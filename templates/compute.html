@@ -9,14 +9,46 @@
 
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
-            <h1 class="page-header">Computes</h1>
+            <h1 class="page-header">{{ compute.name }}</h1>
 
-            <div class="alert alert-danger alert-dismissible" role="danger">
-              <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <strong>Error:</strong> Better check yourself, you're not looking too good.
+            {% include 'errors.html' %}
+
+            <h4>{% trans "Basic details" %}</h4>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <td>{% trans "Connection" %}</td>
+                            <td>{{ uri_conn }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Hostname" %}</td>
+                            <td>{{ hostname }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Hypervisor" %}</td>
+                            <td>{{ hypervisor }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Memory" %}</td>
+                            <td>{{ host_memory|filesizeformat }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Logical CPUs" %}</td>
+                            <td>{{ logical_cpu }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Processor" %}</td>
+                            <td>{{ model_cpu }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Architecture" %}</td>
+                            <td>{{ host_arch }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
-
 
         </div>
     </div>

@@ -14,7 +14,7 @@ def computes(request):
     """
 
     if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
+        return HttpResponseRedirect(reverse('index'))
 
     def get_hosts_status(computes):
         """
@@ -23,13 +23,13 @@ def computes(request):
         compute_data = []
         for compute in computes:
             compute_data.append({'id': compute.id,
-                              'name': compute.name,
-                              'hostname': compute.hostname,
-                              'status': connection_manager.host_is_up(compute.type, compute.hostname),
-                              'type': compute.type,
-                              'login': compute.login,
-                              'password': compute.password
-                              })
+                                 'name': compute.name,
+                                 'hostname': compute.hostname,
+                                 'status': connection_manager.host_is_up(compute.type, compute.hostname),
+                                 'type': compute.type,
+                                 'login': compute.login,
+                                 'password': compute.password
+                                })
         return compute_data
 
     computes = Compute.objects.filter()
@@ -44,7 +44,7 @@ def compute(request, compute_id):
     """
 
     if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
+        return HttpResponseRedirect(reverse('index'))
 
     errors = []
 

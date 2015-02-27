@@ -26,7 +26,7 @@ def instances(request):
     """
 
     if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
+        return HttpResponseRedirect(reverse('index'))
 
     computes = Compute.objects.filter()
     all_host_vms = {}
@@ -50,6 +50,6 @@ def instance(request, comptes_id, vname):
     """
 
     if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
+        return HttpResponseRedirect(reverse('index'))
 
     return render(request, 'instances.html', locals())
