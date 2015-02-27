@@ -16,8 +16,8 @@ def secrets(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
-    errors = []
     secrets_all = []
+    error_messages = []
     compute = Compute.objects.get(id=compute_id)
 
     try:
@@ -30,8 +30,8 @@ def secrets(request, compute_id):
             secrt = conn.get_secret(uuid)
             try:
                 secret_value = conn.get_secret_value(uuid)
-            except:
-                secret_value = ''
+            except libvirtError as lib_err:
+                secret_value = None
             secrets_all.append({'usage': secrt.usageID(),
                                 'uuid': secrt.UUIDString(),
                                 'usageType': secrt.usageType(),
@@ -54,6 +54,6 @@ def secrets(request, compute_id):
                 conn.set_secret_value(uuid, value)
                 return HttpResponseRedirect(request.get_full_path())
     except libvirtError as err:
-        errors.append(err)
+        error_messages.append(err)
 
     return render(request, 'secrets.html', locals())

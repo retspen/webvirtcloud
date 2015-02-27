@@ -16,8 +16,8 @@ def interfaces(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
-    errors = []
     ifaces_all = []
+    error_messages = []
     compute = Compute.objects.get(id=compute_id)
 
     try:
@@ -45,8 +45,8 @@ def interfaces(request, compute_id):
                                       data['stp'], data['delay'])
                     return HttpResponseRedirect(request.get_full_path())
         conn.close()
-    except libvirtError as err:
-        errors.append(err)
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
 
     return render(request, 'interfaces.html', locals())
 
@@ -60,8 +60,8 @@ def interface(request, compute_id, iface):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
-    errors = []
     ifaces_all = []
+    error_messages = []
     compute = Compute.objects.get(id=compute_id)
 
     try:
@@ -89,9 +89,9 @@ def interface(request, compute_id, iface):
                 return HttpResponseRedirect(request.get_full_path())
             if 'delete' in request.POST:
                 conn.delete_iface()
-                return HttpResponseRedirect(reverse('interfaces', args=[host_id]))
+                return HttpResponseRedirect(reverse('interfaces', args=[compute_id]))
         conn.close()
-    except libvirtError as err:
-        errors.append(err)
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
 
     return render(request, 'interface.html', locals())

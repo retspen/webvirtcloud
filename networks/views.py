@@ -18,7 +18,7 @@ def networks(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
-    errors = []
+    error_messages = []
     compute = Compute.objects.get(id=compute_id)
 
     try:
@@ -35,23 +35,23 @@ def networks(request, compute_id):
                     data = form.cleaned_data
                     if data['name'] in networks:
                         msg = _("Pool name already in use")
-                        errors.append(msg)
+                        error_messages.append(msg)
                     if data['forward'] == 'bridge' and data['bridge_name'] == '':
-                        errors.append('Please enter bridge name')
+                        error_messages.append('Please enter bridge name')
                     try:
                         gateway, netmask, dhcp = network_size(data['subnet'], data['dhcp'])
                     except:
-                        msg = _("Input subnet pool error")
-                        errors.append(msg)
-                    if not errors:
+                        error_msg = _("Input subnet pool error")
+                        error_messages.append(error_msg)
+                    if not error_messages:
                         conn.create_network(data['name'], data['forward'], gateway, netmask,
                                             dhcp, data['bridge_name'], data['openvswitch'], data['fixed'])
-                        return HttpResponseRedirect(reverse('network', args=[host_id, data['name']]))
+                        return HttpResponseRedirect(reverse('network', args=[compute_id, data['name']]))
         conn.close()
-    except libvirtError as err:
-        errors.append(err)
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
 
-    return render(request, 'network.html', locals())
+    return render(request, 'networks.html', locals())
 
 
 def network(request, compute_id, pool):
@@ -63,7 +63,7 @@ def network(request, compute_id, pool):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
-    errors = []
+    error_messages = []
     compute = Compute.objects.get(id=compute_id)
 
     try:
@@ -81,40 +81,40 @@ def network(request, compute_id, pool):
         ipv4_dhcp_range_end = conn.get_ipv4_dhcp_range_end()
         ipv4_network = conn.get_ipv4_network()
         fixed_address = conn.get_mac_ipaddr()
-    except libvirtError as err:
-        errors.append(err)
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
 
     if request.method == 'POST':
         if 'start' in request.POST:
             try:
                 conn.start()
                 return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as error_msg:
-                errors.append(error_msg.message)
+            except libvirtError as lib_err:
+                error_messages.append(lib_err.message)
         if 'stop' in request.POST:
             try:
                 conn.stop()
                 return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as error_msg:
-                errors.append(error_msg.message)
+            except libvirtError as lib_err:
+                error_messages.append(lib_err.message)
         if 'delete' in request.POST:
             try:
                 conn.delete()
-                return HttpResponseRedirect(reverse('networks', args=[host_id]))
-            except libvirtError as error_msg:
-                errors.append(error_msg.message)
+                return HttpResponseRedirect(reverse('networks', args=[compute_id]))
+            except libvirtError as lib_err:
+                error_messages.append(lib_err.message)
         if 'set_autostart' in request.POST:
             try:
                 conn.set_autostart(1)
                 return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as error_msg:
-                errors.append(error_msg.message)
+            except libvirtError as lib_err:
+                error_messages.append(lib_err.message)
         if 'unset_autostart' in request.POST:
             try:
                 conn.set_autostart(0)
                 return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as error_msg:
-                errors.append(error_msg.message)
+            except libvirtError as lib_err:
+                error_messages.append(lib_err.message)
 
     conn.close()
 
