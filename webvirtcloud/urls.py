@@ -29,7 +29,7 @@ urlpatterns = patterns('',
     # url(r'^accounts/$', 'accounts.views.accounts', name='accounts'),
     # url(r'^account/(\d+)/$', 'accounts.views.account', name='account'),
     #
-    # url(r'^console/$', 'console.views.console', name='console'),
-    # url(r'^create/(\d+)/$', 'create.views.create', name='create'),
+    url(r'^console/$', 'console.views.console', name='console'),
+    url(r'^create/(\d+)/$', 'create.views.create_instance', name='create_instance'),
     (r'^admin/', include(admin.site.urls)),
 )

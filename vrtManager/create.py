@@ -1,11 +1,7 @@
-#
-# Copyright (C) 2013 Webvirtmgr.
-#
 import string
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-
-from webvirtmgr.settings import QEMU_CONSOLE_DEFAULT_TYPE
+from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
 
 
 def get_rbd_storage_data(stg):

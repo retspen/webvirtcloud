@@ -1,6 +1,3 @@
-#
-# Copyright (C) 2013 Webvirtmgr.
-#
 import time
 import os.path
 try:
@@ -11,8 +8,7 @@ from vrtManager import util
 from xml.etree import ElementTree
 from datetime import datetime
 from vrtManager.connection import wvmConnect
-
-from webvirtmgr.settings import QEMU_CONSOLE_TYPES
+from webvirtcloud.settings import QEMU_CONSOLE_TYPES
 
 
 class wvmInstances(wvmConnect):

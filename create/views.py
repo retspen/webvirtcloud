@@ -3,15 +3,15 @@ from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from computes.models import Compute
-from definst.models import Flavor
-from definst.forms import FlavorAddForm, NewVMForm
+from create.models import Flavor
+from create.forms import FlavorAddForm, NewVMForm
 from instances.models import Instance
 from vrtManager.create import wvmCreate
 from vrtManager import util
 from libvirt import libvirtError
 
 
-def create(request, host_id):
+def create_instance(request, host_id):
     """
     :param request:
     :return:
@@ -133,4 +133,4 @@ def create(request, host_id):
                                 error_messages.append(lib_err)
         conn.close()
 
-    return render('definst.html', locals())
+    return render('create.html', locals())

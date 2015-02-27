@@ -1,6 +1,3 @@
-#
-# Copyright (C) 2013 Webvirtmgr.
-#
 import time
 from vrtManager.connection import wvmConnect
 from vrtManager.util import get_xml_path

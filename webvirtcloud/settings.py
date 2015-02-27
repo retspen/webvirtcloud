@@ -68,7 +68,21 @@ TEMPLATE_DIRS = (
 )
 
 # WebVirtCloud settings
+
+# Wobsock port
 WS_PORT = 6080
+
+# Websock host
 WS_HOST = '0.0.0.0'
+
+# Websock public port
 WS_PUBLIC_HOST = None
+
+# Websock SSL connection
 WS_CERT = None
+
+# list of console types
+QEMU_CONSOLE_TYPES = ['vnc', 'spice']
+
+# default console type
+QEMU_CONSOLE_DEFAULT_TYPE = 'vnc'

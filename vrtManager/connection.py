@@ -1,16 +1,10 @@
-#
-# Copyright (C) 2013 Webvirtmgr.
-#
 import libvirt
 import threading
 import socket
-
 from vrtManager import util
-
-from libvirt import libvirtError
-
 from rwlock import ReadWriteLock
 from django.conf import settings
+from libvirt import libvirtError
 
 
 CONN_SOCKET = 4
