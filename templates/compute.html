@@ -1,7 +1,7 @@
-{% load static %}
+{% extends "base.html" %}
 {% load i18n %}
-{% include 'header.html' %}
-<body>
+{% block title %}{% trans "Compute" %} - {{ compute.name }}{% endblock %}
+{% block content %}
 <div class="container-fluid">
     <div class="row">
 
@@ -53,5 +53,4 @@
         </div>
     </div>
 </div>
-
-{% include 'footer.html' %}
+{% endblock %}

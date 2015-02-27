@@ -1,11 +1,6 @@
 """
 Django settings for webvirtcloud project.
 
-For more information on this file, see
-https://docs.djangoproject.com/en/1.7/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 
 import os
@@ -71,3 +66,9 @@ STATICFILES_DIRS = (
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR,  'templates'),
 )
+
+# WebVirtCloud settings
+WS_PORT = 6080
+WS_HOST = '0.0.0.0'
+WS_PUBLIC_HOST = None
+WS_CERT = None

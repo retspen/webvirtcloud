@@ -1,7 +1,7 @@
-{% load static %}
+{% extends "base.html" %}
 {% load i18n %}
-{% include 'header.html' %}
-<body>
+{% block title %}{% trans "Instances" %}{% endblock %}
+{% block content %}
 <div class="container-fluid">
     <div class="row">
 
@@ -100,8 +100,8 @@
                     </tbody>
                 </table>
             </div>
+
         </div>
     </div>
 </div>
-
-{% include 'footer.html' %}
+{% endblock %}
