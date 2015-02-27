@@ -24,6 +24,7 @@ INSTALLED_APPS = (
     'computes',
     'instances',
     'accounts',
+    'create',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -86,3 +87,7 @@ QEMU_CONSOLE_TYPES = ['vnc', 'spice']
 
 # default console type
 QEMU_CONSOLE_DEFAULT_TYPE = 'vnc'
+
+# keepalive interval and count for libvirt connections
+LIBVIRT_KEEPALIVE_INTERVAL = 5
+LIBVIRT_KEEPALIVE_COUNT    = 5
