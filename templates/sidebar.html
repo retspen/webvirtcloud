@@ -1,0 +1,15 @@
+{% load i18n %}
+{% load tags_active %}
+        <div class="col-sm-3 col-md-2 sidebar">
+            <a class="logo" href="{% url 'instances' %}">WebVirtCloud</a>
+            <hr>
+            <ul class="nav nav-sidebar">
+                <li {% active request "^/instance" %}><a href="{% url 'instances' %}"><span class="glyphicon glyphicon-th" aria-hidden="true"></span></a></li>
+                <li {% active request "^/compute" %}><a href="{% url 'computes' %}"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span></a></li>
+                <li {% active request "^/accaunt" %}><a href="#"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a></li>
+                <li class="bottom-sticky">
+                    <a href="#"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a>
+                    <a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a>
+                </li>
+            </ul>
+        </div>

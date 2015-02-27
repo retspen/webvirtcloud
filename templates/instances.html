@@ -1,0 +1,110 @@
+{% load static %}
+{% load i18n %}
+{% include 'header.html' %}
+<body>
+<div class="container-fluid">
+    <div class="row">
+
+        {% include 'sidebar.html' %}
+
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
+            <h1 class="page-header">Instances</h1>
+
+            <div class="alert alert-danger alert-dismissible" role="danger">
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <strong>Error:</strong> Better check yourself, you're not looking too good.
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr class="active">
+                            <th>Name</th>
+                            <th>Host</th>
+                            <th>Status</th>
+                            <th style="width:164px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for host, inst  in all_host_vms.items %}
+                            {% for vm, info in inst.items %}
+                                <tr>
+                                    <td>
+                                        <span class="glyphicon glyphicon-th" aria-hidden="true"></span> <a href="{% url 'instance' host.0 vm %}">{{ vm }}</a>
+                                    </td>
+                                    <td>
+                                        <span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> <a href="{% url 'compute' host.0 %}">{{ host.1 }}</a>
+                                    </td>
+                                    <td>{% ifequal info.status 1 %}
+                                            <span class="label label-success">{% trans "Running" %}</span>
+                                        {% endifequal %}
+                                        {% ifequal info.status 5 %}
+                                            <span class="label label-danger">{% trans "Shutoff" %}</span>
+                                        {% endifequal %}
+                                        {% ifequal info.status 3 %}
+                                            <span class="label label-warning">{% trans "Suspend" %}</span>
+                                        {% endifequal %}
+                                    </td>
+                                    <td><form action="" method="post" role="form">{% csrf_token %}
+                                            <input type="hidden" name="name" value="{{ info.name }}"/>
+                                            <input type="hidden" name="compute" value="{{ host.0 }}"/>
+                                            {% ifequal info.status 5 %}
+                                                <button class="btn btn-sm btn-default" type="submit" name="start" title="Start">
+                                                    <span class="glyphicon glyphicon-play"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
+                                                    <span class="glyphicon glyphicon-pause"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Destroy" %}">
+                                                    <span class="glyphicon glyphicon-stop"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Console" %}">
+                                                    <span class="glyphicon glyphicon-eye-open"></span>
+                                                </button>
+                                            {% endifequal %}
+                                            {% ifequal info.status 3 %}
+                                                <button class="btn btn-sm btn-default" type="submit" name="resume"
+                                                        title="{% trans "Resume" %}">
+                                                    <span class="glyphicon glyphicon-play"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
+                                                    <span class="glyphicon glyphicon-pause"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Destroy" %}">
+                                                    <span class="glyphicon glyphicon-stop"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Console" %}">
+                                                    <span class="glyphicon glyphicon-eye-open"></span>
+                                                </button>
+                                            {% endifequal %}
+                                            {% ifequal info.status 1 %}
+                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Start" %}">
+                                                    <span class="glyphicon glyphicon-play"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default" type="submit" name="suspend"
+                                                        title="{% trans "Suspend" %}">
+                                                    <span class="glyphicon glyphicon-pause"></span>
+                                                </button>
+                                                <button class="btn btn-sm btn-default" type="submit" name="destroy"
+                                                        title="{% trans "Destroy" %}" onclick="return confirm('Are you sure?')">
+                                                    <span class="glyphicon glyphicon-stop"></span>
+                                                </button>
+                                                <a href="#" class="btn btn-sm btn-default"
+                                                   onclick='open_console("{{ host.0 }}-{{ info.uuid }}")' title="{% trans "Console" %}">
+                                                    <span class="glyphicon glyphicon-eye-open"></span>
+                                                </a>
+                                            {% endifequal %}
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'footer.html' %}

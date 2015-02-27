@@ -1,0 +1,5 @@
+.vagrant
+.idea
+.DS_*
+*.pyc
+webvirtcloud.sqlite3
