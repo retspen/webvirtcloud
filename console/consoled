@@ -1,0 +1,218 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+DIR_PATH = os.path.dirname(os.path.abspath(__file__))
+ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, '..', ''))
+# VENV_PATH = ROOT_PATH + '/venv/lib/python2.7/site-packages'
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
+CERT = DIR_PATH + '/cert.pem'
+
+if ROOT_PATH not in sys.path:
+    sys.path.append(ROOT_PATH)
+# if VENV_PATH not in sys.path:
+# sys.path.append(VENV_PATH)
+
+import Cookie
+import socket
+from webvirtcloud.settings import WS_PORT
+from webvirtcloud.settings import WS_HOST
+
+from webvirtcloud.settings import WS_CERT
+if WS_CERT:
+    CERT = WS_CERT
+
+from vrtManager.connection import CONN_SSH, CONN_SOCKET
+
+import re
+
+from tunnel import Tunnel
+
+try:
+    from websockify import WebSocketProxy
+
+    try:
+        from websockify import ProxyRequestHandler
+    except ImportError:
+        USE_HANDLER = False
+    else:
+        USE_HANDLER = True
+except ImportError:
+    try:
+        from novnc.wsproxy import WebSocketProxy
+    except ImportError:
+        print('Unable to import a websockify implementation, ' +
+              'please install one')
+        sys.exit(1)
+    else:
+        USE_HANDLER = False
+
+
+def get_connection_infos(token):
+    from instance.models import Instance
+    from vrtManager.instance import wvmInstance
+
+    try:
+        temptoken = token.split('-', 1)
+        host = int(temptoken[0])
+        uuid = temptoken[1]
+        instance = Instance.objects.get(compute_id=host, uuid=uuid)
+        conn = wvmInstance(instance.compute.hostname,
+                           instance.compute.login,
+                           instance.compute.password,
+                           instance.compute.type,
+                           instance.name)
+        if instance.compute.hostname.count(':'):
+            connhost = host.split(':')[0]
+            connport = host.split(':')[1]
+        else:
+            connhost = instance.compute.hostname
+            connport = 22
+        connuser = instance.compute.login
+        conntype = instance.compute.type
+        console_host = conn.get_console_listen_addr()
+        console_port = conn.get_console_port()
+        console_socket = conn.get_console_socket()
+    except:
+        connhost = None
+        connport = None
+        connuser = None
+        conntype = None
+        console_host = None
+        console_port = None
+        console_socket = None
+    return (connhost, connport, connuser, conntype, console_host,
+            console_port, console_socket)
+
+
+class CompatibilityMixIn(object):
+    def _new_client(self, daemon, socket_factory):
+        cookie = Cookie.SimpleCookie()
+        cookie.load(self.headers.getheader('cookie'))
+        token = cookie['token'].value
+
+        (connhost, connport, connuser, conntype, console_host, console_port,
+         console_socket) = get_connection_infos(token)
+
+        if console_socket and conntype == CONN_SOCKET:
+            # Local socket on local host
+            self.msg('Try to open local socket %s' % console_socket)
+            tsock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            tsock.connect(console_socket)
+        elif console_socket or re.match('^127\.', console_host):
+            # Need tunnel to physical host
+            if conntype != CONN_SSH:
+                self.msg("Need a tunnel to access console but can't mount " +
+                         "one because it's not a SSH host")
+                raise
+            try:
+                # generate a string with all placeholders to avoid TypeErrors
+                # in sprintf
+                # https://github.com/retspen/webvirtmgr/pull/497
+                error_msg = "Try to open tunnel on %s@%s:%s on console %s:%s "
+                error_msg += "(or socket %s)"
+                self.msg(error_msg % (connuser, connhost, connport,
+                         console_host, console_port, console_socket))
+                tunnel = Tunnel()
+                fd = tunnel.open(connhost, connuser, connport,
+                                 console_host, console_port, console_socket)
+                tsock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
+            except Exception as e:
+                self.msg("Fail to open tunnel : %s" % e)
+                raise
+            self.msg("Tunnel openned")
+        else:
+            # Direct access
+            self.msg("connecting to: %s:%s" % (connhost, console_port))
+            tsock = socket_factory(connhost, console_port, connect=True)
+            tunnel = None
+
+        if self.verbose and not daemon:
+            print(self.traffic_legend)
+
+        # Start proxying
+        try:
+            self.msg("Start proxying")
+            self.do_proxy(tsock)
+        except:
+            if tunnel:
+                self.vmsg(
+                    "%s:%s (via %s@%s:%s) : Target closed" %
+                    (console_host, console_port, connuser, connhost, connport))
+                if tsock:
+                    tsock.shutdown(socket.SHUT_RDWR)
+                    tsock.close()
+                if tunnel:
+                    tunnel.close()
+            raise
+
+
+if USE_HANDLER:
+    class NovaProxyRequestHandler(ProxyRequestHandler, CompatibilityMixIn):
+        def msg(self, *args, **kwargs):
+            self.log_message(*args, **kwargs)
+
+        def vmsg(self, *args, **kwargs):
+            if self.verbose:
+                self.msg(*args, **kwargs)
+
+        def new_websocket_client(self):
+            """
+            Called after a new WebSocket connection has been established.
+            """
+            # Setup variable for compatibility
+            daemon = self.server.daemon
+            socket_factory = self.server.socket
+
+            self._new_client(daemon, socket_factory)
+
+else:
+    class NovaWebSocketProxy(WebSocketProxy, CompatibilityMixIn):
+
+        def new_client(self):
+            """
+            Called after a new WebSocket connection has been established.
+            """
+            # Setup variable for compatibility
+            daemon = self.daemon
+            socket_factory = self.socket
+
+            self._new_client(daemon, socket_factory)
+
+if __name__ == '__main__':
+    if USE_HANDLER:
+        # Create the WebSocketProxy with NovaProxyRequestHandler handler
+        server = WebSocketProxy(RequestHandlerClass=NovaProxyRequestHandler,
+                                listen_host=WS_HOST,
+                                listen_port=WS_PORT,
+                                source_is_ipv6=False,
+                                verbose=False,
+                                cert=CERT,
+                                key=None,
+                                ssl_only=False,
+                                daemon=False,
+                                record=False,
+                                web=False,
+                                traffic=False,
+                                target_host='ignore',
+                                target_port='ignore',
+                                wrap_mode='exit',
+                                wrap_cmd=None)
+    else:
+        # Create the NovaWebSockets proxy
+        server = NovaWebSocketProxy(listen_host=WS_HOST,
+                                    listen_port=WS_PORT,
+                                    source_is_ipv6=False,
+                                    verbose=False,
+                                    cert=CERT,
+                                    key=None,
+                                    ssl_only=False,
+                                    daemon=False,
+                                    record=False,
+                                    web=False,
+                                    target_host='ignore',
+                                    target_port='ignore',
+                                    wrap_mode='exit',
+                                    wrap_cmd=None)
+    server.start_server()
