@@ -11,7 +11,7 @@ from vrtManager import util
 from libvirt import libvirtError
 
 
-def create_instance(request, host_id):
+def create_instance(request, compute_id):
     """
     :param request:
     :return:
@@ -25,7 +25,7 @@ def create_instance(request, host_id):
     storages = []
     networks = []
     meta_prealloc = False
-    compute = Compute.objects.get(id=host_id)
+    compute = Compute.objects.get(id=compute_id)
     flavors = Flavor.objects.filter().order_by('id')
 
     try:
@@ -78,7 +78,7 @@ def create_instance(request, host_id):
                 else:
                     try:
                         conn._defineXML(xml)
-                        return HttpResponseRedirect(reverse('instance', args=[host_id, name]))
+                        return HttpResponseRedirect(reverse('instance', args=[compute_id, name]))
                     except libvirtError as lib_err:
                         error_messages.append(lib_err.message)
             if 'create' in request.POST:
@@ -133,4 +133,4 @@ def create_instance(request, host_id):
                                 error_messages.append(lib_err)
         conn.close()
 
-    return render('create.html', locals())
+    return render(request, 'create_instance.html', locals())

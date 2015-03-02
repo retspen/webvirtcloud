@@ -6,7 +6,7 @@
             <ul class="nav nav-sidebar">
                 <li {% active request "^/instance" %}><a href="{% url 'instances' %}"><span class="glyphicon glyphicon-th" aria-hidden="true"></span></a></li>
                 <li {% active request "^/compute" %}><a href="{% url 'computes' %}"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span></a></li>
-                <li {% active request "^/accaunt" %}><a href="#"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a></li>
+                <li {% active request "^/user" %}><a href="{% url 'users' %}"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a></li>
                 <li class="bottom-sticky">
                     <a href="#"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a>
                     <a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a>

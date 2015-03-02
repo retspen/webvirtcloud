@@ -26,9 +26,9 @@ urlpatterns = patterns('',
 
     url(r'^secret/(\d+)/$', 'secrets.views.secrets', name='secrets'),
 
-    # url(r'^accounts/$', 'accounts.views.accounts', name='accounts'),
-    # url(r'^account/(\d+)/$', 'accounts.views.account', name='account'),
-    #
+    url(r'^users/$', 'users.views.users', name='users'),
+    url(r'^user/(\d+)/$', 'users.views.user', name='user'),
+
     url(r'^console/$', 'console.views.console', name='console'),
     url(r'^create/(\d+)/$', 'create.views.create_instance', name='create_instance'),
     (r'^admin/', include(admin.site.urls)),

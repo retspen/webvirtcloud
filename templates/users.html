@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Users" %}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+
+        {% include 'sidebar.html' %}
+
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
+             <h1 class="page-header">{% trans "Accounts" %}</h1>
+
+            {% include 'errors.html' %}
+
+            {% for user in users %}
+                <div id="{{ user.username }}" class="col-xs-6 col-sm-4">
+                    <div class="panel {% if user.is_active %}panel-success{% else %}panel-danger{% endif %} panel-data">
+                        <div class="panel-heading">
+                            <h3 class="panel-title"><strong>{{ user.username }}</strong>
+                                <a data-toggle="modal" href="{% url 'user' user.id %}" class="pull-right"
+                                   title="{% trans "Edit" %}">
+                                    <span class="glyphicon glyphicon-cog"></span>
+                                </a>
+                            </h3>
+                        </div>
+                        <div class="panel-body">
+                            <p>Status: {% if user.is_active %}Active{% else %}Blocked{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
