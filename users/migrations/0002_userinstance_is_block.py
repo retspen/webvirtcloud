@@ -13,13 +13,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='userinstance',
-            name='is_change',
-            field=models.BooleanField(default=False),
-            preserve_default=True,
-        ),
-        migrations.AddField(
-            model_name='userinstance',
-            name='is_delete',
+            name='is_block',
             field=models.BooleanField(default=False),
             preserve_default=True,
         ),

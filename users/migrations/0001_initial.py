@@ -17,6 +17,8 @@ class Migration(migrations.Migration):
             name='UserInstance',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('is_change', models.BooleanField(default=False)),
+                ('is_delete', models.BooleanField(default=False)),
                 ('instance', models.ForeignKey(to='instances.Instance')),
                 ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
             ],
