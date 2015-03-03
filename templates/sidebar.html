@@ -1,18 +1,18 @@
 {% load i18n %}
 {% load tags_active %}
-        <div class="col-sm-3 col-md-2 sidebar">
-            <a class="logo" href="{% url 'instances' %}">WebVirtCloud</a>
-            <hr>
-            <ul class="nav nav-sidebar">
-                <li {% active request "^/instance" %}><a href="{% url 'instances' %}"><span class="glyphicon glyphicon-th" aria-hidden="true"></span></a></li>
-                {% if request.user.is_superuser %}
-                    <li {% active request "^/compute" %}><a href="{% url 'computes' %}"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span></a></li>
-                    <li {% active request "^/user" %}><a href="{% url 'users' %}"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a></li>
-                    <li {% active request "^/showlogs" %}><a href="{% url 'showlogs' %}"><span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span></a></li>
-                {% endif %}
-                <li class="bottom-sticky">
-                    <a href="#"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a>
-                    <a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a>
-                </li>
-            </ul>
-        </div>
+<div class="col-sm-3 col-md-2 sidebar">
+    <a class="logo" href="{% url 'instances' %}">WebVirtCloud</a>
+    <hr>
+    <ul class="nav nav-sidebar">
+        <li class="{% class_active request "^/instance" %}"><a href="{% url 'instances' %}"><span class="glyphicon glyphicon-th" aria-hidden="true"></span></a></li>
+        {% if request.user.is_superuser %}
+            <li class="{% class_active request "^/compute" %}"><a href="{% url 'computes' %}"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span></a></li>
+            <li class="{% class_active request "^/user" %}"><a href="{% url 'users' %}"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a></li>
+            <li class="{% class_active request "^/log" %}"><a href="{% url 'showlogs' %}"><span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span></a></li>
+        {% endif %}
+        <li class="bottom-sticky">
+            <a class="{% class_active request "^/account" %}" href="#"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a>
+            <a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a>
+        </li>
+    </ul>
+</div>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Logs" %}{% endblock %}
+{% block title %}{% trans "Network" %} - {{ compute.name }}{% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -9,10 +9,17 @@
 
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
 
-            <h1 class="page-header">{% trans "Logs" %}</h1>
+            {% include "create_stg_block.html" %}
+
+            <h1 class="page-header">{{ compute.name }}</h1>
+
+            {% include 'compute_block_link.html' %}
 
             {% include 'errors_block.html' %}
 
+            <div class="row">
+
+            </div>
 
         </div>
     </div>

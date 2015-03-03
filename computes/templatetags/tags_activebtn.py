@@ -5,7 +5,7 @@ register = template.Library()
 
 
 @register.simple_tag
-def class_active(request, pattern):
+def class_activebtn(request, pattern):
     if re.search(pattern, request.path):
-        return 'active'
+        return 'btn-primary'
     return ''

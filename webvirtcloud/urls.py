@@ -15,16 +15,16 @@ urlpatterns = patterns('',
     url(r'^computes/$', 'computes.views.computes', name='computes'),
     url(r'^compute/(\d+)/$', 'computes.views.compute', name='compute'),
 
-    url(r'^storages/(\d+)/$', 'storages.views.storages', name='storages'),
-    url(r'^storage/(\d+)/([\w\-\.]+)/$', 'storages.views.storage', name='storage'),
+    url(r'^compute/stgs/(\d+)/$', 'storages.views.storages', name='storages'),
+    url(r'^compute/stg/(\d+)/([\w\-\.]+)/$', 'storages.views.storage', name='storage'),
 
-    url(r'^networks/(\d+)/$', 'networks.views.networks', name='networks'),
-    url(r'^network/(\d+)/([\w\-\.]+)/$', 'networks.views.network', name='network'),
+    url(r'^compute/nets/(\d+)/$', 'networks.views.networks', name='networks'),
+    url(r'^compute/net/(\d+)/([\w\-\.]+)/$', 'networks.views.network', name='network'),
 
-    url(r'^interfaces/(\d+)/$', 'interfaces.views.interfaces', name='interfaces'),
-    url(r'^interface/(\d+)/([\w\.]+)$', 'interfaces.views.interface', name='interface'),
+    url(r'^compute/ifaces/(\d+)/$', 'interfaces.views.interfaces', name='interfaces'),
+    url(r'^compute/iface/(\d+)/([\w\.]+)$', 'interfaces.views.interface', name='interface'),
 
-    url(r'^secret/(\d+)/$', 'secrets.views.secrets', name='secrets'),
+    url(r'^compute/secret/(\d+)/$', 'secrets.views.secrets', name='secrets'),
 
     url(r'^users/$', 'users.views.users', name='users'),
     url(r'^user/(\d+)/$', 'users.views.user', name='user'),

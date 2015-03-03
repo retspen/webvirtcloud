@@ -18,7 +18,7 @@ def networks(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
-    if not request.user.is_superuser():
+    if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []

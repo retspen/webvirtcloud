@@ -1,0 +1,8 @@
+{% load i18n %}
+{% load tags_activebtn %}
+<a href="{% url 'storages' compute.id %}" class="btn btn-default {% class_activebtn request "^/storage" %}">{% trans "Storages" %}</a>
+<a href="{% url 'networks' compute.id %}" class="btn btn-default {% class_activebtn request "^/network" %}">{% trans "Networks" %}</a>
+<a href="{% url 'interfaces' compute.id %}" class="btn btn-default {% class_activebtn request "^/interface" %}">{% trans "Interface" %}</a>
+<a href="{% url 'secrets' compute.id %}" class="btn btn-default {% class_activebtn request "^/secret" %}">{% trans "Secrets" %}</a>
+
+<hr>
