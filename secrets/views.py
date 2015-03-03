@@ -16,6 +16,9 @@ def secrets(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+
     secrets_all = []
     error_messages = []
     compute = Compute.objects.get(id=compute_id)

@@ -8,12 +8,12 @@
         {% include 'sidebar.html' %}
 
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            {% if request.user.is_superuser %}
-                <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
-            {% endif %}
+
+            {% include 'create_inst_block.html' %}
+
             <h1 class="page-header">{{ vname }}</h1>
 
-            {% include 'errors.html' %}
+            {% include 'errors_block.html' %}
 
 
         </div>

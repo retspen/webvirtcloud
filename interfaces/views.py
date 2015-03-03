@@ -16,6 +16,9 @@ def interfaces(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+
     ifaces_all = []
     error_messages = []
     compute = Compute.objects.get(id=compute_id)
@@ -58,6 +61,9 @@ def interface(request, compute_id, iface):
     """
 
     if not request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('index'))
+
+    if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
     ifaces_all = []

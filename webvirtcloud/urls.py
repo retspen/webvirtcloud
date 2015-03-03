@@ -31,5 +31,6 @@ urlpatterns = patterns('',
 
     url(r'^console/$', 'console.views.console', name='console'),
     url(r'^create/(\d+)/$', 'create.views.create_instance', name='create_instance'),
+    url(r'^logs/$', 'logs.views.showlogs', name='showlogs'),
     (r'^admin/', include(admin.site.urls)),
 )

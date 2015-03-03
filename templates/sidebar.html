@@ -8,6 +8,7 @@
                 {% if request.user.is_superuser %}
                     <li {% active request "^/compute" %}><a href="{% url 'computes' %}"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span></a></li>
                     <li {% active request "^/user" %}><a href="{% url 'users' %}"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a></li>
+                    <li {% active request "^/showlogs" %}><a href="{% url 'showlogs' %}"><span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span></a></li>
                 {% endif %}
                 <li class="bottom-sticky">
                     <a href="#"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a>

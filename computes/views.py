@@ -16,6 +16,9 @@ def computes(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+
     def get_hosts_status(computes):
         """
         Function return all hosts all vds on host
@@ -46,8 +49,10 @@ def compute(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
-    errors = []
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
 
+    error_messages = []
     compute = Compute.objects.get(id=compute_id)
 
     try:
@@ -59,7 +64,7 @@ def compute(request, compute_id):
         hypervisor = conn.hypervisor_type()
         mem_usage = conn.get_memory_usage()
         conn.close()
-    except libvirtError as err:
-        errors.append(err)
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
 
     return render(request, 'compute.html', locals())

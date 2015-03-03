@@ -11,7 +11,7 @@
             <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
              <h1 class="page-header">{% trans "Accounts" %}</h1>
 
-            {% include 'errors.html' %}
+            {% include 'errors_block.html' %}
 
             {% for user in users %}
                 <div id="{{ user.username }}" class="col-xs-6 col-sm-4">

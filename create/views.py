@@ -20,6 +20,9 @@ def create_instance(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+
     conn = None
     error_messages = []
     storages = []

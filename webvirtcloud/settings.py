@@ -25,6 +25,7 @@ INSTALLED_APPS = (
     'instances',
     'users',
     'create',
+    'logs',
 )
 
 MIDDLEWARE_CLASSES = (

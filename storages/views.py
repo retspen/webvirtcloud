@@ -17,6 +17,9 @@ def storages(request, compute_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+
     error_messages = []
     compute = Compute.objects.get(id=compute_id)
 

@@ -8,11 +8,12 @@
         {% include 'sidebar.html' %}
 
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
+
+            {% include 'create_inst_block.html' %}
+
             <h1 class="page-header">Instances</h1>
 
-            {% include 'errors.html' %}
-
+            {% include 'errors_block.html' %}
 
             <div class="table-responsive">
             {% if request.user.is_superuser %}
@@ -24,7 +25,7 @@
                             <th>VCPU</th>
                             <th>Memory</th>
                             <th>Status</th>
-                            <th style="width:164px;">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -38,7 +39,7 @@
                                         <span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> <a href="{% url 'compute' host.0 %}">{{ host.1 }}</a>
                                     </td>
                                     <td>{{ info.vcpu }}</td>
-                                    <td>{{ info.memory }}</td>
+                                    <td>{{ info.memory }} {% trans "MB" %}</td>
                                     <td>{% ifequal info.status 1 %}
                                             <span class="label label-success">{% trans "Running" %}</span>
                                         {% endifequal %}
@@ -115,7 +116,7 @@
                             <th>VCPU</th>
                             <th>Memory</th>
                             <th>Status</th>
-                            <th style="width:164px;">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
