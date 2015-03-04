@@ -15,16 +15,16 @@
 
             {% include 'errors_block.html' %}
 
-            <div class="table-responsive">
             {% if request.user.is_superuser %}
-                <table class="table">
+
+                <table class="table table-responsive table-hover">
                     <thead>
-                        <tr class="active">
+                        <tr>
                             <th>Name</th>
                             <th>Host</th>
+                            <th>Status</th>
                             <th>VCPU</th>
                             <th>Memory</th>
-                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -32,24 +32,20 @@
                         {% for host, inst  in all_host_vms.items %}
                             {% for vm, info in inst.items %}
                                 <tr>
-                                    <td>
-                                        <span class="glyphicon glyphicon-th" aria-hidden="true"></span> <a href="{% url 'instance' host.0 vm %}">{{ vm }}</a>
-                                    </td>
-                                    <td>
-                                        <span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> <a href="{% url 'compute' host.0 %}">{{ host.1 }}</a>
+                                    <td><a href="{% url 'instance' host.0 vm %}">{{ vm }}</a></td>
+                                    <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
+                                    <td>{% ifequal info.status 1 %}
+                                            {% trans "Active" %}
+                                        {% endifequal %}
+                                        {% ifequal info.status 5 %}
+                                            {% trans "Off" %}
+                                        {% endifequal %}
+                                        {% ifequal info.status 3 %}
+                                            {% trans "Suspend" %}
+                                        {% endifequal %}
                                     </td>
                                     <td>{{ info.vcpu }}</td>
                                     <td>{{ info.memory }} {% trans "MB" %}</td>
-                                    <td>{% ifequal info.status 1 %}
-                                            <span class="label label-success">{% trans "Running" %}</span>
-                                        {% endifequal %}
-                                        {% ifequal info.status 5 %}
-                                            <span class="label label-danger">{% trans "Shutoff" %}</span>
-                                        {% endifequal %}
-                                        {% ifequal info.status 3 %}
-                                            <span class="label label-warning">{% trans "Suspend" %}</span>
-                                        {% endifequal %}
-                                    </td>
                                     <td><form action="" method="post" role="form">{% csrf_token %}
                                             <input type="hidden" name="name" value="{{ info.name }}"/>
                                             <input type="hidden" name="compute" value="{{ host.0 }}"/>
@@ -109,34 +105,33 @@
 
             {% else %}
 
-                <table class="table">
+                <table class="table table-responsive table-hover">
                     <thead>
-                        <tr class="active">
+                        <tr>
                             <th>Name</th>
+                            <th>Status</th>
                             <th>VCPU</th>
                             <th>Memory</th>
-                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
+
                         {% for host, vm in all_user_vms.items %}
                             <tr>
-                                <td>
-                                    <span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> <a href="{% url 'instance' host.0 vm.name %}">{{ vm.name }}</a>
+                                <td><a href="{% url 'instance' host.0 vm.name %}">{{ vm.name }}</a></td>
+                                <td>{% ifequal vm.status 1 %}
+                                        {% trans "Active" %}
+                                    {% endifequal %}
+                                    {% ifequal vm.status 5 %}
+                                        {% trans "Off" %}
+                                    {% endifequal %}
+                                    {% ifequal vm.status 3 %}
+                                        {% trans "Suspend" %}
+                                    {% endifequal %}
                                 </td>
                                 <td>{{ vm.vcpu }}</td>
                                 <td>{{ vm.memory }} {% trans "MB" %}</td>
-                                <td>{% ifequal vm.status 1 %}
-                                        <span class="label label-success">{% trans "Running" %}</span>
-                                    {% endifequal %}
-                                    {% ifequal vm.status 5 %}
-                                        <span class="label label-danger">{% trans "Shutoff" %}</span>
-                                    {% endifequal %}
-                                    {% ifequal vm.status 3 %}
-                                        <span class="label label-warning">{% trans "Suspend" %}</span>
-                                    {% endifequal %}
-                                </td>
                                 <td><form action="" method="post" role="form">{% csrf_token %}
                                         <input type="hidden" name="name" value="{{ vm.name }}"/>
                                         <input type="hidden" name="compute" value="{{ host.0 }}"/>
@@ -189,12 +184,13 @@
                                     </form>
                                 </td>
                             </tr>
+
                         {% endfor %}
+
                     </tbody>
                 </table>
-            {% endif %}
 
-            </div>
+            {% endif %}
 
         </div>
     </div>

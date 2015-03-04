@@ -13,7 +13,7 @@ urlpatterns = patterns('',
     url(r'^instance/(\d+)/([\w\-\.]+)/$', 'instances.views.instance', name='instance'),
 
     url(r'^computes/$', 'computes.views.computes', name='computes'),
-    url(r'^compute/(\d+)/$', 'computes.views.compute', name='compute'),
+    url(r'^compute/overview/(\d+)/$', 'computes.views.overview', name='overview'),
 
     url(r'^compute/stgs/(\d+)/$', 'storages.views.storages', name='storages'),
     url(r'^compute/stg/(\d+)/([\w\-\.]+)/$', 'storages.views.storage', name='storage'),

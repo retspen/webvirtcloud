@@ -23,7 +23,7 @@
                                 <div class="panel-heading">
                                     {% ifequal compute.status 1 %}
                                         <h3 class="panel-title">
-                                            <a href="{% url 'compute' compute.id %}"><strong>{{ compute.name }}</strong></a>
+                                            <a href="{% url 'overview' compute.id %}"><strong>{{ compute.name }}</strong></a>
                                             <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right"
                                                title="{% trans "Edit" %}">
                                                 <span class="glyphicon glyphicon-cog"></span>

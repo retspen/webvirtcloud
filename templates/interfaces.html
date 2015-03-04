@@ -19,6 +19,28 @@
 
             <div class="row">
 
+                {% if not  ifaces_all %}
+                    <div class="well">
+                        <h4>{% trans "You do not have any storage pools" %}</h4>
+                    </div>
+                {% else %}
+                    {% for iface in ifaces_all %}
+                        <div class="col-xs-12 col-sm-4">
+                            <div class="panel {% ifequal iface.state 1 %}panel-success{% else %}panel-danger{% endifequal %} panel-data">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title"><a href="{% url 'interface' compute.id iface.name %}">{{ iface.name }}</a>
+                                    </h3>
+                                </div>
+                                <div class="panel-body">
+                                    <p>{% trans "Type" %}: {{ iface.type }}</p>
+
+                                    <p>{% trans "MAC" %}: {{ iface.mac }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
             </div>
 
         </div>

@@ -40,7 +40,7 @@ def computes(request):
 
     return render(request, 'computes.html', locals())
 
-def compute(request, compute_id):
+def overview(request, compute_id):
     """
     :param request:
     :return:
@@ -67,4 +67,4 @@ def compute(request, compute_id):
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
-    return render(request, 'compute.html', locals())
+    return render(request, 'overview.html', locals())
