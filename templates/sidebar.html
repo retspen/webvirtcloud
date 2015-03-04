@@ -1,18 +1,21 @@
 {% load i18n %}
 {% load tags_active %}
-<div class="col-sm-3 col-md-2 sidebar">
-    <a class="logo" href="{% url 'instances' %}">WebVirtCloud</a>
-    <hr>
-    <ul class="nav nav-sidebar">
-        <li class="{% class_active request "^/instance" %}"><a href="{% url 'instances' %}"><span class="glyphicon glyphicon-th" aria-hidden="true"></span></a></li>
-        {% if request.user.is_superuser %}
-            <li class="{% class_active request "^/compute" %}"><a href="{% url 'computes' %}"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span></a></li>
-            <li class="{% class_active request "^/user" %}"><a href="{% url 'users' %}"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a></li>
-            <li class="{% class_active request "^/log" %}"><a href="{% url 'showlogs' %}"><span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span></a></li>
-        {% endif %}
-        <li class="bottom-sticky">
-            <a class="{% class_active request "^/account" %}" href="#"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a>
-            <a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a>
-        </li>
-    </ul>
-</div>
+            <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav side-nav">
+                    <li {% class_active request "^/instance" %}">
+                        <a href="{% url 'instances' %}"><i class="fa fa-fw fa-dashboard"></i> {% trans "Instances" %}</a>
+                    </li>
+                    {% if request.user.is_superuser %}
+                        <li {% class_active request "^/compute" %}>
+                            <a href="{% url 'computes' %}"><i class="fa fa-fw fa-bar-chart-o"></i> {% trans "Coputes" %}</a>
+                        </li>
+                        <li {% class_active request "^/user" %}>
+                            <a href="{% url 'users' %}"><i class="fa fa-fw fa-table"></i> {% trans "User" %}</a>
+                        </li>
+                        <li {% class_active request "^/log" %}>
+                            <a href="{% url 'showlogs' %}"><i class="fa fa-fw fa-edit"></i> {% trans "Logs" %}</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
