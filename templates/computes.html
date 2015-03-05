@@ -16,60 +16,44 @@
             <div class="row">
                 {% if computes_info %}
                     {% for compute in computes_info %}
-                        <div id="{{ compute.name }}" class="col-xs-6 col-sm-4">
-                            <div class="panel {% ifequal compute.status 1 %}panel-success{% else %}panel-danger{% endifequal %} panel-data">
+                        <div id="{{ compute.name }}" class="col-xs-12 col-sm-4">
+                            <div class="panel {% if compute.status %}panel-success{% else %}panel-danger{% endif %} panel-data">
                                 <div class="panel-heading">
                                     {% ifequal compute.status 1 %}
                                         <h3 class="panel-title">
                                             <a href="{% url 'overview' compute.id %}"><strong>{{ compute.name }}</strong></a>
-                                            <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right"
-                                               title="{% trans "Edit" %}">
+                                            <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right" title="{% trans "Edit" %}">
                                                 <span class="glyphicon glyphicon-cog"></span>
                                             </a>
                                         </h3>
                                     {% else %}
                                         <h3 class="panel-title"><strong>{{ compute.name }}</strong>
-                                            <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right"
-                                               title="{% trans "Edit" %}">
+                                            <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right" title="{% trans "Edit" %}">
                                                 <span class="glyphicon glyphicon-cog"></span>
                                             </a>
                                         </h3>
                                     {% endifequal %}
                                 </div>
                                 <div class="panel-body">
-                                    <p>
-                                        <form action="" method="post" role="form">{% csrf_token %}
-                                            <input type="hidden" name="host_id" value="{{ compute.id }}">
-                                            <button type="submit" class="pull-right btn btn-xs btn-danger" name="host_del"
-                                                    title="{% trans "Delete" %}"
-                                                    onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                <span class="glyphicon glyphicon-trash"></span>
-                                            </button>
-                                        </form>
-                                    </p>
-                                    <p>
-                                        {% ifequal compute.type 1 %}
-                                            tcp://{{ compute.hostname }}
-                                        {% endifequal %}
-                                        {% ifequal compute.type 2 %}
-                                            ssh://{{ compute.hostname }}
-                                        {% endifequal %}
-                                        {% ifequal compute.type 3 %}
-                                            tls://{{ compute.hostname }}
-                                        {% endifequal %}
-                                        {% ifequal compute.type 4 %}
-                                            socket://
-                                        {% endifequal %}
-                                    </p>
+                                    <div class="row">
+                                        <div class="col-xs-4 col-sm-4">
+                                            <p><strong>{% trans "Status:" %}</strong></p>
+                                        </div>
+                                        <div class="col-xs-4 col-sm-6">
+                                            {% if compute.status %}
+                                                <p>{% trans "Connected" %}</p>
+                                            {% else %}
+                                                <p>{% trans "Not Connected" %}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
 
                                     <!-- Modal Edit -->
-                                    <div class="modal fade" id="editHost{{ compute.id }}" tabindex="-1" role="dialog"
-                                         aria-labelledby="editHostLabel" aria-hidden="true">
+                                    <div class="modal fade" id="editHost{{ compute.id }}" tabindex="-1" role="dialog" aria-labelledby="editHostLabel" aria-hidden="true">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <button type="button" class="close" data-dismiss="modal"
-                                                            aria-hidden="true">&times;</button>
+                                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                                                     <h4 class="modal-title">{% trans "Edit connection" %}</h4>
                                                 </div>
                                                 {% ifequal compute.type 1 %}
@@ -109,13 +93,18 @@
                                                                            value="{{ compute.password }}">
                                                                 </div>
                                                             </div>
-                                                        </form>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-default"
-                                                                data-dismiss="modal">{% trans "Close" %}</button>
-                                                        <button type="submit" class="btn btn-primary"
-                                                                name="host_edit">{% trans "Edit" %}</button>
+                                                        <button type="submit" class="pull-left btn btn-danger" name="host_del">
+                                                            {% trans "Delete" %}
+                                                        </button>
+                                                        <button type="button" class="btn btn-default" data-dismiss="modal">
+                                                            {% trans "Close" %}
+                                                        </button>
+                                                        <button type="submit" class="btn btn-primary" name="host_edit">
+                                                            {% trans "Edit" %}
+                                                        </button>
+                                                        </form>
                                                     </div>
                                                 {% endifequal %}
                                                 {% ifequal compute.type 2 %}
@@ -150,13 +139,18 @@
                                                                            value="{{ host.login }}">
                                                                 </div>
                                                             </div>
-                                                        </form>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-default"
-                                                                data-dismiss="modal">{% trans "Close" %}</button>
-                                                        <button type="submit" class="btn btn-primary"
-                                                                name="host_edit">{% trans "Edit" %}</button>
+                                                        <button type="submit" class="pull-left btn btn-danger" name="host_del">
+                                                            {% trans "Delete" %}
+                                                        </button>
+                                                        <button type="button" class="btn btn-default" data-dismiss="modal">
+                                                            {% trans "Close" %}
+                                                        </button>
+                                                        <button type="submit" class="btn btn-primary" name="host_edit">
+                                                            {% trans "Edit" %}
+                                                        </button>
+                                                        </form>
                                                     </div>
                                                 {% endifequal %}
                                                 {% ifequal compute.type 3 %}
@@ -197,13 +191,18 @@
                                                                            value="{{ host.password }}">
                                                                 </div>
                                                             </div>
-                                                        </form>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-default"
-                                                                data-dismiss="modal">{% trans "Close" %}</button>
-                                                        <button type="submit" class="btn btn-primary"
-                                                                name="host_tls_add">{% trans "Add" %}</button>
+                                                        <button type="submit" class="pull-left btn btn-danger" name="host_del">
+                                                            {% trans "Delete" %}
+                                                        </button>
+                                                        <button type="button" class="btn btn-default" data-dismiss="modal">
+                                                            {% trans "Close" %}
+                                                        </button>
+                                                        <button type="submit" class="btn btn-primary" name="host_tls_add">
+                                                            {% trans "Add" %}
+                                                        </button>
+                                                        </form>
                                                     </div>
                                                     {% endifequal %}
                                             </div><!-- /.modal-content -->
