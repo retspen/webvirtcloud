@@ -2,14 +2,14 @@
 {% load i18n %}
 {% block title %}{% trans "Users" %}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-
-        {% include 'sidebar.html' %}
-
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
-             <h1 class="page-header">{% trans "Accounts" %}</h1>
+            <!-- Page Heading -->
+            <div class="row">
+                <div class="col-lg-12">
+                    {% include 'create_user_block.html' %}
+                    <h1 class="page-header">{% trans "Users" %}</h1>
+                </div>
+            </div>
+            <!-- /.row -->
 
             {% include 'errors_block.html' %}
 
@@ -31,8 +31,4 @@
                     </div>
                 </div>
             {% endfor %}
-
-        </div>
-    </div>
-</div>
 {% endblock %}

@@ -4,17 +4,17 @@
             <div class="collapse navbar-collapse navbar-ex1-collapse">
                 <ul class="nav navbar-nav side-nav">
                     <li {% class_active request "^/instance" %}">
-                        <a href="{% url 'instances' %}"><i class="fa fa-fw fa-dashboard"></i> {% trans "Instances" %}</a>
+                        <a href="{% url 'instances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
                     </li>
                     {% if request.user.is_superuser %}
                         <li {% class_active request "^/compute" %}>
-                            <a href="{% url 'computes' %}"><i class="fa fa-fw fa-bar-chart-o"></i> {% trans "Coputes" %}</a>
+                            <a href="{% url 'computes' %}"><i class="fa fa-fw fa-tasks"></i> {% trans "Coputes" %}</a>
                         </li>
                         <li {% class_active request "^/user" %}>
-                            <a href="{% url 'users' %}"><i class="fa fa-fw fa-table"></i> {% trans "User" %}</a>
+                            <a href="{% url 'users' %}"><i class="fa fa-fw fa-users"></i> {% trans "Users" %}</a>
                         </li>
                         <li {% class_active request "^/log" %}>
-                            <a href="{% url 'showlogs' %}"><i class="fa fa-fw fa-edit"></i> {% trans "Logs" %}</a>
+                            <a href="{% url 'showlogs' %}"><i class="fa fa-fw fa-list-alt"></i> {% trans "Logs" %}</a>
                         </li>
                     {% endif %}
                 </ul>

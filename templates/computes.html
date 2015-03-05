@@ -2,16 +2,14 @@
 {% load i18n %}
 {% block title %}{% trans "Computes" %}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-
-        {% include 'sidebar.html' %}
-
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-
-            {% include 'create_comp_block.html' %}
-
-            <h1 class="page-header">Computes</h1>
+            <!-- Page Heading -->
+            <div class="row">
+                <div class="col-lg-12">
+                    {% include 'create_comp_block.html' %}
+                    <h1 class="page-header">{% trans "Computes" %}</h1>
+                </div>
+            </div>
+            <!-- /.row -->
 
             {% include 'errors_block.html' %}
 
@@ -216,17 +214,13 @@
                             </div>
                         </div>
                     {% endfor %}
-
                 {% else %}
-                    <div class="col-sm-12">
-                        <div class="well">
-                            <h4>{% trans "You have no connection" %}</h4>
+                   <div class="col-lg-12">
+                        <div class="alert alert-warning alert-dismissable">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Computes" %}
                         </div>
                     </div>
                 {% endif %}
             </div>
-
-        </div>
-    </div>
-</div>
 {% endblock %}

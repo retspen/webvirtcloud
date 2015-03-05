@@ -1,21 +1,18 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Accounts" %}{% endblock %}
+{% block title %}{% trans "User" %} - {{ user }}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-
-        {% include 'sidebar.html' %}
-
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            <button type="button" class="btn btn-success pull-right"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
-             <h1 class="page-header">{{ user.username }}</h1>
+            <!-- Page Heading -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">{{ user }}</h1>
+                </div>
+            </div>
+            <!-- /.row -->
 
             {% include 'errors_block.html' %}
 
+            <div class="row">
             {{ user }}
-
-        </div>
-    </div>
-</div>
+            </div>
 {% endblock %}
