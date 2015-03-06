@@ -2,8 +2,10 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from computes.models import Compute
+from instances.models import Instance
+from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHostForm, ComputeAddTlsForm, ComputeAddSocketForm
 from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.connection import connection_manager
+from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager
 from libvirt import libvirtError
 
 
@@ -37,6 +39,71 @@ def computes(request):
 
     computes = Compute.objects.filter()
     computes_info = get_hosts_status(computes)
+
+    if request.method == 'POST':
+        if 'host_del' in request.POST:
+            compute_id = request.POST.get('host_id', '')
+            try:
+                del_inst_on_host = Instance.objects.filter(compute_id=compute_id)
+                del_inst_on_host.delete()
+            finally:
+                del_host = Compute.objects.get(id=compute_id)
+                del_host.delete()
+            return HttpResponseRedirect(request.get_full_path())
+        if 'host_tcp_add' in request.POST:
+            form = ComputeAddTcpForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data
+                new_tcp_host = Compute(name=data['name'],
+                                       hostname=data['hostname'],
+                                       type=CONN_TCP,
+                                       login=data['login'],
+                                       password=data['password'])
+                new_tcp_host.save()
+                return HttpResponseRedirect(request.get_full_path())
+        if 'host_ssh_add' in request.POST:
+            form = ComputeAddSshForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data
+                new_ssh_host = Compute(name=data['name'],
+                                       hostname=data['hostname'],
+                                       type=CONN_SSH,
+                                       login=data['login'])
+                new_ssh_host.save()
+                return HttpResponseRedirect(request.get_full_path())
+        if 'host_tls_add' in request.POST:
+            form = ComputeAddTlsForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data
+                new_tls_host = Compute(name=data['name'],
+                                       hostname=data['hostname'],
+                                       type=CONN_TLS,
+                                       login=data['login'],
+                                       password=data['password'])
+                new_tls_host.save()
+                return HttpResponseRedirect(request.get_full_path())
+        if 'host_socket_add' in request.POST:
+            form = ComputeAddSocketForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data
+                new_socket_host = Compute(name=data['name'],
+                                          hostname='localhost',
+                                          type=CONN_SOCKET,
+                                          login='',
+                                          password='')
+                new_socket_host.save()
+                return HttpResponseRedirect(request.get_full_path())
+        if 'host_edit' in request.POST:
+            form = ComputeEditHostForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data
+                compute_edit = Compute.objects.get(id=data['host_id'])
+                compute_edit.name = data['name']
+                compute_edit.hostname = data['hostname']
+                compute_edit.login = data['login']
+                compute_edit.password = data['password']
+                compute_edit.save()
+                return HttpResponseRedirect(request.get_full_path())
 
     return render(request, 'computes.html', locals())
 
