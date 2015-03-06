@@ -3,11 +3,11 @@
             <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
             <div class="collapse navbar-collapse navbar-ex1-collapse">
                 <ul class="nav navbar-nav side-nav">
-                    <li {% class_active request "^/instance" %}">
+                    <li {% class_active request "^/instance" %}>
                         <a href="{% url 'instances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
                     </li>
                     {% if request.user.is_superuser %}
-                        <li {% class_active request "^/compute" %}>
+                        <li {% class_active request "^/compute" %}{% class_active request "^/create" %}>
                             <a href="{% url 'computes' %}"><i class="fa fa-fw fa-tasks"></i> {% trans "Computes" %}</a>
                         </li>
                         <li {% class_active request "^/user" %}>

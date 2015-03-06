@@ -28,6 +28,7 @@ def create_instance(request, compute_id):
     storages = []
     networks = []
     meta_prealloc = False
+    computes = Compute.objects.all()
     compute = Compute.objects.get(id=compute_id)
     flavors = Flavor.objects.filter().order_by('id')
 
