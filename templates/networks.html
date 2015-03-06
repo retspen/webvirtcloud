@@ -64,17 +64,17 @@
             </div>
 {% endblock %}
 {% block script %}
-    <script>
-        $(document).ready(function () {
-            $('#forward_select').change(function (eventObject) {
-                if ($(this).val() == 'bridge') {
-                    $('.bridge_name_form_group').show();
-                    $('.bridge_name_form_group_dhcp').hide();
-                } else {
-                    $('.bridge_name_form_group').hide();
-                    $('.bridge_name_form_group_dhcp').show();
-                }
-            }).change();
-        });
-    </script>
+<script>
+    $(document).ready(function () {
+        $('#forward_select').change(function (eventObject) {
+            if ($(this).val() == 'bridge') {
+                $('.bridge_name_form_group').show();
+                $('.bridge_name_form_group_dhcp').hide();
+            } else {
+                $('.bridge_name_form_group').hide();
+                $('.bridge_name_form_group_dhcp').show();
+            }
+        }).change();
+    });
+</script>
 {% endblock %}
