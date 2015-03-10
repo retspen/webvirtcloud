@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Instances" %}{% endblock %}
+{% block style %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}/css/sortable-theme-bootstrap.css" />
+{% endblock %}
 {% block content %}
                 <!-- Page Heading -->
                 <div class="row">
@@ -17,7 +20,7 @@
                     <div class="col-lg-12">
                         <div class="table-responsive">
                             {% if request.user.is_superuser %}
-                                <table class="table table-hover table-striped">
+                                <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
                                     <thead>
                                         <tr>
                                             <th>Name</th>
@@ -25,7 +28,7 @@
                                             <th>Status</th>
                                             <th>VCPU</th>
                                             <th>Memory</th>
-                                            <th>Actions</th>
+                                            <th data-sortable="false" style="width: 165px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -190,6 +193,7 @@
                 </div>
 {% endblock %}
 {% block script %}
+<script src="{{ STATIC_URL }}/js/sortable.min.js"></script>
 <script>
     function open_console(uuid) {
         window.open("{% url 'console' %}?token=" + uuid, "", "width=850,height=485");
