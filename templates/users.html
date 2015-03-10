@@ -13,22 +13,29 @@
 
             {% include 'errors_block.html' %}
 
-            {% for user in users %}
-                <div id="{{ user.username }}" class="col-xs-6 col-sm-4">
-                    <div class="panel {% if user.is_active %}panel-success{% else %}panel-danger{% endif %} panel-data">
-                        <div class="panel-heading">
-                            <h3 class="panel-title"><strong>{{ user.username }}</strong>
-                                <a data-toggle="modal" href="{% url 'user' user.id %}" class="pull-right"
-                                   title="{% trans "Edit" %}">
-                                    <span class="glyphicon glyphicon-cog"></span>
-                                </a>
-                            </h3>
-                        </div>
-                        <div class="panel-body">
-                            <p>Status: {% if user.is_active %}Active{% else %}Blocked{% endif %}
-                            </p>
+            <div class="row">
+                {% for user in users %}
+                    <div id="{{ user.username }}" class="col-xs-12 col-sm-4">
+                        <div class="panel {% if user.is_active %}panel-success{% else %}panel-danger{% endif %} panel-data">
+                            <div class="panel-heading">
+                                <h3 class="panel-title">
+                                    <a href="{% url 'user' user.id %}"><strong>{{ user.username }}</strong></a>
+                                </h3>
+                            </div>
+                            <div class="panel-body">
+                                <div class="col-xs-4 col-sm-4">
+                                    <p><strong>{% trans "Status:" %}</strong></p>
+                                </div>
+                                <div class="col-xs-4 col-sm-6">
+                                    {% if user.is_active %}
+                                        <p>{% trans "Active" %}</p>
+                                    {% else %}
+                                        <p>{% trans "Blocked" %}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
 {% endblock %}

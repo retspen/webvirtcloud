@@ -47,6 +47,9 @@ def interfaces(request, compute_id):
                                       data['ipv6_type'], data['ipv6_addr'], data['ipv6_gw'],
                                       data['stp'], data['delay'])
                     return HttpResponseRedirect(request.get_full_path())
+                else:
+                    for msg_err in form.errors.values():
+                        error_messages.append(msg_err.as_text())
         conn.close()
     except libvirtError as lib_err:
         error_messages.append(lib_err)

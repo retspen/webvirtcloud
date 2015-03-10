@@ -62,7 +62,6 @@ def instances(request):
                             check_uuid.save()
                     conn.close()
                 except libvirtError as lib_err:
-                    print 'Error'
                     error_messages.append(lib_err)
 
     return render(request, 'instances.html', locals())

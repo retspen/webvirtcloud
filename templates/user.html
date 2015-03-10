@@ -5,6 +5,7 @@
             <!-- Page Heading -->
             <div class="row">
                 <div class="col-lg-12">
+                    {% include 'create_user_inst_block.html' %}
                     <h1 class="page-header">{{ user }}</h1>
                 </div>
             </div>
@@ -13,6 +14,102 @@
             {% include 'errors_block.html' %}
 
             <div class="row">
-            {{ user }}
+                <div class="col-lg-12">
+                    {% if not user_insts %}
+                        <div class="col-lg-12">
+                            <div class="alert alert-warning alert-dismissable">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                                <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "User doesn't have any Instace" %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>{% trans "Name" %}</th>
+                                        <th>{% trans "Is blocked" %}</th>
+                                        <th>{% trans "Can change" %}</th>
+                                        <th>{% trans "Can delete" %}</th>
+                                        <th colspan="2">{% trans "Action" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inst in user_insts %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ inst.instance.name }}</td>
+                                            <td>{{ inst.is_block }}</td>
+                                            <td>{{ inst.is_change }}</td>
+                                            <td>{{ inst.is_delete }}</td>
+                                            <td style="width:5px;">
+                                                <a href="#editPriv{{ forloop.counter }}" type="button" class="btn btn-xs btn-default" data-toggle="modal">
+                                                    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+                                                </a>
+
+                                                <!-- Modal pool -->
+                                                <div class="modal fade" id="editPriv{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="editPrivLabel" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                                                <h4 class="modal-title">{% trans "Edit privilegies for" %} {{ inst.instance.name }}</h4>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
+                                                                    <div class="form-group">
+                                                                        <label class="col-sm-4 control-label">{% trans "Is blocked" %}</label>
+                                                                        <div class="col-sm-6">
+                                                                            <input type="hidden" name="user_inst" value="{{ inst.id }}">
+                                                                            <select type="text" class="form-control" name="inst_block">
+                                                                                <option value="">False</option>
+                                                                                <option value="1">True</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="form-group">
+                                                                        <label class="col-sm-4 control-label">{% trans "Can change" %}</label>
+                                                                        <div class="col-sm-6">
+                                                                            <select type="text" class="form-control" name="inst_change">
+                                                                                <option value="">False</option>
+                                                                                <option value="1">True</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="form-group">
+                                                                        <label class="col-sm-4 control-label">{% trans "Can delete" %}</label>
+                                                                        <div class="col-sm-6">
+                                                                            <select type="text" class="form-control" name="inst_delete">
+                                                                                <option value="">False</option>
+                                                                                <option value="1">True</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                                                                <button type="submit" class="btn btn-primary" name="edit">{% trans "Edit" %}</button>
+                                                            </div>
+                                                                </form>
+                                                        </div> <!-- /.modal-content -->
+                                                    </div> <!-- /.modal-dialog -->
+                                                </div> <!-- /.modal -->
+                                            </td>
+                                            <td style="width:5px;">
+                                                <form action="" method="post" role="form">{% csrf_token %}
+                                                    <input type="hidden" name="user_inst" value="{{ inst.id }}">
+                                                    <button type="submit" class="btn btn-xs btn-default" name="delete" tittle="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
 {% endblock %}

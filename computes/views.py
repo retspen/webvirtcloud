@@ -3,6 +3,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from computes.models import Compute
 from instances.models import Instance
+from users.models import UserInstance
 from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHostForm, ComputeAddTlsForm, ComputeAddSocketForm
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager
@@ -37,6 +38,7 @@ def computes(request):
                                 })
         return compute_data
 
+    error_messages = []
     computes = Compute.objects.filter()
     computes_info = get_hosts_status(computes)
 
@@ -44,11 +46,15 @@ def computes(request):
         if 'host_del' in request.POST:
             compute_id = request.POST.get('host_id', '')
             try:
-                del_inst_on_host = Instance.objects.filter(compute_id=compute_id)
-                del_inst_on_host.delete()
+                del_user_inst_on_host = UserInstance.objects.filter(compute_id=compute_id)
+                del_user_inst_on_host.save()
             finally:
-                del_host = Compute.objects.get(id=compute_id)
-                del_host.delete()
+                try:
+                    del_inst_on_host = Instance.objects.filter(compute_id=compute_id)
+                    del_inst_on_host.delete()
+                finally:
+                    del_host = Compute.objects.get(id=compute_id)
+                    del_host.delete()
             return HttpResponseRedirect(request.get_full_path())
         if 'host_tcp_add' in request.POST:
             form = ComputeAddTcpForm(request.POST)
@@ -61,6 +67,9 @@ def computes(request):
                                        password=data['password'])
                 new_tcp_host.save()
                 return HttpResponseRedirect(request.get_full_path())
+            else:
+                for msg_err in form.errors.values():
+                    error_messages.append(msg_err.as_text())
         if 'host_ssh_add' in request.POST:
             form = ComputeAddSshForm(request.POST)
             if form.is_valid():
@@ -71,6 +80,9 @@ def computes(request):
                                        login=data['login'])
                 new_ssh_host.save()
                 return HttpResponseRedirect(request.get_full_path())
+            else:
+                for msg_err in form.errors.values():
+                    error_messages.append(msg_err.as_text())
         if 'host_tls_add' in request.POST:
             form = ComputeAddTlsForm(request.POST)
             if form.is_valid():
@@ -82,6 +94,9 @@ def computes(request):
                                        password=data['password'])
                 new_tls_host.save()
                 return HttpResponseRedirect(request.get_full_path())
+            else:
+                for msg_err in form.errors.values():
+                    error_messages.append(msg_err.as_text())
         if 'host_socket_add' in request.POST:
             form = ComputeAddSocketForm(request.POST)
             if form.is_valid():
@@ -93,6 +108,9 @@ def computes(request):
                                           password='')
                 new_socket_host.save()
                 return HttpResponseRedirect(request.get_full_path())
+            else:
+                for msg_err in form.errors.values():
+                    error_messages.append(msg_err.as_text())
         if 'host_edit' in request.POST:
             form = ComputeEditHostForm(request.POST)
             if form.is_valid():
@@ -104,7 +122,9 @@ def computes(request):
                 compute_edit.password = data['password']
                 compute_edit.save()
                 return HttpResponseRedirect(request.get_full_path())
-
+            else:
+                for msg_err in form.errors.values():
+                    error_messages.append(msg_err.as_text())
     return render(request, 'computes.html', locals())
 
 def overview(request, compute_id):

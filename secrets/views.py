@@ -47,6 +47,9 @@ def secrets(request, compute_id):
                     data = form.cleaned_data
                     conn.create_secret(data['ephemeral'], data['private'], data['usage_type'], data['data'])
                     return HttpResponseRedirect(request.get_full_path())
+                else:
+                    for msg_err in form.errors.values():
+                        error_messages.append(msg_err.as_text())
             if 'delete' in request.POST:
                 uuid = request.POST.get('uuid', '')
                 conn.delete_secret(uuid)

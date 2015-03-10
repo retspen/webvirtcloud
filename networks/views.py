@@ -50,6 +50,9 @@ def networks(request, compute_id):
                         conn.create_network(data['name'], data['forward'], gateway, netmask,
                                             dhcp, data['bridge_name'], data['openvswitch'], data['fixed'])
                         return HttpResponseRedirect(reverse('network', args=[compute_id, data['name']]))
+                else:
+                    for msg_err in form.errors.values():
+                        error_messages.append(msg_err.as_text())
         conn.close()
     except libvirtError as lib_err:
         error_messages.append(lib_err)

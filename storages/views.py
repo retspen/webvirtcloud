@@ -58,6 +58,9 @@ def storages(request, compute_id):
                         else:
                             conn.create_storage(data['stg_type'], data['name'], data['source'], data['target'])
                         return HttpResponseRedirect(reverse('storage', args=[compute_id, data['name']]))
+                else:
+                    for msg_err in form.errors.values():
+                        error_messages.append(msg_err.as_text())
         conn.close()
     except libvirtError as lib_err:
         error_messages.append(lib_err)
@@ -155,6 +158,9 @@ def storage(request, compute_id, pool):
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)
+            else:
+                for msg_err in form.errors.values():
+                    error_messages.append(msg_err.as_text())
         if 'del_volume' in request.POST:
             volname = request.POST.get('volname', '')
             try:
@@ -191,6 +197,9 @@ def storage(request, compute_id, pool):
                         return HttpResponseRedirect(request.get_full_path())
                     except libvirtError as lib_err:
                         error_messages.append(lib_err)
+            else:
+                for msg_err in form.errors.values():
+                    error_messages.append(msg_err.as_text())
     conn.close()
 
     return render(request, 'storage.html', locals())
