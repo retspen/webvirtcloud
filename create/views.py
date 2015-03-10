@@ -128,9 +128,9 @@ def create_instance(request, compute_id):
                             try:
                                 conn.create_instance(data['name'], data['memory'], data['vcpu'], data['host_model'],
                                                      uuid, volumes, data['networks'], data['virtio'], data['mac'])
-                                create_instance = Instance(compute_id=host_id, name=data['name'], uuid=uuid)
+                                create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
-                                return HttpResponseRedirect(reverse('instance', args=[host_id, data['name']]))
+                                return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
                                 if data['hdd_size']:
                                     conn.delete_volume(volumes.keys()[0])

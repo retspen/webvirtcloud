@@ -18,7 +18,191 @@
             {% include 'errors_block.html' %}
 
             <div class="row">
+                <div class="col-lg-12">
+                    <p>
+                        <a class="btn btn-success" data-toggle="collapse" href="#addCustom" aria-expanded="false" aria-controls="addCustom">
+                            {% trans "Custom" %}
+                        </a>
+                        <a class="btn btn-success" data-toggle="collapse" href="#addFromTemp" aria-expanded="false" aria-controls="addFromTemp">
+                            {% trans "Template" %}
+                        </a>
+                         <a class="btn btn-success" data-toggle="collapse" href="#addFromXML" aria-expanded="false" aria-controls="addFromXML">
+                            {% trans "XML" %}
+                        </a>
+                    </p>
+                    <div class="collapse" id="addCustom">
+                        <div class="well">
+                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="checkbox" name="host_model" value="true" checked>
+                                </div>
+                                <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
+                                </div>
+                                <label class="col-sm-1 control-label">{% trans "MB" %}</label>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
+                                <div class="col-sm-6">
+                                    <ul id="img-list">
+                                        <!-- populated from javascript -->
+                                    </ul>
+                                    <input id="images" name="images" type="hidden" value=""/>
+                                    <select id="image-control" name="image-control" class="form-control" multiple="multiple">
+                                        {% if get_images %}
+                                            {% for name in get_images %}
+                                                <option value="{{ name }}">{{ name }}</option>
+                                            {% endfor %}
+                                        {% else %}
+                                            <option value="">{% trans "None" %}</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "Network" %}</label>
+                                <div class="col-sm-6">
+                                    <ul id="net-list">
+                                        <!-- populated from javascript -->
+                                    </ul>
+                                    <input id="networks" type="hidden" name="networks" value=""/>
+                                    <select id="network-control" name="network-control" class="form-control" multiple="multiple">
+                                        {% for network in networks %}
+                                            <option value="{{ network }}">{{ network }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="checkbox" name="virtio" value="true" checked>
+                                </div>
+                            </div>
+                            {% if storages %}
+                                <button type="submit" class="btn btn-primary" name="create" value="1">
+                                    {% trans "Create" %}
+                                </button>
+                            {% else %}
+                                <button class="btn btn-primary disabled">
+                                    {% trans "Create" %}
+                                </button>
+                            {% endif %}
+                        </form>
+                        </div>
+                    </div>
+                    <div class="collapse" id="addFromTemp">
+                        <div class="well">
+                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="checkbox" name="host_model" value="true" checked>
+                                    </div>
+                                    <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
+                                    </div>
+                                    <label class="col-sm-1 control-label">{% trans "MB" %}</label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
+                                    <div class="col-sm-6">
+                                        <select name="template" class="form-control">
+                                            {% if get_images %}
+                                                {% for name in get_images %}
+                                                    <option value="{{ name }}">{{ name }}</option>
+                                                {% endfor %}
+                                            {% else %}
+                                                <option value="">{% trans "None" %}</option>
+                                            {% endif %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group meta-prealloc">
+                                    <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
+                                    </div>
+                                    <label class="col-lg-1 control-label">{% trans "Image" %}</label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "Network" %}</label>
+                                    <div class="col-sm-6">
+                                        <select name="networks" class="form-control">
+                                            {% for network in networks %}
+                                                <option value="{{ network }}">{{ network }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="checkbox" name="virtio" value="true" checked>
+                                    </div>
+                                </div>
+                                {% if storages %}
+                                    <button type="submit" class="btn btn-primary" name="create" value="1">
+                                        {% trans "Create" %}
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-primary disabled">
+                                        {% trans "Create" %}
+                                    </button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                    <div class="collapse" id="addFromXML">
+                        <div class="well">
+                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                <div class="col-sm-12" id="xmlheight">
+                                    <textarea id="editor" name="from_xml""></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" name="create_xml">
+                                    {% trans "Create" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <div class="row">
                 {% if not flavors %}
                     <div class="col-lg-12">
                         <div class="alert alert-warning alert-dismissable">
@@ -152,7 +336,6 @@
                         </div>
                     </div>
                 {% endif %}
-
             </div>
 {% endblock %}
 {% block script %}
@@ -225,5 +408,10 @@
             }
         });
     });
+</script>
+<script src="{{ STATIC_URL }}/js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.getSession().setMode("ace/mode/xml");
 </script>
 {% endblock %}

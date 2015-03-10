@@ -63,3 +63,19 @@ body {
 .page-header {
     margin: 5px 5px 20px 20px;
 }
+
+#editor {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+#xmlheight {
+    height: 364px;
+}
+
+.ace_editor {
+    height: 350px;
+}
