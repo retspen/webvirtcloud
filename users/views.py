@@ -35,6 +35,34 @@ def users(request):
                 new_user = User.objects.create_user(data['name'], None, data['password'])
                 new_user.save()
                 return HttpResponseRedirect(request.get_full_path())
+        if 'edit' in request.POST:
+            user_id = request.POST.get('user_id', '')
+            user_pass = request.POST.get('user_pass', '')
+            user_edit = User.objects.get(id=user_id)
+            user.password = user_pass
+            user_edit.save()
+            return HttpResponseRedirect(request.get_full_path())
+        if 'block' in request.POST:
+            user_id = request.POST.get('user_id', '')
+            user_block = User.objects.get(id=user_id)
+            user_block.is_active = False
+            user_block.save()
+            return HttpResponseRedirect(request.get_full_path())
+        if 'unblock' in request.POST:
+            user_id = request.POST.get('user_id', '')
+            user_unblock = User.objects.get(id=user_id)
+            user_unblock.is_active = True
+            user_unblock.save()
+            return HttpResponseRedirect(request.get_full_path())
+        if 'delete' in request.POST:
+            user_id = request.POST.get('user_id', '')
+            try:
+                del_user_inst = UserInstance.objects.filter(user_id=user_id)
+                del_user_inst.delete()
+            finally:
+                user_delete = User.objects.get(id=user_id)
+                user_delete.delete()
+            return HttpResponseRedirect(request.get_full_path())
 
     return render(request, 'users.html', locals())
 
