@@ -44,8 +44,8 @@ def instances(request):
                                       usr_inst.instance.compute.login,
                                       usr_inst.instance.compute.password,
                                       usr_inst.instance.compute.type)
-                all_user_vms[usr_inst.instance.compute.id,
-                             usr_inst.instance.compute.name] = conn.get_user_instances(usr_inst.instance.name)
+                all_user_vms[usr_inst] = conn.get_user_instances(usr_inst.instance.name)
+                all_user_vms[usr_inst].update({'host_id': usr_inst.instance.compute.id})
     else:
         for compute in computes:
             if connection_manager.host_is_up(compute.type, compute.hostname):

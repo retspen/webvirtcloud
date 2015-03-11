@@ -9,6 +9,9 @@
                 <div class="row">
                     <div class="col-lg-12">
                         {% include 'create_inst_block.html' %}
+                        <div class="pull-right search">
+                            <input id="filter" class="form-control" type="text" placeholder="Search">
+                        </div>
                         <h1 class="page-header">{% trans "Instances" %}</h1>
                     </div>
                 </div>
@@ -19,9 +22,6 @@
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="table-responsive">
-                            <div class="pull-right search">
-                                <input id="filter" class="form-control" type="text" placeholder="Search">
-                            </div>
                             {% if request.user.is_superuser %}
                                 <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
                                     <thead>
@@ -108,30 +108,27 @@
                                     </tbody>
                                 </table>
                             {% else %}
-                                <div class="pull-right search">
-                                    <input id="filter" class="form-control" type="text" placeholder="Search">
-                                </div>
-                                <table class="table table-hover table-striped">
+                                <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
                                     <thead>
                                         <tr>
                                             <th>Name</th>
                                             <th>Status</th>
                                             <th>VCPU</th>
                                             <th>Memory</th>
-                                            <th>Actions</th>
+                                            <th data-sortable="false" style="width: 165px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody class="searchable">
-                                        {% for host, vm in all_user_vms.items %}
+                                        {% for inst, vm in all_user_vms.items %}
                                             <tr>
-                                                <td><a href="{% url 'instance' host.0 vm.name %}">{{ vm.name }}</a></td>
+                                                <td><a href="{% url 'instance' vm.host_id vm.name %}">{{ vm.name }}</a></td>
                                                 <td>{% ifequal vm.status 1 %}
                                                         <p class="text-success">{% trans "Active" %}</p>
                                                     {% endifequal %}
-                                                    {% ifequal info.status 5 %}
+                                                    {% ifequal vm.status 5 %}
                                                         <p class="text-danger">{% trans "Off" %}</p>
                                                     {% endifequal %}
-                                                    {% ifequal info.status 3 %}
+                                                    {% ifequal vm.status 3 %}
                                                        <p class="text-warning">{% trans "Suspend" %}</p>
                                                     {% endifequal %}
                                                 </td>
@@ -139,7 +136,7 @@
                                                 <td>{{ vm.memory }} {% trans "MB" %}</td>
                                                 <td><form action="" method="post" role="form">{% csrf_token %}
                                                         <input type="hidden" name="name" value="{{ vm.name }}"/>
-                                                        <input type="hidden" name="compute" value="{{ host.0 }}"/>
+                                                        <input type="hidden" name="compute" value="{{ vm.host_id }}"/>
                                                         {% ifequal vm.status 5 %}
                                                             <button class="btn btn-sm btn-default" type="submit" name="start" title="Start">
                                                                 <span class="glyphicon glyphicon-play"></span>
@@ -205,12 +202,6 @@
     }
 </script>
 <script>
-    function goto_compute() {
-        var compute = $("#compute_select").val();
-        window.location = "/create/" + compute + "/";
-    }
-</script>
-<script>
     $(document).ready(function () {
         (function ($) {
             $('#filter').keyup(function () {
@@ -223,4 +214,12 @@
         }(jQuery));
     });
 </script>
+{% if request.user.is_superuser %}
+    <script>
+        function goto_compute() {
+            var compute = $("#compute_select").val();
+            window.location = "/create/" + compute + "/";
+        }
+    </script>
+{% endif %}
 {% endblock %}

@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from users.models import UserInstance
+from instances.models import Instance
 from users.forms import UserAddForm
 
 
@@ -36,6 +38,7 @@ def users(request):
 
     return render(request, 'users.html', locals())
 
+
 def user(request, user_id):
     """
     :param request:
@@ -48,8 +51,10 @@ def user(request, user_id):
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
+    error_messages = []
     user = User.objects.get(id=user_id)
     user_insts = UserInstance.objects.filter(user_id=user_id)
+    instances = Instance.objects.all()
 
     if request.method == 'POST':
         if 'delete' in request.POST:
@@ -68,5 +73,15 @@ def user(request, user_id):
             edit_user_inst.is_delete = bool(inst_delete)
             edit_user_inst.save()
             return HttpResponseRedirect(request.get_full_path())
+        if 'add' in request.POST:
+            inst_id = request.POST.get('inst_id', '')
+            try:
+                check_inst = UserInstance.objects.get(instance_id=int(inst_id))
+                msg = _("Instance already added")
+                error_messages.append(msg)
+            except UserInstance.DoesNotExist:
+                add_user_inst = UserInstance(instance_id=int(inst_id), user_id=user_id)
+                add_user_inst.save()
+                return HttpResponseRedirect(request.get_full_path())
 
     return render(request, 'user.html', locals())
