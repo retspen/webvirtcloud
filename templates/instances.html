@@ -19,6 +19,9 @@
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="table-responsive">
+                            <div class="pull-right search">
+                                <input id="filter" class="form-control" type="text" placeholder="Search">
+                            </div>
                             {% if request.user.is_superuser %}
                                 <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
                                     <thead>
@@ -31,7 +34,7 @@
                                             <th data-sortable="false" style="width: 165px;">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody class="searchable">
                                         {% for host, inst  in all_host_vms.items %}
                                             {% for vm, info in inst.items %}
                                                 <tr>
@@ -105,6 +108,9 @@
                                     </tbody>
                                 </table>
                             {% else %}
+                                <div class="pull-right search">
+                                    <input id="filter" class="form-control" type="text" placeholder="Search">
+                                </div>
                                 <table class="table table-hover table-striped">
                                     <thead>
                                         <tr>
@@ -115,8 +121,7 @@
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-
+                                    <tbody class="searchable">
                                         {% for host, vm in all_user_vms.items %}
                                             <tr>
                                                 <td><a href="{% url 'instance' host.0 vm.name %}">{{ vm.name }}</a></td>
@@ -204,5 +209,18 @@
         var compute = $("#compute_select").val();
         window.location = "/create/" + compute + "/";
     }
+</script>
+<script>
+    $(document).ready(function () {
+        (function ($) {
+            $('#filter').keyup(function () {
+                var rex = new RegExp($(this).val(), 'i');
+                $('.searchable tr').hide();
+                $('.searchable tr').filter(function () {
+                    return rex.test($(this).text());
+                }).show();
+            })
+        }(jQuery));
+    });
 </script>
 {% endblock %}

@@ -79,3 +79,7 @@ body {
 .ace_editor {
     height: 350px;
 }
+
+.search {
+    margin: 5px;
+}

@@ -80,7 +80,10 @@
                         <h3 class="page-header">{% trans "Volumes" %}</h3>
                         {% if volumes  %}
                         <div class="table-responsive">
-                            <table class="table table-striped table-bordered sortable-theme-bootstrap" data-sortable>
+                            <div class="pull-right search">
+                                <input id="filter" class="form-control" type="text" placeholder="Search">
+                            </div>
+                            <table class="table table-striped sortable-theme-bootstrap" data-sortable>
                                 <thead>
                                 <tr>
                                     <th style="width:35px;">#</th>
@@ -90,7 +93,7 @@
                                     <th data-sortable="false" colspan="2">{% trans "Action" %}</th>
                                 </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="searchable">
                                 {% for volume in volumes %}
                                     <tr>
                                         <td>{{ forloop.counter }}</td>
@@ -200,6 +203,19 @@
         } else {
             $('.meta-prealloc').hide();
         }
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        (function ($) {
+            $('#filter').keyup(function () {
+                var rex = new RegExp($(this).val(), 'i');
+                $('.searchable tr').hide();
+                $('.searchable tr').filter(function () {
+                    return rex.test($(this).text());
+                }).show();
+            })
+        }(jQuery));
     });
 </script>
 {% endblock %}
