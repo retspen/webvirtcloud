@@ -53,8 +53,8 @@
                                                     <td>{{ info.vcpu }}</td>
                                                     <td>{{ info.memory }} {% trans "MB" %}</td>
                                                     <td><form action="" method="post" role="form">{% csrf_token %}
-                                                            <input type="hidden" name="name" value="{{ info.name }}"/>
-                                                            <input type="hidden" name="compute" value="{{ host.0 }}"/>
+                                                            <input type="hidden" name="name" value="{{ vm }}"/>
+                                                            <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
                                                             {% ifequal info.status 5 %}
                                                                 <button class="btn btn-sm btn-default" type="submit" name="start" title="Start">
                                                                     <span class="glyphicon glyphicon-play"></span>
@@ -121,7 +121,7 @@
                                     <tbody class="searchable">
                                         {% for inst, vm in all_user_vms.items %}
                                             <tr>
-                                                <td><a href="{% url 'instance' vm.host_id vm.name %}">{{ vm.name }}</a></td>
+                                                <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a></td>
                                                 <td>{% ifequal vm.status 1 %}
                                                         <p class="text-success">{% trans "Active" %}</p>
                                                     {% endifequal %}
@@ -136,7 +136,7 @@
                                                 <td>{{ vm.memory }} {% trans "MB" %}</td>
                                                 <td><form action="" method="post" role="form">{% csrf_token %}
                                                         <input type="hidden" name="name" value="{{ vm.name }}"/>
-                                                        <input type="hidden" name="compute" value="{{ vm.host_id }}"/>
+                                                        <input type="hidden" name="compute_id" value="{{ vm.compute_id }}"/>
                                                         {% ifequal vm.status 5 %}
                                                             <button class="btn btn-sm btn-default" type="submit" name="start" title="Start">
                                                                 <span class="glyphicon glyphicon-play"></span>
