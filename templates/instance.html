@@ -34,6 +34,7 @@
 
                     </div>
                 </div>
+                <hr>
                 <div class="row">
                     <div class="col-lg-12">
                         <div role="tabpanel">
@@ -90,8 +91,8 @@
                                         <ul class="nav nav-tabs" role="tablist">
                                             {% ifequal status 1 %}
                                                 <li role="presentation" class="active">
-                                                    <a href="#reboot" aria-controls="reboot" role="tab" data-toggle="tab">
-                                                        {% trans "Reboot" %}
+                                                    <a href="#powercycle" aria-controls="powercycle" role="tab" data-toggle="tab">
+                                                        {% trans "Power Cycle" %}
                                                     </a>
                                                 </li>
                                                 <li role="presentation">
@@ -123,24 +124,44 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             {% ifequal status 1 %}
-                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="reboot">
-                                                    <p>Reboot</p>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="powercycle">
+                                                    <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
+                                                    <form action="" method="post" role="form">{% csrf_token %}
+                                                        <input type="submit" name="powercycle" class="btn btn-lg btn-success pull-right" value="{% trans "Power Cycle" %}">
+                                                        <div class="clearfix"></div>
+                                                    </form>
                                                 </div>
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="poweroff">
-                                                    <p>Power Off</p>
+                                                    <p>{% trans "This action sends an ACPI shutdown signal to the instance." %}</p>
+                                                     <form action="" method="post" role="form">{% csrf_token %}
+                                                        <input type="submit" name="poweroff" class="btn btn-lg btn-success pull-right" value="{% trans "Power Off" %}">
+                                                        <div class="clearfix"></div>
+                                                    </form>
                                                 </div>
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="suspend">
-                                                    <p>Suspend</p>
+                                                    <p>{% trans "This action suspends the instance." %}</p>
+                                                     <form action="" method="post" role="form">{% csrf_token %}
+                                                        <input type="submit" name="suspend" class="btn btn-lg btn-success pull-right" value="{% trans "Suspend" %}">
+                                                        <div class="clearfix"></div>
+                                                    </form>
                                                 </div>
                                             {% endifequal %}
                                             {% ifequal status 3 %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
-                                                    <p>Resume</p>
+                                                    <p>{% trans "This action restore the instance after suspend." %}</p>
+                                                     <form action="" method="post" role="form">{% csrf_token %}
+                                                        <input type="submit" name="resume" class="btn btn-lg btn-success pull-right" value="{% trans "Resume" %}">
+                                                        <div class="clearfix"></div>
+                                                    </form>
                                                 </div>
                                             {% endifequal %}
                                             {% ifequal status 5 %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
-                                                    <p>Boot</p>
+                                                    <p>{% trans "Click on Boot button to start this instance." %}</p>
+                                                    <form action="" method="post" role="form">{% csrf_token %}
+                                                        <input type="submit" name="boot" class="btn btn-lg btn-success pull-right" value="{% trans "Boot" %}">
+                                                        <div class="clearfix"></div>
+                                                    </form>
                                                 </div>
                                             {% endifequal %}
                                         </div>
@@ -159,7 +180,13 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="vnconsole">
-                                                <p>Console</p>
+                                                <p>{% trans "This action opens a new window with a VNC connection to the console of the instance." %}</p>
+                                                {% ifequal status 5 %}
+                                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Console" %}</button>
+                                                {% else %}
+                                                    <a href="#" class="btn btn-lg btn-success pull-right" title="Console port: {{ console_port }}" onclick="open_console()">{% trans "Console" %}</a>
+                                                {% endifequal %}
+                                                <div class="clearfix"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -193,17 +220,80 @@
                                             </li>
                                             <li role="presentation">
                                                 <a href="#restoresnapshot" aria-controls="restoresnapshot" role="tab" data-toggle="tab">
-                                                    {% trans "Restore From Snaphot" %}
+                                                    {% trans "Restore From Snapshot" %}
                                                 </a>
                                             </li>
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
-                                                <p>Take Snapshots</p>
+                                                {% ifequal status 5 %}
+                                                    <p>{% trans "This may take more than an hour, depending on how much content is on your droplet and how large the disk is." %}</p>
+                                                    <form class="form-inline" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group">
+                                                            <div class="col-sm-4">
+                                                                <input type="text" class="form-control" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
+                                                            </div>
+                                                        </div>
+                                                        {% ifequal status 5 %}
+                                                            <input type="submit" class="btn btn-lg btn-success pull-right" name="snapshot" value="{% trans "Take Snapshot" %}">
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Take Snapshot" %}</button>
+                                                        {% endifequal %}
+                                                    </form>
+                                                    <div class="clearfix"></div>
+                                                {% else %}
+                                                    <p>{% trans "To take a snapshot please Power Off the instance." %}</p>
+                                                {% endifequal %}
                                             </div>
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="restoresnapshot">
-                                                <p>Restore Snapshots</p>
+                                               {% ifequal status 5 %}
+                                                    {% if snapshots %}
+                                                        <table class="table table-bordered">
+                                                            <thead>
+                                                            <tr class="active">
+                                                                <th>{% trans "Name" %}</th>
+                                                                <th>{% trans "Date" %}</th>
+                                                                <th colspan="2">{% trans "Action" %}</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {% for snap in snapshots %}
+                                                                <tr>
+                                                                    <td><strong>{{ snap.name }}</strong></td>
+                                                                    <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                                                    <td style="width:30px;">
+                                                                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                            <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                            {% ifequal status 5 %}
+                                                                                <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" onclick="return confirm('Are you sure?')">
+                                                                                    {% trans "Revert" %}
+                                                                                </button>
+                                                                            {% else %}
+                                                                                <button type="button" class="btn btn-sm btn-primary disabled">
+                                                                                    {% trans "Revert" %}
+                                                                                </button>
+                                                                            {% endifequal %}
+                                                                        </form>
+                                                                    </td>
+                                                                    <td style="width:30px;">
+                                                                        <form action="" method="post" role="form">{% csrf_token %}
+                                                                            <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                            <button type="submit" class="btn btn-sm btn-danger" name="delete_snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                                {% trans "Delete" %}
+                                                                            </button>
+                                                                        </form>
+                                                                    </td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    {% else %}
+                                                        <p>{% trans "You do not have any snapshots" %}</p>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <p>{% trans "To restore snapshots you need Power Off the instance." %}</p>
+                                                {% endifequal %}
                                             </div>
                                         </div>
                                     </div>
@@ -274,4 +364,11 @@
                         </div>
                     </div>
                 </div>
+{% endblock %}
+{% block script %}
+<script>
+    function open_console() {
+        window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}', '', 'width=850,height=485')
+    }
+</script>
 {% endblock %}
