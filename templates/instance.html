@@ -2,21 +2,276 @@
 {% load i18n %}
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
+                <!-- Page Heading -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header">{{ vname }}</h1>
+                    </div>
+                </div>
+                <!-- /.row -->
 
-        {% include 'sidebar.html' %}
+                {% include 'errors_block.html' %}
 
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <div class="row">
+                    <div class="col-lg-12">
 
-            {% include 'create_inst_block.html' %}
+                                    Status:
+                                    {% ifequal status 5 %}
+                                       <span class="text-danger">{% trans "Off" %}</span>
+                                    {% endifequal %}
+                                    {% ifequal status 1 %}
+                                        <span class="text-success">{% trans "Active" %}</span>
+                                    {% endifequal %}
+                                    {% ifequal status 3 %}
+                                        <span class="text-warning">{% trans "Suspend" %}</span>
+                                    {% endifequal %}
 
-            <h1 class="page-header">{{ vname }}</h1>
+                            Vcpu: {% if cur_vcpu %}{{ cur_vcpu }}{% else %}{{ vcpu }}{% endif %}
+                           Ram: {{ cur_memory }}{% trans "MB" %}
+                            {% ifnotequal description 'None' %}
+                                {{ description }}
+                            {% endifnotequal %}
 
-            {% include 'errors_block.html' %}
-
-
-        </div>
-    </div>
-</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div role="tabpanel">
+                            <!-- Nav tabs -->
+                            <ul class="nav nav-pills" role="tablist">
+                                <li role="presentation" class="active">
+                                    <a href="#power" id="action-button" aria-controls="power" role="tab" data-toggle="tab">
+                                        <span id="action-block" class="glyphicon glyphicon-off" aria-hidden="true"></span>
+                                        {% trans "Power" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#access" id="action-button" aria-controls="access" role="tab" data-toggle="tab">
+                                        <span id="action-block" class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+                                        {% trans "Access" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#resize" id="action-button" aria-controls="resize" role="tab" data-toggle="tab">
+                                        <span id="action-block" class="glyphicon glyphicon-resize-full" aria-hidden="true"></span>
+                                        {% trans "Resize" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#snapshots" id="action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
+                                        <span id="action-block" class="glyphicon glyphicon-camera" aria-hidden="true"></span>
+                                        {% trans "Snapshots" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#settings" id="action-button" aria-controls="settings" role="tab" data-toggle="tab">
+                                        <span id="action-block" class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+                                        {% trans "Settings" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#graphics" id="action-button" aria-controls="graphics" role="tab" data-toggle="tab">
+                                        <span id="action-block" class="glyphicon glyphicon-signal" aria-hidden="true"></span>
+                                        {% trans "Graphs" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#undefine" id="action-button" aria-controls="undefine" role="tab" data-toggle="tab">
+                                        <span id="action-block" class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                        {% trans "Destroy" %}
+                                    </a>
+                                </li>
+                            </ul>
+                            <!-- Tab panes -->
+                            <div class="tab-content">
+                                <div role="tabpanel" class="tab-pane active" id="power">
+                                    <div role="tabpanel">
+                                        <!-- Nav tabs -->
+                                        <ul class="nav nav-tabs" role="tablist">
+                                            {% ifequal status 1 %}
+                                                <li role="presentation" class="active">
+                                                    <a href="#reboot" aria-controls="reboot" role="tab" data-toggle="tab">
+                                                        {% trans "Reboot" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
+                                                    <a href="#poweroff" aria-controls="poweroff" role="tab" data-toggle="tab">
+                                                        {% trans "Power Off" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
+                                                    <a href="#suspend" aria-controls="suspend" role="tab" data-toggle="tab">
+                                                        {% trans "Suspend" %}
+                                                    </a>
+                                                </li>
+                                            {% endifequal %}
+                                            {% ifequal status 3 %}
+                                                <li role="presentation" class="active">
+                                                    <a href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
+                                                        {% trans "Reboot" %}
+                                                    </a>
+                                                </li>
+                                            {% endifequal %}
+                                            {% ifequal status 5 %}
+                                                <li role="presentation" class="active">
+                                                    <a href="#boot" aria-controls="boot" role="tab" data-toggle="tab">
+                                                        {% trans "Boot" %}
+                                                    </a>
+                                                </li>
+                                            {% endifequal %}
+                                        </ul>
+                                        <!-- Tab panes -->
+                                        <div class="tab-content">
+                                            {% ifequal status 1 %}
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="reboot">
+                                                    <p>Reboot</p>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="poweroff">
+                                                    <p>Power Off</p>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="suspend">
+                                                    <p>Suspend</p>
+                                                </div>
+                                            {% endifequal %}
+                                            {% ifequal status 3 %}
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                                                    <p>Resume</p>
+                                                </div>
+                                            {% endifequal %}
+                                            {% ifequal status 5 %}
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
+                                                    <p>Boot</p>
+                                                </div>
+                                            {% endifequal %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane" id="access">
+                                    <div role="tabpanel">
+                                        <!-- Nav tabs -->
+                                        <ul class="nav nav-tabs" role="tablist">
+                                            <li role="presentation" class="active">
+                                                <a href="#vnconsole" aria-controls="vnconsole" role="tab" data-toggle="tab">
+                                                    {% trans "Console" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        <!-- Tab panes -->
+                                        <div class="tab-content">
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="vnconsole">
+                                                <p>Console</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane" id="resize">
+                                    <div role="tabpanel">
+                                        <!-- Nav tabs -->
+                                        <ul class="nav nav-tabs" role="tablist">
+                                            <li role="presentation" class="active">
+                                                <a href="#resizevm" aria-controls="resizevm" role="tab" data-toggle="tab">
+                                                    {% trans "Resize Instance" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        <!-- Tab panes -->
+                                        <div class="tab-content">
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
+                                                <p>Resize Instance</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane" id="snapshots">
+                                    <div role="tabpanel">
+                                        <!-- Nav tabs -->
+                                        <ul class="nav nav-tabs" role="tablist">
+                                            <li role="presentation" class="active">
+                                                <a href="#takesnapshot" aria-controls="takesnapshot" role="tab" data-toggle="tab">
+                                                    {% trans "Take Snapshot" %}
+                                                </a>
+                                            </li>
+                                            <li role="presentation">
+                                                <a href="#restoresnapshot" aria-controls="restoresnapshot" role="tab" data-toggle="tab">
+                                                    {% trans "Restore From Snaphot" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        <!-- Tab panes -->
+                                        <div class="tab-content">
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
+                                                <p>Take Snapshots</p>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="restoresnapshot">
+                                                <p>Restore Snapshots</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane" id="settings">
+                                    <div role="tabpanel">
+                                        <!-- Nav tabs -->
+                                        <ul class="nav nav-tabs" role="tablist">
+                                            <li role="presentation" class="active">
+                                                <a href="#autostart" aria-controls="autostart" role="tab" data-toggle="tab">
+                                                    {% trans "Autostart" %}
+                                                </a>
+                                            </li>
+                                            <li role="presentation">
+                                                <a href="#media" aria-controls="media" role="tab" data-toggle="tab">
+                                                    {% trans "Media" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        <!-- Tab panes -->
+                                        <div class="tab-content">
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="autostart">
+                                                <p>Autostart</p>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="media">
+                                                <p>Cdrome</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane" id="graphics">
+                                    <div role="tabpanel">
+                                        <!-- Nav tabs -->
+                                        <ul class="nav nav-tabs" role="tablist">
+                                            <li role="presentation" class="active">
+                                                <a href="#graps" aria-controls="graps" role="tab" data-toggle="tab">
+                                                    {% trans "Real Time" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        <!-- Tab panes -->
+                                        <div class="tab-content">
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="graps">
+                                                <p>Graphics</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane" id="undefine">
+                                    <div role="tabpanel">
+                                        <!-- Nav tabs -->
+                                        <ul class="nav nav-tabs" role="tablist">
+                                            <li role="presentation" class="active">
+                                                <a href="#destroy" aria-controls="destroy" role="tab" data-toggle="tab">
+                                                    {% trans "Destroy Instance" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        <!-- Tab panes -->
+                                        <div class="tab-content">
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
+                                                <p>Destroy Instance</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 {% endblock %}

@@ -87,3 +87,54 @@ body {
 .btn-header {
     margin-top: 5px;
 }
+
+#action-block {
+    display: block;
+    padding: 15px 0;
+    font-weight: 400;
+    font-size: 14px;
+    width: 65px;
+}
+
+#action-button {
+    text-align: center;
+}
+
+.tab-pane-bordered {
+    border: 1px solid #eee;
+    border-top-width: 0;
+    padding: 20px;
+}
+
+p {
+    display: block;
+    margin: 10px 10px 10px 10px;
+}
+
+#power {
+    margin-top: 20px;
+}
+
+#access {
+    margin-top: 20px;
+}
+
+#resize {
+    margin-top: 20px;
+}
+
+#snapshots {
+    margin-top: 20px;
+}
+
+#settings {
+    margin-top: 20px;
+}
+
+#graphics {
+    margin-top: 20px;
+}
+
+#undefine {
+    margin-top: 20px;
+}

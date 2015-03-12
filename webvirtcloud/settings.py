@@ -89,6 +89,13 @@ QEMU_CONSOLE_TYPES = ['vnc', 'spice']
 # default console type
 QEMU_CONSOLE_DEFAULT_TYPE = 'vnc'
 
+# list taken from http://qemu.weilnetz.de/qemu-doc.html#sec_005finvocation
+QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
+                'fo', 'fr', 'fr-be', 'fr-ca', 'fr-ch', 'hr', 'hu', 'is', 'it',
+                'ja', 'lt', 'lv', 'mk', 'nl', 'nl-be', 'no', 'pl', 'pt',
+                'pt-br', 'ru', 'sl', 'sv', 'th', 'tr']
+
 # keepalive interval and count for libvirt connections
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT    = 5
+
