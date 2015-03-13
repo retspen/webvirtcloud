@@ -178,22 +178,28 @@ def instance(request, compute_id, vname):
 
     try:
         if request.method == 'POST':
+
             if 'poweron' in request.POST:
                 conn.start()
                 return HttpResponseRedirect(request.get_full_path() + '#poweron')
+
             if 'powercycle' in request.POST:
                 conn.force_shutdown()
                 conn.start()
                 return HttpResponseRedirect(request.get_full_path() + '#powercycle')
+
             if 'poweroff' == request.POST.get('power', ''):
                 conn.shutdown()
                 return HttpResponseRedirect(request.get_full_path() + '#poweroff')
+
             if 'suspend' in request.POST:
                 conn.suspend()
                 return HttpResponseRedirect(request.get_full_path() + '#resume')
+
             if 'resume' in request.POST:
                 conn.resume()
                 return HttpResponseRedirect(request.get_full_path() + '#suspend')
+
             if 'delete' in request.POST:
                 if conn.get_status() == 1:
                     conn.force_shutdown()
@@ -205,26 +211,32 @@ def instance(request, compute_id, vname):
                 finally:
                     conn.delete()
                 return HttpResponseRedirect(reverse('instances', args=[compute_id]))
+
             if 'snapshot' in request.POST:
                 name = request.POST.get('name', '')
                 conn.create_snapshot(name)
                 return HttpResponseRedirect(request.get_full_path() + '#istaceshapshosts')
+
             if 'umount_iso' in request.POST:
                 image = request.POST.get('path', '')
                 dev = request.POST.get('umount_iso', '')
                 conn.umount_iso(dev, image)
                 return HttpResponseRedirect(request.get_full_path() + '#instancemedia')
+
             if 'mount_iso' in request.POST:
                 image = request.POST.get('media', '')
                 dev = request.POST.get('mount_iso', '')
                 conn.mount_iso(dev, image)
                 return HttpResponseRedirect(request.get_full_path() + '#instancemedia')
+
             if 'set_autostart' in request.POST:
                 conn.set_autostart(1)
                 return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
+
             if 'unset_autostart' in request.POST:
                 conn.set_autostart(0)
                 return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
+
             if 'resize' in request.POST:
                 description = request.POST.get('description', '')
                 vcpu = request.POST.get('vcpu', '')
@@ -239,11 +251,13 @@ def instance(request, compute_id, vname):
                     cur_memory = cur_memory_custom
                 conn.resize(cur_memory, memory, cur_vcpu, vcpu)
                 return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
+
             if 'change_xml' in request.POST:
-                xml = request.POST.get('inst_xml', '')
-                if xml:
-                    conn._defineXML(xml)
+                exit_xml = request.POST.get('inst_xml', '')
+                if exit_xml:
+                    conn._defineXML(exit_xml)
                     return HttpResponseRedirect(request.get_full_path() + '#instancexml')
+
             if 'set_console_passwd' in request.POST:
                 if request.POST.get('auto_pass', ''):
                     passwd = ''.join([choice(letters + digits) for i in xrange(12)])
@@ -290,16 +304,19 @@ def instance(request, compute_id, vname):
                 conn_migrate.define_move(vname)
                 conn_migrate.close()
                 return HttpResponseRedirect(reverse('instance', args=[compute_id, vname]))
+
             if 'delete_snapshot' in request.POST:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
                 return HttpResponseRedirect(request.get_full_path() + '#istaceshapshosts')
+
             if 'revert_snapshot' in request.POST:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_revert(snap_name)
                 msg = _("Successful revert snapshot: ")
                 msg += snap_name
                 messages.append(msg)
+
             if 'clone' in request.POST:
                 clone_data = {}
                 clone_data['name'] = request.POST.get('name', '')

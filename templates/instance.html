@@ -635,7 +635,23 @@
                                                 <div class="clearfix"></div></p>
                                             </div>
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
-                                                <p>XML</p>
+                                                <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
+                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                    <div class="col-sm-12" id="xmlheight">
+                                                        <textarea id="editor">{{ inst_xml }}</textarea>
+                                                    </div>
+                                                    {% ifequal status 5 %}
+                                                        <input type="hidden" name="inst_xml">
+                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="change_xml">
+                                                            {% trans "Change" %}
+                                                        </button>
+                                                    {% else %}
+                                                        <button class="btn btn-lg btn-success pull-right disabled">
+                                                            {% trans "Change" %}
+                                                        </button>
+                                                    {% endifequal %}
+                                                </form>
+                                                <div class="clearfix"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -692,6 +708,16 @@
                 </div>
 {% endblock %}
 {% block script %}
+<script src="{{ STATIC_URL }}/js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.getSession().setMode("ace/mode/xml");
+
+    var input = $('input[name="inst_xml"]');
+        editor.getSession().on("change", function () {
+        input.val(editor.getSession().getValue());
+    });
+</script>
 <script>
     function open_console() {
         window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}', '', 'width=850,height=485')
