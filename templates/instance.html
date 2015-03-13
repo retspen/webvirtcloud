@@ -109,14 +109,14 @@
                                             {% ifequal status 3 %}
                                                 <li role="presentation" class="active">
                                                     <a href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
-                                                        {% trans "Reboot" %}
+                                                        {% trans "Resume" %}
                                                     </a>
                                                 </li>
                                             {% endifequal %}
                                             {% ifequal status 5 %}
                                                 <li role="presentation" class="active">
                                                     <a href="#boot" aria-controls="boot" role="tab" data-toggle="tab">
-                                                        {% trans "Boot" %}
+                                                        {% trans "Power On" %}
                                                     </a>
                                                 </li>
                                             {% endifequal %}
@@ -159,7 +159,7 @@
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
                                                     <p>{% trans "Click on Boot button to start this instance." %}</p>
                                                     <form action="" method="post" role="form">{% csrf_token %}
-                                                        <input type="submit" name="boot" class="btn btn-lg btn-success pull-right" value="{% trans "Boot" %}">
+                                                        <input type="submit" name="poweron" class="btn btn-lg btn-success pull-right" value="{% trans "Power On" %}">
                                                         <div class="clearfix"></div>
                                                     </form>
                                                 </div>
@@ -204,7 +204,68 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
-                                                <p>Resize Instance</p>
+                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                    <p style="font-weight:bold;">{% trans "Logical host CPUs:" %} {{ vcpu_host }}</p>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label" style="font-weight:normal;"> {% trans "Current allocation" %}</label>
+                                                        <div class="col-sm-4">
+                                                            <select name="cur_vcpu" class="form-control">
+                                                                {% for cpu in vcpu_range %}
+                                                                    {% if cur_vcpu %}
+                                                                        <option value="{{ cpu }}" {% if cpu == cur_vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                                                    {% else %}
+                                                                        <option value="{{ cpu }}" {% if cpu == vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Maximum allocation" %}</label>
+                                                        <div class="col-sm-4">
+                                                            <select name="vcpu" class="form-control">
+                                                                {% for cpu in vcpu_range %}
+                                                                    <option value="{{ cpu }}" {% if cpu == vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <p style="font-weight:bold;">{% trans "Total host memory:" %} {{ memory_host|filesizeformat }}</p>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Current allocation" %} ({% trans "MB" %})</label>
+                                                        <div class="col-sm-4 js-custom__container">
+                                                            <select name="cur_memory" class="form-control js-custom__toggle">
+                                                                {% for mem in memory_range %}
+                                                                    <option value="{{ mem }}"
+                                                                            {% if mem == cur_memory %}selected{% endif %}>{{ mem }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                            <input type="text" name="cur_memory_custom" class="form-control js-custom__toggle" style="display: none" />
+                                                            <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label"
+                                                               style="font-weight:normal;">{% trans "Maximum allocation" %} ({% trans "MB" %})</label>
+
+                                                        <div class="col-sm-4 js-custom__container">
+                                                            <select name="memory" class="form-control js-custom__toggle">
+                                                                {% for mem in memory_range %}
+                                                                    <option value="{{ mem }}"
+                                                                            {% if mem == memory %}selected{% endif %}>{{ mem }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                            <input type="text" name="memory_custom" class="form-control js-custom__toggle" style="display: none" />
+                                                            <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                                                        </div>
+                                                    </div>
+                                                    {% ifequal status 5 %}
+                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="resize">{% trans "Resize" %}</button>
+                                                    {% else %}
+                                                        <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                                    {% endifequal %}
+                                                </form>
+                                                <div class="clearfix"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -231,8 +292,8 @@
                                                     <p>{% trans "This may take more than an hour, depending on how much content is on your droplet and how large the disk is." %}</p>
                                                     <form class="form-inline" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
-                                                            <div class="col-sm-4">
-                                                                <input type="text" class="form-control" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
+                                                            <div class="col-sm-6">
+                                                                <input type="text" class="form-control input-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
                                                             </div>
                                                         </div>
                                                         {% ifequal status 5 %}
@@ -249,45 +310,48 @@
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="restoresnapshot">
                                                {% ifequal status 5 %}
                                                     {% if snapshots %}
-                                                        <table class="table table-bordered">
-                                                            <thead>
-                                                            <tr class="active">
-                                                                <th>{% trans "Name" %}</th>
-                                                                <th>{% trans "Date" %}</th>
-                                                                <th colspan="2">{% trans "Action" %}</th>
-                                                            </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                            {% for snap in snapshots %}
+                                                        <p>{% trans "Choose a snapshot for restore" %}</p>
+                                                        <div class="table-responsive">
+                                                            <table class="table">
+                                                                <thead>
                                                                 <tr>
-                                                                    <td><strong>{{ snap.name }}</strong></td>
-                                                                    <td>{{ snap.date|date:"M d H:i:s" }}</td>
-                                                                    <td style="width:30px;">
-                                                                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
-                                                                            <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                            {% ifequal status 5 %}
-                                                                                <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" onclick="return confirm('Are you sure?')">
-                                                                                    {% trans "Revert" %}
-                                                                                </button>
-                                                                            {% else %}
-                                                                                <button type="button" class="btn btn-sm btn-primary disabled">
-                                                                                    {% trans "Revert" %}
-                                                                                </button>
-                                                                            {% endifequal %}
-                                                                        </form>
-                                                                    </td>
-                                                                    <td style="width:30px;">
-                                                                        <form action="" method="post" role="form">{% csrf_token %}
-                                                                            <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                            <button type="submit" class="btn btn-sm btn-danger" name="delete_snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                                {% trans "Delete" %}
-                                                                            </button>
-                                                                        </form>
-                                                                    </td>
+                                                                    <th>{% trans "Name" %}</th>
+                                                                    <th>{% trans "Date" %}</th>
+                                                                    <th colspan="2">{% trans "Action" %}</th>
                                                                 </tr>
-                                                            {% endfor %}
-                                                            </tbody>
-                                                        </table>
+                                                                </thead>
+                                                                <tbody>
+                                                                {% for snap in snapshots %}
+                                                                    <tr>
+                                                                        <td><strong>{{ snap.name }}</strong></td>
+                                                                        <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                                                        <td style="width:30px;">
+                                                                            <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                                {% ifequal status 5 %}
+                                                                                    <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" onclick="return confirm('Are you sure?')">
+                                                                                        <span class="glyphicon glyphicon-save"></span>
+                                                                                    </button>
+                                                                                {% else %}
+                                                                                    <button type="button" class="btn btn-sm btn-default disabled">
+                                                                                        <span class="glyphicon glyphicon-save"></span>
+                                                                                    </button>
+                                                                                {% endifequal %}
+                                                                            </form>
+                                                                        </td>
+                                                                        <td style="width:30px;">
+                                                                            <form action="" method="post" role="form">{% csrf_token %}
+                                                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                                <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                                    <span class="glyphicon glyphicon-trash"></span>
+                                                                                </button>
+                                                                            </form>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endfor %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
                                                     {% else %}
                                                         <p>{% trans "You do not have any snapshots" %}</p>
                                                     {% endif %}
@@ -303,23 +367,275 @@
                                         <!-- Nav tabs -->
                                         <ul class="nav nav-tabs" role="tablist">
                                             <li role="presentation" class="active">
+                                                <a href="#media" aria-controls="media" role="tab" data-toggle="tab">
+                                                    {% trans "Media" %}
+                                                </a>
+                                            </li>
+                                            <li role="presentation">
                                                 <a href="#autostart" aria-controls="autostart" role="tab" data-toggle="tab">
                                                     {% trans "Autostart" %}
                                                 </a>
                                             </li>
                                             <li role="presentation">
-                                                <a href="#media" aria-controls="media" role="tab" data-toggle="tab">
-                                                    {% trans "Media" %}
+                                                <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
+                                                    {% trans "VNC" %}
+                                                </a>
+                                            </li>
+                                            <li role="presentation">
+                                                <a href="#clone" aria-controls="clone" role="tab" data-toggle="tab">
+                                                    {% trans "Clone" %}
+                                                </a>
+                                            </li>
+                                            <li role="presentation">
+                                                <a href="#migrate" aria-controls="migrate" role="tab" data-toggle="tab">
+                                                    {% trans "Migrate" %}
+                                                </a>
+                                            </li>
+                                            <li role="presentation">
+                                                <a href="#xmledit" aria-controls="xmledit" role="tab" data-toggle="tab">
+                                                    {% trans "XML" %}
                                                 </a>
                                             </li>
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="autostart">
-                                                <p>Autostart</p>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="media">
+                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                    {% for cd in media %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-2 control-label">{% trans "CDROM" %} {{ forloop.counter }}</label>
+                                                            {% if not cd.image %}
+                                                                <div class="col-sm-6">
+                                                                    <select name="media" class="form-control">
+                                                                        {% if media_iso %}
+                                                                            {% for iso in media_iso %}
+                                                                                <option value="{{ iso }}">{{ iso }}</option>
+                                                                            {% endfor %}
+                                                                        {% else %}
+                                                                            <option value="none">{% trans "None" %}</option>
+                                                                        {% endif %}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-sm-2">
+                                                                    {% if media_iso %}
+                                                                        <button type="submit" class="btn btn-sm btn-success pull-left" name="mount_iso" value="{{ cd.dev }}" style="margin-top: 2px;">{% trans "Mount" %}</button>
+                                                                    {% else %}
+                                                                        <button class="btn btn-sm btn-success pull-left disabled" name="mount_iso" style="margin-top: 2px;">{% trans "Mount" %}</button>
+                                                                    {% endif %}
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="col-sm-5">
+                                                                    <p>{{ cd.image }}</p>
+                                                                </div>
+                                                                <div class="col-sm-2">
+                                                                    <input type="hidden" name="path" value="{{ cd.path }}">
+                                                                    <button type="submit" class="btn btn-sm btn-success pull-left" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endfor %}
+                                                </form>
+                                                <div class="clearfix"></div>
                                             </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="media">
-                                                <p>Cdrome</p>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="autostart">
+                                                <p>{% trans "Autostart your instance when host server is power on" %}</p>
+                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                    {% ifequal autostart 0 %}
+                                                        <input type="submit" class="btn btn-lg btn-success pull-right" name="set_autostart" value="{% trans "Enable" %}">
+                                                    {% else %}
+                                                        <input type="submit" class="btn btn-lg btn-success pull-right" name="unset_autostart" value="{% trans "Disable" %}">
+                                                    {% endifequal %}
+                                                </form>
+                                                <div class="clearfix"></div>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
+                                                <p>{% trans "To set console's type, shutdown the instance." %}</p>
+                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                    <div class="form-group" id="console_type_selection">
+                                                        <label for="console_select_type" class="col-sm-2 control-label">{% trans "Type" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <select id="console_select_type" class="form-control" name="console_type">
+                                                                <option value="" style="font-weight: bold">{% trans "please choose" %}</option>
+                                                                {% for ctype in console_types %}
+                                                                    <option value="{{ ctype }}">{{ ctype }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            {% ifequal status 5 %}
+                                                                <button type="submit" class="btn btn-success " name="set_console_type">{% trans "Set" %}</button>
+                                                            {% else %}
+                                                                <button class="btn btn-success disabled" name="set_console_type">{% trans "Set" %}</button>
+                                                            {% endifequal %}
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                                <p>{% trans "To create console password, shutdown the instance." %}</p>
+                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                    <div class="form-group">
+                                                        <div class="col-sm-offset-2 col-sm-10">
+                                                            <div class="checkbox">
+                                                                <label>
+                                                                    <input type="checkbox" name="auto_pass" value="true" id="console_passwd_gen">{% trans "Generate" %}
+                                                                </label>
+                                                            </div>
+                                                            <div class="checkbox">
+                                                                <label>
+                                                                    <input type="checkbox" name="clear_pass" value="true" id="console_passwd_clear">{% trans "Clear" %}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group" id="console_passwd_manual">
+                                                        <label for="inputPassword1" class="col-sm-2 control-label">{% trans "Password" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input id="console_show_pass" type="password" class="form-control" name="console_passwd"
+                                                                   {% if console_passwd %}
+                                                                        value="{{ console_passwd }}"
+                                                                   {% else %}
+                                                                        placeholder="{% trans "Password" %}"
+                                                                   {% endif %} maxlength="14">
+                                                        </div>
+                                                        {% if console_passwd %}
+                                                            <a href="#" name="console_show" class="btn btn-primary btn-md" onclick="show_console()">{% trans "Show" %}</a>
+                                                        {% endif %}
+                                                        <div class="col-sm-3">
+                                                            {% ifequal status 5 %}
+                                                                <button type="submit" class="btn btn-success" name="set_console_passwd">{% trans "Set" %}</button>
+                                                            {% else %}
+                                                                <button class="btn btn-success disabled" name="set_console_passwd">{% trans "Set" %}</button>
+                                                            {% endifequal %}
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                                <p>{% trans "To set console's keymap, shutdown the instance." %}</p>
+                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                    <div class="form-group">
+                                                        <div class="col-sm-offset-2 col-sm-10">
+                                                            <div class="checkbox">
+                                                                <label>
+                                                                    <input type="checkbox" name="clear_keymap" value="true" id="console_keymap_clear">{% trans "Clear" %}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group" id="console_keymap_selection">
+                                                        <label for="console_select_keymap" class="col-sm-2 control-label">{% trans "Keymap" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <select id="console_select_keymap" class="form-control" name="console_keymap">
+                                                                <option value="" style="font-weight: bold">{% trans "please choose" %}</option>
+                                                                {% for keymap in keymaps %}
+                                                                    <option value="{{ keymap }}">{{ keymap }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            {% ifequal status 5 %}
+                                                                <button type="submit" class="btn btn-success" name="set_console_keymap">{% trans "Set" %}</button>
+                                                            {% else %}
+                                                                <button class="btn btn-success disabled" name="set_console_keymap">{% trans "Set" %}</button>
+                                                            {% endifequal %}
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                                <div class="clearfix"></div>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
+                                                <p style="font-weight:bold;">{% trans "Create a clone" %}</p>
+                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                    <div class="form-group">
+                                                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Clone Name" %}</label>
+                                                        <div class="col-sm-3">
+                                                            <input type="text" class="form-control" name="name" value="{{ vname }}-clone"/>
+                                                        </div>
+                                                    </div>
+                                                    <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                    {% for network in networks %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
+                                                            <div class="col-sm-3">
+                                                                <input type="text" class="form-control" name="net-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                            </div>
+                                                            <div class="col-sm-1">
+                                                                <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
+                                                                        onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                    <p style="font-weight:bold;">{% trans "Storage devices" %}</p>
+                                                    {% for disk in clone_disks %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{{ disk.dev }} ({{ disk.storage }})</label>
+                                                            <div class="col-sm-3">
+                                                                <input type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
+                                                            </div>
+                                                            {% ifequal disk.format 'qcow2' %}
+                                                                <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">Metadata</label>
+                                                                <div class="col-sm-1">
+                                                                    <input type="checkbox" name="meta-{{ disk.dev }}" value="true" style="margin-top: 10px;">
+                                                                </div>
+                                                            {% endifequal %}
+                                                        </div>
+                                                    {% endfor %}
+                                                    {% ifequal status 5 %}
+                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="clone">{% trans "Clone" %}</button>
+                                                    {% else %}
+                                                        <button class="btn btn-lg btn-success pull-right disabled" name="clone">{% trans "Clone" %}</button>
+                                                    {% endifequal %}
+                                                </form>
+                                                <div class="clearfix"></div>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
+                                                <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
+                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                    <div class="form-group">
+                                                        <label class="col-sm-3 control-label">{% trans "Original host" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <p style="margin: 10px -10px 0 0;">{{ compute.name }}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-3 control-label">{% trans "Host migration" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <select name="compute_id" class="form-control">
+                                                                {% if computes_count != 1 %}
+                                                                    {% for comp in computes %}
+                                                                        {% if comp.id != compute.id %}
+                                                                            <option value="{{ comp.id }}">{{ comp.name }}</option>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                {% endif %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-3 control-label">{% trans "Live migration" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-3 control-label">{% trans "Unsafe migration" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="checkbox" name="unsafe_migrate" value="true" id="vm_unsafe_migrate">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-3 control-label">{% trans "Delete original" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="checkbox" name="xml_delete" value="true" id="xml_delete">
+                                                        </div>
+                                                    </div>
+                                                    {% if computes_count != 1 %}
+                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="migrate">{% trans "Migrate" %}</button>
+                                                    {% else %}
+                                                        <button class="btn btn-lg btn-success pull-right disabled">{% trans "Migrate" %}</button>
+                                                    {% endif %}
+                                                </form>
+                                                <div class="clearfix"></div></p>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
+                                                <p>XML</p>
                                             </div>
                                         </div>
                                     </div>
@@ -355,7 +671,17 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
-                                                <p>Destroy Instance</p>
+                                                <p>{% trans "Delete storage for instance?" %}</p>
+                                                <form class="form-group" method="post" role="form">{% csrf_token %}
+                                                    <div class="checkbox" style="margin-left: 8px;">
+                                                        <label>
+                                                            <input type="checkbox" name="delete_disk" value="true">
+                                                            <strong>{% trans "Remove Instance's data" %}</strong>
+                                                        </label>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-lg btn-success pull-right" name="delete">{% trans "Destroy" %}</button>
+                                                </form>
+                                                <div class="clearfix"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -370,5 +696,74 @@
     function open_console() {
         window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}', '', 'width=850,height=485')
     }
+</script>
+<script>
+    function random_mac(net) {
+        var hexDigits = "0123456789abcdef";
+        var macAddress="52:54:00:";
+        for (var i=0; i<3; i++) {
+            macAddress+=hexDigits.charAt(Math.round(Math.random()*16));
+            macAddress+=hexDigits.charAt(Math.round(Math.random()*16));
+            if (i != 2) macAddress+=":";
+        }
+        $('input[name="net-'+net+'"]').val(macAddress);
+    };
+</script>
+<script>
+    function show_console() {
+        if ($('#console_show_pass').attr('type') == 'password') {
+            $('#console_show_pass').attr('type', 'text');
+        } else {
+            $('#console_show_pass').attr('type', 'password');
+        }
+    }
+</script>
+<script>
+    $(document).on('change', '#console_passwd_gen', function () {
+        if ($(this).prop('checked')) {
+            $('#console_passwd_manual').hide();
+            $('#console_passwd_clear').prop('checked', false);
+        } else {
+            $('#console_passwd_manual').show();
+        }
+    });
+    $(document).on('change', '#console_passwd_clear', function () {
+        if ($(this).prop('checked')) {
+            $('#console_passwd_manual').hide();
+            $('#console_passwd_gen').prop('checked', false);
+        } else {
+            $('#console_passwd_manual').show();
+        }
+    });
+    $(document).on('change', '#console_keymap_clear', function () {
+        if ($(this).prop('checked')) {
+            $('#console_keymap_selection').hide();
+        } else {
+            $('#console_keymap_selection').show();
+        }
+    });
+    $(document).ready(function () {
+        // set current console keymap or fall back to default
+        var keymap = "{{ console_keymap }}"
+        if (keymap != '') {
+            $("#console_select_keymap option[value='" + keymap + "']").prop('selected', true);
+        }
+    });
+    $(document).ready(function () {
+        // set current console type or fall back to default
+        var console_type = "{{ console_type }}"
+        if (console_type != '') {
+            $("#console_select_type option[value='" + console_type + "']").prop('selected', true);
+        }
+    });
+</script>
+<script>
+    $(function () {
+        $('.js-custom__checkbox').change(function () {
+            var container  = $(this).closest('.js-custom__container');
+            var toggles     = container.find('.js-custom__toggle');
+            toggles.toggle();
+        });
+    });
 </script>
 {% endblock %}

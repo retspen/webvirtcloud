@@ -470,7 +470,7 @@ class wvmInstance(wvmConnect):
         return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE),
                                  "/domain/devices/graphics/@keymap") or ''
 
-    def change_settings(self, description, cur_memory, memory, cur_vcpu, vcpu):
+    def resize(self, cur_memory, memory, cur_vcpu, vcpu):
         """
         Function change ram and cpu on vds.
         """
@@ -484,17 +484,9 @@ class wvmInstance(wvmConnect):
         set_mem.text = str(memory)
         set_cur_mem = tree.find('currentMemory')
         set_cur_mem.text = str(cur_memory)
-        set_desc = tree.find('description')
         set_vcpu = tree.find('vcpu')
         set_vcpu.text = vcpu
         set_vcpu.set('current', cur_vcpu)
-
-        if not set_desc:
-            tree_desc = ElementTree.Element('description')
-            tree_desc.text = description
-            tree.insert(2, tree_desc)
-        else:
-            set_desc.text = description
 
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)

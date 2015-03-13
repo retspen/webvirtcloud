@@ -120,7 +120,7 @@ def instance(request, compute_id, vname):
                 {'dev': disk['dev'], 'storage': disk['storage'], 'image': image, 'format': disk['format']})
         return clone_disk
 
-    errors = []
+    error_messages = []
     messages = []
     compute = Compute.objects.get(id=compute_id)
     computes = Compute.objects.all()
@@ -164,8 +164,8 @@ def instance(request, compute_id, vname):
         has_managed_save_image = conn.get_managed_save_image()
         clone_disks = show_clone_disk(disks)
         console_passwd = conn.get_console_passwd()
-    except libvirtError as err:
-        errors.append(err)
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
 
     try:
         instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -178,25 +178,19 @@ def instance(request, compute_id, vname):
 
     try:
         if request.method == 'POST':
-            if 'start' in request.POST:
+            if 'poweron' in request.POST:
                 conn.start()
-                return HttpResponseRedirect(request.get_full_path() + '#shutdown')
-            if 'power' in request.POST:
-                if 'shutdown' == request.POST.get('power', ''):
-                    conn.shutdown()
-                    return HttpResponseRedirect(request.get_full_path() + '#shutdown')
-                if 'destroy' == request.POST.get('power', ''):
-                    conn.force_shutdown()
-                    return HttpResponseRedirect(request.get_full_path() + '#forceshutdown')
-                if 'managedsave' == request.POST.get('power', ''):
-                    conn.managedsave()
-                    return HttpResponseRedirect(request.get_full_path() + '#managedsave')
-            if 'deletesaveimage' in request.POST:
-                conn.managed_save_remove()
-                return HttpResponseRedirect(request.get_full_path() + '#managedsave')
+                return HttpResponseRedirect(request.get_full_path() + '#poweron')
+            if 'powercycle' in request.POST:
+                conn.force_shutdown()
+                conn.start()
+                return HttpResponseRedirect(request.get_full_path() + '#powercycle')
+            if 'poweroff' == request.POST.get('power', ''):
+                conn.shutdown()
+                return HttpResponseRedirect(request.get_full_path() + '#poweroff')
             if 'suspend' in request.POST:
                 conn.suspend()
-                return HttpResponseRedirect(request.get_full_path() + '#suspend')
+                return HttpResponseRedirect(request.get_full_path() + '#resume')
             if 'resume' in request.POST:
                 conn.resume()
                 return HttpResponseRedirect(request.get_full_path() + '#suspend')
@@ -204,13 +198,13 @@ def instance(request, compute_id, vname):
                 if conn.get_status() == 1:
                     conn.force_shutdown()
                 try:
-                    instance = Instance.objects.get(compute_id=host_id, name=vname)
+                    instance = Instance.objects.get(compute_id=compute_id, name=vname)
                     instance.delete()
                     if request.POST.get('delete_disk', ''):
                         conn.delete_disk()
                 finally:
                     conn.delete()
-                return HttpResponseRedirect(reverse('instances', args=[host_id]))
+                return HttpResponseRedirect(reverse('instances', args=[compute_id]))
             if 'snapshot' in request.POST:
                 name = request.POST.get('name', '')
                 conn.create_snapshot(name)
@@ -231,7 +225,7 @@ def instance(request, compute_id, vname):
             if 'unset_autostart' in request.POST:
                 conn.set_autostart(0)
                 return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
-            if 'change_settings' in request.POST:
+            if 'resize' in request.POST:
                 description = request.POST.get('description', '')
                 vcpu = request.POST.get('vcpu', '')
                 cur_vcpu = request.POST.get('cur_vcpu', '')
@@ -243,7 +237,7 @@ def instance(request, compute_id, vname):
                 cur_memory_custom = request.POST.get('cur_memory_custom', '')
                 if cur_memory_custom:
                     cur_memory = cur_memory_custom
-                conn.change_settings(description, cur_memory, memory, cur_vcpu, vcpu)
+                conn.resize(cur_memory, memory, cur_vcpu, vcpu)
                 return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
             if 'change_xml' in request.POST:
                 xml = request.POST.get('inst_xml', '')
@@ -260,11 +254,11 @@ def instance(request, compute_id, vname):
                         passwd = ''
                     if not passwd and not clear:
                         msg = _("Enter the console password or select Generate")
-                        errors.append(msg)
-                if not errors:
+                        error_messages.append(msg)
+                if not error_messages:
                     if not conn.set_console_passwd(passwd):
                         msg = _("Error setting console password. You should check that your instance have an graphic device.")
-                        errors.append(msg)
+                        error_messages.append(msg)
                     else:
                         return HttpResponseRedirect(request.get_full_path() + '#console_pass')
 
@@ -315,11 +309,11 @@ def instance(request, compute_id, vname):
                         clone_data[post] = request.POST.get(post, '')
 
                 conn.clone_instance(clone_data)
-                return HttpResponseRedirect(reverse('instance', args=[host_id, clone_data['name']]))
+                return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
 
         conn.close()
 
     except libvirtError as err:
-        errors.append(err)
+        error_messages.append(err)
 
     return render(request, 'instance.html', locals())
