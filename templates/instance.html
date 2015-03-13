@@ -12,31 +12,28 @@
 
                 {% include 'errors_block.html' %}
 
-                <div class="row">
+                <div class="row" id="max-width-page">
                     <div class="col-lg-12">
 
-                                    Status:
-                                    {% ifequal status 5 %}
-                                       <span class="text-danger">{% trans "Off" %}</span>
-                                    {% endifequal %}
-                                    {% ifequal status 1 %}
-                                        <span class="text-success">{% trans "Active" %}</span>
-                                    {% endifequal %}
-                                    {% ifequal status 3 %}
-                                        <span class="text-warning">{% trans "Suspend" %}</span>
-                                    {% endifequal %}
+                            {% ifequal status 5 %}
+                               <span class="text-danger">{% trans "Off" %}</span>
+                            {% endifequal %}
+                            {% ifequal status 1 %}
+                                <span class="text-success">{% trans "Active" %}</span>
+                            {% endifequal %}
+                            {% ifequal status 3 %}
+                                <span class="text-warning">{% trans "Suspend" %}</span>
+                            {% endifequal %}
 
-                            Vcpu: {% if cur_vcpu %}{{ cur_vcpu }}{% else %}{{ vcpu }}{% endif %}
-                           Ram: {{ cur_memory }}{% trans "MB" %}
-                            {% ifnotequal description 'None' %}
-                                {{ description }}
-                            {% endifnotequal %}
+                            {% if cur_vcpu %}{{ cur_vcpu }}{% else %}{{ vcpu }}{% endif %} {% trans "Vcpu" %}
+                            {{ cur_memory }}{% trans "MB" %} {% trans "Ram" %}
+                            {% for disk in disks %}
+                                {{ disk.size|filesizeformat }} {% trans "Disk" %}
+                            {% endfor %}
 
-                    </div>
-                </div>
-                <hr>
-                <div class="row">
-                    <div class="col-lg-12">
+                            {{ description }}
+                    <hr>
+
                         <div role="tabpanel">
                             <!-- Nav tabs -->
                             <ul class="nav nav-pills" role="tablist">

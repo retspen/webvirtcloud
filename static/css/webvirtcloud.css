@@ -10,6 +10,10 @@ body {
     background-color: #FFF;
 }
 
+#max-width-page {
+    max-width: 768px;
+}
+
 .side-nav {
     background-color: #FFF;
     font-size: 1.2em;

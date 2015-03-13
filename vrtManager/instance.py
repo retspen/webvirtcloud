@@ -205,6 +205,7 @@ class wvmInstance(wvmConnect):
                         try:
                             vol = self.get_volume_by_path(src_fl)
                             volume = vol.name()
+                            disk_size = vol.info()[1]
                             stg = vol.storagePoolLookupByVolume()
                             storage = stg.name()
                         except libvirtError:
@@ -213,7 +214,7 @@ class wvmInstance(wvmConnect):
                         pass
                     finally:
                         result.append(
-                            {'dev': dev, 'image': volume, 'storage': storage, 'path': src_fl, 'format': disk_format})
+                            {'dev': dev, 'image': volume, 'storage': storage, 'path': src_fl, 'format': disk_format, 'size': disk_size})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)
