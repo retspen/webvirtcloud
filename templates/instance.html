@@ -7,6 +7,26 @@
                     <div class="col-lg-12">
                         <h1 class="page-header">{{ vname }}</h1>
                     </div>
+                    <h4 class="page-header">
+                        {% trans "Status:" %}
+                        {% ifequal status 5 %}
+                           <span class="text-danger">{% trans "Off" %}</span>
+                        {% endifequal %}
+                        {% ifequal status 1 %}
+                            <span class="text-success">{% trans "Active" %}</span>
+                        {% endifequal %}
+                        {% ifequal status 3 %}
+                            <span class="text-warning">{% trans "Suspend" %}</span>
+                        {% endifequal %}
+                        {% trans "Vcpu:" %}
+                        {% if cur_vcpu %}{{ cur_vcpu }}{% else %}{{ vcpu }}{% endif %}
+                        {% trans "Ram:" %}
+                        {{ cur_memory }}{% trans "MB" %}
+                        {% trans "Disk:" %}
+                        {% for disk in disks %}
+                           {{ disk.size|filesizeformat }}
+                        {% endfor %}
+                    </h4>
                 </div>
                 <!-- /.row -->
 
@@ -14,26 +34,6 @@
 
                 <div class="row" id="max-width-page">
                     <div class="col-lg-12">
-
-                            {% ifequal status 5 %}
-                               <span class="text-danger">{% trans "Off" %}</span>
-                            {% endifequal %}
-                            {% ifequal status 1 %}
-                                <span class="text-success">{% trans "Active" %}</span>
-                            {% endifequal %}
-                            {% ifequal status 3 %}
-                                <span class="text-warning">{% trans "Suspend" %}</span>
-                            {% endifequal %}
-
-                            {% if cur_vcpu %}{{ cur_vcpu }}{% else %}{{ vcpu }}{% endif %} {% trans "Vcpu" %}
-                            {{ cur_memory }}{% trans "MB" %} {% trans "Ram" %}
-                            {% for disk in disks %}
-                                {{ disk.size|filesizeformat }} {% trans "Disk" %}
-                            {% endfor %}
-
-                            {{ description }}
-                    <hr>
-
                         <div role="tabpanel">
                             <!-- Nav tabs -->
                             <ul class="nav nav-pills" role="tablist">
@@ -97,11 +97,13 @@
                                                         {% trans "Power Off" %}
                                                     </a>
                                                 </li>
-                                                <li role="presentation">
-                                                    <a href="#suspend" aria-controls="suspend" role="tab" data-toggle="tab">
-                                                        {% trans "Suspend" %}
-                                                    </a>
-                                                </li>
+                                                {% if status %}
+                                                    <li role="presentation">
+                                                        <a href="#suspend" aria-controls="suspend" role="tab" data-toggle="tab">
+                                                            {% trans "Suspend" %}
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
                                             {% endifequal %}
                                             {% ifequal status 3 %}
                                                 <li role="presentation" class="active">
@@ -201,67 +203,72 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
-                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                    <p style="font-weight:bold;">{% trans "Logical host CPUs:" %} {{ vcpu_host }}</p>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-4 control-label" style="font-weight:normal;"> {% trans "Current allocation" %}</label>
-                                                        <div class="col-sm-4">
-                                                            <select name="cur_vcpu" class="form-control">
-                                                                {% for cpu in vcpu_range %}
-                                                                    {% if cur_vcpu %}
-                                                                        <option value="{{ cpu }}" {% if cpu == cur_vcpu %}selected{% endif %}>{{ cpu }}</option>
-                                                                    {% else %}
+                                                {% if request.user.is_superuser or userinstace.is_change %}
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <p style="font-weight:bold;">{% trans "Logical host CPUs:" %} {{ vcpu_host }}</p>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-4 control-label" style="font-weight:normal;"> {% trans "Current allocation" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <select name="cur_vcpu" class="form-control">
+                                                                    {% for cpu in vcpu_range %}
+                                                                        {% if cur_vcpu %}
+                                                                            <option value="{{ cpu }}" {% if cpu == cur_vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                                                        {% else %}
+                                                                            <option value="{{ cpu }}" {% if cpu == vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Maximum allocation" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <select name="vcpu" class="form-control">
+                                                                    {% for cpu in vcpu_range %}
                                                                         <option value="{{ cpu }}" {% if cpu == vcpu %}selected{% endif %}>{{ cpu }}</option>
-                                                                    {% endif %}
-                                                                {% endfor %}
-                                                            </select>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Maximum allocation" %}</label>
-                                                        <div class="col-sm-4">
-                                                            <select name="vcpu" class="form-control">
-                                                                {% for cpu in vcpu_range %}
-                                                                    <option value="{{ cpu }}" {% if cpu == vcpu %}selected{% endif %}>{{ cpu }}</option>
-                                                                {% endfor %}
-                                                            </select>
+                                                        <p style="font-weight:bold;">{% trans "Total host memory:" %} {{ memory_host|filesizeformat }}</p>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Current allocation" %} ({% trans "MB" %})</label>
+                                                            <div class="col-sm-4 js-custom__container">
+                                                                <select name="cur_memory" class="form-control js-custom__toggle">
+                                                                    {% for mem in memory_range %}
+                                                                        <option value="{{ mem }}"
+                                                                                {% if mem == cur_memory %}selected{% endif %}>{{ mem }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                                <input type="text" name="cur_memory_custom" class="form-control js-custom__toggle" style="display: none" />
+                                                                <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <p style="font-weight:bold;">{% trans "Total host memory:" %} {{ memory_host|filesizeformat }}</p>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Current allocation" %} ({% trans "MB" %})</label>
-                                                        <div class="col-sm-4 js-custom__container">
-                                                            <select name="cur_memory" class="form-control js-custom__toggle">
-                                                                {% for mem in memory_range %}
-                                                                    <option value="{{ mem }}"
-                                                                            {% if mem == cur_memory %}selected{% endif %}>{{ mem }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                            <input type="text" name="cur_memory_custom" class="form-control js-custom__toggle" style="display: none" />
-                                                            <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-4 control-label"
-                                                               style="font-weight:normal;">{% trans "Maximum allocation" %} ({% trans "MB" %})</label>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-4 control-label"
+                                                                   style="font-weight:normal;">{% trans "Maximum allocation" %} ({% trans "MB" %})</label>
 
-                                                        <div class="col-sm-4 js-custom__container">
-                                                            <select name="memory" class="form-control js-custom__toggle">
-                                                                {% for mem in memory_range %}
-                                                                    <option value="{{ mem }}"
-                                                                            {% if mem == memory %}selected{% endif %}>{{ mem }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                            <input type="text" name="memory_custom" class="form-control js-custom__toggle" style="display: none" />
-                                                            <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                                                            <div class="col-sm-4 js-custom__container">
+                                                                <select name="memory" class="form-control js-custom__toggle">
+                                                                    {% for mem in memory_range %}
+                                                                        <option value="{{ mem }}"
+                                                                                {% if mem == memory %}selected{% endif %}>{{ mem }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                                <input type="text" name="memory_custom" class="form-control js-custom__toggle" style="display: none" />
+                                                                <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    {% ifequal status 5 %}
-                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="resize">{% trans "Resize" %}</button>
-                                                    {% else %}
-                                                        <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
-                                                    {% endifequal %}
-                                                </form>
+                                                        {% ifequal status 5 %}
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="resize">{% trans "Resize" %}</button>
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                                        {% endifequal %}
+                                                    </form>
+                                                {% else %}
+                                                    {% trans "You don't have permission for resizing instance" %}
+                                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                                {% endif %}
                                                 <div class="clearfix"></div>
                                             </div>
                                         </div>
@@ -685,15 +692,19 @@
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
                                                 <p>{% trans "Delete storage for instance?" %}</p>
-                                                <form class="form-group" method="post" role="form">{% csrf_token %}
-                                                    <div class="checkbox" style="margin-left: 8px;">
-                                                        <label>
-                                                            <input type="checkbox" name="delete_disk" value="true">
-                                                            <strong>{% trans "Remove Instance's data" %}</strong>
-                                                        </label>
-                                                    </div>
-                                                    <button type="submit" class="btn btn-lg btn-success pull-right" name="delete">{% trans "Destroy" %}</button>
-                                                </form>
+                                                {% if request.user.is_superuser or userinstace.is_delete %}
+                                                    <form class="form-group" method="post" role="form">{% csrf_token %}
+                                                        <div class="checkbox" style="margin-left: 8px;">
+                                                            <label>
+                                                                <input type="checkbox" name="delete_disk" value="true">
+                                                                <strong>{% trans "Remove Instance's data" %}</strong>
+                                                            </label>
+                                                        </div>
+                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="delete">{% trans "Destroy" %}</button>
+                                                    </form>
+                                                {% else %}
+                                                    <button class="btn btn-lg btn-success disabled pull-right" name="delete">{% trans "Destroy" %}</button>
+                                                {% endif %}
                                                 <div class="clearfix"></div>
                                             </div>
                                         </div>

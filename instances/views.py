@@ -106,6 +106,24 @@ def instance(request, compute_id, vname):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    error_messages = []
+    messages = []
+    compute = Compute.objects.get(id=compute_id)
+    computes = Compute.objects.all()
+    computes_count = len(computes)
+    keymaps = QEMU_KEYMAPS
+    console_types = QEMU_CONSOLE_TYPES
+    try:
+        userinstace = UserInstance.objects.get(instance__compute_id=compute_id,
+                                               instance__name=vname,
+                                               user__id=request.user.id)
+    except UserInstance.DoesNotExist:
+        userinstace = None
+
+    if not request.user.is_superuser:
+        if not userinstace:
+            return HttpResponseRedirect(reverse('index'))
+
     def show_clone_disk(disks):
         clone_disk = []
         for disk in disks:
@@ -119,14 +137,6 @@ def instance(request, compute_id, vname):
             clone_disk.append(
                 {'dev': disk['dev'], 'storage': disk['storage'], 'image': image, 'format': disk['format']})
         return clone_disk
-
-    error_messages = []
-    messages = []
-    compute = Compute.objects.get(id=compute_id)
-    computes = Compute.objects.all()
-    computes_count = len(computes)
-    keymaps = QEMU_KEYMAPS
-    console_types = QEMU_CONSOLE_TYPES
 
     try:
         conn = wvmInstance(compute.hostname,
@@ -164,21 +174,17 @@ def instance(request, compute_id, vname):
         has_managed_save_image = conn.get_managed_save_image()
         clone_disks = show_clone_disk(disks)
         console_passwd = conn.get_console_passwd()
-    except libvirtError as lib_err:
-        error_messages.append(lib_err)
 
-    try:
-        instance = Instance.objects.get(compute_id=compute_id, name=vname)
-        if instance.uuid != uuid:
-            instance.uuid = uuid
+        try:
+            instance = Instance.objects.get(compute_id=compute_id, name=vname)
+            if instance.uuid != uuid:
+                instance.uuid = uuid
+                instance.save()
+        except Instance.DoesNotExist:
+            instance = Instance(compute_id=compute_id, name=vname, uuid=uuid)
             instance.save()
-    except Instance.DoesNotExist:
-        instance = Instance(compute_id=compute_id, name=vname, uuid=uuid)
-        instance.save()
 
-    try:
         if request.method == 'POST':
-
             if 'poweron' in request.POST:
                 conn.start()
                 return HttpResponseRedirect(request.get_full_path() + '#poweron')
@@ -209,8 +215,17 @@ def instance(request, compute_id, vname):
                     if request.POST.get('delete_disk', ''):
                         conn.delete_disk()
                 finally:
+                    if not request.user.is_superuser:
+                        del_userinstance = UserInstance.objects.get(id=userinstace.id)
+                        del_userinstance.delete()
+                    else:
+                        try:
+                            del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
+                            del_userinstance.save()
+                        except UserInstance.DoesNotExist:
+                            pass
                     conn.delete()
-                return HttpResponseRedirect(reverse('instances', args=[compute_id]))
+                return HttpResponseRedirect(reverse('instances'))
 
             if 'snapshot' in request.POST:
                 name = request.POST.get('name', '')
@@ -330,7 +345,7 @@ def instance(request, compute_id, vname):
 
         conn.close()
 
-    except libvirtError as err:
-        error_messages.append(err)
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
 
     return render(request, 'instance.html', locals())

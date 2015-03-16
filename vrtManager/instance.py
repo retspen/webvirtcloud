@@ -195,6 +195,7 @@ class wvmInstance(wvmConnect):
             storage = None
             src_fl = None
             disk_format = None
+            disk_size = None
             for disk in ctx.xpathEval('/domain/devices/disk'):
                 device = disk.xpathEval('@device')[0].content
                 if device == 'disk':
