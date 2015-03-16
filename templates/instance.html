@@ -97,7 +97,7 @@
                                                         {% trans "Power Off" %}
                                                     </a>
                                                 </li>
-                                                {% if status %}
+                                                {% if request.user.is_superuser %}
                                                     <li role="presentation">
                                                         <a href="#suspend" aria-controls="suspend" role="tab" data-toggle="tab">
                                                             {% trans "Suspend" %}
@@ -105,13 +105,15 @@
                                                     </li>
                                                 {% endif %}
                                             {% endifequal %}
-                                            {% ifequal status 3 %}
-                                                <li role="presentation" class="active">
-                                                    <a href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
-                                                        {% trans "Resume" %}
-                                                    </a>
-                                                </li>
-                                            {% endifequal %}
+                                            {% if request.user.is_superuser %}
+                                                {% ifequal status 3 %}
+                                                    <li role="presentation" class="active">
+                                                        <a href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
+                                                            {% trans "Resume" %}
+                                                        </a>
+                                                    </li>
+                                                {% endifequal %}
+                                            {% endif %}
                                             {% ifequal status 5 %}
                                                 <li role="presentation" class="active">
                                                     <a href="#boot" aria-controls="boot" role="tab" data-toggle="tab">
@@ -137,23 +139,27 @@
                                                         <div class="clearfix"></div>
                                                     </form>
                                                 </div>
-                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="suspend">
-                                                    <p>{% trans "This action suspends the instance." %}</p>
-                                                     <form action="" method="post" role="form">{% csrf_token %}
-                                                        <input type="submit" name="suspend" class="btn btn-lg btn-success pull-right" value="{% trans "Suspend" %}">
-                                                        <div class="clearfix"></div>
-                                                    </form>
-                                                </div>
+                                                {% if request.user.is_superuser %}
+                                                    <div role="tabpanel" class="tab-pane tab-pane-bordered" id="suspend">
+                                                        <p>{% trans "This action suspends the instance." %}</p>
+                                                         <form action="" method="post" role="form">{% csrf_token %}
+                                                            <input type="submit" name="suspend" class="btn btn-lg btn-success pull-right" value="{% trans "Suspend" %}">
+                                                            <div class="clearfix"></div>
+                                                        </form>
+                                                    </div>
+                                                {% endif %}
                                             {% endifequal %}
-                                            {% ifequal status 3 %}
-                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
-                                                    <p>{% trans "This action restore the instance after suspend." %}</p>
-                                                     <form action="" method="post" role="form">{% csrf_token %}
-                                                        <input type="submit" name="resume" class="btn btn-lg btn-success pull-right" value="{% trans "Resume" %}">
-                                                        <div class="clearfix"></div>
-                                                    </form>
-                                                </div>
-                                            {% endifequal %}
+                                            {% if request.user.is_superuser %}
+                                                {% ifequal status 3 %}
+                                                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                                                        <p>{% trans "This action restore the instance after suspend." %}</p>
+                                                         <form action="" method="post" role="form">{% csrf_token %}
+                                                            <input type="submit" name="resume" class="btn btn-lg btn-success pull-right" value="{% trans "Resume" %}">
+                                                            <div class="clearfix"></div>
+                                                        </form>
+                                                    </div>
+                                                {% endifequal %}
+                                            {% endif %}
                                             {% ifequal status 5 %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
                                                     <p>{% trans "Click on Boot button to start this instance." %}</p>
@@ -375,31 +381,33 @@
                                                     {% trans "Media" %}
                                                 </a>
                                             </li>
-                                            <li role="presentation">
-                                                <a href="#autostart" aria-controls="autostart" role="tab" data-toggle="tab">
-                                                    {% trans "Autostart" %}
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
-                                                    {% trans "VNC" %}
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#clone" aria-controls="clone" role="tab" data-toggle="tab">
-                                                    {% trans "Clone" %}
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#migrate" aria-controls="migrate" role="tab" data-toggle="tab">
-                                                    {% trans "Migrate" %}
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#xmledit" aria-controls="xmledit" role="tab" data-toggle="tab">
-                                                    {% trans "XML" %}
-                                                </a>
-                                            </li>
+                                            {% if request.user.is_superuser %}
+                                                <li role="presentation">
+                                                    <a href="#autostart" aria-controls="autostart" role="tab" data-toggle="tab">
+                                                        {% trans "Autostart" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
+                                                    <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
+                                                        {% trans "VNC" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
+                                                    <a href="#clone" aria-controls="clone" role="tab" data-toggle="tab">
+                                                        {% trans "Clone" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
+                                                    <a href="#migrate" aria-controls="migrate" role="tab" data-toggle="tab">
+                                                        {% trans "Migrate" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
+                                                    <a href="#xmledit" aria-controls="xmledit" role="tab" data-toggle="tab">
+                                                        {% trans "XML" %}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
@@ -441,222 +449,224 @@
                                                 </form>
                                                 <div class="clearfix"></div>
                                             </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="autostart">
-                                                <p>{% trans "Autostart your instance when host server is power on" %}</p>
-                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                    {% ifequal autostart 0 %}
-                                                        <input type="submit" class="btn btn-lg btn-success pull-right" name="set_autostart" value="{% trans "Enable" %}">
-                                                    {% else %}
-                                                        <input type="submit" class="btn btn-lg btn-success pull-right" name="unset_autostart" value="{% trans "Disable" %}">
-                                                    {% endifequal %}
-                                                </form>
-                                                <div class="clearfix"></div>
-                                            </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
-                                                <p>{% trans "To set console's type, shutdown the instance." %}</p>
-                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                    <div class="form-group" id="console_type_selection">
-                                                        <label for="console_select_type" class="col-sm-2 control-label">{% trans "Type" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <select id="console_select_type" class="form-control" name="console_type">
-                                                                <option value="" style="font-weight: bold">{% trans "please choose" %}</option>
-                                                                {% for ctype in console_types %}
-                                                                    <option value="{{ ctype }}">{{ ctype }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            {% ifequal status 5 %}
-                                                                <button type="submit" class="btn btn-success " name="set_console_type">{% trans "Set" %}</button>
-                                                            {% else %}
-                                                                <button class="btn btn-success disabled" name="set_console_type">{% trans "Set" %}</button>
-                                                            {% endifequal %}
-                                                        </div>
-                                                    </div>
-                                                </form>
-                                                <p>{% trans "To create console password, shutdown the instance." %}</p>
-                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                    <div class="form-group">
-                                                        <div class="col-sm-offset-2 col-sm-10">
-                                                            <div class="checkbox">
-                                                                <label>
-                                                                    <input type="checkbox" name="auto_pass" value="true" id="console_passwd_gen">{% trans "Generate" %}
-                                                                </label>
-                                                            </div>
-                                                            <div class="checkbox">
-                                                                <label>
-                                                                    <input type="checkbox" name="clear_pass" value="true" id="console_passwd_clear">{% trans "Clear" %}
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group" id="console_passwd_manual">
-                                                        <label for="inputPassword1" class="col-sm-2 control-label">{% trans "Password" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <input id="console_show_pass" type="password" class="form-control" name="console_passwd"
-                                                                   {% if console_passwd %}
-                                                                        value="{{ console_passwd }}"
-                                                                   {% else %}
-                                                                        placeholder="{% trans "Password" %}"
-                                                                   {% endif %} maxlength="14">
-                                                        </div>
-                                                        {% if console_passwd %}
-                                                            <a href="#" name="console_show" class="btn btn-primary btn-md" onclick="show_console()">{% trans "Show" %}</a>
-                                                        {% endif %}
-                                                        <div class="col-sm-3">
-                                                            {% ifequal status 5 %}
-                                                                <button type="submit" class="btn btn-success" name="set_console_passwd">{% trans "Set" %}</button>
-                                                            {% else %}
-                                                                <button class="btn btn-success disabled" name="set_console_passwd">{% trans "Set" %}</button>
-                                                            {% endifequal %}
-                                                        </div>
-                                                    </div>
-                                                </form>
-                                                <p>{% trans "To set console's keymap, shutdown the instance." %}</p>
-                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                    <div class="form-group">
-                                                        <div class="col-sm-offset-2 col-sm-10">
-                                                            <div class="checkbox">
-                                                                <label>
-                                                                    <input type="checkbox" name="clear_keymap" value="true" id="console_keymap_clear">{% trans "Clear" %}
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group" id="console_keymap_selection">
-                                                        <label for="console_select_keymap" class="col-sm-2 control-label">{% trans "Keymap" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <select id="console_select_keymap" class="form-control" name="console_keymap">
-                                                                <option value="" style="font-weight: bold">{% trans "please choose" %}</option>
-                                                                {% for keymap in keymaps %}
-                                                                    <option value="{{ keymap }}">{{ keymap }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            {% ifequal status 5 %}
-                                                                <button type="submit" class="btn btn-success" name="set_console_keymap">{% trans "Set" %}</button>
-                                                            {% else %}
-                                                                <button class="btn btn-success disabled" name="set_console_keymap">{% trans "Set" %}</button>
-                                                            {% endifequal %}
-                                                        </div>
-                                                    </div>
-                                                </form>
-                                                <div class="clearfix"></div>
-                                            </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
-                                                <p style="font-weight:bold;">{% trans "Create a clone" %}</p>
-                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                    <div class="form-group">
-                                                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Clone Name" %}</label>
-                                                        <div class="col-sm-3">
-                                                            <input type="text" class="form-control" name="name" value="{{ vname }}-clone"/>
-                                                        </div>
-                                                    </div>
-                                                    <p style="font-weight:bold;">{% trans "Network devices" %}</p>
-                                                    {% for network in networks %}
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
-                                                            <div class="col-sm-3">
-                                                                <input type="text" class="form-control" name="net-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                                                            </div>
-                                                            <div class="col-sm-1">
-                                                                <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
-                                                                        onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
-                                                            </div>
-                                                        </div>
-                                                    {% endfor %}
-                                                    <p style="font-weight:bold;">{% trans "Storage devices" %}</p>
-                                                    {% for disk in clone_disks %}
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{{ disk.dev }} ({{ disk.storage }})</label>
-                                                            <div class="col-sm-3">
-                                                                <input type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
-                                                            </div>
-                                                            {% ifequal disk.format 'qcow2' %}
-                                                                <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">Metadata</label>
-                                                                <div class="col-sm-1">
-                                                                    <input type="checkbox" name="meta-{{ disk.dev }}" value="true" style="margin-top: 10px;">
-                                                                </div>
-                                                            {% endifequal %}
-                                                        </div>
-                                                    {% endfor %}
-                                                    {% ifequal status 5 %}
-                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="clone">{% trans "Clone" %}</button>
-                                                    {% else %}
-                                                        <button class="btn btn-lg btn-success pull-right disabled" name="clone">{% trans "Clone" %}</button>
-                                                    {% endifequal %}
-                                                </form>
-                                                <div class="clearfix"></div>
-                                            </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
-                                                <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
-                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                    <div class="form-group">
-                                                        <label class="col-sm-3 control-label">{% trans "Original host" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <p style="margin: 10px -10px 0 0;">{{ compute.name }}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-3 control-label">{% trans "Host migration" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <select name="compute_id" class="form-control">
-                                                                {% if computes_count != 1 %}
-                                                                    {% for comp in computes %}
-                                                                        {% if comp.id != compute.id %}
-                                                                            <option value="{{ comp.id }}">{{ comp.name }}</option>
-                                                                        {% endif %}
+                                            {% if request.user.is_superuser %}
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="autostart">
+                                                    <p>{% trans "Autostart your instance when host server is power on" %}</p>
+                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                        {% ifequal autostart 0 %}
+                                                            <input type="submit" class="btn btn-lg btn-success pull-right" name="set_autostart" value="{% trans "Enable" %}">
+                                                        {% else %}
+                                                            <input type="submit" class="btn btn-lg btn-success pull-right" name="unset_autostart" value="{% trans "Disable" %}">
+                                                        {% endifequal %}
+                                                    </form>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
+                                                    <p>{% trans "To set console's type, shutdown the instance." %}</p>
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group" id="console_type_selection">
+                                                            <label for="console_select_type" class="col-sm-2 control-label">{% trans "Type" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <select id="console_select_type" class="form-control" name="console_type">
+                                                                    <option value="" style="font-weight: bold">{% trans "please choose" %}</option>
+                                                                    {% for ctype in console_types %}
+                                                                        <option value="{{ ctype }}">{{ ctype }}</option>
                                                                     {% endfor %}
-                                                                {% endif %}
-                                                            </select>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                {% ifequal status 5 %}
+                                                                    <button type="submit" class="btn btn-success " name="set_console_type">{% trans "Set" %}</button>
+                                                                {% else %}
+                                                                    <button class="btn btn-success disabled" name="set_console_type">{% trans "Set" %}</button>
+                                                                {% endifequal %}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-3 control-label">{% trans "Live migration" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate">
+                                                    </form>
+                                                    <p>{% trans "To create console password, shutdown the instance." %}</p>
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group">
+                                                            <div class="col-sm-offset-2 col-sm-10">
+                                                                <div class="checkbox">
+                                                                    <label>
+                                                                        <input type="checkbox" name="auto_pass" value="true" id="console_passwd_gen">{% trans "Generate" %}
+                                                                    </label>
+                                                                </div>
+                                                                <div class="checkbox">
+                                                                    <label>
+                                                                        <input type="checkbox" name="clear_pass" value="true" id="console_passwd_clear">{% trans "Clear" %}
+                                                                    </label>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-3 control-label">{% trans "Unsafe migration" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <input type="checkbox" name="unsafe_migrate" value="true" id="vm_unsafe_migrate">
+                                                        <div class="form-group" id="console_passwd_manual">
+                                                            <label for="inputPassword1" class="col-sm-2 control-label">{% trans "Password" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input id="console_show_pass" type="password" class="form-control" name="console_passwd"
+                                                                       {% if console_passwd %}
+                                                                            value="{{ console_passwd }}"
+                                                                       {% else %}
+                                                                            placeholder="{% trans "Password" %}"
+                                                                       {% endif %} maxlength="14">
+                                                            </div>
+                                                            {% if console_passwd %}
+                                                                <a href="#" name="console_show" class="btn btn-primary btn-md" onclick="show_console()">{% trans "Show" %}</a>
+                                                            {% endif %}
+                                                            <div class="col-sm-3">
+                                                                {% ifequal status 5 %}
+                                                                    <button type="submit" class="btn btn-success" name="set_console_passwd">{% trans "Set" %}</button>
+                                                                {% else %}
+                                                                    <button class="btn btn-success disabled" name="set_console_passwd">{% trans "Set" %}</button>
+                                                                {% endifequal %}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="col-sm-3 control-label">{% trans "Delete original" %}</label>
-                                                        <div class="col-sm-6">
-                                                            <input type="checkbox" name="xml_delete" value="true" id="xml_delete">
+                                                    </form>
+                                                    <p>{% trans "To set console's keymap, shutdown the instance." %}</p>
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group">
+                                                            <div class="col-sm-offset-2 col-sm-10">
+                                                                <div class="checkbox">
+                                                                    <label>
+                                                                        <input type="checkbox" name="clear_keymap" value="true" id="console_keymap_clear">{% trans "Clear" %}
+                                                                    </label>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    {% if computes_count != 1 %}
-                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="migrate">{% trans "Migrate" %}</button>
-                                                    {% else %}
-                                                        <button class="btn btn-lg btn-success pull-right disabled">{% trans "Migrate" %}</button>
-                                                    {% endif %}
-                                                </form>
-                                                <div class="clearfix"></div></p>
-                                            </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
-                                                <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
-                                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                    <div class="col-sm-12" id="xmlheight">
-                                                        <textarea id="editor">{{ inst_xml }}</textarea>
-                                                    </div>
-                                                    {% ifequal status 5 %}
-                                                        <input type="hidden" name="inst_xml">
-                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="change_xml">
-                                                            {% trans "Change" %}
-                                                        </button>
-                                                    {% else %}
-                                                        <button class="btn btn-lg btn-success pull-right disabled">
-                                                            {% trans "Change" %}
-                                                        </button>
-                                                    {% endifequal %}
-                                                </form>
-                                                <div class="clearfix"></div>
-                                            </div>
+                                                        <div class="form-group" id="console_keymap_selection">
+                                                            <label for="console_select_keymap" class="col-sm-2 control-label">{% trans "Keymap" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <select id="console_select_keymap" class="form-control" name="console_keymap">
+                                                                    <option value="" style="font-weight: bold">{% trans "please choose" %}</option>
+                                                                    {% for keymap in keymaps %}
+                                                                        <option value="{{ keymap }}">{{ keymap }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                {% ifequal status 5 %}
+                                                                    <button type="submit" class="btn btn-success" name="set_console_keymap">{% trans "Set" %}</button>
+                                                                {% else %}
+                                                                    <button class="btn btn-success disabled" name="set_console_keymap">{% trans "Set" %}</button>
+                                                                {% endifequal %}
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
+                                                    <p style="font-weight:bold;">{% trans "Create a clone" %}</p>
+                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Clone Name" %}</label>
+                                                            <div class="col-sm-3">
+                                                                <input type="text" class="form-control" name="name" value="{{ vname }}-clone"/>
+                                                            </div>
+                                                        </div>
+                                                        <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                        {% for network in networks %}
+                                                            <div class="form-group">
+                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
+                                                                <div class="col-sm-3">
+                                                                    <input type="text" class="form-control" name="net-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                                </div>
+                                                                <div class="col-sm-1">
+                                                                    <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
+                                                                            onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                        <p style="font-weight:bold;">{% trans "Storage devices" %}</p>
+                                                        {% for disk in clone_disks %}
+                                                            <div class="form-group">
+                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">{{ disk.dev }} ({{ disk.storage }})</label>
+                                                                <div class="col-sm-3">
+                                                                    <input type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
+                                                                </div>
+                                                                {% ifequal disk.format 'qcow2' %}
+                                                                    <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">Metadata</label>
+                                                                    <div class="col-sm-1">
+                                                                        <input type="checkbox" name="meta-{{ disk.dev }}" value="true" style="margin-top: 10px;">
+                                                                    </div>
+                                                                {% endifequal %}
+                                                            </div>
+                                                        {% endfor %}
+                                                        {% ifequal status 5 %}
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="clone">{% trans "Clone" %}</button>
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled" name="clone">{% trans "Clone" %}</button>
+                                                        {% endifequal %}
+                                                    </form>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
+                                                    <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Original host" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <p style="margin: 10px -10px 0 0;">{{ compute.name }}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Host migration" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <select name="compute_id" class="form-control">
+                                                                    {% if computes_count != 1 %}
+                                                                        {% for comp in computes %}
+                                                                            {% if comp.id != compute.id %}
+                                                                                <option value="{{ comp.id }}">{{ comp.name }}</option>
+                                                                            {% endif %}
+                                                                        {% endfor %}
+                                                                    {% endif %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Live migration" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Unsafe migration" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input type="checkbox" name="unsafe_migrate" value="true" id="vm_unsafe_migrate">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Delete original" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input type="checkbox" name="xml_delete" value="true" id="xml_delete">
+                                                            </div>
+                                                        </div>
+                                                        {% if computes_count != 1 %}
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="migrate">{% trans "Migrate" %}</button>
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Migrate" %}</button>
+                                                        {% endif %}
+                                                    </form>
+                                                    <div class="clearfix"></div></p>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
+                                                    <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <div class="col-sm-12" id="xmlheight">
+                                                            <textarea id="editor">{{ inst_xml }}</textarea>
+                                                        </div>
+                                                        {% ifequal status 5 %}
+                                                            <input type="hidden" name="inst_xml">
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="change_xml">
+                                                                {% trans "Change" %}
+                                                            </button>
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled">
+                                                                {% trans "Change" %}
+                                                            </button>
+                                                        {% endifequal %}
+                                                    </form>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

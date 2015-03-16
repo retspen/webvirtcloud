@@ -8,7 +8,6 @@ class UserInstance(models.Model):
     instance = models.ForeignKey(Instance)
     is_change = models.BooleanField(default=False)
     is_delete = models.BooleanField(default=False)
-    is_block = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.instance.name

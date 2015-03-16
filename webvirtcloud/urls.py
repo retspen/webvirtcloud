@@ -22,7 +22,7 @@ urlpatterns = patterns('',
     url(r'^compute/net/(\d+)/([\w\-\.]+)/$', 'networks.views.network', name='network'),
 
     url(r'^compute/ifaces/(\d+)/$', 'interfaces.views.interfaces', name='interfaces'),
-    url(r'^compute/iface/(\d+)/([\w\.]+)$', 'interfaces.views.interface', name='interface'),
+    url(r'^compute/iface/(\d+)/([\w\.\:]+)$', 'interfaces.views.interface', name='interface'),
 
     url(r'^compute/secret/(\d+)/$', 'secrets.views.secrets', name='secrets'),
 

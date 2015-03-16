@@ -90,13 +90,11 @@ def user(request, user_id):
             del_user_inst = UserInstance.objects.get(id=user_inst)
             del_user_inst.delete()
             return HttpResponseRedirect(request.get_full_path())
-        if 'edit' in request.POST:
+        if 'permission' in request.POST:
             user_inst = request.POST.get('user_inst', '')
-            inst_block = request.POST.get('inst_block', '')
             inst_change = request.POST.get('inst_change', '')
             inst_delete = request.POST.get('inst_delete', '')
             edit_user_inst = UserInstance.objects.get(id=user_inst)
-            edit_user_inst.is_block = bool(inst_block)
             edit_user_inst.is_change = bool(inst_change)
             edit_user_inst.is_delete = bool(inst_delete)
             edit_user_inst.save()

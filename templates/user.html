@@ -28,10 +28,9 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>{% trans "Name" %}</th>
-                                        <th>{% trans "User blocked" %}</th>
-                                        <th>{% trans "Can change" %}</th>
-                                        <th>{% trans "Can delete" %}</th>
+                                        <th>{% trans "Instance" %}</th>
+                                        <th>{% trans "Resize" %}</th>
+                                        <th>{% trans "Delete" %}</th>
                                         <th colspan="2">{% trans "Action" %}</th>
                                     </tr>
                                 </thead>
@@ -39,8 +38,7 @@
                                     {% for inst in user_insts %}
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
-                                            <td>{{ inst.instance.name }}</td>
-                                            <td>{{ inst.is_block }}</td>
+                                            <td><a href="{% url 'instance' inst.instance.compute.id inst.instance.name %}">{{ inst.instance.name }}</a></td>
                                             <td>{{ inst.is_change }}</td>
                                             <td>{{ inst.is_delete }}</td>
                                             <td style="width:5px;">
@@ -58,38 +56,29 @@
                                                             </div>
                                                             <div class="modal-body">
                                                                 <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
+                                                                    <input type="hidden" name="user_inst" value="{{ inst.id }}">
                                                                     <div class="form-group">
-                                                                        <label class="col-sm-4 control-label">{% trans "Is blocked" %}</label>
-                                                                        <div class="col-sm-6">
-                                                                            <input type="hidden" name="user_inst" value="{{ inst.id }}">
-                                                                            <select type="text" class="form-control" name="inst_block">
-                                                                                <option value="">False</option>
-                                                                                <option value="1">True</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="form-group">
-                                                                        <label class="col-sm-4 control-label">{% trans "Can change" %}</label>
+                                                                        <label class="col-sm-4 control-label">{% trans "Resize" %}</label>
                                                                         <div class="col-sm-6">
                                                                             <select type="text" class="form-control" name="inst_change">
                                                                                 <option value="">False</option>
-                                                                                <option value="1">True</option>
+                                                                                <option value="1" {% if inst.is_change %}selected{% endif %}>True</option>
                                                                             </select>
                                                                         </div>
                                                                     </div>
                                                                     <div class="form-group">
-                                                                        <label class="col-sm-4 control-label">{% trans "Can delete" %}</label>
+                                                                        <label class="col-sm-4 control-label">{% trans "Delete" %}</label>
                                                                         <div class="col-sm-6">
                                                                             <select type="text" class="form-control" name="inst_delete">
                                                                                 <option value="">False</option>
-                                                                                <option value="1">True</option>
+                                                                                <option value="1" {% if inst.is_delete %}selected{% endif %}>True</option>
                                                                             </select>
                                                                         </div>
                                                                     </div>
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-                                                                <button type="submit" class="btn btn-primary" name="edit">{% trans "Edit" %}</button>
+                                                                <button type="submit" class="btn btn-primary" name="permission">{% trans "Edit" %}</button>
                                                             </div>
                                                                 </form>
                                                         </div> <!-- /.modal-content -->
