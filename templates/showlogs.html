@@ -13,5 +13,40 @@
             {% include 'errors_block.html' %}
 
             <div class="row">
+                <div class="col-lg-12">
+                    {% if not logs %}
+                        <div class="col-lg-12">
+                            <div class="alert alert-warning alert-dismissable">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                                <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "You don't have any Logs" %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>{% trans "User" %}</th>
+                                        <th>{% trans "Instance" %}</th>
+                                        <th>{% trans "Message" %}</th>
+                                        <th>{% trans "Date" %}</th>
+                                        </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td><a href="#">{{ log.user }}</a></td>
+                                            <td><a href="#">{{ log.instance }}<a></td>
+                                            <td>{{ log.message }}</td>
+                                            <td>{{ log.date }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
 {% endblock %}

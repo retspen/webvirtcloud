@@ -16,6 +16,6 @@ def showlogs(request):
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
-
+    logs = Logs.objects.all()
 
     return render(request, 'showlogs.html', locals())
