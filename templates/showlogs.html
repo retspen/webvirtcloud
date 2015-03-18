@@ -38,9 +38,9 @@
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
                                             <td><a href="#">{{ log.user }}</a></td>
-                                            <td><a href="#">{{ log.instance }}<a></td>
+                                            <td><a href="#">{{ log.instance }}</a></td>
                                             <td>{{ log.message }}</td>
-                                            <td>{{ log.date }}</td>
+                                            <td style="width:120px;">{{ log.date|date:"M d H:i:s" }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>

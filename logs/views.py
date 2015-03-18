@@ -4,6 +4,15 @@ from django.core.urlresolvers import reverse
 from logs.models import Logs
 
 
+def addlogmsg(userid, instanceid, message):
+    """
+    :param request:
+    :return:
+    """
+    add_log_msg = Logs(user_id=userid, instance_id=instanceid, message=message)
+    add_log_msg.save()
+
+
 def showlogs(request):
     """
     :param request:

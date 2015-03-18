@@ -39,7 +39,7 @@
                                                 <th>Status</th>
                                                 <th>VCPU</th>
                                                 <th>Memory</th>
-                                                <th data-sortable="false" style="width: 165px;">Actions</th>
+                                                <th data-sortable="false" style="width:205px;">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody class="searchable">
@@ -64,44 +64,50 @@
                                                                 <input type="hidden" name="name" value="{{ vm }}"/>
                                                                 <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
                                                                 {% ifequal info.status 5 %}
-                                                                    <button class="btn btn-sm btn-default" type="submit" name="start" title="Start">
+                                                                    <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
                                                                         <span class="glyphicon glyphicon-play"></span>
                                                                     </button>
                                                                     <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
                                                                         <span class="glyphicon glyphicon-pause"></span>
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Destroy" %}">
+                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
+                                                                        <span class="glyphicon glyphicon-off"></span>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
                                                                         <span class="glyphicon glyphicon-stop"></span>
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Console" %}">
+                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}">
                                                                         <span class="glyphicon glyphicon-eye-open"></span>
                                                                     </button>
                                                                 {% endifequal %}
                                                                 {% ifequal info.status 3 %}
-                                                                    <button class="btn btn-sm btn-default" type="submit" name="resume"
-                                                                            title="{% trans "Resume" %}">
+                                                                    <button class="btn btn-sm btn-default" type="submit" name="resume" title="{% trans "Resume" %}">
                                                                         <span class="glyphicon glyphicon-play"></span>
                                                                     </button>
                                                                     <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
                                                                         <span class="glyphicon glyphicon-pause"></span>
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Destroy" %}">
+                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
+                                                                        <span class="glyphicon glyphicon-off"></span>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
                                                                         <span class="glyphicon glyphicon-stop"></span>
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Console" %}">
+                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}">
                                                                         <span class="glyphicon glyphicon-eye-open"></span>
                                                                     </button>
                                                                 {% endifequal %}
                                                                 {% ifequal info.status 1 %}
-                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Start" %}">
+                                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}">
                                                                         <span class="glyphicon glyphicon-play"></span>
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-default" type="submit" name="suspend"
-                                                                            title="{% trans "Suspend" %}">
+                                                                    <button class="btn btn-sm btn-default" type="submit" name="suspend" title="{% trans "Suspend" %}">
                                                                         <span class="glyphicon glyphicon-pause"></span>
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-default" type="submit" name="destroy"
-                                                                            title="{% trans "Destroy" %}" onclick="return confirm('Are you sure?')">
+                                                                    <button class="btn btn-sm btn-default" type="submit" name="poweroff" title="{% trans "Power Off" %}" onclick="return confirm('Are you sure?')">
+                                                                        <span class="glyphicon glyphicon-off"></span>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-default" type="submit" name="powercycle" title="{% trans "Power Cycle" %}" onclick="return confirm('Are you sure?')">
                                                                         <span class="glyphicon glyphicon-stop"></span>
                                                                     </button>
                                                                     <a href="#" class="btn btn-sm btn-default" onclick='open_console("{{ host.0 }}-{{ info.uuid }}")' title="{% trans "Console" %}">
@@ -155,48 +161,44 @@
                                                             <input type="hidden" name="name" value="{{ vm.name }}"/>
                                                             <input type="hidden" name="compute_id" value="{{ vm.compute_id }}"/>
                                                             {% ifequal vm.status 5 %}
-                                                                <button class="btn btn-sm btn-default" type="submit" name="start" title="Start">
+                                                                <button class="btn btn-sm btn-default" type="submit" name="poweron" title="Power On">
                                                                     <span class="glyphicon glyphicon-play"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
-                                                                    <span class="glyphicon glyphicon-pause"></span>
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
+                                                                    <span class="glyphicon glyphicon-off"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Destroy" %}">
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
                                                                     <span class="glyphicon glyphicon-stop"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Console" %}">
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}">
                                                                     <span class="glyphicon glyphicon-eye-open"></span>
                                                                 </button>
                                                             {% endifequal %}
                                                             {% ifequal vm.status 3 %}
-                                                                <button class="btn btn-sm btn-default" type="submit" name="resume"
-                                                                        title="{% trans "Resume" %}">
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}">
                                                                     <span class="glyphicon glyphicon-play"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
-                                                                    <span class="glyphicon glyphicon-pause"></span>
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
+                                                                    <span class="glyphicon glyphicon-off"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Destroy" %}">
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
                                                                     <span class="glyphicon glyphicon-stop"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Console" %}">
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}">
                                                                     <span class="glyphicon glyphicon-eye-open"></span>
                                                                 </button>
                                                             {% endifequal %}
                                                             {% ifequal vm.status 1 %}
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Start" %}">
+                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}">
                                                                     <span class="glyphicon glyphicon-play"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default" type="submit" name="suspend"
-                                                                        title="{% trans "Suspend" %}">
-                                                                    <span class="glyphicon glyphicon-pause"></span>
+                                                                <button class="btn btn-sm btn-default" type="submit" name="poweroff" title="{% trans "Power Off" %}">
+                                                                    <span class="glyphicon glyphicon-off"></span>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default" type="submit" name="destroy"
-                                                                        title="{% trans "Destroy" %}" onclick="return confirm('Are you sure?')">
+                                                                <button class="btn btn-sm btn-default" type="submit" name="powercycle" title="{% trans "Power Cycle" %}" onclick="return confirm('Are you sure?')">
                                                                     <span class="glyphicon glyphicon-stop"></span>
                                                                 </button>
-                                                                <a href="#" class="btn btn-sm btn-default"
-                                                                   onclick='open_console("{{ host.0 }}-{{ vm.uuid }}")' title="{% trans "Console" %}">
+                                                                <a href="#" class="btn btn-sm btn-default" onclick='open_console("{{ host.0 }}-{{ vm.uuid }}")' title="{% trans "Console" %}">
                                                                     <span class="glyphicon glyphicon-eye-open"></span>
                                                                 </a>
                                                             {% endifequal %}

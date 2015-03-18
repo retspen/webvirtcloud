@@ -105,15 +105,21 @@
                                                     </li>
                                                 {% endif %}
                                             {% endifequal %}
-                                            {% if request.user.is_superuser %}
-                                                {% ifequal status 3 %}
+                                            {% ifequal status 3 %}
+                                                {% if request.user.is_superuser %}
                                                     <li role="presentation" class="active">
                                                         <a href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
                                                             {% trans "Resume" %}
                                                         </a>
                                                     </li>
-                                                {% endifequal %}
-                                            {% endif %}
+                                                {% else %}
+                                                    <li role="presentation" class="active">
+                                                        <a href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
+                                                            {% trans "Resume" %}
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+                                            {% endifequal %}
                                             {% ifequal status 5 %}
                                                 <li role="presentation" class="active">
                                                     <a href="#boot" aria-controls="boot" role="tab" data-toggle="tab">
@@ -149,8 +155,8 @@
                                                     </div>
                                                 {% endif %}
                                             {% endifequal %}
-                                            {% if request.user.is_superuser %}
-                                                {% ifequal status 3 %}
+                                            {% ifequal status 3 %}
+                                                {% if request.user.is_superuser %}
                                                     <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
                                                         <p>{% trans "This action restore the instance after suspend." %}</p>
                                                          <form action="" method="post" role="form">{% csrf_token %}
@@ -158,8 +164,16 @@
                                                             <div class="clearfix"></div>
                                                         </form>
                                                     </div>
-                                                {% endifequal %}
-                                            {% endif %}
+                                                {% else %}
+                                                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                                                        <p>{% trans "Administrator blocked your instance." %}</p>
+                                                         <form action="" method="post" role="form">{% csrf_token %}
+                                                            <button class="btn btn-lg btn-success disabled pull-right">{% trans "Resume" %}</button>
+                                                            <div class="clearfix"></div>
+                                                        </form>
+                                                    </div>
+                                                {% endif %}
+                                            {% endifequal %}
                                             {% ifequal status 5 %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
                                                     <p>{% trans "Click on Boot button to start this instance." %}</p>
@@ -186,10 +200,10 @@
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="vnconsole">
                                                 <p>{% trans "This action opens a new window with a VNC connection to the console of the instance." %}</p>
-                                                {% ifequal status 5 %}
-                                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Console" %}</button>
-                                                {% else %}
+                                                {% ifequal status 1 %}
                                                     <a href="#" class="btn btn-lg btn-success pull-right" title="Console port: {{ console_port }}" onclick="open_console()">{% trans "Console" %}</a>
+                                                {% else %}
+                                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Console" %}</button>
                                                 {% endifequal %}
                                                 <div class="clearfix"></div>
                                             </div>
@@ -703,15 +717,19 @@
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
                                                 <p>{% trans "Delete storage for instance?" %}</p>
                                                 {% if request.user.is_superuser or userinstace.is_delete %}
-                                                    <form class="form-group" method="post" role="form">{% csrf_token %}
-                                                        <div class="checkbox" style="margin-left: 8px;">
-                                                            <label>
-                                                                <input type="checkbox" name="delete_disk" value="true">
-                                                                <strong>{% trans "Remove Instance's data" %}</strong>
-                                                            </label>
-                                                        </div>
-                                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="delete">{% trans "Destroy" %}</button>
-                                                    </form>
+                                                    {% ifequal status 3 %}
+                                                        <button class="btn btn-lg btn-success disabled pull-right" name="delete">{% trans "Destroy" %}</button>
+                                                    {% else %}
+                                                        <form class="form-group" method="post" role="form">{% csrf_token %}
+                                                            <div class="checkbox" style="margin-left: 8px;">
+                                                                <label>
+                                                                    <input type="checkbox" name="delete_disk" value="true">
+                                                                    <strong>{% trans "Remove Instance's data" %}</strong>
+                                                                </label>
+                                                            </div>
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="delete">{% trans "Destroy" %}</button>
+                                                        </form>
+                                                    {% endifequal %}
                                                 {% else %}
                                                     <button class="btn btn-lg btn-success disabled pull-right" name="delete">{% trans "Destroy" %}</button>
                                                 {% endif %}
