@@ -19,7 +19,7 @@
                         <div class="panel {% if user.is_active %}panel-success{% else %}panel-danger{% endif %} panel-data">
                             <div class="panel-heading">
                                 <h3 class="panel-title">
-                                    <a href="{% url 'user' user.id %}"><strong>{{ user.username }}</strong></a>
+                                    <a href="{% url 'account' user.id %}"><strong>{{ user.username }}</strong></a>
                                     <a data-toggle="modal" href="#editUser{{ user.id }}" class="pull-right" title="{% trans "Edit" %}">
                                         <span class="glyphicon glyphicon-cog"></span>
                                     </a>

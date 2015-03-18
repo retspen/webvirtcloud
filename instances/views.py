@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.utils.translation import ugettext_lazy as _
 from computes.models import Compute
 from instances.models import Instance
-from users.models import UserInstance
+from accounts.models import UserInstance
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager

@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0002_userinstance_is_block'),
+        ('accounts', '0002_userinstance_is_block'),
     ]
 
     operations = [

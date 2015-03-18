@@ -2,11 +2,11 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
 urlpatterns = patterns('',
-    url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}, name='login'),
-    url(r'^logout/$', 'django.contrib.auth.views.logout', {'template_name': 'logout.html'}, name='logout'),
-
-    url(r'^login/$', 'django.contrib.auth.views.login'),
-    url(r'^logout/$', 'django.contrib.auth.views.logout'),
+    url(r'^accounts/login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}, name='login'),
+    url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'template_name': 'logout.html'}, name='logout'),
+    url(r'^accounts/profile/$', 'accounts.views.profile', name='profile'),
+    url(r'^accounts/$', 'accounts.views.accounts', name='accounts'),
+    url(r'^accounts/profile/(\d+)/$', 'accounts.views.account', name='account'),
 
     url(r'^$', 'instances.views.index', name='index'),
     url(r'^instances$', 'instances.views.instances', name='instances'),
@@ -26,8 +26,7 @@ urlpatterns = patterns('',
 
     url(r'^compute/secret/(\d+)/$', 'secrets.views.secrets', name='secrets'),
 
-    url(r'^users/$', 'users.views.users', name='users'),
-    url(r'^user/(\d+)/$', 'users.views.user', name='user'),
+
 
     url(r'^console/$', 'console.views.console', name='console'),
     url(r'^create/(\d+)/$', 'create.views.create_instance', name='create_instance'),

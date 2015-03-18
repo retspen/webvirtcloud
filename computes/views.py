@@ -3,7 +3,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from computes.models import Compute
 from instances.models import Instance
-from users.models import UserInstance
+from accounts.models import UserInstance
 from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHostForm, ComputeAddTlsForm, ComputeAddSocketForm
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager

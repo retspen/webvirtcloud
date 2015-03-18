@@ -10,8 +10,8 @@
                         <li {% class_active request "^/compute" %}{% class_active request "^/create" %}>
                             <a href="{% url 'computes' %}"><i class="fa fa-fw fa-tasks"></i> {% trans "Computes" %}</a>
                         </li>
-                        <li {% class_active request "^/user" %}>
-                            <a href="{% url 'users' %}"><i class="fa fa-fw fa-users"></i> {% trans "Users" %}</a>
+                        <li {% class_active request "^/account" %}>
+                            <a href="{% url 'accounts' %}"><i class="fa fa-fw fa-users"></i> {% trans "Users" %}</a>
                         </li>
                         <li {% class_active request "^/log" %}>
                             <a href="{% url 'showlogs' %}"><i class="fa fa-fw fa-list-alt"></i> {% trans "Logs" %}</a>

@@ -3,12 +3,23 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
-from users.models import UserInstance
+from accounts.models import UserInstance
 from instances.models import Instance
-from users.forms import UserAddForm
+from accounts.forms import UserAddForm
 
 
-def users(request):
+def profile(request):
+    """
+    :param request:
+    :return:
+    """
+    if not request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('index'))
+
+    return render(request, 'profile.html', locals())
+
+
+def accounts(request):
     """
     :param request:
     :return:
@@ -64,10 +75,10 @@ def users(request):
                 user_delete.delete()
             return HttpResponseRedirect(request.get_full_path())
 
-    return render(request, 'users.html', locals())
+    return render(request, 'accounts.html', locals())
 
 
-def user(request, user_id):
+def account(request, user_id):
     """
     :param request:
     :return:
@@ -110,4 +121,4 @@ def user(request, user_id):
                 add_user_inst.save()
                 return HttpResponseRedirect(request.get_full_path())
 
-    return render(request, 'user.html', locals())
+    return render(request, 'account.html', locals())
