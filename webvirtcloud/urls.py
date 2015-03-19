@@ -26,7 +26,7 @@ urlpatterns = patterns('',
 
     url(r'^compute/secret/(\d+)/$', 'secrets.views.secrets', name='secrets'),
 
-
+    url(r'^compute/statistics/(\d+)/$', 'computes.views.compute_graph', name='compute_graph'),
 
     url(r'^console/$', 'console.views.console', name='console'),
     url(r'^create/(\d+)/$', 'create.views.create_instance', name='create_instance'),

@@ -142,3 +142,7 @@ p {
 #undefine {
     margin-top: 20px;
 }
+
+.flot-chart {
+    max-height: 250px;
+}

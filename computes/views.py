@@ -1,4 +1,6 @@
-from django.http import HttpResponseRedirect
+import time
+import json
+from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from computes.models import Compute
@@ -127,6 +129,7 @@ def computes(request):
                     error_messages.append(msg_err.as_text())
     return render(request, 'computes.html', locals())
 
+
 def overview(request, compute_id):
     """
     :param request:
@@ -155,3 +158,68 @@ def overview(request, compute_id):
         error_messages.append(lib_err)
 
     return render(request, 'overview.html', locals())
+
+
+def compute_graph(request, compute_id):
+    """
+    :param request:
+    :return:
+    """
+
+    if not request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('login'))
+
+    points = 5
+    datasets = {}
+    cookies = {}
+    compute = Compute.objects.get(id=compute_id)
+    curent_time = time.strftime("%H:%M:%S")
+
+    try:
+        conn = wvmHostDetails(compute.hostname,
+                              compute.login,
+                              compute.password,
+                              compute.type)
+        cpu_usage = conn.get_cpu_usage()
+        mem_usage = conn.get_memory_usage()
+        conn.close()
+    except libvirtError:
+        cpu_usage = 0
+        mem_usage = 0
+
+    try:
+        cookies['cpu'] = request.COOKIES['cpu']
+        cookies['mem'] = request.COOKIES['mem']
+        cookies['timer'] = request.COOKIES['timer']
+    except KeyError:
+        cookies['cpu'] = None
+        cookies['mem'] = None
+
+    if not cookies['cpu'] and not cookies['mem']:
+        datasets['cpu'] = [0]
+        datasets['mem'] = [0]
+        datasets['timer'] = [curent_time]
+    else:
+        datasets['cpu'] = eval(cookies['cpu'])
+        datasets['mem'] = eval(cookies['mem'])
+        datasets['timer'] = eval(cookies['timer'])
+
+    datasets['timer'].append(curent_time)
+    datasets['cpu'].append(int(cpu_usage['usage']))
+    datasets['mem'].append(int(mem_usage['usage']) / 1048576)
+
+    if len(datasets['timer']) > points:
+        datasets['timer'].pop(0)
+    if len(datasets['cpu']) > points:
+        datasets['cpu'].pop(0)
+    if len(datasets['mem']) > points:
+        datasets['mem'].pop(0)
+
+    data = json.dumps({'cpudata': datasets['cpu'], 'memdata': datasets['mem'], 'timeline': datasets['timer']})
+    response = HttpResponse()
+    response['Content-Type'] = "text/javascript"
+    response.cookies['cpu'] = datasets['cpu']
+    response.cookies['timer'] = datasets['timer']
+    response.cookies['mem'] = datasets['mem']
+    response.write(data)
+    return response
