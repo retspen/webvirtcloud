@@ -12,6 +12,8 @@ urlpatterns = patterns('',
     url(r'^instances$', 'instances.views.instances', name='instances'),
     url(r'^instance/(\d+)/([\w\-\.]+)/$', 'instances.views.instance', name='instance'),
 
+    url(r'^instance/statistics/(\d+)/([\w\-\.]+)/$', 'instances.views.inst_graph', name='inst_graph'),
+
     url(r'^computes/$', 'computes.views.computes', name='computes'),
     url(r'^compute/overview/(\d+)/$', 'computes.views.overview', name='overview'),
 

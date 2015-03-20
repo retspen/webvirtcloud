@@ -1,7 +1,9 @@
+import time
+import json
 from string import letters, digits
 from random import choice
 from bisect import insort
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from django.utils.translation import ugettext_lazy as _
@@ -408,3 +410,122 @@ def instance(request, compute_id, vname):
         addlogmsg(request.user.id, instance.id, lib_err.message)
 
     return render(request, 'instance.html', locals())
+
+
+def inst_graph(request, compute_id, vname):
+    """
+    Return instance usage
+    """
+    if not request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('login'))
+
+    datasets = {}
+    datasets_rd = []
+    datasets_wr = []
+    json_blk = []
+    cookie_blk = {}
+    blk_error = False
+    datasets_rx = []
+    datasets_tx = []
+    json_net = []
+    cookie_net = {}
+    net_error = False
+    networks = None
+    disks = None
+    points = 5
+    curent_time = time.strftime("%H:%M:%S")
+    compute = Compute.objects.get(id=compute_id)
+
+    try:
+        conn = wvmInstance(compute.hostname,
+                           compute.login,
+                           compute.password,
+                           compute.type,
+                           vname)
+        status = conn.get_status()
+        cpu_usage = conn.cpu_usage()
+        blk_usage = conn.disk_usage()
+        net_usage = conn.net_usage()
+        conn.close()
+    except libvirtError:
+        status = None
+        blk_usage = None
+        cpu_usage = None
+        net_usage = None
+
+    if status == 1:
+        cookies = request.COOKIES
+        if cookies.get('cpu') == '{}' or not cookies.get('cpu') or not cpu_usage:
+            datasets['cpu'] = [0]
+            datasets['timer'] = [curent_time]
+        else:
+            datasets['cpu'] = eval(cookies.get('cpu'))
+            datasets['timer'] = eval(cookies.get('timer'))
+
+        datasets['timer'].append(curent_time)
+        datasets['cpu'].append(int(cpu_usage['cpu']))
+
+        if len(datasets['timer']) > points:
+            datasets['timer'].pop(0)
+        if len(datasets['cpu']) > points:
+            datasets['cpu'].pop(0)
+
+        for blk in blk_usage:
+            if cookies.get('hdd') == '{}' or not cookies.get('hdd') or not blk_usage:
+                datasets_wr.append(0)
+                datasets_rd.append(0)
+            else:
+                datasets['hdd'] = eval(cookies.get('hdd'))
+                try:
+                    datasets_rd = datasets['hdd'][blk['dev']][0]
+                    datasets_wr = datasets['hdd'][blk['dev']][1]
+                except:
+                    blk_error = True
+
+            if not blk_error:
+                datasets_rd.append(int(blk['rd']) / 1048576)
+                datasets_wr.append(int(blk['wr']) / 1048576)
+
+                if len(datasets_rd) > points:
+                    datasets_rd.pop(0)
+                if len(datasets_wr) >= points + 1:
+                    datasets_wr.pop(0)
+
+            json_blk.append({'dev': blk['dev'], 'data': [datasets_rd, datasets_wr]})
+            cookie_blk[blk['dev']] = [datasets_rd, datasets_wr]
+
+        for net in net_usage:
+            if cookies.get('net') == '{}' or not cookies.get('net') or not net_usage:
+                datasets_rx.append(0)
+                datasets_tx.append(0)
+            else:
+                datasets['net'] = eval(cookies.get('net'))
+                try:
+                    datasets_rx = datasets['net'][net['dev']][0]
+                    datasets_tx = datasets['net'][net['dev']][1]
+                except:
+                    net_error = True
+
+            if not net_error:
+                datasets_rx.append(int(net['rx']) / 1048576)
+                datasets_tx.append(int(net['tx']) / 1048576)
+
+                if len(datasets_rx) > points:
+                    datasets_rx.pop(0)
+                if len(datasets_tx) > points:
+                    datasets_tx.pop(0)
+
+            json_net.append({'dev': net['dev'], 'data': [datasets_rx, datasets_tx]})
+            cookie_net[net['dev']] = [datasets_rx, datasets_tx]
+
+    data = json.dumps({'status': status, 'cpudata': datasets['cpu'], 'hdddata': json_blk, 'netdata': json_net, 'timeline':  datasets['timer']})
+
+    response = HttpResponse()
+    response['Content-Type'] = "text/javascript"
+    if status == 1:
+        response.cookies['cpu'] = datasets['cpu']
+        response.cookies['timer'] = datasets['timer']
+        response.cookies['hdd'] = cookie_blk
+        response.cookies['net'] = cookie_net
+    response.write(data)
+    return response

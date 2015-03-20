@@ -81,7 +81,7 @@
             </div>
 {% endblock %}
 {% block script %}
-<script src="{{ STATIC_URL }}/js/Chart.min.js"></script>
+<script src="{{ STATIC_URL }}js/Chart.min.js"></script>
 <script>
     var cpuLineData = {
         labels : [0, 0, 0, 0, 0],
@@ -133,7 +133,7 @@
         responsive: true
     });
 
-    function hostusage() {
+    function graph_usage() {
         $.getJSON('{% url 'compute_graph' compute_id %}', function (data) {
             cpuChart.scale.xLabels = data.timeline;
             memChart.scale.xLabels = data.timeline;
@@ -145,8 +145,9 @@
             memChart.update();
         });
     }
+
     $(function () {
-        window.setInterval('hostusage()', 4000);
+        window.setInterval(graph_usage(), 4000);
     });
 </script>
 {% endblock %}
