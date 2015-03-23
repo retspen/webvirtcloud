@@ -1000,7 +1000,17 @@
                     netChart[data.netdata[j].dev].update();
                 }
             });
-        }, 6000);
+        }, 10000);
     });
+ </script>
+ <script>
+     window.setInterval(function get_status() {
+         var status = {{ status }};
+         $.getJSON('{% url 'inst_status' compute_id vname %}', function (data) {
+             if (data['status'] != status) {
+                 window.location.reload()
+             }
+         })
+     }, 2000);
  </script>
 {% endblock %}

@@ -133,7 +133,7 @@
         responsive: true
     });
 
-    function graph_usage() {
+    window.setInterval(function graph_usage() {
         $.getJSON('{% url 'compute_graph' compute_id %}', function (data) {
             cpuChart.scale.xLabels = data.timeline;
             memChart.scale.xLabels = data.timeline;
@@ -144,10 +144,6 @@
             cpuChart.update();
             memChart.update();
         });
-    }
-
-    $(function () {
-        window.setInterval(graph_usage(), 4000);
-    });
+    }, 5000);
 </script>
 {% endblock %}
