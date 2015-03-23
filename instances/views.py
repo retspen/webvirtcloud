@@ -412,28 +412,15 @@ def instance(request, compute_id, vname):
     return render(request, 'instance.html', locals())
 
 
-def inst_graph(request, compute_id, vname):
+def inst_status(request, compute_id, vname):
     """
-    Return instance usage
+    :param request:
+    :return:
     """
+
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('login'))
 
-    datasets = {}
-    datasets_rd = []
-    datasets_wr = []
-    json_blk = []
-    cookie_blk = {}
-    blk_error = False
-    datasets_rx = []
-    datasets_tx = []
-    json_net = []
-    cookie_net = {}
-    net_error = False
-    networks = None
-    disks = None
-    points = 5
-    curent_time = time.strftime("%H:%M:%S")
     compute = Compute.objects.get(id=compute_id)
 
     try:
@@ -443,18 +430,58 @@ def inst_graph(request, compute_id, vname):
                            compute.type,
                            vname)
         status = conn.get_status()
+        conn.close()
+    except libvirtError:
+        status = None
+
+    data = json.dumps({'status': status})
+    response = HttpResponse()
+    response['Content-Type'] = "text/javascript"
+    response.write(data)
+    return response
+
+
+def inst_graph(request, compute_id, vname):
+    """
+    :param request:
+    :return:
+    """
+
+    if not request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('login'))
+
+    datasets = {}
+    datasets_rd = []
+    datasets_wr = []
+    json_blk = []
+    cookie_blk = {}
+    datasets_rx = []
+    datasets_tx = []
+    json_net = []
+    cookie_net = {}
+    points = 5
+    curent_time = time.strftime("%H:%M:%S")
+    compute = Compute.objects.get(id=compute_id)
+    cookies = request.COOKIES
+    response = HttpResponse()
+    response['Content-Type'] = "text/javascript"
+
+    def check_points(dataset):
+        if len(dataset) > points:
+            dataset.pop(0)
+        return dataset
+
+    try:
+        conn = wvmInstance(compute.hostname,
+                           compute.login,
+                           compute.password,
+                           compute.type,
+                           vname)
         cpu_usage = conn.cpu_usage()
         blk_usage = conn.disk_usage()
         net_usage = conn.net_usage()
         conn.close()
-    except libvirtError:
-        status = None
-        blk_usage = None
-        cpu_usage = None
-        net_usage = None
 
-    if status == 1:
-        cookies = request.COOKIES
         if cookies.get('cpu') == '{}' or not cookies.get('cpu') or not cpu_usage:
             datasets['cpu'] = [0]
             datasets['timer'] = [curent_time]
@@ -465,10 +492,8 @@ def inst_graph(request, compute_id, vname):
         datasets['timer'].append(curent_time)
         datasets['cpu'].append(int(cpu_usage['cpu']))
 
-        if len(datasets['timer']) > points:
-            datasets['timer'].pop(0)
-        if len(datasets['cpu']) > points:
-            datasets['cpu'].pop(0)
+        datasets['timer'] = check_points(datasets['timer'])
+        datasets['cpu'] = check_points(datasets['cpu'])
 
         for blk in blk_usage:
             if cookies.get('blk') == '{}' or not cookies.get('blk') or not blk_usage:
@@ -476,20 +501,14 @@ def inst_graph(request, compute_id, vname):
                 datasets_rd.append(0)
             else:
                 datasets['blk'] = eval(cookies.get('blk'))
-                try:
-                    datasets_rd = datasets['blk'][blk['dev']][0]
-                    datasets_wr = datasets['blk'][blk['dev']][1]
-                except:
-                    blk_error = True
+                datasets_rd = datasets['blk'][blk['dev']][0]
+                datasets_wr = datasets['blk'][blk['dev']][1]
 
-            if not blk_error:
                 datasets_rd.append(int(blk['rd']) / 1048576)
                 datasets_wr.append(int(blk['wr']) / 1048576)
 
-                if len(datasets_rd) > points:
-                    datasets_rd.pop(0)
-                if len(datasets_wr) >= points + 1:
-                    datasets_wr.pop(0)
+                datasets_rd = check_points(datasets_rd)
+                datasets_wr = check_points(datasets_wr)
 
             json_blk.append({'dev': blk['dev'], 'data': [datasets_rd, datasets_wr]})
             cookie_blk[blk['dev']] = [datasets_rd, datasets_wr]
@@ -500,32 +519,26 @@ def inst_graph(request, compute_id, vname):
                 datasets_tx.append(0)
             else:
                 datasets['net'] = eval(cookies.get('net'))
-                try:
-                    datasets_rx = datasets['net'][net['dev']][0]
-                    datasets_tx = datasets['net'][net['dev']][1]
-                except:
-                    net_error = True
+                datasets_rx = datasets['net'][net['dev']][0]
+                datasets_tx = datasets['net'][net['dev']][1]
 
-            if not net_error:
                 datasets_rx.append(int(net['rx']) / 1048576)
                 datasets_tx.append(int(net['tx']) / 1048576)
 
-                if len(datasets_rx) > points:
-                    datasets_rx.pop(0)
-                if len(datasets_tx) > points:
-                    datasets_tx.pop(0)
+                datasets_rx = check_points(datasets_rx)
+                datasets_tx = check_points(datasets_tx)
 
             json_net.append({'dev': net['dev'], 'data': [datasets_rx, datasets_tx]})
             cookie_net[net['dev']] = [datasets_rx, datasets_tx]
 
-    data = json.dumps({'status': status, 'cpudata': datasets['cpu'], 'blkdata': json_blk, 'netdata': json_net, 'timeline':  datasets['timer']})
+        data = json.dumps({'cpudata': datasets['cpu'], 'blkdata': json_blk, 'netdata': json_net, 'timeline':  datasets['timer']})
 
-    response = HttpResponse()
-    response['Content-Type'] = "text/javascript"
-    if status == 1:
         response.cookies['cpu'] = datasets['cpu']
         response.cookies['timer'] = datasets['timer']
         response.cookies['blk'] = cookie_blk
         response.cookies['net'] = cookie_net
+    except libvirtError:
+        data = json.dumps({'error': 'Error 500'})
+
     response.write(data)
     return response
