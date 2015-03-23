@@ -870,10 +870,7 @@
 </script>
 <script src="{{ STATIC_URL }}js/Chart.min.js"></script>
 <script>
-$( "#graphics" ).click();
-</script>
-<script>
-    $('#chartgraphs').on('shown.bs.tab', function (e) {
+    $('#chartgraphs').on('shown.bs.tab', function (event) {
         var cpuLineData = {
             labels : [0, 0, 0, 0, 0],
             datasets : [
@@ -969,25 +966,37 @@ $( "#graphics" ).click();
             netChart['{{ forloop.counter0 }}'] = new Chart(net_ctx_{{ forloop.counter0 }}).Line(netLineData, netOpt);
         {% endfor %}
 
-        function graph_usage() {
+        window.setInterval(function graph_usage() {
             $.getJSON('{% url 'inst_graph' compute_id vname %}', function (data) {
                 cpuChart.scale.xLabels = data.timeline;
-                for (var i = 0; i < 5; i++) {
+                for (var i = 0; i < data.cpudata.length; i++) {
                     cpuChart.datasets[0].points[i].value = data.cpudata[i];
                 }
                 cpuChart.update();
+
+                for (var j = 0; j < data.blkdata.length; j++) {
+                    diskChart[data.blkdata[j].dev].scale.xLabels = data.timeline;
+
+                    for (var i = 0; i < data.blkdata[j].data[0].length; i++) {
+                        diskChart[data.blkdata[j].dev].datasets[0].points[i].value = data.blkdata[j].data[0][i];
+                        diskChart[data.blkdata[j].dev].datasets[1].points[i].value = data.blkdata[j].data[1][i];
+                    }
+
+                    diskChart[data.blkdata[j].dev].update();
+                }
+
+                for (var j = 0; j < data.netdata.length; j++) {
+                    netChart[data.netdata[j].dev].scale.xLabels = data.timeline;
+
+                    for (var i = 0; i < data.netdata[j].data[0].length; i++) {
+                        netChart[data.netdata[j].dev].datasets[0].points[i].value = data.netdata[j].data[0][i];
+                        netChart[data.netdata[j].dev].datasets[1].points[i].value = data.netdata[j].data[1][i];
+                    }
+
+                    netChart[data.netdata[j].dev].update();
+                }
             });
-        }
-
-{##}
-{#        $(function(f) {#}
-{#            window.setInterval('graph_usage()', 2000);#}
-{#        });#}
-
+        }, 6000);
     });
-
-
-
-
  </script>
 {% endblock %}

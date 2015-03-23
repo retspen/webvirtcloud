@@ -471,14 +471,14 @@ def inst_graph(request, compute_id, vname):
             datasets['cpu'].pop(0)
 
         for blk in blk_usage:
-            if cookies.get('hdd') == '{}' or not cookies.get('hdd') or not blk_usage:
+            if cookies.get('blk') == '{}' or not cookies.get('blk') or not blk_usage:
                 datasets_wr.append(0)
                 datasets_rd.append(0)
             else:
-                datasets['hdd'] = eval(cookies.get('hdd'))
+                datasets['blk'] = eval(cookies.get('blk'))
                 try:
-                    datasets_rd = datasets['hdd'][blk['dev']][0]
-                    datasets_wr = datasets['hdd'][blk['dev']][1]
+                    datasets_rd = datasets['blk'][blk['dev']][0]
+                    datasets_wr = datasets['blk'][blk['dev']][1]
                 except:
                     blk_error = True
 
@@ -518,14 +518,14 @@ def inst_graph(request, compute_id, vname):
             json_net.append({'dev': net['dev'], 'data': [datasets_rx, datasets_tx]})
             cookie_net[net['dev']] = [datasets_rx, datasets_tx]
 
-    data = json.dumps({'status': status, 'cpudata': datasets['cpu'], 'hdddata': json_blk, 'netdata': json_net, 'timeline':  datasets['timer']})
+    data = json.dumps({'status': status, 'cpudata': datasets['cpu'], 'blkdata': json_blk, 'netdata': json_net, 'timeline':  datasets['timer']})
 
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
     if status == 1:
         response.cookies['cpu'] = datasets['cpu']
         response.cookies['timer'] = datasets['timer']
-        response.cookies['hdd'] = cookie_blk
+        response.cookies['blk'] = cookie_blk
         response.cookies['net'] = cookie_net
     response.write(data)
     return response
