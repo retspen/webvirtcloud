@@ -16,6 +16,30 @@ def profile(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    error_messages = []
+    user = User.objects.get(id=request.user.id)
+
+    if request.method == 'POST':
+        if 'username' in request.POST:
+            username = request.POST.get('username', '')
+            email = request.POST.get('email', '')
+            user.first_name = username
+            user.email = email
+            user.save()
+            return HttpResponseRedirect(request.get_full_path())
+        if 'oldpasswd' in request.POST:
+            oldpasswd = request.POST.get('oldpasswd', '')
+            password1 = request.POST.get('passwd1', '')
+            password2 = request.POST.get('passwd2', '')
+            if password1 and password2 and password1 != password2:
+                error_messages.append("Passwords don't match")
+            if not user.check_password(oldpasswd):
+                error_messages.append("Old password is wrong!")
+            if not error_messages:
+                user.set_password(password1)
+                user.save()
+                return HttpResponseRedirect(request.get_full_path())
+
     return render(request, 'profile.html', locals())
 
 

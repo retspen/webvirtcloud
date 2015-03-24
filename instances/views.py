@@ -411,7 +411,7 @@ def instance(request, compute_id, vname):
     return render(request, 'instance.html', locals())
 
 
-def inst_status(request, compute_id, vname):
+def inst_status(request, host_id, vname):
     """
     :param request:
     :return:
@@ -420,7 +420,9 @@ def inst_status(request, compute_id, vname):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('login'))
 
-    compute = Compute.objects.get(id=compute_id)
+    compute = Compute.objects.get(id=host_id)
+    response = HttpResponse()
+    response['Content-Type'] = "text/javascript"
 
     try:
         conn = wvmInstance(compute.hostname,
@@ -428,14 +430,10 @@ def inst_status(request, compute_id, vname):
                            compute.password,
                            compute.type,
                            vname)
-        status = conn.get_status()
+        data = json.dumps({'status': conn.get_status()})
         conn.close()
     except libvirtError:
-        status = None
-
-    data = json.dumps({'status': status})
-    response = HttpResponse()
-    response['Content-Type'] = "text/javascript"
+        data = json.dumps({'error': 'Error 500'})
     response.write(data)
     return response
 

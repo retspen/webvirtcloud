@@ -347,9 +347,7 @@ class wvmInstance(wvmConnect):
             else:
                 rd_diff_usage = 0
                 wr_diff_usage = 0
-
             dev_usage.append({'dev': dev[1], 'rd': rd_diff_usage, 'wr': wr_diff_usage})
-
         return dev_usage
 
     def net_usage(self):
@@ -371,7 +369,6 @@ class wvmInstance(wvmConnect):
         else:
             for i, dev in enumerate(self.get_net_device()):
                 dev_usage.append({'dev': i, 'rx': 0, 'tx': 0})
-
         return dev_usage
 
     def get_telnet_port(self):
