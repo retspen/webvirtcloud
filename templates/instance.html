@@ -36,7 +36,7 @@
                     <div class="col-lg-12">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
-                            <ul class="nav nav-pills" role="tablist">
+                            <ul class="nav nav-pills" role="tablist" id="navbtn">
                                 <li role="presentation" class="active">
                                     <a href="#power" class="action-button" aria-controls="power" role="tab" data-toggle="tab">
                                         <span id="action-block" class="glyphicon glyphicon-off" aria-hidden="true"></span>
@@ -1002,8 +1002,8 @@
             });
         }, 10000);
     });
- </script>
- <script>
+</script>
+<script>
      window.setInterval(function get_status() {
          var status = {{ status }};
          $.getJSON('{% url 'inst_status' compute_id vname %}', function (data) {
@@ -1012,5 +1012,32 @@
              }
          })
      }, 2000);
- </script>
+</script>
+<script>
+    var hash = location.hash;
+    if (~$.inArray(hash, ['#poweron', '#poweroff', '#powercycle', '#suspend', '#resume'])) {
+        var btnsect = $('#navbtn>li>a');
+        $(btnsect).each(function () {
+            if ($(this).attr('href') === '#power') {
+                $(this).trigger('click');
+            }
+        });
+    }
+    if (~$.inArray(hash, ['#resize'])) {
+        var btnsect = $('#navbtn>li>a');
+        $(btnsect).each(function () {
+            if ($(this).attr('href') === '#resize') {
+                $(this).trigger('click');
+            }
+        });
+    }
+    if (~$.inArray(hash, ['#media', '#autostart', '#xmledit', '#vncedit'])) {
+        var btnsect = $('#navbtn>li>a');
+        $(btnsect).each(function () {
+            if ($(this).attr('href') === '#settings') {
+                $(this).trigger('click');
+            }
+        });
+    }
+</script>
 {% endblock %}

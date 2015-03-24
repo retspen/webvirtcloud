@@ -246,12 +246,21 @@ def instance(request, compute_id, vname):
                     conn.delete()
                 return HttpResponseRedirect(reverse('instances'))
 
-            if 'snapshot' in request.POST:
-                msg = _("New snapshot")
+            if 'resize' in request.POST:
+                msg = _("Resize")
                 addlogmsg(request.user.id, instance.id, msg)
-                name = request.POST.get('name', '')
-                conn.create_snapshot(name)
-                return HttpResponseRedirect(request.get_full_path() + '#istaceshapshosts')
+                vcpu = request.POST.get('vcpu', '')
+                cur_vcpu = request.POST.get('cur_vcpu', '')
+                memory = request.POST.get('memory', '')
+                memory_custom = request.POST.get('memory_custom', '')
+                if memory_custom:
+                    memory = memory_custom
+                cur_memory = request.POST.get('cur_memory', '')
+                cur_memory_custom = request.POST.get('cur_memory_custom', '')
+                if cur_memory_custom:
+                    cur_memory = cur_memory_custom
+                conn.resize(cur_memory, memory, cur_vcpu, vcpu)
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'umount_iso' in request.POST:
                 msg = _("Mount media")
@@ -259,7 +268,7 @@ def instance(request, compute_id, vname):
                 image = request.POST.get('path', '')
                 dev = request.POST.get('umount_iso', '')
                 conn.umount_iso(dev, image)
-                return HttpResponseRedirect(request.get_full_path() + '#instancemedia')
+                return HttpResponseRedirect(request.get_full_path() + '#media')
 
             if 'mount_iso' in request.POST:
                 msg = _("Umount media")
@@ -267,14 +276,21 @@ def instance(request, compute_id, vname):
                 image = request.POST.get('media', '')
                 dev = request.POST.get('mount_iso', '')
                 conn.mount_iso(dev, image)
-                return HttpResponseRedirect(request.get_full_path() + '#instancemedia')
+                return HttpResponseRedirect(request.get_full_path() + '#media')
+
+            if 'snapshot' in request.POST:
+                msg = _("New snapshot")
+                addlogmsg(request.user.id, instance.id, msg)
+                name = request.POST.get('name', '')
+                conn.create_snapshot(name)
+                return HttpResponseRedirect(request.get_full_path() + '#snapshot')
 
             if 'delete_snapshot' in request.POST:
                 msg = _("Delete snapshot")
                 addlogmsg(request.user.id, instance.id, msg)
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
-                return HttpResponseRedirect(request.get_full_path() + '#istaceshapshosts')
+                return HttpResponseRedirect(request.get_full_path() + '#snapshot')
 
             if 'revert_snapshot' in request.POST:
                 msg = _("Revert snapshot")
@@ -302,30 +318,13 @@ def instance(request, compute_id, vname):
                     msg = _("Set autostart")
                     addlogmsg(request.user.id, instance.id, msg)
                     conn.set_autostart(1)
-                    return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
+                    return HttpResponseRedirect(request.get_full_path() + '#autostart')
 
                 if 'unset_autostart' in request.POST:
                     msg = _("Unset autostart")
                     addlogmsg(request.user.id, instance.id, msg)
                     conn.set_autostart(0)
-                    return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
-
-                if 'resize' in request.POST:
-                    msg = _("Resize")
-                    addlogmsg(request.user.id, instance.id, msg)
-                    description = request.POST.get('description', '')
-                    vcpu = request.POST.get('vcpu', '')
-                    cur_vcpu = request.POST.get('cur_vcpu', '')
-                    memory = request.POST.get('memory', '')
-                    memory_custom = request.POST.get('memory_custom', '')
-                    if memory_custom:
-                        memory = memory_custom
-                    cur_memory = request.POST.get('cur_memory', '')
-                    cur_memory_custom = request.POST.get('cur_memory_custom', '')
-                    if cur_memory_custom:
-                        cur_memory = cur_memory_custom
-                    conn.resize(cur_memory, memory, cur_vcpu, vcpu)
-                    return HttpResponseRedirect(request.get_full_path() + '#instancesettings')
+                    return HttpResponseRedirect(request.get_full_path() + '#autostart')
 
                 if 'change_xml' in request.POST:
                     msg = _("Edit XML")
@@ -333,7 +332,7 @@ def instance(request, compute_id, vname):
                     exit_xml = request.POST.get('inst_xml', '')
                     if exit_xml:
                         conn._defineXML(exit_xml)
-                        return HttpResponseRedirect(request.get_full_path() + '#instancexml')
+                        return HttpResponseRedirect(request.get_full_path() + '#xmledit')
 
                 if 'set_console_passwd' in request.POST:
                     msg = _("Set VNC password")
@@ -353,7 +352,7 @@ def instance(request, compute_id, vname):
                             msg = _("Error setting console password. You should check that your instance have an graphic device.")
                             error_messages.append(msg)
                         else:
-                            return HttpResponseRedirect(request.get_full_path() + '#console_pass')
+                            return HttpResponseRedirect(request.get_full_path() + '#vncedit')
 
                 if 'set_console_keymap' in request.POST:
                     msg = _("Set VNC keymap")
@@ -364,14 +363,14 @@ def instance(request, compute_id, vname):
                         conn.set_console_keymap('')
                     else:
                         conn.set_console_keymap(keymap)
-                    return HttpResponseRedirect(request.get_full_path() + '#console_keymap')
+                    return HttpResponseRedirect(request.get_full_path() + '#vncedit')
 
                 if 'set_console_type' in request.POST:
                     msg = _("Set VNC type")
                     addlogmsg(request.user.id, instance.id, msg)
                     console_type = request.POST.get('console_type', '')
                     conn.set_console_type(console_type)
-                    return HttpResponseRedirect(request.get_full_path() + '#console_type')
+                    return HttpResponseRedirect(request.get_full_path() + '#vncedit')
 
                 if 'migrate' in request.POST:
                     msg = _("Migrate")
