@@ -60,15 +60,16 @@ def instances(request):
             if connection_manager.host_is_up(comp.type, comp.hostname):
                 try:
                     conn = wvmHostDetails(comp, comp.login, comp.password, comp.type)
-                    all_host_vms[comp.id, comp.name] = conn.get_host_instances()
-                    for vm, info in conn.get_host_instances().items():
-                        try:
-                            check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
-                            if check_uuid.uuid != info['uuid']:
+                    if conn.get_host_instances():
+                        all_host_vms[comp.id, comp.name] = conn.get_host_instances()
+                        for vm, info in conn.get_host_instances().items():
+                            try:
+                                check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
+                                if check_uuid.uuid != info['uuid']:
+                                    check_uuid.save()
+                            except Instance.DoesNotExist:
+                                check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
                                 check_uuid.save()
-                        except Instance.DoesNotExist:
-                            check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
-                            check_uuid.save()
                     conn.close()
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)
