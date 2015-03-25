@@ -31,6 +31,8 @@ def profile(request):
             oldpasswd = request.POST.get('oldpasswd', '')
             password1 = request.POST.get('passwd1', '')
             password2 = request.POST.get('passwd2', '')
+            if not password1 or not password2:
+                error_messages.append("Passwords didn't enter")
             if password1 and password2 and password1 != password2:
                 error_messages.append("Passwords don't match")
             if not user.check_password(oldpasswd):
@@ -74,7 +76,7 @@ def accounts(request):
             user_id = request.POST.get('user_id', '')
             user_pass = request.POST.get('user_pass', '')
             user_edit = User.objects.get(id=user_id)
-            user.password = user_pass
+            user_edit.set_password(user_pass)
             user_edit.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'block' in request.POST:
