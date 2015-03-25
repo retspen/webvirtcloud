@@ -448,18 +448,14 @@ def inst_graph(request, compute_id, vname):
         return HttpResponseRedirect(reverse('login'))
 
     datasets = {}
-    datasets_rd = []
-    datasets_wr = []
     json_blk = []
-    cookie_blk = {}
-    datasets_rx = []
-    datasets_tx = []
+    datasets_blk = {}
     json_net = []
-    cookie_net = {}
+    datasets_net = {}
+    cookies = {}
     points = 5
     curent_time = time.strftime("%H:%M:%S")
     compute = Compute.objects.get(id=compute_id)
-    cookies = request.COOKIES
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
 
@@ -479,12 +475,22 @@ def inst_graph(request, compute_id, vname):
         net_usage = conn.net_usage()
         conn.close()
 
-        if cookies.get('cpu') == '{}' or not cookies.get('cpu') or not cpu_usage:
-            datasets['cpu'] = [0]
-            datasets['timer'] = [curent_time]
+        try:
+            cookies['cpu'] = request.COOKIES['cpu']
+            cookies['blk'] = request.COOKIES['blk']
+            cookies['net'] = request.COOKIES['net']
+            cookies['timer'] = request.COOKIES['timer']
+        except KeyError:
+            cookies['cpu'] = None
+            cookies['blk'] = None
+            cookies['net'] = None
+
+        if not cookies['cpu']:
+            datasets['cpu'] = [0] * points
+            datasets['timer'] = [0] * points
         else:
-            datasets['cpu'] = eval(cookies.get('cpu'))
-            datasets['timer'] = eval(cookies.get('timer'))
+            datasets['cpu'] = eval(cookies['cpu'])
+            datasets['timer'] = eval(cookies['timer'])
 
         datasets['timer'].append(curent_time)
         datasets['cpu'].append(int(cpu_usage['cpu']))
@@ -493,11 +499,11 @@ def inst_graph(request, compute_id, vname):
         datasets['cpu'] = check_points(datasets['cpu'])
 
         for blk in blk_usage:
-            if cookies.get('blk') == '{}' or not cookies.get('blk') or not blk_usage:
-                datasets_wr.append(0)
-                datasets_rd.append(0)
+            if not cookies['blk']:
+                datasets_wr = [0] * points
+                datasets_rd = [0] * points
             else:
-                datasets['blk'] = eval(cookies.get('blk'))
+                datasets['blk'] = eval(cookies['blk'])
                 datasets_rd = datasets['blk'][blk['dev']][0]
                 datasets_wr = datasets['blk'][blk['dev']][1]
 
@@ -508,14 +514,14 @@ def inst_graph(request, compute_id, vname):
                 datasets_wr = check_points(datasets_wr)
 
             json_blk.append({'dev': blk['dev'], 'data': [datasets_rd, datasets_wr]})
-            cookie_blk[blk['dev']] = [datasets_rd, datasets_wr]
+            datasets_blk[blk['dev']] = [datasets_rd, datasets_wr]
 
         for net in net_usage:
-            if cookies.get('net') == '{}' or not cookies.get('net') or not net_usage:
-                datasets_rx.append(0)
-                datasets_tx.append(0)
+            if not cookies['net']:
+                datasets_rx = [0] * points
+                datasets_tx = [0] * points
             else:
-                datasets['net'] = eval(cookies.get('net'))
+                datasets['net'] = eval(cookies['net'])
                 datasets_rx = datasets['net'][net['dev']][0]
                 datasets_tx = datasets['net'][net['dev']][1]
 
@@ -526,14 +532,14 @@ def inst_graph(request, compute_id, vname):
                 datasets_tx = check_points(datasets_tx)
 
             json_net.append({'dev': net['dev'], 'data': [datasets_rx, datasets_tx]})
-            cookie_net[net['dev']] = [datasets_rx, datasets_tx]
+            datasets_net[net['dev']] = [datasets_rx, datasets_tx]
 
         data = json.dumps({'cpudata': datasets['cpu'], 'blkdata': json_blk, 'netdata': json_net, 'timeline':  datasets['timer']})
 
         response.cookies['cpu'] = datasets['cpu']
         response.cookies['timer'] = datasets['timer']
-        response.cookies['blk'] = cookie_blk
-        response.cookies['net'] = cookie_net
+        response.cookies['blk'] = datasets_blk
+        response.cookies['net'] = datasets_net
     except libvirtError:
         data = json.dumps({'error': 'Error 500'})
 

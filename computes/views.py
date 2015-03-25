@@ -195,10 +195,10 @@ def compute_graph(request, compute_id):
         cookies['cpu'] = None
         cookies['mem'] = None
 
-    if not cookies['cpu'] and not cookies['mem']:
-        datasets['cpu'] = [0]
-        datasets['mem'] = [0]
-        datasets['timer'] = [curent_time]
+    if not cookies['cpu'] or not cookies['mem']:
+        datasets['cpu'] = [0] * points
+        datasets['mem'] = [0] * points
+        datasets['timer'] = [0] * points
     else:
         datasets['cpu'] = eval(cookies['cpu'])
         datasets['mem'] = eval(cookies['mem'])
