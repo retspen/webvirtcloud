@@ -49,13 +49,13 @@
                                                         <td><a href="{% url 'instance' host.0 vm %}">{{ vm }}</a></td>
                                                         <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
                                                         <td>{% ifequal info.status 1 %}
-                                                                <p class="text-success">{% trans "Active" %}</p>
+                                                                <span class="text-success">{% trans "Active" %}</span>
                                                             {% endifequal %}
                                                             {% ifequal info.status 5 %}
-                                                                <p class="text-danger">{% trans "Off" %}</p>
+                                                                <span class="text-danger">{% trans "Off" %}</span>
                                                             {% endifequal %}
                                                             {% ifequal info.status 3 %}
-                                                               <p class="text-warning">{% trans "Suspend" %}</p>
+                                                                <span class="text-warning">{% trans "Suspend" %}</span>
                                                             {% endifequal %}
                                                         </td>
                                                         <td>{{ info.vcpu }}</td>
@@ -146,13 +146,13 @@
                                                 <tr>
                                                     <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a></td>
                                                     <td>{% ifequal vm.status 1 %}
-                                                            <p class="text-success">{% trans "Active" %}</p>
+                                                            <span class="text-success">{% trans "Active" %}</span>
                                                         {% endifequal %}
                                                         {% ifequal vm.status 5 %}
-                                                            <p class="text-danger">{% trans "Off" %}</p>
+                                                            <span class="text-danger">{% trans "Off" %}</span>
                                                         {% endifequal %}
                                                         {% ifequal vm.status 3 %}
-                                                           <p class="text-warning">{% trans "Suspend" %}</p>
+                                                            <span class="text-warning">{% trans "Suspend" %}</span>
                                                         {% endifequal %}
                                                     </td>
                                                     <td>{{ vm.vcpu }}</td>
