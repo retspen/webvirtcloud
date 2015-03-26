@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends "base_auth.html" %}
 {% load i18n %}
 {% block title %}{% trans "404" %}{% endblock %}
 {% block content %}
     <div class="row">
-        <div class="col-xs-12" id="error">
+        <div class="col-xs-12" style="text-align: center;">
             <h1>Oops!</h1>
 
             <p class="lead">{% trans "404 Not Found" %}</p>
