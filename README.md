@@ -26,7 +26,7 @@ sudo service nginx restart
 sudo service supervisor restart
 ```
 
-### Setup hypervisor
+### Setup libvirt and KVM on server
 
 ```bash
 wget -O - https://clck.ru/9Sz6S | sudo sh
