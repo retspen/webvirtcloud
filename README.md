@@ -31,3 +31,9 @@ sudo service supervisor restart
 ```bash
 wget -O - https://clck.ru/9Sz6S | sudo sh
 ```
+
+### Default credentials
+
+login: admin
+
+password: admin
