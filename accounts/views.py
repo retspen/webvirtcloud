@@ -122,7 +122,7 @@ def account(request, user_id):
     instances = Instance.objects.all()
 
     if user.username == request.user.username:
-         return HttpResponseRedirect(reverse('profile'))
+        return HttpResponseRedirect(reverse('profile'))
 
     if request.method == 'POST':
         if 'delete' in request.POST:

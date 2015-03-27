@@ -37,7 +37,7 @@ def computes(request):
                                  'type': compute.type,
                                  'login': compute.login,
                                  'password': compute.password
-                                })
+                                 })
         return compute_data
 
     error_messages = []

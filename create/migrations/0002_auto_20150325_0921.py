@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations
+
 
 def add_favors(apps, schema_editor):
     Flavor = apps.get_model("create", "Flavor")
@@ -17,6 +18,7 @@ def add_favors(apps, schema_editor):
     add_flavor.save()
     add_flavor = Flavor(label="xlarge", vcpu="8", memory="16384", disk="160")
     add_flavor.save()
+
 
 class Migration(migrations.Migration):
 

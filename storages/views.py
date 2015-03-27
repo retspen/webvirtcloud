@@ -132,7 +132,7 @@ def storage(request, compute_id, pool):
         if 'delete' in request.POST:
             try:
                 conn.delete()
-                return HttpResponseRedirect(reverse('storages', args=[host_id]))
+                return HttpResponseRedirect(reverse('storages', args=[compute_id]))
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
         if 'set_autostart' in request.POST:

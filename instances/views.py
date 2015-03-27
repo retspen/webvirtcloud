@@ -234,7 +234,7 @@ def instance(request, compute_id, vname):
                 conn.force_shutdown()
                 msg = _("Force Off")
                 addlogmsg(request.user.id, instance.id, msg)
-                return HttpResponseRedirect(request.get_full_path()  + '#powerforce')
+                return HttpResponseRedirect(request.get_full_path() + '#powerforce')
 
             if 'delete' in request.POST:
                 if conn.get_status() == 1:
@@ -547,7 +547,7 @@ def inst_graph(request, compute_id, vname):
             json_net.append({'dev': net['dev'], 'data': [datasets_rx, datasets_tx]})
             datasets_net[net['dev']] = [datasets_rx, datasets_tx]
 
-        data = json.dumps({'cpudata': datasets['cpu'], 'blkdata': json_blk, 'netdata': json_net, 'timeline':  datasets['timer']})
+        data = json.dumps({'cpudata': datasets['cpu'], 'blkdata': json_blk, 'netdata': json_net, 'timeline': datasets['timer']})
 
         response.cookies['cpu'] = datasets['cpu']
         response.cookies['timer'] = datasets['timer']
