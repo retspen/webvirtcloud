@@ -25,3 +25,9 @@ Restart services for running WebVirtCloud:
 sudo service nginx restart
 sudo service supervisor restart
 ```
+
+### Setup hypervisor
+
+```bash
+wget -O - https://clck.ru/9Sz6S | sudo sh
+```
