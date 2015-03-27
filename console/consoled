@@ -2,36 +2,36 @@
 
 import os
 import sys
+import django
 
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, '..', ''))
-# VENV_PATH = ROOT_PATH + '/venv/lib/python2.7/site-packages'
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
 CERT = DIR_PATH + '/cert.pem'
 
 if ROOT_PATH not in sys.path:
     sys.path.append(ROOT_PATH)
-# if VENV_PATH not in sys.path:
-# sys.path.append(VENV_PATH)
 
+django.setup()
+
+# VENV_PATH = ROOT_PATH + '/venv/lib/python2.7/site-packages'
+# if VENV_PATH not in sys.path:
+#     sys.path.append(VENV_PATH)
+
+import re
 import Cookie
 import socket
 from webvirtcloud.settings import WS_PORT
 from webvirtcloud.settings import WS_HOST
-
 from webvirtcloud.settings import WS_CERT
+from vrtManager.connection import CONN_SSH, CONN_SOCKET
+from tunnel import Tunnel
+
 if WS_CERT:
     CERT = WS_CERT
 
-from vrtManager.connection import CONN_SSH, CONN_SOCKET
-
-import re
-
-from tunnel import Tunnel
-
 try:
     from websockify import WebSocketProxy
-
     try:
         from websockify import ProxyRequestHandler
     except ImportError:
@@ -50,7 +50,7 @@ except ImportError:
 
 
 def get_connection_infos(token):
-    from instance.models import Instance
+    from instances.models import Instance
     from vrtManager.instance import wvmInstance
 
     try:

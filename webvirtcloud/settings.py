@@ -69,7 +69,7 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR,  'templates'),
 )
 
-# WebVirtCloud settings
+## WebVirtCloud settings
 
 # Wobsock port
 WS_PORT = 6080

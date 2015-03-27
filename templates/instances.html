@@ -215,7 +215,7 @@
                 </div>
 {% endblock %}
 {% block script %}
-<script src="{{ STATIC_URL }}/js/sortable.min.js"></script>
+<script src="{{ STATIC_URL }}js/sortable.min.js"></script>
 <script>
     function open_console(uuid) {
         window.open("{% url 'console' %}?token=" + uuid, "", "width=850,height=485");
