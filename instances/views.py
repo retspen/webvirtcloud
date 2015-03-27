@@ -91,7 +91,7 @@ def instances(request):
             if 'powercycle' in request.POST:
                 msg = _("Power Cycle")
                 conn.force_shutdown(name)
-                conn.start()
+                conn.start(name)
                 addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path())
             if 'poweroff' in request.POST:
