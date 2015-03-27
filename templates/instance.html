@@ -88,13 +88,18 @@
                                         <ul class="nav nav-tabs" role="tablist">
                                             {% ifequal status 1 %}
                                                 <li role="presentation" class="active">
+                                                    <a href="#poweroff" aria-controls="poweroff" role="tab" data-toggle="tab">
+                                                        {% trans "Power Off" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
                                                     <a href="#powercycle" aria-controls="powercycle" role="tab" data-toggle="tab">
                                                         {% trans "Power Cycle" %}
                                                     </a>
                                                 </li>
                                                 <li role="presentation">
-                                                    <a href="#poweroff" aria-controls="poweroff" role="tab" data-toggle="tab">
-                                                        {% trans "Power Off" %}
+                                                    <a href="#powerforce" aria-controls="powerforce" role="tab" data-toggle="tab">
+                                                        {% trans "Force Off" %}
                                                     </a>
                                                 </li>
                                                 {% if request.user.is_superuser %}
@@ -131,17 +136,24 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             {% ifequal status 1 %}
-                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="powercycle">
-                                                    <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="poweroff">
+                                                    <p>{% trans "This action sends an ACPI shutdown signal to the instance." %}</p>
+                                                     <form action="" method="post" role="form">{% csrf_token %}
+                                                        <input type="submit" name="poweroff" class="btn btn-lg btn-success pull-right" value="{% trans "Power Off" %}">
+                                                        <div class="clearfix"></div>
+                                                    </form>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powercycle">
+                                                    <p>{% trans "This action forcibly powers off and start the instance and may cause data corruption." %}</p>
                                                     <form action="" method="post" role="form">{% csrf_token %}
                                                         <input type="submit" name="powercycle" class="btn btn-lg btn-success pull-right" value="{% trans "Power Cycle" %}">
                                                         <div class="clearfix"></div>
                                                     </form>
                                                 </div>
-                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="poweroff">
-                                                    <p>{% trans "This action sends an ACPI shutdown signal to the instance." %}</p>
-                                                     <form action="" method="post" role="form">{% csrf_token %}
-                                                        <input type="submit" name="poweroff" class="btn btn-lg btn-success pull-right" value="{% trans "Power Off" %}">
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powerforce">
+                                                    <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
+                                                    <form action="" method="post" role="form">{% csrf_token %}
+                                                        <input type="submit" name="powerforce" class="btn btn-lg btn-success pull-right" value="{% trans "Force Off" %}">
                                                         <div class="clearfix"></div>
                                                     </form>
                                                 </div>

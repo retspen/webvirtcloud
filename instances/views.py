@@ -88,28 +88,34 @@ def instances(request):
                 addlogmsg(request.user.id, instance.id, msg)
                 conn.start(name)
                 return HttpResponseRedirect(request.get_full_path())
+
+            if 'poweroff' in request.POST:
+                msg = _("Power Off")
+                addlogmsg(request.user.id, instance.id, msg)
+                conn.shutdown(name)
+                return HttpResponseRedirect(request.get_full_path())
+
             if 'powercycle' in request.POST:
                 msg = _("Power Cycle")
                 conn.force_shutdown(name)
                 conn.start(name)
                 addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path())
-            if 'poweroff' in request.POST:
-                msg = _("Power Off")
-                addlogmsg(request.user.id, instance.id, msg)
-                conn.shutdown(name)
-                return HttpResponseRedirect(request.get_full_path())
+
             if request.user.is_superuser:
+
                 if 'suspend' in request.POST:
                     msg = _("Suspend")
                     addlogmsg(request.user.id, instance.id, msg)
                     conn.suspend(name)
                     return HttpResponseRedirect(request.get_full_path())
+
                 if 'resume' in request.POST:
                     msg = _("Resume")
                     addlogmsg(request.user.id, instance.id, msg)
                     conn.resume(name)
                     return HttpResponseRedirect(request.get_full_path())
+
         except libvirtError as lib_err:
             error_messages.append(lib_err)
             addlogmsg(request.user.id, instance.id, lib_err.message)
@@ -206,27 +212,31 @@ def instance(request, compute_id, vname):
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
+                conn.start()
                 msg = _("Power On")
                 addlogmsg(request.user.id, instance.id, msg)
-                conn.start()
                 return HttpResponseRedirect(request.get_full_path() + '#poweron')
 
             if 'powercycle' in request.POST:
-                msg = _("Power Cycle")
-                addlogmsg(request.user.id, instance.id, msg)
                 conn.force_shutdown()
                 conn.start()
+                msg = _("Power Cycle")
+                addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#powercycle')
 
             if 'poweroff' == request.POST.get('power', ''):
+                conn.shutdown()
                 msg = _("Power Off")
                 addlogmsg(request.user.id, instance.id, msg)
-                conn.shutdown()
                 return HttpResponseRedirect(request.get_full_path() + '#poweroff')
 
-            if 'delete' in request.POST:
-                msg = _("Destroy")
+            if 'powerforce' in request.POST:
+                conn.force_shutdown()
+                msg = _("Force Off")
                 addlogmsg(request.user.id, instance.id, msg)
+                return HttpResponseRedirect(request.get_full_path()  + '#powerforce')
+
+            if 'delete' in request.POST:
                 if conn.get_status() == 1:
                     conn.force_shutdown()
                 try:
@@ -235,6 +245,8 @@ def instance(request, compute_id, vname):
                     if request.POST.get('delete_disk', ''):
                         conn.delete_disk()
                 finally:
+                    msg = _("Destroy")
+                    addlogmsg(request.user.id, instance.id, msg)
                     if not request.user.is_superuser:
                         del_userinstance = UserInstance.objects.get(id=userinstace.id)
                         del_userinstance.delete()
@@ -248,8 +260,6 @@ def instance(request, compute_id, vname):
                 return HttpResponseRedirect(reverse('instances'))
 
             if 'resize' in request.POST:
-                msg = _("Resize")
-                addlogmsg(request.user.id, instance.id, msg)
                 vcpu = request.POST.get('vcpu', '')
                 cur_vcpu = request.POST.get('cur_vcpu', '')
                 memory = request.POST.get('memory', '')
@@ -261,83 +271,83 @@ def instance(request, compute_id, vname):
                 if cur_memory_custom:
                     cur_memory = cur_memory_custom
                 conn.resize(cur_memory, memory, cur_vcpu, vcpu)
+                msg = _("Resize")
+                addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'umount_iso' in request.POST:
-                msg = _("Mount media")
-                addlogmsg(request.user.id, instance.id, msg)
                 image = request.POST.get('path', '')
                 dev = request.POST.get('umount_iso', '')
                 conn.umount_iso(dev, image)
+                msg = _("Mount media")
+                addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#media')
 
             if 'mount_iso' in request.POST:
-                msg = _("Umount media")
-                addlogmsg(request.user.id, instance.id, msg)
                 image = request.POST.get('media', '')
                 dev = request.POST.get('mount_iso', '')
                 conn.mount_iso(dev, image)
+                msg = _("Umount media")
+                addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#media')
 
             if 'snapshot' in request.POST:
-                msg = _("New snapshot")
-                addlogmsg(request.user.id, instance.id, msg)
                 name = request.POST.get('name', '')
                 conn.create_snapshot(name)
+                msg = _("New snapshot")
+                addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#snapshot')
 
             if 'delete_snapshot' in request.POST:
-                msg = _("Delete snapshot")
-                addlogmsg(request.user.id, instance.id, msg)
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
+                msg = _("Delete snapshot")
+                addlogmsg(request.user.id, instance.id, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#snapshot')
 
             if 'revert_snapshot' in request.POST:
-                msg = _("Revert snapshot")
-                addlogmsg(request.user.id, instance.id, msg)
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_revert(snap_name)
                 msg = _("Successful revert snapshot: ")
                 msg += snap_name
                 messages.append(msg)
+                msg = _("Revert snapshot")
+                addlogmsg(request.user.id, instance.id, msg)
 
             if request.user.is_superuser:
                 if 'suspend' in request.POST:
+                    conn.suspend()
                     msg = _("Suspend")
                     addlogmsg(request.user.id, instance.id, msg)
-                    conn.suspend()
                     return HttpResponseRedirect(request.get_full_path() + '#resume')
 
                 if 'resume' in request.POST:
+                    conn.resume()
                     msg = _("Resume")
                     addlogmsg(request.user.id, instance.id, msg)
-                    conn.resume()
                     return HttpResponseRedirect(request.get_full_path() + '#suspend')
 
                 if 'set_autostart' in request.POST:
+                    conn.set_autostart(1)
                     msg = _("Set autostart")
                     addlogmsg(request.user.id, instance.id, msg)
-                    conn.set_autostart(1)
                     return HttpResponseRedirect(request.get_full_path() + '#autostart')
 
                 if 'unset_autostart' in request.POST:
+                    conn.set_autostart(0)
                     msg = _("Unset autostart")
                     addlogmsg(request.user.id, instance.id, msg)
-                    conn.set_autostart(0)
                     return HttpResponseRedirect(request.get_full_path() + '#autostart')
 
                 if 'change_xml' in request.POST:
-                    msg = _("Edit XML")
-                    addlogmsg(request.user.id, instance.id, msg)
                     exit_xml = request.POST.get('inst_xml', '')
                     if exit_xml:
                         conn._defineXML(exit_xml)
+                        msg = _("Edit XML")
+                        addlogmsg(request.user.id, instance.id, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#xmledit')
 
                 if 'set_console_passwd' in request.POST:
-                    msg = _("Set VNC password")
-                    addlogmsg(request.user.id, instance.id, msg)
                     if request.POST.get('auto_pass', ''):
                         passwd = ''.join([choice(letters + digits) for i in xrange(12)])
                     else:
@@ -353,29 +363,29 @@ def instance(request, compute_id, vname):
                             msg = _("Error setting console password. You should check that your instance have an graphic device.")
                             error_messages.append(msg)
                         else:
+                            msg = _("Set VNC password")
+                            addlogmsg(request.user.id, instance.id, msg)
                             return HttpResponseRedirect(request.get_full_path() + '#vncedit')
 
                 if 'set_console_keymap' in request.POST:
-                    msg = _("Set VNC keymap")
-                    addlogmsg(request.user.id, instance.id, msg)
                     keymap = request.POST.get('console_keymap', '')
                     clear = request.POST.get('clear_keymap', False)
                     if clear:
                         conn.set_console_keymap('')
                     else:
                         conn.set_console_keymap(keymap)
+                    msg = _("Set VNC keymap")
+                    addlogmsg(request.user.id, instance.id, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#vncedit')
 
                 if 'set_console_type' in request.POST:
-                    msg = _("Set VNC type")
-                    addlogmsg(request.user.id, instance.id, msg)
                     console_type = request.POST.get('console_type', '')
                     conn.set_console_type(console_type)
+                    msg = _("Set VNC type")
+                    addlogmsg(request.user.id, instance.id, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#vncedit')
 
                 if 'migrate' in request.POST:
-                    msg = _("Migrate")
-                    addlogmsg(request.user.id, instance.id, msg)
                     compute_id = request.POST.get('compute_id', '')
                     live = request.POST.get('live_migrate', False)
                     unsafe = request.POST.get('unsafe_migrate', False)
@@ -388,11 +398,11 @@ def instance(request, compute_id, vname):
                     conn_migrate.moveto(conn, vname, live, unsafe, xml_del)
                     conn_migrate.define_move(vname)
                     conn_migrate.close()
+                    msg = _("Migrate")
+                    addlogmsg(request.user.id, instance.id, msg)
                     return HttpResponseRedirect(reverse('instance', args=[compute_id, vname]))
 
                 if 'clone' in request.POST:
-                    msg = _("Clone")
-                    addlogmsg(request.user.id, instance.id, msg)
                     clone_data = {}
                     clone_data['name'] = request.POST.get('name', '')
 
@@ -401,6 +411,8 @@ def instance(request, compute_id, vname):
                             clone_data[post] = request.POST.get(post, '')
 
                     conn.clone_instance(clone_data)
+                    msg = _("Clone")
+                    addlogmsg(request.user.id, instance.id, msg)
                     return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
 
         conn.close()
