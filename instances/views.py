@@ -5,7 +5,7 @@ from random import choice
 from bisect import insort
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from computes.models import Compute
 from instances.models import Instance
@@ -134,7 +134,7 @@ def instance(request, compute_id, vname):
 
     error_messages = []
     messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
     computes = Compute.objects.all()
     computes_count = len(computes)
     keymaps = QEMU_KEYMAPS
@@ -161,7 +161,8 @@ def instance(request, compute_id, vname):
             else:
                 image = disk['image'] + "-clone"
             clone_disk.append(
-                {'dev': disk['dev'], 'storage': disk['storage'], 'image': image, 'format': disk['format']})
+                {'dev': disk['dev'], 'storage': disk['storage'],
+                 'image': image, 'format': disk['format']})
         return clone_disk
 
     try:
@@ -424,7 +425,7 @@ def instance(request, compute_id, vname):
     return render(request, 'instances/instance.html', locals())
 
 
-def inst_status(request, host_id, vname):
+def inst_status(request, compute_id, vname):
     """
     :param request:
     :return:
@@ -433,7 +434,7 @@ def inst_status(request, host_id, vname):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('login'))
 
-    compute = Compute.objects.get(id=host_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
 
@@ -468,7 +469,7 @@ def inst_graph(request, compute_id, vname):
     cookies = {}
     points = 5
     curent_time = time.strftime("%H:%M:%S")
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
 
@@ -547,7 +548,8 @@ def inst_graph(request, compute_id, vname):
             json_net.append({'dev': net['dev'], 'data': [datasets_rx, datasets_tx]})
             datasets_net[net['dev']] = [datasets_rx, datasets_tx]
 
-        data = json.dumps({'cpudata': datasets['cpu'], 'blkdata': json_blk, 'netdata': json_net, 'timeline': datasets['timer']})
+        data = json.dumps({'cpudata': datasets['cpu'], 'blkdata': json_blk,
+                           'netdata': json_net, 'timeline': datasets['timer']})
 
         response.cookies['cpu'] = datasets['cpu']
         response.cookies['timer'] = datasets['timer']

@@ -2,7 +2,7 @@ import time
 import json
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from computes.models import Compute
 from instances.models import Instance
 from accounts.models import UserInstance
@@ -143,7 +143,7 @@ def overview(request, compute_id):
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
         conn = wvmHostDetails(compute.hostname,
@@ -172,7 +172,7 @@ def compute_graph(request, compute_id):
     points = 5
     datasets = {}
     cookies = {}
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
     curent_time = time.strftime("%H:%M:%S")
 
     try:

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
@@ -29,7 +29,7 @@ def create_instance(request, compute_id):
     networks = []
     meta_prealloc = False
     computes = Compute.objects.all()
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
     flavors = Flavor.objects.filter().order_by('id')
 
     try:

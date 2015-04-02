@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from computes.models import Compute
@@ -21,7 +21,7 @@ def interfaces(request, compute_id):
 
     ifaces_all = []
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
         conn = wvmInterfaces(compute.hostname,
@@ -71,7 +71,7 @@ def interface(request, compute_id, iface):
 
     ifaces_all = []
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
         conn = wvmInterface(compute.hostname,

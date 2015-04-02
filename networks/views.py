@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
@@ -22,7 +22,7 @@ def networks(request, compute_id):
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
         conn = wvmNetworks(compute.hostname,
@@ -73,7 +73,7 @@ def network(request, compute_id, pool):
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
         conn = wvmNetwork(compute.hostname,

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from computes.models import Compute
@@ -21,7 +21,7 @@ def secrets(request, compute_id):
 
     secrets_all = []
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
         conn = wvmSecrets(compute.hostname,

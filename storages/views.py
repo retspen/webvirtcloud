@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
@@ -21,7 +21,7 @@ def storages(request, compute_id):
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
         conn = wvmStorages(compute.hostname,
@@ -85,7 +85,7 @@ def storage(request, compute_id, pool):
         destination.close()
 
     error_messages = []
-    compute = Compute.objects.get(id=compute_id)
+    compute = get_object_or_404(Compute, pk=compute_id)
     meta_prealloc = False
 
     try:
