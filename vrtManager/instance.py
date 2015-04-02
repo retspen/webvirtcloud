@@ -215,7 +215,8 @@ class wvmInstance(wvmConnect):
                         pass
                     finally:
                         result.append(
-                            {'dev': dev, 'image': volume, 'storage': storage, 'path': src_fl, 'format': disk_format, 'size': disk_size})
+                            {'dev': dev, 'image': volume, 'storage': storage, 'path': src_fl,
+                             'format': disk_format, 'size': disk_size})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)

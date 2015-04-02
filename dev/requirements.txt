@@ -1,4 +1,4 @@
-Django==1.7.7
+Django==1.8
 websockify==0.6.0
 pep8==1.6.2
 pyflakes==0.8.1
