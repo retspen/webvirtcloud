@@ -57,7 +57,7 @@ def networks(request, compute_id):
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
-    return render(request, 'networks.html', locals())
+    return render(request, 'networks/networks.html', locals())
 
 
 def network(request, compute_id, pool):
@@ -127,4 +127,4 @@ def network(request, compute_id, pool):
 
     conn.close()
 
-    return render(request, 'network.html', locals())
+    return render(request, 'networks/network.html', locals())

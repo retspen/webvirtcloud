@@ -120,7 +120,7 @@ def instances(request):
             error_messages.append(lib_err)
             addlogmsg(request.user.id, instance.id, lib_err.message)
 
-    return render(request, 'instances.html', locals())
+    return render(request, 'instances/instances.html', locals())
 
 
 def instance(request, compute_id, vname):
@@ -421,7 +421,7 @@ def instance(request, compute_id, vname):
         error_messages.append(lib_err.message)
         addlogmsg(request.user.id, instance.id, lib_err.message)
 
-    return render(request, 'instance.html', locals())
+    return render(request, 'instances/instance.html', locals())
 
 
 def inst_status(request, host_id, vname):

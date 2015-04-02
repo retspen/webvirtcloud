@@ -62,4 +62,4 @@ def secrets(request, compute_id):
     except libvirtError as err:
         error_messages.append(err)
 
-    return render(request, 'secrets.html', locals())
+    return render(request, 'secrets/secrets.html', locals())

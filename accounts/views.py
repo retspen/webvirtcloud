@@ -42,7 +42,7 @@ def profile(request):
                 user.save()
                 return HttpResponseRedirect(request.get_full_path())
 
-    return render(request, 'profile.html', locals())
+    return render(request, 'accounts/profile.html', locals())
 
 
 def accounts(request):
@@ -101,7 +101,7 @@ def accounts(request):
                 user_delete.delete()
             return HttpResponseRedirect(request.get_full_path())
 
-    return render(request, 'accounts.html', locals())
+    return render(request, 'accounts/accounts.html', locals())
 
 
 def account(request, user_id):
@@ -150,4 +150,4 @@ def account(request, user_id):
                 add_user_inst.save()
                 return HttpResponseRedirect(request.get_full_path())
 
-    return render(request, 'account.html', locals())
+    return render(request, 'accounts/account.html', locals())

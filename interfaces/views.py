@@ -54,7 +54,7 @@ def interfaces(request, compute_id):
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
-    return render(request, 'interfaces.html', locals())
+    return render(request, 'interfaces/interfaces.html', locals())
 
 
 def interface(request, compute_id, iface):
@@ -103,4 +103,4 @@ def interface(request, compute_id, iface):
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
-    return render(request, 'interface.html', locals())
+    return render(request, 'interfaces/interface.html', locals())

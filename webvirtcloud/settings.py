@@ -45,7 +45,7 @@ WSGI_APPLICATION = 'webvirtcloud.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'webvirtcloud.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -97,5 +97,4 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
 
 # keepalive interval and count for libvirt connections
 LIBVIRT_KEEPALIVE_INTERVAL = 5
-LIBVIRT_KEEPALIVE_COUNT    = 5
-
+LIBVIRT_KEEPALIVE_COUNT = 5

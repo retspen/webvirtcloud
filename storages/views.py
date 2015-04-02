@@ -65,7 +65,7 @@ def storages(request, compute_id):
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
-    return render(request, 'storages.html', locals())
+    return render(request, 'storages/storages.html', locals())
 
 
 def storage(request, compute_id, pool):
@@ -202,4 +202,4 @@ def storage(request, compute_id, pool):
                     error_messages.append(msg_err.as_text())
     conn.close()
 
-    return render(request, 'storage.html', locals())
+    return render(request, 'storages/storage.html', locals())

@@ -2,13 +2,13 @@
 {% load i18n %}
 {% block title %}{% trans "Storage" %} - {{ pool }}{% endblock %}
 {% block style %}
-    <link rel="stylesheet" href="{{ STATIC_URL }}/css/sortable-theme-bootstrap.css" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/sortable-theme-bootstrap.css" />
 {% endblock %}
 {% block content %}
            <!-- Page Heading -->
             <div class="row">
                 <div class="col-lg-12">
-                    {% include 'create_stg_vol_block.html' %}
+                    {% include 'storages/create_stg_vol_block.html' %}
                     <h1 class="page-header">{% trans "Storage:" %} {{ pool }}</h1>
                     <ol class="breadcrumb">
                         <li class="active">

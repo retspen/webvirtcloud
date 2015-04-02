@@ -27,4 +27,4 @@ def showlogs(request):
 
     logs = Logs.objects.all()
 
-    return render(request, 'showlogs.html', locals())
+    return render(request, 'logs/showlogs.html', locals())

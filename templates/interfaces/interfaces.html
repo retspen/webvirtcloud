@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Storages" %} - {{ compute.name }}{% endblock %}
+{% block title %}{% trans "Interfaces" %} - {{ compute.name }}{% endblock %}
 {% block content %}
            <!-- Page Heading -->
             <div class="row">
                 <div class="col-lg-12">
-                    {% include 'create_stg_block.html' %}
+                    {% include 'interfaces/create_iface_block.html' %}
                     <h1 class="page-header">{{ compute.name }}</h1>
                     <ol class="breadcrumb">
                         <li class="active">
                             <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
                         </li>
                         <li>
-                            <i class="fa fa-hdd-o"></i> {% trans "Storages" %}
+                            <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
                         </li>
                         <li>
                             <i class="fa fa-sitemap"></i> <a href="{% url 'networks' compute.id %}">{% trans "Networks" %}</a>
                         </li>
                         <li>
-                            <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
+                            <i class="fa fa-wifi"></i> {% trans "Interfaces" %}
                         </li>
                         <li>
                             <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
@@ -31,31 +31,30 @@
             {% include 'errors_block.html' %}
 
             <div class="row">
-                {% if not storages %}
+                {% if not  ifaces_all %}
                     <div class="col-lg-12">
                         <div class="alert alert-warning alert-dismissable">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Storages" %}
+                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Interfaces" %}
                         </div>
                     </div>
                 {% else %}
-                    {% for pool in storages %}
+                    {% for iface in ifaces_all %}
                         <div class="col-xs-12 col-sm-4">
-                            <div class="panel {% if pool.status %}panel-success{% else %}panel-danger{% endif %} panel-data">
+                            <div class="panel {% ifequal iface.state 1 %}panel-success{% else %}panel-danger{% endifequal %} panel-data">
                                 <div class="panel-heading">
-                                    <h3 class="panel-title"><a href="{% url 'storage' compute.id pool.name %}">{{ pool.name }}</a></h3>
+                                    <h3 class="panel-title"><a href="{% url 'interface' compute.id iface.name %}">{{ iface.name }}</a>
+                                    </h3>
                                 </div>
                                 <div class="panel-body">
                                     <div class="row">
                                         <div class="col-xs-4 col-sm-4">
                                             <p><strong>{% trans "Type:" %}</strong></p>
-                                            <p><strong>{% trans "Size:" %}</strong></p>
-                                            <p><strong>{% trans "Volumes:" %}</strong></p>
+                                            <p><strong>{% trans "MAC:" %}</strong></p>
                                         </div>
                                         <div class="col-xs-6 col-sm-7">
-                                            <p>{{ pool.type|upper }}</p>
-                                            <p>{{ pool.size|filesizeformat }}</p>
-                                            <p>{{ pool.volumes }}</p>
+                                            <p>{{ iface.type }}</p>
+                                            <p>{{ iface.mac }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -64,4 +63,31 @@
                     {% endfor %}
                 {% endif %}
             </div>
+{% endblock %}
+{% block script %}
+    <script>
+        $(document).ready(function () {
+            $('#itype').change(function (eventObject) {
+                if ($(this).val() == 'bridge') {
+                    $('.bridge_name_form_group').show();
+                } else {
+                    $('.bridge_name_form_group').hide();
+                }
+            }).change();
+            $('#ipv4').change(function (eventObject) {
+                if ($(this).val() == 'static') {
+                    $('.static_ipv4_form_group').show();
+                } else {
+                    $('.static_ipv4_form_group').hide();
+                }
+            }).change();
+            $('#ipv6').change(function (eventObject) {
+                if ($(this).val() == 'static') {
+                    $('.static_ipv6_form_group').show();
+                } else {
+                    $('.static_ipv6_form_group').hide();
+                }
+            }).change();
+        });
+    </script>
 {% endblock %}

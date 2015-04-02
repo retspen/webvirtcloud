@@ -127,7 +127,7 @@ def computes(request):
             else:
                 for msg_err in form.errors.values():
                     error_messages.append(msg_err.as_text())
-    return render(request, 'computes.html', locals())
+    return render(request, 'computes/computes.html', locals())
 
 
 def overview(request, compute_id):
@@ -157,7 +157,7 @@ def overview(request, compute_id):
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
-    return render(request, 'overview.html', locals())
+    return render(request, 'computes/overview.html', locals())
 
 
 def compute_graph(request, compute_id):
