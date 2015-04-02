@@ -137,4 +137,4 @@ def create_instance(request, compute_id):
                                 error_messages.append(lib_err)
         conn.close()
 
-    return render(request, 'create/create_instance.html', locals())
+    return render(request, 'create_instance.html', locals())
