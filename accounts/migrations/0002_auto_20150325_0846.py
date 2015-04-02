@@ -2,15 +2,12 @@
 from __future__ import unicode_literals
 
 from django.db import migrations
-from django.contrib.auth.models import User
 
 
-def add_admin(apps, schema_editor):
-    add_user = User.objects.create_user("admin", None, "admin")
-    add_user.is_active = True
-    add_user.is_superuser = True
-    add_user.is_staff = True
-    add_user.save()
+def add_useradmin(apps, schema_editor):
+    from django.contrib.auth.models import User
+    # Broken in Django 1.8
+    #User.objects.create_superuser("admin", None, "admin")
 
 
 class Migration(migrations.Migration):
@@ -20,5 +17,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(add_admin),
+        migrations.RunPython(add_useradmin),
     ]
