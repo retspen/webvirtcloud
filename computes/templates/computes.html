@@ -93,7 +93,7 @@
                                                             {% trans "Close" %}
                                                         </button>
                                                         <button type="submit" class="btn btn-primary" name="host_edit">
-                                                            {% trans "Edit" %}
+                                                            {% trans "Change" %}
                                                         </button>
                                                         </form>
                                                     </div>
@@ -130,7 +130,7 @@
                                                             {% trans "Close" %}
                                                         </button>
                                                         <button type="submit" class="btn btn-primary" name="host_edit">
-                                                            {% trans "Edit" %}
+                                                            {% trans "Change" %}
                                                         </button>
                                                         </form>
                                                     </div>
@@ -171,13 +171,13 @@
                                                         <button type="button" class="btn btn-default" data-dismiss="modal">
                                                             {% trans "Close" %}
                                                         </button>
-                                                        <button type="submit" class="btn btn-primary" name="host_tls_add">
-                                                            {% trans "Add" %}
+                                                        <button type="submit" class="btn btn-primary" name="host_edit">
+                                                            {% trans "Change" %}
                                                         </button>
                                                         </form>
                                                     </div>
-                                                    {% endifequal %}
-                                                    {% ifequal compute.type 4 %}
+                                                {% endifequal %}
+                                                {% ifequal compute.type 4 %}
                                                     <div class="modal-body">
                                                         <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                                             <div class="form-group">
@@ -195,12 +195,12 @@
                                                         <button type="button" class="btn btn-default" data-dismiss="modal">
                                                             {% trans "Close" %}
                                                         </button>
-                                                        <button type="submit" class="btn btn-primary" name="host_tls_add">
-                                                            {% trans "Add" %}
+                                                        <button type="submit" class="btn btn-primary" name="host_edit">
+                                                            {% trans "Change" %}
                                                         </button>
                                                         </form>
                                                     </div>
-                                                    {% endifequal %}
+                                                {% endifequal %}
                                             </div><!-- /.modal-content -->
                                         </div><!-- /.modal-dialog -->
                                     </div><!-- /.modal -->
