@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load staticfiles %}
 {% block title %}{% trans "Storage" %} - {{ pool }}{% endblock %}
 {% block style %}
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/sortable-theme-bootstrap.css" />
+    <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
 {% endblock %}
 {% block content %}
            <!-- Page Heading -->
@@ -186,7 +187,7 @@
             </div>
 {% endblock %}
 {% block script %}
-<script src="{{ STATIC_URL }}/js/sortable.min.js"></script>
+<script src="{% static "js/sortable.min.js" %}"></script>
 <script>
     $('.format-convert').hide();
     $(document).on('change', '.volume-convert', function () {

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load staticfiles %}
 {% block title %}{% trans "Overview" %} - {{ compute.name }}{% endblock %}
 {% block content %}
             <!-- Page Heading -->
@@ -81,7 +82,7 @@
             </div>
 {% endblock %}
 {% block script %}
-<script src="{{ STATIC_URL }}js/Chart.min.js"></script>
+<script src="{% static "js/Chart.min.js" %}"></script>
 <script>
     var cpuLineData = {
         labels : [0, 0, 0, 0, 0],

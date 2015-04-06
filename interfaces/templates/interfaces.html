@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load staticfiles %}
 {% block title %}{% trans "Interfaces" %} - {{ compute.name }}{% endblock %}
 {% block content %}
            <!-- Page Heading -->
@@ -65,29 +66,29 @@
             </div>
 {% endblock %}
 {% block script %}
-    <script>
-        $(document).ready(function () {
-            $('#itype').change(function (eventObject) {
-                if ($(this).val() == 'bridge') {
-                    $('.bridge_name_form_group').show();
-                } else {
-                    $('.bridge_name_form_group').hide();
-                }
-            }).change();
-            $('#ipv4').change(function (eventObject) {
-                if ($(this).val() == 'static') {
-                    $('.static_ipv4_form_group').show();
-                } else {
-                    $('.static_ipv4_form_group').hide();
-                }
-            }).change();
-            $('#ipv6').change(function (eventObject) {
-                if ($(this).val() == 'static') {
-                    $('.static_ipv6_form_group').show();
-                } else {
-                    $('.static_ipv6_form_group').hide();
-                }
-            }).change();
-        });
-    </script>
+<script>
+    $(document).ready(function () {
+        $('#itype').change(function (eventObject) {
+            if ($(this).val() == 'bridge') {
+                $('.bridge_name_form_group').show();
+            } else {
+                $('.bridge_name_form_group').hide();
+            }
+        }).change();
+        $('#ipv4').change(function (eventObject) {
+            if ($(this).val() == 'static') {
+                $('.static_ipv4_form_group').show();
+            } else {
+                $('.static_ipv4_form_group').hide();
+            }
+        }).change();
+        $('#ipv6').change(function (eventObject) {
+            if ($(this).val() == 'static') {
+                $('.static_ipv6_form_group').show();
+            } else {
+                $('.static_ipv6_form_group').hide();
+            }
+        }).change();
+    });
+</script>
 {% endblock %}

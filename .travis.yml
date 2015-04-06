@@ -6,7 +6,10 @@ env:
 install:
   - pip install -r dev/requirements.txt --use-mirrors
 script:
-  - pep8 --exclude=IPy.py --ignore=E501 vrtManager accounts computes console create instances interfaces networks secrets storages
-  - pyflakes vrtManager accounts computes console create instances interfaces networks secrets storages
+  - pep8 --exclude=IPy.py --ignore=E501 vrtManager accounts computes \
+                                        console create instances interfaces \
+                                        networks secrets storages
+  - pyflakes vrtManager accounts computes console create instances interfaces \
+             networks secrets storages
   - python manage.py migrate
   - python manage.py test --settings=webvirtcloud.settings-dev

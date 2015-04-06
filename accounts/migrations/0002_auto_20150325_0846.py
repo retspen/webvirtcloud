@@ -5,9 +5,10 @@ from django.db import migrations
 
 
 def add_useradmin(apps, schema_editor):
-    from django.contrib.auth.models import User
+    # from django.contrib.auth.models import User
     # Broken in Django 1.8
-    #User.objects.create_superuser("admin", None, "admin")
+    # User.objects.create_superuser("admin", None, "admin")
+    pass
 
 
 class Migration(migrations.Migration):
