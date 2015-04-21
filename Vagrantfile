@@ -3,7 +3,7 @@
 
 Vagrant.configure(2) do |config|
   config.vm.box = "chef/ubuntu-14.04"
-  config.vm.hostname = "webvirtmgr"
+  config.vm.hostname = "webvirtcloud"
   config.vm.network "private_network", ip: "192.168.33.10"
   config.vm.provision "shell", inline: <<-SHELL
      sudo sh /vagrant/dev/libvirt-bootstrap.sh
