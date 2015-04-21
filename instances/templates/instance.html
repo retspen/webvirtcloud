@@ -1051,10 +1051,32 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#media', '#autostart', '#xmledit', '#vncedit'])) {
+    if (~$.inArray(hash, ['#media', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#settings') {
+                $(this).trigger('click');
+            }
+        });
+
+        var btn = $('#settings>div>ul>li>a');
+        $(btn).each(function () {
+            if ($(this).attr('href') === hash) {
+                $(this).trigger('click');
+            }
+        });
+    }
+    if (~$.inArray(hash, ['#takesnapshot', '#restoresnapshot'])) {
+        var btnsect = $('#navbtn>li>a');
+        $(btnsect).each(function () {
+            if ($(this).attr('href') === '#snapshots') {
+                $(this).trigger('click');
+            }
+        });
+
+        var btn = $('#snapshots>div>ul>li>a');
+        $(btn).each(function () {
+            if ($(this).attr('href') === hash) {
                 $(this).trigger('click');
             }
         });

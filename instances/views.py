@@ -297,14 +297,14 @@ def instance(request, compute_id, vname):
                 conn.create_snapshot(name)
                 msg = _("New snapshot")
                 addlogmsg(request.user.id, instance.id, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#snapshot')
+                return HttpResponseRedirect(request.get_full_path() + '#takesnapshot')
 
             if 'delete_snapshot' in request.POST:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
                 msg = _("Delete snapshot")
                 addlogmsg(request.user.id, instance.id, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#snapshot')
+                return HttpResponseRedirect(request.get_full_path() + '#restoresnapshot')
 
             if 'revert_snapshot' in request.POST:
                 snap_name = request.POST.get('name', '')
@@ -366,7 +366,7 @@ def instance(request, compute_id, vname):
                         else:
                             msg = _("Set VNC password")
                             addlogmsg(request.user.id, instance.id, msg)
-                            return HttpResponseRedirect(request.get_full_path() + '#vncedit')
+                            return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
                 if 'set_console_keymap' in request.POST:
                     keymap = request.POST.get('console_keymap', '')
@@ -377,14 +377,14 @@ def instance(request, compute_id, vname):
                         conn.set_console_keymap(keymap)
                     msg = _("Set VNC keymap")
                     addlogmsg(request.user.id, instance.id, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#vncedit')
+                    return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
                 if 'set_console_type' in request.POST:
                     console_type = request.POST.get('console_type', '')
                     conn.set_console_type(console_type)
                     msg = _("Set VNC type")
                     addlogmsg(request.user.id, instance.id, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#vncedit')
+                    return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
                 if 'migrate' in request.POST:
                     compute_id = request.POST.get('compute_id', '')
