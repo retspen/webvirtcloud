@@ -3,12 +3,12 @@
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
                 <!-- Page Heading -->
+                 <div class="row">
+                    <h2 class="page-header">{{ vname }}</h2>
+                </div>
+<!--
                 <div class="row">
-                    <div class="col-lg-12">
-                        <h1 class="page-header">{{ vname }}</h1>
-                    </div>
-                    <h4 class="page-header">
-                        {% trans "Status:" %}
+                    <div class="col-sm-1 pull-right">
                         {% ifequal status 5 %}
                            <span class="text-danger">{% trans "Off" %}</span>
                         {% endifequal %}
@@ -18,16 +18,24 @@
                         {% ifequal status 3 %}
                             <span class="text-warning">{% trans "Suspend" %}</span>
                         {% endifequal %}
-                        {% trans "Vcpu:" %}
-                        {% if cur_vcpu %}{{ cur_vcpu }}{% else %}{{ vcpu }}{% endif %}
-                        {% trans "Ram:" %}
-                        {{ cur_memory }}{% trans "MB" %}
-                        {% trans "Disk:" %}
+                    </div>
+                    <div class="col-sm-1 pull-right">
+                        {% if cur_vcpu %}
+                            {{ cur_vcpu }} {% trans "Vcpu" %}
+                        {% else %} 
+                            {{ vcpu }} {% trans "Vcpu" %}
+                        {% endif %} 
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        {{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}
+                    </div>
+                    <div class="col-sm-2 pull-right">
                         {% for disk in disks %}
-                           {{ disk.size|filesizeformat }}
+                            {{ disk.size|filesizeformat }} {% trans "Disk" %}
                         {% endfor %}
-                    </h4>
+                    </div>
                 </div>
+-->
                 <!-- /.row -->
 
                 {% include 'errors_block.html' %}
@@ -328,7 +336,7 @@
                                                     <p>{% trans "This may take more than an hour, depending on how much content is on your droplet and how large the disk is." %}</p>
                                                     <form class="form-inline" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
-                                                            <div class="col-sm-6">
+                                                            <div class="col-sm-12">
                                                                 <input type="text" class="form-control input-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
                                                             </div>
                                                         </div>
@@ -716,7 +724,7 @@
                                                     <div class="panel-body">
                                                         <div class="flot-chart">
                                                             <div class="flot-chart-content" id="flot-moving-line-chart" style="padding: 0px; position: relative;">
-                                                                <canvas id="cpuChart" width="735" height="250"></canvas>
+                                                                <canvas id="cpuChart" width="735" height="160"></canvas>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -729,7 +737,7 @@
                                                         <div class="panel-body">
                                                             <div class="flot-chart">
                                                                 <div class="flot-chart-content" id="flot-moving-line-chart" style="padding: 0px; position: relative;">
-                                                                    <canvas id="netEth{{ forloop.counter0 }}Chart" width="735" height="250"></canvas>
+                                                                    <canvas id="netEth{{ forloop.counter0 }}Chart" width="735" height="160"></canvas>
                                                                     <span class="netIN">{% trans "In" %}</span>
                                                                     <span class="netOUT">{% trans "Out" %}</span>
                                                                 </div>
@@ -745,7 +753,7 @@
                                                         <div class="panel-body">
                                                             <div class="flot-chart">
                                                                 <div class="flot-chart-content" id="flot-moving-line-chart" style="padding: 0px; position: relative;">
-                                                                    <canvas id="blk{{ disk.dev }}Chart" width="735" height="250"></canvas>
+                                                                    <canvas id="blk{{ disk.dev }}Chart" width="735" height="160"></canvas>
                                                                     <span class="diskRD">{% trans "Read" %}</span>
                                                                     <span class="diskWR">{% trans "Write" %}</span>
                                                                 </div>

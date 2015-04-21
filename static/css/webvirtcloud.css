@@ -7,61 +7,12 @@
 /* Global Styles */
 
 body {
+    padding-top: 70px;
     background-color: #FFF;
 }
 
-#max-width-page {
+.container {
     max-width: 768px;
-}
-
-.side-nav {
-    background-color: #FFF;
-    font-size: 1.2em;
-}
-
-.side-nav li a:hover,
-.side-nav li a:focus {
-    color: #FFF;
-    background-color: #5CD062 !important;
-}
-
-.navbar-inverse {
-    background-color: #6F5499;
-    border-color: #6F5499;
-}
-
-.navbar-inverse .navbar-brand {
-    color: #FFF;
-    font-size: 2em;
-}
-
-.navbar-inverse .navbar-nav>li>a {
-    color: #767676;
-}
-
-.navbar-inverse .navbar-nav>li>a:focus,
-.navbar-inverse .navbar-nav>li>a:hover {
-    color: #FFF;
-    background-color: #5CD062;
-}
-
-.navbar-inverse .navbar-nav>.active>a, 
-.navbar-inverse .navbar-nav>.active>a:focus, 
-.navbar-inverse .navbar-nav>.active>a:hover {
-    color: #FFF;
-    background-color: #5CD062;
-}
-
-.top-nav>li>a {
-    color: #FFF6F6;
-}
-
-.top-nav>li>a:hover,
-.top-nav>li>a:focus, 
-.top-nav>.open>a,
-.top-nav>.open>a:hover, 
-.top-nav>.open>a:focus {
-    background-color: #5CD062;
 }
 
 .page-header {

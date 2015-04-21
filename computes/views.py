@@ -48,8 +48,8 @@ def computes(request):
         if 'host_del' in request.POST:
             compute_id = request.POST.get('host_id', '')
             try:
-                del_user_inst_on_host = UserInstance.objects.filter(compute_id=compute_id)
-                del_user_inst_on_host.save()
+                del_user_inst_on_host = UserInstance.objects.filter(instance__compute_id=compute_id)
+                del_user_inst_on_host.delete()
             finally:
                 try:
                     del_inst_on_host = Instance.objects.filter(compute_id=compute_id)

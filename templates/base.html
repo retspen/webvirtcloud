@@ -1,9 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-
+  <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,9 +12,6 @@
 
     <!-- Bootstrap Core CSS -->
     <link href="{% static "css/bootstrap.min.css" %}" rel="stylesheet">
-
-    <!-- SB admin CSS -->
-    <link href="{% static "css/sb-admin.css" %}" rel="stylesheet">
 
     <!-- WebVirtCloud CSS -->
     <link href="{% static "css/webvirtcloud.css" %}" rel="stylesheet">
@@ -33,37 +28,26 @@
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
         <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
+  </head>
 
-</head>
+  <body>
 
-<body>
+    {% include 'navbar.html' %}
 
-    <div id="wrapper">
+    <div class="container">
 
-        {% include 'navbar.html' %}
+    {% block content %}{% endblock %}
 
-        <div id="page-wrapper">
+    </div> <!-- /container -->
 
-            <div class="container-fluid">
 
-            {% block content %}{% endblock %}
-
-            </div>
-            <!-- /.container-fluid -->
-
-        </div>
-        <!-- /#page-wrapper -->
-
-    </div>
-    <!-- /#wrapper -->
-
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
     <!-- jQuery -->
     <script src="{% static "js/jquery.js" %}"></script>
-
     <!-- Bootstrap Core JavaScript -->
     <script src="{% static "js/bootstrap.min.js" %}"></script>
-
     {% block script %}{% endblock %}
-</body>
-
+  </body>
 </html>
