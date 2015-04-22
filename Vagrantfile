@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "chef/ubuntu-14.04"
+  config.vm.box = "ubuntu/trusty64"
   config.vm.hostname = "webvirtcloud"
   config.vm.network "private_network", ip: "192.168.33.10"
   config.vm.provision "shell", inline: <<-SHELL
