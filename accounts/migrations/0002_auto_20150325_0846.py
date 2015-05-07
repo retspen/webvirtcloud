@@ -5,10 +5,12 @@ from django.db import migrations
 
 
 def add_useradmin(apps, schema_editor):
-    # from django.contrib.auth.models import User
-    # Broken in Django 1.8
-    # User.objects.create_superuser("admin", None, "admin")
-    pass
+    from django.utils import timezone
+    from django.contrib.auth.models import User
+
+    User.objects.create_superuser('admin', None, 'admin',
+                                  last_login=timezone.now()
+                                  )
 
 
 class Migration(migrations.Migration):
