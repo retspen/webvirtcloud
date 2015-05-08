@@ -9,7 +9,7 @@ WebVirtMgr is a libvirt-based Web interface for managing virtual machines for ad
 ```bash
 sudo apt-get -y install git python-pip python-dev python-libvirt python-libxml2 nginx supervisor
 git clone https://github.com/retspen/webvirtcloud
-cd webvirtmgr
+cd webvirtcloud
 sudo pip install -r conf/requirements.txt
 python manage.py migrate
 sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
