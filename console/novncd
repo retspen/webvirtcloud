@@ -66,14 +66,15 @@ parser.add_option("-c",
 
 (options, args) = parser.parse_args()
 
-FORMAT="%(asctime)s - %(name)s - %(levelname)s : %(message)s"
+
+FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
 if options.debug:
-    logging.basicConfig(level=logging.DEBUG,format=FORMAT)
-    options.verbose=True
+    logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+    options.verbose = True
 elif options.verbose:
-    logging.basicConfig(level=logging.INFO,format=FORMAT)
+    logging.basicConfig(level=logging.INFO, format=FORMAT)
 else:
-    logging.basicConfig(level=logging.WARNING,format=FORMAT)
+    logging.basicConfig(level=logging.WARNING, format=FORMAT)
 
 try:
     from websockify import WebSocketProxy

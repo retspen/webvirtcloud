@@ -43,19 +43,19 @@
                     <h3 class="page-header">{% trans "Edit Password" %}</h3>
                     <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
                         <div class="form-group">
-                            <label class="col-sm-2 control-label">{% trans "Old password" %}</label>
+                            <label class="col-sm-2 control-label">{% trans "Old" %}</label>
                             <div class="col-sm-4">
                                 <input type="password" class="form-control" name="oldpasswd" value="">
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "New password" %}</label>
+                            <label class="col-sm-2 control-label">{% trans "New" %}</label>
                             <div class="col-sm-4">
                                 <input type="password" class="form-control" name="passwd1" value="">
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "Retry password" %}</label>
+                            <label class="col-sm-2 control-label">{% trans "Retry" %}</label>
                             <div class="col-sm-4">
                                 <input type="password" class="form-control" name="passwd2" value="">
                             </div>
