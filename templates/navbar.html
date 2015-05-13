@@ -19,7 +19,7 @@
                 </li>
                 {% if request.user.is_superuser %}
                     <li {% class_active request "^/compute" %}{% class_active request "^/create" %}>
-                        <a href="{% url 'computes' %}"><i class="fa fa-fw fa-tasks"></i> {% trans "Computes" %}</a>
+                        <a href="{% url 'computes' %}"><i class="fa fa-fw fa-server"></i> {% trans "Computes" %}</a>
                     </li>
                     <li {% class_active request "^/account" %}>
                         <a href="{% url 'accounts' %}"><i class="fa fa-fw fa-users"></i> {% trans "Users" %}</a>
@@ -31,10 +31,10 @@
               </ul>
               <ul class="nav navbar-nav navbar-right">
                 <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{{ request.user.username }} <span class="caret"></span></a>
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-fw fa-user"></i> {{ request.user.username }} <span class="caret"></span></a>
                   <ul class="dropdown-menu" role="menu">
                     <li>
-                        <a href="{% url 'profile' %}"><i class="fa fa-fw fa-user"></i> Profile</a>
+                        <a href="{% url 'profile' %}"><i class="fa fa-fw fa-pencil-square-o"></i> Profile</a>
                     </li>
                     <li class="divider"></li>
                     <li>
