@@ -9,6 +9,9 @@
                 <!-- Page Heading -->
                 <div class="row">
                     <div class="col-lg-12">
+                        {% if request.user.is_superuser %}
+                            {% include 'create_inst_block.html' %}
+                        {% endif %}
                         {% if all_host_vms %}
                             {% include 'create_inst_block.html' %}
                             <div class="pull-right search">

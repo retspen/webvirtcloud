@@ -48,10 +48,10 @@ def create_instance(request, compute_id):
 
     if conn:
         if not storages:
-            msg = _("You haven't defined have any storage pools")
+            msg = _("You haven't defined any storage pools")
             error_messages.append(msg)
         if not networks:
-            msg = _("You haven't defined have any network pools")
+            msg = _("You haven't defined any network pools")
             error_messages.append(msg)
 
         if request.method == 'POST':
