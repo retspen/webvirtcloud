@@ -1,10 +1,9 @@
 from django.db import models
-from instances.models import Instance
-from django.contrib.auth.models import User
+
 
 class Logs(models.Model):
-    user = models.ForeignKey(User)
-    instance = models.ForeignKey(Instance)
+    user = models.CharField(max_length=50)
+    instance = models.CharField(max_length=50)
     message = models.CharField(max_length=255)
     date = models.DateTimeField(auto_now=True)
 

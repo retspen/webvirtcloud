@@ -37,10 +37,10 @@
                                     {% for log in logs %}
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
-                                            <td><a href="{% url 'account' log.user.id %}">{{ log.user }}</a></td>
-                                            <td><a href="{% url 'instance' log.instance.compute.id log.instance %}">{{ log.instance }}</a></td>
+                                            <td>{{ log.user }}</a></td>
+                                            <td>{{ log.instance }}</a></td>
                                             <td>{{ log.message }}</td>
-                                            <td style="width:120px;">{{ log.date|date:"M d H:i:s" }}</td>
+                                            <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>

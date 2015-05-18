@@ -37,3 +37,10 @@ wget -O - https://clck.ru/9Sz6S | sudo sh
 login: admin
 
 password: admin
+
+
+### How To Update
+```bash
+$ python manage.py migrate
+$ sudo service supervisor restart
+```
