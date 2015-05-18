@@ -41,6 +41,7 @@ password: admin
 
 ### How To Update
 ```bash
+$ git pull
 $ python manage.py migrate
 $ sudo service supervisor restart
 ```
