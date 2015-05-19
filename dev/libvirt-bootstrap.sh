@@ -3,13 +3,13 @@
 # vim: softtabstop=4 shiftwidth=4 expandtab fenc=utf-8 spell spelllang=en cc=81
 #===============================================================================
 #
-#          FILE: bootstrap-webvirtmgr.sh
+#          FILE: libvirt-bootstrap.sh
 #
 #   DESCRIPTION: Bootstrap webvirtmgr installation for various distributions
 #
-#          BUGS: https://github.com/retspen/webvirtmgr-boostrap/issues
+#          BUGS: https://github.com/retspen/webvirtmgr/issues
 #
-#     COPYRIGHT: (c) 2013 by the WebVirtMgr Team
+#     COPYRIGHT: (c) 2015 by the WebVirtMgr Team
 #
 #       LICENSE: Apache 2.0
 #  ORGANIZATION: WebVirtMgr (webvirtmgr.net)

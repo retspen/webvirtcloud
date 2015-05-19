@@ -29,7 +29,7 @@ sudo service supervisor restart
 ### Setup libvirt and KVM on server
 
 ```bash
-wget -O - https://clck.ru/9Sz6S | sudo sh
+wget -O - https://clck.ru/9V9fH | sudo sh
 ```
 
 ### Default credentials
