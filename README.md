@@ -3,7 +3,7 @@
 
 ## Features
 
-* User can change root password (Test only Ubuntu)
+* User can change root password in Virtual Machine (Tested only Ubuntu)
 
 ### Description
 
