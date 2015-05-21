@@ -1,4 +1,4 @@
--r ../requirements.txt
+-r ../conf/requirements.txt
 pep8==1.6.2
 pyflakes==0.8.1
 pylint==1.4.3
