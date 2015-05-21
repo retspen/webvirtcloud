@@ -269,19 +269,22 @@ def instance(request, compute_id, vname):
                 passwd_hash = crypt.crypt(passwd, '$6$kgPoiREy')
                 data = {'passwd': passwd_hash, 'vname': vname}
 
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((compute.hostname, 16510))
-                s.send(json.dumps(data))
-                result = json.loads(s.recv(1024))
-                s.close()
+                if conn.get_status() == 5:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((compute.hostname, 16510))
+                    s.send(json.dumps(data))
+                    result = json.loads(s.recv(1024))
+                    s.close()
+                    msg = _("Reset root password")
+                    addlogmsg(request.user.username, instance.name, msg)
 
-                msg = _("Reset root password")
-                addlogmsg(request.user.username, instance.name, msg)
-
-                if result['return'] == 'success':
-                    messages.append(msg)
+                    if result['return'] == 'success':
+                        messages.append(msg)
+                    else:
+                        error_messages.append(msg)
                 else:
-                    error_messages(msg)
+                    msg = _("Please shutdow down your instance and then try again")
+                    error_messages.append(msg)
 
             if 'resize' in request.POST:
                 vcpu = request.POST.get('vcpu', '')
