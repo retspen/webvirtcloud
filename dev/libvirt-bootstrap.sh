@@ -408,15 +408,17 @@ install_centos_post() {
             curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf >> /etc/supervisor.conf
         else
             echoerror "Supervisor not found. Exiting..."
-        exit 1
-    else:
+            exit 1
+        fi
+    else
         if [ -f /etc/supervisord.conf ]; then
             curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd > /usr/local/bin/gstfsd
             chmod +x /usr/local/bin/gstfsd
             curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf > /etc/supervisor.d/gstfsd.ini
         else
             echoerror "Supervisor not found. Exiting..."
-        exit 1
+            exit 1
+        fi
     fi
     return 0
 }
@@ -487,7 +489,7 @@ install_fedora_post() {
         curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd > /usr/local/bin/gstfsd
         chmod +x /usr/local/bin/gstfsd
         curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf > /etc/supervisor.d/gstfsd.ini
-    else:
+    else
         echoerror "Supervisor not found. Exiting..."
         exit 1
     fi
@@ -548,7 +550,7 @@ install_opensuse_post() {
         curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd > /usr/local/bin/gstfsd
         chmod +x /usr/local/bin/gstfsd
         curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf > /etc/supervisor.d/gstfsd.ini
-    else:
+    else
         echoerror "Supervisor not found. Exiting..."
         exit 1
     fi
@@ -581,7 +583,7 @@ daemons_running_opensuse() {
 #
 install_ubuntu() {
     apt-get update || return 1
-    apt-get -y install kvm libvirt-bin bridge-utils sasl2-bin python-guestfs || return 1
+    apt-get -y install kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     return 0
 }
 
@@ -610,11 +612,11 @@ install_ubuntu_post() {
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
         exit 1
     fi
-    if [ -f /etc/supervisor/supervisor.conf ]; then
+    if [ -f /etc/supervisor/supervisord.conf ]; then
         wget -O /usr/local/bin/gstfsd https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd
         chmod +x /usr/local/bin/gstfsd
         wget -O /etc/supervisor/conf.d/gstfsd.conf https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf
-    else:
+    else
         echoerror "Supervisor not found. Exiting..."
         exit 1
     fi
@@ -627,7 +629,7 @@ daemons_running_ubuntu() {
         service libvirt-bin stop > /dev/null 2>&1
         service libvirt-bin start
     fi
-    if [ -f /etc/supervisor/supervisord.conf ]; then
+    if [ -f /etc/init.d/supervisor ]; then
         # Still in SysV init!?
         service supervisor stop > /dev/null 2>&1
         service supervisor start
@@ -681,11 +683,11 @@ install_debian_post() {
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
         exit 1
     fi
-    if [ -f /etc/supervisor/supervisor.conf ]; then
+    if [ -f /etc/supervisor/supervisord.conf ]; then
         wget -O /usr/local/bin/gstfsd https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd
         chmod +x /usr/local/bin/gstfsd
         wget -O /etc/supervisor/conf.d/gstfsd.conf https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf
-    else:
+    else
         echoerror "Supervisor not found. Exiting..."
         exit 1
     fi
@@ -702,7 +704,7 @@ daemons_running_debian() {
         /etc/init.d/$LIBVIRTSVC stop > /dev/null 2>&1
         /etc/init.d/$LIBVIRTSVC start
     fi
-    if [ -f /etc/supervisor/supervisord.conf ]; then
+    if [ -f /etc/init.d/supervisor ]; then
         service supervisor stop > /dev/null 2>&1
         service supervisor start
     fi
