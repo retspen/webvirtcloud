@@ -1,8 +1,13 @@
-## WebVirtCloud
+## WebVirtCloud Beta
+
+
+## Features
+
+* User can change root password (Test only Ubuntu)
 
 ### Description
 
-WebVirtMgr is a libvirt-based Web interface for managing virtual machines for admins and users. It allows you to create and configure new domains, and adjust a domain's resource allocation. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported. 
+WebVirtMgr is a libvirt-based Web interface for managing virtual machines. It can delegate Virtual Machine's to users. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported.
 
 ### Install WebVirtCloud panel
 

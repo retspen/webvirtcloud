@@ -1,5 +1,7 @@
 import time
 import json
+import socket
+import crypt
 from string import letters, digits
 from random import choice
 from bisect import insort
@@ -261,6 +263,29 @@ def instance(request, compute_id, vname):
                     conn.delete()
                 return HttpResponseRedirect(reverse('instances'))
 
+            if 'rootpasswd' in request.POST:
+                passwd = request.POST.get('passwd', '')
+
+                passwd_hash = crypt.crypt(passwd, '$6$kgPoiREy')
+                data = {'passwd': passwd_hash, 'vname': vname}
+
+                if conn.get_status() == 5:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((compute.hostname, 16510))
+                    s.send(json.dumps(data))
+                    result = json.loads(s.recv(1024))
+                    s.close()
+                    msg = _("Reset root password")
+                    addlogmsg(request.user.username, instance.name, msg)
+
+                    if result['return'] == 'success':
+                        messages.append(msg)
+                    else:
+                        error_messages.append(msg)
+                else:
+                    msg = _("Please shutdow down your instance and then try again")
+                    error_messages.append(msg)
+
             if 'resize' in request.POST:
                 vcpu = request.POST.get('vcpu', '')
                 cur_vcpu = request.POST.get('cur_vcpu', '')
@@ -298,7 +323,7 @@ def instance(request, compute_id, vname):
                 conn.create_snapshot(name)
                 msg = _("New snapshot")
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#takesnapshot')
+                return HttpResponseRedirect(request.get_full_path() + '#restoresnapshot')
 
             if 'delete_snapshot' in request.POST:
                 snap_name = request.POST.get('name', '')
