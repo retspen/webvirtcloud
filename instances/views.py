@@ -47,7 +47,7 @@ def instances(request):
     computes = Compute.objects.all()
 
     if not request.user.is_superuser:
-        user_instances = UserInstance.objects.all()
+        user_instances = UserInstance.objects.filter(user_id=request.user.id)
         for usr_inst in user_instances:
             if connection_manager.host_is_up(usr_inst.instance.compute.type,
                                              usr_inst.instance.compute.hostname):
