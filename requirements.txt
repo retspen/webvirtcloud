@@ -1,3 +1,0 @@
-Django==1.8
-websockify==0.6.0
-gunicorn==19.3.0

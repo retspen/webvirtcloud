@@ -1,0 +1,14 @@
+{% if messages %}
+    {% for message in messages %}
+        <!-- Success Messages -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="alert alert-success alert-dismissible" role="susses">
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  <strong>Success:</strong> {{ message }}
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+    {% endfor %}
+{% endif %}
