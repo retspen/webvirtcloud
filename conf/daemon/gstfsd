@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+#
+# gstfsd - WebVirtCloud daemon for managing VM's filesystem
+#
 
 import SocketServer
 import json

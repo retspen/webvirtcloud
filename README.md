@@ -3,7 +3,17 @@
 
 ## Features
 
-* User can change root password in Virtual Machine (Tested only Ubuntu)
+* User can add SSH public key to root in Instance (Tested only Ubuntu)
+* User can change root password in Instance (Tested only Ubuntu)
+
+### Warning!!!
+
+How to update <code>gstfsd</code> daemon on hypervior:
+
+```bash
+wget -O - https://clck.ru/9VMRH | sudo tee -a /usr/local/bin/gstfsd
+sudo service supervisor restart
+```
 
 ### Description
 
@@ -46,7 +56,7 @@ password: admin
 
 ### How To Update
 ```bash
-$ git pull
-$ python manage.py migrate
-$ sudo service supervisor restart
+git pull
+python manage.py migrate
+sudo service supervisor restart
 ```
