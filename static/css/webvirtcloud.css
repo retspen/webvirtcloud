@@ -129,3 +129,7 @@ p {
     border-width: 0 0 0 1em;
     padding: 0 0.3em;
 }
+.keyselect {
+    display: inline;
+    min-width: 250px;
+}

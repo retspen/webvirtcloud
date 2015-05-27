@@ -11,7 +11,7 @@ from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from computes.models import Compute
 from instances.models import Instance
-from accounts.models import UserInstance
+from accounts.models import UserInstance, UserSSHKey
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
@@ -139,6 +139,7 @@ def instance(request, compute_id, vname):
     compute = get_object_or_404(Compute, pk=compute_id)
     computes = Compute.objects.all()
     computes_count = len(computes)
+    publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     keymaps = QEMU_KEYMAPS
     console_types = QEMU_CONSOLE_TYPES
     try:
@@ -265,9 +266,8 @@ def instance(request, compute_id, vname):
 
             if 'rootpasswd' in request.POST:
                 passwd = request.POST.get('passwd', '')
-
                 passwd_hash = crypt.crypt(passwd, '$6$kgPoiREy')
-                data = {'passwd': passwd_hash, 'vname': vname}
+                data = {'action': 'password', 'passwd': passwd_hash, 'vname': vname}
 
                 if conn.get_status() == 5:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -276,6 +276,28 @@ def instance(request, compute_id, vname):
                     result = json.loads(s.recv(1024))
                     s.close()
                     msg = _("Reset root password")
+                    addlogmsg(request.user.username, instance.name, msg)
+
+                    if result['return'] == 'success':
+                        messages.append(msg)
+                    else:
+                        error_messages.append(msg)
+                else:
+                    msg = _("Please shutdow down your instance and then try again")
+                    error_messages.append(msg)
+
+            if 'addpublickey' in request.POST:
+                sshkeyid = request.POST.get('sshkeyid', '')
+                publickey = UserSSHKey.objects.get(id=sshkeyid)
+                data = {'action': 'publickey', 'key': publickey.keypublic, 'vname': vname}
+
+                if conn.get_status() == 5:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((compute.hostname, 16510))
+                    s.send(json.dumps(data))
+                    result = json.loads(s.recv(1024))
+                    s.close()
+                    msg = _("Installed new ssh public key %s" % publickey.keyname)
                     addlogmsg(request.user.username, instance.name, msg)
 
                     if result['return'] == 'success':

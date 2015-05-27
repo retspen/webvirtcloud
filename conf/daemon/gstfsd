@@ -29,13 +29,21 @@ class MyTCPServerHandler(SocketServer.BaseRequestHandler):
                 try:
                     gfs.mount(part, '/')
                     if gfs.is_file('/etc/shadow'):
-                        file_shadow = gfs.cat('/etc/shadow')
-                        new_root_hash = "root:" + data['passwd'] + ":"
-                        file_shadow_new = re.sub('^root:.*?:', new_root_hash, file_shadow)
-                        gfs.write("/etc/shadow", file_shadow_new)
-                        gfs.chmod(640, '/etc/shadow')
-                        gfs.umount(part)
-                        self.request.sendall(json.dumps({'return': 'success'}))
+                        if data['action'] == 'password':
+                            file_shadow = gfs.cat('/etc/shadow')
+                            new_root_hash = "root:" + data['passwd'] + ":"
+                            file_shadow_new = re.sub('^root:.*?:', new_root_hash, file_shadow)
+                            gfs.write('/etc/shadow', file_shadow_new)
+                            gfs.chmod(640, '/etc/shadow')
+                            self.request.sendall(json.dumps({'return': 'success'}))
+                        if data['action'] == 'publickey':
+                            if not gfs.is_dir('/root/.ssh'):
+                                gfs.mkdir ('/root/.ssh')
+                                gfs.chmod(0700, "/root/.ssh")
+                            gfs.write('/root/.ssh/authorized_keys', data['key'])
+                            gfs.chmod(0600, '/root/.ssh/authorized_keys')
+                            self.request.sendall(json.dumps({'return': 'success'}))
+                    gfs.umount(part)
                 except RuntimeError:
                     pass
             gfs.shutdown()
