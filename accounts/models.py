@@ -11,3 +11,12 @@ class UserInstance(models.Model):
 
     def __unicode__(self):
         return self.instance.name
+
+
+class UserSSHKey(models.Model):
+    user = models.ForeignKey(User)
+    keyname = models.CharField(max_length=25)
+    keypublic = models.CharField(max_length=500)
+
+    def __unicode__(self):
+        return self.keyname

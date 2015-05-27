@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
-from accounts.models import UserInstance
+from accounts.models import UserInstance, UserSSHKey
 from instances.models import Instance
 from accounts.forms import UserAddForm
 
@@ -18,6 +18,7 @@ def profile(request):
 
     error_messages = []
     user = User.objects.get(id=request.user.id)
+    publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
 
     if request.method == 'POST':
         if 'username' in request.POST:
@@ -41,7 +42,25 @@ def profile(request):
                 user.set_password(password1)
                 user.save()
                 return HttpResponseRedirect(request.get_full_path())
-
+        if 'keyname' in request.POST:
+            keyname = request.POST.get('keyname', '')
+            keypublic = request.POST.get('keypublic', '')
+            for key in publickeys:
+                if keyname == key.keyname:
+                    msg = _("Key name already exist")
+                    error_messages.append(msg)
+                if keypublic == key.keypublic:
+                    msg = _("Public key already exist")
+                    error_messages.append(msg)
+            if not error_messages:
+                addkeypublic = UserSSHKey(user_id=request.user.id, keyname=keyname, keypublic=keypublic)
+                addkeypublic.save()
+                return HttpResponseRedirect(request.get_full_path())
+        if 'keydelete' in request.POST:
+            keyid = request.POST.get('keyid', '')
+            delkeypublic = UserSSHKey.objects.get(id=keyid)
+            delkeypublic.delete()
+            return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
 
 

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load tags_fingerprint %}
 {% block title %}{% trans "Profile" %}{% endblock %}
 {% block content %}
             <!-- Page Heading -->
@@ -63,6 +64,49 @@
                         <div class="form-group">
                             <div class="col-sm-offset-2 col-sm-10">
                                 <button type="submit" class="btn btn-primary">{% trans "Change" %}</button>
+                            </div>
+                        </div>
+                    </form>
+                    <h3 class="page-header">{% trans "SSH Keys" %}</h3>
+                    {% if publickeys %}
+                        <div class="col-lg-12">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <tbody style="text-align: center;">
+                                    {% for key in publickeys %}
+                                        <tr>
+                                            <td>{{ key.keyname }} ({% ssh_to_fingerprint key.keypublic %})</td>
+                                             <td>
+                                                <form action="" method="post" role="form">{% csrf_token %}
+                                                    <input type="hidden" name="keyid" value="{{ key.id }}"/>
+                                                    <button type="submit" class="btn btn-sm btn-default" name="keydelete" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <span class="glyphicon glyphicon-trash"></span>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
+                        <div class="form-group bridge_name_form_group_dhcp">
+                            <label class="col-sm-2 control-label">{% trans "Retry" %}</label>
+                            <div class="col-sm-4">
+                                <input type="text" class="form-control" name="keyname" placeholder="{% trans "Enter Name" %}">
+                            </div>
+                        </div>
+                        <div class="form-group bridge_name_form_group_dhcp">
+                            <label class="col-sm-2 control-label">{% trans "Retry" %}</label>
+                            <div class="col-sm-8">
+                                <textarea name="keypublic" class="form-control" rows="6" placeholder="{% trans "Enter Public Key" %}"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-offset-2 col-sm-10">
+                                <button type="submit" class="btn btn-primary">{% trans "Create" %}</button>
                             </div>
                         </div>
                     </form>
