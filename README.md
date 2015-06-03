@@ -8,7 +8,7 @@
 
 ### Warning!!!
 
-How to update <code>gstfsd</code> daemon on hypervior:
+How to update <code>gstfsd</code> daemon on hypervisor:
 
 ```bash
 wget -O - https://clck.ru/9VMRH | sudo tee -a /usr/local/bin/gstfsd
