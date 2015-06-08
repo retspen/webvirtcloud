@@ -23,7 +23,7 @@ class MyTCPServerHandler(SocketServer.BaseRequestHandler):
         data = json.loads(self.request.recv(1024).strip())
 
         # GuestFS
-        gfs = guestfs.GuestFS (python_return_dict=True)
+        gfs = guestfs.GuestFS(python_return_dict=True)
         try:
             gfs.add_domain(data['vname'])
             gfs.launch()
@@ -41,7 +41,7 @@ class MyTCPServerHandler(SocketServer.BaseRequestHandler):
                             self.request.sendall(json.dumps({'return': 'success'}))
                         if data['action'] == 'publickey':
                             if not gfs.is_dir('/root/.ssh'):
-                                gfs.mkdir ('/root/.ssh')
+                                gfs.mkdir('/root/.ssh')
                                 gfs.chmod(0700, "/root/.ssh")
                             gfs.write('/root/.ssh/authorized_keys', data['key'])
                             gfs.chmod(0600, '/root/.ssh/authorized_keys')
