@@ -10,7 +10,9 @@ Vagrant.configure(2) do |config|
      sudo sed -i 's/auth_tcp = \"sasl\"/auth_tcp = \"none\"/g' /etc/libvirt/libvirtd.conf
      sudo service libvirt-bin restart
      sudo adduser vagrant libvirtd
-     sudo apt-get -y install python-pip python-dev python-libvirt python-libxml2
-     sudo pip install -r /vagrant/dev/requirements.txt
+     sudo apt-get -y install python-virtualenv python-dev libxml2-dev libvirt-dev zlib1g-dev
+     virtualenv /vagrant/venv
+     source /vagrant/venv/bin/activate
+     pip install -r /vagrant/dev/requirements.txt
   SHELL
 end

@@ -22,16 +22,18 @@ WebVirtMgr is a libvirt-based Web interface for managing virtual machines. It ca
 ### Install WebVirtCloud panel
 
 ```bash
-sudo apt-get -y install git python-pip python-dev python-libvirt python-libxml2 nginx supervisor
+sudo apt-get -y install git python-virtualenv python-dev libxml2-dev libvirt-dev zlib1g-dev nginx supervisor
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
-sudo pip install -r conf/requirements.txt
+virtualenv venv
+source venv/bin/activate
+pip install -r conf/requirements.txt
 python manage.py migrate
 sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
 sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d
 cd ..
-sudo mv webvirtcloud /var/www/
-sudo chown -R www-data:www-data /var/www/webvirtcloud
+sudo mv webvirtcloud /srv
+sudo chown -R www-data:www-data /srv/webvirtcloud
 ```
 
 Restart services for running WebVirtCloud:
