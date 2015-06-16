@@ -12,7 +12,7 @@
                         {% if request.user.is_superuser %}
                             {% include 'create_inst_block.html' %}
                         {% endif %}
-                        {% if all_host_vms %}
+                        {% if all_host_vms or all_user_vms %}
                             <div class="pull-right search">
                                 <input id="filter" class="form-control" type="text" placeholder="Search">
                             </div>
