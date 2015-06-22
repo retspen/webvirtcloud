@@ -10,7 +10,7 @@ SECRET_KEY = '4y(f4rfqc6f2!i8_vfuu)kav6tdv5#sc=n%o451dm+th0&3uci'
 
 DEBUG = False
 
-TEMPLATE_DEBUG = False
+TEMPLATE_DEBUG = DEBUG
 
 ALLOWED_HOSTS = ['*']
 
