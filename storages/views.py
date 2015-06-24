@@ -77,6 +77,9 @@ def storage(request, compute_id, pool):
     if not request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
 
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+
     def handle_uploaded_file(path, f_name):
         target = path + '/' + str(f_name)
         destination = open(target, 'wb+')
