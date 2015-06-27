@@ -35,6 +35,7 @@ virtualenv venv
 source venv/bin/activate
 pip install -r conf/requirements.txt
 python manage.py migrate
+sudo chown -R www-data:www-data /srv/webvirtcloud
 ```
 
 Restart services for running WebVirtCloud:
