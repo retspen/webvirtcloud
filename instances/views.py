@@ -228,7 +228,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#powercycle')
 
-            if 'poweroff' == request.POST.get('power', ''):
+            if 'poweroff' in request.POST:
                 conn.shutdown()
                 msg = _("Power Off")
                 addlogmsg(request.user.username, instance.name, msg)
