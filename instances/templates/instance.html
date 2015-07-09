@@ -4,39 +4,43 @@
 {% block content %}
                 <!-- Page Heading -->
                  <div class="row">
-                    <h2 class="page-header">{{ vname }}</h2>
+                    <table>
+                        <tr>
+                            <td><h3>{{ vname }}</h3></td>
+                            <td>
+                                {% ifequal status 5 %}
+                                   <span class="label label-danger">{% trans "Off" %}</span>
+                                {% endifequal %}
+                                {% ifequal status 1 %}
+                                    <span class="label label-success">{% trans "Active" %}</span>
+                                {% endifequal %}
+                                {% ifequal status 3 %}
+                                    <span class="label label-warning">{% trans "Suspend" %}</span>
+                                {% endifequal %}
+                            </td>
+                        </tr>
+                    </table>
+                    <table width="65%">
+                        <tr>
+                            <td>
+                                {% if cur_vcpu %}
+                                    <h4>{{ cur_vcpu }} {% trans "Vcpu" %}</h4>
+                                {% else %}
+                                    <h4>{{ vcpu }} {% trans "Vcpu" %}</h4>
+                                {% endif %} 
+                            </td>
+                            <td>
+                                <h4>{{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}</h4>
+                            </td>
+                            {% for disk in disks %}
+                                <td>
+                                    <h4>{{ disk.size|filesizeformat }} {% trans "Disk" %}</h4>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    </table>
+                    <hr>
                 </div>
-<!--
-                <div class="row">
-                    <div class="col-sm-1 pull-right">
-                        {% ifequal status 5 %}
-                           <span class="text-danger">{% trans "Off" %}</span>
-                        {% endifequal %}
-                        {% ifequal status 1 %}
-                            <span class="text-success">{% trans "Active" %}</span>
-                        {% endifequal %}
-                        {% ifequal status 3 %}
-                            <span class="text-warning">{% trans "Suspend" %}</span>
-                        {% endifequal %}
-                    </div>
-                    <div class="col-sm-1 pull-right">
-                        {% if cur_vcpu %}
-                            {{ cur_vcpu }} {% trans "Vcpu" %}
-                        {% else %} 
-                            {{ vcpu }} {% trans "Vcpu" %}
-                        {% endif %} 
-                    </div>
-                    <div class="col-sm-2 pull-right">
-                        {{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}
-                    </div>
-                    <div class="col-sm-2 pull-right">
-                        {% for disk in disks %}
-                            {{ disk.size|filesizeformat }} {% trans "Disk" %}
-                        {% endfor %}
-                    </div>
-                </div>
--->
-                <!-- /.row -->
 
                 {% include 'errors_block.html' %}
                 {% include 'messages_block.html' %}
@@ -1083,7 +1087,7 @@
                  window.location.reload()
              }
          })
-     }, 2000);
+     }, 5000);
 </script>
 <script>
     var hash = location.hash;

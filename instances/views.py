@@ -243,25 +243,27 @@ def instance(request, compute_id, vname):
             if 'delete' in request.POST:
                 if conn.get_status() == 1:
                     conn.force_shutdown()
-                try:
-                    instance = Instance.objects.get(compute_id=compute_id, name=vname)
-                    instance_name = instance.name
-                    instance.delete()
-                    if request.POST.get('delete_disk', ''):
-                        conn.delete_disk()
-                finally:
-                    msg = _("Destroy")
-                    addlogmsg(request.user.username, instance_name, msg)
-                    if not request.user.is_superuser:
-                        del_userinstance = UserInstance.objects.get(id=userinstace.id)
+                if request.POST.get('delete_disk', ''):
+                    conn.delete_disk()
+                conn.delete()
+
+                instance = Instance.objects.get(compute_id=compute_id, name=vname)
+                instance_name = instance.name
+                instance.delete()
+
+                if not request.user.is_superuser:
+                    del_userinstance = UserInstance.objects.get(id=userinstace.id)
+                    del_userinstance.delete()
+                else:
+                    try:
+                        del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
                         del_userinstance.delete()
-                    else:
-                        try:
-                            del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
-                            del_userinstance.delete()
-                        except UserInstance.DoesNotExist:
-                            pass
-                    conn.delete()
+                    except UserInstance.DoesNotExist:
+                        pass
+
+                msg = _("Destroy")
+                addlogmsg(request.user.username, instance_name, msg)
+
                 return HttpResponseRedirect(reverse('instances'))
 
             if 'rootpasswd' in request.POST:
