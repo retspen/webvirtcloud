@@ -63,7 +63,7 @@
                                                                 <label class="col-sm-4 control-label">{% trans "Label" %}</label>
                                                                 <div class="col-sm-6">
                                                                     <input type="hidden" name="host_id" value="{{ compute.id }}">
-                                                                    <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
+                                                                    <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                                                 </div>
                                                             </div>
                                                             <div class="form-group">
