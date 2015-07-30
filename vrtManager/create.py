@@ -193,7 +193,8 @@ class wvmCreate(wvmConnect):
             xml += """<interface type='network'>"""
             if mac:
                 xml += """<mac address='%s'/>""" % mac
-            xml += """<source network='%s'/>""" % net
+            xml += """<source network='%s'/>
+                      <filterref filter='clean-traffic'/>""" % net
             if virtio:
                 xml += """<model type='virtio'/>"""
             xml += """</interface>"""
