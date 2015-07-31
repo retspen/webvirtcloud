@@ -19,7 +19,7 @@ sudo service supervisor restart
 
 WebVirtMgr is a libvirt-based Web interface for managing virtual machines. It can delegate Virtual Machine's to users. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported.
 
-### Install WebVirtCloud panel
+### Install WebVirtCloud panel (Ubuntu)
 
 ```bash
 sudo apt-get -y install git python-virtualenv python-dev libxml2-dev libvirt-dev zlib1g-dev nginx supervisor
@@ -46,11 +46,145 @@ sudo service nginx restart
 sudo service supervisor restart
 ```
 
-### Setup libvirt and KVM on server
+Setup libvirt and KVM on server
 
 ```bash
 wget -O - https://clck.ru/9V9fH | sudo sh
 ```
+
+### Install WebVirtCloud panel (CentOS)
+
+```
+$ sudo yum -y install python-virtualenv python-devel libxml2-dev libvirt-devel glibc gcc nginx supervisor git libxml2 libxml2-devel git
+```
+
+#### Creating directories and cloning repo
+
+```
+mkdir /srv && cd /srv
+git clone https://github.com/retspen/webvirtcloud && cd webvirtcloud
+```
+
+#### Start installation webvirtcloud
+```
+virtualenv venv
+source venv/bin/activate
+pip install -r conf/requirements.txt
+cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+python manage.py migrate
+```
+
+#### Configure the supervisor for CentOS
+Add the following after the [include] line (after **files = ... ** actually):
+```
+vim /etc/supervisord.conf
+
+[program:webvirtcloud]
+command=/srv/webvirtcloud/venv/bin/gunicorn webvirtcloud.wsgi:application -c /srv/webvirtcloud/gunicorn.conf.py
+directory=/srv/webvirtcloud
+user=nginx
+autostart=true
+autorestart=true
+redirect_stderr=true
+
+[program:novncd]
+command=/srv/webvirtcloud/venv/bin/python /srv/webvirtcloud/console/novncd
+directory=/srv/webvirtcloud
+user=nginx
+autostart=true
+autorestart=true
+redirect_stderr=true
+```
+
+#### Edit the nginx.conf file
+You will need to edit the main nginx.conf file as the one that comes from the rpm's will not work. Comment the following lines:
+
+```
+#    server {
+#        listen       80 default_server;
+#        listen       [::]:80 default_server;
+#        server_name  _;
+#        root         /usr/share/nginx/html;
+#
+#        # Load configuration files for the default server block.
+#        include /etc/nginx/default.d/*.conf;
+#
+#        location / {
+#        }
+#
+#        error_page 404 /404.html;
+#            location = /40x.html {
+#        }
+#
+#        error_page 500 502 503 504 /50x.html;
+#            location = /50x.html {
+#        }
+#    }
+}
+```
+
+Also make sure file in **/etc/nginx/conf.d/webvirtcloud.conf** has the proper paths:
+```
+server {
+    listen 80;
+
+    server_name servername.domain.com;
+    access_log /var/log/nginx/webvirtcloud-access_log; 
+
+    location /static/ {
+        root /srv/webvirtcloud;
+        expires max;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-for $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host:$server_port;
+        proxy_set_header X-Forwarded-Proto $remote_addr;
+        proxy_connect_timeout 600;
+        proxy_read_timeout 600;
+        proxy_send_timeout 600;
+        client_max_body_size 1024M;
+    }
+}
+```
+
+Change permissions so nginx can read the webvirtcloud folder:
+
+```
+chown -R nginx:nginx /srv/webvirtcloud
+```
+
+Add required user to the kvm group:
+```
+usermod -G kvm -a webvirtmgr
+```
+
+
+#### Install final required packages for libvirtd and others
+```
+wget -O - https://clck.ru/9V9fH | sudo sh
+```
+
+Let's restart nginx and the supervisord services:
+```
+systemctl restart nginx && systemctl restart supervisord
+```
+
+And finally, check everything is running:
+```
+supervisorctl status
+
+gstfsd                           RUNNING    pid 24187, uptime 2:59:14
+novncd                           RUNNING    pid 24186, uptime 2:59:14
+webvirtcloud                     RUNNING    pid 24185, uptime 2:59:14
+
+```
+
+Done!!
+
+Go to http://serverip and you should see the login screen.
 
 ### Default credentials
 
