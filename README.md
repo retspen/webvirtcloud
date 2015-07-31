@@ -54,30 +54,30 @@ wget -O - https://clck.ru/9V9fH | sudo sh
 
 ### Install WebVirtCloud panel (CentOS)
 
-```
-$ sudo yum -y install python-virtualenv python-devel libxml2-dev libvirt-devel glibc gcc nginx supervisor git libxml2 libxml2-devel git
+```bash
+sudo yum -y install python-virtualenv python-devel libxml2-dev libvirt-devel glibc gcc nginx supervisor git libxml2 libxml2-devel git
 ```
 
 #### Creating directories and cloning repo
 
-```
-mkdir /srv && cd /srv
-git clone https://github.com/retspen/webvirtcloud && cd webvirtcloud
+```bash
+sudo mkdir /srv && cd /srv
+sudo git clone https://github.com/retspen/webvirtcloud && cd webvirtcloud
 ```
 
 #### Start installation webvirtcloud
 ```
-virtualenv venv
-source venv/bin/activate
-pip install -r conf/requirements.txt
-cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
-python manage.py migrate
+sudo virtualenv venv
+sudo source venv/bin/activate
+sudo pip install -r conf/requirements.txt
+sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+sudo python manage.py migrate
 ```
 
 #### Configure the supervisor for CentOS
 Add the following after the [include] line (after **files = ... ** actually):
-```
-vim /etc/supervisord.conf
+```bash
+sudo vim /etc/supervisord.conf
 
 [program:webvirtcloud]
 command=/srv/webvirtcloud/venv/bin/gunicorn webvirtcloud.wsgi:application -c /srv/webvirtcloud/gunicorn.conf.py
@@ -152,29 +152,29 @@ server {
 
 Change permissions so nginx can read the webvirtcloud folder:
 
-```
-chown -R nginx:nginx /srv/webvirtcloud
+```bash
+sudo chown -R nginx:nginx /srv/webvirtcloud
 ```
 
 Add required user to the kvm group:
-```
-usermod -G kvm -a webvirtmgr
+```bash
+sudo usermod -G kvm -a webvirtmgr
 ```
 
 
 #### Install final required packages for libvirtd and others
-```
+```bash
 wget -O - https://clck.ru/9V9fH | sudo sh
 ```
 
 Let's restart nginx and the supervisord services:
-```
-systemctl restart nginx && systemctl restart supervisord
+```bash
+sudo systemctl restart nginx && systemctl restart supervisord
 ```
 
 And finally, check everything is running:
-```
-supervisorctl status
+```bash
+sudo supervisorctl status
 
 gstfsd                           RUNNING    pid 24187, uptime 2:59:14
 novncd                           RUNNING    pid 24186, uptime 2:59:14
