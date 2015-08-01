@@ -488,7 +488,7 @@ install_fedora_post() {
     if [ -f /etc/supervisord.conf ]; then
         curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd > /usr/local/bin/gstfsd
         chmod +x /usr/local/bin/gstfsd
-        curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf > /etc/supervisor.d/gstfsd.ini
+        curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf > /etc/supervisord.d/gstfsd.ini
     else
         echoerror "Supervisor not found. Exiting..."
         exit 1
