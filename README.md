@@ -156,15 +156,15 @@ Change permissions so nginx can read the webvirtcloud folder:
 sudo chown -R nginx:nginx /srv/webvirtcloud
 ```
 
+Change permission for selinux:
+
+```bash
+sudo semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)"
+```
+
 Add required user to the kvm group:
 ```bash
 sudo usermod -G kvm -a webvirtmgr
-```
-
-
-#### Install final required packages for libvirtd and others
-```bash
-wget -O - https://clck.ru/9V9fH | sudo sh
 ```
 
 Let's restart nginx and the supervisord services:
@@ -180,6 +180,11 @@ gstfsd                           RUNNING    pid 24187, uptime 2:59:14
 novncd                           RUNNING    pid 24186, uptime 2:59:14
 webvirtcloud                     RUNNING    pid 24185, uptime 2:59:14
 
+```
+
+#### Install final required packages for libvirtd and others on Host Server
+```bash
+wget -O - https://clck.ru/9V9fH | sudo sh
 ```
 
 Done!!
