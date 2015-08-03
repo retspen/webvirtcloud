@@ -55,7 +55,7 @@ wget -O - https://clck.ru/9V9fH | sudo sh
 ### Install WebVirtCloud panel (CentOS)
 
 ```bash
-sudo yum -y install python-virtualenv python-devel libxml2-dev libvirt-devel glibc gcc nginx supervisor git libxml2 libxml2-devel git
+sudo yum -y install python-virtualenv python-devel libvirt-devel glibc gcc nginx supervisor libxml2 libxml2-devel git
 ```
 
 #### Creating directories and cloning repo
