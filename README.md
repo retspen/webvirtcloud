@@ -176,7 +176,6 @@ And finally, check everything is running:
 ```bash
 sudo supervisorctl status
 
-gstfsd                           RUNNING    pid 24187, uptime 2:59:14
 novncd                           RUNNING    pid 24186, uptime 2:59:14
 webvirtcloud                     RUNNING    pid 24185, uptime 2:59:14
 
@@ -192,11 +191,10 @@ Done!!
 Go to http://serverip and you should see the login screen.
 
 ### Default credentials
-
+<pre>
 login: admin
-
 password: admin
-
+</pre>
 
 ### How To Update
 ```bash
