@@ -55,7 +55,7 @@ wget -O - https://clck.ru/9V9fH | sudo sh
 ### Install WebVirtCloud panel (CentOS)
 
 ```bash
-sudo yum -y install python-virtualenv python-devel libxml2-dev libvirt-devel glibc gcc nginx supervisor git libxml2 libxml2-devel git
+sudo yum -y install python-virtualenv python-devel python-libguestfs libvirt-devel glibc gcc nginx supervisor git libxml2 libxml2-devel git
 ```
 
 #### Creating directories and cloning repo
@@ -129,7 +129,7 @@ server {
     listen 80;
 
     server_name servername.domain.com;
-    access_log /var/log/nginx/webvirtcloud-access_log; 
+    access_log /var/log/nginx/webvirtcloud-access_log;
 
     location /static/ {
         root /srv/webvirtcloud;
