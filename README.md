@@ -17,7 +17,7 @@ sudo service supervisor restart
 
 ### Description
 
-WebVirtMgr is a libvirt-based Web interface for managing virtual machines. It can delegate Virtual Machine's to users. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported.
+WebVirtCloud is virtualization web interface for admins and users. It can delegate Virtual Machine's to users. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported.
 
 ### Install WebVirtCloud panel (Ubuntu)
 
