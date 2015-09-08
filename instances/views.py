@@ -103,6 +103,25 @@ def instances(request):
                 conn.start(name)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path())
+            
+            if 'getvvfile' in request.POST:
+                msg = _("Send console.vv file")
+                addlogmsg(request.user.username, instance.name, msg)
+                response = HttpResponse(content='', content_type='application/x-virt-viewer', status=200, reason=None, charset='utf-8')
+                response.writelines('[virt-viewer]\n')
+                response.writelines('type=' + conn.graphics_type(name) + '\n')
+                response.writelines('host=' + conn.graphics_listen(name) + '\n')
+                response.writelines('port=' + conn.graphics_port(name) + '\n')
+                response.writelines('title=' + conn.domain_name(name) + '\n')
+                response.writelines('password=' + conn.graphics_passwd(name) + '\n')
+                response.writelines('enable-usbredir=1\n')
+                response.writelines('disable-effects=all\n')
+                response.writelines('secure-attention=ctrl+alt+ins\n')
+                response.writelines('release-cursor=ctrl+alt\n')
+                response.writelines('fullscreen=1\n')
+                response.writelines('delete-this-file=1\n')
+                response['Content-Disposition'] = 'attachment; filename="console.vv"'
+                return response
 
             if request.user.is_superuser:
 
