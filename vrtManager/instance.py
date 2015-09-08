@@ -81,6 +81,43 @@ class wvmInstances(wvmConnect):
         dom = self.get_instance(name)
         xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE)
         self.wvm.defineXML(xml)
+        
+    def graphics_type(self, name):
+        inst = self.get_instance(name)
+        console_type = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@type")
+        if console_type is None:
+            return "None"
+        return console_type
+
+    def graphics_listen(self, name):
+        inst = self.get_instance(name)
+        listen_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@listen")
+        if listen_addr is None:
+            listen_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/listen/@address")
+            if listen_addr is None:
+                    return "None"
+        return listen_addr
+
+    def graphics_port(self, name):
+        inst = self.get_instance(name)
+        console_port = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@port")
+        if console_port is None:
+            return "None"
+        return console_port
+
+    def domain_name(self, name):
+        inst = self.get_instance(name)
+        domname = util.get_xml_path(inst.XMLDesc(0), "/domain/name")
+        if domname is None:
+            return "NoName"
+        return domname
+
+    def graphics_passwd(self, name):
+        inst = self.get_instance(name)
+        password = util.get_xml_path(inst.XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd")
+        if password is None:
+            return "None"
+        return password
 
 
 class wvmInstance(wvmConnect):
