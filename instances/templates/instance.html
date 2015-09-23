@@ -1061,6 +1061,7 @@
                     diskChart[data.blkdata[j].dev].scale.xLabels = data.timeline;
 
                     for (var i = 0; i < data.blkdata[j].data[0].length; i++) {
+                        diskChart[data.blkdata[j].dev].datasets[0].points[i].label = 'Time: ' + data.timeline[i];
                         diskChart[data.blkdata[j].dev].datasets[0].points[i].value = data.blkdata[j].data[0][i];
                         diskChart[data.blkdata[j].dev].datasets[1].points[i].value = data.blkdata[j].data[1][i];
                     }
@@ -1072,6 +1073,7 @@
                     netChart[data.netdata[j].dev].scale.xLabels = data.timeline;
 
                     for (var i = 0; i < data.netdata[j].data[0].length; i++) {
+                        netChart[data.netdata[j].dev].datasets[0].points[i].label = 'Time: ' + data.timeline[i];
                         netChart[data.netdata[j].dev].datasets[0].points[i].value = data.netdata[j].data[0][i];
                         netChart[data.netdata[j].dev].datasets[1].points[i].value = data.netdata[j].data[1][i];
                     }
