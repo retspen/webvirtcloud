@@ -589,9 +589,9 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div class="form-group" id="console_passwd_manual">
+                                                        <div class="form-group">
                                                             <label for="inputPassword1" class="col-sm-2 control-label">{% trans "Password" %}</label>
-                                                            <div class="col-sm-6">
+                                                            <div class="col-sm-6" id="console_passwd_manual">
                                                                 <input id="console_show_pass" type="password" class="form-control" name="console_passwd"
                                                                        {% if console_passwd %}
                                                                             value="{{ console_passwd }}"
@@ -599,10 +599,10 @@
                                                                             placeholder="{% trans "Password" %}"
                                                                        {% endif %} maxlength="14">
                                                             </div>
-                                                            {% if console_passwd %}
-                                                                <a href="#" name="console_show" class="btn btn-primary btn-md" onclick="show_console()">{% trans "Show" %}</a>
-                                                            {% endif %}
                                                             <div class="col-sm-3">
+                                                                {% if console_passwd %}
+                                                                    <a href="#" name="console_show" class="btn btn-primary btn-md" onclick="show_console()">{% trans "Show" %}</a>
+                                                                {% endif %}
                                                                 {% ifequal status 5 %}
                                                                     <button type="submit" class="btn btn-success" name="set_console_passwd">{% trans "Set" %}</button>
                                                                 {% else %}
