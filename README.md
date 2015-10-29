@@ -125,6 +125,10 @@ You will need to edit the main nginx.conf file as the one that comes from the rp
 
 Also make sure file in **/etc/nginx/conf.d/webvirtcloud.conf** has the proper paths:
 ```
+upstream gunicorn_server {
+    #server unix:/srv/webvirtcloud/venv/wvcloud.socket fail_timeout=0;
+    server 127.0.0.1:8000 fail_timeout=0;
+}
 server {
     listen 80;
 
@@ -137,7 +141,7 @@ server {
     }
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://gunicorn_server;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-for $proxy_add_x_forwarded_for;
         proxy_set_header Host $host:$server_port;
