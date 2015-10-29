@@ -21,6 +21,8 @@ import os
 #
 
 bind = '127.0.0.1:8000'
+# or over socket
+# bind = 'unix:/var/wvcloud.socket'
 backlog = 2048
 
 #
