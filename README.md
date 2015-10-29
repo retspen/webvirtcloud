@@ -69,9 +69,9 @@ sudo git clone https://github.com/retspen/webvirtcloud && cd webvirtcloud
 ```
 sudo virtualenv venv
 sudo source venv/bin/activate
-sudo pip install -r conf/requirements.txt
+sudo venv/bin/pip install -r conf/requirements.txt
 sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
-sudo python manage.py migrate
+sudo venv/bin/python manage.py migrate
 ```
 
 #### Configure the supervisor for CentOS
