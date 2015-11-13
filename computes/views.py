@@ -41,7 +41,7 @@ def computes(request):
         return compute_data
 
     error_messages = []
-    computes = Compute.objects.filter()
+    computes = Compute.objects.filter().order_by('name')
     computes_info = get_hosts_status(computes)
 
     if request.method == 'POST':
