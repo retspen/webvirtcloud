@@ -8,6 +8,7 @@ from vrtManager import util
 from xml.etree import ElementTree
 from datetime import datetime
 from vrtManager.connection import wvmConnect
+from vrtManager.storage import wvmStorage
 from webvirtcloud.settings import QEMU_CONSOLE_TYPES
 
 
@@ -598,6 +599,14 @@ class wvmInstance(wvmConnect):
     def get_managed_save_image(self):
         return self.instance.hasManagedSaveImage(0)
 
+    def get_wvmStorage(self, pool):
+        storage = wvmStorage(self.host,
+                             self.login,
+                             self.passwd,
+                             self.conn,
+                             pool)
+        return storage
+
     def clone_instance(self, clone_data):
         clone_dev_path = []
 
@@ -649,5 +658,19 @@ class wvmInstance(wvmConnect):
                                     </volume>""" % (target_file, vol_format)
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
-
+                
+                source_dev = elm.get('dev')
+                if source_dev:
+                    clone_path = os.path.join(os.path.dirname(source_dev), target_file)
+                    elm.set('dev', clone_path)
+                    
+                    vol = self.get_volume_by_path(source_dev)
+                    stg = vol.storagePoolLookupByVolume()
+                    
+                    vol_name = util.get_xml_path(vol.XMLDesc(0), "/volume/name")
+                    pool_name = util.get_xml_path(stg.XMLDesc(0), "/pool/name")
+                    
+                    storage = self.get_wvmStorage(pool_name)
+                    storage.clone_volume(vol_name, target_file)
+                
         self._defineXML(ElementTree.tostring(tree))
