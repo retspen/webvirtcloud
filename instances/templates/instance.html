@@ -355,6 +355,15 @@
                                                                 <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
                                                             </div>
                                                         </div>
+                                                        <p style="font-weight:bold;">{% trans "Disk allocation (B):" %}</p>
+                                                        {% for disk in disks %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Current allocation" %} ({{ disk.dev }})</label>
+                                                            <div class="col-sm-4 js-custom__container">
+                                                                <input type="text" name="disk_size_{{ disk.dev }}" class="form-control" value="{{ disk.size|filesizeformat }}" />
+                                                            </div>
+                                                        </div>
+                                                        {% endfor %}
                                                         {% ifequal status 5 %}
                                                             <button type="submit" class="btn btn-lg btn-success pull-right" name="resize">{% trans "Resize" %}</button>
                                                         {% else %}

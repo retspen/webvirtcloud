@@ -186,6 +186,23 @@ def instance(request, compute_id, vname):
                 {'dev': disk['dev'], 'storage': disk['storage'],
                  'image': image, 'format': disk['format']})
         return clone_disk
+    
+    def filesizefstr(size_str):
+        if size_str == '':
+            return 0
+        size_str = size_str.encode('ascii', 'ignore').upper().translate(None, " B")
+        if 'K' == size_str[-1]:
+            return long(float(size_str[:-1]))<<10
+        elif 'M' == size_str[-1]:
+            return long(float(size_str[:-1]))<<20
+        elif 'G' == size_str[-1]:
+            return long(float(size_str[:-1]))<<30
+        elif 'T' == size_str[-1]:
+            return long(float(size_str[:-1]))<<40
+        elif 'P' == size_str[-1]:
+            return long(float(size_str[:-1]))<<50
+        else:
+            return long(float(size_str))
 
     try:
         conn = wvmInstance(compute.hostname,
@@ -340,7 +357,13 @@ def instance(request, compute_id, vname):
                 cur_memory_custom = request.POST.get('cur_memory_custom', '')
                 if cur_memory_custom:
                     cur_memory = cur_memory_custom
-                conn.resize(cur_memory, memory, cur_vcpu, vcpu)
+                disks_new = []
+                for disk in disks:
+                    input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
+                    if input_disk_size > disk['size']+(64<<20):
+                        disk['size_new'] = input_disk_size
+                        disks_new.append(disk) 
+                conn.resize(cur_memory, memory, cur_vcpu, vcpu, disks_new)
                 msg = _("Resize")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')

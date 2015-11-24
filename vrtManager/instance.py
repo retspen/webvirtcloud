@@ -524,7 +524,7 @@ class wvmInstance(wvmConnect):
         return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE),
                                  "/domain/devices/graphics/@keymap") or ''
 
-    def resize(self, cur_memory, memory, cur_vcpu, vcpu):
+    def resize(self, cur_memory, memory, cur_vcpu, vcpu, disks=[]):
         """
         Function change ram and cpu on vds.
         """
@@ -542,6 +542,11 @@ class wvmInstance(wvmConnect):
         set_vcpu.text = vcpu
         set_vcpu.set('current', cur_vcpu)
 
+        for disk in disks:
+            source_dev = disk['path']
+            vol = self.get_volume_by_path(source_dev)
+            vol.resize(disk['size_new'])
+        
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
