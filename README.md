@@ -185,6 +185,12 @@ webvirtcloud                     RUNNING    pid 24185, uptime 2:59:14
 
 ```
 
+#### Apache mod_wsgi configuration
+```
+WSGIDaemonProcess webvirtcloud threads=2 maximum-requests=1000 display-name=webvirtcloud
+WSGIScriptAlias / /srv/webvirtcloud/webvirtcloud/wsgi.py
+```
+
 #### Install final required packages for libvirtd and others on Host Server
 ```bash
 wget -O - https://clck.ru/9V9fH | sudo sh
