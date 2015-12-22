@@ -46,7 +46,10 @@ MIDDLEWARE_CLASSES = (
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.RemoteUserBackend',
+    #'accounts.backends.MyRemoteUserBackend',
 )
+
+LOGIN_URL = '/accounts/login'
 
 ROOT_URLCONF = 'webvirtcloud.urls'
 

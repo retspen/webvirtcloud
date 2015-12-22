@@ -3,18 +3,18 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 from accounts.models import UserInstance, UserSSHKey
 from instances.models import Instance
 from accounts.forms import UserAddForm
 
 
+@login_required
 def profile(request):
     """
     :param request:
     :return:
     """
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     user = User.objects.get(id=request.user.id)
@@ -63,15 +63,12 @@ def profile(request):
             return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
 
-
+@login_required
 def accounts(request):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
@@ -123,14 +120,12 @@ def accounts(request):
     return render(request, 'accounts.html', locals())
 
 
+@login_required
 def account(request, user_id):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))

@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
 from accounts.models import UserInstance, UserSSHKey
@@ -20,26 +21,22 @@ from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
 from logs.views import addlogmsg
 
 
+@login_required
 def index(request):
     """
     :param request:
     :return:
     """
 
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
-    else:
-        return HttpResponseRedirect(reverse('instances'))
+    return HttpResponseRedirect(reverse('instances'))
 
 
+@login_required
 def instances(request):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     all_host_vms = {}
@@ -144,14 +141,12 @@ def instances(request):
     return render(request, 'instances.html', locals())
 
 
+@login_required
 def instance(request, compute_id, vname):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     messages = []
@@ -517,14 +512,12 @@ def instance(request, compute_id, vname):
     return render(request, 'instance.html', locals())
 
 
+@login_required
 def inst_status(request, compute_id, vname):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
 
     compute = get_object_or_404(Compute, pk=compute_id)
     response = HttpResponse()
@@ -544,14 +537,12 @@ def inst_status(request, compute_id, vname):
     return response
 
 
+@login_required
 def inst_graph(request, compute_id, vname):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
 
     datasets = {}
     json_blk = []

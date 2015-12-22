@@ -3,6 +3,7 @@ import json
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
 from accounts.models import UserInstance
@@ -12,14 +13,12 @@ from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, con
 from libvirt import libvirtError
 
 
+@login_required
 def computes(request):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
@@ -130,14 +129,12 @@ def computes(request):
     return render(request, 'computes.html', locals())
 
 
+@login_required
 def overview(request, compute_id):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
@@ -160,14 +157,12 @@ def overview(request, compute_id):
     return render(request, 'overview.html', locals())
 
 
+@login_required
 def compute_graph(request, compute_id):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
 
     points = 5
     datasets = {}
