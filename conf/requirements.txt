@@ -1,5 +1,5 @@
 Django==1.8.2
-websockify==0.6.0
+websockify==0.7.0
 gunicorn==19.3.0
 libvirt-python==1.2.16
 http://github.com/retspen/retspen.github.io/raw/master/libxml2-python-2.9.1.tar.gz
