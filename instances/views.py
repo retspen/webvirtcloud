@@ -503,6 +503,18 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
 
+                if 'change_network' in request.POST:
+                    network_data = {}
+
+                    for post in request.POST:
+                        if 'net-' in post:
+                            network_data[post] = request.POST.get(post, '')
+
+                    conn.change_network(network_data)
+                    msg = _("Edit network")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
         conn.close()
 
     except libvirtError as lib_err:

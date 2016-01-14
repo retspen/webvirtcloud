@@ -492,6 +492,11 @@
                                                     </a>
                                                 </li>
                                                 <li role="presentation">
+                                                    <a href="#network" aria-controls="network" role="tab" data-toggle="tab">
+                                                        {% trans "Network" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
                                                     <a href="#clone" aria-controls="clone" role="tab" data-toggle="tab">
                                                         {% trans "Clone" %}
                                                     </a>
@@ -649,6 +654,33 @@
                                                                 {% endifequal %}
                                                             </div>
                                                         </div>
+                                                    </form>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
+                                                    <p>{% trans "Assign network device to bridge" %}</p>
+                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                        <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                        {% for network in networks %}
+                                                            <div class="form-group">
+                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }}</label>
+                                                                <div class="col-sm-3">
+                                                                    <input type="text" class="form-control" name="net-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <input type="text" class="form-control" name="net-source-{{ forloop.counter0 }}" value="{{ network.nic }}"/>
+                                                                </div>
+                                                                <div class="col-sm-1">
+                                                                    <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
+                                                                            onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random MAC" %}</button>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                        {% ifequal status 5 %}
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="change_network">{% trans "Change" %}</button>
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled" name="change_network">{% trans "Change" %}</button>
+                                                        {% endifequal %}
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
@@ -1117,7 +1149,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#media', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate'])) {
+    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#settings') {

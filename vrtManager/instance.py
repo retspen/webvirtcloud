@@ -679,3 +679,16 @@ class wvmInstance(wvmConnect):
                     storage.clone_volume(vol_name, target_file)
                 
         self._defineXML(ElementTree.tostring(tree))
+
+    def change_network(self, network_data):
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        for interface in tree.findall('devices/interface'):
+            if interface.get('type') == 'bridge':
+                source = interface.find('source')
+                source.set('bridge', network_data['net-source-0'])
+
+        new_xml = ElementTree.tostring(tree)
+        self._defineXML(new_xml)
+
