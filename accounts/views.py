@@ -136,11 +136,6 @@ def account(request, user_id):
     user_insts = UserInstance.objects.filter(user_id=user_id)
     instances = Instance.objects.all()
 
-    def add_user_inst(request, inst_id, user_id):
-        add_user_inst = UserInstance(instance_id=int(inst_id), user_id=user_id)
-        add_user_inst.save()
-        return HttpResponseRedirect(request.get_full_path())
-
     if user.username == request.user.username:
         return HttpResponseRedirect(reverse('profile'))
 
@@ -161,14 +156,18 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
+            
             if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
-                return add_user_inst(request, inst_id, user_id)
+                check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
             else:
-                try:
-                    check_inst = UserInstance.objects.get(instance_id=int(inst_id))
-                    msg = _("Instance already added")
-                    error_messages.append(msg)
-                except UserInstance.DoesNotExist:
-                    return add_user_inst(request, inst_id, user_id)
+                check_inst = UserInstance.objects.filter(instance_id=int(inst_id))
+            
+            if check_inst:
+                msg = _("Instance already added")
+                error_messages.append(msg)
+            else:
+                add_user_inst = UserInstance(instance_id=int(inst_id), user_id=int(user_id))
+                add_user_inst.save()
+                return HttpResponseRedirect(request.get_full_path())
 
     return render(request, 'account.html', locals())
