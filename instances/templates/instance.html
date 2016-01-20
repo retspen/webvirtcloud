@@ -204,7 +204,12 @@
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
                                                     <p>{% trans "Click on Boot button to start this instance." %}</p>
                                                     <form action="" method="post" role="form">{% csrf_token %}
-                                                        <input type="submit" name="poweron" class="btn btn-lg btn-success pull-right" value="{% trans "Power On" %}">
+                                                        {% if instance.is_template %}
+                                                            <p>{% trans "Template instance cannot be started." %}</p>
+                                                            <input type="submit" name="poweron" class="btn btn-lg btn-success pull-right disabled" value="{% trans "Power On" %}">
+                                                        {% else %}
+                                                            <input type="submit" name="poweron" class="btn btn-lg btn-success pull-right" value="{% trans "Power On" %}">
+                                                        {% endif %}
                                                         <div class="clearfix"></div>
                                                     </form>
                                                 </div>
@@ -511,6 +516,11 @@
                                                         {% trans "XML" %}
                                                     </a>
                                                 </li>
+                                                <li role="presentation">
+                                                    <a href="#template" aria-controls="template" role="tab" data-toggle="tab">
+                                                        {% trans "Template" %}
+                                                    </a>
+                                                </li>
                                             {% endif %}
                                         </ul>
                                         <!-- Tab panes -->
@@ -680,6 +690,23 @@
                                                             <button type="submit" class="btn btn-lg btn-success pull-right" name="change_network">{% trans "Change" %}</button>
                                                         {% else %}
                                                             <button class="btn btn-lg btn-success pull-right disabled" name="change_network">{% trans "Change" %}</button>
+                                                        {% endifequal %}
+                                                    </form>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="template">
+                                                    <p>{% trans "Is this instance template?" %}</p>
+                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Is template" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input type="checkbox" name="is_template" value="true" id="is_template" {% if instance.is_template %}checked{% endif %}>
+                                                            </div>
+                                                        </div>
+                                                        {% ifequal status 5 %}
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="change_template">{% trans "Change" %}</button>
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled" name="change_template">{% trans "Change" %}</button>
                                                         {% endifequal %}
                                                     </form>
                                                     <div class="clearfix"></div>
@@ -1149,7 +1176,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate'])) {
+    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate', '#template'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#settings') {

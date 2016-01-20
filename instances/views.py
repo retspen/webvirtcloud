@@ -66,6 +66,7 @@ def instances(request):
                                 check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
                                 if check_uuid.uuid != info['uuid']:
                                     check_uuid.save()
+                                all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
                             except Instance.DoesNotExist:
                                 check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
                                 check_uuid.save()
@@ -514,6 +515,13 @@ def instance(request, compute_id, vname):
                     msg = _("Edit network")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
+
+                if 'change_template' in request.POST:
+                    instance.is_template = request.POST.get('is_template', False)
+                    instance.save()
+                    msg = _("Edit template %s" % instance.is_template)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#template')
 
         conn.close()
 

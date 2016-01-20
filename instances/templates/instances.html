@@ -69,7 +69,7 @@
                                                                 <input type="hidden" name="name" value="{{ vm }}"/>
                                                                 <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
                                                                 {% ifequal info.status 5 %}
-                                                                    <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
+                                                                    <button class="btn btn-sm btn-default {% if info.is_template %}disabled{% endif %}" type="submit" name="poweron" title="{% trans "Power On" %}">
                                                                         <span class="glyphicon glyphicon-play"></span>
                                                                     </button>
                                                                     <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
