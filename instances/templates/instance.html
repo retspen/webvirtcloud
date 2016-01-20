@@ -755,7 +755,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Live migration" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate">
+                                                                <input type="checkbox" name="live_migrate" id="vm_live_migrate" checked>
                                                             </div>
                                                         </div>
                                                         <div class="form-group">
@@ -767,7 +767,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Delete original" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="xml_delete" value="true" id="xml_delete">
+                                                                <input type="checkbox" name="xml_delete" id="xml_delete" checked>
                                                             </div>
                                                         </div>
                                                         {% if computes_count != 1 %}
