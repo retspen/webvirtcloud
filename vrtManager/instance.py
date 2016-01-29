@@ -612,6 +612,14 @@ class wvmInstance(wvmConnect):
                              pool)
         return storage
 
+    def fix_mac(self, mac):
+        if ":" in mac:
+            return mac
+        # if mac does not contain ":", try to split into tuples and join with ":"
+        n = 2
+        mac_tuples = [mac[i:i+n] for i in range(0, len(mac), n)]
+        return ':'.join(mac_tuples)
+
     def clone_instance(self, clone_data):
         clone_dev_path = []
 
@@ -624,7 +632,8 @@ class wvmInstance(wvmConnect):
 
         for num, net in enumerate(tree.findall('devices/interface')):
             elm = net.find('mac')
-            elm.set('address', clone_data['net-' + str(num)])
+            mac_address = self.fix_mac(clone_data['net-' + str(num)])
+            elm.set('address', mac_address)
 
         for disk in tree.findall('devices/disk'):
             if disk.get('device') == 'disk':
