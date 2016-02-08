@@ -716,18 +716,18 @@
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Clone Name" %}</label>
-                                                            <div class="col-sm-3">
-                                                                <input type="text" class="form-control" name="name" value="{{ vname }}-clone"/>
+                                                            <div class="col-sm-4">
+                                                                <input id="clone_name" type="text" class="form-control" name="name" value="{{ vname }}-clone"/>
                                                             </div>
                                                         </div>
                                                         <p style="font-weight:bold;">{% trans "Network devices" %}</p>
                                                         {% for network in networks %}
                                                             <div class="form-group">
                                                                 <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
-                                                                <div class="col-sm-3">
+                                                                <div class="col-sm-4">
                                                                     <input type="text" class="form-control" name="net-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
                                                                 </div>
-                                                                <div class="col-sm-1">
+                                                                <div class="col-sm-4">
                                                                     <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
                                                                             onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
                                                                 </div>
@@ -737,8 +737,8 @@
                                                         {% for disk in clone_disks %}
                                                             <div class="form-group">
                                                                 <label class="col-sm-3 control-label" style="font-weight:normal;">{{ disk.dev }} ({{ disk.storage }})</label>
-                                                                <div class="col-sm-3">
-                                                                    <input type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
+                                                                <div class="col-sm-4">
+                                                                    <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
                                                                 </div>
                                                                 {% ifequal disk.format 'qcow2' %}
                                                                     <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">Metadata</label>
@@ -965,6 +965,28 @@
     }
 </script>
 <script>
+    function update_clone_disk_name(new_vname) {
+        vname = '{{ vname }}-clone';
+        {% for disk in clone_disks %}
+        disk_name = '{{ disk.image }}';
+        disk_minus = disk_name.split('-');
+        disk_minus_suffix = disk_minus[disk_minus.length-1];
+        disk_minus.pop();
+        disk_minus_name = disk_minus.join('-');
+        disk_dot = disk_name.split('.')
+        disk_dot_suffix = disk_dot[disk_dot.length-1];
+        if (disk_name.lastIndexOf('-') > -1 && disk_minus_name == vname) {
+            image = new_vname + "-" + disk_minus_suffix;
+        } else if (disk_name.lastIndexOf('.') > -1 && disk_dot_suffix.length <= 7) {
+            image = new_vname + "." + disk_dot_suffix
+        } else {
+            image = new_vname + '-clone';
+        }
+        $('#disk_name-{{ disk.dev }}').val(image);
+        {% endfor %} 
+    }
+</script>
+<script>
     $(document).on('change', '#console_passwd_gen', function () {
         if ($(this).prop('checked')) {
             $('#console_passwd_manual').hide();
@@ -987,6 +1009,9 @@
         } else {
             $('#console_keymap_selection').show();
         }
+    });
+    $('#clone_name').on('input', function () {
+        update_clone_disk_name($(this).val());
     });
     $(document).ready(function () {
         // set current console keymap or fall back to default
