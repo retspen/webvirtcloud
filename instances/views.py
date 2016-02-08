@@ -168,12 +168,15 @@ def instance(request, compute_id, vname):
         if not userinstace:
             return HttpResponseRedirect(reverse('index'))
 
-    def show_clone_disk(disks):
+    def show_clone_disk(disks, vname=''):
         clone_disk = []
         for disk in disks:
             if disk['image'] is None:
                 continue
-            if disk['image'].count(".") and len(disk['image'].rsplit(".", 1)[1]) <= 7:
+            if disk['image'].count("-") and disk['image'].rsplit("-", 1)[0] == vname:
+                name, suffix = disk['image'].rsplit("-", 1)
+                image = name + "-clone" + "-" + suffix
+            elif disk['image'].count(".") and len(disk['image'].rsplit(".", 1)[1]) <= 7:
                 name, suffix = disk['image'].rsplit(".", 1)
                 image = name + "-clone" + "." + suffix
             else:
@@ -234,7 +237,7 @@ def instance(request, compute_id, vname):
         snapshots = sorted(conn.get_snapshot(), reverse=True)
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
         has_managed_save_image = conn.get_managed_save_image()
-        clone_disks = show_clone_disk(disks)
+        clone_disks = show_clone_disk(disks, vname)
         console_passwd = conn.get_console_passwd()
 
         try:
