@@ -730,6 +730,8 @@
                                                                 <div class="col-sm-4">
                                                                     <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
                                                                             onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
+                                                                    <button type="button" class="btn btn-sm btn-success pull-left" name="guess-mac-{{ forloop.counter0 }}"
+                                                                            onclick="guess_mac_address({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Guess" %}</button>
                                                                 </div>
                                                             </div>
                                                         {% endfor %}
@@ -962,6 +964,14 @@
         } else {
             $('#console_show_pass').attr('type', 'password');
         }
+    }
+</script>
+<script>
+    function guess_mac_address(net) {
+        new_vname = $('#clone_name').val();
+        $.getJSON('/instance/guess_mac_address/' + new_vname + '/', function(data) {
+            $('input[name="net-'+net+'"]').val(data['mac']);
+        });
     }
 </script>
 <script>

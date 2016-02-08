@@ -8,4 +8,6 @@ urlpatterns = [
         views.inst_graph, name='inst_graph'),
     url(r'^status/(?P<compute_id>[0-9]+)/(?P<vname>[\w\-\.]+)/$',
         views.inst_status, name='inst_status'),
+    url(r'^guess_mac_address/(?P<vname>[\w\-\.]+)/$',
+        views.guess_mac_address, name='guess_mac_address'),
 ]

@@ -666,3 +666,17 @@ def inst_graph(request, compute_id, vname):
 
     response.write(data)
     return response
+
+@login_required
+def guess_mac_address(request, vname):
+    dhcp_file = '/srv/webvirtcloud/dhcpd.hype.ipv4.conf'
+    data = { 'vname': vname, 'mac': '52:54:00:' }
+    with open(dhcp_file, 'r') as f:
+        name_found = False
+        for line in f:
+            if "host %s." % vname in line:
+                name_found = True
+            if name_found and "hardware ethernet" in line:
+                data['mac'] = line.split(' ')[-1].strip().strip(';')
+                break
+    return HttpResponse(json.dumps(data));
