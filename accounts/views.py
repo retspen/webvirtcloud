@@ -75,7 +75,7 @@ def accounts(request):
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
-    users = User.objects.filter(is_staff=False, is_superuser=False)
+    users = User.objects.all()
 
     if request.method == 'POST':
         if 'create' in request.POST:
@@ -92,8 +92,12 @@ def accounts(request):
         if 'edit' in request.POST:
             user_id = request.POST.get('user_id', '')
             user_pass = request.POST.get('user_pass', '')
+            user_is_staff = request.POST.get('user_is_staff', False)
+            user_is_superuser = request.POST.get('user_is_superuser', False)
             user_edit = User.objects.get(id=user_id)
             user_edit.set_password(user_pass)
+            user_edit.is_staff = user_is_staff
+            user_edit.is_superuser = user_is_superuser
             user_edit.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'block' in request.POST:

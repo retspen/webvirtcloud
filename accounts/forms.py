@@ -9,6 +9,8 @@ class UserAddForm(forms.Form):
                            error_messages={'required': _('No User name has been entered')},
                            max_length=20)
     password = forms.CharField(required=True, error_messages={'required': _('No password has been entered')},)
+    is_staff = forms.BooleanField(required=True)
+    is_superuser = forms.BooleanField(required=True)
 
     def clean_name(self):
         name = self.cleaned_data['name']
