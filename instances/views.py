@@ -511,7 +511,7 @@ def instance(request, compute_id, vname):
                     network_data = {}
 
                     for post in request.POST:
-                        if 'net-' in post:
+                        if post.startswith('net-'):
                             network_data[post] = request.POST.get(post, '')
 
                     conn.change_network(network_data)

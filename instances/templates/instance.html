@@ -674,15 +674,11 @@
                                                         {% for network in networks %}
                                                             <div class="form-group">
                                                                 <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }}</label>
-                                                                <div class="col-sm-3">
-                                                                    <input type="text" class="form-control" name="net-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                                <div class="col-sm-4">
+                                                                    <input type="text" class="form-control" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
                                                                 </div>
                                                                 <div class="col-sm-3">
                                                                     <input type="text" class="form-control" name="net-source-{{ forloop.counter0 }}" value="{{ network.nic }}"/>
-                                                                </div>
-                                                                <div class="col-sm-1">
-                                                                    <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
-                                                                            onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random MAC" %}</button>
                                                                 </div>
                                                             </div>
                                                         {% endfor %}
@@ -725,7 +721,7 @@
                                                             <div class="form-group">
                                                                 <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
                                                                 <div class="col-sm-4">
-                                                                    <input type="text" class="form-control" name="net-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                                    <input type="text" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
                                                                 </div>
                                                                 <div class="col-sm-4">
                                                                     <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
@@ -954,7 +950,7 @@
             macAddress+=hexDigits.charAt(Math.round(Math.random()*16));
             if (i != 2) macAddress+=":";
         }
-        $('input[name="net-'+net+'"]').val(macAddress);
+        $('input[name="clone-net-mac-'+net+'"]').val(macAddress);
     };
 </script>
 <script>
@@ -970,7 +966,7 @@
     function guess_mac_address(net) {
         new_vname = $('#clone_name').val();
         $.getJSON('/instance/guess_mac_address/' + new_vname + '/', function(data) {
-            $('input[name="net-'+net+'"]').val(data['mac']);
+            $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
         });
     }
 </script>

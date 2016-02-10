@@ -632,7 +632,7 @@ class wvmInstance(wvmConnect):
 
         for num, net in enumerate(tree.findall('devices/interface')):
             elm = net.find('mac')
-            mac_address = self.fix_mac(clone_data['net-' + str(num)])
+            mac_address = self.fix_mac(clone_data['clone-net-mac-' + str(num)])
             elm.set('address', mac_address)
 
         for disk in tree.findall('devices/disk'):
@@ -693,10 +693,12 @@ class wvmInstance(wvmConnect):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)
 
-        for interface in tree.findall('devices/interface'):
+        for num, interface in enumerate(tree.findall('devices/interface')):
             if interface.get('type') == 'bridge':
+                source = interface.find('mac')
+                source.set('address', network_data['net-mac-' + str(num)])
                 source = interface.find('source')
-                source.set('bridge', network_data['net-source-0'])
+                source.set('bridge', network_data['net-source-' + str(num)])
 
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
