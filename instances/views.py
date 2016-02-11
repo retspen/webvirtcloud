@@ -498,14 +498,19 @@ def instance(request, compute_id, vname):
                     clone_data = {}
                     clone_data['name'] = request.POST.get('name', '')
 
-                    for post in request.POST:
-                        if 'disk' or 'meta' in post:
-                            clone_data[post] = request.POST.get(post, '')
+                    check_instance = Instance.objects.filter(name=clone_data['name'])
+                    if check_instance:
+                        msg = _("Instance '%s' already exists!" % clone_data['name'])
+                        error_messages.append(msg)
+                    else:
+                        for post in request.POST:
+                            if 'disk' or 'meta' in post:
+                                clone_data[post] = request.POST.get(post, '')
 
-                    conn.clone_instance(clone_data)
-                    msg = _("Clone")
-                    addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
+                        conn.clone_instance(clone_data)
+                        msg = _("Clone")
+                        addlogmsg(request.user.username, instance.name, msg)
+                        return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
 
                 if 'change_network' in request.POST:
                     network_data = {}
