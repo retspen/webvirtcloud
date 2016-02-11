@@ -669,7 +669,7 @@ def inst_graph(request, compute_id, vname):
 
 @login_required
 def guess_mac_address(request, vname):
-    dhcp_file = '/srv/webvirtcloud/dhcpd.hype.ipv4.conf'
+    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
     data = { 'vname': vname, 'mac': '52:54:00:' }
     with open(dhcp_file, 'r') as f:
         name_found = False
