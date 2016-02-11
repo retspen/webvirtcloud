@@ -680,3 +680,11 @@ def guess_mac_address(request, vname):
                 data['mac'] = line.split(' ')[-1].strip().strip(';')
                 break
     return HttpResponse(json.dumps(data));
+
+@login_required
+def check_instance(request, vname):
+    check_instance = Instance.objects.filter(name=vname)
+    data = { 'vname': vname, 'exists': False }
+    if check_instance:
+        data['exists'] = True
+    return HttpResponse(json.dumps(data));
