@@ -218,6 +218,7 @@ def instance(request, compute_id, vname):
         uuid = conn.get_uuid()
         memory = conn.get_memory()
         cur_memory = conn.get_cur_memory()
+        title = conn.get_title()
         description = conn.get_description()
         disks = conn.get_disk_device()
         media = conn.get_media_device()
@@ -525,12 +526,19 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
-                if 'change_template' in request.POST:
+                if 'change_options' in request.POST:
                     instance.is_template = request.POST.get('is_template', False)
                     instance.save()
-                    msg = _("Edit template %s" % instance.is_template)
+                    
+                    options = {}
+                    for post in request.POST:
+                        if post in ['title', 'description']:
+                            options[post] = request.POST.get(post, '')
+                    conn.set_options(options)
+                    
+                    msg = _("Edit options")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#template')
+                    return HttpResponseRedirect(request.get_full_path() + '#options')
 
         conn.close()
 

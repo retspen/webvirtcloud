@@ -185,8 +185,13 @@ class wvmInstance(wvmConnect):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/currentMemory")
         return int(mem) / 1024
 
+    def get_title(self):
+        title = util.get_xml_path(self._XMLDesc(0), "/domain/title")
+        return title if title else ''
+
     def get_description(self):
-        return util.get_xml_path(self._XMLDesc(0), "/domain/description")
+        description = util.get_xml_path(self._XMLDesc(0), "/domain/description")
+        return description if description else ''
 
     def get_max_memory(self):
         return self.wvm.getInfo()[1] * 1048576
@@ -699,6 +704,27 @@ class wvmInstance(wvmConnect):
                 source.set('address', network_data['net-mac-' + str(num)])
                 source = interface.find('source')
                 source.set('bridge', network_data['net-source-' + str(num)])
+
+        new_xml = ElementTree.tostring(tree)
+        self._defineXML(new_xml)
+
+    def set_options(self, options):
+        """
+        Function change description, title
+        """
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        for o in ['title', 'description']:
+            option = tree.find(o)
+            option_value = str(options[o]).strip()
+            if not option_value:
+                if not option is None:
+                    tree.remove(option)
+            else:
+                if option is None:
+                    option = ElementTree.SubElement(tree, o)
+                option.text = option_value
 
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)

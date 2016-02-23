@@ -517,8 +517,8 @@
                                                     </a>
                                                 </li>
                                                 <li role="presentation">
-                                                    <a href="#template" aria-controls="template" role="tab" data-toggle="tab">
-                                                        {% trans "Template" %}
+                                                    <a href="#options" aria-controls="options" role="tab" data-toggle="tab">
+                                                        {% trans "Options" %}
                                                     </a>
                                                 </li>
                                             {% endif %}
@@ -690,9 +690,20 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
-                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="template">
-                                                    <p>{% trans "Is this instance template?" %}</p>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="options">
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Title" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input type="text" name="title" class="form-control" value="{{ title }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Description" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <textarea name="description" class="form-control">{{ description }}</textarea>
+                                                            </div>
+                                                        </div>
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Is template" %}</label>
                                                             <div class="col-sm-6">
@@ -700,9 +711,9 @@
                                                             </div>
                                                         </div>
                                                         {% ifequal status 5 %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="change_template">{% trans "Change" %}</button>
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="change_options">{% trans "Change" %}</button>
                                                         {% else %}
-                                                            <button class="btn btn-lg btn-success pull-right disabled" name="change_template">{% trans "Change" %}</button>
+                                                            <button class="btn btn-lg btn-success pull-right disabled" name="change_options">{% trans "Change" %}</button>
                                                         {% endifequal %}
                                                     </form>
                                                     <div class="clearfix"></div>
@@ -1207,7 +1218,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate', '#template'])) {
+    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate', '#options'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#settings') {
