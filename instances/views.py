@@ -506,8 +506,7 @@ def instance(request, compute_id, vname):
                         error_messages.append(msg)
                     else:
                         for post in request.POST:
-                            if 'disk' or 'meta' in post:
-                                clone_data[post] = request.POST.get(post, '')
+                            clone_data[post] = request.POST.get(post, '')
 
                         conn.clone_instance(clone_data)
                         msg = _("Clone")
