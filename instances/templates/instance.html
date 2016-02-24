@@ -729,6 +729,18 @@
                                                                 {% endifequal %}
                                                             </div>
                                                         {% endfor %}
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Title" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input type="text" name="clone-title" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Description" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <textarea name="clone-description" class="form-control"></textarea>
+                                                            </div>
+                                                        </div>
                                                         {% ifequal status 5 %}
                                                             <button type="submit" class="btn btn-lg btn-success pull-right" name="clone">{% trans "Clone" %}</button>
                                                         {% else %}

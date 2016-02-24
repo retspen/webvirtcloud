@@ -691,7 +691,13 @@ class wvmInstance(wvmConnect):
                     
                     storage = self.get_wvmStorage(pool_name)
                     storage.clone_volume(vol_name, target_file)
-                
+
+        options = {
+            'title': clone_data.get('clone-title', ''),
+            'description': clone_data.get('clone-description', ''),
+        }
+        self._set_options(tree, options)
+
         self._defineXML(ElementTree.tostring(tree))
 
     def change_network(self, network_data):
@@ -708,16 +714,10 @@ class wvmInstance(wvmConnect):
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
-    def set_options(self, options):
-        """
-        Function change description, title
-        """
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
-
+    def _set_options(self, tree, options):
         for o in ['title', 'description']:
             option = tree.find(o)
-            option_value = str(options[o]).strip()
+            option_value = str(options.get(o, '')).strip()
             if not option_value:
                 if not option is None:
                     tree.remove(option)
@@ -725,6 +725,15 @@ class wvmInstance(wvmConnect):
                 if option is None:
                     option = ElementTree.SubElement(tree, o)
                 option.text = option_value
+
+    def set_options(self, options):
+        """
+        Function change description, title
+        """
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        self._set_options(tree, options)
 
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
