@@ -11,7 +11,7 @@ urlpatterns = patterns('',
 
     url(r'^compute/(?P<compute_id>[0-9]+)/storages/$',
         'storages.views.storages', name='storages'),
-    url(r'^compute/(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.]+)/$',
+    url(r'^compute/(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.\/]+)/$',
         'storages.views.storage', name='storage'),
     url(r'^compute/(?P<compute_id>[0-9]+)/networks/$',
         'networks.views.networks', name='networks'),
