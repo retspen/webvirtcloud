@@ -149,6 +149,8 @@ class ComputeEditHostForm(forms.Form):
 class ComputeAddSocketForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
                            max_length=20)
+    details = forms.CharField(error_messages={'required': _('No details has been entred')},
+                           max_length=50)
 
     def clean_name(self):
         name = self.cleaned_data['name']
