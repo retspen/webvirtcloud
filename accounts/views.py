@@ -138,7 +138,7 @@ def account(request, user_id):
     error_messages = []
     user = User.objects.get(id=user_id)
     user_insts = UserInstance.objects.filter(user_id=user_id)
-    instances = Instance.objects.all()
+    instances = Instance.objects.all().order_by('name')
 
     if user.username == request.user.username:
         return HttpResponseRedirect(reverse('profile'))
