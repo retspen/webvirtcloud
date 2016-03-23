@@ -69,9 +69,15 @@
                                                                 <input type="hidden" name="name" value="{{ vm }}"/>
                                                                 <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
                                                                 {% ifequal info.status 5 %}
-                                                                    <button class="btn btn-sm btn-default {% if info.is_template %}disabled{% endif %}" type="submit" name="poweron" title="{% trans "Power On" %}">
-                                                                        <span class="glyphicon glyphicon-play"></span>
-                                                                    </button>
+                                                                    {% if info.is_template %}
+                                                                        <button class="btn btn-sm btn-default" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ host.0 }}, '{{ vm }}');">
+                                                                            <span class="glyphicon glyphicon-duplicate"></span>
+                                                                        </button>
+                                                                    {% else %}
+                                                                        <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
+                                                                            <span class="glyphicon glyphicon-play"></span>
+                                                                        </button>
+                                                                    {% endif %}
                                                                     <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
                                                                         <span class="glyphicon glyphicon-pause"></span>
                                                                     </button>
@@ -166,9 +172,15 @@
                                                             <input type="hidden" name="name" value="{{ vm.name }}"/>
                                                             <input type="hidden" name="compute_id" value="{{ vm.compute_id }}"/>
                                                             {% ifequal vm.status 5 %}
-                                                                <button class="btn btn-sm btn-default {% if inst.instance.is_template %}disabled{% endif %}" type="submit" name="poweron" title="Power On">
-                                                                    <span class="glyphicon glyphicon-play"></span>
-                                                                </button>
+                                                                {% if inst.instance.is_template %}
+                                                                    <button class="btn btn-sm btn-default" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ vm.compute_id }}, '{{ vm.name }}');">
+                                                                        <span class="glyphicon glyphicon-duplicate"></span>
+                                                                    </button>
+                                                                {% else %}
+                                                                    <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
+                                                                        <span class="glyphicon glyphicon-play"></span>
+                                                                    </button>
+                                                                {% endif %}
                                                                 <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
                                                                     <span class="glyphicon glyphicon-off"></span>
                                                                 </button>
@@ -238,6 +250,11 @@
             })
         }(jQuery));
     });
+</script>
+<script>
+    function goto_instance_clone(compute, instance) {
+        window.location = "/instance/" + compute + "/" + instance + "/#clone";
+    }
 </script>
 {% if request.user.is_superuser %}
     <script>
