@@ -20,3 +20,13 @@ class UserSSHKey(models.Model):
 
     def __unicode__(self):
         return self.keyname
+
+class UserAttributes(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    can_clone_instances = models.BooleanField(default=False)
+    max_instances = models.IntegerField(default=0)
+    max_cpus = models.IntegerField(default=0)
+    max_memory = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return self.user.username

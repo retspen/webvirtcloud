@@ -501,11 +501,15 @@
                                                         {% trans "Network" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
                                                 <li role="presentation">
                                                     <a href="#clone" aria-controls="clone" role="tab" data-toggle="tab">
                                                         {% trans "Clone" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <li role="presentation">
                                                     <a href="#migrate" aria-controls="migrate" role="tab" data-toggle="tab">
                                                         {% trans "Migrate" %}
@@ -690,45 +694,67 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
                                                     <p style="font-weight:bold;">{% trans "Create a clone" %}</p>
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Clone Name" %}</label>
                                                             <div class="col-sm-4">
+                                                                {% if request.user.is_superuser %}
                                                                 <input id="clone_name" type="text" class="form-control" name="name" value="{{ vname }}-clone"/>
+                                                                {% else %}
+                                                                <select id="select_clone_name" class="form-control" name="name" size="1"/>
+                                                                {% for name in clone_free_names %}
+                                                                    <option value="{{ name }}">{{ name }}</option>
+                                                                {% endfor %}
+                                                                </select>
+                                                                {% endif %}
                                                             </div>
                                                         </div>
-                                                        <p style="font-weight:bold;">{% trans "Network devices" %}</p>
-                                                        {% for network in networks %}
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
-                                                                <div class="col-sm-4">
-                                                                    <input type="text" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                                                                </div>
-                                                                <div class="col-sm-4">
-                                                                    <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
-                                                                            onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
-                                                                    <button type="button" class="btn btn-sm btn-success pull-left" name="guess-mac-{{ forloop.counter0 }}"
-                                                                            onclick="guess_mac_address({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Guess" %}</button>
-                                                                </div>
-                                                            </div>
-                                                        {% endfor %}
-                                                        <p style="font-weight:bold;">{% trans "Storage devices" %}</p>
-                                                        {% for disk in clone_disks %}
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">{{ disk.dev }} ({{ disk.storage }})</label>
-                                                                <div class="col-sm-4">
-                                                                    <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
-                                                                </div>
-                                                                {% ifequal disk.format 'qcow2' %}
-                                                                    <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">Metadata</label>
-                                                                    <div class="col-sm-1">
-                                                                        <input type="checkbox" name="meta-{{ disk.dev }}" value="true" style="margin-top: 10px;">
+                                                        {% if request.user.is_superuser %}
+                                                            <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                            {% for network in networks %}
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
+                                                                    <div class="col-sm-4">
+                                                                        <input type="text" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
                                                                     </div>
-                                                                {% endifequal %}
-                                                            </div>
-                                                        {% endfor %}
+                                                                    <div class="col-sm-4">
+                                                                        <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
+                                                                                onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
+                                                                        <button type="button" class="btn btn-sm btn-success pull-left" name="guess-mac-{{ forloop.counter0 }}"
+                                                                                onclick="guess_mac_address('#clone_name', {{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Guess" %}</button>
+                                                                    </div>
+                                                                </div>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            {% for network in networks %}
+                                                                <input type="hidden" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                        {% if request.user.is_superuser %}
+                                                            <p style="font-weight:bold;">{% trans "Storage devices" %}</p>
+                                                            {% for disk in clone_disks %}
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label" style="font-weight:normal;">{{ disk.dev }} ({{ disk.storage }})</label>
+                                                                    <div class="col-sm-4">
+                                                                        <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
+                                                                    </div>
+                                                                    {% ifequal disk.format 'qcow2' %}
+                                                                        <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">Metadata</label>
+                                                                        <div class="col-sm-1">
+                                                                            <input type="checkbox" name="meta-{{ disk.dev }}" value="true" style="margin-top: 10px;">
+                                                                        </div>
+                                                                    {% endifequal %}
+                                                                </div>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            {% for disk in clone_disks %}
+                                                                <input id="disk_name-{{ disk.dev }}" type="hidden" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
+                                                            {% endfor %}
+                                                        {% endif %}
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Title" %}</label>
                                                             <div class="col-sm-6">
@@ -749,6 +775,8 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
                                                     <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
@@ -986,8 +1014,8 @@
     }
 </script>
 <script>
-    function guess_mac_address(net) {
-        new_vname = $('#clone_name').val();
+    function guess_mac_address(src_elem, net) {
+        new_vname = $(src_elem).val();
         $.getJSON('/instance/guess_mac_address/' + new_vname + '/', function(data) {
             $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
         });
@@ -1056,6 +1084,16 @@
             $("#console_select_type option[value='" + console_type + "']").prop('selected', true);
         }
     });
+{% if not request.user.is_superuser %}
+    $('#select_clone_name').on('change', function () {
+        update_clone_disk_name($(this).val());
+        guess_mac_address('#select_clone_name', 0);
+    });
+    $(document).ready(function () {
+        update_clone_disk_name($('#select_clone_name').val());
+        guess_mac_address('#select_clone_name', 0);
+    });
+{% endif %}
 </script>
 <script>
     $(function () {

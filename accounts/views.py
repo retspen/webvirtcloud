@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from accounts.models import UserInstance, UserSSHKey
+from accounts.models import *
 from instances.models import Instance
 from accounts.forms import UserAddForm
 from django.conf import settings
@@ -92,13 +92,23 @@ def accounts(request):
         if 'edit' in request.POST:
             user_id = request.POST.get('user_id', '')
             user_pass = request.POST.get('user_pass', '')
-            user_is_staff = request.POST.get('user_is_staff', False)
-            user_is_superuser = request.POST.get('user_is_superuser', False)
             user_edit = User.objects.get(id=user_id)
             user_edit.set_password(user_pass)
-            user_edit.is_staff = user_is_staff
-            user_edit.is_superuser = user_is_superuser
+            user_edit.is_staff = request.POST.get('user_is_staff', False)
+            user_edit.is_superuser = request.POST.get('user_is_superuser', False)
             user_edit.save()
+            try:
+                userattributes = user_edit.userattributes
+            except UserAttributes.DoesNotExist:
+                userattributes = UserAttributes(user=user_edit)
+            userattributes.can_clone_instances = request.POST.get('userattributes_can_clone_instances', False)
+            userattributes_max_instances = request.POST.get('userattributes_max_instances', 0)
+            userattributes_max_cpus = request.POST.get('userattributes_max_cpus', 0)
+            userattributes_max_memory = request.POST.get('userattributes_max_memory', 0)
+            userattributes.max_instances = userattributes_max_instances if userattributes_max_instances else 0
+            userattributes.max_cpus = userattributes_max_cpus if userattributes_max_cpus else 0
+            userattributes.max_memory = userattributes_max_memory if userattributes_max_memory else 0
+            userattributes.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'block' in request.POST:
             user_id = request.POST.get('user_id', '')

@@ -697,8 +697,9 @@ class wvmInstance(wvmConnect):
             'description': clone_data.get('clone-description', ''),
         }
         self._set_options(tree, options)
-
         self._defineXML(ElementTree.tostring(tree))
+
+        return self.get_instance(clone_data['name']).UUIDString()
 
     def change_network(self, network_data):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)

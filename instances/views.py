@@ -20,6 +20,7 @@ from vrtManager.connection import connection_manager
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
 from logs.views import addlogmsg
+from django.conf import settings
 
 
 @login_required
@@ -204,6 +205,31 @@ def instance(request, compute_id, vname):
         else:
             return long(float(size_str))
 
+    def get_clone_free_names(size=10):
+        prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+        free_names = []
+        existing_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
+        index = 1
+        while len(free_names) < size:
+            new_name = prefix + str(index)
+            if new_name not in existing_names:
+                free_names.append(new_name)
+            index += 1
+        return free_names
+
+    def check_user_quota():
+        userinstances = UserInstance.objects.filter(user__id=request.user.id)
+        instances_count = len(userinstances)
+        cpus_count = instances_count
+        memory_count = instances_count * 2048
+        if request.user.userattributes.max_instances > 0 and instances_count > request.user.userattributes.max_instances:
+            return "instance"
+        if request.user.userattributes.max_cpus > 0 and cpus_count > request.user.userattributes.max_cpus:
+            return "cpu"
+        if request.user.userattributes.max_memory > 0 and memory_count > request.user.userattributes.max_memory:
+            return "memory"
+        return ""
+
     try:
         conn = wvmInstance(compute.hostname,
                            compute.login,
@@ -241,6 +267,7 @@ def instance(request, compute_id, vname):
         has_managed_save_image = conn.get_managed_save_image()
         clone_disks = show_clone_disk(disks, vname)
         console_passwd = conn.get_console_passwd()
+        clone_free_names = get_clone_free_names()
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -496,23 +523,6 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(reverse('instance', args=[compute_id, vname]))
 
-                if 'clone' in request.POST:
-                    clone_data = {}
-                    clone_data['name'] = request.POST.get('name', '')
-
-                    check_instance = Instance.objects.filter(name=clone_data['name'])
-                    if check_instance:
-                        msg = _("Instance '%s' already exists!" % clone_data['name'])
-                        error_messages.append(msg)
-                    else:
-                        for post in request.POST:
-                            clone_data[post] = request.POST.get(post, '')
-
-                        conn.clone_instance(clone_data)
-                        msg = _("Clone")
-                        addlogmsg(request.user.username, instance.name, msg)
-                        return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
-
                 if 'change_network' in request.POST:
                     network_data = {}
 
@@ -538,6 +548,34 @@ def instance(request, compute_id, vname):
                     msg = _("Edit options")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#options')
+
+            if request.user.is_superuser or request.user.userattributes.can_clone_instances:
+                if 'clone' in request.POST:
+                    clone_data = {}
+                    clone_data['name'] = request.POST.get('name', '')
+
+                    quota_msg = check_user_quota()
+                    if quota_msg:    
+                        msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
+                        error_messages.append(msg)
+
+                    check_instance = Instance.objects.filter(name=clone_data['name'])
+                    if check_instance:
+                        msg = _("Instance '%s' already exists!" % clone_data['name'])
+                        error_messages.append(msg)
+                    else:
+                        for post in request.POST:
+                            clone_data[post] = request.POST.get(post, '')
+
+                        new_uuid = conn.clone_instance(clone_data)
+                        new_instance = Instance(compute_id=compute_id, name=clone_data['name'], uuid=new_uuid)
+                        new_instance.save()
+                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id)
+                        userinstance.save()
+
+                        msg = _("Clone of '%s'" % instance.name)
+                        addlogmsg(request.user.username, new_instance.name, msg)
+                        return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
 
         conn.close()
 
