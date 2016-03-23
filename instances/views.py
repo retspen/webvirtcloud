@@ -381,27 +381,31 @@ def instance(request, compute_id, vname):
                     error_messages.append(msg)
 
             if 'resize' in request.POST:
-                vcpu = request.POST.get('vcpu', '')
-                cur_vcpu = request.POST.get('cur_vcpu', '')
-                memory = request.POST.get('memory', '')
-                memory_custom = request.POST.get('memory_custom', '')
-                if memory_custom:
-                    memory = memory_custom
-                cur_memory = request.POST.get('cur_memory', '')
-                cur_memory_custom = request.POST.get('cur_memory_custom', '')
-                if cur_memory_custom:
-                    cur_memory = cur_memory_custom
+                new_vcpu = request.POST.get('vcpu', '')
+                new_cur_vcpu = request.POST.get('cur_vcpu', '')
+                new_memory = request.POST.get('memory', '')
+                new_memory_custom = request.POST.get('memory_custom', '')
+                if new_memory_custom:
+                    new_memory = new_memory_custom
+                new_cur_memory = request.POST.get('cur_memory', '')
+                new_cur_memory_custom = request.POST.get('cur_memory_custom', '')
+                if new_cur_memory_custom:
+                    new_cur_memory = new_cur_memory_custom
                 disks_new = []
                 for disk in disks:
                     input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
                     if input_disk_size > disk['size']+(64<<20):
                         disk['size_new'] = input_disk_size
                         disks_new.append(disk) 
-                quota_msg = check_user_quota(0, int(vcpu)-conn.get_vcpu(), int(memory)-conn.get_memory())
+                quota_msg = check_user_quota(0, int(new_vcpu)-vcpu, int(new_memory)-memory)
                 if not request.user.is_superuser and quota_msg:    
                     msg = _("User %s quota reached, cannot resize '%s'!" % (quota_msg, instance.name))
                     error_messages.append(msg)
                 else:
+                    cur_memory = new_cur_memory
+                    memory = new_memory
+                    cur_vcpu = new_cur_vcpu
+                    vcpu = new_vcpu
                     conn.resize(cur_memory, memory, cur_vcpu, vcpu, disks_new)
                     msg = _("Resize")
                     addlogmsg(request.user.username, instance.name, msg)
