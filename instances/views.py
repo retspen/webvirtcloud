@@ -397,7 +397,7 @@ def instance(request, compute_id, vname):
                     if input_disk_size > disk['size']+(64<<20):
                         disk['size_new'] = input_disk_size
                         disks_new.append(disk) 
-                quota_msg = check_user_quota(0, vcpu, memory)
+                quota_msg = check_user_quota(0, int(vcpu)-conn.get_vcpu(), int(memory)-conn.get_memory())
                 if not request.user.is_superuser and quota_msg:    
                     msg = _("User %s quota reached, cannot resize '%s'!" % (quota_msg, instance.name))
                     error_messages.append(msg)
