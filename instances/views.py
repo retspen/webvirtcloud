@@ -229,7 +229,7 @@ def instance(request, compute_id, vname):
                                       usr_inst.instance.compute.type)
                 wvm_instance = conn.get_user_instances(usr_inst.instance.name)
                 cpu += int(wvm_instance['vcpu'])
-                memory += int(wvm_instance['memory'])/1024
+                memory += int(wvm_instance['memory'])
         
         ua = request.user.userattributes
         if ua.max_instances > 0 and instance > ua.max_instances:
@@ -325,15 +325,11 @@ def instance(request, compute_id, vname):
                 instance_name = instance.name
                 instance.delete()
 
-                if not request.user.is_superuser:
-                    del_userinstance = UserInstance.objects.get(id=userinstace.id)
+                try:
+                    del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
                     del_userinstance.delete()
-                else:
-                    try:
-                        del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
-                        del_userinstance.delete()
-                    except UserInstance.DoesNotExist:
-                        pass
+                except UserInstance.DoesNotExist:
+                    pass
 
                 msg = _("Destroy")
                 addlogmsg(request.user.username, instance_name, msg)
@@ -585,7 +581,7 @@ def instance(request, compute_id, vname):
                         new_uuid = conn.clone_instance(clone_data)
                         new_instance = Instance(compute_id=compute_id, name=clone_data['name'], uuid=new_uuid)
                         new_instance.save()
-                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id)
+                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
                         userinstance.save()
 
                         msg = _("Clone of '%s'" % instance.name)
