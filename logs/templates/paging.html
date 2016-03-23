@@ -1,0 +1,12 @@
+<center>
+    {% if page > 1 %}
+        <a href="{% url 'showlogspage' page|add:"-1" %}">&larr;</a>
+    {% else %}
+        &nbsp;
+    {% endif %}
+    {% if has_next_page %}
+    <a href="{% url 'showlogspage' page|add:"1" %}">&rarr;</a>
+    {% else %}
+        &nbsp;
+    {% endif %}
+</center>
