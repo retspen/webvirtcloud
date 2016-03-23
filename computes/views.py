@@ -35,14 +35,15 @@ def computes(request):
                                  'status': connection_manager.host_is_up(compute.type, compute.hostname),
                                  'type': compute.type,
                                  'login': compute.login,
-                                 'password': compute.password
+                                 'password': compute.password,
+                                 'details': compute.details
                                  })
         return compute_data
 
     error_messages = []
     computes = Compute.objects.filter().order_by('name')
     computes_info = get_hosts_status(computes)
-
+    
     if request.method == 'POST':
         if 'host_del' in request.POST:
             compute_id = request.POST.get('host_id', '')
@@ -103,6 +104,7 @@ def computes(request):
             if form.is_valid():
                 data = form.cleaned_data
                 new_socket_host = Compute(name=data['name'],
+                                          details=data['details'],
                                           hostname='localhost',
                                           type=CONN_SOCKET,
                                           login='',
@@ -121,6 +123,7 @@ def computes(request):
                 compute_edit.hostname = data['hostname']
                 compute_edit.login = data['login']
                 compute_edit.password = data['password']
+                compute.edit_details = data['details']
                 compute_edit.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:

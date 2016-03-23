@@ -45,6 +45,11 @@
                                             {% else %}
                                                 <p>{% trans "Not Connected" %}</p>
                                             {% endif %}
+											{% if compute.details %}
+												<p>{% trans compute.details %}</p>
+											{% else %}
+												<p>{% trans "No details available" %}</p>
+											{% endif %}
                                         </div>
                                     </div>
 
