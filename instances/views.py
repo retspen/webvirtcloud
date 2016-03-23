@@ -218,15 +218,17 @@ def instance(request, compute_id, vname):
         return free_names
 
     def check_user_quota():
+        # TODO: count cpus, memory correctly
         userinstances = UserInstance.objects.filter(user__id=request.user.id)
         instances_count = len(userinstances)
         cpus_count = instances_count
         memory_count = instances_count * 2048
-        if request.user.userattributes.max_instances > 0 and instances_count > request.user.userattributes.max_instances:
+        ua = request.user.userattributes
+        if ua.max_instances > 0 and instances_count > ua.max_instances:
             return "instance"
-        if request.user.userattributes.max_cpus > 0 and cpus_count > request.user.userattributes.max_cpus:
+        if ua.max_cpus > 0 and cpus_count > ua.max_cpus:
             return "cpu"
-        if request.user.userattributes.max_memory > 0 and memory_count > request.user.userattributes.max_memory:
+        if ua.max_memory > 0 and memory_count > ua.max_memory:
             return "memory"
         return ""
 
@@ -555,12 +557,12 @@ def instance(request, compute_id, vname):
                     clone_data['name'] = request.POST.get('name', '')
 
                     quota_msg = check_user_quota()
-                    if quota_msg:    
+                    check_instance = Instance.objects.filter(name=clone_data['name'])
+                    
+                    if not request.user.is_superuser and quota_msg:    
                         msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
                         error_messages.append(msg)
-
-                    check_instance = Instance.objects.filter(name=clone_data['name'])
-                    if check_instance:
+                    elif check_instance:
                         msg = _("Instance '%s' already exists!" % clone_data['name'])
                         error_messages.append(msg)
                     else:
