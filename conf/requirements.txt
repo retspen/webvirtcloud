@@ -3,5 +3,4 @@ websockify==0.6.0
 gunicorn==19.3.0
 libvirt-python==1.2.16
 #http://github.com/retspen/retspen.github.io/raw/master/libxml2-python-2.9.1.tar.gz
-#Warning! this string installing libxml2-python version 2.9.2
-git+http://github.com/GNOME/libxml2.git#egg=subdir&subdirectory=python
+git+https://git.gnome.org/browse/libxml2@v2.9.1#egg=libxml2-python&subdirectory=python
