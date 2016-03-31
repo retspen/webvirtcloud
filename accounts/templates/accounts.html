@@ -107,6 +107,12 @@
                                                     <input type="text" name="userattributes_max_memory" class="form-control" value="{{ user.userattributes.max_memory }}">
                                                 </div>
                                             </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Max disk size (GB)" %}</label>
+                                                <div class="col-sm-6">
+                                                    <input type="text" name="userattributes_max_disk_size" class="form-control" value="{{ user.userattributes.max_disk_size }}">
+                                                </div>
+                                            </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="submit" class="pull-left btn btn-danger" name="delete">

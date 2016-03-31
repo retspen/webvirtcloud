@@ -217,28 +217,41 @@ def instance(request, compute_id, vname):
             index += 1
         return free_names
 
-    def check_user_quota(instance, cpu, memory):
-        user_instances = UserInstance.objects.filter(user_id=request.user.id)
+    def check_user_quota(instance, cpu, memory, disk_size):
+        user_instances = UserInstance.objects.filter(user_id=request.user.id, instance__is_template=False)
         instance += len(user_instances)
         for usr_inst in user_instances:
             if connection_manager.host_is_up(usr_inst.instance.compute.type,
                                              usr_inst.instance.compute.hostname):
-                conn = wvmHostDetails(usr_inst.instance.compute,
+                conn = wvmInstance(usr_inst.instance.compute,
                                       usr_inst.instance.compute.login,
                                       usr_inst.instance.compute.password,
-                                      usr_inst.instance.compute.type)
-                wvm_instance = conn.get_user_instances(usr_inst.instance.name)
-                cpu += int(wvm_instance['vcpu'])
-                memory += int(wvm_instance['memory'])
+                                      usr_inst.instance.compute.type,
+                                      usr_inst.instance.name)
+                cpu += int(conn.get_vcpu())
+                memory += int(conn.get_memory())
+                for disk in conn.get_disk_device():
+                    disk_size += int(disk['size'])>>30
         
         ua = request.user.userattributes
+        msg = ""
         if ua.max_instances > 0 and instance > ua.max_instances:
-            return "instance"
+            msg = "instance"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (instance, ua.max_instances)
         if ua.max_cpus > 0 and cpu > ua.max_cpus:
-            return "cpu"
+            msg = "cpu"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (cpu, ua.max_cpus)
         if ua.max_memory > 0 and memory > ua.max_memory:
-            return "memory"
-        return ""
+            msg = "memory"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (memory, ua.max_memory)
+        if ua.max_disk_size > 0 and disk_size > ua.max_disk_size:
+            msg = "disk"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
+        return msg
 
     try:
         conn = wvmInstance(compute.hostname,
@@ -278,6 +291,7 @@ def instance(request, compute_id, vname):
         clone_disks = show_clone_disk(disks, vname)
         console_passwd = conn.get_console_passwd()
         clone_free_names = get_clone_free_names()
+        user_quota_msg = check_user_quota(0, 0, 0, 0)
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -397,7 +411,9 @@ def instance(request, compute_id, vname):
                     if input_disk_size > disk['size']+(64<<20):
                         disk['size_new'] = input_disk_size
                         disks_new.append(disk) 
-                quota_msg = check_user_quota(0, int(new_vcpu)-vcpu, int(new_memory)-memory)
+                disk_sum = sum([disk['size']>>30 for disk in disks_new])
+                disk_new_sum = sum([disk['size_new']>>30 for disk in disks_new])
+                quota_msg = check_user_quota(0, int(new_vcpu)-vcpu, int(new_memory)-memory, disk_new_sum-disk_sum)
                 if not request.user.is_superuser and quota_msg:    
                     msg = _("User %s quota reached, cannot resize '%s'!" % (quota_msg, instance.name))
                     error_messages.append(msg)
@@ -569,7 +585,8 @@ def instance(request, compute_id, vname):
                     clone_data = {}
                     clone_data['name'] = request.POST.get('name', '')
 
-                    quota_msg = check_user_quota(1, conn.get_vcpu(), conn.get_memory())
+                    disk_sum = sum([disk['size']>>30 for disk in disks])
+                    quota_msg = check_user_quota(1, vcpu, memory, disk_sum)
                     check_instance = Instance.objects.filter(name=clone_data['name'])
                     
                     if not request.user.is_superuser and quota_msg:    

@@ -39,6 +39,9 @@
                             {% endfor %}
                         </tr>
                     </table>
+                    {% if user_quota_msg %}
+                        <span class="label label-warning">{{ user_quota_msg|capfirst }} quota reached.</span>
+                    {% endif %}
                     <hr>
                 </div>
 
