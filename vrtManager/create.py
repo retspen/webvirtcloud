@@ -48,6 +48,17 @@ class wvmCreate(wvmConnect):
         """Get guest capabilities"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
 
+    def get_cache_modes(self):
+        """Get cache available modes"""
+        return {
+            'default': 'Default',
+            'none': 'Disabled',
+            'writethrough': 'Write through',
+            'writeback': 'Write back',
+            'directsync': 'Direct sync',  # since libvirt 0.9.5
+            'unsafe': 'Unsafe',  # since libvirt 0.9.7
+        }
+
     def create_volume(self, storage, name, size, format='qcow2', metadata=False):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)
@@ -129,7 +140,7 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(path)
         vol.delete()
 
-    def create_instance(self, name, memory, vcpu, host_model, uuid, images, networks, virtio, mac=None):
+    def create_instance(self, name, memory, vcpu, host_model, uuid, images, cache_mode, networks, virtio, mac=None):
         """
         Create VM function
         """
@@ -172,11 +183,11 @@ class wvmCreate(wvmConnect):
             if stg_type == 'rbd':
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
                 xml += """<disk type='network' device='disk'>
-                            <driver name='qemu' type='%s'/>
+                            <driver name='qemu' type='%s' cache='%s'/>
                             <auth username='%s'>
                                 <secret type='ceph' uuid='%s'/>
                             </auth>
-                            <source protocol='rbd' name='%s'>""" % (img_type, ceph_user, secret_uuid, image)
+                            <source protocol='rbd' name='%s'>""" % (img_type, cache_mode, ceph_user, secret_uuid, image)
                 if isinstance(ceph_hosts, list):
                     for host in ceph_hosts:
                         if host.get('port'):
@@ -189,8 +200,8 @@ class wvmCreate(wvmConnect):
                             </source>"""
             else:
                 xml += """<disk type='file' device='disk'>
-                            <driver name='qemu' type='%s'/>
-                            <source file='%s'/>""" % (img_type, image)
+                            <driver name='qemu' type='%s' cache='%s'/>
+                            <source file='%s'/>""" % (img_type, cache_mode, image)
 
             if virtio:
                 xml += """<target dev='vd%s' bus='virtio'/>""" % (disk_letters.pop(0),)
