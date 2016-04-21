@@ -549,6 +549,8 @@ def instance(request, compute_id, vname):
                                                 new_compute.type)
                     conn_migrate.moveto(conn, vname, live, unsafe, xml_del)
                     conn_migrate.define_move(vname)
+                    instance.compute = new_compute
+                    instance.save()
                     conn_migrate.close()
                     msg = _("Migrate")
                     addlogmsg(request.user.username, instance.name, msg)
