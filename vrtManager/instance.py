@@ -82,7 +82,7 @@ class wvmInstances(wvmConnect):
         dom = self.get_instance(name)
         xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE)
         self.wvm.defineXML(xml)
-        
+
     def graphics_type(self, name):
         inst = self.get_instance(name)
         console_type = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@type")

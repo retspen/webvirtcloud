@@ -103,7 +103,7 @@ def instances(request):
                 conn.start(name)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path())
-            
+
             if 'getvvfile' in request.POST:
                 msg = _("Send console.vv file")
                 addlogmsg(request.user.username, instance.name, msg)

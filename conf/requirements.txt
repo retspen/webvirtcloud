@@ -1,5 +1,6 @@
-Django==1.8.2
-websockify==0.7.0
+Django==1.8.11
+websockify==0.8.0
 gunicorn==19.3.0
-libvirt-python==1.2.16
-http://github.com/retspen/retspen.github.io/raw/master/libxml2-python-2.9.1.tar.gz
+libvirt-python==1.3.2
+#http://github.com/retspen/retspen.github.io/raw/master/libxml2-python-2.9.1.tar.gz
+http://git.gnome.org/browse/libxml2/snapshot/libxml2-2.9.1.tar.gz#egg=libxml2-python&subdirectory=python
