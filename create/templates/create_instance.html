@@ -77,6 +77,13 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="form-group meta-prealloc">
+                                <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
+                                </div>
+                                <label class="col-lg-1 control-label">{% trans "Image" %}</label>
+                            </div>
                             <div class="form-group">
                                 <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
                                 <div class="col-sm-6">
@@ -278,6 +285,7 @@
                                                                 <label class="col-sm-3 control-label">{% trans "Storage" %}</label>
 
                                                                 <div class="col-sm-6">
+                                                                    <input type="hidden" name="cache_mode" value="default">
                                                                     <select name="storage" class="form-control">
                                                                         {% if storages %}
                                                                             {% for storage in storages %}
@@ -288,13 +296,6 @@
                                                                         {% endif %}
                                                                     </select>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group meta-prealloc">
-                                                                <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
-                                                                </div>
-                                                                <label class="col-lg-1 control-label">{% trans "Image" %}</label>
                                                             </div>
                                                             <div class="form-group">
                                                                 <label class="col-sm-3 control-label">{% trans "Network" %}</label>
