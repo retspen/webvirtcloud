@@ -2,6 +2,7 @@
 {% load i18n %}
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
+                {% include 'pleasewaitdialog.html' %}
                 <!-- Page Heading -->
                  <div class="row">
                     <table>
@@ -771,7 +772,7 @@
                                                             </div>
                                                         </div>
                                                         {% ifequal status 5 %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="clone">{% trans "Clone" %}</button>
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="clone" onclick="showPleaseWaitDialog();">{% trans "Clone" %}</button>
                                                         {% else %}
                                                             <button class="btn btn-lg btn-success pull-right disabled" name="clone">{% trans "Clone" %}</button>
                                                         {% endifequal %}
@@ -822,7 +823,7 @@
                                                             </div>
                                                         </div>
                                                         {% if computes_count != 1 %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="migrate">{% trans "Migrate" %}</button>
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="migrate" onclick="showPleaseWaitDialog();">{% trans "Migrate" %}</button>
                                                         {% else %}
                                                             <button class="btn btn-lg btn-success pull-right disabled">{% trans "Migrate" %}</button>
                                                         {% endif %}
