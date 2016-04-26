@@ -71,11 +71,20 @@ def accounts(request):
     :return:
     """
 
+    def create_missing_userattributes(users):
+        for user in users:
+            try:
+                userattributes = user.userattributes
+            except UserAttributes.DoesNotExist:
+                userattributes = UserAttributes(user=user)
+                userattributes.save()
+
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     users = User.objects.all()
+    create_missing_userattributes(users)
 
     if request.method == 'POST':
         if 'create' in request.POST:
@@ -97,19 +106,13 @@ def accounts(request):
             user_edit.is_staff = request.POST.get('user_is_staff', False)
             user_edit.is_superuser = request.POST.get('user_is_superuser', False)
             user_edit.save()
-            try:
-                userattributes = user_edit.userattributes
-            except UserAttributes.DoesNotExist:
-                userattributes = UserAttributes(user=user_edit)
+
+            userattributes = user_edit.userattributes
             userattributes.can_clone_instances = request.POST.get('userattributes_can_clone_instances', False)
-            userattributes_max_instances = request.POST.get('userattributes_max_instances', 0)
-            userattributes_max_cpus = request.POST.get('userattributes_max_cpus', 0)
-            userattributes_max_memory = request.POST.get('userattributes_max_memory', 0)
-            userattributes_max_disk_size = request.POST.get('userattributes_max_disk_size', 0)
-            userattributes.max_instances = userattributes_max_instances if userattributes_max_instances else 0
-            userattributes.max_cpus = userattributes_max_cpus if userattributes_max_cpus else 0
-            userattributes.max_memory = userattributes_max_memory if userattributes_max_memory else 0
-            userattributes.max_disk_size = userattributes_max_disk_size if userattributes_max_disk_size else 0
+            userattributes.max_instances = request.POST.get('userattributes_max_instances', 0)
+            userattributes.max_cpus = request.POST.get('userattributes_max_cpus', 0)
+            userattributes.max_memory = request.POST.get('userattributes_max_memory', 0)
+            userattributes.max_disk_size = request.POST.get('userattributes_max_disk_size', 0)
             userattributes.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'block' in request.POST:
