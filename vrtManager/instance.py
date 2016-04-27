@@ -718,7 +718,7 @@ class wvmInstance(wvmConnect):
     def _set_options(self, tree, options):
         for o in ['title', 'description']:
             option = tree.find(o)
-            option_value = str(options.get(o, '')).strip()
+            option_value = options.get(o, '').strip()
             if not option_value:
                 if not option is None:
                     tree.remove(option)
