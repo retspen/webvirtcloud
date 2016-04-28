@@ -529,6 +529,11 @@
                                                         {% trans "Options" %}
                                                     </a>
                                                 </li>
+                                                <li role="presentation">
+                                                    <a href="#users" aria-controls="users" role="tab" data-toggle="tab">
+                                                        {% trans "Users" %}
+                                                    </a>
+                                                </li>
                                             {% endif %}
                                         </ul>
                                         <!-- Tab panes -->
@@ -875,6 +880,13 @@
                                                             <button class="btn btn-lg btn-success pull-right disabled" name="change_options">{% trans "Change" %}</button>
                                                         {% endifequal %}
                                                     </form>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="users">
+                                                    <p style="font-weight:bold;">{% trans "Instance owners" %}</p>
+                                                    {% for userinstance in userinstances %}
+                                                    <p><a href="{% url 'account' userinstance.user.id %}">{{ userinstance.user }}</a></p>
+                                                    {%  endfor %}
                                                     <div class="clearfix"></div>
                                                 </div>
                                             {% endif %}
@@ -1272,7 +1284,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate', '#options'])) {
+    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate', '#options', '#users'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#settings') {

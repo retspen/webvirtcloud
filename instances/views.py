@@ -302,6 +302,8 @@ def instance(request, compute_id, vname):
             instance = Instance(compute_id=compute_id, name=vname, uuid=uuid)
             instance.save()
 
+        userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
+
         if request.method == 'POST':
             if 'poweron' in request.POST:
                 conn.start()
