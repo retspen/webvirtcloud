@@ -39,8 +39,8 @@
                                     <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
                                         <thead>
                                             <tr>
-                                                <th>Name</th>
-                                                <th>Host</th>
+                                                <th>Name<br>Description</th>
+                                                <th>Host<br>User</th>
                                                 <th>Status</th>
                                                 <th>VCPU</th>
                                                 <th>Memory</th>
@@ -52,7 +52,7 @@
                                                 {% for vm, info in inst.items %}
                                                     <tr>
                                                         <td><a href="{% url 'instance' host.0 vm %}">{{ vm }}</a><br><small><em>{{ info.title }}</em></small></td>
-                                                        <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
+                                                        <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a><br><small><em>{% if info.userinstances.count > 0 %}{{ info.userinstances.first_user.user.username }}{% if info.userinstances.count > 1 %} (+{{ info.userinstances.count|add:"-1" }}){% endif %}{% endif %}</em></small></td>
                                                         <td>{% ifequal info.status 1 %}
                                                                 <span class="text-success">{% trans "Active" %}</span>
                                                             {% endifequal %}

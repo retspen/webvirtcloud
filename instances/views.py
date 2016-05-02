@@ -45,6 +45,16 @@ def instances(request):
     all_user_vms = {}
     computes = Compute.objects.all()
 
+    def get_userinstances_info(instance):
+        info = {}
+        uis = UserInstance.objects.filter(instance=instance)
+        info['count'] = len(uis)
+        if len(uis) > 0:
+            info['first_user'] = uis[0]
+        else:
+            info['first_user'] = None
+        return info
+
     if not request.user.is_superuser:
         user_instances = UserInstance.objects.filter(user_id=request.user.id)
         for usr_inst in user_instances:
@@ -69,6 +79,7 @@ def instances(request):
                                 if check_uuid.uuid != info['uuid']:
                                     check_uuid.save()
                                 all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
+                                all_host_vms[comp.id, comp.name][vm]['userinstances'] = get_userinstances_info(check_uuid)
                             except Instance.DoesNotExist:
                                 check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
                                 check_uuid.save()
