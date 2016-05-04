@@ -10,7 +10,7 @@ import re
 
 
 PORT = 16510
-ADDRESS = "0.0.0.0"
+ADDRESS = "127.0.0.1"
 
 
 class MyTCPServer(SocketServer.ThreadingTCPServer):
