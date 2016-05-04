@@ -227,8 +227,8 @@ class wvmCreate(wvmConnect):
 
         xml += """  <input type='mouse' bus='ps2'/>
                     <input type='tablet' bus='usb'/>
-                    <graphics type='%s' port='-1' autoport='yes' listen='0.0.0.0'>
-                      <listen type='address' address='0.0.0.0'/>
+                    <graphics type='%s' port='-1' autoport='yes' listen='127.0.0.1'>
+                      <listen type='address' address='127.0.0.1'/>
                     </graphics>
                     <console type='pty'/>
                     <video>

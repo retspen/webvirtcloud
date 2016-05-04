@@ -223,6 +223,7 @@ def instance(request, compute_id, vname):
         has_managed_save_image = conn.get_managed_save_image()
         clone_disks = show_clone_disk(disks)
         console_passwd = conn.get_console_passwd()
+        console_listen_locally = conn.get_console_listen_addr() in ["127.0.0.1", "::1"]
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -416,6 +417,16 @@ def instance(request, compute_id, vname):
                         msg = _("Edit XML")
                         addlogmsg(request.user.username, instance.name, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#xmledit')
+
+                if 'set_console_listen_addr' in request.POST:
+                    console_listen_locally = request.POST.get("listen_locally", False) == "true"
+                    if not conn.set_console_listen_addr('127.0.0.1' if console_listen_locally else '0.0.0.0'):
+                        msg = _("Error setting console listen status. You should check that your instance have an graphic device.")
+                        error_messages.append(msg)
+                    else:
+                        msg = _("Set VNC listen status")
+                        addlogmsg(request.user.username, instance.name, msg)
+                        return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
                 if 'set_console_passwd' in request.POST:
                     if request.POST.get('auto_pass', ''):
