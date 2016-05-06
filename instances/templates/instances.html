@@ -245,7 +245,7 @@
         $('.searchable tr').filter(function () {
             return rex.test($(this).text());
         }).show();
-        Cookies.set("instances_filter", $(this).val());
+        Cookies.set("instances_filter", $(this).val(), { expires: 1 });
     }
     $(document).ready(function () {
         instances_filter_cookie = Cookies.get("instances_filter");
