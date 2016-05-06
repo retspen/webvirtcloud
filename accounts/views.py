@@ -83,7 +83,7 @@ def accounts(request):
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
-    users = User.objects.all()
+    users = User.objects.all().order_by('username')
     create_missing_userattributes(users)
 
     if request.method == 'POST':
