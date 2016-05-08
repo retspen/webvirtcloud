@@ -1,4 +1,5 @@
 import re
+import json
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from computes.models import Compute
@@ -43,6 +44,20 @@ class ComputeAddTcpForm(forms.Form):
             return hostname
         raise forms.ValidationError(_('This host is already connected'))
 
+    def clean_gstfsd_key(self):
+        gstfsd_key = self.cleaned_data['gstfsd_key']
+        try:
+            data = json.loads(gstfsd_key)
+            if not isinstance(data, dict):
+                raise forms.ValidationError(_('Gstfsd key must be a json object'))
+            if not 'k' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "k" field'))
+            if not 'kty' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "kty" field'))
+        except ValueError:
+            raise forms.ValidationError(_('Gstfsd key must be a valid json'))
+        return gstfsd_key
+
 
 class ComputeAddSshForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
@@ -80,6 +95,20 @@ class ComputeAddSshForm(forms.Form):
         except Compute.DoesNotExist:
             return hostname
         raise forms.ValidationError(_('This host is already connected'))
+
+    def clean_gstfsd_key(self):
+        gstfsd_key = self.cleaned_data['gstfsd_key']
+        try:
+            data = json.loads(gstfsd_key)
+            if not isinstance(data, dict):
+                raise forms.ValidationError(_('Gstfsd key must be a json object'))
+            if not 'k' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "k" field'))
+            if not 'kty' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "kty" field'))
+        except ValueError:
+            raise forms.ValidationError(_('Gstfsd key must be a valid json'))
+        return gstfsd_key
 
 
 class ComputeAddTlsForm(forms.Form):
@@ -121,6 +150,20 @@ class ComputeAddTlsForm(forms.Form):
             return hostname
         raise forms.ValidationError(_('This host is already connected'))
 
+    def clean_gstfsd_key(self):
+        gstfsd_key = self.cleaned_data['gstfsd_key']
+        try:
+            data = json.loads(gstfsd_key)
+            if not isinstance(data, dict):
+                raise forms.ValidationError(_('Gstfsd key must be a json object'))
+            if not 'k' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "k" field'))
+            if not 'kty' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "kty" field'))
+        except ValueError:
+            raise forms.ValidationError(_('Gstfsd key must be a valid json'))
+        return gstfsd_key
+
 
 class ComputeEditHostForm(forms.Form):
     host_id = forms.CharField()
@@ -153,6 +196,20 @@ class ComputeEditHostForm(forms.Form):
             raise forms.ValidationError(_('Wrong IP address'))
         return hostname
 
+    def clean_gstfsd_key(self):
+        gstfsd_key = self.cleaned_data['gstfsd_key']
+        try:
+            data = json.loads(gstfsd_key)
+            if not isinstance(data, dict):
+                raise forms.ValidationError(_('Gstfsd key must be a json object'))
+            if not 'k' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "k" field'))
+            if not 'kty' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "kty" field'))
+        except ValueError:
+            raise forms.ValidationError(_('Gstfsd key must be a valid json'))
+        return gstfsd_key
+
 
 class ComputeAddSocketForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
@@ -173,3 +230,17 @@ class ComputeAddSocketForm(forms.Form):
         except Compute.DoesNotExist:
             return name
         raise forms.ValidationError(_('This host is already connected'))
+
+    def clean_gstfsd_key(self):
+        gstfsd_key = self.cleaned_data['gstfsd_key']
+        try:
+            data = json.loads(gstfsd_key)
+            if not isinstance(data, dict):
+                raise forms.ValidationError(_('Gstfsd key must be a json object'))
+            if not 'k' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "k" field'))
+            if not 'kty' in data:
+                raise forms.ValidationError(_('Gstfsd key must have a "kty" field'))
+        except ValueError:
+            raise forms.ValidationError(_('Gstfsd key must be a valid json'))
+        return gstfsd_key
