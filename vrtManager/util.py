@@ -1,6 +1,7 @@
 import random
 import libxml2
 import libvirt
+import string
 
 
 def is_kvm_available(xml):
@@ -27,6 +28,11 @@ def randomUUID():
 
     u = [random.randint(0, 255) for dummy in range(0, 16)]
     return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2, "%02x" * 6]) % tuple(u)
+
+
+def randomPasswd(length=12, alphabet=string.letters + string.digits):
+    """Generate a random password"""
+    return ''.join([random.choice(alphabet) for i in xrange(length)])
 
 
 def get_max_vcpus(conn, type=None):

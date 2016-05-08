@@ -15,6 +15,7 @@ from accounts.models import UserInstance, UserSSHKey
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
+from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
 from logs.views import addlogmsg
@@ -419,7 +420,7 @@ def instance(request, compute_id, vname):
 
                 if 'set_console_passwd' in request.POST:
                     if request.POST.get('auto_pass', ''):
-                        passwd = ''.join([choice(letters + digits) for i in xrange(12)])
+                        passwd = randomPasswd()
                     else:
                         passwd = request.POST.get('console_passwd', '')
                         clear = request.POST.get('clear_pass', False)
