@@ -36,7 +36,8 @@ def computes(request):
                                  'status': connection_manager.host_is_up(compute.type, compute.hostname),
                                  'type': compute.type,
                                  'login': compute.login,
-                                 'password': compute.password
+                                 'password': compute.password,
+                                 'gstfsd_key': compute.gstfsd_key
                                  })
         return compute_data
 
@@ -66,7 +67,8 @@ def computes(request):
                                        hostname=data['hostname'],
                                        type=CONN_TCP,
                                        login=data['login'],
-                                       password=data['password'])
+                                       password=data['password'],
+                                       gstfsd_key=data['gstfsd_key'])
                 new_tcp_host.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:
@@ -79,7 +81,8 @@ def computes(request):
                 new_ssh_host = Compute(name=data['name'],
                                        hostname=data['hostname'],
                                        type=CONN_SSH,
-                                       login=data['login'])
+                                       login=data['login'],
+                                       gstfsd_key=data['gstfsd_key'])
                 new_ssh_host.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:
@@ -93,7 +96,8 @@ def computes(request):
                                        hostname=data['hostname'],
                                        type=CONN_TLS,
                                        login=data['login'],
-                                       password=data['password'])
+                                       password=data['password'],
+                                       gstfsd_key=data['gstfsd_key'])
                 new_tls_host.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:
@@ -107,7 +111,8 @@ def computes(request):
                                           hostname='localhost',
                                           type=CONN_SOCKET,
                                           login='',
-                                          password='')
+                                          password='',
+                                          gstfsd_key=data['gstfsd_key'])
                 new_socket_host.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:
@@ -122,6 +127,7 @@ def computes(request):
                 compute_edit.hostname = data['hostname']
                 compute_edit.login = data['login']
                 compute_edit.password = data['password']
+                compute_edit.gstfsd_key = data['gstfsd_key']
                 compute_edit.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:

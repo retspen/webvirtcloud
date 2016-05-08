@@ -5,6 +5,7 @@ import crypt
 from string import letters, digits
 from random import choice
 from bisect import insort
+from jwcrypto import jws, jwk, jwe
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, get_object_or_404
@@ -291,17 +292,26 @@ def instance(request, compute_id, vname):
                 data = {'action': 'password', 'passwd': passwd_hash, 'vname': vname}
 
                 if conn.get_status() == 5:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect((compute.hostname, 16510))
-                    s.send(json.dumps(data))
-                    result = json.loads(s.recv(1024))
-                    s.close()
-                    msg = _("Reset root password")
-                    addlogmsg(request.user.username, instance.name, msg)
+                    if compute.gstfsd_key:
+                        key = jwk.JWK(**json.loads(compute.gstfsd_key.strip()))
+                        data = jwe.JWE(json.dumps(data), algs=["A256KW", "A256CBC-HS512"])
+                        data.add_recipient(key, header='{"alg":"A256KW","enc":"A256CBC-HS512"}')
+                        data = jws.JWS(data.serialize())
+                        data.add_signature(key, alg="HS512")
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect((compute.hostname, 16510))
+                        s.send(data.serialize())
+                        result = json.loads(s.recv(4096))
+                        s.close()
+                        msg = _("Reset root password")
+                        addlogmsg(request.user.username, instance.name, msg)
 
-                    if result['return'] == 'success':
-                        messages.append(msg)
+                        if result['return'] == 'success':
+                            messages.append(msg)
+                        else:
+                            error_messages.append(result.get('message', msg))
                     else:
+                        msg = _("Please import the gstfsd key into this compute. It is in /var/lib/gstfsd/SECRET on %s") % compute.name
                         error_messages.append(msg)
                 else:
                     msg = _("Please shutdow down your instance and then try again")
@@ -313,17 +323,26 @@ def instance(request, compute_id, vname):
                 data = {'action': 'publickey', 'key': publickey.keypublic, 'vname': vname}
 
                 if conn.get_status() == 5:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect((compute.hostname, 16510))
-                    s.send(json.dumps(data))
-                    result = json.loads(s.recv(1024))
-                    s.close()
-                    msg = _("Installed new ssh public key %s" % publickey.keyname)
-                    addlogmsg(request.user.username, instance.name, msg)
+                    if compute.gstfsd_key:
+                        key = jwk.JWK(**json.loads(compute.gstfsd_key.strip()))
+                        data = jwe.JWE(json.dumps(data), algs=["A256KW", "A256CBC-HS512"])
+                        data.add_recipient(key, header='{"alg":"A256KW","enc":"A256CBC-HS512"}')
+                        data = jws.JWS(data.serialize())
+                        data.add_signature(key, alg="HS512")
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect((compute.hostname, 16510))
+                        s.send(data.serialize())
+                        result = json.loads(s.recv(4096))
+                        s.close()
+                        msg = _("Installed new ssh public key %s" % publickey.keyname)
+                        addlogmsg(request.user.username, instance.name, msg)
 
-                    if result['return'] == 'success':
-                        messages.append(msg)
+                        if result['return'] == 'success':
+                            messages.append(msg)
+                        else:
+                            error_messages.append(result.get('message', msg))
                     else:
+                        msg = _("Please import the gstfsd key into this compute. It is in /var/lib/gstfsd/SECRET on %s") % compute.name
                         error_messages.append(msg)
                 else:
                     msg = _("Please shutdow down your instance and then try again")

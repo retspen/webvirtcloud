@@ -13,6 +13,8 @@ class ComputeAddTcpForm(forms.Form):
                             max_length=100)
     password = forms.CharField(error_messages={'required': _('No password has been entered')},
                                max_length=100)
+    gstfsd_key = forms.CharField(max_length=256, required=False)
+
 
     def clean_name(self):
         name = self.cleaned_data['name']
@@ -49,6 +51,8 @@ class ComputeAddSshForm(forms.Form):
                                max_length=100)
     login = forms.CharField(error_messages={'required': _('No login has been entered')},
                             max_length=20)
+    gstfsd_key = forms.CharField(max_length=256, required=False)
+
 
     def clean_name(self):
         name = self.cleaned_data['name']
@@ -87,6 +91,8 @@ class ComputeAddTlsForm(forms.Form):
                             max_length=100)
     password = forms.CharField(error_messages={'required': _('No password has been entered')},
                                max_length=100)
+    gstfsd_key = forms.CharField(max_length=256, required=False)
+
 
     def clean_name(self):
         name = self.cleaned_data['name']
@@ -126,6 +132,8 @@ class ComputeEditHostForm(forms.Form):
                             max_length=100)
     password = forms.CharField(max_length=100)
 
+    gstfsd_key = forms.CharField(max_length=256, required=False)
+
     def clean_name(self):
         name = self.cleaned_data['name']
         have_symbol = re.match('[^a-zA-Z0-9._-]+', name)
@@ -149,6 +157,9 @@ class ComputeEditHostForm(forms.Form):
 class ComputeAddSocketForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
                            max_length=20)
+
+    gstfsd_key = forms.CharField(max_length=256, required=False)
+
 
     def clean_name(self):
         name = self.cleaned_data['name']
