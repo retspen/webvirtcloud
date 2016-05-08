@@ -103,3 +103,5 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
 # keepalive interval and count for libvirt connections
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
+
+SCREENSHOT_PATH = os.path.join(BASE_DIR, "static/screenshots")
