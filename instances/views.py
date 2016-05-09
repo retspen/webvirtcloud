@@ -418,6 +418,7 @@ def instance(request, compute_id, vname):
                         addlogmsg(request.user.username, instance.name, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#xmledit')
 
+            if request.user.is_superuser or userinstace.is_vnc:
                 if 'set_console_passwd' in request.POST:
                     if request.POST.get('auto_pass', ''):
                         passwd = randomPasswd()
@@ -456,6 +457,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
+            if request.user.is_superuser:
                 if 'migrate' in request.POST:
                     compute_id = request.POST.get('compute_id', '')
                     live = request.POST.get('live_migrate', False)

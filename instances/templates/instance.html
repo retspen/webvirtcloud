@@ -477,11 +477,15 @@
                                                         {% trans "Autostart" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or userinstace.is_vnc %}
                                                 <li role="presentation">
                                                     <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
                                                         {% trans "VNC" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <li role="presentation">
                                                     <a href="#clone" aria-controls="clone" role="tab" data-toggle="tab">
                                                         {% trans "Clone" %}
@@ -551,6 +555,8 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or userinstace.is_vnc %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
                                                     <p>{% trans "To set console's type, shutdown the instance." %}</p>
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
@@ -643,6 +649,8 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
                                                     <p style="font-weight:bold;">{% trans "Create a clone" %}</p>
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
