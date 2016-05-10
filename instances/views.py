@@ -289,7 +289,7 @@ def instance(request, compute_id, vname):
             if 'rootpasswd' in request.POST:
                 passwd = request.POST.get('passwd', '')
                 if passwd:
-                    passwd_hash = crypt.crypt(passwd, '$6$kgPoiREy')
+                    passwd_hash = crypt.crypt(passwd, '$6$%s' % ''.join([choice(letters + digits) for i in xrange(8)]))
                 # if password is empty, disable the root password
                 else:
                     passwd_hash = "*"
