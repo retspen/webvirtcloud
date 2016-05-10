@@ -288,7 +288,11 @@ def instance(request, compute_id, vname):
 
             if 'rootpasswd' in request.POST:
                 passwd = request.POST.get('passwd', '')
-                passwd_hash = crypt.crypt(passwd, '$6$kgPoiREy')
+                if passwd:
+                    passwd_hash = crypt.crypt(passwd, '$6$kgPoiREy')
+                # if password is empty, disable the root password
+                else:
+                    passwd_hash = "*"
                 data = {'action': 'password', 'passwd': passwd_hash, 'vname': vname}
 
                 if conn.get_status() == 5:
