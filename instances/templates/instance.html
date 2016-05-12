@@ -19,6 +19,9 @@
                                     <span class="label label-warning">{% trans "Suspend" %}</span>
                                 {% endifequal %}
                             </td>
+                            <td>
+                                <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
+                            </td>
                         </tr>
                     </table>
                     <table width="65%">
