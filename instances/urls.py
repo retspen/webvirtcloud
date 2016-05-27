@@ -10,6 +10,8 @@ urlpatterns = [
         views.inst_status, name='inst_status'),
     url(r'^guess_mac_address/(?P<vname>[\w\-\.]+)/$',
         views.guess_mac_address, name='guess_mac_address'),
+    url(r'^guess_clone_name/$',
+        views.guess_clone_name, name='guess_clone_name'),
     url(r'^check_instance/(?P<vname>[\w\-\.]+)/$',
         views.check_instance, name='check_instance'),
 ]

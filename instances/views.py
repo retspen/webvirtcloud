@@ -781,6 +781,21 @@ def guess_mac_address(request, vname):
     return HttpResponse(json.dumps(data));
 
 @login_required
+def guess_clone_name(request):
+    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
+    prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+    if os.path.isfile(dhcp_file):
+        instance_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
+        with open(dhcp_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if "host %s" % prefix in line:
+                    hostname = line.split(' ')[1]
+                    if hostname.startswith(prefix) and hostname not in instance_names:
+                        return HttpResponse(json.dumps({'name': hostname}))
+    return HttpResponse(json.dumps({}));
+
+@login_required
 def check_instance(request, vname):
     check_instance = Instance.objects.filter(name=vname)
     data = { 'vname': vname, 'exists': False }

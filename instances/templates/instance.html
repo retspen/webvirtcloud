@@ -713,17 +713,23 @@
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Clone Name" %}</label>
+                                                            {% if request.user.is_superuser %}
                                                             <div class="col-sm-4">
-                                                                {% if request.user.is_superuser %}
                                                                 <input id="clone_name" type="text" class="form-control" name="name" value="{{ vname }}-clone"/>
-                                                                {% else %}
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                <button type="button" class="btn btn-sm btn-success pull-left" name="guess-clone-name"
+                                                                        onclick="guess_clone_name()" style="margin-top: 2px;">{% trans "Guess" %}</button>
+                                                            </div>
+                                                            {% else %}
+                                                            <div class="col-sm-4">
                                                                 <select id="select_clone_name" class="form-control" name="name" size="1"/>
                                                                 {% for name in clone_free_names %}
                                                                     <option value="{{ name }}">{{ name }}</option>
                                                                 {% endfor %}
                                                                 </select>
-                                                                {% endif %}
                                                             </div>
+                                                            {% endif %}
                                                         </div>
                                                         {% if request.user.is_superuser %}
                                                             <p style="font-weight:bold;">{% trans "Network devices" %}</p>
@@ -1037,6 +1043,15 @@
         new_vname = $(src_elem).val();
         $.getJSON('/instance/guess_mac_address/' + new_vname + '/', function(data) {
             $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
+        });
+    }
+</script>
+<script>
+    function guess_clone_name() {
+        $.getJSON('/instance/guess_clone_name/', function(data) {
+            guessed_name = data['name'].split(".")[0];
+            $('#clone_name').val(guessed_name);
+            update_clone_disk_name(guessed_name);
         });
     }
 </script>
