@@ -23,7 +23,7 @@
                         <div class="form-group">
                             <label class="col-sm-4 control-label">{% trans "Password" %}</label>
                             <div class="col-sm-6">
-                                <input type="password" class="form-control" name="password" placeholder="*******" required>
+                                <input type="password" class="form-control" name="password" placeholder="*******" {% if not allow_empty_password %}required{% endif %}>
                             </div>
                         </div>
                 </div>

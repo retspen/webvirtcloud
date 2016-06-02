@@ -85,6 +85,7 @@ def accounts(request):
     error_messages = []
     users = User.objects.all().order_by('username')
     create_missing_userattributes(users)
+    allow_empty_password = settings.ALLOW_EMPTY_PASSWORD
 
     if request.method == 'POST':
         if 'create' in request.POST:
