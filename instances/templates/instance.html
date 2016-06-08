@@ -1052,6 +1052,7 @@
             guessed_name = data['name'].split(".")[0];
             $('#clone_name').val(guessed_name);
             update_clone_disk_name(guessed_name);
+            guess_mac_address('#clone_name', 0);
         });
     }
 </script>

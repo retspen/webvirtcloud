@@ -790,7 +790,8 @@ def guess_clone_name(request):
             for line in f:
                 line = line.strip()
                 if "host %s" % prefix in line:
-                    hostname = line.split(' ')[1]
+                    fqdn = line.split(' ')[1]
+                    hostname = fqdn.split('.')[0]
                     if hostname.startswith(prefix) and hostname not in instance_names:
                         return HttpResponse(json.dumps({'name': hostname}))
     return HttpResponse(json.dumps({}));
