@@ -152,6 +152,7 @@ def overview(request, compute_id):
                               compute.type)
         hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
         hypervisor = conn.hypervisor_type()
+        hv_verion = ".".join([str(conn.hypervisor_version())[:1].lstrip('0'), str(conn.hypervisor_version())[1:4].lstrip('0'), str(conn.hypervisor_version())[4:].lstrip('0')])
         mem_usage = conn.get_memory_usage()
         conn.close()
     except libvirtError as lib_err:
