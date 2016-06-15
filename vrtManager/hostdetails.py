@@ -70,3 +70,11 @@ class wvmHostDetails(wvmConnect):
     def hypervisor_type(self):
         """Return hypervisor type"""
         return get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch/domain/@type")
+        
+    def hypervisor_version(self):
+        """Return hypervisor version"""
+        return self.wvm.getVersion()
+
+    def lib_version(self):
+        """Return libvirt library version"""
+        return self.wvm.getLibVersion()
