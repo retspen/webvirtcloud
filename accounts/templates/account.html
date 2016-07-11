@@ -29,6 +29,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>{% trans "Instance" %}</th>
+                                        <th>{% trans "VNC" %}</th>
                                         <th>{% trans "Resize" %}</th>
                                         <th>{% trans "Delete" %}</th>
                                         <th colspan="2">{% trans "Action" %}</th>
@@ -39,6 +40,7 @@
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
                                             <td><a href="{% url 'instance' inst.instance.compute.id inst.instance.name %}">{{ inst.instance.name }}</a></td>
+                                            <td>{{ inst.is_vnc }}</td>
                                             <td>{{ inst.is_change }}</td>
                                             <td>{{ inst.is_delete }}</td>
                                             <td style="width:5px;">
@@ -57,6 +59,15 @@
                                                             <div class="modal-body">
                                                                 <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
                                                                     <input type="hidden" name="user_inst" value="{{ inst.id }}">
+                                                                    <div class="form-group">
+                                                                        <label class="col-sm-4 control-label">{% trans "VNC" %}</label>
+                                                                        <div class="col-sm-6">
+                                                                            <select type="text" class="form-control" name="inst_vnc">
+                                                                                <option value="">False</option>
+                                                                                <option value="1" {% if inst.is_vnc %}selected{% endif %}>True</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
                                                                     <div class="form-group">
                                                                         <label class="col-sm-4 control-label">{% trans "Resize" %}</label>
                                                                         <div class="col-sm-6">
