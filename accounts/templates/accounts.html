@@ -71,6 +71,48 @@
                                                     <input type="password" name="user_pass" class="form-control" value="">
                                                 </div>
                                             </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Is staff" %}</label>
+                                                <div class="col-sm-2">
+                                                    <input type="checkbox" name="user_is_staff" {% if user.is_staff %}checked{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Is superuser" %}</label>
+                                                <div class="col-sm-2">
+                                                    <input type="checkbox" name="user_is_superuser" {% if user.is_superuser %}checked{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Can clone instances" %}</label>
+                                                <div class="col-sm-2">
+                                                    <input type="checkbox" name="userattributes_can_clone_instances" {% if user.userattributes.can_clone_instances %}checked{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Max instances" %}</label>
+                                                <div class="col-sm-6">
+                                                    <input type="text" name="userattributes_max_instances" class="form-control" value="{{ user.userattributes.max_instances }}">
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Max cpus" %}</label>
+                                                <div class="col-sm-6">
+                                                    <input type="text" name="userattributes_max_cpus" class="form-control" value="{{ user.userattributes.max_cpus }}">
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Max memory (MB)" %}</label>
+                                                <div class="col-sm-6">
+                                                    <input type="text" name="userattributes_max_memory" class="form-control" value="{{ user.userattributes.max_memory }}">
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-4 control-label">{% trans "Max disk size (GB)" %}</label>
+                                                <div class="col-sm-6">
+                                                    <input type="text" name="userattributes_max_disk_size" class="form-control" value="{{ user.userattributes.max_disk_size }}">
+                                                </div>
+                                            </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="submit" class="pull-left btn btn-danger" name="delete">

@@ -1,0 +1,25 @@
+{% load i18n %}
+    <!-- Please wait dialog -->
+    <div class="modal fade" id="pleaseWaitDialog" tabindex="-1" role="dialog" aria-labelledby="pleaseWaitDialogLabel" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{% trans "Processing" %}...</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="10" style="width:100%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+function showPleaseWaitDialog() {
+    $('#pleaseWaitDialog').modal();
+}
+function hidePleaseWaitDialog() {
+    $('#pleaseWaitDialog').modal('hide');
+}
+</script>

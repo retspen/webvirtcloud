@@ -22,30 +22,32 @@
                             </div>
                         </div>
                     {% else %}
+                        {% include "paging.html" %}
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
                                 <thead>
                                     <tr>
                                         <th>#</th>
+                                        <th>{% trans "Date" %}</th>
                                         <th>{% trans "User" %}</th>
                                         <th>{% trans "Instance" %}</th>
                                         <th>{% trans "Message" %}</th>
-                                        <th>{% trans "Date" %}</th>
                                         </tr>
                                 </thead>
                                 <tbody>
                                     {% for log in logs %}
                                         <tr>
-                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ log.id }}</td>
+                                            <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
                                             <td>{{ log.user }}</a></td>
                                             <td>{{ log.instance }}</a></td>
                                             <td>{{ log.message }}</td>
-                                            <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+                        {% include "paging.html" %}
                     {% endif %}
                 </div>
             </div>

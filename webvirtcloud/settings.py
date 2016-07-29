@@ -8,7 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 SECRET_KEY = '4y(f4rfqc6f2!i8_vfuu)kav6tdv5#sc=n%o451dm+th0&3uci'
 
-DEBUG = False
+DEBUG = True 
 
 TEMPLATE_DEBUG = DEBUG
 
@@ -38,10 +38,18 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.RemoteUserMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.RemoteUserBackend',
+    #'accounts.backends.MyRemoteUserBackend',
+)
+
+LOGIN_URL = '/accounts/login'
 
 ROOT_URLCONF = 'webvirtcloud.urls'
 
@@ -103,3 +111,9 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
 # keepalive interval and count for libvirt connections
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
+
+ALLOW_INSTANCE_MULTIPLE_OWNER = True
+CLONE_INSTANCE_DEFAULT_PREFIX = 'ourea'
+LOGS_PER_PAGE = 100
+QUOTA_DEBUG = True
+ALLOW_EMPTY_PASSWORD = True

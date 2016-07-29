@@ -39,8 +39,8 @@
                                     <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
                                         <thead>
                                             <tr>
-                                                <th>Name</th>
-                                                <th>Host</th>
+                                                <th>Name<br>Description</th>
+                                                <th>Host<br>User</th>
                                                 <th>Status</th>
                                                 <th>VCPU</th>
                                                 <th>Memory</th>
@@ -51,8 +51,8 @@
                                             {% for host, inst  in all_host_vms.items %}
                                                 {% for vm, info in inst.items %}
                                                     <tr>
-                                                        <td><a href="{% url 'instance' host.0 vm %}">{{ vm }}</a></td>
-                                                        <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
+                                                        <td><a href="{% url 'instance' host.0 vm %}">{{ vm }}</a><br><small><em>{{ info.title }}</em></small></td>
+                                                        <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a><br><small><em>{% if info.userinstances.count > 0 %}{{ info.userinstances.first_user.user.username }}{% if info.userinstances.count > 1 %} (+{{ info.userinstances.count|add:"-1" }}){% endif %}{% endif %}</em></small></td>
                                                         <td>{% ifequal info.status 1 %}
                                                                 <span class="text-success">{% trans "Active" %}</span>
                                                             {% endifequal %}
@@ -69,9 +69,15 @@
                                                                 <input type="hidden" name="name" value="{{ vm }}"/>
                                                                 <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
                                                                 {% ifequal info.status 5 %}
-                                                                    <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
-                                                                        <span class="glyphicon glyphicon-play"></span>
-                                                                    </button>
+                                                                    {% if info.is_template %}
+                                                                        <button class="btn btn-sm btn-default" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ host.0 }}, '{{ vm }}');">
+                                                                            <span class="glyphicon glyphicon-duplicate"></span>
+                                                                        </button>
+                                                                    {% else %}
+                                                                        <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
+                                                                            <span class="glyphicon glyphicon-play"></span>
+                                                                        </button>
+                                                                    {% endif %}
                                                                     <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}">
                                                                         <span class="glyphicon glyphicon-pause"></span>
                                                                     </button>
@@ -149,7 +155,7 @@
                                         <tbody class="searchable">
                                             {% for inst, vm in all_user_vms.items %}
                                                 <tr>
-                                                    <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a></td>
+                                                    <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a><br><small><em>{{ vm.title }}</em></small></td>
                                                     <td>{% ifequal vm.status 1 %}
                                                             <span class="text-success">{% trans "Active" %}</span>
                                                         {% endifequal %}
@@ -166,9 +172,15 @@
                                                             <input type="hidden" name="name" value="{{ vm.name }}"/>
                                                             <input type="hidden" name="compute_id" value="{{ vm.compute_id }}"/>
                                                             {% ifequal vm.status 5 %}
-                                                                <button class="btn btn-sm btn-default" type="submit" name="poweron" title="Power On">
-                                                                    <span class="glyphicon glyphicon-play"></span>
-                                                                </button>
+                                                                {% if inst.instance.is_template %}
+                                                                    <button class="btn btn-sm btn-default" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ vm.compute_id }}, '{{ vm.name }}');">
+                                                                        <span class="glyphicon glyphicon-duplicate"></span>
+                                                                    </button>
+                                                                {% else %}
+                                                                    <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
+                                                                        <span class="glyphicon glyphicon-play"></span>
+                                                                    </button>
+                                                                {% endif %}
                                                                 <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
                                                                     <span class="glyphicon glyphicon-off"></span>
                                                                 </button>
@@ -227,17 +239,29 @@
     }
 </script>
 <script>
+    function filter_table() {
+        var rex = new RegExp($(this).val(), 'i');
+        $('.searchable tr').hide();
+        $('.searchable tr').filter(function () {
+            return rex.test($(this).text());
+        }).show();
+        Cookies.set("instances_filter", $(this).val(), { expires: 1 });
+    }
     $(document).ready(function () {
+        instances_filter_cookie = Cookies.get("instances_filter");
+        if (instances_filter_cookie) {
+            $('#filter').val(instances_filter_cookie);
+            $('#filter').each(filter_table);
+        }
         (function ($) {
-            $('#filter').keyup(function () {
-                var rex = new RegExp($(this).val(), 'i');
-                $('.searchable tr').hide();
-                $('.searchable tr').filter(function () {
-                    return rex.test($(this).text());
-                }).show();
-            })
+            $('#filter').keyup(filter_table)
         }(jQuery));
     });
+</script>
+<script>
+    function goto_instance_clone(compute, instance) {
+        window.location = "/instance/" + compute + "/" + instance + "/#clone";
+    }
 </script>
 {% if request.user.is_superuser %}
     <script>
