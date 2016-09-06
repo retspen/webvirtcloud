@@ -3,6 +3,7 @@ import time
 import json
 import socket
 import crypt
+import re
 from string import letters, digits
 from random import choice
 from bisect import insort
@@ -609,6 +610,9 @@ def instance(request, compute_id, vname):
                         error_messages.append(msg)
                     elif check_instance:
                         msg = _("Instance '%s' already exists!" % clone_data['name'])
+                        error_messages.append(msg)
+                    elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
+                        msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
                         error_messages.append(msg)
                     else:
                         for post in request.POST:
