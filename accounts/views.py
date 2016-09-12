@@ -167,11 +167,13 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'permission' in request.POST:
             user_inst = request.POST.get('user_inst', '')
+            inst_vnc = request.POST.get('inst_vnc', '')
             inst_change = request.POST.get('inst_change', '')
             inst_delete = request.POST.get('inst_delete', '')
             edit_user_inst = UserInstance.objects.get(id=user_inst)
             edit_user_inst.is_change = bool(inst_change)
             edit_user_inst.is_delete = bool(inst_delete)
+            edit_user_inst.is_vnc = bool(inst_vnc)
             edit_user_inst.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:

@@ -18,6 +18,7 @@ from accounts.models import UserInstance, UserSSHKey
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
+from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
 from logs.views import addlogmsg
@@ -342,7 +343,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#powerforce')
 
-            if 'delete' in request.POST:
+            if 'delete' in request.POST and (request.user.is_superuser or userinstace.is_delete):
                 if conn.get_status() == 1:
                     conn.force_shutdown()
                 if request.POST.get('delete_disk', ''):
@@ -408,7 +409,7 @@ def instance(request, compute_id, vname):
                     msg = _("Please shutdow down your instance and then try again")
                     error_messages.append(msg)
 
-            if 'resize' in request.POST:
+            if 'resize' in request.POST and (request.user.is_superuser or userinstace.is_change):
                 new_vcpu = request.POST.get('vcpu', '')
                 new_cur_vcpu = request.POST.get('cur_vcpu', '')
                 new_memory = request.POST.get('memory', '')
@@ -513,9 +514,10 @@ def instance(request, compute_id, vname):
                         addlogmsg(request.user.username, instance.name, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#xmledit')
 
+            if request.user.is_superuser or userinstace.is_vnc:
                 if 'set_console_passwd' in request.POST:
                     if request.POST.get('auto_pass', ''):
-                        passwd = ''.join([choice(letters + digits) for i in xrange(12)])
+                        passwd = randomPasswd()
                     else:
                         passwd = request.POST.get('console_passwd', '')
                         clear = request.POST.get('clear_pass', False)
@@ -551,6 +553,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
+            if request.user.is_superuser:
                 if 'migrate' in request.POST:
                     compute_id = request.POST.get('compute_id', '')
                     live = request.POST.get('live_migrate', False)
