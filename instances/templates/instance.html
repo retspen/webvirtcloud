@@ -245,10 +245,10 @@
                                             </div>
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
                                                 <p>{% trans "You need shut down your instance and enter a new root password." %}</p>
-                                                <form class="form-inline" method="post" role="form">{% csrf_token %}
+                                                <form class="form-inline" method="post" role="form" autocomplete="off">{% csrf_token %}
                                                     <div class="form-group">
                                                         <div class="col-sm-12">
-                                                            <input type="text" class="form-control input-lg" name="passwd" placeholder="{% trans "Enter Password" %}" maxlength="24">
+                                                            <input type="text" class="form-control input-lg" name="passwd" placeholder="{% trans "Enter Password" %}" maxlength="24" autocomplete="off">
                                                         </div>
                                                     </div>
                                                     {% ifequal status 5 %}
@@ -257,6 +257,7 @@
                                                         <button class="btn btn-lg btn-success pull-right disabled">{% trans "Reset Root Password" %}</button>
                                                     {% endifequal %}
                                                 </form>
+                                                <p>{% trans "An empty password disable the root password." %}</p>
                                                 <div class="clearfix"></div>
                                             </div>
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">

@@ -7,10 +7,12 @@ import SocketServer
 import json
 import guestfs
 import re
-
+import os
+from jwcrypto import jws, jwk, jwe
 
 PORT = 16510
 ADDRESS = "0.0.0.0"
+SECRET = None
 
 
 class MyTCPServer(SocketServer.ThreadingTCPServer):
@@ -19,12 +21,20 @@ class MyTCPServer(SocketServer.ThreadingTCPServer):
 
 class MyTCPServerHandler(SocketServer.BaseRequestHandler):
     def handle(self):
-        # recive data
-        data = json.loads(self.request.recv(1024).strip())
-
-        # GuestFS
-        gfs = guestfs.GuestFS(python_return_dict=True)
+        # recive data and check authentcation
         try:
+            signed_data = jws.JWS()
+            signed_data.deserialize(self.request.recv(4096).strip())
+            signed_data.verify(SECRET, "HS512")
+
+            encrypted_data = jwe.JWE(algs=["A256KW", "A256CBC-HS512"])
+            encrypted_data.deserialize(signed_data.payload)
+            encrypted_data.decrypt(SECRET)
+
+            data = json.loads(encrypted_data.plaintext)
+
+            # GuestFS
+            gfs = guestfs.GuestFS(python_return_dict=True)
             gfs.add_domain(data['vname'])
             gfs.launch()
             parts = gfs.list_partitions()
@@ -51,8 +61,29 @@ class MyTCPServerHandler(SocketServer.BaseRequestHandler):
                     pass
             gfs.shutdown()
             gfs.close()
-        except RuntimeError, err:
+        # we check signature before trying to decrypt so jwe.InvalidJWEData should not be raised ever
+        except (jws.InvalidJWSObject, jwe.InvalidJWEData, RuntimeError, ValueError) as err:
             self.request.sendall(json.dumps({'return': 'error', 'message': err.message}))
+
+        except jws.InvalidJWSSignature as err:
+            self.request.sendall(json.dumps({'return': 'error', 'message': (
+                "Fail to verify request signature. Check if you have imported "
+                "the key (/var/lib/gstfsd/SECRET) in WebVirtCloud"
+            )}))
+
+if not os.path.isfile("/var/lib/gstfsd/SECRET"):
+    try:
+        os.mkdir("/var/lib/gstfsd")
+    except OSError as error:
+        if error.errno != 17: # File exists
+            raise
+    os.chmod("/var/lib/gstfsd", 0700)
+    with open("/var/lib/gstfsd/SECRET", 'w') as f:
+        f.write(jwk.JWK(generate='oct', size=256).export())
+    os.chmod("/var/lib/gstfsd/SECRET", 0600)
+
+with open("/var/lib/gstfsd/SECRET") as f:
+    SECRET = jwk.JWK(**json.load(f))
 
 server = MyTCPServer((ADDRESS, PORT), MyTCPServerHandler)
 server.serve_forever()
