@@ -347,6 +347,8 @@ def instance(request, compute_id, vname):
                 if conn.get_status() == 1:
                     conn.force_shutdown()
                 if request.POST.get('delete_disk', ''):
+                    for snap in snapshots:
+                        conn.snapshot_delete(snap['name'])
                     conn.delete_disk()
                 conn.delete()
 
