@@ -844,6 +844,12 @@
                                                                 <input type="checkbox" name="xml_delete" value="true" id="xml_delete" checked>
                                                             </div>
                                                         </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label">{% trans "Offline migration" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <input type="checkbox" name="offline_migrate" value="true" id="offline_migrate">
+                                                            </div>
+                                                        </div>
                                                         {% if computes_count != 1 %}
                                                             <button type="submit" class="btn btn-lg btn-success pull-right" name="migrate" onclick="showPleaseWaitDialog();">{% trans "Migrate" %}</button>
                                                         {% else %}

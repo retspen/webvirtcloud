@@ -67,20 +67,18 @@ class wvmInstances(wvmConnect):
         dom = self.get_instance(name)
         dom.resume()
 
-    def moveto(self, conn, name, live, unsafe, undefine):
+    def moveto(self, conn, name, live, unsafe, undefine, offline):
         flags = 0
         if live and conn.get_status() == 1:
             flags |= VIR_MIGRATE_LIVE
         if unsafe and conn.get_status() == 1:
             flags |= VIR_MIGRATE_UNSAFE
         dom = conn.get_instance(name)
-        dom.migrate(self.wvm, flags, name, None, 0)
+        xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE)
+        if not offline:
+            dom.migrate(self.wvm, flags, None, None, 0)
         if undefine:
             dom.undefine()
-
-    def define_move(self, name):
-        dom = self.get_instance(name)
-        xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE)
         self.wvm.defineXML(xml)
 
     def graphics_type(self, name):
