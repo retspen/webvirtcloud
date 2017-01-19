@@ -23,6 +23,7 @@ WebVirtCloud is a virtualization web interface for admins and users. It can dele
 
 ```bash
 sudo apt-get -y install git python-virtualenv python-dev libxml2-dev libvirt-dev zlib1g-dev nginx supervisor libsasl2-modules
+cd /srv
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
 sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
