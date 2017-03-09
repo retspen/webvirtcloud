@@ -22,7 +22,7 @@ WebVirtCloud is a virtualization web interface for admins and users. It can dele
 ### Install WebVirtCloud panel (Ubuntu)
 
 ```bash
-sudo apt-get -y install git python-virtualenv python-dev libxml2-dev libvirt-dev zlib1g-dev nginx supervisor libsasl2-modules
+sudo apt-get -y install git python-virtualenv python-dev libxml2-dev libvirt-dev zlib1g-dev nginx supervisor libsasl2-modules gcc pkg-config
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
 sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
@@ -183,6 +183,12 @@ sudo supervisorctl status
 novncd                           RUNNING    pid 24186, uptime 2:59:14
 webvirtcloud                     RUNNING    pid 24185, uptime 2:59:14
 
+```
+
+#### Apache mod_wsgi configuration
+```
+WSGIDaemonProcess webvirtcloud threads=2 maximum-requests=1000 display-name=webvirtcloud
+WSGIScriptAlias / /srv/webvirtcloud/webvirtcloud/wsgi.py
 ```
 
 #### Install final required packages for libvirtd and others on Host Server

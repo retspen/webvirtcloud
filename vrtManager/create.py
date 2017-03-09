@@ -220,16 +220,15 @@ class wvmCreate(wvmConnect):
             xml += """<interface type='network'>"""
             if mac:
                 xml += """<mac address='%s'/>""" % mac
-            xml += """<source network='%s'/>""" % net
+            xml += """<source network='%s'/>
+                      <filterref filter='clean-traffic'/>""" % net
             if virtio:
                 xml += """<model type='virtio'/>"""
             xml += """</interface>"""
 
         xml += """  <input type='mouse' bus='ps2'/>
                     <input type='tablet' bus='usb'/>
-                    <graphics type='%s' port='-1' autoport='yes' listen='0.0.0.0' passwd='%s'>
-                      <listen type='address' address='0.0.0.0'/>
-                    </graphics>
+                    <graphics type='%s' port='-1' autoport='yes' passwd='%s' listen='127.0.0.1'/>
                     <console type='pty'/>
                     <video>
                       <model type='cirrus'/>

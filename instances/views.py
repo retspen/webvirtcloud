@@ -1,7 +1,9 @@
+import os
 import time
 import json
 import socket
 import crypt
+import re
 from string import letters, digits
 from random import choice
 from bisect import insort
@@ -9,6 +11,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
 from accounts.models import UserInstance, UserSSHKey
@@ -19,33 +22,40 @@ from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
 from logs.views import addlogmsg
+from django.conf import settings
 
 
+@login_required
 def index(request):
     """
     :param request:
     :return:
     """
 
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
-    else:
-        return HttpResponseRedirect(reverse('instances'))
+    return HttpResponseRedirect(reverse('instances'))
 
 
+@login_required
 def instances(request):
     """
     :param request:
     :return:
     """
 
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
-
     error_messages = []
     all_host_vms = {}
     all_user_vms = {}
     computes = Compute.objects.all()
+
+    def get_userinstances_info(instance):
+        info = {}
+        uis = UserInstance.objects.filter(instance=instance)
+        info['count'] = len(uis)
+        if len(uis) > 0:
+            info['first_user'] = uis[0]
+        else:
+            info['first_user'] = None
+        return info
 
     if not request.user.is_superuser:
         user_instances = UserInstance.objects.filter(user_id=request.user.id)
@@ -70,6 +80,8 @@ def instances(request):
                                 check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
                                 if check_uuid.uuid != info['uuid']:
                                     check_uuid.save()
+                                all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
+                                all_host_vms[comp.id, comp.name][vm]['userinstances'] = get_userinstances_info(check_uuid)
                             except Instance.DoesNotExist:
                                 check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
                                 check_uuid.save()
@@ -145,14 +157,12 @@ def instances(request):
     return render(request, 'instances.html', locals())
 
 
+@login_required
 def instance(request, compute_id, vname):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     messages = []
@@ -173,12 +183,15 @@ def instance(request, compute_id, vname):
         if not userinstace:
             return HttpResponseRedirect(reverse('index'))
 
-    def show_clone_disk(disks):
+    def show_clone_disk(disks, vname=''):
         clone_disk = []
         for disk in disks:
             if disk['image'] is None:
                 continue
-            if disk['image'].count(".") and len(disk['image'].rsplit(".", 1)[1]) <= 7:
+            if disk['image'].count("-") and disk['image'].rsplit("-", 1)[0] == vname:
+                name, suffix = disk['image'].rsplit("-", 1)
+                image = name + "-clone" + "-" + suffix
+            elif disk['image'].count(".") and len(disk['image'].rsplit(".", 1)[1]) <= 7:
                 name, suffix = disk['image'].rsplit(".", 1)
                 image = name + "-clone" + "." + suffix
             else:
@@ -187,6 +200,71 @@ def instance(request, compute_id, vname):
                 {'dev': disk['dev'], 'storage': disk['storage'],
                  'image': image, 'format': disk['format']})
         return clone_disk
+    
+    def filesizefstr(size_str):
+        if size_str == '':
+            return 0
+        size_str = size_str.encode('ascii', 'ignore').upper().translate(None, " B")
+        if 'K' == size_str[-1]:
+            return long(float(size_str[:-1]))<<10
+        elif 'M' == size_str[-1]:
+            return long(float(size_str[:-1]))<<20
+        elif 'G' == size_str[-1]:
+            return long(float(size_str[:-1]))<<30
+        elif 'T' == size_str[-1]:
+            return long(float(size_str[:-1]))<<40
+        elif 'P' == size_str[-1]:
+            return long(float(size_str[:-1]))<<50
+        else:
+            return long(float(size_str))
+
+    def get_clone_free_names(size=10):
+        prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+        free_names = []
+        existing_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
+        index = 1
+        while len(free_names) < size:
+            new_name = prefix + str(index)
+            if new_name not in existing_names:
+                free_names.append(new_name)
+            index += 1
+        return free_names
+
+    def check_user_quota(instance, cpu, memory, disk_size):
+        user_instances = UserInstance.objects.filter(user_id=request.user.id, instance__is_template=False)
+        instance += len(user_instances)
+        for usr_inst in user_instances:
+            if connection_manager.host_is_up(usr_inst.instance.compute.type,
+                                             usr_inst.instance.compute.hostname):
+                conn = wvmInstance(usr_inst.instance.compute,
+                                      usr_inst.instance.compute.login,
+                                      usr_inst.instance.compute.password,
+                                      usr_inst.instance.compute.type,
+                                      usr_inst.instance.name)
+                cpu += int(conn.get_vcpu())
+                memory += int(conn.get_memory())
+                for disk in conn.get_disk_device():
+                    disk_size += int(disk['size'])>>30
+        
+        ua = request.user.userattributes
+        msg = ""
+        if ua.max_instances > 0 and instance > ua.max_instances:
+            msg = "instance"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (instance, ua.max_instances)
+        if ua.max_cpus > 0 and cpu > ua.max_cpus:
+            msg = "cpu"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (cpu, ua.max_cpus)
+        if ua.max_memory > 0 and memory > ua.max_memory:
+            msg = "memory"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (memory, ua.max_memory)
+        if ua.max_disk_size > 0 and disk_size > ua.max_disk_size:
+            msg = "disk"
+            if settings.QUOTA_DEBUG:
+                msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
+        return msg
 
     try:
         conn = wvmInstance(compute.hostname,
@@ -202,6 +280,7 @@ def instance(request, compute_id, vname):
         uuid = conn.get_uuid()
         memory = conn.get_memory()
         cur_memory = conn.get_cur_memory()
+        title = conn.get_title()
         description = conn.get_description()
         disks = conn.get_disk_device()
         media = conn.get_media_device()
@@ -222,8 +301,10 @@ def instance(request, compute_id, vname):
         snapshots = sorted(conn.get_snapshot(), reverse=True)
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
         has_managed_save_image = conn.get_managed_save_image()
-        clone_disks = show_clone_disk(disks)
+        clone_disks = show_clone_disk(disks, vname)
         console_passwd = conn.get_console_passwd()
+        clone_free_names = get_clone_free_names()
+        user_quota_msg = check_user_quota(0, 0, 0, 0)
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -233,6 +314,8 @@ def instance(request, compute_id, vname):
         except Instance.DoesNotExist:
             instance = Instance(compute_id=compute_id, name=vname, uuid=uuid)
             instance.save()
+
+        userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
@@ -264,6 +347,8 @@ def instance(request, compute_id, vname):
                 if conn.get_status() == 1:
                     conn.force_shutdown()
                 if request.POST.get('delete_disk', ''):
+                    for snap in snapshots:
+                        conn.snapshot_delete(snap['name'])
                     conn.delete_disk()
                 conn.delete()
 
@@ -271,15 +356,11 @@ def instance(request, compute_id, vname):
                 instance_name = instance.name
                 instance.delete()
 
-                if not request.user.is_superuser:
-                    del_userinstance = UserInstance.objects.get(id=userinstace.id)
+                try:
+                    del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
                     del_userinstance.delete()
-                else:
-                    try:
-                        del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
-                        del_userinstance.delete()
-                    except UserInstance.DoesNotExist:
-                        pass
+                except UserInstance.DoesNotExist:
+                    pass
 
                 msg = _("Destroy")
                 addlogmsg(request.user.username, instance_name, msg)
@@ -331,20 +412,37 @@ def instance(request, compute_id, vname):
                     error_messages.append(msg)
 
             if 'resize' in request.POST and (request.user.is_superuser or userinstace.is_change):
-                vcpu = request.POST.get('vcpu', '')
-                cur_vcpu = request.POST.get('cur_vcpu', '')
-                memory = request.POST.get('memory', '')
-                memory_custom = request.POST.get('memory_custom', '')
-                if memory_custom:
-                    memory = memory_custom
-                cur_memory = request.POST.get('cur_memory', '')
-                cur_memory_custom = request.POST.get('cur_memory_custom', '')
-                if cur_memory_custom:
-                    cur_memory = cur_memory_custom
-                conn.resize(cur_memory, memory, cur_vcpu, vcpu)
-                msg = _("Resize")
-                addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#resize')
+                new_vcpu = request.POST.get('vcpu', '')
+                new_cur_vcpu = request.POST.get('cur_vcpu', '')
+                new_memory = request.POST.get('memory', '')
+                new_memory_custom = request.POST.get('memory_custom', '')
+                if new_memory_custom:
+                    new_memory = new_memory_custom
+                new_cur_memory = request.POST.get('cur_memory', '')
+                new_cur_memory_custom = request.POST.get('cur_memory_custom', '')
+                if new_cur_memory_custom:
+                    new_cur_memory = new_cur_memory_custom
+                disks_new = []
+                for disk in disks:
+                    input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
+                    if input_disk_size > disk['size']+(64<<20):
+                        disk['size_new'] = input_disk_size
+                        disks_new.append(disk) 
+                disk_sum = sum([disk['size']>>30 for disk in disks_new])
+                disk_new_sum = sum([disk['size_new']>>30 for disk in disks_new])
+                quota_msg = check_user_quota(0, int(new_vcpu)-vcpu, int(new_memory)-memory, disk_new_sum-disk_sum)
+                if not request.user.is_superuser and quota_msg:    
+                    msg = _("User %s quota reached, cannot resize '%s'!" % (quota_msg, instance.name))
+                    error_messages.append(msg)
+                else:
+                    cur_memory = new_cur_memory
+                    memory = new_memory
+                    cur_vcpu = new_cur_vcpu
+                    vcpu = new_vcpu
+                    conn.resize(cur_memory, memory, cur_vcpu, vcpu, disks_new)
+                    msg = _("Resize")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'umount_iso' in request.POST:
                 image = request.POST.get('path', '')
@@ -463,30 +561,85 @@ def instance(request, compute_id, vname):
                     live = request.POST.get('live_migrate', False)
                     unsafe = request.POST.get('unsafe_migrate', False)
                     xml_del = request.POST.get('xml_delete', False)
+                    offline = request.POST.get('offline_migrate', False)
                     new_compute = Compute.objects.get(id=compute_id)
                     conn_migrate = wvmInstances(new_compute.hostname,
                                                 new_compute.login,
                                                 new_compute.password,
                                                 new_compute.type)
-                    conn_migrate.moveto(conn, vname, live, unsafe, xml_del)
-                    conn_migrate.define_move(vname)
+                    conn_migrate.moveto(conn, vname, live, unsafe, xml_del, offline)
+                    instance.compute = new_compute
+                    instance.save()
                     conn_migrate.close()
-                    msg = _("Migrate")
+                    if autostart:
+                        conn_new = wvmInstance(new_compute.hostname,
+                                               new_compute.login,
+                                               new_compute.password,
+                                               new_compute.type,
+                                               vname)
+                        conn_new.set_autostart(1)
+                        conn_new.close()
+                    msg = _("Migrate to %s" % new_compute.hostname)
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(reverse('instance', args=[compute_id, vname]))
 
+                if 'change_network' in request.POST:
+                    network_data = {}
+
+                    for post in request.POST:
+                        if post.startswith('net-'):
+                            network_data[post] = request.POST.get(post, '')
+
+                    conn.change_network(network_data)
+                    msg = _("Edit network")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
+                if 'change_options' in request.POST:
+                    instance.is_template = request.POST.get('is_template', False)
+                    instance.save()
+                    
+                    options = {}
+                    for post in request.POST:
+                        if post in ['title', 'description']:
+                            options[post] = request.POST.get(post, '')
+                    conn.set_options(options)
+                    
+                    msg = _("Edit options")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#options')
+
+            if request.user.is_superuser or request.user.userattributes.can_clone_instances:
                 if 'clone' in request.POST:
                     clone_data = {}
                     clone_data['name'] = request.POST.get('name', '')
 
-                    for post in request.POST:
-                        if 'disk' or 'meta' in post:
+                    disk_sum = sum([disk['size']>>30 for disk in disks])
+                    quota_msg = check_user_quota(1, vcpu, memory, disk_sum)
+                    check_instance = Instance.objects.filter(name=clone_data['name'])
+                    
+                    if not request.user.is_superuser and quota_msg:    
+                        msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
+                        error_messages.append(msg)
+                    elif check_instance:
+                        msg = _("Instance '%s' already exists!" % clone_data['name'])
+                        error_messages.append(msg)
+                    elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
+                        msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
+                        error_messages.append(msg)
+                    else:
+                        for post in request.POST:
                             clone_data[post] = request.POST.get(post, '')
 
-                    conn.clone_instance(clone_data)
-                    msg = _("Clone")
-                    addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
+                        new_uuid = conn.clone_instance(clone_data)
+                        new_instance = Instance(compute_id=compute_id, name=clone_data['name'], uuid=new_uuid)
+                        new_instance.save()
+                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
+                        userinstance.save()
+
+                        msg = _("Clone of '%s'" % instance.name)
+                        addlogmsg(request.user.username, new_instance.name, msg)
+                        return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
 
         conn.close()
 
@@ -497,14 +650,12 @@ def instance(request, compute_id, vname):
     return render(request, 'instance.html', locals())
 
 
+@login_required
 def inst_status(request, compute_id, vname):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
 
     compute = get_object_or_404(Compute, pk=compute_id)
     response = HttpResponse()
@@ -524,14 +675,12 @@ def inst_status(request, compute_id, vname):
     return response
 
 
+@login_required
 def inst_graph(request, compute_id, vname):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('login'))
 
     datasets = {}
     json_blk = []
@@ -632,3 +781,42 @@ def inst_graph(request, compute_id, vname):
 
     response.write(data)
     return response
+
+@login_required
+def guess_mac_address(request, vname):
+    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
+    data = { 'vname': vname, 'mac': '52:54:00:' }
+    if os.path.isfile(dhcp_file):
+        with open(dhcp_file, 'r') as f:
+            name_found = False
+            for line in f:
+                if "host %s." % vname in line:
+                    name_found = True
+                if name_found and "hardware ethernet" in line:
+                    data['mac'] = line.split(' ')[-1].strip().strip(';')
+                    break
+    return HttpResponse(json.dumps(data));
+
+@login_required
+def guess_clone_name(request):
+    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
+    prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+    if os.path.isfile(dhcp_file):
+        instance_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
+        with open(dhcp_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if "host %s" % prefix in line:
+                    fqdn = line.split(' ')[1]
+                    hostname = fqdn.split('.')[0]
+                    if hostname.startswith(prefix) and hostname not in instance_names:
+                        return HttpResponse(json.dumps({'name': hostname}))
+    return HttpResponse(json.dumps({}));
+
+@login_required
+def check_instance(request, vname):
+    check_instance = Instance.objects.filter(name=vname)
+    data = { 'vname': vname, 'exists': False }
+    if check_instance:
+        data['exists'] = True
+    return HttpResponse(json.dumps(data));

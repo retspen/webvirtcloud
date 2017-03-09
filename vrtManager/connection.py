@@ -442,7 +442,16 @@ class wvmConnect(object):
                 vcpu = cur_vcpu
             else:
                 vcpu = util.get_xml_path(dom.XMLDesc(0), "/domain/vcpu")
-            vname[dom.name()] = {'status': dom.info()[0], 'uuid': dom.UUIDString(), 'vcpu': vcpu, 'memory': mem}
+            title = util.get_xml_path(dom.XMLDesc(0), "/domain/title")
+            description = util.get_xml_path(dom.XMLDesc(0), "/domain/description")
+            vname[dom.name()] = {
+                'status': dom.info()[0],
+                'uuid': dom.UUIDString(),
+                'vcpu': vcpu,
+                'memory': mem,
+                'title': title if title else '',
+                'description': description if description else '',
+            }
         return vname
 
     def get_user_instances(self, name):
@@ -454,7 +463,17 @@ class wvmConnect(object):
             vcpu = cur_vcpu
         else:
             vcpu = util.get_xml_path(dom.XMLDesc(0), "/domain/vcpu")
-        return {'name': dom.name(), 'status': dom.info()[0], 'uuid': dom.UUIDString(), 'vcpu': vcpu, 'memory': mem}
+        title = util.get_xml_path(dom.XMLDesc(0), "/domain/title")
+        description = util.get_xml_path(dom.XMLDesc(0), "/domain/description")
+        return {
+            'name': dom.name(),
+            'status': dom.info()[0],
+            'uuid': dom.UUIDString(),
+            'vcpu': vcpu,
+            'memory': mem,
+            'title': title if title else '',
+            'description': description if description else '',
+        }
 
     def close(self):
         """Close connection"""

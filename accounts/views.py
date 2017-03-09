@@ -3,18 +3,19 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
-from accounts.models import UserInstance, UserSSHKey
+from django.contrib.auth.decorators import login_required
+from accounts.models import *
 from instances.models import Instance
 from accounts.forms import UserAddForm
+from django.conf import settings
 
 
+@login_required
 def profile(request):
     """
     :param request:
     :return:
     """
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     user = User.objects.get(id=request.user.id)
@@ -63,21 +64,28 @@ def profile(request):
             return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
 
-
+@login_required
 def accounts(request):
     """
     :param request:
     :return:
     """
 
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
+    def create_missing_userattributes(users):
+        for user in users:
+            try:
+                userattributes = user.userattributes
+            except UserAttributes.DoesNotExist:
+                userattributes = UserAttributes(user=user)
+                userattributes.save()
 
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
-    users = User.objects.filter(is_staff=False, is_superuser=False)
+    users = User.objects.all().order_by('username')
+    create_missing_userattributes(users)
+    allow_empty_password = settings.ALLOW_EMPTY_PASSWORD
 
     if request.method == 'POST':
         if 'create' in request.POST:
@@ -96,7 +104,17 @@ def accounts(request):
             user_pass = request.POST.get('user_pass', '')
             user_edit = User.objects.get(id=user_id)
             user_edit.set_password(user_pass)
+            user_edit.is_staff = request.POST.get('user_is_staff', False)
+            user_edit.is_superuser = request.POST.get('user_is_superuser', False)
             user_edit.save()
+
+            userattributes = user_edit.userattributes
+            userattributes.can_clone_instances = request.POST.get('userattributes_can_clone_instances', False)
+            userattributes.max_instances = request.POST.get('userattributes_max_instances', 0)
+            userattributes.max_cpus = request.POST.get('userattributes_max_cpus', 0)
+            userattributes.max_memory = request.POST.get('userattributes_max_memory', 0)
+            userattributes.max_disk_size = request.POST.get('userattributes_max_disk_size', 0)
+            userattributes.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'block' in request.POST:
             user_id = request.POST.get('user_id', '')
@@ -123,14 +141,12 @@ def accounts(request):
     return render(request, 'accounts.html', locals())
 
 
+@login_required
 def account(request, user_id):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
@@ -138,7 +154,7 @@ def account(request, user_id):
     error_messages = []
     user = User.objects.get(id=user_id)
     user_insts = UserInstance.objects.filter(user_id=user_id)
-    instances = Instance.objects.all()
+    instances = Instance.objects.all().order_by('name')
 
     if user.username == request.user.username:
         return HttpResponseRedirect(reverse('profile'))
@@ -162,12 +178,17 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
-            try:
-                check_inst = UserInstance.objects.get(instance_id=int(inst_id))
+            
+            if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+                check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
+            else:
+                check_inst = UserInstance.objects.filter(instance_id=int(inst_id))
+            
+            if check_inst:
                 msg = _("Instance already added")
                 error_messages.append(msg)
-            except UserInstance.DoesNotExist:
-                add_user_inst = UserInstance(instance_id=int(inst_id), user_id=user_id)
+            else:
+                add_user_inst = UserInstance(instance_id=int(inst_id), user_id=int(user_id))
                 add_user_inst.save()
                 return HttpResponseRedirect(request.get_full_path())
 

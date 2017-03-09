@@ -8,6 +8,7 @@ from vrtManager import util
 from xml.etree import ElementTree
 from datetime import datetime
 from vrtManager.connection import wvmConnect
+from vrtManager.storage import wvmStorage
 from webvirtcloud.settings import QEMU_CONSOLE_TYPES
 
 
@@ -66,20 +67,18 @@ class wvmInstances(wvmConnect):
         dom = self.get_instance(name)
         dom.resume()
 
-    def moveto(self, conn, name, live, unsafe, undefine):
+    def moveto(self, conn, name, live, unsafe, undefine, offline):
         flags = 0
         if live and conn.get_status() == 1:
             flags |= VIR_MIGRATE_LIVE
         if unsafe and conn.get_status() == 1:
             flags |= VIR_MIGRATE_UNSAFE
         dom = conn.get_instance(name)
-        dom.migrate(self.wvm, flags, name, None, 0)
+        xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE)
+        if not offline:
+            dom.migrate(self.wvm, flags, None, None, 0)
         if undefine:
             dom.undefine()
-
-    def define_move(self, name):
-        dom = self.get_instance(name)
-        xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE)
         self.wvm.defineXML(xml)
 
     def graphics_type(self, name):
@@ -184,8 +183,13 @@ class wvmInstance(wvmConnect):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/currentMemory")
         return int(mem) / 1024
 
+    def get_title(self):
+        title = util.get_xml_path(self._XMLDesc(0), "/domain/title")
+        return title if title else ''
+
     def get_description(self):
-        return util.get_xml_path(self._XMLDesc(0), "/domain/description")
+        description = util.get_xml_path(self._XMLDesc(0), "/domain/description")
+        return description if description else ''
 
     def get_max_memory(self):
         return self.wvm.getInfo()[1] * 1048576
@@ -523,7 +527,7 @@ class wvmInstance(wvmConnect):
         return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE),
                                  "/domain/devices/graphics/@keymap") or ''
 
-    def resize(self, cur_memory, memory, cur_vcpu, vcpu):
+    def resize(self, cur_memory, memory, cur_vcpu, vcpu, disks=[]):
         """
         Function change ram and cpu on vds.
         """
@@ -541,6 +545,11 @@ class wvmInstance(wvmConnect):
         set_vcpu.text = vcpu
         set_vcpu.set('current', cur_vcpu)
 
+        for disk in disks:
+            source_dev = disk['path']
+            vol = self.get_volume_by_path(source_dev)
+            vol.resize(disk['size_new'])
+        
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
@@ -598,6 +607,22 @@ class wvmInstance(wvmConnect):
     def get_managed_save_image(self):
         return self.instance.hasManagedSaveImage(0)
 
+    def get_wvmStorage(self, pool):
+        storage = wvmStorage(self.host,
+                             self.login,
+                             self.passwd,
+                             self.conn,
+                             pool)
+        return storage
+
+    def fix_mac(self, mac):
+        if ":" in mac:
+            return mac
+        # if mac does not contain ":", try to split into tuples and join with ":"
+        n = 2
+        mac_tuples = [mac[i:i+n] for i in range(0, len(mac), n)]
+        return ':'.join(mac_tuples)
+
     def clone_instance(self, clone_data):
         clone_dev_path = []
 
@@ -610,7 +635,8 @@ class wvmInstance(wvmConnect):
 
         for num, net in enumerate(tree.findall('devices/interface')):
             elm = net.find('mac')
-            elm.set('address', clone_data['net-' + str(num)])
+            mac_address = self.fix_mac(clone_data['clone-net-mac-' + str(num)])
+            elm.set('address', mac_address)
 
         for disk in tree.findall('devices/disk'):
             if disk.get('device') == 'disk':
@@ -649,5 +675,65 @@ class wvmInstance(wvmConnect):
                                     </volume>""" % (target_file, vol_format)
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
+                
+                source_dev = elm.get('dev')
+                if source_dev:
+                    clone_path = os.path.join(os.path.dirname(source_dev), target_file)
+                    elm.set('dev', clone_path)
+                    
+                    vol = self.get_volume_by_path(source_dev)
+                    stg = vol.storagePoolLookupByVolume()
+                    
+                    vol_name = util.get_xml_path(vol.XMLDesc(0), "/volume/name")
+                    pool_name = util.get_xml_path(stg.XMLDesc(0), "/pool/name")
+                    
+                    storage = self.get_wvmStorage(pool_name)
+                    storage.clone_volume(vol_name, target_file)
 
+        options = {
+            'title': clone_data.get('clone-title', ''),
+            'description': clone_data.get('clone-description', ''),
+        }
+        self._set_options(tree, options)
         self._defineXML(ElementTree.tostring(tree))
+
+        return self.get_instance(clone_data['name']).UUIDString()
+
+    def change_network(self, network_data):
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        for num, interface in enumerate(tree.findall('devices/interface')):
+            if interface.get('type') == 'bridge':
+                source = interface.find('mac')
+                source.set('address', network_data['net-mac-' + str(num)])
+                source = interface.find('source')
+                source.set('bridge', network_data['net-source-' + str(num)])
+
+        new_xml = ElementTree.tostring(tree)
+        self._defineXML(new_xml)
+
+    def _set_options(self, tree, options):
+        for o in ['title', 'description']:
+            option = tree.find(o)
+            option_value = options.get(o, '').strip()
+            if not option_value:
+                if not option is None:
+                    tree.remove(option)
+            else:
+                if option is None:
+                    option = ElementTree.SubElement(tree, o)
+                option.text = option_value
+
+    def set_options(self, options):
+        """
+        Function change description, title
+        """
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        self._set_options(tree, options)
+
+        new_xml = ElementTree.tostring(tree)
+        self._defineXML(new_xml)
+
