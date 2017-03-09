@@ -571,7 +571,15 @@ def instance(request, compute_id, vname):
                     instance.compute = new_compute
                     instance.save()
                     conn_migrate.close()
-                    msg = _("Migrate")
+                    if autostart:
+                        conn_new = wvmInstance(new_compute.hostname,
+                                               new_compute.login,
+                                               new_compute.password,
+                                               new_compute.type,
+                                               vname)
+                        conn_new.set_autostart(1)
+                        conn_new.close()
+                    msg = _("Migrate to %s" % new_compute.hostname)
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(reverse('instance', args=[compute_id, vname]))
 
