@@ -1290,13 +1290,14 @@
     });
 </script>
 <script>
+     backgroundJobRunning = false;
      window.setInterval(function get_status() {
          var status = {{ status }};
          $.getJSON('{% url 'inst_status' compute_id vname %}', function (data) {
-             if (data['status'] != status) {
+             if (data['status'] != status && !backgroundJobRunning) {
                  window.location.reload()
              }
-         })
+         });
      }, 5000);
 </script>
 <script>
