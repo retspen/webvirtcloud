@@ -8,7 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 SECRET_KEY = '4y(f4rfqc6f2!i8_vfuu)kav6tdv5#sc=n%o451dm+th0&3uci'
 
-DEBUG = True 
+DEBUG = True
 
 TEMPLATE_DEBUG = DEBUG
 
@@ -44,10 +44,10 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.RemoteUserBackend',
-    #'accounts.backends.MyRemoteUserBackend',
-)
+#AUTHENTICATION_BACKENDS = (
+#    'django.contrib.auth.backends.RemoteUserBackend',
+#    #'accounts.backends.MyRemoteUserBackend',
+#)
 
 LOGIN_URL = '/accounts/login'
 
