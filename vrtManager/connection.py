@@ -1,6 +1,9 @@
 import libvirt
 import threading
 import socket
+import io
+import os.path
+from PIL import Image, ImageFont, ImageDraw
 from vrtManager import util
 from rwlock import ReadWriteLock
 from django.conf import settings
@@ -475,8 +478,60 @@ class wvmConnect(object):
             'description': description if description else '',
         }
 
+    def get_user_instances_screenshot(self, domname):
+        img_file_path = settings.SCREENSHOT_PATH + '/'
+        file_name = img_file_path + domname
+        screen = 0
+        try:
+            dom = self.wvm.lookupByName(domname)
+            if dom.info()[0] == 1:
+                stream = self.wvm.newStream()
+                dom.screenshot(stream, screen, 0)
+
+                buff = io.BytesIO()
+
+                stream.recvAll(saver, buff)
+
+                stream.finish()
+                buff.seek(0)
+
+                image = Image.open(buff)
+                image.load()
+                image.thumbnail((200,200),Image.ANTIALIAS)
+                image.save(file_name + '.png', "PNG")
+
+                result = True
+
+            if dom.info()[0] == 3:
+                if not os.path.exists(img_file_path + 'vm_is_suspend.png'):
+                    image = Image.new('RGBA',(200, 150),(0,0,0,255))
+                    fnt = ImageFont.truetype('static/fonts/sans-serif.ttf', 36)
+                    draw = ImageDraw.Draw(image)
+                    draw.text((15, 50),"VM is SUSPEND",fill=(255,255,255,255),font=fnt)
+                    image.save(img_file_path + 'vm_is_suspend.png', "PNG")
+                result = True
+
+            if dom.info()[0] == 5:
+                if not os.path.exists(img_file_path + 'vm_is_off.png'):
+                    image = Image.new('RGBA',(200, 150),(0,0,0,255))
+                    fnt = ImageFont.truetype('static/fonts/sans-serif.ttf', 36)
+                    draw = ImageDraw.Draw(image)
+                    draw.text((15, 50),"VM is OFF",fill=(255,255,255,255),font=fnt)
+                    image.save(img_file_path + 'vm_is_off.png', "PNG")
+                result = True
+
+        except IOError as e:
+            print "I/O error({0}): {1}".format(e.errno, e.strerror)
+            pass
+            result = False
+
+        return result
+        
     def close(self):
         """Close connection"""
         # to-do: do not close connection ;)
         # self.wvm.close()
         pass
+
+def saver(stream, data, buff_):
+    return buff_.write(data)
