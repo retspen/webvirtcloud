@@ -70,21 +70,11 @@ def accounts(request):
     :param request:
     :return:
     """
-
-    def create_missing_userattributes(users):
-        for user in users:
-            try:
-                userattributes = user.userattributes
-            except UserAttributes.DoesNotExist:
-                userattributes = UserAttributes(user=user)
-                userattributes.save()
-
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     users = User.objects.all().order_by('username')
-    create_missing_userattributes(users)
     allow_empty_password = settings.ALLOW_EMPTY_PASSWORD
 
     if request.method == 'POST':

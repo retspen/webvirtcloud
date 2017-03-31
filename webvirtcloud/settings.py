@@ -45,8 +45,8 @@ MIDDLEWARE_CLASSES = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.RemoteUserBackend',
-    #'accounts.backends.MyRemoteUserBackend',
+    #'django.contrib.auth.backends.RemoteUserBackend',
+    'accounts.backends.MyRemoteUserBackend',
 )
 
 LOGIN_URL = '/accounts/login'
