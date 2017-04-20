@@ -546,8 +546,8 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="media">
-                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                    {% for cd in media %}
+                                                {% for cd in media %}
+                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
                                                             <label class="col-sm-2 control-label">{% trans "CDROM" %} {{ forloop.counter }}</label>
                                                             {% if not cd.image %}
@@ -579,8 +579,8 @@
                                                                 </div>
                                                             {% endif %}
                                                         </div>
-                                                    {% endfor %}
-                                                </form>
+                                                    </form>
+                                                {% endfor %}
                                                 <div class="clearfix"></div>
                                             </div>
                                             {% if request.user.is_superuser %}
