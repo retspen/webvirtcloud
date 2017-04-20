@@ -57,6 +57,25 @@ def instances(request):
             info['first_user'] = None
         return info
 
+    def refresh_instance_database(comp, vm, info):
+        instances_count = Instance.objects.filter(name=vm).count()
+        if instances_count > 1:
+            for i in Instance.objects.filter(name=vm):
+                user_instances_count = UserInstance.objects.filter(instance=i).count()
+                if user_instances_count == 0:
+                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple records."))
+                    i.delete()
+        
+        try:
+            check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
+            if check_uuid.uuid != info['uuid']:
+                check_uuid.save()
+            all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
+            all_host_vms[comp.id, comp.name][vm]['userinstances'] = get_userinstances_info(check_uuid)
+        except Instance.DoesNotExist:
+            check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
+            check_uuid.save()
+    
     if not request.user.is_superuser:
         user_instances = UserInstance.objects.filter(user_id=request.user.id)
         for usr_inst in user_instances:
@@ -76,15 +95,8 @@ def instances(request):
                     if conn.get_host_instances():
                         all_host_vms[comp.id, comp.name] = conn.get_host_instances()
                         for vm, info in conn.get_host_instances().items():
-                            try:
-                                check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
-                                if check_uuid.uuid != info['uuid']:
-                                    check_uuid.save()
-                                all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
-                                all_host_vms[comp.id, comp.name][vm]['userinstances'] = get_userinstances_info(check_uuid)
-                            except Instance.DoesNotExist:
-                                check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
-                                check_uuid.save()
+                            refresh_instance_database(comp, vm, info)
+
                     conn.close()
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)
