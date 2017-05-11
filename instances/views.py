@@ -807,7 +807,7 @@ def guess_mac_address(request, vname):
                 if name_found and "hardware ethernet" in line:
                     data['mac'] = line.split(' ')[-1].strip().strip(';')
                     break
-    return HttpResponse(json.dumps(data));
+    return HttpResponse(json.dumps(data))
 
 @login_required
 def guess_clone_name(request):
@@ -823,7 +823,7 @@ def guess_clone_name(request):
                     hostname = fqdn.split('.')[0]
                     if hostname.startswith(prefix) and hostname not in instance_names:
                         return HttpResponse(json.dumps({'name': hostname}))
-    return HttpResponse(json.dumps({}));
+    return HttpResponse(json.dumps({}))
 
 @login_required
 def check_instance(request, vname):
@@ -831,4 +831,20 @@ def check_instance(request, vname):
     data = { 'vname': vname, 'exists': False }
     if check_instance:
         data['exists'] = True
-    return HttpResponse(json.dumps(data));
+    return HttpResponse(json.dumps(data))
+
+def sshkeys(request, vname):
+    """
+    :param request:
+    :param vm:
+    :return:
+    """
+
+    instance_keys = []
+    userinstances = UserInstance.objects.filter(instance__name=vname)
+    
+    for ui in userinstances:
+        keys = UserSSHKey.objects.filter(user=ui.user)
+        for k in keys:
+            instance_keys.append(k.keypublic)
+    return HttpResponse(json.dumps(instance_keys))
