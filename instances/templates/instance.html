@@ -5,44 +5,37 @@
                 {% include 'pleasewaitdialog.html' %}
                 <!-- Page Heading -->
                  <div class="row">
-                    <table>
-                        <tr>
-                            <td><h3>{{ vname }}</h3></td>
-                            <td>
-                                {% ifequal status 5 %}
-                                   <span class="label label-danger">{% trans "Off" %}</span>
-                                {% endifequal %}
-                                {% ifequal status 1 %}
-                                    <span class="label label-success">{% trans "Active" %}</span>
-                                {% endifequal %}
-                                {% ifequal status 3 %}
-                                    <span class="label label-warning">{% trans "Suspend" %}</span>
-                                {% endifequal %}
-                            </td>
-                            <td>
-                                <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
-                            </td>
-                        </tr>
-                    </table>
-                    <table width="65%">
-                        <tr>
-                            <td>
-                                {% if cur_vcpu %}
-                                    <h4>{{ cur_vcpu }} {% trans "Vcpu" %}</h4>
-                                {% else %}
-                                    <h4>{{ vcpu }} {% trans "Vcpu" %}</h4>
-                                {% endif %} 
-                            </td>
-                            <td>
-                                <h4>{{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}</h4>
-                            </td>
+                    <div>
+                        <h3>
+                            {{ vname }}{% if title %}&nbsp;({{ title }}){% endif %}
+                        </h3>
+                    </div>
+                    <div>
+                        <div>
+                            {% ifequal status 5 %}
+                               <span class="label label-danger">{% trans "Off" %}</span>
+                            {% endifequal %}
+                            {% ifequal status 1 %}
+                                <span class="label label-success">{% trans "Active" %}</span>
+                            {% endifequal %}
+                            {% ifequal status 3 %}
+                                <span class="label label-warning">{% trans "Suspend" %}</span>
+                            {% endifequal %}
+                            |
+                            {% if cur_vcpu %}
+                                {{ cur_vcpu }} {% trans "Vcpu" %}
+                            {% else %}
+                                {{ vcpu }} {% trans "Vcpu" %}
+                            {% endif %}
+                            |
+                            {{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}
+                            |
                             {% for disk in disks %}
-                                <td>
-                                    <h4>{{ disk.size|filesizeformat }} {% trans "Disk" %}</h4>
-                                </td>
+                                {{ disk.size|filesizeformat }} {% trans "Disk" %} |
                             {% endfor %}
-                        </tr>
-                    </table>
+                            <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
+                        </div>
+                    </div>
                     {% if user_quota_msg %}
                         <span class="label label-warning">{{ user_quota_msg|capfirst }} quota reached.</span>
                     {% endif %}
