@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load staticfiles %}
 {% load i18n %}
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
@@ -1009,7 +1010,7 @@
                 </div>
 {% endblock %}
 {% block script %}
-<script src="{{ STATIC_URL }}/js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="{% static "js/ace.js" %}" type="text/javascript" charset="utf-8"></script>
 <script>
     var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
@@ -1146,7 +1147,7 @@
         });
     });
 </script>
-<script src="{{ STATIC_URL }}js/Chart.min.js"></script>
+<script src="{% static "js/Chart.min.js" %}"></script>
 <script>
     $('#chartgraphs').on('shown.bs.tab', function (event) {
         var cpuLineData = {
