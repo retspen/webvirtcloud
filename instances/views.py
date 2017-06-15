@@ -630,7 +630,10 @@ def instance(request, compute_id, vname):
                     quota_msg = check_user_quota(1, vcpu, memory, disk_sum)
                     check_instance = Instance.objects.filter(name=clone_data['name'])
                     
-                    if not request.user.is_superuser and quota_msg:    
+                    for post in request.POST:
+                        clone_data[post] = request.POST.get(post, '').strip()
+                    
+                    if not request.user.is_superuser and quota_msg:
                         msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
                         error_messages.append(msg)
                     elif check_instance:
@@ -639,10 +642,10 @@ def instance(request, compute_id, vname):
                     elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
                         msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
                         error_messages.append(msg)
+                    elif not re.match(r'^([0-9A-F]{2})(\:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'], re.IGNORECASE):
+                        msg = _("Instance mac '%s' invalid format!" % clone_data['clone-net-mac-0'])
+                        error_messages.append(msg)
                     else:
-                        for post in request.POST:
-                            clone_data[post] = request.POST.get(post, '')
-
                         new_uuid = conn.clone_instance(clone_data)
                         new_instance = Instance(compute_id=compute_id, name=clone_data['name'], uuid=new_uuid)
                         new_instance.save()
