@@ -256,7 +256,8 @@ def instance(request, compute_id, vname):
                 cpu += int(conn.get_vcpu())
                 memory += int(conn.get_memory())
                 for disk in conn.get_disk_device():
-                    disk_size += int(disk['size'])>>30
+                    if disk['size']:
+                        disk_size += int(disk['size'])>>30
         
         ua = request.user.userattributes
         msg = ""
