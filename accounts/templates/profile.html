@@ -41,6 +41,7 @@
                             </div>
                         </div>
                     </form>
+                    {% if SHOW_PROFILE_EDIT_PASSWORD %}
                     <h3 class="page-header">{% trans "Edit Password" %}</h3>
                     <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
                         <div class="form-group">
@@ -67,6 +68,7 @@
                             </div>
                         </div>
                     </form>
+                    {% endif %}
                     <h3 class="page-header">{% trans "SSH Keys" %}</h3>
                     {% if publickeys %}
                         <div class="col-lg-12">
