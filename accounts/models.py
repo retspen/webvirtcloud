@@ -30,5 +30,34 @@ class UserAttributes(models.Model):
     max_memory = models.IntegerField(default=2048)
     max_disk_size = models.IntegerField(default=20)
 
+    default_instances = [
+        'debian8-template',
+        'debian8-template-nocf',
+        'debian9-template',
+        'debian9-template-nocf',
+        ]
+
+    @staticmethod
+    def create_missing_userattributes(user):
+        try:
+            userattributes = user.userattributes
+        except UserAttributes.DoesNotExist:
+            userattributes = UserAttributes(user=user)
+            userattributes.save()
+
+    @staticmethod
+    def add_default_instances(user):
+        existing_instances = UserInstance.objects.filter(user=user)
+        if not existing_instances:
+            for instance_name in UserAttributes.default_instances:
+                instance = Instance.objects.get(name=instance_name)
+                user_instance = UserInstance(user=user, instance=instance)
+                user_instance.save()
+    
+    @staticmethod
+    def configure_user(user):
+        UserAttributes.create_missing_userattributes(user)
+        UserAttributes.add_default_instances(user)
+
     def __unicode__(self):
         return self.user.username

@@ -88,6 +88,7 @@ def accounts(request):
             if not error_messages:
                 new_user = User.objects.create_user(data['name'], None, data['password'])
                 new_user.save()
+                UserAttributes.configure_user(new_user)
                 return HttpResponseRedirect(request.get_full_path())
         if 'edit' in request.POST:
             user_id = request.POST.get('user_id', '')
