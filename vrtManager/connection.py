@@ -380,6 +380,25 @@ class wvmConnect(object):
             interface.append(inface)
         return interface
 
+    def get_cache_modes(self):
+        """Get cache available modes"""
+        return {
+            'default': 'Default',
+            'none': 'Disabled',
+            'writethrough': 'Write through',
+            'writeback': 'Write back',
+            'directsync': 'Direct sync',  # since libvirt 0.9.5
+            'unsafe': 'Unsafe',  # since libvirt 0.9.7
+        }
+    
+    def get_busses(self):
+        """Get available busses"""
+        return [ 'ide', 'scsi', 'usb', 'virtio' ]
+
+    def get_image_formats(self):
+        """Get available image formats"""
+        return [ 'raw', 'qcow', 'qcow2' ]
+
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
 

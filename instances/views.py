@@ -4,7 +4,7 @@ import json
 import socket
 import crypt
 import re
-from string import letters, digits
+import string
 from random import choice
 from bisect import insort
 from django.http import HttpResponse, HttpResponseRedirect
@@ -18,6 +18,7 @@ from accounts.models import UserInstance, UserSSHKey
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
+from vrtManager.create import wvmCreate
 from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
@@ -279,13 +280,25 @@ def instance(request, compute_id, vname):
                 msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
         return msg
 
+    def get_new_disk_dev(disks, bus):
+        if bus == "virtio":
+            dev_base = "vd"
+        else:
+            dev_base = "sd"
+        existing_devs = [ disk['dev'] for disk in disks ]
+        for l in string.lowercase:
+            dev = dev_base + l
+            if dev not in existing_devs:
+                return dev
+        raise Exception(_('None available device name'))
+            
     try:
         conn = wvmInstance(compute.hostname,
                            compute.login,
                            compute.password,
                            compute.type,
                            vname)
-
+        
         status = conn.get_status()
         autostart = conn.get_autostart()
         vcpu = conn.get_vcpu()
@@ -318,6 +331,13 @@ def instance(request, compute_id, vname):
         console_passwd = conn.get_console_passwd()
         clone_free_names = get_clone_free_names()
         user_quota_msg = check_user_quota(0, 0, 0, 0)
+        storages = sorted(conn.get_storages())
+        cache_modes = sorted(conn.get_cache_modes().items())
+        default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
+        default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
+        formats = conn.get_image_formats()
+        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
+        busses = conn.get_busses()
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -456,6 +476,27 @@ def instance(request, compute_id, vname):
                     msg = _("Resize")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
+
+            if 'addvolume' in request.POST and (request.user.is_superuser or userinstace.is_change):
+                connCreate = wvmCreate(compute.hostname,
+                                   compute.login,
+                                   compute.password,
+                                   compute.type)
+                storage = request.POST.get('storage', '')
+                name = request.POST.get('name', '')
+                extension = request.POST.get('extension', '')
+                format = request.POST.get('format', '')
+                size = request.POST.get('size', 0)
+                meta_prealloc = request.POST.get('meta_prealloc', False)
+                bus = request.POST.get('bus', '')
+                cache = request.POST.get('cache', '')
+                target = get_new_disk_dev(disks, bus)
+                
+                path = connCreate.create_volume(storage, name, size, format, meta_prealloc, extension)
+                conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
+                msg = _('Attach new disk')
+                addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'umount_iso' in request.POST:
                 image = request.POST.get('path', '')
