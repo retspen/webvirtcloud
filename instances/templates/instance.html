@@ -918,7 +918,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Live migration" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" checked>
+                                                                <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% ifequal status 1 %}checked{% endifequal %}>
                                                             </div>
                                                         </div>
                                                         <div class="form-group">
@@ -936,7 +936,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Offline migration" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="offline_migrate" value="true" id="offline_migrate">
+                                                                <input type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% ifequal status 5 %}checked{% endifequal %}>
                                                             </div>
                                                         </div>
                                                         {% if computes_count != 1 %}
