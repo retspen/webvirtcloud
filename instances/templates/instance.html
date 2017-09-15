@@ -995,10 +995,31 @@
                                                     <div class="clearfix"></div>
                                                 </div>
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="users">
-                                                    <p style="font-weight:bold;">{% trans "Instance owners" %}</p>
-                                                    {% for userinstance in userinstances %}
-                                                    <p><a href="{% url 'account' userinstance.user.id %}">{{ userinstance.user }}</a></p>
-                                                    {%  endfor %}
+                                                    <div>
+                                                    <p style="font-weight:bold;">
+                                                        {% trans "Instance owners" %}
+                                                        {% include 'add_instance_owner_block.html' %}
+                                                    </p>
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped sortable-theme-bootstrap" data-sortable>
+                                                            <tbody class="searchable">
+                                                            {% for userinstance in userinstances %}
+                                                                <tr>
+                                                                    <td><a href="{% url 'account' userinstance.user.id %}">{{ userinstance.user }}</a></td>
+                                                                    <td style="width:30px;">
+                                                                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                            <input type="hidden" name="userinstance" value="{{ userinstance.pk }}">
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="del_owner" title="{% trans "Delete" %}">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        </form>
+                                                                    </td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                     <div class="clearfix"></div>
                                                 </div>
                                             {% endif %}

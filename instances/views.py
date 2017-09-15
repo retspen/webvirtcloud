@@ -14,6 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
+from django.contrib.auth.models import User
 from accounts.models import UserInstance, UserSSHKey
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
@@ -182,6 +183,7 @@ def instance(request, compute_id, vname):
     compute = get_object_or_404(Compute, pk=compute_id)
     computes = Compute.objects.all()
     computes_count = len(computes)
+    users = User.objects.all().order_by('username')
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     keymaps = QEMU_KEYMAPS
     console_types = QEMU_CONSOLE_TYPES
@@ -662,6 +664,33 @@ def instance(request, compute_id, vname):
                     msg = _("Edit options")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#options')
+
+                if 'add_owner' in request.POST:
+                    user_id = int(request.POST.get('user_id', ''))
+                    
+                    if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+                        check_inst = UserInstance.objects.filter(instance=instance, user_id=user_id)
+                    else:
+                        check_inst = UserInstance.objects.filter(instance=instance)
+                    
+                    if check_inst:
+                        msg = _("Owner already added")
+                        error_messages.append(msg)
+                    else:
+                        add_user_inst = UserInstance(instance=instance, user_id=user_id)
+                        add_user_inst.save()
+                        msg = _("Added owner %d" % user_id)
+                        addlogmsg(request.user.username, instance.name, msg)
+                        return HttpResponseRedirect(request.get_full_path() + '#users')
+
+                if 'del_owner' in request.POST:
+                    userinstance_id = int(request.POST.get('userinstance', ''))
+                    userinstance = UserInstance.objects.get(pk=userinstance_id)
+                    userinstance.delete()
+                    msg = _("Deleted owner %d" % userinstance_id)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#users')
+
 
             if request.user.is_superuser or request.user.userattributes.can_clone_instances:
                 if 'clone' in request.POST:
