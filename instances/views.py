@@ -446,7 +446,7 @@ def instance(request, compute_id, vname):
                     msg = _("Please shutdow down your instance and then try again")
                     error_messages.append(msg)
 
-            if 'resize' in request.POST and (request.user.is_superuser or userinstace.is_change):
+            if 'resize' in request.POST and (request.user.is_superuser or request.user.is_staff or userinstace.is_change):
                 new_vcpu = request.POST.get('vcpu', '')
                 new_cur_vcpu = request.POST.get('cur_vcpu', '')
                 new_memory = request.POST.get('memory', '')

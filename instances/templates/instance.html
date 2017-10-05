@@ -318,7 +318,7 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
-                                                {% if request.user.is_superuser or userinstace.is_change %}
+                                                {% if request.user.is_superuser or request.user.is_staff or userinstace.is_change %}
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                                         <p style="font-weight:bold;">{% trans "Logical host CPUs:" %} {{ vcpu_host }}</p>
                                                         <div class="form-group">
