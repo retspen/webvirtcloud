@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 from instances.models import Instance
 
 
@@ -30,13 +31,6 @@ class UserAttributes(models.Model):
     max_memory = models.IntegerField(default=2048)
     max_disk_size = models.IntegerField(default=20)
 
-    default_instances = [
-        'debian8-template',
-        'debian8-template-nocf',
-        'debian9-template',
-        'debian9-template-nocf',
-        ]
-
     @staticmethod
     def create_missing_userattributes(user):
         try:
@@ -49,7 +43,7 @@ class UserAttributes(models.Model):
     def add_default_instances(user):
         existing_instances = UserInstance.objects.filter(user=user)
         if not existing_instances:
-            for instance_name in UserAttributes.default_instances:
+            for instance_name in settings.NEW_USER_DEFAULT_INSTANCES:
                 instance = Instance.objects.get(name=instance_name)
                 user_instance = UserInstance(user=user, instance=instance)
                 user_instance.save()
