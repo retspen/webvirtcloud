@@ -3,7 +3,7 @@ venv
 .idea
 .DS_*
 *.pyc
-db.sqlite3
+db.sqlite3*
 console/cert.pem
 tags
 dhcpd.*
