@@ -651,20 +651,6 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
-                if 'change_options' in request.POST:
-                    instance.is_template = request.POST.get('is_template', False)
-                    instance.save()
-                    
-                    options = {}
-                    for post in request.POST:
-                        if post in ['title', 'description']:
-                            options[post] = request.POST.get(post, '')
-                    conn.set_options(options)
-                    
-                    msg = _("Edit options")
-                    addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#options')
-
                 if 'add_owner' in request.POST:
                     user_id = int(request.POST.get('user_id', ''))
                     
@@ -726,6 +712,20 @@ def instance(request, compute_id, vname):
                         msg = _("Clone of '%s'" % instance.name)
                         addlogmsg(request.user.username, new_instance.name, msg)
                         return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
+
+                if 'change_options' in request.POST:
+                    instance.is_template = request.POST.get('is_template', False)
+                    instance.save()
+                    
+                    options = {}
+                    for post in request.POST:
+                        if post in ['title', 'description']:
+                            options[post] = request.POST.get(post, '')
+                    conn.set_options(options)
+                    
+                    msg = _("Edit options")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#options')
 
         conn.close()
 

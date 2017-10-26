@@ -620,11 +620,15 @@
                                                         {% trans "XML" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
                                                 <li role="presentation">
                                                     <a href="#options" aria-controls="options" role="tab" data-toggle="tab">
                                                         {% trans "Options" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <li role="presentation">
                                                     <a href="#users" aria-controls="users" role="tab" data-toggle="tab">
                                                         {% trans "Users" %}
@@ -966,6 +970,8 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="options">
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
@@ -983,7 +989,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Is template" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="is_template" value="true" id="is_template" {% if instance.is_template %}checked{% endif %}>
+                                                                <input type="checkbox" name="is_template" value="true" id="is_template" {% if instance.is_template %}checked{% endif %} {% if not request.user.is_superuser %}disabled{% endif %}>
                                                             </div>
                                                         </div>
                                                         {% ifequal status 5 %}
@@ -994,6 +1000,8 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="users">
                                                     <div>
                                                     <p style="font-weight:bold;">
