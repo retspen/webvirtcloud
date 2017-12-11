@@ -84,8 +84,8 @@
                                 </li>
                                 <li role="presentation">
                                     <a href="#graphics" id="chartgraphs" class="action-button" aria-controls="graphics" role="tab" data-toggle="tab">
-                                        <span id="action-block" class="glyphicon glyphicon-signal" aria-hidden="true"></span>
-                                        {% trans "Graphs" %}
+                                        <span id="action-block" class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+                                        {% trans "Stats" %}
                                     </a>
                                 </li>
                                 <li role="presentation">
@@ -1043,6 +1043,11 @@
                                                     {% trans "Real Time" %}
                                                 </a>
                                             </li>
+                                            <li role="presentation">
+                                                <a href="#logs" aria-controls="logs" role="tab" data-toggle="tab" onclick='update_logs_table("{{ vname }}");'>
+                                                    {% trans "Logs" %}
+                                                </a>
+                                            </li>
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
@@ -1087,6 +1092,23 @@
                                                         </div>
                                                     </div>
                                                 {% endfor %}
+                                                <div class="clearfix"></div>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="logs">
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped sortable-theme-bootstrap" id="logs_table" data-sortable>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>{% trans "Date" %}</th>
+                                                                <th>{% trans "User" %}</th>
+                                                                <th>{% trans "Message" %}</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="searchable">
+                                                            <tr><td colspan="3"><i>None ...</i></td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                                 <div class="clearfix"></div>
                                             </div>
                                         </div>
@@ -1464,6 +1486,21 @@
             if ($(this).attr('href') === hash) {
                 $(this).trigger('click');
             }
+        });
+    }
+</script>
+<script>
+    function update_logs_table(vname) {
+        $.getJSON('/logs/vm_logs/'+vname+'/', function(data) {
+            var logs = "";
+            $.each(data, function(id) {
+                row = data[id];
+                console.log(row);
+                logs += '<tr><td style="width:150px">'+row['date']+'</td>';
+                logs += '<td>'+row['user']+'</td>';
+                logs += '<td>'+row['message']+'</td></tr>';
+            });
+            $("#logs_table > tbody").html(logs);
         });
     }
 </script>

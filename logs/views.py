@@ -1,8 +1,11 @@
 from django.shortcuts import render
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
+from instances.models import Instance
 from logs.models import Logs
 from django.conf import settings
+import json
 
 
 def addlogmsg(user, instance, message):
@@ -14,14 +17,12 @@ def addlogmsg(user, instance, message):
     add_log_msg.save()
 
 
+@login_required
 def showlogs(request, page=1):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('index'))
 
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
@@ -34,3 +35,27 @@ def showlogs(request, page=1):
     # TODO: remove last element from queryset, but do not affect database
 
     return render(request, 'showlogs.html', locals())
+
+@login_required
+def vm_logs(request, vname):
+    """
+    :param request:
+    :param vm:
+    :return:
+    """
+    
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+
+    vm = Instance.objects.get(name=vname)
+    logs_ = Logs.objects.filter(instance=vm.name, date__gte=vm.created).order_by('-date')
+    logs = []
+    for l in logs_:
+        log = {}
+        log['user'] = l.user
+        log['instance'] = l.instance
+        log['message'] = l.message
+        log['date'] = l.date.strftime('%x %X')
+        logs.append(log)
+    
+    return HttpResponse(json.dumps(logs))
