@@ -4,6 +4,6 @@ venv
 .DS_*
 *.pyc
 db.sqlite3*
-console/cert.pem
+console/cert.pem*
 tags
 dhcpd.*
