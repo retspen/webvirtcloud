@@ -6,7 +6,7 @@ Django settings for webvirtcloud project.
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-SECRET_KEY = '4y(f4rfqc6f2!i8_vfuu)kav6tdv5#sc=n%o451dm+th0&3uci'
+SECRET_KEY = ''
 
 DEBUG = True 
 
@@ -46,7 +46,7 @@ MIDDLEWARE_CLASSES = (
 
 AUTHENTICATION_BACKENDS = (
     #'django.contrib.auth.backends.RemoteUserBackend',
-    'accounts.backends.MyRemoteUserBackend',
+    #'accounts.backends.MyRemoteUserBackend',
 )
 
 LOGIN_URL = '/accounts/login'
@@ -117,11 +117,8 @@ LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
 ALLOW_INSTANCE_MULTIPLE_OWNER = True
-NEW_USER_DEFAULT_INSTANCES = [
-    'debian9-template',
-    'kiv-adm-template',
-]
-CLONE_INSTANCE_DEFAULT_PREFIX = 'ourea'
+NEW_USER_DEFAULT_INSTANCES = []
+CLONE_INSTANCE_DEFAULT_PREFIX = 'instance'
 LOGS_PER_PAGE = 100
 QUOTA_DEBUG = True
 ALLOW_EMPTY_PASSWORD = True
