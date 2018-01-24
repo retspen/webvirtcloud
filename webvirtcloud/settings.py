@@ -118,7 +118,6 @@ LIBVIRT_KEEPALIVE_COUNT = 5
 
 ALLOW_INSTANCE_MULTIPLE_OWNER = True
 NEW_USER_DEFAULT_INSTANCES = [
-    'debian8-template',
     'debian9-template',
     'kiv-adm-template',
 ]
