@@ -52,17 +52,17 @@ def instances(request):
     def get_userinstances_info(instance):
         info = {}
         uis = UserInstance.objects.filter(instance=instance)
-        info['count'] = len(uis)
-        if len(uis) > 0:
+        info['count'] = uis.count()
+        if info['count'] > 0:
             info['first_user'] = uis[0]
         else:
             info['first_user'] = None
         return info
 
     def refresh_instance_database(comp, vm, info):
-        instances_count = Instance.objects.filter(name=vm).count()
-        if instances_count > 1:
-            for i in Instance.objects.filter(name=vm):
+        instances = Instance.objects.filter(name=vm)
+        if instances.count() > 1:
+            for i in instances:
                 user_instances_count = UserInstance.objects.filter(instance=i).count()
                 if user_instances_count == 0:
                     addlogmsg(request.user.username, i.name, _("Deleting due to multiple records."))
@@ -94,9 +94,10 @@ def instances(request):
             if connection_manager.host_is_up(comp.type, comp.hostname):
                 try:
                     conn = wvmHostDetails(comp, comp.login, comp.password, comp.type)
-                    if conn.get_host_instances():
-                        all_host_vms[comp.id, comp.name] = conn.get_host_instances()
-                        for vm, info in conn.get_host_instances().items():
+                    host_instances = conn.get_host_instances()
+                    if host_instances:
+                        all_host_vms[comp.id, comp.name] = host_instances
+                        for vm, info in host_instances.items():
                             refresh_instance_database(comp, vm, info)
 
                     conn.close()
@@ -182,7 +183,7 @@ def instance(request, compute_id, vname):
     messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     computes = Compute.objects.all()
-    computes_count = len(computes)
+    computes_count = computes.count()
     users = User.objects.all().order_by('username')
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     keymaps = QEMU_KEYMAPS
@@ -247,7 +248,7 @@ def instance(request, compute_id, vname):
 
     def check_user_quota(instance, cpu, memory, disk_size):
         user_instances = UserInstance.objects.filter(user_id=request.user.id, instance__is_template=False)
-        instance += len(user_instances)
+        instance += user_instances.count()
         for usr_inst in user_instances:
             if connection_manager.host_is_up(usr_inst.instance.compute.type,
                                              usr_inst.instance.compute.hostname):
