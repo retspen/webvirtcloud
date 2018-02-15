@@ -314,7 +314,10 @@ def instance(request, compute_id, vname):
         disks = conn.get_disk_device()
         media = conn.get_media_device()
         networks = conn.get_net_device()
-        media_iso = sorted(conn.get_iso_media())
+        if len(media) != 0:
+            media_iso = sorted(conn.get_iso_media())
+        else:
+            media_iso = []
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
