@@ -26,8 +26,10 @@
                             </thead>
                             <tbody>
                             {% for publickey in publickeys %}
+                                <tr>
                                 <td>{{ publickey.keyname }}</td>
                                 <td title="{{ publickey.keypublic }}">{{ publickey.keypublic|truncatechars:64 }}</td>
+                                </tr>
                             {% endfor %}
                             </tbody>
                         </table>
