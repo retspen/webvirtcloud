@@ -926,3 +926,40 @@ def sshkeys(request, vname):
         for k in keys:
             instance_keys.append(k.keypublic)
     return HttpResponse(json.dumps(instance_keys))
+
+def delete_instance(instance, delete_disk=False):
+    compute = instance.compute
+    instance_name = instance.name
+    try:
+        conn = wvmInstance(compute.hostname,
+                           compute.login,
+                           compute.password,
+                           compute.type,
+                           instance.name)
+
+        del_userinstance = UserInstance.objects.filter(instance=instance)
+        if del_userinstance:
+            print("Deleting UserInstances")
+            print(del_userinstance)
+            del_userinstance.delete()
+
+        if conn.get_status() == 1:
+            print("Forcing shutdown")
+            conn.force_shutdown()
+        if delete_disk:
+            snapshots = sorted(conn.get_snapshot(), reverse=True)
+            for snap in snapshots:
+                print("Deleting snapshot {}".format(snap['name']))
+                conn.snapshot_delete(snap['name'])
+            print("Deleting disks")
+            conn.delete_disk()
+
+        conn.delete()
+        instance.delete()
+
+        print("Instance {} on compute {} sucessfully deleted".format(instance_name, compute.hostname))
+
+    except libvirtError as lib_err:
+        print("Error removing instance {} on compute {}".format(instance_name, compute.hostname))
+        raise lib_err
+
