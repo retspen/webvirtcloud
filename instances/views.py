@@ -925,7 +925,12 @@ def sshkeys(request, vname):
         keys = UserSSHKey.objects.filter(user=ui.user)
         for k in keys:
             instance_keys.append(k.keypublic)
-    return HttpResponse(json.dumps(instance_keys))
+    if request.GET.get('plain', ''):
+        response = '\n'.join(instance_keys)
+        response += '\n'
+    else:
+        response = json.dumps(instance_keys)
+    return HttpResponse(response)
 
 def delete_instance(instance, delete_disk=False):
     compute = instance.compute
