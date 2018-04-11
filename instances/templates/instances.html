@@ -43,7 +43,7 @@
                                                 <th>Host<br>User</th>
                                                 <th>Status</th>
                                                 <th>VCPU</th>
-                                                <th>Memory</th>
+                                                <th>Memory<br>({% trans "MB" %})</th>
                                                 <th data-sortable="false" style="width:205px;">Actions</th>
                                             </tr>
                                         </thead>
@@ -64,7 +64,7 @@
                                                             {% endifequal %}
                                                         </td>
                                                         <td>{{ info.vcpu }}</td>
-                                                        <td>{{ info.memory }} {% trans "MB" %}</td>
+                                                        <td>{{ info.memory }}</td>
                                                         <td><form action="" method="post" role="form">{% csrf_token %}
                                                                 <input type="hidden" name="name" value="{{ vm }}"/>
                                                                 <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
