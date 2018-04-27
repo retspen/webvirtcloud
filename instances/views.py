@@ -182,7 +182,7 @@ def instance(request, compute_id, vname):
     error_messages = []
     messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
-    computes = Compute.objects.all()
+    computes = Compute.objects.all().order_by('name')
     computes_count = computes.count()
     users = User.objects.all().order_by('username')
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
