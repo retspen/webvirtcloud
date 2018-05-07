@@ -227,14 +227,14 @@
                                                     {% trans "Console" %}
                                                 </a>
                                             </li>
-                                            {% if SHOW_ACCESS_ROOT_PASSWORD %}
+                                            {% if show_access_root_password %}
                                             <li role="presentation">
                                                 <a href="#rootpasswd" aria-controls="rootpasswd" role="tab" data-toggle="tab">
                                                     {% trans "Root Password" %}
                                                 </a>
                                             </li>
                                             {% endif %}
-                                            {% if SHOW_ACCESS_SSH_KEYS %}
+                                            {% if show_access_ssh_keys %}
                                             <li role="presentation">
                                                 <a href="#sshkeys" aria-controls="sshkeys" role="tab" data-toggle="tab">
                                                     {% trans "SSH Keys" %}
@@ -253,7 +253,7 @@
                                                 {% endifequal %}
                                                 <div class="clearfix"></div>
                                             </div>
-                                            {% if SHOW_ACCESS_ROOT_PASSWORD %}
+                                            {% if show_access_root_password %}
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
                                                 <p>{% trans "You need shut down your instance and enter a new root password." %}</p>
                                                 <form class="form-inline" method="post" role="form">{% csrf_token %}
@@ -271,7 +271,7 @@
                                                 <div class="clearfix"></div>
                                             </div>
                                             {% endif %}
-                                            {% if SHOW_ACCESS_SSH_KEYS %}
+                                            {% if show_access_ssh_keys %}
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">
                                                 <p>{% trans "You need shut down your instance and choose your public key." %}</p>
                                                 <form class="form-inline" method="post" role="form">{% csrf_token %}

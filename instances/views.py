@@ -344,6 +344,9 @@ def instance(request, compute_id, vname):
         formats = conn.get_image_formats()
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         busses = conn.get_busses()
+        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
+        show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
+        show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
