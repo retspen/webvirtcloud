@@ -20,6 +20,7 @@ def profile(request):
     error_messages = []
     user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    show_profile_edit_password = settings.SHOW_PROFILE_EDIT_PASSWORD
 
     if request.method == 'POST':
         if 'username' in request.POST:
@@ -70,21 +71,11 @@ def accounts(request):
     :param request:
     :return:
     """
-
-    def create_missing_userattributes(users):
-        for user in users:
-            try:
-                userattributes = user.userattributes
-            except UserAttributes.DoesNotExist:
-                userattributes = UserAttributes(user=user)
-                userattributes.save()
-
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     users = User.objects.all().order_by('username')
-    create_missing_userattributes(users)
     allow_empty_password = settings.ALLOW_EMPTY_PASSWORD
 
     if request.method == 'POST':
@@ -98,6 +89,7 @@ def accounts(request):
             if not error_messages:
                 new_user = User.objects.create_user(data['name'], None, data['password'])
                 new_user.save()
+                UserAttributes.configure_user(new_user)
                 return HttpResponseRedirect(request.get_full_path())
         if 'edit' in request.POST:
             user_id = request.POST.get('user_id', '')
@@ -155,9 +147,7 @@ def account(request, user_id):
     user = User.objects.get(id=user_id)
     user_insts = UserInstance.objects.filter(user_id=user_id)
     instances = Instance.objects.all().order_by('name')
-
-    if user.username == request.user.username:
-        return HttpResponseRedirect(reverse('profile'))
+    publickeys = UserSSHKey.objects.filter(user_id=user_id)
 
     if request.method == 'POST':
         if 'delete' in request.POST:

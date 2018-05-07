@@ -6,7 +6,7 @@ Django settings for webvirtcloud project.
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-SECRET_KEY = '4y(f4rfqc6f2!i8_vfuu)kav6tdv5#sc=n%o451dm+th0&3uci'
+SECRET_KEY = ''
 
 DEBUG = True
 
@@ -44,10 +44,10 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-#AUTHENTICATION_BACKENDS = (
-#    'django.contrib.auth.backends.RemoteUserBackend',
-#    #'accounts.backends.MyRemoteUserBackend',
-#)
+AUTHENTICATION_BACKENDS = (
+    #'django.contrib.auth.backends.RemoteUserBackend',
+    #'accounts.backends.MyRemoteUserBackend',
+)
 
 LOGIN_URL = '/accounts/login'
 
@@ -78,9 +78,13 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
 )
 
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR,  'templates'),
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [ os.path.join(BASE_DIR, 'templates'), ],
+        'APP_DIRS': True,
+    }
+]
 
 ## WebVirtCloud settings
 
@@ -113,7 +117,14 @@ LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
 ALLOW_INSTANCE_MULTIPLE_OWNER = True
-CLONE_INSTANCE_DEFAULT_PREFIX = 'ourea'
+NEW_USER_DEFAULT_INSTANCES = []
+CLONE_INSTANCE_DEFAULT_PREFIX = 'instance'
 LOGS_PER_PAGE = 100
 QUOTA_DEBUG = True
 ALLOW_EMPTY_PASSWORD = True
+SHOW_ACCESS_ROOT_PASSWORD = False
+SHOW_ACCESS_SSH_KEYS = False
+SHOW_PROFILE_EDIT_PASSWORD = False
+INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
+INSTANCE_VOLUME_DEFAULT_BUS = 'virtio'
+INSTANCE_VOLUME_DEFAULT_CACHE = 'directsync'

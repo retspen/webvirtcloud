@@ -3,7 +3,8 @@ venv
 .idea
 .DS_*
 *.pyc
-db.sqlite3
-console/cert.pem
+db.sqlite3*
+console/cert.pem*
 tags
 dhcpd.*
+webvirtcloud/settings.py

@@ -18,8 +18,10 @@
 <script>
 function showPleaseWaitDialog() {
     $('#pleaseWaitDialog').modal();
+    backgroundJobRunning = true;
 }
 function hidePleaseWaitDialog() {
     $('#pleaseWaitDialog').modal('hide');
+    backgroundJobRunning = false;
 }
 </script>
