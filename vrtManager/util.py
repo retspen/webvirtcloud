@@ -94,13 +94,7 @@ def get_xml_path(xml, path=None, func=None):
         ctx = doc.xpathNewContext()
 
         if path:
-            ret = ctx.xpathEval(path)
-            if ret is not None:
-                if type(ret) == list:
-                    if len(ret) >= 1:
-                        result = ret[0].content
-                else:
-                    result = ret
+            result = get_xpath(ctx, path)
 
         elif func:
             result = func(ctx)
@@ -112,6 +106,19 @@ def get_xml_path(xml, path=None, func=None):
             doc.freeDoc()
         if ctx:
             ctx.xpathFreeContext()
+    return result
+
+
+def get_xpath(ctx, path):
+    result = None
+    ret = ctx.xpathEval(path)
+    if ret is not None:
+        if type(ret) == list:
+            if len(ret) >= 1:
+                result = ret[0].content
+        else:
+            result = ret
+    
     return result
 
 

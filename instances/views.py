@@ -4,7 +4,7 @@ import json
 import socket
 import crypt
 import re
-from string import letters, digits
+import string
 from random import choice
 from bisect import insort
 from django.http import HttpResponse, HttpResponseRedirect
@@ -14,10 +14,12 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
+from django.contrib.auth.models import User
 from accounts.models import UserInstance, UserSSHKey
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
+from vrtManager.create import wvmCreate
 from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
@@ -50,13 +52,32 @@ def instances(request):
     def get_userinstances_info(instance):
         info = {}
         uis = UserInstance.objects.filter(instance=instance)
-        info['count'] = len(uis)
-        if len(uis) > 0:
+        info['count'] = uis.count()
+        if info['count'] > 0:
             info['first_user'] = uis[0]
         else:
             info['first_user'] = None
         return info
 
+    def refresh_instance_database(comp, vm, info):
+        instances = Instance.objects.filter(name=vm)
+        if instances.count() > 1:
+            for i in instances:
+                user_instances_count = UserInstance.objects.filter(instance=i).count()
+                if user_instances_count == 0:
+                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple records."))
+                    i.delete()
+        
+        try:
+            check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
+            if check_uuid.uuid != info['uuid']:
+                check_uuid.save()
+            all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
+            all_host_vms[comp.id, comp.name][vm]['userinstances'] = get_userinstances_info(check_uuid)
+        except Instance.DoesNotExist:
+            check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
+            check_uuid.save()
+    
     if not request.user.is_superuser:
         user_instances = UserInstance.objects.filter(user_id=request.user.id)
         for usr_inst in user_instances:
@@ -73,18 +94,12 @@ def instances(request):
             if connection_manager.host_is_up(comp.type, comp.hostname):
                 try:
                     conn = wvmHostDetails(comp, comp.login, comp.password, comp.type)
-                    if conn.get_host_instances():
-                        all_host_vms[comp.id, comp.name] = conn.get_host_instances()
-                        for vm, info in conn.get_host_instances().items():
-                            try:
-                                check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
-                                if check_uuid.uuid != info['uuid']:
-                                    check_uuid.save()
-                                all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
-                                all_host_vms[comp.id, comp.name][vm]['userinstances'] = get_userinstances_info(check_uuid)
-                            except Instance.DoesNotExist:
-                                check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
-                                check_uuid.save()
+                    host_instances = conn.get_host_instances()
+                    if host_instances:
+                        all_host_vms[comp.id, comp.name] = host_instances
+                        for vm, info in host_instances.items():
+                            refresh_instance_database(comp, vm, info)
+
                     conn.close()
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)
@@ -167,8 +182,9 @@ def instance(request, compute_id, vname):
     error_messages = []
     messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
-    computes = Compute.objects.all()
-    computes_count = len(computes)
+    computes = Compute.objects.all().order_by('name')
+    computes_count = computes.count()
+    users = User.objects.all().order_by('username')
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     keymaps = QEMU_KEYMAPS
     console_types = QEMU_CONSOLE_TYPES
@@ -232,7 +248,7 @@ def instance(request, compute_id, vname):
 
     def check_user_quota(instance, cpu, memory, disk_size):
         user_instances = UserInstance.objects.filter(user_id=request.user.id, instance__is_template=False)
-        instance += len(user_instances)
+        instance += user_instances.count()
         for usr_inst in user_instances:
             if connection_manager.host_is_up(usr_inst.instance.compute.type,
                                              usr_inst.instance.compute.hostname):
@@ -244,7 +260,8 @@ def instance(request, compute_id, vname):
                 cpu += int(conn.get_vcpu())
                 memory += int(conn.get_memory())
                 for disk in conn.get_disk_device():
-                    disk_size += int(disk['size'])>>30
+                    if disk['size']:
+                        disk_size += int(disk['size'])>>30
         
         ua = request.user.userattributes
         msg = ""
@@ -266,13 +283,25 @@ def instance(request, compute_id, vname):
                 msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
         return msg
 
+    def get_new_disk_dev(disks, bus):
+        if bus == "virtio":
+            dev_base = "vd"
+        else:
+            dev_base = "sd"
+        existing_devs = [ disk['dev'] for disk in disks ]
+        for l in string.lowercase:
+            dev = dev_base + l
+            if dev not in existing_devs:
+                return dev
+        raise Exception(_('None available device name'))
+            
     try:
         conn = wvmInstance(compute.hostname,
                            compute.login,
                            compute.password,
                            compute.type,
                            vname)
-
+        
         status = conn.get_status()
         autostart = conn.get_autostart()
         vcpu = conn.get_vcpu()
@@ -285,7 +314,10 @@ def instance(request, compute_id, vname):
         disks = conn.get_disk_device()
         media = conn.get_media_device()
         networks = conn.get_net_device()
-        media_iso = sorted(conn.get_iso_media())
+        if len(media) != 0:
+            media_iso = sorted(conn.get_iso_media())
+        else:
+            media_iso = []
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
@@ -305,6 +337,16 @@ def instance(request, compute_id, vname):
         console_passwd = conn.get_console_passwd()
         clone_free_names = get_clone_free_names()
         user_quota_msg = check_user_quota(0, 0, 0, 0)
+        storages = sorted(conn.get_storages())
+        cache_modes = sorted(conn.get_cache_modes().items())
+        default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
+        default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
+        formats = conn.get_image_formats()
+        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
+        busses = conn.get_busses()
+        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
+        show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
+        show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -411,7 +453,7 @@ def instance(request, compute_id, vname):
                     msg = _("Please shutdow down your instance and then try again")
                     error_messages.append(msg)
 
-            if 'resize' in request.POST and (request.user.is_superuser or userinstace.is_change):
+            if 'resize' in request.POST and (request.user.is_superuser or request.user.is_staff or userinstace.is_change):
                 new_vcpu = request.POST.get('vcpu', '')
                 new_cur_vcpu = request.POST.get('cur_vcpu', '')
                 new_memory = request.POST.get('memory', '')
@@ -443,6 +485,27 @@ def instance(request, compute_id, vname):
                     msg = _("Resize")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
+
+            if 'addvolume' in request.POST and (request.user.is_superuser or userinstace.is_change):
+                connCreate = wvmCreate(compute.hostname,
+                                   compute.login,
+                                   compute.password,
+                                   compute.type)
+                storage = request.POST.get('storage', '')
+                name = request.POST.get('name', '')
+                extension = request.POST.get('extension', '')
+                format = request.POST.get('format', '')
+                size = request.POST.get('size', 0)
+                meta_prealloc = request.POST.get('meta_prealloc', False)
+                bus = request.POST.get('bus', '')
+                cache = request.POST.get('cache', '')
+                target = get_new_disk_dev(disks, bus)
+                
+                path = connCreate.create_volume(storage, name, size, format, meta_prealloc, extension)
+                conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
+                msg = _('Attach new disk')
+                addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'umount_iso' in request.POST:
                 image = request.POST.get('path', '')
@@ -595,6 +658,68 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
+                if 'add_owner' in request.POST:
+                    user_id = int(request.POST.get('user_id', ''))
+                    
+                    if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+                        check_inst = UserInstance.objects.filter(instance=instance, user_id=user_id)
+                    else:
+                        check_inst = UserInstance.objects.filter(instance=instance)
+                    
+                    if check_inst:
+                        msg = _("Owner already added")
+                        error_messages.append(msg)
+                    else:
+                        add_user_inst = UserInstance(instance=instance, user_id=user_id)
+                        add_user_inst.save()
+                        msg = _("Added owner %d" % user_id)
+                        addlogmsg(request.user.username, instance.name, msg)
+                        return HttpResponseRedirect(request.get_full_path() + '#users')
+
+                if 'del_owner' in request.POST:
+                    userinstance_id = int(request.POST.get('userinstance', ''))
+                    userinstance = UserInstance.objects.get(pk=userinstance_id)
+                    userinstance.delete()
+                    msg = _("Deleted owner %d" % userinstance_id)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#users')
+
+
+            if request.user.is_superuser or request.user.userattributes.can_clone_instances:
+                if 'clone' in request.POST:
+                    clone_data = {}
+                    clone_data['name'] = request.POST.get('name', '')
+
+                    disk_sum = sum([disk['size']>>30 for disk in disks])
+                    quota_msg = check_user_quota(1, vcpu, memory, disk_sum)
+                    check_instance = Instance.objects.filter(name=clone_data['name'])
+                    
+                    for post in request.POST:
+                        clone_data[post] = request.POST.get(post, '').strip()
+                    
+                    if not request.user.is_superuser and quota_msg:
+                        msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
+                        error_messages.append(msg)
+                    elif check_instance:
+                        msg = _("Instance '%s' already exists!" % clone_data['name'])
+                        error_messages.append(msg)
+                    elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
+                        msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
+                        error_messages.append(msg)
+                    elif not re.match(r'^([0-9A-F]{2})(\:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'], re.IGNORECASE):
+                        msg = _("Instance mac '%s' invalid format!" % clone_data['clone-net-mac-0'])
+                        error_messages.append(msg)
+                    else:
+                        new_uuid = conn.clone_instance(clone_data)
+                        new_instance = Instance(compute_id=compute_id, name=clone_data['name'], uuid=new_uuid)
+                        new_instance.save()
+                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
+                        userinstance.save()
+
+                        msg = _("Clone of '%s'" % instance.name)
+                        addlogmsg(request.user.username, new_instance.name, msg)
+                        return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
+
                 if 'change_options' in request.POST:
                     instance.is_template = request.POST.get('is_template', False)
                     instance.save()
@@ -608,38 +733,6 @@ def instance(request, compute_id, vname):
                     msg = _("Edit options")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#options')
-
-            if request.user.is_superuser or request.user.userattributes.can_clone_instances:
-                if 'clone' in request.POST:
-                    clone_data = {}
-                    clone_data['name'] = request.POST.get('name', '')
-
-                    disk_sum = sum([disk['size']>>30 for disk in disks])
-                    quota_msg = check_user_quota(1, vcpu, memory, disk_sum)
-                    check_instance = Instance.objects.filter(name=clone_data['name'])
-                    
-                    if not request.user.is_superuser and quota_msg:    
-                        msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
-                        error_messages.append(msg)
-                    elif check_instance:
-                        msg = _("Instance '%s' already exists!" % clone_data['name'])
-                        error_messages.append(msg)
-                    elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
-                        msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
-                        error_messages.append(msg)
-                    else:
-                        for post in request.POST:
-                            clone_data[post] = request.POST.get(post, '')
-
-                        new_uuid = conn.clone_instance(clone_data)
-                        new_instance = Instance(compute_id=compute_id, name=clone_data['name'], uuid=new_uuid)
-                        new_instance.save()
-                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
-                        userinstance.save()
-
-                        msg = _("Clone of '%s'" % instance.name)
-                        addlogmsg(request.user.username, new_instance.name, msg)
-                        return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
 
         conn.close()
 
@@ -795,7 +888,7 @@ def guess_mac_address(request, vname):
                 if name_found and "hardware ethernet" in line:
                     data['mac'] = line.split(' ')[-1].strip().strip(';')
                     break
-    return HttpResponse(json.dumps(data));
+    return HttpResponse(json.dumps(data))
 
 @login_required
 def guess_clone_name(request):
@@ -811,7 +904,7 @@ def guess_clone_name(request):
                     hostname = fqdn.split('.')[0]
                     if hostname.startswith(prefix) and hostname not in instance_names:
                         return HttpResponse(json.dumps({'name': hostname}))
-    return HttpResponse(json.dumps({}));
+    return HttpResponse(json.dumps({}))
 
 @login_required
 def check_instance(request, vname):
@@ -819,4 +912,62 @@ def check_instance(request, vname):
     data = { 'vname': vname, 'exists': False }
     if check_instance:
         data['exists'] = True
-    return HttpResponse(json.dumps(data));
+    return HttpResponse(json.dumps(data))
+
+def sshkeys(request, vname):
+    """
+    :param request:
+    :param vm:
+    :return:
+    """
+
+    instance_keys = []
+    userinstances = UserInstance.objects.filter(instance__name=vname)
+    
+    for ui in userinstances:
+        keys = UserSSHKey.objects.filter(user=ui.user)
+        for k in keys:
+            instance_keys.append(k.keypublic)
+    if request.GET.get('plain', ''):
+        response = '\n'.join(instance_keys)
+        response += '\n'
+    else:
+        response = json.dumps(instance_keys)
+    return HttpResponse(response)
+
+def delete_instance(instance, delete_disk=False):
+    compute = instance.compute
+    instance_name = instance.name
+    try:
+        conn = wvmInstance(compute.hostname,
+                           compute.login,
+                           compute.password,
+                           compute.type,
+                           instance.name)
+
+        del_userinstance = UserInstance.objects.filter(instance=instance)
+        if del_userinstance:
+            print("Deleting UserInstances")
+            print(del_userinstance)
+            del_userinstance.delete()
+
+        if conn.get_status() == 1:
+            print("Forcing shutdown")
+            conn.force_shutdown()
+        if delete_disk:
+            snapshots = sorted(conn.get_snapshot(), reverse=True)
+            for snap in snapshots:
+                print("Deleting snapshot {}".format(snap['name']))
+                conn.snapshot_delete(snap['name'])
+            print("Deleting disks")
+            conn.delete_disk()
+
+        conn.delete()
+        instance.delete()
+
+        print("Instance {} on compute {} sucessfully deleted".format(instance_name, compute.hostname))
+
+    except libvirtError as lib_err:
+        print("Error removing instance {} on compute {}".format(instance_name, compute.hostname))
+        raise lib_err
+

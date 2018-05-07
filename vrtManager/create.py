@@ -48,23 +48,12 @@ class wvmCreate(wvmConnect):
         """Get guest capabilities"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
 
-    def get_cache_modes(self):
-        """Get cache available modes"""
-        return {
-            'default': 'Default',
-            'none': 'Disabled',
-            'writethrough': 'Write through',
-            'writeback': 'Write back',
-            'directsync': 'Direct sync',  # since libvirt 0.9.5
-            'unsafe': 'Unsafe',  # since libvirt 0.9.7
-        }
-
-    def create_volume(self, storage, name, size, format='qcow2', metadata=False):
+    def create_volume(self, storage, name, size, format='qcow2', metadata=False, image_extension='img'):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         if storage_type == 'dir':
-            name += '.img'
+            name += '.' + image_extension
             alloc = 0
         else:
             alloc = size
