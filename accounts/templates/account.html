@@ -13,6 +13,31 @@
 
             {% include 'errors_block.html' %}
 
+            {% if request.user.is_superuser and publickeys %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Key name" %}</th>
+                                    <th>{% trans "Public key" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for publickey in publickeys %}
+                                <tr>
+                                <td>{{ publickey.keyname }}</td>
+                                <td title="{{ publickey.keypublic }}">{{ publickey.keypublic|truncatechars:64 }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
             <div class="row">
                 <div class="col-lg-12">
                     {% if not user_insts %}

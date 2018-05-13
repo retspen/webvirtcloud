@@ -1,11 +1,12 @@
+{% load staticfiles %}
 {% load i18n %}
 <html>
 <head>
     <meta charset="utf-8">
-    <link rel="shortcut icon" href="{{ STATIC_URL }}img/favicon.ico">
+    <link rel="shortcut icon" href="{% static "img/favicon.ico" %}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.min.css">
-    <link href="{{ STATIC_URL }}css/webvirtcloud.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}">
+    <link href="{% static "css/webvirtcloud.css" %}" rel="stylesheet">
 
     <style>
         body {
@@ -92,8 +93,8 @@
 <div id='main_container' class="container">
 {% block content %}{% endblock %}
 </div>
-<script src="{{ STATIC_URL }}js/jquery.js"></script>
-<script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+<script src="{% static "js/jquery.js" %}"></script>
+<script src="{% static "js/bootstrap.min.js" %}"></script>
 
 <script>
     function log_message(msg,type) {

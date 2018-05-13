@@ -380,6 +380,25 @@ class wvmConnect(object):
             interface.append(inface)
         return interface
 
+    def get_cache_modes(self):
+        """Get cache available modes"""
+        return {
+            'default': 'Default',
+            'none': 'Disabled',
+            'writethrough': 'Write through',
+            'writeback': 'Write back',
+            'directsync': 'Direct sync',  # since libvirt 0.9.5
+            'unsafe': 'Unsafe',  # since libvirt 0.9.7
+        }
+    
+    def get_busses(self):
+        """Get available busses"""
+        return [ 'ide', 'scsi', 'usb', 'virtio' ]
+
+    def get_image_formats(self):
+        """Get available image formats"""
+        return [ 'raw', 'qcow', 'qcow2' ]
+
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
 
@@ -424,55 +443,71 @@ class wvmConnect(object):
 
     def get_net_device(self):
         netdevice = []
+        def get_info(ctx):
+            dev_type = util.get_xpath(ctx, '/device/capability/@type')
+            interface = util.get_xpath(ctx, '/device/capability/interface')
+            return (dev_type, interface)
         for dev in self.wvm.listAllDevices(0):
             xml = dev.XMLDesc(0)
-            dev_type = util.get_xml_path(xml, '/device/capability/@type')
+            (dev_type, interface) = util.get_xml_path(xml, func=get_info)
             if dev_type == 'net':
-                netdevice.append(util.get_xml_path(xml, '/device/capability/interface'))
+                netdevice.append(interface)
         return netdevice
 
     def get_host_instances(self):
         vname = {}
-        for name in self.get_instances():
-            dom = self.get_instance(name)
-            mem = util.get_xml_path(dom.XMLDesc(0), "/domain/currentMemory")
+        def get_info(ctx):
+            mem = util.get_xpath(ctx, "/domain/currentMemory")
             mem = int(mem) / 1024
-            cur_vcpu = util.get_xml_path(dom.XMLDesc(0), "/domain/vcpu/@current")
+            cur_vcpu = util.get_xpath(ctx, "/domain/vcpu/@current")
             if cur_vcpu:
                 vcpu = cur_vcpu
             else:
-                vcpu = util.get_xml_path(dom.XMLDesc(0), "/domain/vcpu")
-            title = util.get_xml_path(dom.XMLDesc(0), "/domain/title")
-            description = util.get_xml_path(dom.XMLDesc(0), "/domain/description")
+                vcpu = util.get_xpath(ctx, "/domain/vcpu")
+            title = util.get_xpath(ctx, "/domain/title")
+            title = title if title else ''
+            description = util.get_xpath(ctx, "/domain/description")
+            description = description if description else ''
+            return (mem, vcpu, title, description)
+        for name in self.get_instances():
+            dom = self.get_instance(name)
+            xml = dom.XMLDesc(0)
+            (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
             vname[dom.name()] = {
                 'status': dom.info()[0],
                 'uuid': dom.UUIDString(),
                 'vcpu': vcpu,
                 'memory': mem,
-                'title': title if title else '',
-                'description': description if description else '',
+                'title': title,
+                'description': description,
             }
         return vname
 
     def get_user_instances(self, name):
         dom = self.get_instance(name)
-        mem = util.get_xml_path(dom.XMLDesc(0), "/domain/currentMemory")
-        mem = int(mem) / 1024
-        cur_vcpu = util.get_xml_path(dom.XMLDesc(0), "/domain/vcpu/@current")
-        if cur_vcpu:
-            vcpu = cur_vcpu
-        else:
-            vcpu = util.get_xml_path(dom.XMLDesc(0), "/domain/vcpu")
-        title = util.get_xml_path(dom.XMLDesc(0), "/domain/title")
-        description = util.get_xml_path(dom.XMLDesc(0), "/domain/description")
+        xml = dom.XMLDesc(0)
+        def get_info(ctx):
+            mem = util.get_xpath(ctx, "/domain/currentMemory")
+            mem = int(mem) / 1024
+            cur_vcpu = util.get_xpath(ctx, "/domain/vcpu/@current")
+            if cur_vcpu:
+                vcpu = cur_vcpu
+            else:
+                vcpu = util.get_xpath(ctx, "/domain/vcpu")
+            title = util.get_xpath(ctx, "/domain/title")
+            title = title if title else ''
+            description = util.get_xpath(ctx, "/domain/description")
+            description = description if description else ''
+            return (mem, vcpu, title, description)
+        (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
         return {
             'name': dom.name(),
             'status': dom.info()[0],
             'uuid': dom.UUIDString(),
             'vcpu': vcpu,
             'memory': mem,
-            'title': title if title else '',
-            'description': description if description else '',
+            'title': title,
+            'description': description,
         }
 
     def close(self):

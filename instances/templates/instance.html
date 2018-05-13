@@ -1,48 +1,42 @@
 {% extends "base.html" %}
+{% load staticfiles %}
 {% load i18n %}
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
                 {% include 'pleasewaitdialog.html' %}
                 <!-- Page Heading -->
                  <div class="row">
-                    <table>
-                        <tr>
-                            <td><h3>{{ vname }}</h3></td>
-                            <td>
-                                {% ifequal status 5 %}
-                                   <span class="label label-danger">{% trans "Off" %}</span>
-                                {% endifequal %}
-                                {% ifequal status 1 %}
-                                    <span class="label label-success">{% trans "Active" %}</span>
-                                {% endifequal %}
-                                {% ifequal status 3 %}
-                                    <span class="label label-warning">{% trans "Suspend" %}</span>
-                                {% endifequal %}
-                            </td>
-                            <td>
-                                <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
-                            </td>
-                        </tr>
-                    </table>
-                    <table width="65%">
-                        <tr>
-                            <td>
-                                {% if cur_vcpu %}
-                                    <h4>{{ cur_vcpu }} {% trans "Vcpu" %}</h4>
-                                {% else %}
-                                    <h4>{{ vcpu }} {% trans "Vcpu" %}</h4>
-                                {% endif %} 
-                            </td>
-                            <td>
-                                <h4>{{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}</h4>
-                            </td>
+                    <div>
+                        <h3>
+                            {{ vname }}{% if title %}&nbsp;({{ title }}){% endif %}
+                        </h3>
+                    </div>
+                    <div>
+                        <div>
+                            {% ifequal status 5 %}
+                               <span class="label label-danger">{% trans "Off" %}</span>
+                            {% endifequal %}
+                            {% ifequal status 1 %}
+                                <span class="label label-success">{% trans "Active" %}</span>
+                            {% endifequal %}
+                            {% ifequal status 3 %}
+                                <span class="label label-warning">{% trans "Suspend" %}</span>
+                            {% endifequal %}
+                            |
+                            {% if cur_vcpu %}
+                                {{ cur_vcpu }} {% trans "Vcpu" %}
+                            {% else %}
+                                {{ vcpu }} {% trans "Vcpu" %}
+                            {% endif %}
+                            |
+                            {{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}
+                            |
                             {% for disk in disks %}
-                                <td>
-                                    <h4>{{ disk.size|filesizeformat }} {% trans "Disk" %}</h4>
-                                </td>
+                                {{ disk.size|filesizeformat }} {% trans "Disk" %} |
                             {% endfor %}
-                        </tr>
-                    </table>
+                            <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
+                        </div>
+                    </div>
                     {% if user_quota_msg %}
                         <span class="label label-warning">{{ user_quota_msg|capfirst }} quota reached.</span>
                     {% endif %}
@@ -90,8 +84,8 @@
                                 </li>
                                 <li role="presentation">
                                     <a href="#graphics" id="chartgraphs" class="action-button" aria-controls="graphics" role="tab" data-toggle="tab">
-                                        <span id="action-block" class="glyphicon glyphicon-signal" aria-hidden="true"></span>
-                                        {% trans "Graphs" %}
+                                        <span id="action-block" class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+                                        {% trans "Stats" %}
                                     </a>
                                 </li>
                                 <li role="presentation">
@@ -233,16 +227,20 @@
                                                     {% trans "Console" %}
                                                 </a>
                                             </li>
+                                            {% if show_access_root_password %}
                                             <li role="presentation">
                                                 <a href="#rootpasswd" aria-controls="rootpasswd" role="tab" data-toggle="tab">
                                                     {% trans "Root Password" %}
                                                 </a>
                                             </li>
+                                            {% endif %}
+                                            {% if show_access_ssh_keys %}
                                             <li role="presentation">
                                                 <a href="#sshkeys" aria-controls="sshkeys" role="tab" data-toggle="tab">
                                                     {% trans "SSH Keys" %}
                                                 </a>
                                             </li>
+                                            {% endif %}
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
@@ -255,6 +253,7 @@
                                                 {% endifequal %}
                                                 <div class="clearfix"></div>
                                             </div>
+                                            {% if show_access_root_password %}
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
                                                 <p>{% trans "You need shut down your instance and enter a new root password." %}</p>
                                                 <form class="form-inline" method="post" role="form">{% csrf_token %}
@@ -271,6 +270,8 @@
                                                 </form>
                                                 <div class="clearfix"></div>
                                             </div>
+                                            {% endif %}
+                                            {% if show_access_ssh_keys %}
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">
                                                 <p>{% trans "You need shut down your instance and choose your public key." %}</p>
                                                 <form class="form-inline" method="post" role="form">{% csrf_token %}
@@ -295,6 +296,7 @@
                                                 </form>
                                                 <div class="clearfix"></div>
                                             </div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -307,11 +309,16 @@
                                                     {% trans "Resize Instance" %}
                                                 </a>
                                             </li>
+                                            <li role="presentation">
+                                                <a href="#addvolume" aria-controls="addvolume" role="tab" data-toggle="tab">
+                                                    {% trans "Add New Volume" %}
+                                                </a>
+                                            </li>
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
-                                                {% if request.user.is_superuser or userinstace.is_change %}
+                                                {% if request.user.is_superuser or request.user.is_staff or userinstace.is_change %}
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                                         <p style="font-weight:bold;">{% trans "Logical host CPUs:" %} {{ vcpu_host }}</p>
                                                         <div class="form-group">
@@ -385,6 +392,88 @@
                                                 {% else %}
                                                     {% trans "You don't have permission for resizing instance" %}
                                                     <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                                {% endif %}
+                                                <div class="clearfix"></div>
+                                            </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addvolume">
+                                                {% if request.user.is_superuser or userinstace.is_change %}
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <p style="font-weight:bold;">{% trans "Volume parameters" %}</p>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Storage" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <select name="storage" class="form-control image-format">
+                                                                {% for storage in storages %}
+                                                                    <option value="{{ storage }}">{{ storage }}</option>
+                                                                {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Name" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
+                                                            </div>
+                                                            <div class="col-sm-2">
+                                                                <select name="extension" class="form-control image-format">
+                                                                {% for format in formats %}
+                                                                    <option value="{{ format }}" {% if format == default_format %}selected{% endif %}>{% trans format %}</option>
+                                                                {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Format" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <select name="format" class="form-control image-format">
+                                                                {% for format in formats %}
+                                                                    <option value="{{ format }}" {% if format == default_format %}selected{% endif %}>{% trans format %}</option>
+                                                                {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Size" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <input type="text" class="form-control" name="size" value="10" maxlength="3" required pattern="[0-9]+">
+                                                            </div>
+                                                            <label class="col-sm-1 control-label">{% trans "GB" %}</label>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Bus" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <select name="bus" class="form-control image-format">
+                                                                {% for bus in busses %}
+                                                                    <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
+                                                                {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Cache" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <select name="cache" class="form-control image-format">
+                                                                {% for mode, name in cache_modes %}
+                                                                    <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>{% trans name %}</option>
+                                                                {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group meta-prealloc">
+                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Metadata" %}</label>
+                                                            <div class="col-sm-4">
+                                                                <input type="checkbox" name="meta_prealloc" value="true">
+                                                            </div>
+                                                        </div>
+                                                        {% ifequal status 5 %}
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="addvolume">{% trans "Add volume" %}</button>
+                                                        {% else %}
+                                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Add volume" %}</button>
+                                                        {% endifequal %}
+                                                    </form>
+                                                {% else %}
+                                                    {% trans "You don't have permission for resizing instance" %}
+                                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Add volume" %}</button>
                                                 {% endif %}
                                                 <div class="clearfix"></div>
                                             </div>
@@ -531,11 +620,15 @@
                                                         {% trans "XML" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
                                                 <li role="presentation">
                                                     <a href="#options" aria-controls="options" role="tab" data-toggle="tab">
                                                         {% trans "Options" %}
                                                     </a>
                                                 </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <li role="presentation">
                                                     <a href="#users" aria-controls="users" role="tab" data-toggle="tab">
                                                         {% trans "Users" %}
@@ -546,8 +639,8 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="media">
-                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                    {% for cd in media %}
+                                                {% for cd in media %}
+                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
                                                             <label class="col-sm-2 control-label">{% trans "CDROM" %} {{ forloop.counter }}</label>
                                                             {% if not cd.image %}
@@ -579,8 +672,8 @@
                                                                 </div>
                                                             {% endif %}
                                                         </div>
-                                                    {% endfor %}
-                                                </form>
+                                                    </form>
+                                                {% endfor %}
                                                 <div class="clearfix"></div>
                                             </div>
                                             {% if request.user.is_superuser %}
@@ -829,7 +922,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Live migration" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" checked>
+                                                                <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% ifequal status 1 %}checked{% endifequal %}>
                                                             </div>
                                                         </div>
                                                         <div class="form-group">
@@ -847,7 +940,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Offline migration" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="offline_migrate" value="true" id="offline_migrate">
+                                                                <input type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% ifequal status 5 %}checked{% endifequal %}>
                                                             </div>
                                                         </div>
                                                         {% if computes_count != 1 %}
@@ -877,6 +970,8 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="options">
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
@@ -894,7 +989,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Is template" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="is_template" value="true" id="is_template" {% if instance.is_template %}checked{% endif %}>
+                                                                <input type="checkbox" name="is_template" value="true" id="is_template" {% if instance.is_template %}checked{% endif %} {% if not request.user.is_superuser %}disabled{% endif %}>
                                                             </div>
                                                         </div>
                                                         {% ifequal status 5 %}
@@ -905,11 +1000,34 @@
                                                     </form>
                                                     <div class="clearfix"></div>
                                                 </div>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="users">
-                                                    <p style="font-weight:bold;">{% trans "Instance owners" %}</p>
-                                                    {% for userinstance in userinstances %}
-                                                    <p><a href="{% url 'account' userinstance.user.id %}">{{ userinstance.user }}</a></p>
-                                                    {%  endfor %}
+                                                    <div>
+                                                    <p style="font-weight:bold;">
+                                                        {% trans "Instance owners" %}
+                                                        {% include 'add_instance_owner_block.html' %}
+                                                    </p>
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped sortable-theme-bootstrap" data-sortable>
+                                                            <tbody class="searchable">
+                                                            {% for userinstance in userinstances %}
+                                                                <tr>
+                                                                    <td><a href="{% url 'account' userinstance.user.id %}">{{ userinstance.user }}</a></td>
+                                                                    <td style="width:30px;">
+                                                                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                            <input type="hidden" name="userinstance" value="{{ userinstance.pk }}">
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="del_owner" title="{% trans "Delete" %}">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        </form>
+                                                                    </td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                     <div class="clearfix"></div>
                                                 </div>
                                             {% endif %}
@@ -923,6 +1041,11 @@
                                             <li role="presentation" class="active">
                                                 <a href="#graphs" aria-controls="graphs" role="tab" data-toggle="tab">
                                                     {% trans "Real Time" %}
+                                                </a>
+                                            </li>
+                                            <li role="presentation">
+                                                <a href="#logs" aria-controls="logs" role="tab" data-toggle="tab" onclick='update_logs_table("{{ vname }}");'>
+                                                    {% trans "Logs" %}
                                                 </a>
                                             </li>
                                         </ul>
@@ -971,6 +1094,23 @@
                                                 {% endfor %}
                                                 <div class="clearfix"></div>
                                             </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="logs">
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped sortable-theme-bootstrap" id="logs_table" data-sortable>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>{% trans "Date" %}</th>
+                                                                <th>{% trans "User" %}</th>
+                                                                <th>{% trans "Message" %}</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="searchable">
+                                                            <tr><td colspan="3"><i>None ...</i></td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="clearfix"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1016,7 +1156,7 @@
                 </div>
 {% endblock %}
 {% block script %}
-<script src="{{ STATIC_URL }}/js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="{% static "js/ace.js" %}" type="text/javascript" charset="utf-8"></script>
 <script>
     var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
@@ -1153,7 +1293,7 @@
         });
     });
 </script>
-<script src="{{ STATIC_URL }}js/Chart.min.js"></script>
+<script src="{% static "js/Chart.min.js" %}"></script>
 <script>
     $('#chartgraphs').on('shown.bs.tab', function (event) {
         var cpuLineData = {
@@ -1290,13 +1430,14 @@
     });
 </script>
 <script>
+     backgroundJobRunning = false;
      window.setInterval(function get_status() {
          var status = {{ status }};
          $.getJSON('{% url 'inst_status' compute_id vname %}', function (data) {
-             if (data['status'] != status) {
+             if (data['status'] != status && !backgroundJobRunning) {
                  window.location.reload()
              }
-         })
+         });
      }, 5000);
 </script>
 <script>
@@ -1345,6 +1486,21 @@
             if ($(this).attr('href') === hash) {
                 $(this).trigger('click');
             }
+        });
+    }
+</script>
+<script>
+    function update_logs_table(vname) {
+        $.getJSON('/logs/vm_logs/'+vname+'/', function(data) {
+            var logs = "";
+            $.each(data, function(id) {
+                row = data[id];
+                console.log(row);
+                logs += '<tr><td style="width:150px">'+row['date']+'</td>';
+                logs += '<td>'+row['user']+'</td>';
+                logs += '<td>'+row['message']+'</td></tr>';
+            });
+            $("#logs_table > tbody").html(logs);
         });
     }
 </script>
