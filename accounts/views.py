@@ -130,7 +130,10 @@ def accounts(request):
                 user_delete.delete()
             return HttpResponseRedirect(request.get_full_path())
 
-    return render(request, 'accounts.html', locals())
+    accounts_template_file = 'accounts.html'
+    if settings.VIEW_ACCOUNTS_STYLE == "list":
+        accounts_template_file = 'accounts-list.html'
+    return render(request, accounts_template_file, locals())
 
 
 @login_required
