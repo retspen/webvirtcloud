@@ -1,5 +1,6 @@
 .vagrant
 venv
+.vscode
 .idea
 .DS_*
 *.pyc
