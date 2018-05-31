@@ -375,7 +375,7 @@ __check_end_of_life_versions
 #
 install_centos() {
     if [ $DISTRO_MAJOR_VERSION -ge 6 ]; then
-        yum -y install qemu-kvm libvirt bridge-utils python-libguestfs supervisor || return 1
+        yum -y install qemu-kvm libvirt bridge-utils python-libguestfs supervisor cyrus-sasl-md5 || return 1
     fi
     return 0
 }
@@ -399,6 +399,13 @@ install_centos_post() {
         sed -i 's/#vnc_listen/vnc_listen/g' /etc/libvirt/qemu.conf
     else
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
+        exit 1
+    fi
+    if [ -f /etc/sasl2/libvirt.conf ]; then
+        sed -i 's/: gssapi/: digest-md5/g' /etc/sasl2/libvirt.conf
+        sed -i 's/#sasldb_path/sasldb_path/g' /etc/sasl2/libvirt.conf
+    else
+        echoerror "/etc/sasl2/libvirt.conf not found. Exiting..."
         exit 1
     fi
     if [ $DISTRO_MAJOR_VERSION -lt 7 ]; then
