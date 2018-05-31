@@ -10,8 +10,6 @@ SECRET_KEY = ''
 
 DEBUG = True
 
-TEMPLATE_DEBUG = DEBUG
-
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = (
@@ -45,7 +43,7 @@ MIDDLEWARE_CLASSES = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.RemoteUserBackend',
+    'django.contrib.auth.backends.ModelBackend',
     #'accounts.backends.MyRemoteUserBackend',
 )
 
