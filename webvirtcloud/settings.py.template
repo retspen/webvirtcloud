@@ -29,6 +29,7 @@ INSTALLED_APPS = (
     'logs',
     'accounts',
     'create',
+    'datasource',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -44,6 +45,7 @@ MIDDLEWARE_CLASSES = (
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
+    #'django.contrib.auth.backends.RemoteUserBackend',
     #'accounts.backends.MyRemoteUserBackend',
 )
 
@@ -122,11 +124,11 @@ QUOTA_DEBUG = True
 ALLOW_EMPTY_PASSWORD = True
 SHOW_ACCESS_ROOT_PASSWORD = False
 SHOW_ACCESS_SSH_KEYS = False
+SHOW_PROFILE_EDIT_PASSWORD = False
 
 # available: default (grid), list
 VIEW_ACCOUNTS_STYLE = 'grid'
 
-SHOW_PROFILE_EDIT_PASSWORD = False
 INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
 INSTANCE_VOLUME_DEFAULT_BUS = 'virtio'
 INSTANCE_VOLUME_DEFAULT_CACHE = 'directsync'
