@@ -5,6 +5,7 @@
 
 * User can add SSH public key to root in Instance (Tested only Ubuntu)
 * User can change root password in Instance (Tested only Ubuntu)
+* Supports cloud-init datasource interface
 
 ### Warning!!!
 
@@ -218,6 +219,14 @@ Go to http://serverip and you should see the login screen.
 login: admin
 password: admin
 </pre>
+
+### Cloud-init
+Currently supports only root ssh authorized keys and hostname. Example configuration of the cloud-init client follows.
+```
+datasource:
+  OpenStack:
+      metadata_urls: [ "http://webvirtcloud.domain.com/datasource" ]
+```
 
 ### How To Update
 ```bash

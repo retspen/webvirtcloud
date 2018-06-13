@@ -9,6 +9,7 @@ urlpatterns = patterns('',
     url(r'^accounts/', include('accounts.urls')),
     url(r'^computes/', include('computes.urls')),
     url(r'^logs/', include('logs.urls')),
+    url(r'^datasource/', include('datasource.urls')),
 
     url(r'^compute/(?P<compute_id>[0-9]+)/storages/$',
         'storages.views.storages', name='storages'),
