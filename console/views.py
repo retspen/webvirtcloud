@@ -16,6 +16,7 @@ def console(request):
     :param request:
     :return:
     """
+    console_error = None
 
     if request.method == 'GET':
         token = request.GET.get('token', '')
@@ -49,7 +50,8 @@ def console(request):
     elif console_type == 'spice':
         response = render(request, 'console-spice.html', locals())
     else:
-        response = "Console type %s no support" % console_type
+        console_error = "Console type: %s no support" % console_type
+        response = render(request, 'console-vnc.html', locals())
 
     response.set_cookie('token', token)
     return response

@@ -121,6 +121,9 @@
     function log_info(msg) {
         log_message(msg,'info');
     }
+    {% if console_error %}
+        log_error('{{ console_error|escapejs }}');
+    {% endif %}
 </script>
 
 {% block foot %}{% endblock %}
