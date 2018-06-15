@@ -22,7 +22,6 @@ from vrtManager.connection import connection_manager
 from vrtManager.create import wvmCreate
 from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
-from webvirtcloud.settings import QEMU_KEYMAPS, QEMU_CONSOLE_TYPES
 from logs.views import addlogmsg
 from django.conf import settings
 
@@ -186,8 +185,9 @@ def instance(request, compute_id, vname):
     computes_count = computes.count()
     users = User.objects.all().order_by('username')
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-    keymaps = QEMU_KEYMAPS
-    console_types = QEMU_CONSOLE_TYPES
+    keymaps = settings.QEMU_KEYMAPS
+    console_types = settings.QEMU_CONSOLE_TYPES
+    console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
     try:
         userinstace = UserInstance.objects.get(instance__compute_id=compute_id,
                                                instance__name=vname,
@@ -615,6 +615,13 @@ def instance(request, compute_id, vname):
                     console_type = request.POST.get('console_type', '')
                     conn.set_console_type(console_type)
                     msg = _("Set VNC type")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
+                
+                if 'set_console_listen_address' in request.POST:
+                    console_type = request.POST.get('console_listen_address', '')
+                    conn.set_console_listen_addr(console_type)
+                    msg = _("Set VNC listen address")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
