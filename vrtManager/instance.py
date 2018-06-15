@@ -455,6 +455,32 @@ class wvmInstance(wvmConnect):
                     return "127.0.0.1"
         return listen_addr
 
+    def set_console_listen_addr(self, listen_addr):
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        root = ElementTree.fromstring(xml)
+        console_type = self.get_console_type()
+        try:
+            graphic = root.find("devices/graphics[@type='%s']" % console_type)
+        except SyntaxError:
+            # Little fix for old version ElementTree
+            graphic = root.find("devices/graphics")
+        if graphic is None:
+            return False
+        listen = graphic.find("listen[@type='address']")
+        if listen is None:
+            return False
+        if listen_addr:
+            graphic.set("listen", listen_addr)
+            listen.set("address", listen_addr)
+        else:
+            try:
+                graphic.attrib.pop("listen")
+                listen.attrib.pop("address")
+            except:
+                pass
+        newxml = ElementTree.tostring(root)
+        return self._defineXML(newxml)
+    
     def get_console_socket(self):
         socket = util.get_xml_path(self._XMLDesc(0),
                                    "/domain/devices/graphics/@socket")

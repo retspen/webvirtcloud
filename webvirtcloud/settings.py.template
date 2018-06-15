@@ -106,6 +106,12 @@ QEMU_CONSOLE_TYPES = ['vnc', 'spice']
 # default console type
 QEMU_CONSOLE_DEFAULT_TYPE = 'vnc'
 
+# list of console listen addresses
+QEMU_CONSOLE_LISTEN_ADDRESSES = (
+    ('127.0.0.1', 'Localhost'),
+    ('0.0.0.0', 'All interfaces'),
+)
+
 # list taken from http://qemu.weilnetz.de/qemu-doc.html#sec_005finvocation
 QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
                 'fo', 'fr', 'fr-be', 'fr-ca', 'fr-ch', 'hr', 'hu', 'is', 'it',

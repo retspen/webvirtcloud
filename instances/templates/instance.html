@@ -712,6 +712,27 @@
                                                             </div>
                                                         </div>
                                                     </form>
+                                                    <p>{% trans "To set console listen address, shutdown the instance." %}</p>
+                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                        <div class="form-group" id="console_listen_address_selection">
+                                                            <label for="console_select_listen_address" class="col-sm-2 control-label">{% trans "Listen on" %}</label>
+                                                            <div class="col-sm-6">
+                                                                <select id="console_select_listen_address" class="form-control" name="console_listen_address">
+                                                                    <option value="" style="font-weight: bold">{% trans "please choose" %}</option>
+                                                                    {% for address, label in console_listen_addresses %}
+                                                                        <option value="{{ address }}">{{ label }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                {% ifequal status 5 %}
+                                                                    <button type="submit" class="btn btn-success " name="set_console_listen_address">{% trans "Set" %}</button>
+                                                                {% else %}
+                                                                    <button class="btn btn-success disabled" name="set_console_listen_address">{% trans "Set" %}</button>
+                                                                {% endifequal %}
+                                                            </div>
+                                                        </div>
+                                                    </form>
                                                     <p>{% trans "To create console password, shutdown the instance." %}</p>
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
@@ -1271,6 +1292,13 @@
         var console_type = "{{ console_type }}"
         if (console_type != '') {
             $("#console_select_type option[value='" + console_type + "']").prop('selected', true);
+        }
+    });
+    $(document).ready(function () {
+        // set current console listen address or fall back to default
+        var console_listen_address = "{{ console_listen_address }}"
+        if (console_listen_address != '') {
+            $("#console_select_listen_address option[value='" + console_listen_address + "']").prop('selected', true);
         }
     });
 {% if not request.user.is_superuser %}
