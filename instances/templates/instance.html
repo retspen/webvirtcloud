@@ -843,6 +843,10 @@
                                                                 <button type="button" class="btn btn-sm btn-success pull-left" name="guess-clone-name"
                                                                         onclick="guess_clone_name()" style="margin-top: 2px;">{% trans "Guess" %}</button>
                                                             </div>
+                                                            {% elif clone_instance_auto_name %}
+                                                            <div class="col-sm-4">
+                                                                <input id="clone_instance_auto_name" type="text" class="form-control" name="auto_name" value="Automatic" disabled/>
+                                                            </div>
                                                             {% else %}
                                                             <div class="col-sm-4">
                                                                 <select id="select_clone_name" class="form-control" name="name" size="1"/>

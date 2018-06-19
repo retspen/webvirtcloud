@@ -348,6 +348,7 @@ def instance(request, compute_id, vname):
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
         show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
+        clone_instance_auto_name = settings.CLONE_INSTANCE_AUTO_NAME
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -705,6 +706,21 @@ def instance(request, compute_id, vname):
                     for post in request.POST:
                         clone_data[post] = request.POST.get(post, '').strip()
                     
+                    if clone_instance_auto_name:
+                        auto_vname = clone_free_names[0]
+                        clone_data['name'] = auto_vname
+                        clone_data['clone-net-mac-0'] = _get_dhcp_mac_address(auto_vname)
+                        for post in clone_data.keys():
+                            if post.startswith('disk-'):
+                                disk_name = clone_data[post]
+                                if "-" in disk_name:
+                                    suffix = disk_name.split("-")[-1]
+                                    disk_name = '-'.join((auto_vname, suffix))
+                                else:
+                                    suffix = disk_name.split(".")[-1]
+                                    disk_name = '.'.join((auto_vname, suffix))
+                                clone_data[post] = disk_name
+                    
                     if not request.user.is_superuser and quota_msg:
                         msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
                         error_messages.append(msg)
@@ -883,10 +899,9 @@ def inst_graph(request, compute_id, vname):
     response.write(data)
     return response
 
-@login_required
-def guess_mac_address(request, vname):
+def _get_dhcp_mac_address(vname):
     dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
-    data = { 'vname': vname, 'mac': '52:54:00:' }
+    mac = '52:54:00:'
     if os.path.isfile(dhcp_file):
         with open(dhcp_file, 'r') as f:
             name_found = False
@@ -894,8 +909,14 @@ def guess_mac_address(request, vname):
                 if "host %s." % vname in line:
                     name_found = True
                 if name_found and "hardware ethernet" in line:
-                    data['mac'] = line.split(' ')[-1].strip().strip(';')
+                    mac = line.split(' ')[-1].strip().strip(';')
                     break
+    return mac
+
+@login_required
+def guess_mac_address(request, vname):
+    data = { 'vname': vname }
+    data['mac'] = _get_dhcp_mac_address(vname)
     return HttpResponse(json.dumps(data))
 
 @login_required
