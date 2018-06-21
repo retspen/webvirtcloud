@@ -330,6 +330,7 @@ def instance(request, compute_id, vname):
         console_type = conn.get_console_type()
         console_port = conn.get_console_port()
         console_keymap = conn.get_console_keymap()
+        console_listen_address = conn.get_console_listen_addr()
         snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k:k['date'])
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
         has_managed_save_image = conn.get_managed_save_image()
