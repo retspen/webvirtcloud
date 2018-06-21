@@ -241,6 +241,13 @@
                                                 </a>
                                             </li>
                                             {% endif %}
+                                            {% ifequal status 1 %}
+                                            <li role="presentation">
+                                                <a href="#vdiconsole" aria-controls="vdiconsole" role="tab" data-toggle="tab">
+                                                    {% trans "VDI" %}
+                                                </a>
+                                            </li>
+                                            {% endifequal %}
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
@@ -297,6 +304,13 @@
                                                 <div class="clearfix"></div>
                                             </div>
                                             {% endif %}
+                                            {% ifequal status 1 %}
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vdiconsole">
+                                                    <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
+                                                    <a href="#" class="btn btn-lg btn-success pull-right" id="vdi_url" >{% trans "VDI" %}</a>
+                                                <div class="clearfix"></div>
+                                            </div>
+                                            {% endifequal %}
                                         </div>
                                     </div>
                                 </div>
@@ -1304,6 +1318,12 @@
         if (console_listen_address != '') {
             $("#console_select_listen_address option[value='" + console_listen_address + "']").prop('selected', true);
         }
+    });
+    $(document).ready(function () {
+        // set vdi url
+        $.get("/datasource/vdi/{{ vname }}/", function(data) {
+            $("#vdi_url").attr("href", data);
+        });
     });
 {% if not request.user.is_superuser %}
     $('#select_clone_name').on('change', function () {

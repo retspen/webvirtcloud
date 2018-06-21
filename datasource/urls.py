@@ -8,4 +8,6 @@ urlpatterns = [
         views.os_metadata_json, name='ds_openstack_metadata'),
     url(r'^openstack/(?P<version>[\w\-\.]+)/user_data$',
         views.os_userdata, name='ds_openstack_userdata'),
+    url(r'^vdi/(?P<vname>[\w\-\.]+)/$',
+        views.get_vdi_url, name='vdi_url'),
 ]
