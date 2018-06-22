@@ -706,7 +706,7 @@ def instance(request, compute_id, vname):
                     for post in request.POST:
                         clone_data[post] = request.POST.get(post, '').strip()
                     
-                    if clone_instance_auto_name:
+                    if clone_instance_auto_name and not clone_data['name']:
                         auto_vname = clone_free_names[0]
                         clone_data['name'] = auto_vname
                         clone_data['clone-net-mac-0'] = _get_dhcp_mac_address(auto_vname)
