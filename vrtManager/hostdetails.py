@@ -3,11 +3,11 @@ from vrtManager.connection import wvmConnect
 from vrtManager.util import get_xml_path
 
 
-def cpu_version(ctx):
-    for info in ctx.xpathEval('/sysinfo/processor/entry'):
-        elem = info.xpathEval('@name')[0].content
+def cpu_version(doc):
+    for info in doc.xpath('/sysinfo/processor/entry'):
+        elem = info.xpath('@name')[0]
         if elem == 'version':
-            return info.content
+            return info
     return 'Unknown'
 
 

@@ -444,8 +444,8 @@ class wvmConnect(object):
     def get_net_device(self):
         netdevice = []
         def get_info(ctx):
-            dev_type = util.get_xpath(ctx, '/device/capability/@type')
-            interface = util.get_xpath(ctx, '/device/capability/interface')
+            dev_type = util.get_xpath('/device/capability/@type')
+            interface = util.get_xpath('/device/capability/interface')
             return (dev_type, interface)
         for dev in self.wvm.listAllDevices(0):
             xml = dev.XMLDesc(0)
@@ -456,17 +456,17 @@ class wvmConnect(object):
 
     def get_host_instances(self):
         vname = {}
-        def get_info(ctx):
-            mem = util.get_xpath(ctx, "/domain/currentMemory")
+        def get_info(doc):
+            mem = util.get_xpath(doc, "/domain/currentMemory")
             mem = int(mem) / 1024
-            cur_vcpu = util.get_xpath(ctx, "/domain/vcpu/@current")
+            cur_vcpu = util.get_xpath(doc, "/domain/vcpu/@current")
             if cur_vcpu:
                 vcpu = cur_vcpu
             else:
-                vcpu = util.get_xpath(ctx, "/domain/vcpu")
-            title = util.get_xpath(ctx, "/domain/title")
+                vcpu = util.get_xpath(doc, "/domain/vcpu")
+            title = util.get_xpath(doc, "/domain/title")
             title = title if title else ''
-            description = util.get_xpath(ctx, "/domain/description")
+            description = util.get_xpath(doc, "/domain/description")
             description = description if description else ''
             return (mem, vcpu, title, description)
         for name in self.get_instances():
