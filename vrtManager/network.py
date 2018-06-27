@@ -169,8 +169,8 @@ class wvmNetwork(wvmConnect):
         def network(doc):
             result = []
             for net in doc.xpath('/network/ip/dhcp/host'):
-                host = net.xpath('@ip')[0].text
-                mac = net.xpathEval('@mac')[0].text
+                host = net.xpath('@ip')[0]
+                mac = net.xpathEval('@mac')[0]
                 result.append({'host': host, 'mac': mac})
             return result
 
