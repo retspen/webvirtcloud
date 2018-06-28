@@ -59,12 +59,12 @@ class wvmHostDetails(wvmConnect):
         Function return host server information: hostname, cpu, memory, ...
         """
         info = []
-        info.append(self.wvm.getHostname())
-        info.append(self.wvm.getInfo()[0])
-        info.append(self.wvm.getInfo()[1] * 1048576)
-        info.append(self.wvm.getInfo()[2])
-        info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version))
-        info.append(self.wvm.getURI())
+        info.append(self.wvm.getHostname()) # hostname
+        info.append(self.wvm.getInfo()[0]) # architecture
+        info.append(self.wvm.getInfo()[1] * 1048576) # memory
+        info.append(self.wvm.getInfo()[2]) # cpu core count
+        info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version)) # cpu version
+        info.append(self.wvm.getURI()) #uri
         return info
 
     def hypervisor_type(self):

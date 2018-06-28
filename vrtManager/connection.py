@@ -454,11 +454,13 @@ class wvmConnect(object):
                 netdevice.append(interface)
         return netdevice
 
-    def get_host_instances(self):
+    def get_host_instances(self, raw_mem_size=False):
         vname = {}
         def get_info(doc):
             mem = util.get_xpath(doc, "/domain/currentMemory")
             mem = int(mem) / 1024
+            if raw_mem_size:
+                mem = int(mem) * (1024*1024)
             cur_vcpu = util.get_xpath(doc, "/domain/vcpu/@current")
             if cur_vcpu:
                 vcpu = cur_vcpu
