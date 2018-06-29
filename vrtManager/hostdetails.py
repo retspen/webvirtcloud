@@ -7,7 +7,7 @@ def cpu_version(doc):
     for info in doc.xpath('/sysinfo/processor/entry'):
         elem = info.xpath('@name')[0]
         if elem == 'version':
-            return info
+            return info.text
     return 'Unknown'
 
 

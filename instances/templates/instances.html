@@ -51,7 +51,6 @@
                                         <tbody class="searchable">
                                             {% for host, inst  in all_host_vms.items %}
                                                 <!-- copied /-->
-                                                 <!-- <tr style="font-size:16px;background-color: #5CB75C; color: white" > /-->
                                                 <tr class="success" style="font-size:16px">
                                                     <td>{{ forloop.counter }}</td>
                                                     <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
