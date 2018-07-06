@@ -231,6 +231,7 @@ datasource:
 ### How To Update
 ```bash
 git pull
+pip install Django==1.11.14
 python manage.py migrate
 sudo service supervisor restart
 ```
