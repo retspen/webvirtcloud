@@ -123,7 +123,7 @@ def computes(request):
                 compute_edit.hostname = data['hostname']
                 compute_edit.login = data['login']
                 compute_edit.password = data['password']
-                compute.edit_details = data['details']
+                #compute_edit.details = data['details']
                 compute_edit.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:

@@ -166,11 +166,11 @@ class wvmNetwork(wvmConnect):
         return bool(util.get_xml_path(xml, "/network/ip/dhcp/bootp/@file"))
 
     def get_mac_ipaddr(self):
-        def network(ctx):
+        def network(doc):
             result = []
-            for net in ctx.xpathEval('/network/ip/dhcp/host'):
-                host = net.xpathEval('@ip')[0].content
-                mac = net.xpathEval('@mac')[0].content
+            for net in doc.xpath('/network/ip/dhcp/host'):
+                host = net.xpath('@ip')[0]
+                mac = net.xpathEval('@mac')[0]
                 result.append({'host': host, 'mac': mac})
             return result
 
