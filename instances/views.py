@@ -85,7 +85,7 @@ def instances(request):
                          comp_info["mem_size"],
                          comp_info["mem_perc"]][vm]['userinstances'] = get_userinstances_info(check_uuid)
         except Instance.DoesNotExist:
-            check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
+            check_uuid = Instance(compute_id=comp["id"], name=vm, uuid=info['uuid'])
             check_uuid.save()
     
     if not request.user.is_superuser:

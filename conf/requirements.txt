@@ -1,5 +1,6 @@
-Django==1.8.11
+Django==1.11.14
 websockify==0.8.0
-gunicorn==19.3.0
-libvirt-python==3.10
+gunicorn==19.9.0
+libvirt-python==4.4.0
 libxml2-python3==2.9.5
+lxml==4.2.3
