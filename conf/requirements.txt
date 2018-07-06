@@ -1,4 +1,4 @@
-Django==1.8.11
+Django==1.11.14
 websockify==0.8.0
 gunicorn==19.3.0
 libvirt-python==3.10
