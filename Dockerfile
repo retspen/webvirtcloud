@@ -6,7 +6,7 @@ RUN echo 'APT::Get::Clean=always;' >> /etc/apt/apt.conf.d/99AutomaticClean
 RUN apt-get update -qqy
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qyy install \
 	-o APT::Install-Suggests=false \
-	git python-virtualenv python-dev libxml2-dev libvirt-dev zlib1g-dev nginx libsasl2-modules
+	git python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev nginx libsasl2-modules
 
 ADD . /srv/webvirtcloud
 RUN chown -R www-data:www-data /srv/webvirtcloud
