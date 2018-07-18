@@ -44,7 +44,7 @@
                                                 <th>User</th>
                                                 <th>Status</th>
                                                 <th>VCPU</th>
-                                                <th>Memory<br>({% trans "MB" %})</th>
+                                                <th>Memory</th>
                                                 <th data-sortable="false" style="width:205px;">Actions & Mem Usage</th>
                                             </tr>
                                         </thead>
@@ -65,10 +65,7 @@
                                                     <td style="text-align:center;">{{ host.3 }}</td>
                                                     <td style="text-align:right;">{{ host.4|filesizeformat }}</td>
                                                     <td style="text-align:left;">
-
                                                             <div class="progress-bar-success" role="progressbar" style="width: {{ host.5 }}%" aria-valuenow="{{ host.5 }}" aria-valuemin="0" aria-valuemax="100">{{ host.5 }}%</div>
-
-
                                                     </td>
                                                 </tr>
                                                 <!-- copied /-->
