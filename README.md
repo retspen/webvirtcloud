@@ -233,7 +233,7 @@ datasource:
 sudo virtualenv venv
 sudo source venv/bin/activate
 git pull
-pip install -U -r requirements.txt 
+pip install -U -r conf/requirements.txt 
 python manage.py migrate
 sudo service supervisor restart
 ```
