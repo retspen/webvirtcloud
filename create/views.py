@@ -40,9 +40,9 @@ def create_instance(request, compute_id):
         storages = sorted(conn.get_storages())
         networks = sorted(conn.get_networks())
         instances = conn.get_instances()
-        get_images = sorted(conn.get_storages_images())
         cache_modes = sorted(conn.get_cache_modes().items())
         mac_auto = util.randomMAC()
+        get_images = sorted(conn.get_storages_images())
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
