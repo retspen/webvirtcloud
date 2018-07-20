@@ -32,7 +32,7 @@ print(''.join([random.SystemRandom().choice(haystack) for _ in range(50)]))
 ### Install WebVirtCloud panel (Ubuntu)
 
 ```bash
-sudo apt-get -y install git python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev nginx supervisor libsasl2-modules gcc pkg-config
+sudo apt-get -y install git python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
@@ -67,7 +67,7 @@ wget -O - https://clck.ru/9V9fH | sudo sh
 ### Install WebVirtCloud panel (CentOS)
 
 ```bash
-sudo yum -y install python-virtualenv python-devel libvirt-devel glibc gcc nginx supervisor libxml2 libxml2-devel git
+sudo yum -y install python-virtualenv python-devel libvirt-devel glibc gcc nginx supervisor python-lxml git python-libguestfs
 ```
 
 #### Creating directories and cloning repo
@@ -230,8 +230,10 @@ datasource:
 
 ### How To Update
 ```bash
+sudo virtualenv venv
+sudo source venv/bin/activate
 git pull
-pip install Django==1.11.14
+pip install -U -r conf/requirements.txt 
 python manage.py migrate
 sudo service supervisor restart
 ```

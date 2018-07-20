@@ -366,7 +366,6 @@ def instance(request, compute_id, vname):
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
         formats = conn.get_image_formats()
-        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         busses = conn.get_busses()
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
