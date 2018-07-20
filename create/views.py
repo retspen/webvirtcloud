@@ -37,7 +37,7 @@ def create_instance(request, compute_id):
                          compute.password,
                          compute.type)
 
-        storages = sorted(conn.get_storages())
+        storages = sorted(conn.get_storages(only_actives=True))
         networks = sorted(conn.get_networks())
         instances = conn.get_instances()
         cache_modes = sorted(conn.get_cache_modes().items())

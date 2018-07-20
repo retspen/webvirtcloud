@@ -303,7 +303,7 @@ class wvmInstance(wvmConnect):
                             disk.insert(2, src_media)
                             return True
 
-        storages = self.get_storages()
+        storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
@@ -597,7 +597,7 @@ class wvmInstance(wvmConnect):
 
     def get_iso_media(self):
         iso = []
-        storages = self.get_storages()
+        storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
