@@ -2,6 +2,8 @@ import string
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FILE_EXTENSION
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 
 
 def get_rbd_storage_data(stg):
@@ -21,6 +23,9 @@ def get_rbd_storage_data(stg):
 
 
 class wvmCreate(wvmConnect):
+    image_extension = INSTANCE_VOLUME_DEFAULT_FILE_EXTENSION
+    image_format = INSTANCE_VOLUME_DEFAULT_FORMAT
+
     def get_storages_images(self):
         """
         Function return all images on all storages
@@ -30,7 +35,7 @@ class wvmCreate(wvmConnect):
         for storage in storages:
             stg = self.get_storage(storage)
             if not stg.isActive():
-                pass
+                continue
             try:
                 stg.refresh(0)
             except:
@@ -50,7 +55,7 @@ class wvmCreate(wvmConnect):
         """Get guest capabilities"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
 
-    def create_volume(self, storage, name, size, format='qcow2', metadata=False, image_extension='img'):
+    def create_volume(self, storage, name, size, format=image_format, metadata=False, image_extension=image_extension):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")

@@ -399,6 +399,10 @@ class wvmConnect(object):
         """Get available image formats"""
         return [ 'raw', 'qcow', 'qcow2' ]
 
+    def get_file_extensions(self):
+        """Get available image filename extensions"""
+        return [ 'img', 'qcow', 'qcow2' ]
+
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
 
