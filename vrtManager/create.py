@@ -29,6 +29,8 @@ class wvmCreate(wvmConnect):
         storages = self.get_storages()
         for storage in storages:
             stg = self.get_storage(storage)
+            if not stg.isActive():
+                pass
             try:
                 stg.refresh(0)
             except:
