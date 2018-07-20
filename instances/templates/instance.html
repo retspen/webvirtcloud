@@ -416,8 +416,8 @@
                                                             </div>
                                                             <div class="col-sm-2">
                                                                 <select name="extension" class="form-control image-format">
-                                                                {% for format in formats %}
-                                                                    <option value="{{ format }}" {% if format == default_format %}selected{% endif %}>{% trans format %}</option>
+                                                                {% for extension in extensions %}
+                                                                    <option value="{{ extension }}" {% if extension == default_extension %}selected{% endif %}>{% trans extension %}</option>
                                                                 {% endfor %}
                                                                 </select>
                                                             </div>
