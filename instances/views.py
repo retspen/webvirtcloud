@@ -46,7 +46,7 @@ def instances(request):
     error_messages = []
     all_host_vms = {}
     all_user_vms = {}
-    computes = Compute.objects.all()
+    computes = Compute.objects.all().order_by("name")
 
     def get_userinstances_info(instance):
         info = {}
@@ -213,14 +213,14 @@ def instance(request, compute_id, vname):
     console_types = settings.QEMU_CONSOLE_TYPES
     console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
     try:
-        userinstace = UserInstance.objects.get(instance__compute_id=compute_id,
+        userinstance = UserInstance.objects.get(instance__compute_id=compute_id,
                                                instance__name=vname,
                                                user__id=request.user.id)
     except UserInstance.DoesNotExist:
-        userinstace = None
+        userinstance = None
 
     if not request.user.is_superuser:
-        if not userinstace:
+        if not userinstance:
             return HttpResponseRedirect(reverse('index'))
 
     def show_clone_disk(disks, vname=''):
@@ -408,7 +408,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#powerforce')
 
-            if 'delete' in request.POST and (request.user.is_superuser or userinstace.is_delete):
+            if 'delete' in request.POST and (request.user.is_superuser or userinstance.is_delete):
                 if conn.get_status() == 1:
                     conn.force_shutdown()
                 if request.POST.get('delete_disk', ''):
@@ -476,7 +476,7 @@ def instance(request, compute_id, vname):
                     msg = _("Please shutdow down your instance and then try again")
                     error_messages.append(msg)
 
-            if 'resize' in request.POST and (request.user.is_superuser or request.user.is_staff or userinstace.is_change):
+            if 'resize' in request.POST and (request.user.is_superuser or request.user.is_staff or userinstance.is_change):
                 new_vcpu = request.POST.get('vcpu', '')
                 new_cur_vcpu = request.POST.get('cur_vcpu', '')
                 new_memory = request.POST.get('memory', '')
@@ -509,7 +509,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'addvolume' in request.POST and (request.user.is_superuser or userinstace.is_change):
+            if 'addvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
                 connCreate = wvmCreate(compute.hostname,
                                    compute.login,
                                    compute.password,
@@ -602,7 +602,7 @@ def instance(request, compute_id, vname):
                         addlogmsg(request.user.username, instance.name, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#xmledit')
 
-            if request.user.is_superuser or userinstace.is_vnc:
+            if request.user.is_superuser or userinstance.is_vnc:
                 if 'set_console_passwd' in request.POST:
                     if request.POST.get('auto_pass', ''):
                         passwd = randomPasswd()
