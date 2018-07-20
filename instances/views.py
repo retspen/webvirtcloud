@@ -365,7 +365,11 @@ def instance(request, compute_id, vname):
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
+        default_extension = settings.INSTANCE_VOLUME_DEFAULT_FILE_EXTENSION
         formats = conn.get_image_formats()
+        extensions = conn.get_file_extensions()
+
+
         busses = conn.get_busses()
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
@@ -908,7 +912,7 @@ def inst_graph(request, compute_id, vname):
 @login_required
 def guess_mac_address(request, vname):
     dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
-    data = { 'vname': vname, 'mac': '52:54:00:' }
+    data = {'vname': vname, 'mac': '52:54:00:'}
     if os.path.isfile(dhcp_file):
         with open(dhcp_file, 'r') as f:
             name_found = False
