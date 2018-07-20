@@ -10,9 +10,9 @@ def get_rbd_storage_data(stg):
     xml = stg.XMLDesc(0)
     ceph_user = util.get_xml_path(xml, "/pool/source/auth/@username")
 
-    def get_ceph_hosts(ctx):
+    def get_ceph_hosts(doc):
         hosts = []
-        for host in ctx.xpathEval("/pool/source/host"):
+        for host in doc.xpath("/pool/source/host"):
             name = host.prop("name")
             if name:
                 hosts.append({'name': name, 'port': host.prop("port")})
@@ -53,7 +53,7 @@ class wvmCreate(wvmConnect):
         """Get guest capabilities"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
 
-    def create_volume(self, storage, name, size, format=image_format, metadata=False, image_extension=image_extension):
+    def create_volume(self, storage, name, size, image_format=image_format, metadata=False, image_extension=image_extension):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
@@ -71,7 +71,7 @@ class wvmCreate(wvmConnect):
                 <target>
                     <format type='%s'/>
                 </target>
-            </volume>""" % (name, size, alloc, format)
+            </volume>""" % (name, size, alloc, image_format)
         stg.createXML(xml, metadata)
         try:
             stg.refresh(0)
