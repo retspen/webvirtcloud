@@ -36,7 +36,7 @@
                                         </div>
                                     </div>
                                 {% else %}
-                                    <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
+                                    <table class="table table-hover table-striped sortable-theme-bootstrap">
                                         <thead >
                                             <tr>
                                                 <th>#</th>
@@ -70,8 +70,8 @@
 
                                                 {% for vm, info in inst.items %}
                                                     <tr>
-                                                        <td></td>
-                                                        <td>{{ forloop.counter }} &emsp; <a href="{% url 'instance' host.0 vm %}">{{ vm }}</a><br><small><em>{{ info.title }}</em></small></td>
+                                                        <td style="text-align: right">{{ forloop.counter }} </td>
+                                                        <td>&emsp; <a href="{% url 'instance' host.0 vm %}">{{ vm }}</a><br><small><em>{{ info.title }}</em></small></td>
                                                         <td><small><em>{% if info.userinstances.count > 0 %}{{ info.userinstances.first_user.user.username }}{% if info.userinstances.count > 1 %} (+{{ info.userinstances.count|add:"-1" }}){% endif %}{% endif %}</em></small></td>
                                                         <td>{% ifequal info.status 1 %}
                                                                 <span class="text-success">{% trans "Active" %}</span>
