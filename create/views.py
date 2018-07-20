@@ -74,7 +74,7 @@ def create_instance(request, compute_id):
                 xml = request.POST.get('from_xml', '')
                 try:
                     name = util.get_xml_path(xml, '/domain/name')
-                except util.libxml2.parserError:
+                except util.etree.ParserError:
                     name = None
                 if name in instances:
                     error_msg = _("A virtual machine with this name already exists")
