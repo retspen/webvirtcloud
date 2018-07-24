@@ -24,6 +24,7 @@ from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from logs.views import addlogmsg
 from django.conf import settings
+from django.contrib import messages
 
 
 @login_required
@@ -203,7 +204,7 @@ def instance(request, compute_id, vname):
     """
 
     error_messages = []
-    messages = []
+   #messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     computes = Compute.objects.all().order_by('name')
     computes_count = computes.count()
@@ -325,7 +326,7 @@ def instance(request, compute_id, vname):
                            compute.password,
                            compute.type,
                            vname)
-        
+        compute_networks = sorted(conn.get_networks())
         status = conn.get_status()
         autostart = conn.get_autostart()
         vcpu = conn.get_vcpu()
@@ -451,7 +452,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
 
                     if result['return'] == 'success':
-                        messages.append(msg)
+                        messages.success(request, msg)
                     else:
                         error_messages.append(msg)
                 else:
@@ -473,7 +474,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
 
                     if result['return'] == 'success':
-                        messages.append(msg)
+                        messages.success(request, msg)
                     else:
                         error_messages.append(msg)
                 else:
@@ -569,7 +570,7 @@ def instance(request, compute_id, vname):
                 conn.snapshot_revert(snap_name)
                 msg = _("Successful revert snapshot: ")
                 msg += snap_name
-                messages.append(msg)
+                messages.success(request, msg)
                 msg = _("Revert snapshot")
                 addlogmsg(request.user.username, instance.name, msg)
 
@@ -690,6 +691,8 @@ def instance(request, compute_id, vname):
                     conn.change_network(network_data)
                     msg = _("Edit network")
                     addlogmsg(request.user.username, instance.name, msg)
+                    msg = _("Network Devices are changed. Please reboot instance to activate.")
+                    messages.success(request, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_owner' in request.POST:

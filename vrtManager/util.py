@@ -91,7 +91,6 @@ def get_xml_path(xml, path=None, func=None):
     doc = etree.fromstring(xml)
     if path:
         result = get_xpath(doc, path)
-
     elif func:
         result = func(doc)
 

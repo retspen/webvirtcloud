@@ -35,6 +35,7 @@
                                 {{ disk.size|filesizeformat }} {% trans "Disk" %} |
                             {% endfor %}
                             <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
+                            <small><em>on {{ compute.name}} - {{ compute.hostname }}</em></small>
                         </div>
                     </div>
                     {% if user_quota_msg %}
@@ -318,7 +319,7 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
-                                                {% if request.user.is_superuser or request.user.is_staff or userinstace.is_change %}
+                                                {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                                         <p style="font-weight:bold;">{% trans "Logical host CPUs:" %} {{ vcpu_host }}</p>
                                                         <div class="form-group">
@@ -396,7 +397,7 @@
                                                 <div class="clearfix"></div>
                                             </div>
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addvolume">
-                                                {% if request.user.is_superuser or userinstace.is_change %}
+                                                {% if request.user.is_superuser or userinstance.is_change %}
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                                         <p style="font-weight:bold;">{% trans "Volume parameters" %}</p>
                                                         <div class="form-group">
@@ -588,7 +589,7 @@
                                                     </a>
                                                 </li>
                                             {% endif %}
-                                            {% if request.user.is_superuser or userinstace.is_vnc %}
+                                            {% if request.user.is_superuser or userinstance.is_vnc %}
                                                 <li role="presentation">
                                                     <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
                                                         {% trans "VNC" %}
@@ -689,7 +690,7 @@
                                                     <div class="clearfix"></div>
                                                 </div>
                                             {% endif %}
-                                            {% if request.user.is_superuser or userinstace.is_vnc %}
+                                            {% if request.user.is_superuser or userinstance.is_vnc %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
                                                     <p>{% trans "To set console's type, shutdown the instance." %}</p>
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
@@ -811,19 +812,29 @@
                                                         <p style="font-weight:bold;">{% trans "Network devices" %}</p>
                                                         {% for network in networks %}
                                                             <div class="form-group">
-                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }}</label>
-                                                                <div class="col-sm-4">
+                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
+                                                                <div class="col-sm-3">
                                                                     <input type="text" class="form-control" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
                                                                 </div>
                                                                 <div class="col-sm-3">
-                                                                    <input type="text" class="form-control" name="net-source-{{ forloop.counter0 }}" value="{{ network.nic }}"/>
+                                                                    <input type="text" class="form-control" name="net-source-{{ forloop.counter0 }}" value="{{ network.nic }}" disabled/>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <select name="net-source-{{ forloop.counter0 }}" class="form-control" id="network_select" onchange="network_select_enable()">
+                                                                        {% for c_nets in compute_networks %}
+                                                                            {% if forloop.counter0 == 0 %}
+                                                                                <option value="{{ network.nic }}" selected hidden>{% trans "to Change" %}</option>
+                                                                            {% endif %}
+                                                                            <option value="{{ c_nets }}">{{ c_nets }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
                                                                 </div>
                                                             </div>
                                                         {% endfor %}
                                                         {% ifequal status 5 %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="change_network">{% trans "Change" %}</button>
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" id="ali" name="change_network" disabled>{% trans "Change" %}</button>
                                                         {% else %}
-                                                            <button class="btn btn-lg btn-success pull-right disabled" name="change_network">{% trans "Change" %}</button>
+                                                            <button type="submit"class="btn btn-lg btn-success pull-right" id="ali" name="change_network" disabled>{% trans "Change" %}</button>
                                                         {% endifequal %}
                                                     </form>
                                                     <div class="clearfix"></div>
@@ -1149,7 +1160,7 @@
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
                                                 <p>{% trans "Delete storage for instance?" %}</p>
-                                                {% if request.user.is_superuser or userinstace.is_delete %}
+                                                {% if request.user.is_superuser or userinstance.is_delete %}
                                                     {% ifequal status 3 %}
                                                         <button class="btn btn-lg btn-success disabled pull-right" name="delete">{% trans "Destroy" %}</button>
                                                     {% else %}
@@ -1321,6 +1332,17 @@
         });
     });
 </script>
+<script>
+    function network_select_enable(){
+        // set network button enabled
+
+        var selected = $('network_select').val();
+        if (selected != "to Change") {
+            $('button[name="change_network"]').removeAttr('disabled');
+
+        }
+    }
+ </script>
 <script src="{% static "js/Chart.min.js" %}"></script>
 <script>
     $('#chartgraphs').on('shown.bs.tab', function (event) {
