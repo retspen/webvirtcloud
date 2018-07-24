@@ -448,10 +448,12 @@ class wvmConnect(object):
 
     def get_net_device(self):
         netdevice = []
-        def get_info(ctx):
-            dev_type = util.get_xpath('/device/capability/@type')
-            interface = util.get_xpath('/device/capability/interface')
-            return (dev_type, interface)
+
+        def get_info(doc):
+            dev_type = util.get_xpath(doc, '/device/capability/@type')
+            interface = util.get_xpath(doc, '/device/capability/interface')
+            return dev_type, interface
+
         for dev in self.wvm.listAllDevices(0):
             xml = dev.XMLDesc(0)
             (dev_type, interface) = util.get_xml_path(xml, func=get_info)
