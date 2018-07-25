@@ -7,7 +7,7 @@ from computes.models import Compute
 from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
 from libvirt import libvirtError
-
+from django.contrib import messages
 
 @login_required
 def storages(request, compute_id):
@@ -155,6 +155,7 @@ def storage(request, compute_id, pool):
                     meta_prealloc = True
                 try:
                     conn.create_volume(data['name'], data['size'], data['format'], meta_prealloc)
+                    messages.success("Image file {} is created successfully".format(data['name']+".img"))
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)
@@ -166,6 +167,7 @@ def storage(request, compute_id, pool):
             try:
                 vol = conn.get_volume(volname)
                 vol.delete(0)
+                messages.success(request,_('Volume: {} is deleted.'.format(volname)))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
@@ -175,6 +177,7 @@ def storage(request, compute_id, pool):
                 error_messages.append(error_msg)
             else:
                 handle_uploaded_file(path, request.FILES['file'])
+                messages.success(request, _('ISO: {} is uploaded.'.format(request.FILES['file'])))
                 return HttpResponseRedirect(request.get_full_path())
         if 'cln_volume' in request.POST:
             form = CloneImage(request.POST)
@@ -194,6 +197,8 @@ def storage(request, compute_id, pool):
                         format = None
                     try:
                         conn.clone_volume(data['image'], data['name'], format, meta_prealloc)
+                        messages.success(request, _("{} image cloned as {} successfully".format(data['image'],
+                                                                                                data['name'] + ".img")))
                         return HttpResponseRedirect(request.get_full_path())
                     except libvirtError as lib_err:
                         error_messages.append(lib_err)
