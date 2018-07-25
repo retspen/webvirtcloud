@@ -415,13 +415,6 @@
                                                             <div class="col-sm-4">
                                                                 <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
                                                             </div>
-                                                            <div class="col-sm-2">
-                                                                <select name="extension" class="form-control image-format">
-                                                                {% for extension in extensions %}
-                                                                    <option value="{{ extension }}" {% if extension == default_extension %}selected{% endif %}>{% trans extension %}</option>
-                                                                {% endfor %}
-                                                                </select>
-                                                            </div>
                                                         </div>
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Format" %}</label>

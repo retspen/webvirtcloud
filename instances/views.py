@@ -366,9 +366,7 @@ def instance(request, compute_id, vname):
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
-        default_extension = settings.INSTANCE_VOLUME_DEFAULT_FILE_EXTENSION
         formats = conn.get_image_formats()
-        extensions = conn.get_file_extensions()
 
 
         busses = conn.get_busses()
@@ -521,7 +519,6 @@ def instance(request, compute_id, vname):
                                    compute.type)
                 storage = request.POST.get('storage', '')
                 name = request.POST.get('name', '')
-                extension = request.POST.get('extension', '')
                 format = request.POST.get('format', '')
                 size = request.POST.get('size', 0)
                 meta_prealloc = request.POST.get('meta_prealloc', False)
