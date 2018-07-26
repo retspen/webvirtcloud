@@ -2,9 +2,9 @@ language: python
 python:
   - "2.7"
 env:
-  - DJANGO=1.8
+  - DJANGO=1.11.14
 install:
-  - pip install -r dev/requirements.txt --use-mirrors
+  - pip install -r dev/requirements.txt
 script:
   - pep8 --exclude=IPy.py --ignore=E501 vrtManager accounts computes \
                                         console create instances interfaces \

@@ -68,13 +68,24 @@ def instances(request):
                     i.delete()
         
         try:
-            check_uuid = Instance.objects.get(compute_id=comp.id, name=vm)
+            check_uuid = Instance.objects.get(compute_id=comp["id"], name=vm)
             if check_uuid.uuid != info['uuid']:
                 check_uuid.save()
-            all_host_vms[comp.id, comp.name][vm]['is_template'] = check_uuid.is_template
-            all_host_vms[comp.id, comp.name][vm]['userinstances'] = get_userinstances_info(check_uuid)
+
+            all_host_vms[comp_info["id"],
+                         comp_info["name"],
+                         comp_info["status"],
+                         comp_info["cpu"],
+                         comp_info["mem_size"],
+                         comp_info["mem_perc"]][vm]['is_template'] = check_uuid.is_template
+            all_host_vms[comp_info["id"],
+                         comp_info["name"],
+                         comp_info["status"],
+                         comp_info["cpu"],
+                         comp_info["mem_size"],
+                         comp_info["mem_perc"]][vm]['userinstances'] = get_userinstances_info(check_uuid)
         except Instance.DoesNotExist:
-            check_uuid = Instance(compute_id=comp.id, name=vm, uuid=info['uuid'])
+            check_uuid = Instance(compute_id=comp["id"], name=vm, uuid=info['uuid'])
             check_uuid.save()
     
     if not request.user.is_superuser:
@@ -90,14 +101,27 @@ def instances(request):
                 all_user_vms[usr_inst].update({'compute_id': usr_inst.instance.compute.id})
     else:
         for comp in computes:
-            if connection_manager.host_is_up(comp.type, comp.hostname):
+            status = connection_manager.host_is_up(comp.type, comp.hostname)
+            if status:
                 try:
                     conn = wvmHostDetails(comp, comp.login, comp.password, comp.type)
-                    host_instances = conn.get_host_instances()
-                    if host_instances:
-                        all_host_vms[comp.id, comp.name] = host_instances
-                        for vm, info in host_instances.items():
-                            refresh_instance_database(comp, vm, info)
+                    comp_node_info = conn.get_node_info()
+                    comp_mem = conn.get_memory_usage()
+                    comp_instances = conn.get_host_instances(True)
+
+                    if comp_instances:
+                        comp_info= {
+                            "id": comp.id,
+                            "name": comp.name,
+                            "status": status,
+                            "cpu": comp_node_info[3],
+                            "mem_size": comp_node_info[2],
+                            "mem_perc": comp_mem['percent']
+                        }
+                        all_host_vms[comp_info["id"], comp_info["name"], comp_info["status"], comp_info["cpu"],
+                                     comp_info["mem_size"], comp_info["mem_perc"]] = comp_instances
+                        for vm, info in comp_instances.items():
+                            refresh_instance_database(comp_info, vm, info)
 
                     conn.close()
                 except libvirtError as lib_err:
@@ -343,7 +367,6 @@ def instance(request, compute_id, vname):
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
         formats = conn.get_image_formats()
-        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         busses = conn.get_busses()
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD

@@ -1,5 +1,5 @@
 import random
-import libxml2
+import lxml.etree as etree
 import libvirt
 import string
 
@@ -86,41 +86,43 @@ def get_xml_path(xml, path=None, func=None):
     of a passed function (receives xpathContext as its only arg)
     """
     doc = None
-    ctx = None
+    #ctx = None
     result = None
 
-    try:
-        doc = libxml2.parseDoc(xml)
-        ctx = doc.xpathNewContext()
+    #try:
+    doc = etree.fromstring(xml)
+    #ctx = doc.xpathNewContext()
+    if path:
+        result = get_xpath(doc, path)
 
-        if path:
-            result = get_xpath(ctx, path)
+    elif func:
+        result = func(doc)
 
-        elif func:
-            result = func(ctx)
-
-        else:
-            raise ValueError("'path' or 'func' is required.")
-    finally:
-        if doc:
-            doc.freeDoc()
-        if ctx:
-            ctx.xpathFreeContext()
+    else:
+        raise ValueError("'path' or 'func' is required.")
+    #finally:
+        #if doc:
+        #    doc.freeDoc()
+        #if ctx:
+        #    ctx.xpathFreeContext()
     return result
 
 
-def get_xpath(ctx, path):
+def get_xpath(doc, path):
     result = None
-    ret = ctx.xpathEval(path)
+
+    ret = doc.xpath(path)
     if ret is not None:
         if type(ret) == list:
             if len(ret) >= 1:
-                result = ret[0].content
+                if hasattr(ret[0],'text'):
+                    result = ret[0].text
+                else:
+                    result = ret[0]
         else:
             result = ret
-    
-    return result
 
+    return result
 
 def pretty_mem(val):
     val = int(val)
