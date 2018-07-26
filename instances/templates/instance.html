@@ -1212,14 +1212,9 @@
 </script>
 <script>
     function random_mac(net) {
-        var hexDigits = "0123456789abcdef";
-        var macAddress="52:54:00:";
-        for (var i=0; i<3; i++) {
-            macAddress+=hexDigits.charAt(Math.round(Math.random()*16));
-            macAddress+=hexDigits.charAt(Math.round(Math.random()*16));
-            if (i != 2) macAddress+=":";
-        }
-        $('input[name="clone-net-mac-'+net+'"]').val(macAddress);
+        $.getJSON('/instance/random_mac_address/', function(data) {
+            $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
+        });
     };
 </script>
 <script>
@@ -1325,7 +1320,11 @@
             $("#vdi_url").attr("href", data);
         });
     });
-{% if not request.user.is_superuser %}
+{% if request.user.is_superuser %}
+    $(document).ready(function () {
+        random_mac(0);
+    });
+{% else %}
     $('#select_clone_name').on('change', function () {
         update_clone_disk_name($(this).val());
         guess_mac_address('#select_clone_name', 0);
