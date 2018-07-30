@@ -193,6 +193,9 @@ def instances(request):
             error_messages.append(lib_err)
             addlogmsg(request.user.username, instance.name, lib_err.message)
 
+    instances_template_file = 'instances.html'
+    view_style = settings.VIEW_INSTANCES_LIST_STYLE
+
     return render(request, 'instances.html', locals())
 
 
@@ -976,6 +979,7 @@ def check_instance(request, vname):
         data['exists'] = True
     return HttpResponse(json.dumps(data))
 
+
 def sshkeys(request, vname):
     """
     :param request:
@@ -996,6 +1000,7 @@ def sshkeys(request, vname):
     else:
         response = json.dumps(instance_keys)
     return HttpResponse(response)
+
 
 def delete_instance(instance, delete_disk=False):
     compute = instance.compute
