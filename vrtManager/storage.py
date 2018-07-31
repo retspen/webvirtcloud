@@ -227,6 +227,10 @@ class wvmStorage(wvmConnect):
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
             </volume>""" % (name, size, alloc, vol_fmt)
         self._createXML(xml, metadata)
@@ -251,6 +255,10 @@ class wvmStorage(wvmConnect):
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
             </volume>""" % (target_file, vol_fmt)
         self._createXMLFrom(xml, vol, metadata)

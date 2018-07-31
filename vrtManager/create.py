@@ -131,6 +131,10 @@ class wvmCreate(wvmConnect):
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
             </volume>""" % (clone, format)
         stg.createXMLFrom(xml, vol, metadata)
