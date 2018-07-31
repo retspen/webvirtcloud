@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
 {% endblock %}
 {% block content %}
+
 <!-- Page Heading -->
 <div class="row">
     <div class="col-lg-12">
@@ -152,7 +153,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-                                            <button type="submit" class="btn btn-primary" name="cln_volume">{% trans "Clone" %}</button>
+                                            <button type="submit" class="btn btn-primary" name="cln_volume" onclick="showPleaseWaitDialog();">{% trans "Clone11" %}</button>
                                         </div>
                                     </form>
                                 </div> <!-- /.modal-content -->
@@ -188,6 +189,7 @@
         {% endif %}
     </div>
 </div>
+{% include 'pleasewaitdialog.html' %}
 {% endblock %}
 {% block script %}
     <script src="{% static "js/sortable.min.js" %}"></script>
