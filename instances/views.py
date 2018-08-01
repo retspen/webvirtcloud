@@ -193,7 +193,6 @@ def instances(request):
             error_messages.append(lib_err)
             addlogmsg(request.user.username, instance.name, lib_err.message)
 
-    instances_template_file = 'instances.html'
     view_style = settings.VIEW_INSTANCES_LIST_STYLE
 
     return render(request, 'instances.html', locals())
