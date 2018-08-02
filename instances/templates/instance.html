@@ -1028,7 +1028,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Is template" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="is_template" value="true" id="is_template" {% if instance.is_template %}checked{% endif %} {% if not request.user.is_superuser %}disabled{% endif %}>
+                                                                <input type="checkbox" name="is_template" value="True" id="is_template" {% if instance.is_template %}checked{% endif %} {% if not request.user.is_superuser %}disabled{% endif %}>
                                                             </div>
                                                         </div>
                                                         {% ifequal status 5 %}
