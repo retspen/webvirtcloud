@@ -3,18 +3,18 @@
     <thead>
     <tr>
         <th>#</th>
-        <th>Name<br>Description</th>
-        <th>User</th>
-        <th>Status</th>
-        <th>VCPU</th>
-        <th>Memory</th>
-        <th data-sortable="false" style="width:205px;">Actions & Mem Usage</th>
+        <th>{% trans "Name" %}<br>{% trans "Description" %}</th></th>
+        <th>{% trans "User"%}</th>
+        <th>{% trans "Status" %}</th>
+        <th>{% trans "VCPU" %}</th>
+        <th>{% trans "Memory" %}</th>
+        <th data-sortable="false" style="width:205px;">{% trans "Actions & Mem Usage" %}</th>
     </tr>
     </thead>
     <tbody class="searchable">
     {% for host, inst  in all_host_vms.items %}
-        <tr class="success" style="font-size:16px">
-            <td>{{ forloop.counter }}</td>
+        <tr class="active" style="font-weight: bold;border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
+            <td><span class="fa fa-server"></span> </td>
             <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
             <td></td>
             <td>
@@ -25,7 +25,7 @@
             <td style="text-align:center;">{{ host.3 }}</td>
             <td style="text-align:right;">{{ host.4|filesizeformat }}</td>
             <td style="text-align:left;">
-                <div class="progress-bar-success" role="progressbar" style="width: {{ host.5 }}%"
+                <div class="progress-bar progress-bar-success" role="progressbar" style="width: {{ host.5 }}%"
                      aria-valuenow="{{ host.5 }}" aria-valuemin="0" aria-valuemax="100">{{ host.5 }}%
                 </div>
             </td>
