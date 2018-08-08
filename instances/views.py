@@ -73,18 +73,18 @@ def instances(request):
             if check_uuid.uuid != info['uuid']:
                 check_uuid.save()
 
-            all_host_vms[comp_info["id"],
-                         comp_info["name"],
-                         comp_info["status"],
-                         comp_info["cpu"],
-                         comp_info["mem_size"],
-                         comp_info["mem_perc"]][vm]['is_template'] = check_uuid.is_template
-            all_host_vms[comp_info["id"],
-                         comp_info["name"],
-                         comp_info["status"],
-                         comp_info["cpu"],
-                         comp_info["mem_size"],
-                         comp_info["mem_perc"]][vm]['userinstances'] = get_userinstances_info(check_uuid)
+            all_host_vms[comp["id"],
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][vm]['is_template'] = check_uuid.is_template
+            all_host_vms[comp["id"],
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][vm]['userinstances'] = get_userinstances_info(check_uuid)
         except Instance.DoesNotExist:
             check_uuid = Instance(compute_id=comp["id"], name=vm, uuid=info['uuid'])
             check_uuid.save()
