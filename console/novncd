@@ -121,7 +121,7 @@ def get_connection_infos(token):
         console_port = conn.get_console_port()
         console_socket = conn.get_console_socket()
     except Exception, e:
-        logging.error('Fail to retrieve console connexion infos for token %s : %s' % (token, e))
+        logging.error('Fail to retrieve console connection infos for token %s : %s' % (token, e))
         raise
     return (connhost, connport, connuser, conntype, console_host,
             console_port, console_socket)
@@ -139,7 +139,7 @@ class CompatibilityMixIn(object):
         (connhost, connport, connuser, conntype, console_host, console_port,
          console_socket) = get_connection_infos(token)
 
-        cnx_debug_msg = "Connexion infos :\n"
+        cnx_debug_msg = "Connection infos :\n"
         cnx_debug_msg += "- connhost : '%s'\n" % connhost
         cnx_debug_msg += "- connport : '%s'\n" % connport
         cnx_debug_msg += "- connuser : '%s'\n" % connuser
