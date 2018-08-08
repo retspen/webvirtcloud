@@ -21,7 +21,7 @@
 /*----------------------------------------------------------------------------
 **  Spice messages
 **      This file contains classes for passing messages to and from
-**  a spice server.  This file should arguably be generated from 
+**  a spice server.  This file should arguably be generated from
 **  spice.proto, but it was instead put together by hand.
 **--------------------------------------------------------------------------*/
 function SpiceLinkHeader(a, at)
@@ -63,7 +63,7 @@ SpiceLinkHeader.prototype =
         dv.setUint32(at, this.size, true); at += 4;
     },
     buffer_size: function()
-    { 
+    {
         return 16;
     },
 }
@@ -938,7 +938,7 @@ function SpiceMsgcMousePosition(sc, e)
         this.x = e.clientX - sc.display.surfaces[sc.display.primary_surface].canvas.offsetLeft + scrollLeft;
         this.y = e.clientY - sc.display.surfaces[sc.display.primary_surface].canvas.offsetTop + scrollTop;
         sc.mousex = this.x;
-        sc.mousey = this.y; 
+        sc.mousey = this.y;
     }
     else
     {
@@ -1146,6 +1146,29 @@ SpiceMsgDisplayStreamData.prototype =
     },
 }
 
+function SpiceMsgDisplayStreamDataSized(a, at)
+{
+    this.from_buffer(a, at);
+}
+
+SpiceMsgDisplayStreamDataSized.prototype =
+{
+    from_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        this.base = new SpiceStreamDataHeader;
+        at = this.base.from_dv(dv, at, a);
+        this.width = dv.getUint32(at, true); at += 4;
+        this.height = dv.getUint32(at, true); at += 4;
+        this.dest = new SpiceRect;
+        at = this.dest.from_dv(dv, at, a);
+        this.data_size = dv.getUint32(at, true); at += 4;
+        this.data = dv.u8.subarray(at, at + this.data_size);
+    },
+}
+
+
 function SpiceMsgDisplayStreamClip(a, at)
 {
     this.from_buffer(a, at);
@@ -1178,6 +1201,60 @@ SpiceMsgDisplayStreamDestroy.prototype =
     },
 }
 
+function SpiceMsgDisplayStreamActivateReport(a, at)
+{
+    this.from_buffer(a, at);
+}
+
+SpiceMsgDisplayStreamActivateReport.prototype =
+{
+    from_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        this.stream_id = dv.getUint32(at, true); at += 4;
+        this.unique_id = dv.getUint32(at, true); at += 4;
+        this.max_window_size = dv.getUint32(at, true); at += 4;
+        this.timeout_ms = dv.getUint32(at, true); at += 4;
+    },
+}
+
+function SpiceMsgcDisplayStreamReport(stream_id, unique_id)
+{
+    this.stream_id = stream_id;
+    this.unique_id = unique_id;
+    this.start_frame_mm_time = 0;
+    this.end_frame_mm_time = 0;
+    this.num_frames = 0;
+    this.num_drops = 0;
+    this.last_frame_delay = 0;
+
+    // TODO - Implement audio delay
+    this.audio_delay = -1;
+}
+
+SpiceMsgcDisplayStreamReport.prototype =
+{
+    to_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        dv.setUint32(at, this.stream_id, true); at += 4;
+        dv.setUint32(at, this.unique_id, true); at += 4;
+        dv.setUint32(at, this.start_frame_mm_time, true); at += 4;
+        dv.setUint32(at, this.end_frame_mm_time, true); at += 4;
+        dv.setUint32(at, this.num_frames, true); at += 4;
+        dv.setUint32(at, this.num_drops, true); at += 4;
+        dv.setUint32(at, this.last_frame_delay, true); at += 4;
+        dv.setUint32(at, this.audio_delay, true); at += 4;
+        return at;
+    },
+    buffer_size: function()
+    {
+        return 8 * 4;
+    }
+}
+
 function SpiceMsgDisplayInvalList(a, at)
 {
     this.count = 0;
@@ -1200,4 +1277,22 @@ SpiceMsgDisplayInvalList.prototype =
             this.resources[i].id = dv.getUint64(at, true); at += 8;
         }
     },
+}
+
+function SpiceMsgPortInit(a, at)
+{
+    this.from_buffer(a,at);
+};
+
+SpiceMsgPortInit.prototype =
+{
+    from_buffer: function (a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        var namesize = dv.getUint32(at, true); at += 4;
+        var offset = dv.getUint32(at, true); at += 4;
+        this.opened = dv.getUint8(at, true); at += 1;
+        this.name = a.slice(offset, offset + namesize - 1);
+    }
 }

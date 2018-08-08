@@ -280,6 +280,7 @@ function QuicModel(bpc)
         case 2:
         case 4:
             console.log("quic: findmodelparams(): evol value obsolete!!!\n");
+            break;
         default:
             console.log("quic: findmodelparams(): evol out of range!!!\n");
     }

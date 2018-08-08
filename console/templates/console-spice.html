@@ -31,6 +31,9 @@
     <script src="{% static "js/spice-html5/resize.js" %}"></script>
     <script src="{% static "js/spice-html5/filexfer.js" %}"></script>
 
+    <link rel="stylesheet" type="text/css" href="{% static "js/spice-html5/spice.css" %}" />
+    <script src="{% static "js/spice-html5/port.js" %}"></script>
+
 {% endblock %}
 
 {% block content %}
@@ -61,7 +64,7 @@
     {
         console.log(e);
         disconnect();
-        if (e.message != undefined) {
+        if (e.message !== undefined) {
             log_error(e.message);
         }
         else {
@@ -72,6 +75,7 @@
     function spice_success(msg) {
         log_info(msg);
     }
+
 
     function connect(uri,password)
     {
@@ -90,6 +94,7 @@
         {
             sc = new SpiceMainConn({uri: uri, password: password, screen_id: "spice_container",
                         onsuccess: spice_success, onerror: spice_error, onagent: agent_connected });
+
         }
         catch (e)
         {

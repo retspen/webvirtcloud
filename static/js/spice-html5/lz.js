@@ -141,6 +141,19 @@ function lz_rgb32_decompress(in_buf, at, out_buf, type, default_alpha)
     return encoder - 1;
 }
 
+function flip_image_data(img)
+{
+    var wb = img.width * 4;
+    var h = img.height;
+    var temp_h = h;
+    var buff = new Uint8Array(img.width * img.height * 4);
+    while (temp_h--)
+    {
+        buff.set(img.data.subarray(temp_h * wb, (temp_h + 1) * wb), (h - temp_h - 1) * wb);
+    }
+    img.data.set(buff);
+}
+
 function convert_spice_lz_to_web(context, lz_image)
 {
     var at;
@@ -150,6 +163,9 @@ function convert_spice_lz_to_web(context, lz_image)
         var ret = context.createImageData(lz_image.width, lz_image.height);
 
         at = lz_rgb32_decompress(u8, 0, ret.data, LZ_IMAGE_TYPE_RGB32, lz_image.type != LZ_IMAGE_TYPE_RGBA);
+        if (!lz_image.top_down)
+            flip_image_data(ret);
+
         if (lz_image.type == LZ_IMAGE_TYPE_RGBA)
             lz_rgb32_decompress(u8, at, ret.data, LZ_IMAGE_TYPE_RGBA, false);
     }
