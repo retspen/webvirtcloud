@@ -159,7 +159,7 @@ class CompatibilityMixIn(object):
             if conntype != CONN_SSH:
                 self.msg("Need a tunnel to access console but can't mount " +
                          "one because it's not a SSH host")
-                raise
+                raise Exception(self.msg)
             try:
                 # generate a string with all placeholders to avoid TypeErrors
                 # in sprintf
@@ -175,7 +175,7 @@ class CompatibilityMixIn(object):
             except Exception as e:
                 self.msg("Fail to open tunnel : %s" % e)
                 raise
-            self.msg("Tunnel openned")
+            self.msg("Tunnel opened")
         else:
             # Direct access
             self.msg("connecting to: %s:%s" % (connhost, console_port))
