@@ -63,7 +63,7 @@
 
 {% block content %}
 
-        <div id="login">
+        <div id="login" hidden>
             <span class="logo">SPICE</span>
             <label for="host">Host:</label> <input type='text' id='host' value='{{ ws_host }}'> <!-- localhost -->
             <label for="port">Port:</label> <input type='text' id='port' value='{{ ws_port }}'>
@@ -213,7 +213,7 @@
             }
 
              function fullscreen() {
-                var screen=document.getElementById('spice-area');
+                var screen=document.getElementById('spice-screen?');
                 if(screen.requestFullscreen) {
                     screen.requestFullscreen();
                 } else if(screen.mozRequestFullScreen) {

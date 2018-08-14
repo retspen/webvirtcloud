@@ -27,7 +27,7 @@
 {% load staticfiles %}
 {% block head %}
 
-        <title>Spice Javascript client</title>
+        <title>WebVirtCloud - Spice - Lite</title>
         <script src="{% static "js/spice-html5/spicearraybuffer.js" %}"></script>
         <script src="{% static "js/spice-html5/enums.js" %}"></script>
         <script src="{% static "js/spice-html5/atKeynames.js" %}"></script>
@@ -140,6 +140,8 @@
 
                 //password = spice_query_var('password', '');
                 password = '{{ console_passwd | safe }}';
+                if (password === 'None') password = '';
+
                 path = spice_query_var('path', 'websockify');
 
                 if ((!host) || (!port)) {
@@ -233,7 +235,7 @@
             }
 
             function fullscreen() {
-                var screen=document.getElementById('spice-area');
+                var screen=document.getElementById('spice-screen');
                 if(screen.requestFullscreen) {
                     screen.requestFullscreen();
                 } else if(screen.mozRequestFullScreen) {
