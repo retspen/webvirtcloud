@@ -249,7 +249,19 @@
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="vnconsole">
                                                 <p>{% trans "This action opens a new window with a VNC connection to the console of the instance." %}</p>
                                                 {% ifequal status 1 %}
-                                                    <a href="#" class="btn btn-lg btn-success pull-right" title="Console port: {{ console_port }}" onclick="open_console()">{% trans "Console" %}</a>
+                                                    <!-- Split button -->
+                                                    <div class="btn-group pull-right">
+                                                        <button type="button" class="btn btn-lg btn-success " onclick="open_console('lite')">Console</button>
+                                                        <button type="button" class="btn btn-lg btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                            <span class="caret"></span>
+                                                            <span class="sr-only">Toggle Dropdown</span>
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            <li><a href="#" title="Console port: {{ console_port }}" onclick="open_console('lite')">{% trans "Console - Lite" %}</a></li>
+                                                            <li><a href="#" title="Console port: {{ console_port }}" onclick="open_console('full')">{% trans "Console - Full" %}</a></li>
+                                                        </ul>
+                                                    </div>
+
                                                 {% else %}
                                                     <button class="btn btn-lg btn-success pull-right disabled">{% trans "Console" %}</button>
                                                 {% endifequal %}
@@ -1193,8 +1205,8 @@
     });
 </script>
 <script>
-    function open_console() {
-        window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}', '', 'width=850,height=485')
+    function open_console(view_style) {
+        window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}&view=' +view_style +'', '', 'width=850,height=600')
     }
 </script>
 <script>
