@@ -111,7 +111,7 @@
 
                 // By default, use the host and port of server that served this file
                 //host = spice_query_var('host', window.location.hostname);
-                host = '{{ ws_host| safe }}'| spice_query_var('host', window.location.hostname);
+                host = '{{ ws_host| safe }}';
 
                 // Note that using the web server port only makes sense
                 //  if your web server has a reverse proxy to relay the WebSocket
@@ -126,7 +126,7 @@
                     }
                 }
                 //port = spice_query_var('port', default_port);
-                port = '{{ ws_port| safe }}' | spice_query_var('port', default_port);
+                port = '{{ ws_port| safe }}';
                 if (window.location.protocol == 'https:') {
                     scheme = "wss://";
                 }
@@ -139,7 +139,7 @@
                 }
 
                 //password = spice_query_var('password', '');
-                password = '{{ console_passwd | safe }}' | spice_query_var('password', '');
+                password = '{{ console_passwd | safe }}';
                 path = spice_query_var('path', 'websockify');
 
                 if ((!host) || (!port)) {
