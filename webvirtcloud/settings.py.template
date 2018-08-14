@@ -143,6 +143,9 @@ SHOW_PROFILE_EDIT_PASSWORD = False
 # available: default (grid), list
 VIEW_ACCOUNTS_STYLE = 'grid'
 
+# available: default (grouped), nongrouped
+VIEW_INSTANCES_LIST_STYLE = 'grouped'
+
 INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
 INSTANCE_VOLUME_DEFAULT_BUS = 'virtio'
 INSTANCE_VOLUME_DEFAULT_CACHE = 'directsync'

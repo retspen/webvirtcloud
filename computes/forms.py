@@ -13,6 +13,7 @@ class ComputeAddTcpForm(forms.Form):
                             max_length=100)
     password = forms.CharField(error_messages={'required': _('No password has been entered')},
                                max_length=100)
+    details = forms.CharField(max_length=50, required=False)
 
     def clean_name(self):
         name = self.cleaned_data['name']
@@ -49,6 +50,7 @@ class ComputeAddSshForm(forms.Form):
                                max_length=100)
     login = forms.CharField(error_messages={'required': _('No login has been entered')},
                             max_length=20)
+    details = forms.CharField(max_length=50, required=False)
 
     def clean_name(self):
         name = self.cleaned_data['name']
@@ -87,6 +89,7 @@ class ComputeAddTlsForm(forms.Form):
                             max_length=100)
     password = forms.CharField(error_messages={'required': _('No password has been entered')},
                                max_length=100)
+    details = forms.CharField(max_length=50, required=False)
 
     def clean_name(self):
         name = self.cleaned_data['name']
@@ -125,6 +128,7 @@ class ComputeEditHostForm(forms.Form):
     login = forms.CharField(error_messages={'required': _('No login has been entered')},
                             max_length=100)
     password = forms.CharField(max_length=100)
+    details = forms.CharField(max_length=50, required=False)
 
     def clean_name(self):
         name = self.cleaned_data['name']

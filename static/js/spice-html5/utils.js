@@ -22,9 +22,16 @@
 **  Utility settings and functions for Spice
 **--------------------------------------------------------------------------*/
 var DEBUG = 0;
+var PLAYBACK_DEBUG = 0;
+var STREAM_DEBUG = 0;
 var DUMP_DRAWS = false;
 var DUMP_CANVASES = false;
 
+/*----------------------------------------------------------------------------
+**  We use an Image temporarily, and the image/src does not get garbage
+**   collected as quickly as we might like.  This blank image helps with that.
+**--------------------------------------------------------------------------*/
+var EMPTY_GIF_IMAGE = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 
 /*----------------------------------------------------------------------------
 **  combine_array_buffers
@@ -98,9 +105,16 @@ function hexdump_buffer(a)
 }
 
 /*----------------------------------------------------------------------------
+**  Convert arraybuffer to string
+**--------------------------------------------------------------------------*/
+function arraybuffer_to_str(buf) {
+  return String.fromCharCode.apply(null, new Uint16Array(buf));
+}
+
+/*----------------------------------------------------------------------------
 ** Converting keycodes to AT scancodes is very hard.
 ** luckly there are some resources on the web and in the Xorg driver that help
-** us figure out what browser depenend keycodes match to what scancodes.
+** us figure out what browser dependent keycodes match to what scancodes.
 **
 ** This will most likely not work for non US keyboard and browsers other than
 ** modern Chrome and FireFox.
@@ -155,7 +169,7 @@ common_scanmap[121]                = KEY_F10;
 common_scanmap[122]                = KEY_F11;
 common_scanmap[123]                = KEY_F12;
 
-/* These externded scancodes do not line up with values from atKeynames */
+/* These extended scancodes do not line up with values from atKeynames */
 common_scanmap[42]                 = 99;
 common_scanmap[19]                 = 101;    // Break
 common_scanmap[111]                = 0xE035; // KP_Divide
@@ -262,4 +276,57 @@ function keycode_to_end_scan(code)
     } else {
         return 0x80e0 | ((scancode - 0x100) << 8);
     }
+}
+
+function dump_media_element(m)
+{
+    var ret =
+            "[networkState " + m.networkState +
+            "|readyState " + m.readyState +
+            "|error " + m.error +
+            "|seeking " + m.seeking +
+            "|duration " + m.duration +
+            "|paused " + m.paused +
+            "|ended " + m.error +
+            "|buffered " + dump_timerange(m.buffered) +
+            "]";
+    return ret;
+}
+
+function dump_media_source(ms)
+{
+    var ret =
+            "[duration " + ms.duration +
+            "|readyState " + ms.readyState + "]";
+    return ret;
+}
+
+function dump_source_buffer(sb)
+{
+    var ret =
+            "[appendWindowStart " + sb.appendWindowStart +
+            "|appendWindowEnd " + sb.appendWindowEnd +
+            "|buffered " + dump_timerange(sb.buffered) +
+            "|timeStampOffset " + sb.timeStampOffset +
+            "|updating " + sb.updating +
+            "]";
+    return ret;
+}
+
+function dump_timerange(tr)
+{
+    var ret;
+
+    if (tr)
+    {
+        var i = tr.length;
+        ret = "{len " + i;
+        if (i > 0)
+            ret += "; start " + tr.start(0) + "; end " + tr.end(i - 1);
+        ret += "}";
+    }
+    else
+        ret = "N/A";
+
+    return ret;
 }

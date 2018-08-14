@@ -2,15 +2,16 @@ import string
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 
 
 def get_rbd_storage_data(stg):
     xml = stg.XMLDesc(0)
     ceph_user = util.get_xml_path(xml, "/pool/source/auth/@username")
 
-    def get_ceph_hosts(ctx):
+    def get_ceph_hosts(doc):
         hosts = []
-        for host in ctx.xpathEval("/pool/source/host"):
+        for host in doc.xpath("/pool/source/host"):
             name = host.prop("name")
             if name:
                 hosts.append({'name': name, 'port': host.prop("port")})
@@ -21,12 +22,14 @@ def get_rbd_storage_data(stg):
 
 
 class wvmCreate(wvmConnect):
+    image_format = INSTANCE_VOLUME_DEFAULT_FORMAT
+
     def get_storages_images(self):
         """
         Function return all images on all storages
         """
         images = []
-        storages = self.get_storages()
+        storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
             try:
@@ -48,12 +51,12 @@ class wvmCreate(wvmConnect):
         """Get guest capabilities"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
 
-    def create_volume(self, storage, name, size, format='qcow2', metadata=False, image_extension='img'):
+    def create_volume(self, storage, name, size, image_format=image_format, metadata=False):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         if storage_type == 'dir':
-            name += '.' + image_extension
+            name += '.img'
             alloc = 0
         else:
             alloc = size
@@ -65,8 +68,14 @@ class wvmCreate(wvmConnect):
                 <allocation>%s</allocation>
                 <target>
                     <format type='%s'/>
+                     <permissions>
+                        <owner>107</owner>
+                        <group>107</group>
+                        <mode>0644</mode>
+                        <label>virt_image_t</label>
+                    </permissions>
                 </target>
-            </volume>""" % (name, size, alloc, format)
+            </volume>""" % (name, size, alloc, image_format)
         stg.createXML(xml, metadata)
         try:
             stg.refresh(0)
@@ -86,7 +95,7 @@ class wvmCreate(wvmConnect):
             return 'raw'
 
     def get_volume_path(self, volume):
-        storages = self.get_storages()
+        storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
@@ -116,6 +125,16 @@ class wvmCreate(wvmConnect):
                 <allocation>0</allocation>
                 <target>
                     <format type='%s'/>
+                     <permissions>
+                        <owner>107</owner>
+                        <group>107</group>
+                        <mode>0644</mode>
+                        <label>virt_image_t</label>
+                    </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
             </volume>""" % (clone, format)
         stg.createXMLFrom(xml, vol, metadata)

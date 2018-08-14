@@ -81,7 +81,7 @@ function handle_file_drop(e)
     e.preventDefault();
     for (var i = files.length - 1; i >= 0; i--)
     {
-        if (files[i].type); // do not copy a directory
+        if (files[i].type) // do not copy a directory
             sc.file_xfer_start(files[i]);
     }
 

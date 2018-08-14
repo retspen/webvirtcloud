@@ -1,0 +1,262 @@
+<!--
+   Copyright (C) 2012 by Jeremy P. White <jwhite@codeweavers.com>
+
+   This file is part of spice-html5.
+
+   spice-html5 is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   spice-html5 is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with spice-html5.  If not, see <http://www.gnu.org/licenses/>.
+
+   --------------------------------------------------
+    Spice Javascript client template.
+    Refer to main.js for more detailed information
+   --------------------------------------------------
+
+-->
+{% extends "console-base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+{% block head %}
+
+        <title>Spice Javascript client</title>
+        <script src="{% static "js/spice-html5/spicearraybuffer.js" %}"></script>
+        <script src="{% static "js/spice-html5/enums.js" %}"></script>
+        <script src="{% static "js/spice-html5/atKeynames.js" %}"></script>
+        <script src="{% static "js/spice-html5/utils.js" %}"></script>
+        <script src="{% static "js/spice-html5/png.js" %}"></script>
+        <script src="{% static "js/spice-html5/lz.js" %}"></script>
+        <script src="{% static "js/spice-html5/quic.js" %}"></script>
+        <script src="{% static "js/spice-html5/bitmap.js" %}"></script>
+        <script src="{% static "js/spice-html5/spicedataview.js" %}"></script>
+        <script src="{% static "js/spice-html5/spicetype.js" %}"></script>
+        <script src="{% static "js/spice-html5/spicemsg.js" %}"></script>
+        <script src="{% static "js/spice-html5/wire.js" %}"></script>
+        <script src="{% static "js/spice-html5/spiceconn.js" %}"></script>
+        <script src="{% static "js/spice-html5/display.js" %}"></script>
+        <script src="{% static "js/spice-html5/main.js" %}"></script>
+        <script src="{% static "js/spice-html5/inputs.js" %}"></script>
+        <script src="{% static "js/spice-html5/webm.js" %}"></script>
+        <script src="{% static "js/spice-html5/playback.js" %}"></script>
+        <script src="{% static "js/spice-html5/simulatecursor.js" %}"></script>
+        <script src="{% static "js/spice-html5/cursor.js" %}"></script>
+        <script src="{% static "js/spice-html5/thirdparty/jsbn.js" %}"></script>
+        <script src="{% static "js/spice-html5/thirdparty/rsa.js" %}"></script>
+        <script src="{% static "js/spice-html5/thirdparty/prng4.js" %}"></script>
+        <script src="{% static "js/spice-html5/thirdparty/rng.js" %}"></script>
+        <script src="{% static "js/spice-html5/thirdparty/sha1.js" %}"></script>
+        <script src="{% static "js/spice-html5/ticket.js" %}"></script>
+        <script src="{% static "js/spice-html5/resize.js" %}"></script>
+        <script src="{% static "js/spice-html5/filexfer.js" %}"></script>
+        <script src="{% static "js/spice-html5/port.js" %}"></script>
+
+        <link rel="stylesheet" type="text/css" href="{% static "js/spice-html5/spice.css" %}" />
+
+{% endblock %}
+
+
+{% block content %}
+        <div id="spice-area">
+            <div id="spice-screen" class="spice-screen"></div>
+        </div>
+
+        <div id="message-div" class="spice-message"></div>
+
+        <div id="debug-div">
+        <!-- If DUMPXXX is turned on, dumped images will go here -->
+        </div>
+{% endblock %}
+
+{% block foot %}
+    <script>
+            var host = null, port = null;
+            var sc;
+
+            function spice_set_cookie(name, value, days) {
+                var date, expires;
+                date = new Date();
+                date.setTime(date.getTime() + (days*24*60*60*1000));
+                expires = "; expires=" + date.toGMTString();
+                document.cookie = name + "=" + value + expires + "; path=/";
+            };
+
+            function spice_query_var(name, defvalue) {
+                var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+                return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : defvalue;
+            }
+
+            function spice_error(e)
+            {
+                console.log(e);
+                disconnect();
+                if (e.message !== undefined) {
+                    log_error(e.message);
+                }
+                else {
+                    log_error('Unknown error');
+                }
+            }
+
+            function connect()
+            {
+                var host, port, password, scheme = "ws://", uri;
+
+                // By default, use the host and port of server that served this file
+                //host = spice_query_var('host', window.location.hostname);
+                host = '{{ ws_host| safe }}';
+
+                // Note that using the web server port only makes sense
+                //  if your web server has a reverse proxy to relay the WebSocket
+                //  traffic to the correct destination port.
+                var default_port = window.location.port;
+                if (!default_port) {
+                    if (window.location.protocol == 'http:') {
+                        default_port = 80;
+                    }
+                    else if (window.location.protocol == 'https:') {
+                        default_port = 443;
+                    }
+                }
+                //port = spice_query_var('port', default_port);
+                port = '{{ ws_port| safe }}';
+                if (window.location.protocol == 'https:') {
+                    scheme = "wss://";
+                }
+
+                // If a token variable is passed in, set the parameter in a cookie.
+                // This is used by nova-spiceproxy.
+                token = spice_query_var('token', null);
+                if (token) {
+                    spice_set_cookie('token', token, 1)
+                }
+
+                //password = spice_query_var('password', '');
+                password = '{{ console_passwd | safe }}';
+                path = spice_query_var('path', 'websockify');
+
+                if ((!host) || (!port)) {
+                    console.log("must specify host and port in URL");
+                    return;
+                }
+
+                if (sc) {
+                    sc.stop();
+                }
+
+                uri = scheme + host + ":" + port;
+
+                if (path) {
+                  uri += path[0] == '/' ? path : ('/' + path);
+                }
+
+                try
+                {
+                    sc = new SpiceMainConn({uri: uri, screen_id: "spice-screen", dump_id: "debug-div",
+                                message_id: "message-div", password: password, onerror: spice_error, onagent: agent_connected });
+                }
+                catch (e)
+                {
+                    alert(e.toString());
+                    disconnect();
+                }
+
+
+            }
+
+            function disconnect()
+            {
+                console.log(">> disconnect");
+                if (sc) {
+                    sc.stop();
+                }
+                if (window.File && window.FileReader && window.FileList && window.Blob)
+                {
+                    var spice_xfer_area = document.getElementById('spice-xfer-area');
+                    document.getElementById('spice-area').removeChild(spice_xfer_area);
+                    document.getElementById('spice-area').removeEventListener('dragover', handle_file_dragover, false);
+                    document.getElementById('spice-area').removeEventListener('drop', handle_file_drop, false);
+                }
+                console.log("<< disconnect");
+            }
+
+            function agent_connected(sc)
+            {
+                window.addEventListener('resize', handle_resize);
+                window.spice_connection = this;
+
+                resize_helper(this);
+
+                if (window.File && window.FileReader && window.FileList && window.Blob)
+                {
+                    var spice_xfer_area = document.createElement("div");
+                    spice_xfer_area.setAttribute('id', 'spice-xfer-area');
+                    document.getElementById('spice-area').appendChild(spice_xfer_area);
+                    document.getElementById('spice-area').addEventListener('dragover', handle_file_dragover, false);
+                    document.getElementById('spice-area').addEventListener('drop', handle_file_drop, false);
+                }
+                else
+                {
+                    console.log("File API is not supported");
+                }
+            }
+
+            function sendCtrlAltFN(f) {
+                if (sc && sc.inputs && sc.inputs.state === "ready"){
+                    var keys_code=[KEY_F1,KEY_F2,KEY_F3,KEY_F4,KEY_F5,KEY_F6,KEY_F7,KEY_F8,KEY_F9,KEY_F10,KEY_F11,KEY_F12];
+
+                    if (keys_code[f]==undefined) {
+                        return;
+                    }
+                    var key = new SpiceMsgcKeyDown();
+                    var msg = new SpiceMiniData();
+
+                    update_modifier(true, KEY_LCtrl, sc);
+                    update_modifier(true, KEY_Alt, sc);
+
+                    key.code = keys_code[f];
+                    msg.build_msg(SPICE_MSGC_INPUTS_KEY_DOWN, key);
+                    sc.inputs.send_msg(msg);
+                    msg.build_msg(SPICE_MSGC_INPUTS_KEY_UP, key);
+                    sc.inputs.send_msg(msg);
+
+                    if(Ctrl_state == false) update_modifier(false, KEY_LCtrl, sc);
+                    if(Alt_state == false) update_modifier(false, KEY_Alt, sc);
+                }
+            }
+
+            function fullscreen() {
+                var screen=document.getElementById('spice-area');
+                if(screen.requestFullscreen) {
+                    screen.requestFullscreen();
+                } else if(screen.mozRequestFullScreen) {
+                    screen.mozRequestFullScreen();
+                } else if(screen.webkitRequestFullscreen) {
+                    screen.webkitRequestFullscreen();
+                } else if(screen.msRequestFullscreen) {
+                    screen.msRequestFullscreen();
+                }
+            }
+
+            /* SPICE port event listeners
+            window.addEventListener('spice-port-data', function(event) {
+                // Here we convert data to text, but really we can obtain binary data also
+                var msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
+                DEBUG > 0 && console.log('SPICE port', event.detail.channel.portName, 'message text:', msg_text);
+            });
+
+            window.addEventListener('spice-port-event', function(event) {
+                DEBUG > 0 && console.log('SPICE port', event.detail.channel.portName, 'event data:', event.detail.spiceEvent);
+            });
+            */
+            document.getElementById("fullscreen_button").addEventListener('click', fullscreen);
+            connect();
+        </script>
+{% endblock %}

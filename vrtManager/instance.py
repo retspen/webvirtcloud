@@ -217,13 +217,14 @@ class wvmInstance(wvmConnect):
             result = []
             for net in ctx.xpath('/domain/devices/interface'):
                 mac_host = net.xpath('mac/@address')[0]
-                nic_host = net.xpath('source/@network|source/@bridge|source/@dev|target/@dev')[0]
+                network_host = net.xpath('source/@network|source/@bridge|source/@dev')[0]
+                target_host = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
                 try:
-                    net = self.get_network(nic_host)
+                    net = self.get_network(network_host)
                     ip = get_mac_ipaddr(net, mac_host)
-                except:
+                except libvirtError as e:
                     ip = None
-                result.append({'mac': mac_host, 'nic': nic_host, 'ip': ip})
+                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host,'ip': ip})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=networks)
@@ -303,7 +304,7 @@ class wvmInstance(wvmConnect):
                             disk.insert(2, src_media)
                             return True
 
-        storages = self.get_storages()
+        storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
@@ -597,7 +598,7 @@ class wvmInstance(wvmConnect):
 
     def get_iso_media(self):
         iso = []
-        storages = self.get_storages()
+        storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
@@ -746,12 +747,13 @@ class wvmInstance(wvmConnect):
         tree = ElementTree.fromstring(xml)
 
         for num, interface in enumerate(tree.findall('devices/interface')):
+            net = self.get_network(network_data['net-source-' + str(num)])
             if interface.get('type') == 'bridge':
                 source = interface.find('mac')
                 source.set('address', network_data['net-mac-' + str(num)])
                 source = interface.find('source')
-                source.set('bridge', network_data['net-source-' + str(num)])
-
+                source.set('bridge', net.bridgeName())
+                source.set('network', net.name())
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 

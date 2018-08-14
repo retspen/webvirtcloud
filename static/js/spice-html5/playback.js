@@ -29,8 +29,6 @@ function SpicePlaybackConn()
     this.queue = new Array();
     this.append_okay = false;
     this.start_time = 0;
-    this.skip_until = 0;
-    this.gap_time = 0;
 }
 
 SpicePlaybackConn.prototype = Object.create(SpiceConn.prototype);
@@ -46,7 +44,7 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
     {
         var start = new SpiceMsgPlaybackStart(msg.data);
 
-        DEBUG > 0 && console.log("PlaybackStart; frequency " + start.frequency);
+        PLAYBACK_DEBUG > 0 && console.log("PlaybackStart; frequency " + start.frequency);
 
         if (start.frequency != OPUS_FREQUENCY)
         {
@@ -72,6 +70,7 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
             this.media_source.spiceconn = this;
 
             this.audio = document.createElement("audio");
+            this.audio.spiceconn = this;
             this.audio.setAttribute('autoplay', true);
             this.audio.src = window.URL.createObjectURL(this.media_source);
             document.getElementById(this.parent.screen_id).appendChild(this.audio);
@@ -90,55 +89,58 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
     {
         var data = new SpiceMsgPlaybackData(msg.data);
 
-        // If this packet has the same time as the last, just bump up by one.
-        if (this.last_data_time && data.time <= this.last_data_time)
+        if (! this.source_buffer)
+            return true;
+
+        if (this.audio.readyState >= 3 && this.audio.buffered.length > 1 &&
+            this.audio.currentTime == this.audio.buffered.end(0) &&
+            this.audio.currentTime < this.audio.buffered.start(this.audio.buffered.length - 1))
         {
-            // FIXME - this is arguably wrong.  But delaying the transmission was worse,
-            //          in initial testing.  Could use more research.
-            DEBUG > 1 && console.log("Hacking time of " + data.time + " to " + this.last_data_time + 1);
-            data.time = this.last_data_time + 1;
+            console.log("Audio underrun: we appear to have fallen behind; advancing to " +
+                this.audio.buffered.start(this.audio.buffered.length - 1));
+            this.audio.currentTime = this.audio.buffered.start(this.audio.buffered.length - 1);
         }
 
-        /* Gap detection:  If there has been a delay since our last packet, then audio must
-             have paused.  Handling that gets tricky.  In Chrome, you can seek forward,
-             but you cannot in Firefox.  And seeking forward in Chrome is nice, as it keeps
-             Chrome from being overly cautious in it's buffer strategy.
+        /* Around version 45, Firefox started being very particular about the
+           time stamps put into the Opus stream.  The time stamps from the Spice server are
+           somewhat irregular.  They mostly arrive every 10 ms, but sometimes it is 11, or sometimes
+           with two time stamps the same in a row.  The previous logic resulted in fuzzy and/or
+           distorted audio streams in Firefox in a row.
 
-             So we do two things.  First, we seek forward.  Second, we compute how much of a gap
-             there would have been, and essentially eliminate it.
+           In theory, the sequence mode should be appropriate for us, but as of 09/27/2016,
+           I was unable to make sequence mode work with Firefox.
+
+           Thus, we end up with an inelegant hack.  Essentially, we force every packet to have
+           a 10ms time delta, unless there is an obvious gap in time stream, in which case we
+           will resync.
         */
-        if (this.last_data_time && data.time >= (this.last_data_time + GAP_DETECTION_THRESHOLD))
+
+        if (this.start_time != 0 && data.time != (this.last_data_time + EXPECTED_PACKET_DURATION))
         {
-            this.skip_until = data.time;
-            this.gap_time = (data.time - this.start_time) - 
-              (this.source_buffer.buffered.end(this.source_buffer.buffered.end.length - 1) * 1000.0).toFixed(0);
+            if (Math.abs(data.time - (EXPECTED_PACKET_DURATION + this.last_data_time)) < MAX_CLUSTER_TIME)
+            {
+                PLAYBACK_DEBUG > 1 && console.log("Hacking time of " + data.time + " to " +
+                                      (this.last_data_time + EXPECTED_PACKET_DURATION));
+                data.time = this.last_data_time + EXPECTED_PACKET_DURATION;
+            }
+            else
+            {
+                PLAYBACK_DEBUG > 1 && console.log("Apparent gap in audio time; now is " + data.time + " last was " + this.last_data_time);
+            }
         }
 
         this.last_data_time = data.time;
 
-
-        DEBUG > 1 && console.log("PlaybackData; time " + data.time + "; length " + data.data.byteLength);
-
-        if (! this.source_buffer)
-            return true;
+        PLAYBACK_DEBUG > 1 && console.log("PlaybackData; time " + data.time + "; length " + data.data.byteLength);
 
         if (this.start_time == 0)
             this.start_playback(data);
 
-        else if (data.time - this.cluster_time >= MAX_CLUSTER_TIME || this.skip_until > 0)
+        else if (data.time - this.cluster_time >= MAX_CLUSTER_TIME)
             this.new_cluster(data);
 
         else
             this.simple_block(data, false);
-
-        if (this.skip_until > 0)
-        {
-            this.audio.currentTime = (this.skip_until - this.start_time - this.gap_time) / 1000.0;
-            this.skip_until = 0;
-        }
-
-        if (this.audio.paused)
-            this.audio.play();
 
         return true;
     }
@@ -156,6 +158,39 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
 
     if (msg.type == SPICE_MSG_PLAYBACK_STOP)
     {
+        PLAYBACK_DEBUG > 0 && console.log("PlaybackStop");
+        if (this.source_buffer)
+        {
+            document.getElementById(this.parent.screen_id).removeChild(this.audio);
+            window.URL.revokeObjectURL(this.audio.src);
+
+            delete this.source_buffer;
+            delete this.media_source;
+            delete this.audio;
+
+            this.append_okay = false;
+            this.queue = new Array();
+            this.start_time = 0;
+
+            return true;
+        }
+    }
+
+    if (msg.type == SPICE_MSG_PLAYBACK_VOLUME)
+    {
+        this.known_unimplemented(msg.type, "Playback Volume");
+        return true;
+    }
+
+    if (msg.type == SPICE_MSG_PLAYBACK_MUTE)
+    {
+        this.known_unimplemented(msg.type, "Playback Mute");
+        return true;
+    }
+
+    if (msg.type == SPICE_MSG_PLAYBACK_LATENCY)
+    {
+        this.known_unimplemented(msg.type, "Playback Latency");
         return true;
     }
 
@@ -167,10 +202,13 @@ SpicePlaybackConn.prototype.start_playback = function(data)
     this.start_time = data.time;
 
     var h = new webm_Header();
+    var te = new webm_AudioTrackEntry;
+    var t = new webm_Tracks(te);
 
-    var mb = new ArrayBuffer(h.buffer_size())
+    var mb = new ArrayBuffer(h.buffer_size() + t.buffer_size())
 
     this.bytes_written = h.to_buffer(mb);
+    this.bytes_written = t.to_buffer(mb, this.bytes_written);
 
     this.source_buffer.addEventListener('error', handle_sourcebuffer_error, false);
     this.source_buffer.addEventListener('updateend', handle_append_buffer_done, false);
@@ -183,7 +221,7 @@ SpicePlaybackConn.prototype.new_cluster = function(data)
 {
     this.cluster_time = data.time;
 
-    var c = new webm_Cluster(data.time - this.start_time - this.gap_time);
+    var c = new webm_Cluster(data.time - this.start_time);
 
     var mb = new ArrayBuffer(c.buffer_size());
     this.bytes_written += c.to_buffer(mb);
@@ -222,6 +260,12 @@ function handle_source_open(e)
         p.log_err('Codec ' + SPICE_PLAYBACK_CODEC + ' not available.');
         return;
     }
+
+    if (PLAYBACK_DEBUG > 0)
+        playback_handle_event_debug.call(this, e);
+
+    listen_for_audio_events(p);
+
     p.source_buffer.spiceconn = p;
     p.source_buffer.mode = "segments";
 
@@ -245,12 +289,38 @@ function handle_source_closed(e)
     p.log_err('Audio source unexpectedly closed.');
 }
 
-function handle_append_buffer_done(b)
+function condense_playback_queue(queue)
+{
+    if (queue.length == 1)
+        return queue.shift();
+
+    var len = 0;
+    var i = 0;
+    for (i = 0; i < queue.length; i++)
+        len += queue[i].byteLength;
+
+    var mb = new ArrayBuffer(len);
+    var tmp = new Uint8Array(mb);
+    len = 0;
+    for (i = 0; i < queue.length; i++)
+    {
+        tmp.set(new Uint8Array(queue[i]), len);
+        len += queue[i].byteLength;
+    }
+    queue.length = 0;
+    return mb;
+}
+
+function handle_append_buffer_done(e)
 {
     var p = this.spiceconn;
+
+    if (PLAYBACK_DEBUG > 1)
+        playback_handle_event_debug.call(this, e);
+
     if (p.queue.length > 0)
     {
-        var mb = p.queue.shift();
+        var mb = condense_playback_queue(p.queue);
         playback_append_buffer(p, mb);
     }
     else
@@ -275,4 +345,54 @@ function playback_append_buffer(p, b)
     {
         p.log_err("Error invoking appendBuffer: " + e.message);
     }
+}
+
+function playback_handle_event_debug(e)
+{
+    var p = this.spiceconn;
+    if (p.audio)
+    {
+        if (PLAYBACK_DEBUG > 0 || p.audio.buffered.len > 1)
+            console.log(p.audio.currentTime + ": event " + e.type +
+                dump_media_element(p.audio));
+    }
+
+    if (PLAYBACK_DEBUG > 1 && p.media_source)
+        console.log("  media_source " + dump_media_source(p.media_source));
+
+    if (PLAYBACK_DEBUG > 1 && p.source_buffer)
+        console.log("  source_buffer " + dump_source_buffer(p.source_buffer));
+
+    if (PLAYBACK_DEBUG > 0 || p.queue.length > 1)
+        console.log('  queue len ' + p.queue.length + '; append_okay: ' + p.append_okay);
+}
+
+function playback_debug_listen_for_one_event(name)
+{
+    this.addEventListener(name, playback_handle_event_debug);
+}
+
+function listen_for_audio_events(spiceconn)
+{
+    var audio_0_events = [
+        "abort", "error"
+    ];
+
+    var audio_1_events = [
+        "loadstart", "suspend", "emptied", "stalled", "loadedmetadata", "loadeddata", "canplay",
+        "canplaythrough", "playing", "waiting", "seeking", "seeked", "ended", "durationchange",
+        "timeupdate", "play", "pause", "ratechange"
+    ];
+
+    var audio_2_events = [
+        "progress",
+        "resize",
+        "volumechange"
+    ];
+
+    audio_0_events.forEach(playback_debug_listen_for_one_event, spiceconn.audio);
+    if (PLAYBACK_DEBUG > 0)
+        audio_1_events.forEach(playback_debug_listen_for_one_event, spiceconn.audio);
+    if (PLAYBACK_DEBUG > 1)
+        audio_2_events.forEach(playback_debug_listen_for_one_event, spiceconn.audio);
 }

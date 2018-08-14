@@ -96,7 +96,7 @@ SpiceWireReader.prototype =
             this.callback.call(this.sc, mb,
                         this.saved_msg_header || undefined);
         }
-        
+
     },
 
     request: function(n)

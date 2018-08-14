@@ -20,10 +20,10 @@
 
 /*----------------------------------------------------------------------------
 **  SpiceDataView
-** FIXME FIXME 
+** FIXME FIXME
 **    This is used because Firefox does not have DataView yet.
-**    We should use DataView if we have it, because it *has* to 
-**    be faster than this code 
+**    We should use DataView if we have it, because it *has* to
+**    be faster than this code
 **--------------------------------------------------------------------------*/
 function SpiceDataView(buffer, byteOffset, byteLength)
 {
@@ -63,7 +63,7 @@ SpiceDataView.prototype = {
             high = 2;
         }
 
-        return (this.getUint16(byteOffset + high, littleEndian) << 16) | 
+        return (this.getUint16(byteOffset + high, littleEndian) << 16) |
                 this.getUint16(byteOffset + low, littleEndian);
     },
     getUint64: function (byteOffset, littleEndian)

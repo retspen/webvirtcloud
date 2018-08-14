@@ -469,5 +469,5 @@ SpiceSurface.prototype =
     },
 }
 
-/* FIXME - SpiceImage  types lz_plt, jpeg, zlib_glz, and jpeg_alpha are 
+/* FIXME - SpiceImage  types lz_plt, jpeg, zlib_glz, and jpeg_alpha are
            completely unimplemented */

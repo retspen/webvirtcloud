@@ -193,10 +193,9 @@ sudo systemctl restart nginx && systemctl restart supervisord
 And finally, check everything is running:
 ```bash
 sudo supervisorctl status
-
-novncd                           RUNNING    pid 24186, uptime 2:59:14
-webvirtcloud                     RUNNING    pid 24185, uptime 2:59:14
-
+gstfsd             RUNNING   pid 24662, uptime 6:01:40
+novncd             RUNNING   pid 24661, uptime 6:01:40
+webvirtcloud       RUNNING   pid 24660, uptime 6:01:40
 ```
 
 #### Apache mod_wsgi configuration
