@@ -125,6 +125,18 @@
             rfb.sendCredentials({ password: document.getElementById('password_input').value });
             return false;
         }
+        function sendCtrlAltFN(f) {
+            var keys_code=[0xFFBE,0xFFBF,0xFFC0,0xFFC1,0xFFC2,0xFFC3,0xFFC4,0xFFC5,0xFFC6,0xFFC7,0xFFC8,0xFFC9];
+            if (keys_code[f]==undefined) {
+                return;
+            }
+            rfb.sendKey(0xFFE3, 'down');
+            rfb.sendKey(0xFFE9, 'down');
+            rfb.sendKey(keys_code[f], 'down');
+            rfb.sendKey(keys_code[f], 'up');
+            rfb.sendKey(0xFFE9, 'up');
+            rfb.sendKey(0xFFE3, 'up');
+        }
         function sendCtrlAltDel() {
             rfb.sendCtrlAltDel();
             return false;
@@ -244,10 +256,10 @@
             }
             url += '/' + path;
 
-//            rfb = new RFB(document.body, url,
- //                         { repeaterID: WebUtil.getConfigVar('repeaterID', ''),
-   //                         shared: WebUtil.getConfigVar('shared', true),
-     //                       credentials: { password: password } });
+          //rfb = new RFB(document.body, url,
+          //             { repeaterID: WebUtil.getConfigVar('repeaterID', ''),
+          //               shared: WebUtil.getConfigVar('shared', true),
+          //               credentials: { password: password } });
             rfb = new RFB(document.getElementById('vnc_container'), url,
                          { repeaterID: WebUtil.getConfigVar('repeaterID', ''),
                            shared: WebUtil.getConfigVar('shared', true),

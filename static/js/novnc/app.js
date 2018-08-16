@@ -6592,6 +6592,19 @@ RFB.prototype = {
         this._xvpOp(1, 4);
     },
 
+    sendCtrlAltFN: function (f) {
+        var keys_code=[0xFFBE,0xFFBF,0xFFC0,0xFFC1,0xFFC2,0xFFC3,0xFFC4,0xFFC5,0xFFC6,0xFFC7,0xFFC8,0xFFC9];
+        if (keys_code[f]==undefined) {
+            return;
+        }
+        rfb.sendKey(0xFFE3, 'down');
+        rfb.sendKey(0xFFE9, 'down');
+        rfb.sendKey(keys_code[f], 'down');
+        rfb.sendKey(keys_code[f], 'up');
+        rfb.sendKey(0xFFE9, 'up');
+        rfb.sendKey(0xFFE3, 'up');
+    },
+
     // Send a key press. If 'down' is not specified then send a down key
     // followed by an up key.
     sendKey: function (keysym, code, down) {
