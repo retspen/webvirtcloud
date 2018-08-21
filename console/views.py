@@ -20,6 +20,7 @@ def console(request):
 
     if request.method == 'GET':
         token = request.GET.get('token', '')
+        view_type = request.GET.get('view', 'lite')
 
     try:
         temptoken = token.split('-', 1)
@@ -45,13 +46,12 @@ def console(request):
     if ':' in ws_host:
         ws_host = re.sub(':[0-9]+', '', ws_host)
 
-    if console_type == 'vnc':
-        response = render(request, 'console-vnc.html', locals())
-    elif console_type == 'spice':
-        response = render(request, 'console-spice.html', locals())
+    console_page = "console-" + console_type + "-" + view_type + ".html"
+    if console_type == 'vnc' or console_type == 'spice':
+        response = render(request, console_page, locals())
     else:
         console_error = "Console type: %s no support" % console_type
-        response = render(request, 'console-vnc.html', locals())
+        response = render(request, 'console-vnc-lite.html', locals())
 
     response.set_cookie('token', token)
     return response

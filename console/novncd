@@ -121,7 +121,7 @@ def get_connection_infos(token):
         console_port = conn.get_console_port()
         console_socket = conn.get_console_socket()
     except Exception, e:
-        logging.error('Fail to retrieve console connexion infos for token %s : %s' % (token, e))
+        logging.error('Fail to retrieve console connection infos for token %s : %s' % (token, e))
         raise
     return (connhost, connport, connuser, conntype, console_host,
             console_port, console_socket)
@@ -139,7 +139,7 @@ class CompatibilityMixIn(object):
         (connhost, connport, connuser, conntype, console_host, console_port,
          console_socket) = get_connection_infos(token)
 
-        cnx_debug_msg = "Connexion infos :\n"
+        cnx_debug_msg = "Connection infos :\n"
         cnx_debug_msg += "- connhost : '%s'\n" % connhost
         cnx_debug_msg += "- connport : '%s'\n" % connport
         cnx_debug_msg += "- connuser : '%s'\n" % connuser
@@ -159,7 +159,7 @@ class CompatibilityMixIn(object):
             if conntype != CONN_SSH:
                 self.msg("Need a tunnel to access console but can't mount " +
                          "one because it's not a SSH host")
-                raise
+                raise Exception(self.msg)
             try:
                 # generate a string with all placeholders to avoid TypeErrors
                 # in sprintf
@@ -175,7 +175,7 @@ class CompatibilityMixIn(object):
             except Exception as e:
                 self.msg("Fail to open tunnel : %s" % e)
                 raise
-            self.msg("Tunnel openned")
+            self.msg("Tunnel opened")
         else:
             # Direct access
             self.msg("connecting to: %s:%s" % (connhost, console_port))

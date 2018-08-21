@@ -86,25 +86,16 @@ def get_xml_path(xml, path=None, func=None):
     of a passed function (receives xpathContext as its only arg)
     """
     doc = None
-    #ctx = None
     result = None
 
-    #try:
     doc = etree.fromstring(xml)
-    #ctx = doc.xpathNewContext()
     if path:
         result = get_xpath(doc, path)
-
     elif func:
         result = func(doc)
 
     else:
         raise ValueError("'path' or 'func' is required.")
-    #finally:
-        #if doc:
-        #    doc.freeDoc()
-        #if ctx:
-        #    ctx.xpathFreeContext()
     return result
 
 

@@ -52,7 +52,7 @@ class AddStgPool(forms.Form):
 
 
 class AddImage(forms.Form):
-    name = forms.CharField(max_length=20)
+    name = forms.CharField(max_length=120)
     format = forms.ChoiceField(required=True, choices=(('qcow2', 'qcow2 (recommended)'),
                                                        ('qcow', 'qcow'),
                                                        ('raw', 'raw')))
@@ -64,14 +64,14 @@ class AddImage(forms.Form):
         have_symbol = re.match('^[a-zA-Z0-9._-]+$', name)
         if not have_symbol:
             raise forms.ValidationError(_('The image name must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The image name must not exceed 20 characters'))
+        elif len(name) > 120:
+            raise forms.ValidationError(_('The image name must not exceed 120 characters'))
         return name
 
 
 class CloneImage(forms.Form):
-    name = forms.CharField(max_length=20)
-    image = forms.CharField(max_length=20)
+    name = forms.CharField(max_length=120)
+    image = forms.CharField(max_length=120)
     convert = forms.BooleanField(required=False)
     format = forms.ChoiceField(required=False, choices=(('qcow2', 'qcow2 (recommended)'),
                                                         ('qcow', 'qcow'),
@@ -83,6 +83,6 @@ class CloneImage(forms.Form):
         have_symbol = re.match('^[a-zA-Z0-9._-]+$', name)
         if not have_symbol:
             raise forms.ValidationError(_('The image name must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The image name must not exceed 20 characters'))
+        elif len(name) > 120:
+            raise forms.ValidationError(_('The image name must not exceed 120 characters'))
         return name

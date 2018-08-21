@@ -71,7 +71,7 @@ simulate_cursor: function (spicecursor, cursor, screen, pngstr)
 
     if (window.getComputedStyle(screen, null).cursor == 'auto')
     {
-        SpiceSimulateCursor.unknown_cursor(cursor_sha, 
+        SpiceSimulateCursor.unknown_cursor(cursor_sha,
             SpiceSimulateCursor.create_icondir(cursor.header.width, cursor.header.height,
             cursor.data.byteLength, cursor.header.hot_spot_x, cursor.header.hot_spot_y) + pngstr);
 
@@ -99,7 +99,7 @@ simulate_cursor: function (spicecursor, cursor, screen, pngstr)
         spicecursor.spice_simulated_cursor.style.pointerEvents = "none";
     }
     else
-    { 
+    {
         if (spicecursor.spice_simulated_cursor)
         {
             spicecursor.spice_simulated_cursor.spice_screen.removeChild(spicecursor.spice_simulated_cursor);
@@ -162,7 +162,7 @@ create_icondir: function (width, height, bytes, hot_x, hot_y)
 
 };
 
-SpiceSimulateCursor.ICONDIR.prototype = 
+SpiceSimulateCursor.ICONDIR.prototype =
 {
     to_buffer: function(a, at)
     {

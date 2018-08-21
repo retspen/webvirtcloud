@@ -23,7 +23,7 @@
 **      This is the base Javascript class for establishing and
 **  managing a connection to a Spice Server.
 **  It is used to provide core functionality to the Spice main,
-**  display, inputs, and cursor channels.  See main.js for 
+**  display, inputs, and cursor channels.  See main.js for
 **  usage.
 **--------------------------------------------------------------------------*/
 function SpiceConn(o)
@@ -119,20 +119,36 @@ SpiceConn.prototype =
 
         msg.connection_id = this.connection_id;
         msg.channel_type = this.type;
-        // FIXME - we're not setting a channel_id...
+        msg.channel_id = this.chan_id;
+
         msg.common_caps.push(
             (1 << SPICE_COMMON_CAP_PROTOCOL_AUTH_SELECTION) |
             (1 << SPICE_COMMON_CAP_MINI_HEADER)
             );
 
         if (msg.channel_type == SPICE_CHANNEL_PLAYBACK)
-            msg.channel_caps.push(
-                (1 << SPICE_PLAYBACK_CAP_OPUS)
-            );
+        {
+            var caps = 0;
+            if ('MediaSource' in window && MediaSource.isTypeSupported(SPICE_PLAYBACK_CODEC))
+                caps |= (1 << SPICE_PLAYBACK_CAP_OPUS);
+            msg.channel_caps.push(caps);
+        }
         else if (msg.channel_type == SPICE_CHANNEL_MAIN)
+        {
             msg.channel_caps.push(
                 (1 << SPICE_MAIN_CAP_AGENT_CONNECTED_TOKENS)
             );
+        }
+        else if (msg.channel_type == SPICE_CHANNEL_DISPLAY)
+        {
+            var caps =  (1 << SPICE_DISPLAY_CAP_SIZED_STREAM) |
+                        (1 << SPICE_DISPLAY_CAP_STREAM_REPORT) |
+                        (1 << SPICE_DISPLAY_CAP_MULTI_CODEC) |
+                        (1 << SPICE_DISPLAY_CAP_CODEC_MJPEG);
+            if ('MediaSource' in window && MediaSource.isTypeSupported(SPICE_VP8_CODEC))
+                caps |= (1 << SPICE_DISPLAY_CAP_CODEC_VP8);
+            msg.channel_caps.push(caps);
+        }
 
         hdr.size = msg.buffer_size();
 
@@ -180,8 +196,11 @@ SpiceConn.prototype =
 
                 if (msg.type > 500)
                 {
-                    alert("Something has gone very wrong; we think we have message of type " + msg.type);
-                    debugger;
+                    if (DEBUG > 0)
+                    {
+                        alert("Something has gone very wrong; we think we have message of type " + msg.type);
+                        debugger;
+                    }
                 }
 
                 if (msg.size == 0)
@@ -329,6 +348,7 @@ SpiceConn.prototype =
     process_message: function(msg)
     {
         var rc;
+        var start = Date.now();
         DEBUG > 0 && console.log("<< hdr " + this.channel_type() + " type " + msg.type + " size " + (msg.data && msg.data.byteLength));
         rc = this.process_common_messages(msg);
         if (! rc)
@@ -337,10 +357,10 @@ SpiceConn.prototype =
             {
                 rc = this.process_channel_message(msg);
                 if (! rc)
-                    this.log_warn(this.type + ": Unknown message type " + msg.type + "!");
+                    this.log_warn(this.channel_type() + ": Unknown message type " + msg.type + "!");
             }
             else
-                this.log_err(this.type + ": No message handlers for this channel; message " + msg.type);
+                this.log_err(this.channel_type() + ": No message handlers for this channel; message " + msg.type);
         }
 
         if (this.msgs_until_ack !== undefined && this.ack_window)
@@ -356,6 +376,9 @@ SpiceConn.prototype =
             }
         }
 
+        var delta = Date.now() - start;
+        if (DEBUG > 0 || delta > GAP_DETECTION_THRESHOLD)
+            console.log("delta " + this.channel_type() + ":" + msg.type + " " + delta);
         return rc;
     },
 
@@ -369,6 +392,20 @@ SpiceConn.prototype =
             return "inputs";
         else if (this.type == SPICE_CHANNEL_CURSOR)
             return "cursor";
+        else if (this.type == SPICE_CHANNEL_PLAYBACK)
+            return "playback";
+        else if (this.type == SPICE_CHANNEL_RECORD)
+            return "record";
+        else if (this.type == SPICE_CHANNEL_TUNNEL)
+            return "tunnel";
+        else if (this.type == SPICE_CHANNEL_SMARTCARD)
+            return "smartcard";
+        else if (this.type == SPICE_CHANNEL_USBREDIR)
+            return "usbredir";
+        else if (this.type == SPICE_CHANNEL_PORT)
+            return "port";
+        else if (this.type == SPICE_CHANNEL_WEBDAV)
+            return "webdav";
         return "unknown-" + this.type;
 
     },

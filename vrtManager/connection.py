@@ -356,12 +356,13 @@ class wvmConnect(object):
         """Return KVM capabilities."""
         return util.is_kvm_available(self.get_cap_xml())
 
-    def get_storages(self):
+    def get_storages(self, only_actives=False):
         storages = []
         for pool in self.wvm.listStoragePools():
             storages.append(pool)
-        for pool in self.wvm.listDefinedStoragePools():
-            storages.append(pool)
+        if not only_actives:
+            for pool in self.wvm.listDefinedStoragePools():
+                storages.append(pool)
         return storages
 
     def get_networks(self):
@@ -398,6 +399,10 @@ class wvmConnect(object):
     def get_image_formats(self):
         """Get available image formats"""
         return [ 'raw', 'qcow', 'qcow2' ]
+
+    def get_file_extensions(self):
+        """Get available image filename extensions"""
+        return [ 'img', 'qcow', 'qcow2' ]
 
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
@@ -443,10 +448,12 @@ class wvmConnect(object):
 
     def get_net_device(self):
         netdevice = []
-        def get_info(ctx):
-            dev_type = util.get_xpath('/device/capability/@type')
-            interface = util.get_xpath('/device/capability/interface')
-            return (dev_type, interface)
+
+        def get_info(doc):
+            dev_type = util.get_xpath(doc, '/device/capability/@type')
+            interface = util.get_xpath(doc, '/device/capability/interface')
+            return dev_type, interface
+
         for dev in self.wvm.listAllDevices(0):
             xml = dev.XMLDesc(0)
             (dev_type, interface) = util.get_xml_path(xml, func=get_info)

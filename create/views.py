@@ -37,12 +37,12 @@ def create_instance(request, compute_id):
                          compute.password,
                          compute.type)
 
-        storages = sorted(conn.get_storages())
+        storages = sorted(conn.get_storages(only_actives=True))
         networks = sorted(conn.get_networks())
         instances = conn.get_instances()
-        get_images = sorted(conn.get_storages_images())
         cache_modes = sorted(conn.get_cache_modes().items())
         mac_auto = util.randomMAC()
+        get_images = sorted(conn.get_storages_images())
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
@@ -74,7 +74,7 @@ def create_instance(request, compute_id):
                 xml = request.POST.get('from_xml', '')
                 try:
                     name = util.get_xml_path(xml, '/domain/name')
-                except util.libxml2.parserError:
+                except util.etree.ParserError:
                     name = None
                 if name in instances:
                     error_msg = _("A virtual machine with this name already exists")

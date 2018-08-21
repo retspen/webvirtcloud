@@ -66,7 +66,8 @@ def computes(request):
                                        hostname=data['hostname'],
                                        type=CONN_TCP,
                                        login=data['login'],
-                                       password=data['password'])
+                                       password=data['password'],
+                                       details=data['details'])
                 new_tcp_host.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:
@@ -79,7 +80,8 @@ def computes(request):
                 new_ssh_host = Compute(name=data['name'],
                                        hostname=data['hostname'],
                                        type=CONN_SSH,
-                                       login=data['login'])
+                                       login=data['login'],
+                                       details=data['details'])
                 new_ssh_host.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:
@@ -93,7 +95,8 @@ def computes(request):
                                        hostname=data['hostname'],
                                        type=CONN_TLS,
                                        login=data['login'],
-                                       password=data['password'])
+                                       password=data['password'],
+                                       details=data['details'])
                 new_tls_host.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:
@@ -123,7 +126,7 @@ def computes(request):
                 compute_edit.hostname = data['hostname']
                 compute_edit.login = data['login']
                 compute_edit.password = data['password']
-                #compute_edit.details = data['details']
+                compute_edit.details = data['details']
                 compute_edit.save()
                 return HttpResponseRedirect(request.get_full_path())
             else:

@@ -169,6 +169,10 @@ class wvmStorage(wvmConnect):
         vol = self.get_volume(name)
         return vol.info()[1]
 
+    def get_volume_allocation(self, name):
+        vol = self.get_volume(name)
+        return vol.info()[2]
+
     def _vol_XMLDesc(self, name):
         vol = self.get_volume(name)
         return vol.XMLDesc(0)
@@ -196,6 +200,7 @@ class wvmStorage(wvmConnect):
             vol_list.append(
                 {'name': volname,
                  'size': self.get_volume_size(volname),
+                 'allocation': self.get_volume_allocation(volname),
                  'type': self.get_volume_type(volname)}
             )
         return vol_list
@@ -216,14 +221,24 @@ class wvmStorage(wvmConnect):
                 <allocation>%s</allocation>
                 <target>
                     <format type='%s'/>
+                     <permissions>
+                        <owner>107</owner>
+                        <group>107</group>
+                        <mode>0644</mode>
+                        <label>virt_image_t</label>
+                    </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
             </volume>""" % (name, size, alloc, vol_fmt)
         self._createXML(xml, metadata)
 
-    def clone_volume(self, name, clone, vol_fmt=None, metadata=False):
+    def clone_volume(self, name, target_file, vol_fmt=None, metadata=False):
         storage_type = self.get_type()
         if storage_type == 'dir':
-            clone += '.img'
+            target_file += '.img'
         vol = self.get_volume(name)
         if not vol_fmt:
             vol_fmt = self.get_volume_type(name)
@@ -234,6 +249,16 @@ class wvmStorage(wvmConnect):
                 <allocation>0</allocation>
                 <target>
                     <format type='%s'/>
+                    <permissions>
+                        <owner>107</owner>
+                        <group>107</group>
+                        <mode>0644</mode>
+                        <label>virt_image_t</label>
+                    </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
-            </volume>""" % (clone, vol_fmt)
+            </volume>""" % (target_file, vol_fmt)
         self._createXMLFrom(xml, vol, metadata)
