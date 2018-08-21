@@ -36,7 +36,7 @@
                             {% endfor %}
                             <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
                             <em>on</em>
-                            <a href="{% url 'overview' compute.id %}"><span class="label label-primary">{{ compute.name}} - {{ compute.hostname }} </span></a>
+                            <a href="{% url 'overview' compute.id %}"><span class="label label-primary">{{ compute.name }}{% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %} </span></a>
                         </div>
                     </div>
                     {% if user_quota_msg %}
