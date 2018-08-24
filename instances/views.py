@@ -357,6 +357,7 @@ def instance(request, compute_id, vname):
         console_type = conn.get_console_type()
         console_port = conn.get_console_port()
         console_keymap = conn.get_console_keymap()
+        console_listen_address = conn.get_console_listen_addr()
         snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k:k['date'])
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
         has_managed_save_image = conn.get_managed_save_image()
@@ -375,6 +376,7 @@ def instance(request, compute_id, vname):
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
         show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
+        clone_instance_auto_name = settings.CLONE_INSTANCE_AUTO_NAME
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -732,6 +734,21 @@ def instance(request, compute_id, vname):
                     
                     for post in request.POST:
                         clone_data[post] = request.POST.get(post, '').strip()
+                    
+                    if clone_instance_auto_name and not clone_data['name']:
+                        auto_vname = clone_free_names[0]
+                        clone_data['name'] = auto_vname
+                        clone_data['clone-net-mac-0'] = _get_dhcp_mac_address(auto_vname)
+                        for post in clone_data.keys():
+                            if post.startswith('disk-'):
+                                disk_name = clone_data[post]
+                                if "-" in disk_name:
+                                    suffix = disk_name.split("-")[-1]
+                                    disk_name = '-'.join((auto_vname, suffix))
+                                else:
+                                    suffix = disk_name.split(".")[-1]
+                                    disk_name = '.'.join((auto_vname, suffix))
+                                clone_data[post] = disk_name
                     
                     if not request.user.is_superuser and quota_msg:
                         msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))

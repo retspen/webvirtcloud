@@ -32,7 +32,7 @@ print(''.join([random.SystemRandom().choice(haystack) for _ in range(50)]))
 ### Install WebVirtCloud panel (Ubuntu)
 
 ```bash
-sudo apt-get -y install git python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
+sudo apt-get -y install git python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py

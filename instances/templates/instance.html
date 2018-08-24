@@ -36,7 +36,7 @@
                             {% endfor %}
                             <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
                             <em>on</em>
-                            <a href="{% url 'overview' compute.id %}"><span class="label label-primary">{{ compute.name}} - {{ compute.hostname }} </span></a>
+                            <a href="{% url 'overview' compute.id %}"><span class="label label-primary">{{ compute.name }}{% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %} </span></a>
                         </div>
                     </div>
                     {% if user_quota_msg %}
@@ -243,6 +243,13 @@
                                                 </a>
                                             </li>
                                             {% endif %}
+                                            {% ifequal status 1 %}
+                                            <li role="presentation">
+                                                <a href="#vdiconsole" aria-controls="vdiconsole" role="tab" data-toggle="tab">
+                                                    {% trans "VDI" %}
+                                                </a>
+                                            </li>
+                                            {% endifequal %}
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
@@ -311,6 +318,13 @@
                                                 <div class="clearfix"></div>
                                             </div>
                                             {% endif %}
+                                            {% ifequal status 1 %}
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vdiconsole">
+                                                    <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
+                                                    <a href="#" class="btn btn-lg btn-success pull-right" id="vdi_url" >{% trans "VDI" %}</a>
+                                                <div class="clearfix"></div>
+                                            </div>
+                                            {% endifequal %}
                                         </div>
                                     </div>
                                 </div>
@@ -860,6 +874,10 @@
                                                                 <button type="button" class="btn btn-sm btn-success pull-left" name="guess-clone-name"
                                                                         onclick="guess_clone_name()" style="margin-top: 2px;">{% trans "Guess" %}</button>
                                                             </div>
+                                                            {% elif clone_instance_auto_name %}
+                                                            <div class="col-sm-4">
+                                                                <input id="clone_instance_auto_name" type="text" class="form-control" name="auto_name" value="Automatic" disabled/>
+                                                            </div>
                                                             {% else %}
                                                             <div class="col-sm-4">
                                                                 <select id="select_clone_name" class="form-control" name="name" size="1"/>
@@ -1027,7 +1045,7 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-3 control-label">{% trans "Is template" %}</label>
                                                             <div class="col-sm-6">
-                                                                <input type="checkbox" name="is_template" value="true" id="is_template" {% if instance.is_template %}checked{% endif %} {% if not request.user.is_superuser %}disabled{% endif %}>
+                                                                <input type="checkbox" name="is_template" value="True" id="is_template" {% if instance.is_template %}checked{% endif %} {% if not request.user.is_superuser %}disabled{% endif %}>
                                                             </div>
                                                         </div>
                                                         {% ifequal status 5 %}
@@ -1210,7 +1228,7 @@
     }
 </script>
 <script>
-   function random_mac(net) {
+    function random_mac(net) {
         $.getJSON('/instance/random_mac_address/', function(data) {
             $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
         });
@@ -1312,6 +1330,12 @@
         if (console_listen_address != '') {
             $("#console_select_listen_address option[value='" + console_listen_address + "']").prop('selected', true);
         }
+    });
+    $(document).ready(function () {
+        // set vdi url
+        $.get("/datasource/vdi/{{ vname }}/", function(data) {
+            $("#vdi_url").attr("href", data);
+        });
     });
 {% if request.user.is_superuser %}
     $(document).ready(function () {

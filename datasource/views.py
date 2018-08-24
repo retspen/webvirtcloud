@@ -1,6 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse, Http404
 from accounts.models import UserInstance, UserSSHKey
+from instances.models import Instance
+from vrtManager.instance import wvmInstance
+from libvirt import libvirtError
 import json
 import socket
 
@@ -62,3 +65,24 @@ def get_client_ip(request):
 def get_hostname_by_ip(ip):
     addrs = socket.gethostbyaddr(ip)
     return addrs[0]
+
+def get_vdi_url(request, vname):
+    instance = Instance.objects.get(name=vname)
+    compute = instance.compute
+    data = {}
+    try:
+        conn = wvmInstance(compute.hostname,
+                           compute.login,
+                           compute.password,
+                           compute.type,
+                           instance.name)
+
+        fqdn = get_hostname_by_ip(compute.hostname)
+        url = "{}://{}:{}".format(conn.get_console_type(), fqdn, conn.get_console_port())
+        response = url
+        return HttpResponse(response)
+    
+    except libvirtError as lib_err:
+        err = "Error getting vdi url for {}".format(vname)
+        raise Http404(err)
+

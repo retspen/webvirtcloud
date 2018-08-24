@@ -56,6 +56,9 @@ def profile(request):
                 if keypublic == key.keypublic:
                     msg = _("Public key already exist")
                     error_messages.append(msg)
+            if '\n' in keypublic or '\r' in keypublic:
+                msg = _("Invalid characters in public key")
+                error_messages.append(msg)
             if not error_messages:
                 addkeypublic = UserSSHKey(user_id=request.user.id, keyname=keyname, keypublic=keypublic)
                 addkeypublic.save()

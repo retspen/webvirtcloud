@@ -275,9 +275,9 @@ class wvmInstance(wvmConnect):
                 device = media.xpath('@device')[0]
                 if device == 'cdrom':
                     try:
-                        dev = media.xpath('target/@dev')
+                        dev = media.xpath('target/@dev')[0]
                         try:
-                            src_fl = media.xpath('source/@file')
+                            src_fl = media.xpath('source/@file')[0]
                             vol = self.get_volume_by_path(src_fl)
                             volume = vol.name()
                             stg = vol.storagePoolLookupByVolume()
