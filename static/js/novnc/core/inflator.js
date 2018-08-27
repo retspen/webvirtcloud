@@ -1,17 +1,5 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = Inflate;
-
-var _inflate = require("../vendor/pako/lib/zlib/inflate.js");
-
-var _zstream = require("../vendor/pako/lib/zlib/zstream.js");
-
-var _zstream2 = _interopRequireDefault(_zstream);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+import { inflateInit, inflate, inflateReset } from "../vendor/pako/lib/zlib/inflate.js";
+import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 
 Inflate.prototype = {
     inflate: function (data, flush, expected) {
@@ -30,21 +18,21 @@ Inflate.prototype = {
 
         this.strm.avail_out = this.chunkSize;
 
-        (0, _inflate.inflate)(this.strm, flush);
+        inflate(this.strm, flush);
 
         return new Uint8Array(this.strm.output.buffer, 0, this.strm.next_out);
     },
 
     reset: function () {
-        (0, _inflate.inflateReset)(this.strm);
+        inflateReset(this.strm);
     }
 };
 
-function Inflate() {
-    this.strm = new _zstream2.default();
+export default function Inflate() {
+    this.strm = new ZStream();
     this.chunkSize = 1024 * 10 * 10;
     this.strm.output = new Uint8Array(this.chunkSize);
     this.windowBits = 5;
 
-    (0, _inflate.inflateInit)(this.strm, this.windowBits);
+    inflateInit(this.strm, this.windowBits);
 };

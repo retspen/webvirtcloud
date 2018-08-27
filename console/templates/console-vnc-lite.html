@@ -63,9 +63,7 @@
     <!-- promise polyfills promises for IE11 -->
     <script src="{% static "js/novnc/vendor/promise.js" %}"></script>
     <!-- ES2015/ES6 modules polyfill -->
-    <script type="module">
-        window._noVNC_has_module_support = true;
-    </script>
+    <script type="module"> window._noVNC_has_module_support = false;</script>
     <script>
         window.addEventListener("load", function() {
             if (window._noVNC_has_module_support) return;
@@ -75,6 +73,7 @@
         });
     </script>
 {% endblock %}
+
 
 {% block content %}
 
@@ -92,9 +91,7 @@
     </div>
     <div id='vnc_container'></div>
 
-{% endblock %}
 
-{% block foot %}
         <!-- actual script modules -->
     <script type="module" crossorigin="anonymous">
         // Load supporting scripts
@@ -125,17 +122,38 @@
             rfb.sendCredentials({ password: document.getElementById('password_input').value });
             return false;
         }
-        function sendCtrlAltFN(f) {
-            var keys_code=[0xFFBE,0xFFBF,0xFFC0,0xFFC1,0xFFC2,0xFFC3,0xFFC4,0xFFC5,0xFFC6,0xFFC7,0xFFC8,0xFFC9];
-            if (keys_code[f]==undefined) {
-                return;
+
+        function fullscreen() {
+            if (document.fullscreenElement || // alternative standard method
+                document.mozFullScreenElement || // currently working methods
+                document.webkitFullscreenElement ||
+                document.msFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            } else {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) {
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+                } else if (document.body.msRequestFullscreen) {
+                    document.body.msRequestFullscreen();
+                }
             }
-            rfb.sendKey(0xFFE3, 'down');
-            rfb.sendKey(0xFFE9, 'down');
-            rfb.sendKey(keys_code[f], 'down');
-            rfb.sendKey(keys_code[f], 'up');
-            rfb.sendKey(0xFFE9, 'up');
-            rfb.sendKey(0xFFE3, 'up');
+            return false;
+        }
+
+        function sendCtrlAltFN(f) {
+            rfb.sendCtrlAltFN(f);
+            return false;
         }
         function sendCtrlAltDel() {
             rfb.sendCtrlAltDel();
@@ -199,6 +217,21 @@
         document.getElementById('machineShutdownButton').onclick = machineShutdown;
         document.getElementById('machineRebootButton').onclick = machineReboot;
         document.getElementById('machineResetButton').onclick = machineReset;
+        document.getElementById('fullscreen_button').onclick = fullscreen;
+
+        document.getElementById('ctrlaltdel').addEventListener('click', sendCtrlAltDel);
+        document.getElementById('ctrlaltf1').addEventListener('click', function(){sendCtrlAltFN(0);});
+        document.getElementById('ctrlaltf2').addEventListener('click', function(){sendCtrlAltFN(1);});
+        document.getElementById('ctrlaltf3').addEventListener('click', function(){sendCtrlAltFN(2);});
+        document.getElementById('ctrlaltf4').addEventListener('click', function(){sendCtrlAltFN(3);});
+        document.getElementById('ctrlaltf5').addEventListener('click', function(){sendCtrlAltFN(4);});
+        document.getElementById('ctrlaltf6').addEventListener('click', function(){sendCtrlAltFN(5);});
+        document.getElementById('ctrlaltf7').addEventListener('click', function(){sendCtrlAltFN(6);});
+        document.getElementById('ctrlaltf8').addEventListener('click', function(){sendCtrlAltFN(7);});
+        document.getElementById('ctrlaltf9').addEventListener('click', function(){sendCtrlAltFN(8);});
+        document.getElementById('ctrlaltf10').addEventListener('click', function(){sendCtrlAltFN(9);});
+        document.getElementById('ctrlaltf11').addEventListener('click', function(){sendCtrlAltFN(10);});
+        document.getElementById('ctrlaltf12').addEventListener('click', function(){sendCtrlAltFN(11);});
 
         WebUtil.init_logging(WebUtil.getConfigVar('logging', 'warn'));
         document.title = WebUtil.getConfigVar('title', 'noVNC');
@@ -275,4 +308,6 @@
             rfb.resizeSession = WebUtil.getConfigVar('resize', false);
         })();
     </script>
+
+
 {% endblock %}

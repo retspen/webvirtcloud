@@ -1,66 +1,3 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = RFB;
-
-var _logging = require('./util/logging.js');
-
-var Log = _interopRequireWildcard(_logging);
-
-var _strings = require('./util/strings.js');
-
-var _browser = require('./util/browser.js');
-
-var _eventtarget = require('./util/eventtarget.js');
-
-var _eventtarget2 = _interopRequireDefault(_eventtarget);
-
-var _display = require('./display.js');
-
-var _display2 = _interopRequireDefault(_display);
-
-var _keyboard = require('./input/keyboard.js');
-
-var _keyboard2 = _interopRequireDefault(_keyboard);
-
-var _mouse = require('./input/mouse.js');
-
-var _mouse2 = _interopRequireDefault(_mouse);
-
-var _websock = require('./websock.js');
-
-var _websock2 = _interopRequireDefault(_websock);
-
-var _des = require('./des.js');
-
-var _des2 = _interopRequireDefault(_des);
-
-var _keysym = require('./input/keysym.js');
-
-var _keysym2 = _interopRequireDefault(_keysym);
-
-var _xtscancodes = require('./input/xtscancodes.js');
-
-var _xtscancodes2 = _interopRequireDefault(_xtscancodes);
-
-var _inflator = require('./inflator.js');
-
-var _inflator2 = _interopRequireDefault(_inflator);
-
-var _encodings = require('./encodings.js');
-
-require('./util/polyfill.js');
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-/*jslint white: false, browser: true */
-/*global window, Util, Display, Keyboard, Mouse, Websock, Websock_native, Base64, DES, KeyTable, Inflator, XtScancode */
-
-// How many seconds to wait for a disconnect to finish
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2012 Joel Martin
@@ -73,9 +10,28 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
  * (c) 2012 Michael Tinglof, Joe Balaz, Les Piech (Mercuri.ca)
  */
 
+import * as Log from './util/logging.js';
+import { decodeUTF8 } from './util/strings.js';
+import { supportsCursorURIs, isTouchDevice } from './util/browser.js';
+import EventTargetMixin from './util/eventtarget.js';
+import Display from "./display.js";
+import Keyboard from "./input/keyboard.js";
+import Mouse from "./input/mouse.js";
+import Websock from "./websock.js";
+import DES from "./des.js";
+import KeyTable from "./input/keysym.js";
+import XtScancode from "./input/xtscancodes.js";
+import Inflator from "./inflator.js";
+import { encodings, encodingName } from "./encodings.js";
+import "./util/polyfill.js";
+
+/*jslint white: false, browser: true */
+/*global window, Util, Display, Keyboard, Mouse, Websock, Websock_native, Base64, DES, KeyTable, Inflator, XtScancode */
+
+// How many seconds to wait for a disconnect to finish
 var DISCONNECT_TIMEOUT = 3;
 
-function RFB(target, url, options) {
+export default function RFB(target, url, options) {
     if (!target) {
         throw Error("Must specify target");
     }
@@ -123,15 +79,15 @@ function RFB(target, url, options) {
     this._qemuExtKeyEventSupported = false;
 
     // Internal objects
-    this._sock = null; // Websock object
-    this._display = null; // Display object
-    this._flushing = false; // Display flushing state
-    this._keyboard = null; // Keyboard input handler object
-    this._mouse = null; // Mouse input handler object
+    this._sock = null;              // Websock object
+    this._display = null;           // Display object
+    this._flushing = false;         // Display flushing state
+    this._keyboard = null;          // Keyboard input handler object
+    this._mouse = null;             // Mouse input handler object
 
     // Timers
-    this._disconnTimer = null; // disconnection timer
-    this._resizeTimeout = null; // resize rate limiting
+    this._disconnTimer = null;      // disconnection timer
+    this._resizeTimeout = null;     // resize rate limiting
 
     // Decoder states and stats
     this._encHandlers = {};
@@ -139,9 +95,9 @@ function RFB(target, url, options) {
 
     this._FBU = {
         rects: 0,
-        subrects: 0, // RRE and HEXTILE
-        lines: 0, // RAW
-        tiles: 0, // HEXTILE
+        subrects: 0,            // RRE and HEXTILE
+        lines: 0,               // RAW
+        tiles: 0,               // HEXTILE
         bytes: 0,
         x: 0,
         y: 0,
@@ -150,14 +106,14 @@ function RFB(target, url, options) {
         encoding: 0,
         subencoding: -1,
         background: null,
-        zlibs: [] // TIGHT zlib streams
+        zlibs: []               // TIGHT zlib streams
     };
     for (var i = 0; i < 4; i++) {
-        this._FBU.zlibs[i] = new _inflator2.default();
+        this._FBU.zlibs[i] = new Inflator();
     }
 
     this._destBuff = null;
-    this._paletteBuff = new Uint8Array(1024); // 256 * 4 (max palette size * max bytes-per-pixel)
+    this._paletteBuff = new Uint8Array(1024);  // 256 * 4 (max palette size * max bytes-per-pixel)
 
     this._rre_chunk_sz = 100;
 
@@ -184,7 +140,7 @@ function RFB(target, url, options) {
     // Bound event handlers
     this._eventHandlers = {
         focusCanvas: this._focusCanvas.bind(this),
-        windowResize: this._windowResize.bind(this)
+        windowResize: this._windowResize.bind(this),
     };
 
     // main setup
@@ -209,22 +165,22 @@ function RFB(target, url, options) {
     this._screen.appendChild(this._canvas);
 
     // populate encHandlers with bound versions
-    this._encHandlers[_encodings.encodings.encodingRaw] = RFB.encodingHandlers.RAW.bind(this);
-    this._encHandlers[_encodings.encodings.encodingCopyRect] = RFB.encodingHandlers.COPYRECT.bind(this);
-    this._encHandlers[_encodings.encodings.encodingRRE] = RFB.encodingHandlers.RRE.bind(this);
-    this._encHandlers[_encodings.encodings.encodingHextile] = RFB.encodingHandlers.HEXTILE.bind(this);
-    this._encHandlers[_encodings.encodings.encodingTight] = RFB.encodingHandlers.TIGHT.bind(this);
+    this._encHandlers[encodings.encodingRaw] = RFB.encodingHandlers.RAW.bind(this);
+    this._encHandlers[encodings.encodingCopyRect] = RFB.encodingHandlers.COPYRECT.bind(this);
+    this._encHandlers[encodings.encodingRRE] = RFB.encodingHandlers.RRE.bind(this);
+    this._encHandlers[encodings.encodingHextile] = RFB.encodingHandlers.HEXTILE.bind(this);
+    this._encHandlers[encodings.encodingTight] = RFB.encodingHandlers.TIGHT.bind(this);
 
-    this._encHandlers[_encodings.encodings.pseudoEncodingDesktopSize] = RFB.encodingHandlers.DesktopSize.bind(this);
-    this._encHandlers[_encodings.encodings.pseudoEncodingLastRect] = RFB.encodingHandlers.last_rect.bind(this);
-    this._encHandlers[_encodings.encodings.pseudoEncodingCursor] = RFB.encodingHandlers.Cursor.bind(this);
-    this._encHandlers[_encodings.encodings.pseudoEncodingQEMUExtendedKeyEvent] = RFB.encodingHandlers.QEMUExtendedKeyEvent.bind(this);
-    this._encHandlers[_encodings.encodings.pseudoEncodingExtendedDesktopSize] = RFB.encodingHandlers.ExtendedDesktopSize.bind(this);
+    this._encHandlers[encodings.pseudoEncodingDesktopSize] = RFB.encodingHandlers.DesktopSize.bind(this);
+    this._encHandlers[encodings.pseudoEncodingLastRect] = RFB.encodingHandlers.last_rect.bind(this);
+    this._encHandlers[encodings.pseudoEncodingCursor] = RFB.encodingHandlers.Cursor.bind(this);
+    this._encHandlers[encodings.pseudoEncodingQEMUExtendedKeyEvent] = RFB.encodingHandlers.QEMUExtendedKeyEvent.bind(this);
+    this._encHandlers[encodings.pseudoEncodingExtendedDesktopSize] = RFB.encodingHandlers.ExtendedDesktopSize.bind(this);
 
     // NB: nothing that needs explicit teardown should be done
     // before this point, since this can throw an exception
     try {
-        this._display = new _display2.default(this._canvas);
+        this._display = new Display(this._canvas);
     } catch (exc) {
         Log.Error("Display exception: " + exc);
         throw exc;
@@ -232,21 +188,23 @@ function RFB(target, url, options) {
     this._display.onflush = this._onFlush.bind(this);
     this._display.clear();
 
-    this._keyboard = new _keyboard2.default(this._canvas);
+    this._keyboard = new Keyboard(this._canvas);
     this._keyboard.onkeyevent = this._handleKeyEvent.bind(this);
 
-    this._mouse = new _mouse2.default(this._canvas);
+    this._mouse = new Mouse(this._canvas);
     this._mouse.onmousebutton = this._handleMouseButton.bind(this);
     this._mouse.onmousemove = this._handleMouseMove.bind(this);
 
-    this._sock = new _websock2.default();
+    this._sock = new Websock();
     this._sock.on('message', this._handle_message.bind(this));
     this._sock.on('open', function () {
-        if (this._rfb_connection_state === 'connecting' && this._rfb_init_state === '') {
+        if ((this._rfb_connection_state === 'connecting') &&
+            (this._rfb_init_state === '')) {
             this._rfb_init_state = 'ProtocolVersion';
             Log.Debug("Starting VNC handshake");
         } else {
-            this._fail("Unexpected server connection while " + this._rfb_connection_state);
+            this._fail("Unexpected server connection while " +
+                       this._rfb_connection_state);
         }
     }.bind(this));
     this._sock.on('close', function (e) {
@@ -273,10 +231,12 @@ function RFB(target, url, options) {
                 this._updateConnectionState('disconnected');
                 break;
             case 'disconnected':
-                this._fail("Unexpected server disconnect " + "when already disconnected " + msg);
+                this._fail("Unexpected server disconnect " +
+                           "when already disconnected " + msg);
                 break;
             default:
-                this._fail("Unexpected server disconnect before connecting " + msg);
+                this._fail("Unexpected server disconnect before connecting " +
+                           msg);
                 break;
         }
         this._sock.off('close');
@@ -299,13 +259,12 @@ RFB.prototype = {
     focusOnClick: true,
 
     _viewOnly: false,
-    get viewOnly() {
-        return this._viewOnly;
-    },
+    get viewOnly() { return this._viewOnly; },
     set viewOnly(viewOnly) {
         this._viewOnly = viewOnly;
 
-        if (this._rfb_connection_state === "connecting" || this._rfb_connection_state === "connected") {
+        if (this._rfb_connection_state === "connecting" ||
+            this._rfb_connection_state === "connected") {
             if (viewOnly) {
                 this._keyboard.ungrab();
                 this._mouse.ungrab();
@@ -316,30 +275,20 @@ RFB.prototype = {
         }
     },
 
-    get capabilities() {
-        return this._capabilities;
-    },
+    get capabilities() { return this._capabilities; },
 
-    get touchButton() {
-        return this._mouse.touchButton;
-    },
-    set touchButton(button) {
-        this._mouse.touchButton = button;
-    },
+    get touchButton() { return this._mouse.touchButton; },
+    set touchButton(button) { this._mouse.touchButton = button; },
 
     _clipViewport: false,
-    get clipViewport() {
-        return this._clipViewport;
-    },
+    get clipViewport() { return this._clipViewport; },
     set clipViewport(viewport) {
         this._clipViewport = viewport;
         this._updateClip();
     },
 
     _scaleViewport: false,
-    get scaleViewport() {
-        return this._scaleViewport;
-    },
+    get scaleViewport() { return this._scaleViewport; },
     set scaleViewport(scale) {
         this._scaleViewport = scale;
         // Scaling trumps clipping, so we may need to adjust
@@ -354,9 +303,7 @@ RFB.prototype = {
     },
 
     _resizeSession: false,
-    get resizeSession() {
-        return this._resizeSession;
-    },
+    get resizeSession() { return this._resizeSession; },
     set resizeSession(resize) {
         this._resizeSession = resize;
         if (resize) {
@@ -379,17 +326,33 @@ RFB.prototype = {
     },
 
     sendCtrlAltDel: function () {
+        if (this._rfb_connection_state !== 'connected' || this._viewOnly) { return; }
+        Log.Info("Sending Ctrl-Alt-Del");
+
+        this.sendKey(KeyTable.XK_Control_L, "ControlLeft", true);
+        this.sendKey(KeyTable.XK_Alt_L, "AltLeft", true);
+        this.sendKey(KeyTable.XK_Delete, "Delete", true);
+        this.sendKey(KeyTable.XK_Delete, "Delete", false);
+        this.sendKey(KeyTable.XK_Alt_L, "AltLeft", false);
+        this.sendKey(KeyTable.XK_Control_L, "ControlLeft", false);
+    },
+	
+	sendCtrlAltFN: function (f) {
+        var keys_code=[0xFFBE,0xFFBF,0xFFC0,0xFFC1,0xFFC2,0xFFC3,0xFFC4,0xFFC5,0xFFC6,0xFFC7,0xFFC8,0xFFC9];
+        if (keys_code[f]==undefined) {
+            return;
+        }
         if (this._rfb_connection_state !== 'connected' || this._viewOnly) {
             return;
         }
-        Log.Info("Sending Ctrl-Alt-Del");
+        Log.Info("Sending Ctrl-Alt-FN");
 
-        this.sendKey(_keysym2.default.XK_Control_L, "ControlLeft", true);
-        this.sendKey(_keysym2.default.XK_Alt_L, "AltLeft", true);
-        this.sendKey(_keysym2.default.XK_Delete, "Delete", true);
-        this.sendKey(_keysym2.default.XK_Delete, "Delete", false);
-        this.sendKey(_keysym2.default.XK_Alt_L, "AltLeft", false);
-        this.sendKey(_keysym2.default.XK_Control_L, "ControlLeft", false);
+        this.sendKey(KeyTable.XK_Control_L, "ControlLeft", true);
+        this.sendKey(KeyTable.XK_Alt_L, "AltLeft", true);
+        this.sendKey(keys_code[f], "Fn", true);
+        this.sendKey(keys_code[f], "Fn", false);
+        this.sendKey(KeyTable.XK_Alt_L, "AltLeft", false);
+        this.sendKey(KeyTable.XK_Control_L, "ControlLeft", false);
     },
 
     machineShutdown: function () {
@@ -403,13 +366,12 @@ RFB.prototype = {
     machineReset: function () {
         this._xvpOp(1, 4);
     },
+	
 
     // Send a key press. If 'down' is not specified then send a down key
     // followed by an up key.
     sendKey: function (keysym, code, down) {
-        if (this._rfb_connection_state !== 'connected' || this._viewOnly) {
-            return;
-        }
+        if (this._rfb_connection_state !== 'connected' || this._viewOnly) { return; }
 
         if (down === undefined) {
             this.sendKey(keysym, code, true);
@@ -417,7 +379,7 @@ RFB.prototype = {
             return;
         }
 
-        var scancode = _xtscancodes2.default[code];
+        var scancode = XtScancode[code];
 
         if (this._qemuExtKeyEventSupported && scancode) {
             // 0 is NoSymbol
@@ -444,9 +406,7 @@ RFB.prototype = {
     },
 
     clipboardPasteFrom: function (text) {
-        if (this._rfb_connection_state !== 'connected' || this._viewOnly) {
-            return;
-        }
+        if (this._rfb_connection_state !== 'connected' || this._viewOnly) { return; }
         RFB.messages.clientCutText(this._sock, text);
     },
 
@@ -512,18 +472,18 @@ RFB.prototype = {
         Object.keys(stats).forEach(function (key) {
             var s = stats[key];
             if (s[0] + s[1] > 0) {
-                Log.Info("    " + (0, _encodings.encodingName)(key) + ": " + s[0] + " rects");
+                Log.Info("    " + encodingName(key) + ": " + s[0] + " rects");
             }
         });
 
         Log.Info("Encoding stats since page load:");
         Object.keys(stats).forEach(function (key) {
             var s = stats[key];
-            Log.Info("    " + (0, _encodings.encodingName)(key) + ": " + s[1] + " rects");
+            Log.Info("    " + encodingName(key) + ": " + s[1] + " rects");
         });
     },
 
-    _focusCanvas: function (event) {
+    _focusCanvas: function(event) {
         // Respect earlier handlers' request to not do side-effects
         if (event.defaultPrevented) {
             return;
@@ -595,20 +555,23 @@ RFB.prototype = {
         clearTimeout(this._resizeTimeout);
         this._resizeTimeout = null;
 
-        if (!this._resizeSession || this._viewOnly || !this._supportsSetDesktopSize) {
+        if (!this._resizeSession || this._viewOnly ||
+            !this._supportsSetDesktopSize) {
             return;
         }
 
         let size = this._screenSize();
-        RFB.messages.setDesktopSize(this._sock, size.w, size.h, this._screen_id, this._screen_flags);
+        RFB.messages.setDesktopSize(this._sock, size.w, size.h,
+                                    this._screen_id, this._screen_flags);
 
-        Log.Debug('Requested new desktop size: ' + size.w + 'x' + size.h);
+        Log.Debug('Requested new desktop size: ' +
+                   size.w + 'x' + size.h);
     },
 
     // Gets the the size of the available screen
     _screenSize: function () {
         return { w: this._screen.offsetWidth,
-            h: this._screen.offsetHeight };
+                 h: this._screen.offsetHeight };
     },
 
     _fixScrollbars: function () {
@@ -648,28 +611,32 @@ RFB.prototype = {
         switch (state) {
             case 'connected':
                 if (oldstate !== 'connecting') {
-                    Log.Error("Bad transition to connected state, " + "previous connection state: " + oldstate);
+                    Log.Error("Bad transition to connected state, " +
+                               "previous connection state: " + oldstate);
                     return;
                 }
                 break;
 
             case 'disconnected':
                 if (oldstate !== 'disconnecting') {
-                    Log.Error("Bad transition to disconnected state, " + "previous connection state: " + oldstate);
+                    Log.Error("Bad transition to disconnected state, " +
+                               "previous connection state: " + oldstate);
                     return;
                 }
                 break;
 
             case 'connecting':
                 if (oldstate !== '') {
-                    Log.Error("Bad transition to connecting state, " + "previous connection state: " + oldstate);
+                    Log.Error("Bad transition to connecting state, " +
+                               "previous connection state: " + oldstate);
                     return;
                 }
                 break;
 
             case 'disconnecting':
                 if (oldstate !== 'connected' && oldstate !== 'connecting') {
-                    Log.Error("Bad transition to disconnecting state, " + "previous connection state: " + oldstate);
+                    Log.Error("Bad transition to disconnecting state, " +
+                               "previous connection state: " + oldstate);
                     return;
                 }
                 break;
@@ -715,7 +682,9 @@ RFB.prototype = {
                 break;
 
             case 'disconnected':
-                event = new CustomEvent("disconnect", { detail: { clean: this._rfb_clean_disconnect } });
+                event = new CustomEvent(
+                    "disconnect", { detail:
+                                    { clean: this._rfb_clean_disconnect } });
                 this.dispatchEvent(event);
                 break;
         }
@@ -752,7 +721,8 @@ RFB.prototype = {
 
     _setCapability: function (cap, val) {
         this._capabilities[cap] = val;
-        var event = new CustomEvent("capabilities", { detail: { capabilities: this._capabilities } });
+        var event = new CustomEvent("capabilities",
+                                    { detail: { capabilities: this._capabilities } });
         this.dispatchEvent(event);
     },
 
@@ -799,7 +769,7 @@ RFB.prototype = {
         if (this.dragViewport) {
             if (down && !this._viewportDragging) {
                 this._viewportDragging = true;
-                this._viewportDragPos = { 'x': x, 'y': y };
+                this._viewportDragPos = {'x': x, 'y': y};
                 this._viewportHasMoved = false;
 
                 // Skip sending mouse events
@@ -816,17 +786,16 @@ RFB.prototype = {
                 // Otherwise we treat this as a mouse click event.
                 // Send the button down event here, as the button up
                 // event is sent at the end of this function.
-                RFB.messages.pointerEvent(this._sock, this._display.absX(x), this._display.absY(y), bmask);
+                RFB.messages.pointerEvent(this._sock,
+                                          this._display.absX(x),
+                                          this._display.absY(y),
+                                          bmask);
             }
         }
 
-        if (this._viewOnly) {
-            return;
-        } // View only, skip mouse events
+        if (this._viewOnly) { return; } // View only, skip mouse events
 
-        if (this._rfb_connection_state !== 'connected') {
-            return;
-        }
+        if (this._rfb_connection_state !== 'connected') { return; }
         RFB.messages.pointerEvent(this._sock, this._display.absX(x), this._display.absY(y), this._mouse_buttonMask);
     },
 
@@ -839,10 +808,11 @@ RFB.prototype = {
             // devicePixelRatio brings us a bit closer but is not optimal.
             var dragThreshold = 10 * (window.devicePixelRatio || 1);
 
-            if (this._viewportHasMoved || Math.abs(deltaX) > dragThreshold || Math.abs(deltaY) > dragThreshold) {
+            if (this._viewportHasMoved || (Math.abs(deltaX) > dragThreshold ||
+                                           Math.abs(deltaY) > dragThreshold)) {
                 this._viewportHasMoved = true;
 
-                this._viewportDragPos = { 'x': x, 'y': y };
+                this._viewportDragPos = {'x': x, 'y': y};
                 this._display.viewportChangePos(deltaX, deltaY);
             }
 
@@ -850,13 +820,9 @@ RFB.prototype = {
             return;
         }
 
-        if (this._viewOnly) {
-            return;
-        } // View only, skip mouse events
+        if (this._viewOnly) { return; } // View only, skip mouse events
 
-        if (this._rfb_connection_state !== 'connected') {
-            return;
-        }
+        if (this._rfb_connection_state !== 'connected') { return; }
         RFB.messages.pointerEvent(this._sock, this._display.absX(x), this._display.absY(y), this._mouse_buttonMask);
     },
 
@@ -871,24 +837,21 @@ RFB.prototype = {
         Log.Info("Server ProtocolVersion: " + sversion);
         var is_repeater = 0;
         switch (sversion) {
-            case "000.000":
-                // UltraVNC repeater
+            case "000.000":  // UltraVNC repeater
                 is_repeater = 1;
                 break;
             case "003.003":
-            case "003.006": // UltraVNC
-            case "003.889":
-                // Apple Remote Desktop
+            case "003.006":  // UltraVNC
+            case "003.889":  // Apple Remote Desktop
                 this._rfb_version = 3.3;
                 break;
             case "003.007":
                 this._rfb_version = 3.7;
                 break;
             case "003.008":
-            case "004.000": // Intel AMT KVM
-            case "004.001": // RealVNC 4.6
-            case "005.000":
-                // RealVNC 5.3
+            case "004.000":  // Intel AMT KVM
+            case "004.001":  // RealVNC 4.6
+            case "005.000":  // RealVNC 5.3
                 this._rfb_version = 3.8;
                 break;
             default:
@@ -908,7 +871,8 @@ RFB.prototype = {
             this._rfb_version = this._rfb_max_version;
         }
 
-        var cversion = "00" + parseInt(this._rfb_version, 10) + ".00" + this._rfb_version * 10 % 10;
+        var cversion = "00" + parseInt(this._rfb_version, 10) +
+                       ".00" + ((this._rfb_version * 10) % 10);
         this._sock.send_string("RFB " + cversion + "\n");
         Log.Debug('Sent ProtocolVersion: ' + cversion);
 
@@ -930,9 +894,7 @@ RFB.prototype = {
         if (this._rfb_version >= 3.7) {
             // Server sends supported list, client decides
             var num_types = this._sock.rQshift8();
-            if (this._sock.rQwait("security type", num_types, 1)) {
-                return false;
-            }
+            if (this._sock.rQwait("security type", num_types, 1)) { return false; }
 
             if (num_types === 0) {
                 return this._handle_security_failure("no security types");
@@ -958,9 +920,7 @@ RFB.prototype = {
             this._sock.send([this._rfb_auth_scheme]);
         } else {
             // Server decides
-            if (this._sock.rQwait("security scheme", 4)) {
-                return false;
-            }
+            if (this._sock.rQwait("security scheme", 4)) { return false; }
             this._rfb_auth_scheme = this._sock.rQshift32();
         }
 
@@ -999,21 +959,24 @@ RFB.prototype = {
         let reason = "";
 
         if (strlen > 0) {
-            if (this._sock.rQwait("reason", strlen, 8)) {
-                return false;
-            }
+            if (this._sock.rQwait("reason", strlen, 8)) { return false; }
             reason = this._sock.rQshiftStr(strlen);
         }
 
         if (reason !== "") {
 
-            let event = new CustomEvent("securityfailure", { detail: { status: security_result_status, reason: reason } });
+            let event = new CustomEvent(
+                "securityfailure",
+                { detail: { status: security_result_status, reason: reason } });
             this.dispatchEvent(event);
 
-            return this._fail("Security negotiation failed" + context + " (reason: " + reason + ")");
+            return this._fail("Security negotiation failed" + context +
+                              " (reason: " + reason + ")");
         } else {
 
-            let event = new CustomEvent("securityfailure", { detail: { status: security_result_status } });
+            let event = new CustomEvent(
+                "securityfailure",
+                { detail: { status: security_result_status } });
             this.dispatchEvent(event);
 
             return this._fail("Security negotiation failed" + context);
@@ -1022,25 +985,30 @@ RFB.prototype = {
 
     // authentication
     _negotiate_xvp_auth: function () {
-        if (!this._rfb_credentials.username || !this._rfb_credentials.password || !this._rfb_credentials.target) {
-            var event = new CustomEvent("credentialsrequired", { detail: { types: ["username", "password", "target"] } });
+        if (!this._rfb_credentials.username ||
+            !this._rfb_credentials.password ||
+            !this._rfb_credentials.target) {
+            var event = new CustomEvent("credentialsrequired",
+                                        { detail: { types: ["username", "password", "target"] } });
             this.dispatchEvent(event);
             return false;
         }
 
-        var xvp_auth_str = String.fromCharCode(this._rfb_credentials.username.length) + String.fromCharCode(this._rfb_credentials.target.length) + this._rfb_credentials.username + this._rfb_credentials.target;
+        var xvp_auth_str = String.fromCharCode(this._rfb_credentials.username.length) +
+                           String.fromCharCode(this._rfb_credentials.target.length) +
+                           this._rfb_credentials.username +
+                           this._rfb_credentials.target;
         this._sock.send_string(xvp_auth_str);
         this._rfb_auth_scheme = 2;
         return this._negotiate_authentication();
     },
 
     _negotiate_std_vnc_auth: function () {
-        if (this._sock.rQwait("auth challenge", 16)) {
-            return false;
-        }
+        if (this._sock.rQwait("auth challenge", 16)) { return false; }
 
         if (!this._rfb_credentials.password) {
-            var event = new CustomEvent("credentialsrequired", { detail: { types: ["password"] } });
+            var event = new CustomEvent("credentialsrequired",
+                                        { detail: { types: ["password"] } });
             this.dispatchEvent(event);
             return false;
         }
@@ -1068,49 +1036,42 @@ RFB.prototype = {
 
         // choose the notunnel type
         if (serverSupportedTunnelTypes[0]) {
-            if (serverSupportedTunnelTypes[0].vendor != clientSupportedTunnelTypes[0].vendor || serverSupportedTunnelTypes[0].signature != clientSupportedTunnelTypes[0].signature) {
-                return this._fail("Client's tunnel type had the incorrect " + "vendor or signature");
+            if (serverSupportedTunnelTypes[0].vendor != clientSupportedTunnelTypes[0].vendor ||
+                serverSupportedTunnelTypes[0].signature != clientSupportedTunnelTypes[0].signature) {
+                return this._fail("Client's tunnel type had the incorrect " +
+                                  "vendor or signature");
             }
-            this._sock.send([0, 0, 0, 0]); // use NOTUNNEL
+            this._sock.send([0, 0, 0, 0]);  // use NOTUNNEL
             return false; // wait until we receive the sub auth count to continue
         } else {
-            return this._fail("Server wanted tunnels, but doesn't support " + "the notunnel type");
+            return this._fail("Server wanted tunnels, but doesn't support " +
+                              "the notunnel type");
         }
     },
 
     _negotiate_tight_auth: function () {
-        if (!this._rfb_tightvnc) {
-            // first pass, do the tunnel negotiation
-            if (this._sock.rQwait("num tunnels", 4)) {
-                return false;
-            }
+        if (!this._rfb_tightvnc) {  // first pass, do the tunnel negotiation
+            if (this._sock.rQwait("num tunnels", 4)) { return false; }
             var numTunnels = this._sock.rQshift32();
-            if (numTunnels > 0 && this._sock.rQwait("tunnel capabilities", 16 * numTunnels, 4)) {
-                return false;
-            }
+            if (numTunnels > 0 && this._sock.rQwait("tunnel capabilities", 16 * numTunnels, 4)) { return false; }
 
             this._rfb_tightvnc = true;
 
             if (numTunnels > 0) {
                 this._negotiate_tight_tunnels(numTunnels);
-                return false; // wait until we receive the sub auth to continue
+                return false;  // wait until we receive the sub auth to continue
             }
         }
 
         // second pass, do the sub-auth negotiation
-        if (this._sock.rQwait("sub auth count", 4)) {
-            return false;
-        }
+        if (this._sock.rQwait("sub auth count", 4)) { return false; }
         var subAuthCount = this._sock.rQshift32();
-        if (subAuthCount === 0) {
-            // empty sub-auth list received means 'no auth' subtype selected
+        if (subAuthCount === 0) {  // empty sub-auth list received means 'no auth' subtype selected
             this._rfb_init_state = 'SecurityResult';
             return true;
         }
 
-        if (this._sock.rQwait("sub auth capabilities", 16 * subAuthCount, 4)) {
-            return false;
-        }
+        if (this._sock.rQwait("sub auth capabilities", 16 * subAuthCount, 4)) { return false; }
 
         var clientSupportedTypes = {
             'STDVNOAUTH__': 1,
@@ -1130,16 +1091,15 @@ RFB.prototype = {
                 this._sock.send([0, 0, 0, clientSupportedTypes[authType]]);
 
                 switch (authType) {
-                    case 'STDVNOAUTH__':
-                        // no auth
+                    case 'STDVNOAUTH__':  // no auth
                         this._rfb_init_state = 'SecurityResult';
                         return true;
-                    case 'STDVVNCAUTH_':
-                        // VNC auth
+                    case 'STDVVNCAUTH_': // VNC auth
                         this._rfb_auth_scheme = 2;
                         return this._init_msg();
                     default:
-                        return this._fail("Unsupported tiny auth scheme " + "(scheme: " + authType + ")");
+                        return this._fail("Unsupported tiny auth scheme " +
+                                          "(scheme: " + authType + ")");
                 }
             }
         }
@@ -1149,12 +1109,10 @@ RFB.prototype = {
 
     _negotiate_authentication: function () {
         switch (this._rfb_auth_scheme) {
-            case 0:
-                // connection failed
+            case 0:  // connection failed
                 return this._handle_security_failure("authentication scheme");
 
-            case 1:
-                // no auth
+            case 1:  // no auth
                 if (this._rfb_version >= 3.8) {
                     this._rfb_init_state = 'SecurityResult';
                     return true;
@@ -1162,32 +1120,27 @@ RFB.prototype = {
                 this._rfb_init_state = 'ClientInitialisation';
                 return this._init_msg();
 
-            case 22:
-                // XVP auth
+            case 22:  // XVP auth
                 return this._negotiate_xvp_auth();
 
-            case 2:
-                // VNC authentication
+            case 2:  // VNC authentication
                 return this._negotiate_std_vnc_auth();
 
-            case 16:
-                // TightVNC Security Type
+            case 16:  // TightVNC Security Type
                 return this._negotiate_tight_auth();
 
             default:
-                return this._fail("Unsupported auth scheme (scheme: " + this._rfb_auth_scheme + ")");
+                return this._fail("Unsupported auth scheme (scheme: " +
+                                  this._rfb_auth_scheme + ")");
         }
     },
 
     _handle_security_result: function () {
-        if (this._sock.rQwait('VNC auth response ', 4)) {
-            return false;
-        }
+        if (this._sock.rQwait('VNC auth response ', 4)) { return false; }
 
         let status = this._sock.rQshift32();
 
-        if (status === 0) {
-            // OK
+        if (status === 0) { // OK
             this._rfb_init_state = 'ClientInitialisation';
             Log.Debug('Authentication OK');
             return this._init_msg();
@@ -1195,7 +1148,8 @@ RFB.prototype = {
             if (this._rfb_version >= 3.8) {
                 return this._handle_security_failure("security result", status);
             } else {
-                let event = new CustomEvent("securityfailure", { detail: { status: status } });
+                let event = new CustomEvent("securityfailure",
+                                            { detail: { status: status } });
                 this.dispatchEvent(event);
 
                 return this._fail("Security handshake failed");
@@ -1204,52 +1158,44 @@ RFB.prototype = {
     },
 
     _negotiate_server_init: function () {
-        if (this._sock.rQwait("server initialization", 24)) {
-            return false;
-        }
+        if (this._sock.rQwait("server initialization", 24)) { return false; }
 
         /* Screen size */
         var width = this._sock.rQshift16();
         var height = this._sock.rQshift16();
 
         /* PIXEL_FORMAT */
-        var bpp = this._sock.rQshift8();
-        var depth = this._sock.rQshift8();
-        var big_endian = this._sock.rQshift8();
-        var true_color = this._sock.rQshift8();
+        var bpp         = this._sock.rQshift8();
+        var depth       = this._sock.rQshift8();
+        var big_endian  = this._sock.rQshift8();
+        var true_color  = this._sock.rQshift8();
 
-        var red_max = this._sock.rQshift16();
-        var green_max = this._sock.rQshift16();
-        var blue_max = this._sock.rQshift16();
-        var red_shift = this._sock.rQshift8();
+        var red_max     = this._sock.rQshift16();
+        var green_max   = this._sock.rQshift16();
+        var blue_max    = this._sock.rQshift16();
+        var red_shift   = this._sock.rQshift8();
         var green_shift = this._sock.rQshift8();
-        var blue_shift = this._sock.rQshift8();
-        this._sock.rQskipBytes(3); // padding
+        var blue_shift  = this._sock.rQshift8();
+        this._sock.rQskipBytes(3);  // padding
 
         // NB(directxman12): we don't want to call any callbacks or print messages until
         //                   *after* we're past the point where we could backtrack
 
         /* Connection name/title */
         var name_length = this._sock.rQshift32();
-        if (this._sock.rQwait('server init name', name_length, 24)) {
-            return false;
-        }
-        this._fb_name = (0, _strings.decodeUTF8)(this._sock.rQshiftStr(name_length));
+        if (this._sock.rQwait('server init name', name_length, 24)) { return false; }
+        this._fb_name = decodeUTF8(this._sock.rQshiftStr(name_length));
 
         if (this._rfb_tightvnc) {
-            if (this._sock.rQwait('TightVNC extended server init header', 8, 24 + name_length)) {
-                return false;
-            }
+            if (this._sock.rQwait('TightVNC extended server init header', 8, 24 + name_length)) { return false; }
             // In TightVNC mode, ServerInit message is extended
             var numServerMessages = this._sock.rQshift16();
             var numClientMessages = this._sock.rQshift16();
             var numEncodings = this._sock.rQshift16();
-            this._sock.rQskipBytes(2); // padding
+            this._sock.rQskipBytes(2);  // padding
 
             var totalMessagesLength = (numServerMessages + numClientMessages + numEncodings) * 16;
-            if (this._sock.rQwait('TightVNC extended server init header', totalMessagesLength, 32 + name_length)) {
-                return false;
-            }
+            if (this._sock.rQwait('TightVNC extended server init header', totalMessagesLength, 32 + name_length)) { return false; }
 
             // we don't actually do anything with the capability information that TIGHT sends,
             // so we just skip the all of this.
@@ -1266,7 +1212,16 @@ RFB.prototype = {
 
         // NB(directxman12): these are down here so that we don't run them multiple times
         //                   if we backtrack
-        Log.Info("Screen: " + width + "x" + height + ", bpp: " + bpp + ", depth: " + depth + ", big_endian: " + big_endian + ", true_color: " + true_color + ", red_max: " + red_max + ", green_max: " + green_max + ", blue_max: " + blue_max + ", red_shift: " + red_shift + ", green_shift: " + green_shift + ", blue_shift: " + blue_shift);
+        Log.Info("Screen: " + width + "x" + height +
+                  ", bpp: " + bpp + ", depth: " + depth +
+                  ", big_endian: " + big_endian +
+                  ", true_color: " + true_color +
+                  ", red_max: " + red_max +
+                  ", green_max: " + green_max +
+                  ", blue_max: " + blue_max +
+                  ", red_shift: " + red_shift +
+                  ", green_shift: " + green_shift +
+                  ", blue_shift: " + blue_shift);
 
         if (big_endian !== 0) {
             Log.Warn("Server native endian is not little endian");
@@ -1281,17 +1236,14 @@ RFB.prototype = {
         }
 
         // we're past the point where we could backtrack, so it's safe to call this
-        var event = new CustomEvent("desktopname", { detail: { name: this._fb_name } });
+        var event = new CustomEvent("desktopname",
+                                    { detail: { name: this._fb_name } });
         this.dispatchEvent(event);
 
         this._resize(width, height);
 
-        if (!this._viewOnly) {
-            this._keyboard.grab();
-        }
-        if (!this._viewOnly) {
-            this._mouse.grab();
-        }
+        if (!this._viewOnly) { this._keyboard.grab(); }
+        if (!this._viewOnly) { this._mouse.grab(); }
 
         this._fb_depth = 24;
 
@@ -1304,7 +1256,7 @@ RFB.prototype = {
         this._sendEncodings();
         RFB.messages.fbUpdateRequest(this._sock, false, 0, 0, this._fb_width, this._fb_height);
 
-        this._timing.fbu_rt_start = new Date().getTime();
+        this._timing.fbu_rt_start = (new Date()).getTime();
         this._timing.pixels = 0;
 
         // Cursor will be server side until the server decides to honor
@@ -1319,30 +1271,31 @@ RFB.prototype = {
         var encs = [];
 
         // In preference order
-        encs.push(_encodings.encodings.encodingCopyRect);
+        encs.push(encodings.encodingCopyRect);
         // Only supported with full depth support
         if (this._fb_depth == 24) {
-            encs.push(_encodings.encodings.encodingTight);
-            encs.push(_encodings.encodings.encodingHextile);
-            encs.push(_encodings.encodings.encodingRRE);
+            encs.push(encodings.encodingTight);
+            encs.push(encodings.encodingHextile);
+            encs.push(encodings.encodingRRE);
         }
-        encs.push(_encodings.encodings.encodingRaw);
+        encs.push(encodings.encodingRaw);
 
         // Psuedo-encoding settings
-        encs.push(_encodings.encodings.pseudoEncodingTightPNG);
-        encs.push(_encodings.encodings.pseudoEncodingQualityLevel0 + 6);
-        encs.push(_encodings.encodings.pseudoEncodingCompressLevel0 + 2);
+        encs.push(encodings.pseudoEncodingTightPNG);
+        encs.push(encodings.pseudoEncodingQualityLevel0 + 6);
+        encs.push(encodings.pseudoEncodingCompressLevel0 + 2);
 
-        encs.push(_encodings.encodings.pseudoEncodingDesktopSize);
-        encs.push(_encodings.encodings.pseudoEncodingLastRect);
-        encs.push(_encodings.encodings.pseudoEncodingQEMUExtendedKeyEvent);
-        encs.push(_encodings.encodings.pseudoEncodingExtendedDesktopSize);
-        encs.push(_encodings.encodings.pseudoEncodingXvp);
-        encs.push(_encodings.encodings.pseudoEncodingFence);
-        encs.push(_encodings.encodings.pseudoEncodingContinuousUpdates);
+        encs.push(encodings.pseudoEncodingDesktopSize);
+        encs.push(encodings.pseudoEncodingLastRect);
+        encs.push(encodings.pseudoEncodingQEMUExtendedKeyEvent);
+        encs.push(encodings.pseudoEncodingExtendedDesktopSize);
+        encs.push(encodings.pseudoEncodingXvp);
+        encs.push(encodings.pseudoEncodingFence);
+        encs.push(encodings.pseudoEncodingContinuousUpdates);
 
-        if ((0, _browser.supportsCursorURIs)() && !_browser.isTouchDevice && this._fb_depth == 24) {
-            encs.push(_encodings.encodings.pseudoEncodingCursor);
+        if (supportsCursorURIs() &&
+            !isTouchDevice && this._fb_depth == 24) {
+            encs.push(encodings.pseudoEncodingCursor);
         }
 
         RFB.messages.clientEncodings(this._sock, encs);
@@ -1379,7 +1332,8 @@ RFB.prototype = {
                 return this._negotiate_server_init();
 
             default:
-                return this._fail("Unknown init state (state: " + this._rfb_init_state + ")");
+                return this._fail("Unknown init state (state: " +
+                                  this._rfb_init_state + ")");
         }
     },
 
@@ -1392,38 +1346,29 @@ RFB.prototype = {
     _handle_server_cut_text: function () {
         Log.Debug("ServerCutText");
 
-        if (this._sock.rQwait("ServerCutText header", 7, 1)) {
-            return false;
-        }
-        this._sock.rQskipBytes(3); // Padding
+        if (this._sock.rQwait("ServerCutText header", 7, 1)) { return false; }
+        this._sock.rQskipBytes(3);  // Padding
         var length = this._sock.rQshift32();
-        if (this._sock.rQwait("ServerCutText", length, 8)) {
-            return false;
-        }
+        if (this._sock.rQwait("ServerCutText", length, 8)) { return false; }
 
         var text = this._sock.rQshiftStr(length);
 
-        if (this._viewOnly) {
-            return true;
-        }
+        if (this._viewOnly) { return true; }
 
-        var event = new CustomEvent("clipboard", { detail: { text: text } });
+        var event = new CustomEvent("clipboard",
+                                    { detail: { text: text } });
         this.dispatchEvent(event);
 
         return true;
     },
 
-    _handle_server_fence_msg: function () {
-        if (this._sock.rQwait("ServerFence header", 8, 1)) {
-            return false;
-        }
+    _handle_server_fence_msg: function() {
+        if (this._sock.rQwait("ServerFence header", 8, 1)) { return false; }
         this._sock.rQskipBytes(3); // Padding
         var flags = this._sock.rQshift32();
         var length = this._sock.rQshift8();
 
-        if (this._sock.rQwait("ServerFence payload", length, 9)) {
-            return false;
-        }
+        if (this._sock.rQwait("ServerFence payload", length, 9)) { return false; }
 
         if (length > 64) {
             Log.Warn("Bad payload length (" + length + ") in fence response");
@@ -1443,13 +1388,13 @@ RFB.prototype = {
          *  (1<<31) - Request
          */
 
-        if (!(flags & 1 << 31)) {
+        if (!(flags & (1<<31))) {
             return this._fail("Unexpected fence response");
         }
 
         // Filter out unsupported flags
         // FIXME: support syncNext
-        flags &= 1 << 0 | 1 << 1;
+        flags &= (1<<0) | (1<<1);
 
         // BlockBefore and BlockAfter are automatically handled by
         // the fact that we process each incoming message
@@ -1460,20 +1405,16 @@ RFB.prototype = {
     },
 
     _handle_xvp_msg: function () {
-        if (this._sock.rQwait("XVP version and message", 3, 1)) {
-            return false;
-        }
-        this._sock.rQskip8(); // Padding
+        if (this._sock.rQwait("XVP version and message", 3, 1)) { return false; }
+        this._sock.rQskip8();  // Padding
         var xvp_ver = this._sock.rQshift8();
         var xvp_msg = this._sock.rQshift8();
 
         switch (xvp_msg) {
-            case 0:
-                // XVP_FAIL
+            case 0:  // XVP_FAIL
                 Log.Error("XVP Operation Failed");
                 break;
-            case 1:
-                // XVP_INIT
+            case 1:  // XVP_INIT
                 this._rfb_xvp_ver = xvp_ver;
                 Log.Info("XVP extensions enabled (version " + this._rfb_xvp_ver + ")");
                 this._setCapability("power", true);
@@ -1496,32 +1437,28 @@ RFB.prototype = {
         }
 
         switch (msg_type) {
-            case 0:
-                // FramebufferUpdate
+            case 0:  // FramebufferUpdate
                 var ret = this._framebufferUpdate();
                 if (ret && !this._enabledContinuousUpdates) {
-                    RFB.messages.fbUpdateRequest(this._sock, true, 0, 0, this._fb_width, this._fb_height);
+                    RFB.messages.fbUpdateRequest(this._sock, true, 0, 0,
+                                                 this._fb_width, this._fb_height);
                 }
                 return ret;
 
-            case 1:
-                // SetColorMapEntries
+            case 1:  // SetColorMapEntries
                 return this._handle_set_colour_map_msg();
 
-            case 2:
-                // Bell
+            case 2:  // Bell
                 Log.Debug("Bell");
                 var event = new CustomEvent("bell", { detail: {} });
                 this.dispatchEvent(event);
                 return true;
 
-            case 3:
-                // ServerCutText
+            case 3:  // ServerCutText
                 return this._handle_server_cut_text();
 
-            case 150:
-                // EndOfContinuousUpdates
-                var first = !this._supportsContinuousUpdates;
+            case 150: // EndOfContinuousUpdates
+                var first = !(this._supportsContinuousUpdates);
                 this._supportsContinuousUpdates = true;
                 this._enabledContinuousUpdates = false;
                 if (first) {
@@ -1534,12 +1471,10 @@ RFB.prototype = {
                 }
                 return true;
 
-            case 248:
-                // ServerFence
+            case 248: // ServerFence
                 return this._handle_server_fence_msg();
 
-            case 250:
-                // XVP
+            case 250:  // XVP
                 return this._handle_xvp_msg();
 
             default:
@@ -1549,7 +1484,7 @@ RFB.prototype = {
         }
     },
 
-    _onFlush: function () {
+    _onFlush: function() {
         this._flushing = false;
         // Resume processing
         if (this._sock.rQlen() > 0) {
@@ -1562,15 +1497,13 @@ RFB.prototype = {
         var now;
 
         if (this._FBU.rects === 0) {
-            if (this._sock.rQwait("FBU header", 3, 1)) {
-                return false;
-            }
-            this._sock.rQskip8(); // Padding
+            if (this._sock.rQwait("FBU header", 3, 1)) { return false; }
+            this._sock.rQskip8();  // Padding
             this._FBU.rects = this._sock.rQshift16();
             this._FBU.bytes = 0;
             this._timing.cur_fbu = 0;
             if (this._timing.fbu_rt_start > 0) {
-                now = new Date().getTime();
+                now = (new Date()).getTime();
                 Log.Info("First FBU latency: " + (now - this._timing.fbu_rt_start));
             }
 
@@ -1584,38 +1517,34 @@ RFB.prototype = {
         }
 
         while (this._FBU.rects > 0) {
-            if (this._rfb_connection_state !== 'connected') {
-                return false;
-            }
+            if (this._rfb_connection_state !== 'connected') { return false; }
 
-            if (this._sock.rQwait("FBU", this._FBU.bytes)) {
-                return false;
-            }
+            if (this._sock.rQwait("FBU", this._FBU.bytes)) { return false; }
             if (this._FBU.bytes === 0) {
-                if (this._sock.rQwait("rect header", 12)) {
-                    return false;
-                }
+                if (this._sock.rQwait("rect header", 12)) { return false; }
                 /* New FramebufferUpdate */
 
                 var hdr = this._sock.rQshiftBytes(12);
-                this._FBU.x = (hdr[0] << 8) + hdr[1];
-                this._FBU.y = (hdr[2] << 8) + hdr[3];
-                this._FBU.width = (hdr[4] << 8) + hdr[5];
-                this._FBU.height = (hdr[6] << 8) + hdr[7];
-                this._FBU.encoding = parseInt((hdr[8] << 24) + (hdr[9] << 16) + (hdr[10] << 8) + hdr[11], 10);
+                this._FBU.x        = (hdr[0] << 8) + hdr[1];
+                this._FBU.y        = (hdr[2] << 8) + hdr[3];
+                this._FBU.width    = (hdr[4] << 8) + hdr[5];
+                this._FBU.height   = (hdr[6] << 8) + hdr[7];
+                this._FBU.encoding = parseInt((hdr[8] << 24) + (hdr[9] << 16) +
+                                              (hdr[10] << 8) + hdr[11], 10);
 
                 if (!this._encHandlers[this._FBU.encoding]) {
-                    this._fail("Unsupported encoding (encoding: " + this._FBU.encoding + ")");
+                    this._fail("Unsupported encoding (encoding: " +
+                               this._FBU.encoding + ")");
                     return false;
                 }
             }
 
-            this._timing.last_fbu = new Date().getTime();
+            this._timing.last_fbu = (new Date()).getTime();
 
             ret = this._encHandlers[this._FBU.encoding]();
 
-            now = new Date().getTime();
-            this._timing.cur_fbu += now - this._timing.last_fbu;
+            now = (new Date()).getTime();
+            this._timing.cur_fbu += (now - this._timing.last_fbu);
 
             if (ret) {
                 if (!(this._FBU.encoding in this._encStats)) {
@@ -1626,41 +1555,47 @@ RFB.prototype = {
                 this._timing.pixels += this._FBU.width * this._FBU.height;
             }
 
-            if (this._timing.pixels >= this._fb_width * this._fb_height) {
-                if (this._FBU.width === this._fb_width && this._FBU.height === this._fb_height || this._timing.fbu_rt_start > 0) {
+            if (this._timing.pixels >= (this._fb_width * this._fb_height)) {
+                if ((this._FBU.width === this._fb_width && this._FBU.height === this._fb_height) ||
+                    this._timing.fbu_rt_start > 0) {
                     this._timing.full_fbu_total += this._timing.cur_fbu;
                     this._timing.full_fbu_cnt++;
-                    Log.Info("Timing of full FBU, curr: " + this._timing.cur_fbu + ", total: " + this._timing.full_fbu_total + ", cnt: " + this._timing.full_fbu_cnt + ", avg: " + this._timing.full_fbu_total / this._timing.full_fbu_cnt);
+                    Log.Info("Timing of full FBU, curr: " +
+                              this._timing.cur_fbu + ", total: " +
+                              this._timing.full_fbu_total + ", cnt: " +
+                              this._timing.full_fbu_cnt + ", avg: " +
+                              (this._timing.full_fbu_total / this._timing.full_fbu_cnt));
                 }
 
                 if (this._timing.fbu_rt_start > 0) {
                     var fbu_rt_diff = now - this._timing.fbu_rt_start;
                     this._timing.fbu_rt_total += fbu_rt_diff;
                     this._timing.fbu_rt_cnt++;
-                    Log.Info("full FBU round-trip, cur: " + fbu_rt_diff + ", total: " + this._timing.fbu_rt_total + ", cnt: " + this._timing.fbu_rt_cnt + ", avg: " + this._timing.fbu_rt_total / this._timing.fbu_rt_cnt);
+                    Log.Info("full FBU round-trip, cur: " +
+                              fbu_rt_diff + ", total: " +
+                              this._timing.fbu_rt_total + ", cnt: " +
+                              this._timing.fbu_rt_cnt + ", avg: " +
+                              (this._timing.fbu_rt_total / this._timing.fbu_rt_cnt));
                     this._timing.fbu_rt_start = 0;
                 }
             }
 
-            if (!ret) {
-                return ret;
-            } // need more data
+            if (!ret) { return ret; }  // need more data
         }
 
         this._display.flip();
 
-        return true; // We finished this FBU
+        return true;  // We finished this FBU
     },
 
-    _updateContinuousUpdates: function () {
-        if (!this._enabledContinuousUpdates) {
-            return;
-        }
+    _updateContinuousUpdates: function() {
+        if (!this._enabledContinuousUpdates) { return; }
 
-        RFB.messages.enableContinuousUpdates(this._sock, true, 0, 0, this._fb_width, this._fb_height);
+        RFB.messages.enableContinuousUpdates(this._sock, true, 0, 0,
+                                             this._fb_width, this._fb_height);
     },
 
-    _resize: function (width, height) {
+    _resize: function(width, height) {
         this._fb_width = width;
         this._fb_height = height;
 
@@ -1672,20 +1607,18 @@ RFB.prototype = {
         this._updateClip();
         this._updateScale();
 
-        this._timing.fbu_rt_start = new Date().getTime();
+        this._timing.fbu_rt_start = (new Date()).getTime();
         this._updateContinuousUpdates();
     },
 
     _xvpOp: function (ver, op) {
-        if (this._rfb_xvp_ver < ver) {
-            return;
-        }
+        if (this._rfb_xvp_ver < ver) { return; }
         Log.Info("Sending XVP operation " + op + " (version " + ver + ")");
         RFB.messages.xvpOp(this._sock, ver, op);
-    }
+    },
 };
 
-Object.assign(RFB.prototype, _eventtarget2.default);
+Object.assign(RFB.prototype, EventTargetMixin);
 
 // Class Methods
 RFB.messages = {
@@ -1693,15 +1626,15 @@ RFB.messages = {
         var buff = sock._sQ;
         var offset = sock._sQlen;
 
-        buff[offset] = 4; // msg-type
+        buff[offset] = 4;  // msg-type
         buff[offset + 1] = down;
 
         buff[offset + 2] = 0;
         buff[offset + 3] = 0;
 
-        buff[offset + 4] = keysym >> 24;
-        buff[offset + 5] = keysym >> 16;
-        buff[offset + 6] = keysym >> 8;
+        buff[offset + 4] = (keysym >> 24);
+        buff[offset + 5] = (keysym >> 16);
+        buff[offset + 6] = (keysym >> 8);
         buff[offset + 7] = keysym;
 
         sock._sQlen += 8;
@@ -1710,8 +1643,8 @@ RFB.messages = {
 
     QEMUExtendedKeyEvent: function (sock, keysym, down, keycode) {
         function getRFBkeycode(xt_scancode) {
-            var upperByte = keycode >> 8;
-            var lowerByte = keycode & 0x00ff;
+            var upperByte = (keycode >> 8);
+            var lowerByte = (keycode & 0x00ff);
             if (upperByte === 0xe0 && lowerByte < 0x7f) {
                 lowerByte = lowerByte | 0x80;
                 return lowerByte;
@@ -1725,19 +1658,19 @@ RFB.messages = {
         buff[offset] = 255; // msg-type
         buff[offset + 1] = 0; // sub msg-type
 
-        buff[offset + 2] = down >> 8;
+        buff[offset + 2] = (down >> 8);
         buff[offset + 3] = down;
 
-        buff[offset + 4] = keysym >> 24;
-        buff[offset + 5] = keysym >> 16;
-        buff[offset + 6] = keysym >> 8;
+        buff[offset + 4] = (keysym >> 24);
+        buff[offset + 5] = (keysym >> 16);
+        buff[offset + 6] = (keysym >> 8);
         buff[offset + 7] = keysym;
 
         var RFBkeycode = getRFBkeycode(keycode);
 
-        buff[offset + 8] = RFBkeycode >> 24;
-        buff[offset + 9] = RFBkeycode >> 16;
-        buff[offset + 10] = RFBkeycode >> 8;
+        buff[offset + 8] = (RFBkeycode >> 24);
+        buff[offset + 9] = (RFBkeycode >> 16);
+        buff[offset + 10] = (RFBkeycode >> 8);
         buff[offset + 11] = RFBkeycode;
 
         sock._sQlen += 12;
@@ -1781,7 +1714,7 @@ RFB.messages = {
         buff[offset + 7] = n;
 
         for (var i = 0; i < n; i++) {
-            buff[offset + 8 + i] = text.charCodeAt(i);
+            buff[offset + 8 + i] =  text.charCodeAt(i);
         }
 
         sock._sQlen += 8 + n;
@@ -1792,26 +1725,26 @@ RFB.messages = {
         var buff = sock._sQ;
         var offset = sock._sQlen;
 
-        buff[offset] = 251; // msg-type
-        buff[offset + 1] = 0; // padding
-        buff[offset + 2] = width >> 8; // width
+        buff[offset] = 251;              // msg-type
+        buff[offset + 1] = 0;            // padding
+        buff[offset + 2] = width >> 8;   // width
         buff[offset + 3] = width;
-        buff[offset + 4] = height >> 8; // height
+        buff[offset + 4] = height >> 8;  // height
         buff[offset + 5] = height;
 
-        buff[offset + 6] = 1; // number-of-screens
-        buff[offset + 7] = 0; // padding
+        buff[offset + 6] = 1;            // number-of-screens
+        buff[offset + 7] = 0;            // padding
 
         // screen array
-        buff[offset + 8] = id >> 24; // id
+        buff[offset + 8] = id >> 24;     // id
         buff[offset + 9] = id >> 16;
         buff[offset + 10] = id >> 8;
         buff[offset + 11] = id;
-        buff[offset + 12] = 0; // x-position
+        buff[offset + 12] = 0;           // x-position
         buff[offset + 13] = 0;
-        buff[offset + 14] = 0; // y-position
+        buff[offset + 14] = 0;           // y-position
         buff[offset + 15] = 0;
-        buff[offset + 16] = width >> 8; // width
+        buff[offset + 16] = width >> 8;  // width
         buff[offset + 17] = width;
         buff[offset + 18] = height >> 8; // height
         buff[offset + 19] = height;
@@ -1855,14 +1788,14 @@ RFB.messages = {
         var buff = sock._sQ;
         var offset = sock._sQlen;
 
-        buff[offset] = 150; // msg-type
-        buff[offset + 1] = enable; // enable-flag
+        buff[offset] = 150;             // msg-type
+        buff[offset + 1] = enable;      // enable-flag
 
-        buff[offset + 2] = x >> 8; // x
+        buff[offset + 2] = x >> 8;      // x
         buff[offset + 3] = x;
-        buff[offset + 4] = y >> 8; // y
+        buff[offset + 4] = y >> 8;      // y
         buff[offset + 5] = y;
-        buff[offset + 6] = width >> 8; // width
+        buff[offset + 6] = width >> 8;  // width
         buff[offset + 7] = width;
         buff[offset + 8] = height >> 8; // height
         buff[offset + 9] = height;
@@ -1885,35 +1818,35 @@ RFB.messages = {
             bpp = 8;
         }
 
-        bits = Math.floor(depth / 3);
+        bits = Math.floor(depth/3);
 
-        buff[offset] = 0; // msg-type
+        buff[offset] = 0;  // msg-type
 
         buff[offset + 1] = 0; // padding
         buff[offset + 2] = 0; // padding
         buff[offset + 3] = 0; // padding
 
-        buff[offset + 4] = bpp; // bits-per-pixel
-        buff[offset + 5] = depth; // depth
-        buff[offset + 6] = 0; // little-endian
-        buff[offset + 7] = true_color ? 1 : 0; // true-color
+        buff[offset + 4] = bpp;                 // bits-per-pixel
+        buff[offset + 5] = depth;               // depth
+        buff[offset + 6] = 0;                   // little-endian
+        buff[offset + 7] = true_color ? 1 : 0;  // true-color
 
-        buff[offset + 8] = 0; // red-max
-        buff[offset + 9] = (1 << bits) - 1; // red-max
+        buff[offset + 8] = 0;    // red-max
+        buff[offset + 9] = (1 << bits) - 1;  // red-max
 
-        buff[offset + 10] = 0; // green-max
+        buff[offset + 10] = 0;   // green-max
         buff[offset + 11] = (1 << bits) - 1; // green-max
 
-        buff[offset + 12] = 0; // blue-max
+        buff[offset + 12] = 0;   // blue-max
         buff[offset + 13] = (1 << bits) - 1; // blue-max
 
         buff[offset + 14] = bits * 2; // red-shift
         buff[offset + 15] = bits * 1; // green-shift
         buff[offset + 16] = bits * 0; // blue-shift
 
-        buff[offset + 17] = 0; // padding
-        buff[offset + 18] = 0; // padding
-        buff[offset + 19] = 0; // padding
+        buff[offset + 17] = 0;   // padding
+        buff[offset + 18] = 0;   // padding
+        buff[offset + 19] = 0;   // padding
 
         sock._sQlen += 20;
         sock.flush();
@@ -1929,8 +1862,7 @@ RFB.messages = {
         buff[offset + 2] = encodings.length >> 8;
         buff[offset + 3] = encodings.length;
 
-        var i,
-            j = offset + 4;
+        var i, j = offset + 4;
         for (i = 0; i < encodings.length; i++) {
             var enc = encodings[i];
             buff[j] = enc >> 24;
@@ -1949,26 +1881,22 @@ RFB.messages = {
         var buff = sock._sQ;
         var offset = sock._sQlen;
 
-        if (typeof x === "undefined") {
-            x = 0;
-        }
-        if (typeof y === "undefined") {
-            y = 0;
-        }
+        if (typeof(x) === "undefined") { x = 0; }
+        if (typeof(y) === "undefined") { y = 0; }
 
-        buff[offset] = 3; // msg-type
+        buff[offset] = 3;  // msg-type
         buff[offset + 1] = incremental ? 1 : 0;
 
-        buff[offset + 2] = x >> 8 & 0xFF;
+        buff[offset + 2] = (x >> 8) & 0xFF;
         buff[offset + 3] = x & 0xFF;
 
-        buff[offset + 4] = y >> 8 & 0xFF;
+        buff[offset + 4] = (y >> 8) & 0xFF;
         buff[offset + 5] = y & 0xFF;
 
-        buff[offset + 6] = w >> 8 & 0xFF;
+        buff[offset + 6] = (w >> 8) & 0xFF;
         buff[offset + 7] = w & 0xFF;
 
-        buff[offset + 8] = h >> 8 & 0xFF;
+        buff[offset + 8] = (h >> 8) & 0xFF;
         buff[offset + 9] = h & 0xFF;
 
         sock._sQlen += 10;
@@ -1987,7 +1915,7 @@ RFB.messages = {
 
         sock._sQlen += 4;
         sock.flush();
-    }
+    },
 };
 
 RFB.genDES = function (password, challenge) {
@@ -1995,7 +1923,7 @@ RFB.genDES = function (password, challenge) {
     for (var i = 0; i < password.length; i++) {
         passwd.push(password.charCodeAt(i));
     }
-    return new _des2.default(passwd).encrypt(challenge);
+    return (new DES(passwd)).encrypt(challenge);
 };
 
 RFB.encodingHandlers = {
@@ -2005,33 +1933,33 @@ RFB.encodingHandlers = {
         }
 
         var pixelSize = this._fb_depth == 8 ? 1 : 4;
-        this._FBU.bytes = this._FBU.width * pixelSize; // at least a line
-        if (this._sock.rQwait("RAW", this._FBU.bytes)) {
-            return false;
-        }
+        this._FBU.bytes = this._FBU.width * pixelSize;  // at least a line
+        if (this._sock.rQwait("RAW", this._FBU.bytes)) { return false; }
         var cur_y = this._FBU.y + (this._FBU.height - this._FBU.lines);
-        var curr_height = Math.min(this._FBU.lines, Math.floor(this._sock.rQlen() / (this._FBU.width * pixelSize)));
+        var curr_height = Math.min(this._FBU.lines,
+                                   Math.floor(this._sock.rQlen() / (this._FBU.width * pixelSize)));
         var data = this._sock.get_rQ();
         var index = this._sock.get_rQi();
         if (this._fb_depth == 8) {
-            var pixels = this._FBU.width * curr_height;
+            var pixels = this._FBU.width * curr_height
             var newdata = new Uint8Array(pixels * 4);
             var i;
-            for (i = 0; i < pixels; i++) {
-                newdata[i * 4 + 0] = (data[index + i] >> 0 & 0x3) * 255 / 3;
-                newdata[i * 4 + 1] = (data[index + i] >> 2 & 0x3) * 255 / 3;
-                newdata[i * 4 + 2] = (data[index + i] >> 4 & 0x3) * 255 / 3;
+            for (i = 0;i < pixels;i++) {
+                newdata[i * 4 + 0] = ((data[index + i] >> 0) & 0x3) * 255 / 3;
+                newdata[i * 4 + 1] = ((data[index + i] >> 2) & 0x3) * 255 / 3;
+                newdata[i * 4 + 2] = ((data[index + i] >> 4) & 0x3) * 255 / 3;
                 newdata[i * 4 + 4] = 0;
             }
             data = newdata;
             index = 0;
         }
-        this._display.blitImage(this._FBU.x, cur_y, this._FBU.width, curr_height, data, index);
+        this._display.blitImage(this._FBU.x, cur_y, this._FBU.width,
+                                curr_height, data, index);
         this._sock.rQskipBytes(this._FBU.width * curr_height * pixelSize);
         this._FBU.lines -= curr_height;
 
         if (this._FBU.lines > 0) {
-            this._FBU.bytes = this._FBU.width * pixelSize; // At least another line
+            this._FBU.bytes = this._FBU.width * pixelSize;  // At least another line
         } else {
             this._FBU.rects--;
             this._FBU.bytes = 0;
@@ -2042,10 +1970,10 @@ RFB.encodingHandlers = {
 
     COPYRECT: function () {
         this._FBU.bytes = 4;
-        if (this._sock.rQwait("COPYRECT", 4)) {
-            return false;
-        }
-        this._display.copyImage(this._sock.rQshift16(), this._sock.rQshift16(), this._FBU.x, this._FBU.y, this._FBU.width, this._FBU.height);
+        if (this._sock.rQwait("COPYRECT", 4)) { return false; }
+        this._display.copyImage(this._sock.rQshift16(), this._sock.rQshift16(),
+                                this._FBU.x, this._FBU.y, this._FBU.width,
+                                this._FBU.height);
 
         this._FBU.rects--;
         this._FBU.bytes = 0;
@@ -2056,15 +1984,13 @@ RFB.encodingHandlers = {
         var color;
         if (this._FBU.subrects === 0) {
             this._FBU.bytes = 4 + 4;
-            if (this._sock.rQwait("RRE", 4 + 4)) {
-                return false;
-            }
+            if (this._sock.rQwait("RRE", 4 + 4)) { return false; }
             this._FBU.subrects = this._sock.rQshift32();
-            color = this._sock.rQshiftBytes(4); // Background
+            color = this._sock.rQshiftBytes(4);  // Background
             this._display.fillRect(this._FBU.x, this._FBU.y, this._FBU.width, this._FBU.height, color);
         }
 
-        while (this._FBU.subrects > 0 && this._sock.rQlen() >= 4 + 8) {
+        while (this._FBU.subrects > 0 && this._sock.rQlen() >= (4 + 8)) {
             color = this._sock.rQshiftBytes(4);
             var x = this._sock.rQshift16();
             var y = this._sock.rQshift16();
@@ -2098,13 +2024,11 @@ RFB.encodingHandlers = {
 
         while (this._FBU.tiles > 0) {
             this._FBU.bytes = 1;
-            if (this._sock.rQwait("HEXTILE subencoding", this._FBU.bytes)) {
-                return false;
-            }
-            var subencoding = rQ[rQi]; // Peek
-            if (subencoding > 30) {
-                // Raw
-                this._fail("Illegal hextile subencoding (subencoding: " + subencoding + ")");
+            if (this._sock.rQwait("HEXTILE subencoding", this._FBU.bytes)) { return false; }
+            var subencoding = rQ[rQi];  // Peek
+            if (subencoding > 30) {  // Raw
+                this._fail("Illegal hextile subencoding (subencoding: " +
+                           subencoding + ")");
                 return false;
             }
 
@@ -2114,31 +2038,24 @@ RFB.encodingHandlers = {
             var tile_y = Math.floor(curr_tile / this._FBU.tiles_x);
             var x = this._FBU.x + tile_x * 16;
             var y = this._FBU.y + tile_y * 16;
-            var w = Math.min(16, this._FBU.x + this._FBU.width - x);
-            var h = Math.min(16, this._FBU.y + this._FBU.height - y);
+            var w = Math.min(16, (this._FBU.x + this._FBU.width) - x);
+            var h = Math.min(16, (this._FBU.y + this._FBU.height) - y);
 
             // Figure out how much we are expecting
-            if (subencoding & 0x01) {
-                // Raw
+            if (subencoding & 0x01) {  // Raw
                 this._FBU.bytes += w * h * 4;
             } else {
-                if (subencoding & 0x02) {
-                    // Background
+                if (subencoding & 0x02) {  // Background
                     this._FBU.bytes += 4;
                 }
-                if (subencoding & 0x04) {
-                    // Foreground
+                if (subencoding & 0x04) {  // Foreground
                     this._FBU.bytes += 4;
                 }
-                if (subencoding & 0x08) {
-                    // AnySubrects
-                    this._FBU.bytes++; // Since we aren't shifting it off
-                    if (this._sock.rQwait("hextile subrects header", this._FBU.bytes)) {
-                        return false;
-                    }
-                    subrects = rQ[rQi + this._FBU.bytes - 1]; // Peek
-                    if (subencoding & 0x10) {
-                        // SubrectsColoured
+                if (subencoding & 0x08) {  // AnySubrects
+                    this._FBU.bytes++;  // Since we aren't shifting it off
+                    if (this._sock.rQwait("hextile subrects header", this._FBU.bytes)) { return false; }
+                    subrects = rQ[rQi + this._FBU.bytes - 1];  // Peek
+                    if (subencoding & 0x10) {  // SubrectsColoured
                         this._FBU.bytes += subrects * (4 + 2);
                     } else {
                         this._FBU.bytes += subrects * 2;
@@ -2146,9 +2063,7 @@ RFB.encodingHandlers = {
                 }
             }
 
-            if (this._sock.rQwait("hextile", this._FBU.bytes)) {
-                return false;
-            }
+            if (this._sock.rQwait("hextile", this._FBU.bytes)) { return false; }
 
             // We know the encoding and have a whole tile
             this._FBU.subencoding = rQ[rQi];
@@ -2160,32 +2075,27 @@ RFB.encodingHandlers = {
                 } else {
                     this._display.fillRect(x, y, w, h, this._FBU.background);
                 }
-            } else if (this._FBU.subencoding & 0x01) {
-                // Raw
+            } else if (this._FBU.subencoding & 0x01) {  // Raw
                 this._display.blitImage(x, y, w, h, rQ, rQi);
                 rQi += this._FBU.bytes - 1;
             } else {
-                if (this._FBU.subencoding & 0x02) {
-                    // Background
+                if (this._FBU.subencoding & 0x02) {  // Background
                     this._FBU.background = [rQ[rQi], rQ[rQi + 1], rQ[rQi + 2], rQ[rQi + 3]];
                     rQi += 4;
                 }
-                if (this._FBU.subencoding & 0x04) {
-                    // Foreground
+                if (this._FBU.subencoding & 0x04) {  // Foreground
                     this._FBU.foreground = [rQ[rQi], rQ[rQi + 1], rQ[rQi + 2], rQ[rQi + 3]];
                     rQi += 4;
                 }
 
                 this._display.startTile(x, y, w, h, this._FBU.background);
-                if (this._FBU.subencoding & 0x08) {
-                    // AnySubrects
+                if (this._FBU.subencoding & 0x08) {  // AnySubrects
                     subrects = rQ[rQi];
                     rQi++;
 
                     for (var s = 0; s < subrects; s++) {
                         var color;
-                        if (this._FBU.subencoding & 0x10) {
-                            // SubrectsColoured
+                        if (this._FBU.subencoding & 0x10) {  // SubrectsColoured
                             color = [rQ[rQi], rQ[rQi + 1], rQ[rQi + 2], rQ[rQi + 3]];
                             rQi += 4;
                         } else {
@@ -2193,8 +2103,8 @@ RFB.encodingHandlers = {
                         }
                         var xy = rQ[rQi];
                         rQi++;
-                        var sx = xy >> 4;
-                        var sy = xy & 0x0f;
+                        var sx = (xy >> 4);
+                        var sy = (xy & 0x0f);
 
                         var wh = rQ[rQi];
                         rQi++;
@@ -2220,10 +2130,8 @@ RFB.encodingHandlers = {
     },
 
     TIGHT: function () {
-        this._FBU.bytes = 1; // compression-control byte
-        if (this._sock.rQwait("TIGHT compression-control", this._FBU.bytes)) {
-            return false;
-        }
+        this._FBU.bytes = 1;  // compression-control byte
+        if (this._sock.rQwait("TIGHT compression-control", this._FBU.bytes)) { return false; }
 
         var checksum = function (data) {
             var sum = 0;
@@ -2238,7 +2146,7 @@ RFB.encodingHandlers = {
         var streamId = -1;
         var decompress = function (data, expected) {
             for (var i = 0; i < 4; i++) {
-                if (resetStreams >> i & 1) {
+                if ((resetStreams >> i) & 1) {
                     this._FBU.zlibs[i].reset();
                     Log.Info("Reset zlib stream " + i);
                 }
@@ -2277,7 +2185,8 @@ RFB.encodingHandlers = {
                         dest[dp + 2] = palette[sp + 2];
                     }
                 }
-                 xoffset = yoffset + x * 8;
+
+                xoffset = yoffset + x * 8;
                 targetbyte = data[ybitoffset + x];
                 for (b = 7; b >= 8 - width % 8; b--) {
                     dp = (xoffset + 7 - b) * 3;
@@ -2338,11 +2247,9 @@ RFB.encodingHandlers = {
             var numColors = rQ[rQi + 2] + 1;
             var paletteSize = numColors * 3;
             this._FBU.bytes += paletteSize;
-            if (this._sock.rQwait("TIGHT palette " + cmode, this._FBU.bytes)) {
-                return false;
-            }
+            if (this._sock.rQwait("TIGHT palette " + cmode, this._FBU.bytes)) { return false; }
 
-            var bpp = numColors <= 2 ? 1 : 8;
+            var bpp = (numColors <= 2) ? 1 : 8;
             var rowSize = Math.floor((this._FBU.width * bpp + 7) / 8);
             var raw = false;
             if (rowSize * this._FBU.height < 12) {
@@ -2368,9 +2275,7 @@ RFB.encodingHandlers = {
             }
 
             this._FBU.bytes += cl_header + cl_data;
-            if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) {
-                return false;
-            }
+            if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) { return false; }
 
             // Shift ctl, filter id, num colors, palette entries, and clength off
             this._sock.rQskipBytes(3);
@@ -2393,6 +2298,7 @@ RFB.encodingHandlers = {
                 rgbx = indexedToRGBX(data, this._paletteBuff, this._FBU.width, this._FBU.height);
                 this._display.blitRgbxImage(this._FBU.x, this._FBU.y, this._FBU.width, this._FBU.height, rgbx, 0, false);
             }
+
 
             return true;
         }.bind(this);
@@ -2421,9 +2327,7 @@ RFB.encodingHandlers = {
                 // end inline getTightCLength
             }
             this._FBU.bytes = 1 + cl_header + cl_data;
-            if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) {
-                return false;
-            }
+            if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) { return false; }
 
             // Shift ctl, clength off
             this._sock.rQshiftBytes(1 + cl_header);
@@ -2448,33 +2352,33 @@ RFB.encodingHandlers = {
         ctl = ctl >> 4;
         streamId = ctl & 0x3;
 
-        if (ctl === 0x08) cmode = "fill";else if (ctl === 0x09) cmode = "jpeg";else if (ctl === 0x0A) cmode = "png";else if (ctl & 0x04) cmode = "filter";else if (ctl < 0x04) cmode = "copy";else return this._fail("Illegal tight compression received (ctl: " + ctl + ")");
+        if (ctl === 0x08)       cmode = "fill";
+        else if (ctl === 0x09)  cmode = "jpeg";
+        else if (ctl === 0x0A)  cmode = "png";
+        else if (ctl & 0x04)    cmode = "filter";
+        else if (ctl < 0x04)    cmode = "copy";
+        else return this._fail("Illegal tight compression received (ctl: " +
+                               ctl + ")");
 
         switch (cmode) {
             // fill use depth because TPIXELs drop the padding byte
-            case "fill":
-                // TPIXEL
+            case "fill":  // TPIXEL
                 this._FBU.bytes += 3;
                 break;
-            case "jpeg":
-                // max clength
+            case "jpeg":  // max clength
                 this._FBU.bytes += 3;
                 break;
-            case "png":
-                // max clength
+            case "png":  // max clength
                 this._FBU.bytes += 3;
                 break;
-            case "filter":
-                // filter id + num colors if palette
+            case "filter":  // filter id + num colors if palette
                 this._FBU.bytes += 2;
                 break;
             case "copy":
                 break;
         }
 
-        if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) {
-            return false;
-        }
+        if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) { return false; }
 
         // Determine FBU.bytes
         switch (cmode) {
@@ -2499,34 +2403,30 @@ RFB.encodingHandlers = {
                     }
                 }
                 // end inline getTightCLength
-                this._FBU.bytes = 1 + cl_header + cl_data; // ctl + clength size + jpeg-data
-                if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) {
-                    return false;
-                }
+                this._FBU.bytes = 1 + cl_header + cl_data;  // ctl + clength size + jpeg-data
+                if (this._sock.rQwait("TIGHT " + cmode, this._FBU.bytes)) { return false; }
 
                 // We have everything, render it
-                this._sock.rQskipBytes(1 + cl_header); // shift off clt + compact length
+                this._sock.rQskipBytes(1 + cl_header);  // shift off clt + compact length
                 data = this._sock.rQshiftBytes(cl_data);
                 this._display.imageRect(this._FBU.x, this._FBU.y, "image/" + cmode, data);
                 break;
             case "filter":
                 var filterId = rQ[rQi + 1];
                 if (filterId === 1) {
-                    if (!handlePalette()) {
-                        return false;
-                    }
+                    if (!handlePalette()) { return false; }
                 } else {
                     // Filter 0, Copy could be valid here, but servers don't send it as an explicit filter
                     // Filter 2, Gradient is valid but not use if jpeg is enabled
-                    this._fail("Unsupported tight subencoding received " + "(filter: " + filterId + ")");
+                    this._fail("Unsupported tight subencoding received " +
+                               "(filter: " + filterId + ")");
                 }
                 break;
             case "copy":
-                if (!handleCopy()) {
-                    return false;
-                }
+                if (!handleCopy()) { return false; }
                 break;
         }
+
 
         this._FBU.bytes = 0;
         this._FBU.rects--;
@@ -2541,9 +2441,7 @@ RFB.encodingHandlers = {
 
     ExtendedDesktopSize: function () {
         this._FBU.bytes = 1;
-        if (this._sock.rQwait("ExtendedDesktopSize", this._FBU.bytes)) {
-            return false;
-        }
+        if (this._sock.rQwait("ExtendedDesktopSize", this._FBU.bytes)) { return false; }
 
         var firstUpdate = !this._supportsSetDesktopSize;
         this._supportsSetDesktopSize = true;
@@ -2558,22 +2456,20 @@ RFB.encodingHandlers = {
 
         var number_of_screens = this._sock.rQpeek8();
 
-        this._FBU.bytes = 4 + number_of_screens * 16;
-        if (this._sock.rQwait("ExtendedDesktopSize", this._FBU.bytes)) {
-            return false;
-        }
+        this._FBU.bytes = 4 + (number_of_screens * 16);
+        if (this._sock.rQwait("ExtendedDesktopSize", this._FBU.bytes)) { return false; }
 
-        this._sock.rQskipBytes(1); // number-of-screens
-        this._sock.rQskipBytes(3); // padding
+        this._sock.rQskipBytes(1);  // number-of-screens
+        this._sock.rQskipBytes(3);  // padding
 
         for (var i = 0; i < number_of_screens; i += 1) {
             // Save the id and flags of the first screen
             if (i === 0) {
-                this._screen_id = this._sock.rQshiftBytes(4); // id
-                this._sock.rQskipBytes(2); // x-position
-                this._sock.rQskipBytes(2); // y-position
-                this._sock.rQskipBytes(2); // width
-                this._sock.rQskipBytes(2); // height
+                this._screen_id = this._sock.rQshiftBytes(4);    // id
+                this._sock.rQskipBytes(2);                       // x-position
+                this._sock.rQskipBytes(2);                       // y-position
+                this._sock.rQskipBytes(2);                       // width
+                this._sock.rQskipBytes(2);                       // height
                 this._screen_flags = this._sock.rQshiftBytes(4); // flags
             } else {
                 this._sock.rQskipBytes(16);
@@ -2593,20 +2489,21 @@ RFB.encodingHandlers = {
             var msg = "";
             // The y-position indicates the status code from the server
             switch (this._FBU.y) {
-                case 1:
-                    msg = "Resize is administratively prohibited";
-                    break;
-                case 2:
-                    msg = "Out of resources";
-                    break;
-                case 3:
-                    msg = "Invalid screen layout";
-                    break;
-                default:
-                    msg = "Unknown reason";
-                    break;
+            case 1:
+                msg = "Resize is administratively prohibited";
+                break;
+            case 2:
+                msg = "Out of resources";
+                break;
+            case 3:
+                msg = "Invalid screen layout";
+                break;
+            default:
+                msg = "Unknown reason";
+                break;
             }
-            Log.Warn("Server did not accept the resize request: " + msg);
+            Log.Warn("Server did not accept the resize request: "
+                     + msg);
         } else {
             this._resize(this._FBU.width, this._FBU.height);
         }
@@ -2625,8 +2522,8 @@ RFB.encodingHandlers = {
 
     Cursor: function () {
         Log.Debug(">> set_cursor");
-        var x = this._FBU.x; // hotspot-x
-        var y = this._FBU.y; // hotspot-y
+        var x = this._FBU.x;  // hotspot-x
+        var y = this._FBU.y;  // hotspot-y
         var w = this._FBU.width;
         var h = this._FBU.height;
 
@@ -2634,11 +2531,11 @@ RFB.encodingHandlers = {
         var masklength = Math.floor((w + 7) / 8) * h;
 
         this._FBU.bytes = pixelslength + masklength;
-        if (this._sock.rQwait("cursor encoding", this._FBU.bytes)) {
-            return false;
-        }
+        if (this._sock.rQwait("cursor encoding", this._FBU.bytes)) { return false; }
 
-        this._display.changeCursor(this._sock.rQshiftBytes(pixelslength), this._sock.rQshiftBytes(masklength), x, y, w, h);
+        this._display.changeCursor(this._sock.rQshiftBytes(pixelslength),
+                                   this._sock.rQshiftBytes(masklength),
+                                   x, y, w, h);
 
         this._FBU.bytes = 0;
         this._FBU.rects--;
@@ -2656,6 +2553,7 @@ RFB.encodingHandlers = {
             if (keyboardEvent.code !== undefined) {
                 this._qemuExtKeyEventSupported = true;
             }
-        } catch (err) {}
-    }
+        } catch (err) {
+        }
+    },
 };

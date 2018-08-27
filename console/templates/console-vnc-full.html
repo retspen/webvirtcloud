@@ -16,7 +16,7 @@
     or the fragment:
         http://example.com/#host=HOST&port=PORT&encrypt=1
     -->
-    <title xmlns="http://www.w3.org/1999/html">WebVirtCloud - noVNC</title>
+    <title>WebVirtCloud - noVNC</title>
 
     <meta charset="utf-8" />
 
@@ -65,12 +65,26 @@
     <script type="text/javascript" src="{% static "js/novnc/app/error-handler.js" %}"></script>
 
     <!-- begin scripts -->
-    <script src="{% static "js/novnc/app.js" %}"></script>
+    <!-- promise polyfills promises for IE11 -->
+    <script src="{% static "js/novnc/vendor/promise.js" %}"></script>
+    <!-- ES2015/ES6 modules polyfill -->
+    <script type="module">
+        window._noVNC_has_module_support = true;
+    </script>
+    <script>
+        window.addEventListener("load", function() {
+            if (window._noVNC_has_module_support) return;
+            var loader = document.createElement("script");
+            loader.src = "{% static "js/novnc/vendor/browser-es-module-loader/dist/browser-es-module-loader.js" %}";
+            document.head.appendChild(loader);
+        });
+    </script>
+    <!-- actual script modules -->
+    <script type="module" crossorigin="anonymous" src="{% static "js/novnc/app/ui.js" %}"></script>
     <!-- end scripts -->
 {% endblock %}
 
 {% block content %}
-
     <div id="noVNC_fallback_error" class="noVNC_center">
         <div>
             <div>noVNC encountered an error:</div>
@@ -217,7 +231,7 @@
                                     <li>
                                         <label><input id="noVNC_setting_encrypt" type="checkbox" /> Encrypt</label>
                                     </li>
-                                    <li>
+                                     <li>
                                         <label for="noVNC_setting_host">Host:</label>
                                         <input id="noVNC_setting_host" value="{{ ws_host }}"/>
                                     </li>
@@ -274,9 +288,7 @@
         <div id="noVNC_connect_dlg">
             <div class="noVNC_logo" translate="no"><span>no</span>VNC</div>
             <div id="noVNC_connect_button">
-                <div>
-                <img src="{% static "js/novnc/app/images/connect.svg" %}"> Connect
-                </div>
+                <div><img src="{% static "js/novnc/app/images/connect.svg" %}"> Connect</div>
             </div>
         </div>
     </div>

@@ -1,8 +1,3 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
 /*
  * Mapping from Unicode codepoints to X11/RFB keysyms
  *
@@ -671,13 +666,13 @@ var codepoints = {
     0x30f2: 0x04a6, // XK_kana_WO
     0x30f3: 0x04dd, // XK_kana_N
     0x30fb: 0x04a5, // XK_kana_conjunctive
-    0x30fc: 0x04b0 // XK_prolongedsound
+    0x30fc: 0x04b0, // XK_prolongedsound
 };
 
-exports.default = {
-    lookup: function (u) {
+export default {
+    lookup : function(u) {
         // Latin-1 is one-to-one mapping
-        if (u >= 0x20 && u <= 0xff) {
+        if ((u >= 0x20) && (u <= 0xff)) {
             return u;
         }
 
@@ -689,5 +684,5 @@ exports.default = {
 
         // General mapping as final fallback
         return 0x01000000 | u;
-    }
+    },
 };

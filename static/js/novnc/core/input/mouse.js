@@ -1,21 +1,3 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = Mouse;
-
-var _logging = require('../util/logging.js');
-
-var Log = _interopRequireWildcard(_logging);
-
-var _browser = require('../util/browser.js');
-
-var _events = require('../util/events.js');
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-var WHEEL_STEP = 10; // Delta threshold for a mouse wheel step
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2012 Joel Martin
@@ -23,10 +5,15 @@ var WHEEL_STEP = 10; // Delta threshold for a mouse wheel step
  * Licensed under MPL 2.0 or any later version (see LICENSE.txt)
  */
 
+import * as Log from '../util/logging.js';
+import { isTouchDevice } from '../util/browser.js';
+import { setCapture, stopEvent, getPointerEvent } from '../util/events.js';
+
+var WHEEL_STEP = 10; // Delta threshold for a mouse wheel step
 var WHEEL_STEP_TIMEOUT = 50; // ms
 var WHEEL_LINE_HEIGHT = 19;
 
-function Mouse(target) {
+export default function Mouse(target) {
     this._target = target || document;
 
     this._doubleClickTimer = null;
@@ -50,12 +37,12 @@ function Mouse(target) {
 Mouse.prototype = {
     // ===== PROPERTIES =====
 
-    touchButton: 1, // Button mask (1, 2, 4) for touch devices (0 means ignore clicks)
+    touchButton: 1,                 // Button mask (1, 2, 4) for touch devices (0 means ignore clicks)
 
     // ===== EVENT HANDLERS =====
 
-    onmousebutton: function () {}, // Handler for mouse button click/release
-    onmousemove: function () {}, // Handler for mouse movement
+    onmousebutton: function () {},  // Handler for mouse button click/release
+    onmousemove: function () {},    // Handler for mouse movement
 
     // ===== PRIVATE METHODS =====
 
@@ -85,7 +72,7 @@ Mouse.prototype = {
 
                     var xs = this._lastTouchPos.x - pos.x;
                     var ys = this._lastTouchPos.y - pos.y;
-                    var d = Math.sqrt(xs * xs + ys * ys);
+                    var d = Math.sqrt((xs * xs) + (ys * ys));
 
                     // The goal is to trigger on a certain physical width, the
                     // devicePixelRatio brings us a bit closer but is not optimal.
@@ -103,21 +90,22 @@ Mouse.prototype = {
             bmask = 1 << e.button;
         } else {
             /* IE including 9 */
-            bmask = (e.button & 0x1) + // Left
-            (e.button & 0x2) * 2 + // Right
-            (e.button & 0x4) / 2; // Middle
+            bmask = (e.button & 0x1) +      // Left
+                    (e.button & 0x2) * 2 +  // Right
+                    (e.button & 0x4) / 2;   // Middle
         }
 
-        Log.Debug("onmousebutton " + (down ? "down" : "up") + ", x: " + pos.x + ", y: " + pos.y + ", bmask: " + bmask);
+        Log.Debug("onmousebutton " + (down ? "down" : "up") +
+                  ", x: " + pos.x + ", y: " + pos.y + ", bmask: " + bmask);
         this.onmousebutton(pos.x, pos.y, down, bmask);
 
-        (0, _events.stopEvent)(e);
+        stopEvent(e);
     },
 
     _handleMouseDown: function (e) {
         // Touch events have implicit capture
         if (e.type === "mousedown") {
-            (0, _events.setCapture)(this._target);
+            setCapture(this._target);
         }
 
         this._handleMouseButton(e, 1);
@@ -191,21 +179,25 @@ Mouse.prototype = {
         if (Math.abs(this._accumulatedWheelDeltaX) > WHEEL_STEP) {
             this._generateWheelStepX();
         } else {
-            this._wheelStepXTimer = window.setTimeout(this._generateWheelStepX.bind(this), WHEEL_STEP_TIMEOUT);
+            this._wheelStepXTimer =
+                window.setTimeout(this._generateWheelStepX.bind(this),
+                                  WHEEL_STEP_TIMEOUT);
         }
         if (Math.abs(this._accumulatedWheelDeltaY) > WHEEL_STEP) {
             this._generateWheelStepY();
         } else {
-            this._wheelStepYTimer = window.setTimeout(this._generateWheelStepY.bind(this), WHEEL_STEP_TIMEOUT);
+            this._wheelStepYTimer =
+                window.setTimeout(this._generateWheelStepY.bind(this),
+                                  WHEEL_STEP_TIMEOUT);
         }
 
-        (0, _events.stopEvent)(e);
+        stopEvent(e);
     },
 
     _handleMouseMove: function (e) {
         this._updateMousePosition(e);
         this.onmousemove(this._pos.x, this._pos.y);
-        (0, _events.stopEvent)(e);
+        stopEvent(e);
     },
 
     _handleMouseDisable: function (e) {
@@ -216,13 +208,13 @@ Mouse.prototype = {
          *       to listen on the document element instead.
          */
         if (e.target == this._target) {
-            (0, _events.stopEvent)(e);
+            stopEvent(e);
         }
     },
 
     // Update coordinates relative to target
-    _updateMousePosition: function (e) {
-        e = (0, _events.getPointerEvent)(e);
+    _updateMousePosition: function(e) {
+        e = getPointerEvent(e);
         var bounds = this._target.getBoundingClientRect();
         var x, y;
         // Clip to target bounds
@@ -240,7 +232,7 @@ Mouse.prototype = {
         } else {
             y = e.clientY - bounds.top;
         }
-        this._pos = { x: x, y: y };
+        this._pos = {x:x, y:y};
     },
 
     // ===== PUBLIC METHODS =====
@@ -248,7 +240,7 @@ Mouse.prototype = {
     grab: function () {
         var c = this._target;
 
-        if (_browser.isTouchDevice) {
+        if (isTouchDevice) {
             c.addEventListener('touchstart', this._eventHandlers.mousedown);
             c.addEventListener('touchend', this._eventHandlers.mouseup);
             c.addEventListener('touchmove', this._eventHandlers.mousemove);
@@ -271,7 +263,7 @@ Mouse.prototype = {
 
         this._resetWheelStepTimers();
 
-        if (_browser.isTouchDevice) {
+        if (isTouchDevice) {
             c.removeEventListener('touchstart', this._eventHandlers.mousedown);
             c.removeEventListener('touchend', this._eventHandlers.mouseup);
             c.removeEventListener('touchmove', this._eventHandlers.mousemove);
