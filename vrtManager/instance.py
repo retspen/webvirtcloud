@@ -742,16 +742,25 @@ class wvmInstance(wvmConnect):
 
         return self.get_instance(clone_data['name']).UUIDString()
 
-    def add_network(self, mac_address, network, interface_type='bridge', model='virtio'):
+    def get_bridge_name(self, source, source_type='net'):
+        if source_type == 'iface':
+            iface = self.get_iface(source)
+            bridge_name = iface.name()
+        else:
+            net = self.get_network(source)
+            bridge_name = net.bridgeName()
+        return bridge_name
+        
+    def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio'):
         tree = ElementTree.fromstring(self._XMLDesc(0))
-        net = self.get_network(network)
+        bridge_name = self.get_bridge_name(source, source_type)
         xml_interface = """
         <interface type='%s'>
           <mac address='%s'/>
           <source bridge='%s'/>
           <model type='%s'/>
         </interface>
-        """ % (interface_type, mac_address, net.bridgeName(), model)
+        """ % (interface_type, mac_address, bridge_name, model)
         if self.get_status() == 5:
             devices = tree.find('devices')
             elm_interface = ElementTree.fromstring(xml_interface)
@@ -764,13 +773,15 @@ class wvmInstance(wvmConnect):
         tree = ElementTree.fromstring(xml)
 
         for num, interface in enumerate(tree.findall('devices/interface')):
-            net = self.get_network(network_data['net-source-' + str(num)])
+            net_source = network_data['net-source-' + str(num)]
+            net_source_type = network_data['net-source-' + str(num) + '-type']
+            net_mac = network_data['net-mac-' + str(num)]
+            bridge_name = self.get_bridge_name(net_source, net_source_type)
             if interface.get('type') == 'bridge':
                 source = interface.find('mac')
-                source.set('address', network_data['net-mac-' + str(num)])
+                source.set('address', net_mac)
                 source = interface.find('source')
-                source.set('bridge', net.bridgeName())
-                source.set('network', net.name())
+                source.set('bridge', bridge_name)
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 

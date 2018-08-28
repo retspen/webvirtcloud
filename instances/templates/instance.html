@@ -846,9 +846,12 @@
                                                                     <select name="net-source-{{ forloop.counter0 }}" class="form-control" id="network_select" onchange="network_select_enable()">
                                                                         {% for c_nets in compute_networks %}
                                                                             {% if forloop.counter0 == 0 %}
-                                                                                <option value="{{ network.nic }}" selected hidden>{% trans "to Change" %}</option>
+                                                                                <option value="iface:{{ network.nic }}" selected hidden>{% trans "to Change" %}</option>
                                                                             {% endif %}
-                                                                            <option value="{{ c_nets }}">{{ c_nets }}</option>
+                                                                            <option value="net:{{ c_nets }}">Network {{ c_nets }}</option>
+                                                                        {% endfor %}
+                                                                        {% for c_iface in compute_interfaces %}
+                                                                            <option value="iface:{{ c_iface }}">Interface {{ c_iface }}</option>
                                                                         {% endfor %}
                                                                     </select>
                                                                 </div>

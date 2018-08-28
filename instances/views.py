@@ -321,6 +321,13 @@ def instance(request, compute_id, vname):
             if dev not in existing_devs:
                 return dev
         raise Exception(_('None available device name'))
+
+    def get_network_tuple(network_source_str):
+        network_source_pack = network_source_str.split(":", 1)
+        if len(network_source_pack) > 1:
+            return (network_source_pack[1], network_source_pack[0])
+        else:
+            return (network_source_pack[0], 'net')
             
     try:
         conn = wvmInstance(compute.hostname,
@@ -329,6 +336,7 @@ def instance(request, compute_id, vname):
                            compute.type,
                            vname)
         compute_networks = sorted(conn.get_networks())
+        compute_interfaces = sorted(conn.get_ifaces())
         status = conn.get_status()
         autostart = conn.get_autostart()
         vcpu = conn.get_vcpu()
@@ -686,7 +694,11 @@ def instance(request, compute_id, vname):
                     network_data = {}
 
                     for post in request.POST:
-                        if post.startswith('net-'):
+                        if post.startswith('net-source-'):
+                            (source, source_type) = get_network_tuple(request.POST.get(post))
+                            network_data[post] = source
+                            network_data[post + '-type'] = source_type
+                        elif post.startswith('net-'):
                             network_data[post] = request.POST.get(post, '')
 
                     conn.change_network(network_data)
@@ -698,9 +710,9 @@ def instance(request, compute_id, vname):
 
                 if 'add_network' in request.POST:
                     mac = request.POST.get('add-net-mac')
-                    network = request.POST.get('add-net-network')
+                    (source, source_type) = get_network_tuple(request.POST.get('add-net-network'))
 
-                    conn.add_network(mac, network)
+                    conn.add_network(mac, source, source_type)
                     msg = _("Edit network")
                     addlogmsg(request.user.username, instance.name, msg)
                     msg = _("Network Devices are changed. Please reboot instance to activate.")
