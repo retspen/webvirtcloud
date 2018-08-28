@@ -1,6 +1,7 @@
 {% extends "console-base.html" %}
 {% load i18n %}
 {% load staticfiles %}
+
 {% block head %}
     <!--
     noVNC example: lightweight example using minimal UI and features
@@ -14,7 +15,7 @@
     or the fragment:
         http://example.com/#host=HOST&port=PORT&encrypt=1
     -->
-    <title>noVNC</title>
+    <title>WebVirtCloud - noVNC - Lite</title>
 
     <meta charset="utf-8">
 
@@ -63,7 +64,7 @@
     <!-- promise polyfills promises for IE11 -->
     <script src="{% static "js/novnc/vendor/promise.js" %}"></script>
     <!-- ES2015/ES6 modules polyfill -->
-    <script type="module"> window._noVNC_has_module_support = false;</script>
+    <script type="module"> window._noVNC_has_module_support = true;</script>
     <script>
         window.addEventListener("load", function() {
             if (window._noVNC_has_module_support) return;
@@ -72,27 +73,8 @@
             document.head.appendChild(loader);
         });
     </script>
-{% endblock %}
 
-
-{% block content %}
-
-    <div id="noVNC_status_bar">
-        <div id="noVNC_left_dummy_elem"></div>
-        <div id="noVNC_status">Loading</div>
-        <div id="noVNC_buttons">
-            <input type=button value="Send CtrlAltDel" id="sendCtrlAltDelButton" class="noVNC_shown">
-            <span id="noVNC_power_buttons" class="noVNC_hidden">
-                <input type=button value="Shutdown" id="machineShutdownButton">
-                <input type=button value="Reboot" id="machineRebootButton">
-                <input type=button value="Reset" id="machineResetButton">
-            </span>
-        </div>
-    </div>
-    <div id='vnc_container'></div>
-
-
-        <!-- actual script modules -->
+            <!-- actual script modules -->
     <script type="module" crossorigin="anonymous">
         // Load supporting scripts
         import * as WebUtil from '{% static "js/novnc/app/webutil.js" %}';
@@ -122,7 +104,6 @@
             rfb.sendCredentials({ password: document.getElementById('password_input').value });
             return false;
         }
-
         function fullscreen() {
             if (document.fullscreenElement || // alternative standard method
                 document.mozFullScreenElement || // currently working methods
@@ -150,7 +131,6 @@
             }
             return false;
         }
-
         function sendCtrlAltFN(f) {
             rfb.sendCtrlAltFN(f);
             return false;
@@ -293,7 +273,7 @@
           //             { repeaterID: WebUtil.getConfigVar('repeaterID', ''),
           //               shared: WebUtil.getConfigVar('shared', true),
           //               credentials: { password: password } });
-            rfb = new RFB(document.getElementById('vnc_container'), url,
+            rfb = new RFB(document.getElementById('noVNC_container'), url,
                          { repeaterID: WebUtil.getConfigVar('repeaterID', ''),
                            shared: WebUtil.getConfigVar('shared', true),
                            credentials: { password: password } });
@@ -308,6 +288,21 @@
             rfb.resizeSession = WebUtil.getConfigVar('resize', false);
         })();
     </script>
+{% endblock %}
 
 
+{% block content %}
+    <div id="noVNC_status_bar">
+        <div id="noVNC_left_dummy_elem"></div>
+        <div id="noVNC_status">Loading</div>
+        <div id="noVNC_buttons">
+            <input type=button value="Send CtrlAltDel" id="sendCtrlAltDelButton" class="noVNC_shown">
+            <span id="noVNC_power_buttons" class="noVNC_hidden">
+                <input type=button value="Shutdown" id="machineShutdownButton">
+                <input type=button value="Reboot" id="machineRebootButton">
+                <input type=button value="Reset" id="machineResetButton">
+            </span>
+        </div>
+    </div>
+    <div id='noVNC_container'></div>
 {% endblock %}
