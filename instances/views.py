@@ -696,6 +696,17 @@ def instance(request, compute_id, vname):
                     messages.success(request, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
+                if 'add_network' in request.POST:
+                    mac = request.POST.get('add-net-mac')
+                    network = request.POST.get('add-net-network')
+
+                    conn.add_network(mac, network)
+                    msg = _("Edit network")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    msg = _("Network Devices are changed. Please reboot instance to activate.")
+                    messages.success(request, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+                
                 if 'add_owner' in request.POST:
                     user_id = int(request.POST.get('user_id', ''))
                     

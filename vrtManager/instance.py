@@ -742,6 +742,23 @@ class wvmInstance(wvmConnect):
 
         return self.get_instance(clone_data['name']).UUIDString()
 
+    def add_network(self, mac_address, network, interface_type='bridge', model='virtio'):
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+        net = self.get_network(network)
+        xml_interface = """
+        <interface type='%s'>
+          <mac address='%s'/>
+          <source bridge='%s'/>
+          <model type='%s'/>
+        </interface>
+        """ % (interface_type, mac_address, net.bridgeName(), model)
+        if self.get_status() == 5:
+            devices = tree.find('devices')
+            elm_interface = ElementTree.fromstring(xml_interface)
+            devices.append(elm_interface)
+            xmldom = ElementTree.tostring(tree)
+            self._defineXML(xmldom)
+
     def change_network(self, network_data):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)

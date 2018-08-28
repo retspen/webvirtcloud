@@ -827,7 +827,10 @@
                                             {% endif %}
                                             {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
-                                                    <p>{% trans "Assign network device to bridge" %}</p>
+                                                    <p>
+                                                    {% trans "Assign network device to bridge" %}
+                                                    {% include 'add_instance_network_block.html' %}
+                                                    </p>
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <p style="font-weight:bold;">{% trans "Network devices" %}</p>
                                                         {% for network in networks %}
@@ -854,7 +857,7 @@
                                                         {% ifequal status 5 %}
                                                             <button type="submit" class="btn btn-lg btn-success pull-right" id="ali" name="change_network" disabled>{% trans "Change" %}</button>
                                                         {% else %}
-                                                            <button type="submit"class="btn btn-lg btn-success pull-right" id="ali" name="change_network" disabled>{% trans "Change" %}</button>
+                                                            <button type="submit" class="btn btn-lg btn-success pull-right" id="ali" name="change_network" disabled>{% trans "Change" %}</button>
                                                         {% endifequal %}
                                                     </form>
                                                     <div class="clearfix"></div>
@@ -898,7 +901,7 @@
                                                                     </div>
                                                                     <div class="col-sm-4">
                                                                         <button type="button" class="btn btn-sm btn-success pull-left" name="random-mac-{{ forloop.counter0 }}"
-                                                                                onclick="random_mac({{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Random" %}</button>
+                                                                                onclick="random_mac('clone-net-mac-{{ forloop.counter0 }}')" style="margin-top: 2px;">{% trans "Random" %}</button>
                                                                         <button type="button" class="btn btn-sm btn-success pull-left" name="guess-mac-{{ forloop.counter0 }}"
                                                                                 onclick="guess_mac_address('#clone_name', {{ forloop.counter0 }})" style="margin-top: 2px;">{% trans "Guess" %}</button>
                                                                     </div>
@@ -1230,7 +1233,7 @@
 <script>
     function random_mac(net) {
         $.getJSON('/instance/random_mac_address/', function(data) {
-            $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
+            $('input[name="'+net+'"]').val(data['mac']);
         });
     };
 </script>
@@ -1339,7 +1342,8 @@
     });
 {% if request.user.is_superuser %}
     $(document).ready(function () {
-        random_mac(0);
+        random_mac('clone-net-mac-0');
+        random_mac('add-net-mac');
     });
 {% else %}
     $('#select_clone_name').on('change', function () {
