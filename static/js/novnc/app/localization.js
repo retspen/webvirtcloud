@@ -1,9 +1,3 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.Localizer = Localizer;
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2012 Joel Martin
@@ -16,7 +10,7 @@ exports.Localizer = Localizer;
  * Localization Utilities
  */
 
-function Localizer() {
+export function Localizer() {
     // Currently configured language
     this.language = 'en';
 
@@ -41,40 +35,45 @@ Localizer.prototype = {
             userLanguages = [navigator.language || navigator.userLanguage];
         }
 
-        for (var i = 0; i < userLanguages.length; i++) {
+        for (var i = 0;i < userLanguages.length;i++) {
             var userLang = userLanguages[i];
             userLang = userLang.toLowerCase();
             userLang = userLang.replace("_", "-");
             userLang = userLang.split("-");
 
             // Built-in default?
-            if (userLang[0] === 'en' && (userLang[1] === undefined || userLang[1] === 'us')) {
+            if ((userLang[0] === 'en') &&
+                ((userLang[1] === undefined) || (userLang[1] === 'us'))) {
                 return;
             }
 
             // First pass: perfect match
-            for (var j = 0; j < supportedLanguages.length; j++) {
+            for (var j = 0;j < supportedLanguages.length;j++) {
                 var supLang = supportedLanguages[j];
                 supLang = supLang.toLowerCase();
                 supLang = supLang.replace("_", "-");
                 supLang = supLang.split("-");
 
-                if (userLang[0] !== supLang[0]) continue;
-                if (userLang[1] !== supLang[1]) continue;
+                if (userLang[0] !== supLang[0])
+                    continue;
+                if (userLang[1] !== supLang[1])
+                    continue;
 
                 this.language = supportedLanguages[j];
                 return;
             }
 
             // Second pass: fallback
-            for (var j = 0; j < supportedLanguages.length; j++) {
+            for (var j = 0;j < supportedLanguages.length;j++) {
                 supLang = supportedLanguages[j];
                 supLang = supLang.toLowerCase();
                 supLang = supLang.replace("_", "-");
                 supLang = supLang.split("-");
 
-                if (userLang[0] !== supLang[0]) continue;
-                if (supLang[1] !== undefined) continue;
+                if (userLang[0] !== supLang[0])
+                    continue;
+                if (supLang[1] !== undefined)
+                    continue;
 
                 this.language = supportedLanguages[j];
                 return;
@@ -121,31 +120,39 @@ Localizer.prototype = {
             }
 
             if (enabled) {
-                if (elem.hasAttribute("abbr") && elem.tagName === "TH") {
+                if (elem.hasAttribute("abbr") &&
+                    elem.tagName === "TH") {
                     translateAttribute(elem, "abbr");
                 }
-                if (elem.hasAttribute("alt") && isAnyOf(elem.tagName, ["AREA", "IMG", "INPUT"])) {
+                if (elem.hasAttribute("alt") &&
+                    isAnyOf(elem.tagName, ["AREA", "IMG", "INPUT"])) {
                     translateAttribute(elem, "alt");
                 }
-                if (elem.hasAttribute("download") && isAnyOf(elem.tagName, ["A", "AREA"])) {
+                if (elem.hasAttribute("download") &&
+                    isAnyOf(elem.tagName, ["A", "AREA"])) {
                     translateAttribute(elem, "download");
                 }
-                if (elem.hasAttribute("label") && isAnyOf(elem.tagName, ["MENUITEM", "MENU", "OPTGROUP", "OPTION", "TRACK"])) {
+                if (elem.hasAttribute("label") &&
+                    isAnyOf(elem.tagName, ["MENUITEM", "MENU", "OPTGROUP",
+                                   "OPTION", "TRACK"])) {
                     translateAttribute(elem, "label");
                 }
                 // FIXME: Should update "lang"
-                if (elem.hasAttribute("placeholder") && isAnyOf(elem.tagName, ["INPUT", "TEXTAREA"])) {
+                if (elem.hasAttribute("placeholder") &&
+                    isAnyOf(elem.tagName, ["INPUT", "TEXTAREA"])) {
                     translateAttribute(elem, "placeholder");
                 }
                 if (elem.hasAttribute("title")) {
                     translateAttribute(elem, "title");
                 }
-                if (elem.hasAttribute("value") && elem.tagName === "INPUT" && isAnyOf(elem.getAttribute("type"), ["reset", "button", "submit"])) {
+                if (elem.hasAttribute("value") &&
+                    elem.tagName === "INPUT" &&
+                    isAnyOf(elem.getAttribute("type"), ["reset", "button", "submit"])) {
                     translateAttribute(elem, "value");
                 }
             }
 
-            for (var i = 0; i < elem.childNodes.length; i++) {
+            for (var i = 0;i < elem.childNodes.length;i++) {
                 var node = elem.childNodes[i];
                 if (node.nodeType === node.ELEMENT_NODE) {
                     process(node, enabled);
@@ -156,8 +163,8 @@ Localizer.prototype = {
         }
 
         process(document.body, true);
-    }
+    },
 };
 
-var l10n = exports.l10n = new Localizer();
-exports.default = l10n.get.bind(l10n);
+export var l10n = new Localizer();
+export default l10n.get.bind(l10n);

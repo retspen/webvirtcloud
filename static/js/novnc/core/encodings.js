@@ -1,9 +1,3 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.encodingName = encodingName;
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2017 Pierre Ossman for Cendio AB
@@ -12,7 +6,7 @@ exports.encodingName = encodingName;
  * See README.md for usage and integration instructions.
  */
 
-var encodings = exports.encodings = {
+export var encodings = {
     encodingRaw: 0,
     encodingCopyRect: 1,
     encodingRRE: 2,
@@ -31,22 +25,16 @@ var encodings = exports.encodings = {
     pseudoEncodingFence: -312,
     pseudoEncodingContinuousUpdates: -313,
     pseudoEncodingCompressLevel9: -247,
-    pseudoEncodingCompressLevel0: -256
+    pseudoEncodingCompressLevel0: -256,
 };
 
-function encodingName(num) {
+export function encodingName(num) {
     switch (num) {
-        case encodings.encodingRaw:
-            return "Raw";
-        case encodings.encodingCopyRect:
-            return "CopyRect";
-        case encodings.encodingRRE:
-            return "RRE";
-        case encodings.encodingHextile:
-            return "Hextile";
-        case encodings.encodingTight:
-            return "Tight";
-        default:
-            return "[unknown encoding " + num + "]";
+        case encodings.encodingRaw:      return "Raw";
+        case encodings.encodingCopyRect: return "CopyRect";
+        case encodings.encodingRRE:      return "RRE";
+        case encodings.encodingHextile:  return "Hextile";
+        case encodings.encodingTight:    return "Tight";
+        default:                         return "[unknown encoding " + num + "]";
     }
 }

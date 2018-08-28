@@ -1,15 +1,10 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
 /*
  * This file is auto-generated from keymaps.csv on 2017-05-31 16:20
  * Database checksum sha256(92fd165507f2a3b8c5b3fa56e425d45788dbcb98cf067a307527d91ce22cab94)
  * To re-generate, run:
  *   keymap-gen --lang=js code-map keymaps.csv html atset1
 */
-exports.default = {
+export default {
   "Again": 0xe005, /* html:Again (Again) -> linux:129 (KEY_AGAIN) -> atset1:57349 */
   "AltLeft": 0x38, /* html:AltLeft (AltLeft) -> linux:56 (KEY_LEFTALT) -> atset1:56 */
   "AltRight": 0xe038, /* html:AltRight (AltRight) -> linux:100 (KEY_RIGHTALT) -> atset1:57400 */
@@ -172,5 +167,5 @@ exports.default = {
   "Suspend": 0xe025, /* html:Suspend (Suspend) -> linux:205 (KEY_SUSPEND) -> atset1:57381 */
   "Tab": 0xf, /* html:Tab (Tab) -> linux:15 (KEY_TAB) -> atset1:15 */
   "Undo": 0xe007, /* html:Undo (Undo) -> linux:131 (KEY_UNDO) -> atset1:57351 */
-  "WakeUp": 0xe063 /* html:WakeUp (WakeUp) -> linux:143 (KEY_WAKEUP) -> atset1:57443 */
+  "WakeUp": 0xe063, /* html:WakeUp (WakeUp) -> linux:143 (KEY_WAKEUP) -> atset1:57443 */
 };

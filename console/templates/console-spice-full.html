@@ -63,7 +63,7 @@
 
 {% block content %}
 
-        <div id="login">
+        <div id="login" hidden>
             <span class="logo">SPICE</span>
             <label for="host">Host:</label> <input type='text' id='host' value='{{ ws_host }}'> <!-- localhost -->
             <label for="port">Port:</label> <input type='text' id='port' value='{{ ws_port }}'>
@@ -188,32 +188,8 @@
                 resize_helper(sc);
             }
 
-            function sendCtrlAltFN(f) {
-                if (sc && sc.inputs && sc.inputs.state === "ready"){
-                    var keys_code=[KEY_F1,KEY_F2,KEY_F3,KEY_F4,KEY_F5,KEY_F6,KEY_F7,KEY_F8,KEY_F9,KEY_F10,KEY_F11,KEY_F12];
-
-                    if (keys_code[f]==undefined) {
-                        return;
-                    }
-                    var key = new SpiceMsgcKeyDown();
-                    var msg = new SpiceMiniData();
-
-                    update_modifier(true, KEY_LCtrl, sc);
-                    update_modifier(true, KEY_Alt, sc);
-
-                    key.code = keys_code[f];
-                    msg.build_msg(SPICE_MSGC_INPUTS_KEY_DOWN, key);
-                    sc.inputs.send_msg(msg);
-                    msg.build_msg(SPICE_MSGC_INPUTS_KEY_UP, key);
-                    sc.inputs.send_msg(msg);
-
-                    if(Ctrl_state == false) update_modifier(false, KEY_LCtrl, sc);
-                    if(Alt_state == false) update_modifier(false, KEY_Alt, sc);
-                }
-            }
-
-             function fullscreen() {
-                var screen=document.getElementById('spice-area');
+            function fullscreen() {
+                var screen=document.getElementById('spice-screen');
                 if(screen.requestFullscreen) {
                     screen.requestFullscreen();
                 } else if(screen.mozRequestFullScreen) {
@@ -236,7 +212,19 @@
             });
             */
             document.getElementById("fullscreen_button").addEventListener('click', fullscreen);
-
+            document.getElementById('ctrlaltdel').addEventListener('click', sendCtrlAltDel);
+            document.getElementById('ctrlaltf1').addEventListener('click', function(){sendCtrlAltFN(0);});
+            document.getElementById('ctrlaltf2').addEventListener('click', function(){sendCtrlAltFN(1);});
+            document.getElementById('ctrlaltf3').addEventListener('click', function(){sendCtrlAltFN(2);});
+            document.getElementById('ctrlaltf4').addEventListener('click', function(){sendCtrlAltFN(3);});
+            document.getElementById('ctrlaltf5').addEventListener('click', function(){sendCtrlAltFN(4);});
+            document.getElementById('ctrlaltf6').addEventListener('click', function(){sendCtrlAltFN(5);});
+            document.getElementById('ctrlaltf7').addEventListener('click', function(){sendCtrlAltFN(6);});
+            document.getElementById('ctrlaltf8').addEventListener('click', function(){sendCtrlAltFN(7);});
+            document.getElementById('ctrlaltf9').addEventListener('click', function(){sendCtrlAltFN(8);});
+            document.getElementById('ctrlaltf10').addEventListener('click', function(){sendCtrlAltFN(9);});
+            document.getElementById('ctrlaltf11').addEventListener('click', function(){sendCtrlAltFN(10);});
+            document.getElementById('ctrlaltf12').addEventListener('click', function(){sendCtrlAltFN(11);});
             connect();
         </script>
 {% endblock %}

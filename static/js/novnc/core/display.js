@@ -1,22 +1,3 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = Display;
-
-var _logging = require("./util/logging.js");
-
-var Log = _interopRequireWildcard(_logging);
-
-var _base = require("./base64.js");
-
-var _base2 = _interopRequireDefault(_base);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2012 Joel Martin
@@ -26,11 +7,14 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
  * See README.md for usage and integration instructions.
  */
 
-function Display(target) {
+import * as Log from './util/logging.js';
+import Base64 from "./base64.js";
+
+export default function Display(target) {
     this._drawCtx = null;
     this._c_forceCanvas = false;
 
-    this._renderQ = []; // queue drawing actions for in-oder rendering
+    this._renderQ = [];  // queue drawing actions for in-oder rendering
     this._flushing = false;
 
     // the full frame buffer (logical canvas) size
@@ -69,9 +53,9 @@ function Display(target) {
     this._backbuffer = document.createElement('canvas');
     this._drawCtx = this._backbuffer.getContext('2d');
 
-    this._damageBounds = { left: 0, top: 0,
-        right: this._backbuffer.width,
-        bottom: this._backbuffer.height };
+    this._damageBounds = { left:0, top:0,
+                           right: this._backbuffer.width,
+                           bottom: this._backbuffer.height };
 
     Log.Debug("User Agent: " + navigator.userAgent);
 
@@ -98,17 +82,13 @@ Display.prototype = {
     // ===== PROPERTIES =====
 
     _scale: 1.0,
-    get scale() {
-        return this._scale;
-    },
+    get scale() { return this._scale; },
     set scale(scale) {
         this._rescale(scale);
     },
 
     _clipViewport: false,
-    get clipViewport() {
-        return this._clipViewport;
-    },
+    get clipViewport() { return this._clipViewport; },
     set clipViewport(viewport) {
         this._clipViewport = viewport;
         // May need to readjust the viewport dimensions
@@ -128,7 +108,7 @@ Display.prototype = {
 
     // ===== EVENT HANDLERS =====
 
-    onflush: function () {}, // A flush request has finished
+    onflush: function () {},        // A flush request has finished
 
     // ===== PUBLIC METHODS =====
 
@@ -138,7 +118,7 @@ Display.prototype = {
         deltaY = Math.floor(deltaY);
 
         if (!this._clipViewport) {
-            deltaX = -vp.w; // clamped later of out of bounds
+            deltaX = -vp.w;  // clamped later of out of bounds
             deltaY = -vp.h;
         }
 
@@ -158,7 +138,7 @@ Display.prototype = {
             deltaY = -vp.y;
         }
         if (vy2 + deltaY >= this._fb_height) {
-            deltaY -= vy2 + deltaY - this._fb_height + 1;
+            deltaY -= (vy2 + deltaY - this._fb_height + 1);
         }
 
         if (deltaX === 0 && deltaY === 0) {
@@ -174,9 +154,11 @@ Display.prototype = {
         this.flip();
     },
 
-    viewportChangeSize: function (width, height) {
+    viewportChangeSize: function(width, height) {
 
-        if (!this._clipViewport || typeof width === "undefined" || typeof height === "undefined") {
+        if (!this._clipViewport ||
+            typeof(width) === "undefined" ||
+            typeof(height) === "undefined") {
 
             Log.Debug("Setting viewport to full display region");
             width = this._fb_width;
@@ -253,24 +235,24 @@ Display.prototype = {
     },
 
     // Track what parts of the visible canvas that need updating
-    _damage: function (x, y, w, h) {
+    _damage: function(x, y, w, h) {
         if (x < this._damageBounds.left) {
             this._damageBounds.left = x;
         }
         if (y < this._damageBounds.top) {
             this._damageBounds.top = y;
         }
-        if (x + w > this._damageBounds.right) {
+        if ((x + w) > this._damageBounds.right) {
             this._damageBounds.right = x + w;
         }
-        if (y + h > this._damageBounds.bottom) {
+        if ((y + h) > this._damageBounds.bottom) {
             this._damageBounds.bottom = y + h;
         }
     },
 
     // Update the visible canvas with the contents of the
     // rendering canvas
-    flip: function (from_queue) {
+    flip: function(from_queue) {
         if (this._renderQ.length !== 0 && !from_queue) {
             this._renderQ_push({
                 'type': 'flip'
@@ -297,18 +279,20 @@ Display.prototype = {
                 vy = 0;
             }
 
-            if (vx + w > this._viewportLoc.w) {
+            if ((vx + w) > this._viewportLoc.w) {
                 w = this._viewportLoc.w - vx;
             }
-            if (vy + h > this._viewportLoc.h) {
+            if ((vy + h) > this._viewportLoc.h) {
                 h = this._viewportLoc.h - vy;
             }
 
-            if (w > 0 && h > 0) {
+            if ((w > 0) && (h > 0)) {
                 // FIXME: We may need to disable image smoothing here
                 //        as well (see copyImage()), but we haven't
                 //        noticed any problem yet.
-                this._targetCtx.drawImage(this._backbuffer, x, y, w, h, vx, vy, w, h);
+                this._targetCtx.drawImage(this._backbuffer,
+                                          x, y, w, h,
+                                          vx, vy, w, h);
             }
 
             this._damageBounds.left = this._damageBounds.top = 65535;
@@ -327,11 +311,11 @@ Display.prototype = {
         this.flip();
     },
 
-    pending: function () {
+    pending: function() {
         return this._renderQ.length > 0;
     },
 
-    flush: function () {
+    flush: function() {
         if (this._renderQ.length === 0) {
             this.onflush();
         } else {
@@ -365,7 +349,7 @@ Display.prototype = {
                 'x': new_x,
                 'y': new_y,
                 'width': w,
-                'height': h
+                'height': h,
             });
         } else {
             // Due to this bug among others [1] we need to disable the image-smoothing to
@@ -380,14 +364,16 @@ Display.prototype = {
             this._drawCtx.msImageSmoothingEnabled = false;
             this._drawCtx.imageSmoothingEnabled = false;
 
-            this._drawCtx.drawImage(this._backbuffer, old_x, old_y, w, h, new_x, new_y, w, h);
+            this._drawCtx.drawImage(this._backbuffer,
+                                    old_x, old_y, w, h,
+                                    new_x, new_y, w, h);
             this._damage(new_x, new_y, w, h);
         }
     },
 
-    imageRect: function (x, y, mime, arr) {
+    imageRect: function(x, y, mime, arr) {
         var img = new Image();
-        img.src = "data: " + mime + ";base64," + _base2.default.encode(arr);
+        img.src = "data: " + mime + ";base64," + Base64.encode(arr);
         this._renderQ_push({
             'type': 'img',
             'img': img,
@@ -431,7 +417,7 @@ Display.prototype = {
         var width = this._tile.width;
         for (var j = y; j < yend; j++) {
             for (var i = x; i < xend; i++) {
-                var p = (i + j * width) * 4;
+                var p = (i + (j * width)) * 4;
                 data[p] = red;
                 data[p + 1] = green;
                 data[p + 2] = blue;
@@ -443,7 +429,8 @@ Display.prototype = {
     // draw the current tile to the screen
     finishTile: function () {
         this._drawCtx.putImageData(this._tile, this._tile_x, this._tile_y);
-        this._damage(this._tile_x, this._tile_y, this._tile.width, this._tile.height);
+        this._damage(this._tile_x, this._tile_y,
+                     this._tile.width, this._tile.height);
     },
 
     blitImage: function (x, y, width, height, arr, offset, from_queue) {
@@ -459,14 +446,14 @@ Display.prototype = {
                 'x': x,
                 'y': y,
                 'width': width,
-                'height': height
+                'height': height,
             });
         } else {
             this._bgrxImageData(x, y, width, height, arr, offset);
         }
     },
 
-    blitRgbImage: function (x, y, width, height, arr, offset, from_queue) {
+    blitRgbImage: function (x, y , width, height, arr, offset, from_queue) {
         if (this._renderQ.length !== 0 && !from_queue) {
             // NB(directxman12): it's technically more performant here to use preallocated arrays,
             // but it's a lot of extra work for not a lot of payoff -- if we're using the render queue,
@@ -479,7 +466,7 @@ Display.prototype = {
                 'x': x,
                 'y': y,
                 'width': width,
-                'height': height
+                'height': height,
             });
         } else {
             this._rgbImageData(x, y, width, height, arr, offset);
@@ -499,7 +486,7 @@ Display.prototype = {
                 'x': x,
                 'y': y,
                 'width': width,
-                'height': height
+                'height': height,
             });
         } else {
             this._rgbxImageData(x, y, width, height, arr, offset);
@@ -551,7 +538,8 @@ Display.prototype = {
         var width = Math.round(factor * vp.w) + 'px';
         var height = Math.round(factor * vp.h) + 'px';
 
-        if (this._target.style.width !== width || this._target.style.height !== height) {
+        if ((this._target.style.width !== width) ||
+            (this._target.style.height !== height)) {
             this._target.style.width = width;
             this._target.style.height = height;
         }
@@ -569,10 +557,10 @@ Display.prototype = {
         var img = this._drawCtx.createImageData(width, height);
         var data = img.data;
         for (var i = 0, j = offset; i < width * height * 4; i += 4, j += 3) {
-            data[i] = arr[j];
+            data[i]     = arr[j];
             data[i + 1] = arr[j + 1];
             data[i + 2] = arr[j + 2];
-            data[i + 3] = 255; // Alpha
+            data[i + 3] = 255;  // Alpha
         }
         this._drawCtx.putImageData(img, x, y);
         this._damage(x, y, img.width, img.height);
@@ -582,10 +570,10 @@ Display.prototype = {
         var img = this._drawCtx.createImageData(width, height);
         var data = img.data;
         for (var i = 0, j = offset; i < width * height * 4; i += 4, j += 4) {
-            data[i] = arr[j + 2];
+            data[i]     = arr[j + 2];
             data[i + 1] = arr[j + 1];
             data[i + 2] = arr[j];
-            data[i + 3] = 255; // Alpha
+            data[i + 3] = 255;  // Alpha
         }
         this._drawCtx.putImageData(img, x, y);
         this._damage(x, y, img.width, img.height);
@@ -613,7 +601,7 @@ Display.prototype = {
         }
     },
 
-    _resume_renderQ: function () {
+    _resume_renderQ: function() {
         // "this" is the object that is ready, not the
         // display object
         this.removeEventListener('load', this._noVNC_display._resume_renderQ);
@@ -665,27 +653,27 @@ Display.prototype = {
             this._flushing = false;
             this.onflush();
         }
-    }
+    },
 };
 
 // Class Methods
 Display.changeCursor = function (target, pixels, mask, hotx, hoty, w, h) {
-    if (w === 0 || h === 0) {
+    if ((w === 0) || (h === 0)) {
         target.style.cursor = 'none';
         return;
     }
 
-    var cur = [];
+    var cur = []
     var y, x;
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
             var idx = y * Math.ceil(w / 8) + Math.floor(x / 8);
-            var alpha = mask[idx] << x % 8 & 0x80 ? 255 : 0;
-            idx = (w * y + x) * 4;
+            var alpha = (mask[idx] << (x % 8)) & 0x80 ? 255 : 0;
+            idx = ((w * y) + x) * 4;
             cur.push(pixels[idx + 2]); // red
             cur.push(pixels[idx + 1]); // green
-            cur.push(pixels[idx]); // blue
-            cur.push(alpha); // alpha
+            cur.push(pixels[idx]);     // blue
+            cur.push(alpha);           // alpha
         }
     }
 

@@ -1,10 +1,3 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.init_logging = init_logging;
-exports.get_logging = get_logging;
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2012 Joel Martin
@@ -24,24 +17,24 @@ var Info = function (msg) {};
 var Warn = function (msg) {};
 var Error = function (msg) {};
 
-function init_logging(level) {
+export function init_logging (level) {
     if (typeof level === 'undefined') {
         level = _log_level;
     } else {
         _log_level = level;
     }
 
-    exports.Debug = Debug = exports.Info = Info = exports.Warn = Warn = exports.Error = Error = function (msg) {};
+    Debug = Info = Warn = Error = function (msg) {};
     if (typeof window.console !== "undefined") {
         switch (level) {
             case 'debug':
-                exports.Debug = Debug = console.debug.bind(window.console);
+                Debug = console.debug.bind(window.console);
             case 'info':
-                exports.Info = Info = console.info.bind(window.console);
+                Info  = console.info.bind(window.console);
             case 'warn':
-                exports.Warn = Warn = console.warn.bind(window.console);
+                Warn  = console.warn.bind(window.console);
             case 'error':
-                exports.Error = Error = console.error.bind(window.console);
+                Error = console.error.bind(window.console);
             case 'none':
                 break;
             default:
@@ -49,14 +42,10 @@ function init_logging(level) {
         }
     }
 };
-function get_logging() {
+export function get_logging () {
     return _log_level;
 };
-exports.Debug = Debug;
-exports.Info = Info;
-exports.Warn = Warn;
-exports.Error = Error;
+export { Debug, Info, Warn, Error };
 
 // Initialize logging level
-
 init_logging();

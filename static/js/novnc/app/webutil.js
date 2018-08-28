@@ -1,54 +1,31 @@
-"use strict";
+/*
+ * noVNC: HTML5 VNC client
+ * Copyright (C) 2012 Joel Martin
+ * Copyright (C) 2013 NTT corp.
+ * Licensed under MPL 2.0 (see LICENSE.txt)
+ *
+ * See README.md for usage and integration instructions.
+ */
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.init_logging = init_logging;
-exports.getQueryVar = getQueryVar;
-exports.getHashVar = getHashVar;
-exports.getConfigVar = getConfigVar;
-exports.createCookie = createCookie;
-exports.readCookie = readCookie;
-exports.eraseCookie = eraseCookie;
-exports.initSettings = initSettings;
-exports.writeSetting = writeSetting;
-exports.readSetting = readSetting;
-exports.eraseSetting = eraseSetting;
-exports.injectParamIfMissing = injectParamIfMissing;
-exports.fetchJSON = fetchJSON;
-
-var _logging = require("../core/util/logging.js");
+import { init_logging as main_init_logging } from '../core/util/logging.js';
 
 // init log level reading the logging HTTP param
-function init_logging(level) {
+export function init_logging (level) {
     "use strict";
-
     if (typeof level !== "undefined") {
-        (0, _logging.init_logging)(level);
+        main_init_logging(level);
     } else {
         var param = document.location.href.match(/logging=([A-Za-z0-9\._\-]*)/);
-        (0, _logging.init_logging)(param || undefined);
+        main_init_logging(param || undefined);
     }
-} /*
-   * noVNC: HTML5 VNC client
-   * Copyright (C) 2012 Joel Martin
-   * Copyright (C) 2013 NTT corp.
-   * Licensed under MPL 2.0 (see LICENSE.txt)
-   *
-   * See README.md for usage and integration instructions.
-   */
-
-;
+};
 
 // Read a query string variable
-function getQueryVar(name, defVal) {
+export function getQueryVar (name, defVal) {
     "use strict";
-
     var re = new RegExp('.*[?&]' + name + '=([^&#]*)'),
         match = document.location.href.match(re);
-    if (typeof defVal === 'undefined') {
-        defVal = null;
-    }
+    if (typeof defVal === 'undefined') { defVal = null; }
     if (match) {
         return decodeURIComponent(match[1]);
     } else {
@@ -57,14 +34,11 @@ function getQueryVar(name, defVal) {
 };
 
 // Read a hash fragment variable
-function getHashVar(name, defVal) {
+export function getHashVar (name, defVal) {
     "use strict";
-
     var re = new RegExp('.*[&#]' + name + '=([^&]*)'),
         match = document.location.hash.match(re);
-    if (typeof defVal === 'undefined') {
-        defVal = null;
-    }
+    if (typeof defVal === 'undefined') { defVal = null; }
     if (match) {
         return decodeURIComponent(match[1]);
     } else {
@@ -74,9 +48,8 @@ function getHashVar(name, defVal) {
 
 // Read a variable from the fragment or the query string
 // Fragment takes precedence
-function getConfigVar(name, defVal) {
+export function getConfigVar (name, defVal) {
     "use strict";
-
     var val = getHashVar(name);
     if (val === null) {
         val = getQueryVar(name, defVal);
@@ -89,13 +62,12 @@ function getConfigVar(name, defVal) {
  */
 
 // No days means only for this browser session
-function createCookie(name, value, days) {
+export function createCookie (name, value, days) {
     "use strict";
-
     var date, expires;
     if (days) {
         date = new Date();
-        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
         expires = "; expires=" + date.toGMTString();
     } else {
         expires = "";
@@ -110,27 +82,21 @@ function createCookie(name, value, days) {
     document.cookie = name + "=" + value + expires + "; path=/" + secure;
 };
 
-function readCookie(name, defaultValue) {
+export function readCookie (name, defaultValue) {
     "use strict";
-
     var nameEQ = name + "=",
         ca = document.cookie.split(';');
 
     for (var i = 0; i < ca.length; i += 1) {
         var c = ca[i];
-        while (c.charAt(0) === ' ') {
-            c = c.substring(1, c.length);
-        }
-        if (c.indexOf(nameEQ) === 0) {
-            return c.substring(nameEQ.length, c.length);
-        }
+        while (c.charAt(0) === ' ') { c = c.substring(1, c.length); }
+        if (c.indexOf(nameEQ) === 0) { return c.substring(nameEQ.length, c.length); }
     }
-    return typeof defaultValue !== 'undefined' ? defaultValue : null;
+    return (typeof defaultValue !== 'undefined') ? defaultValue : null;
 };
 
-function eraseCookie(name) {
+export function eraseCookie (name) {
     "use strict";
-
     createCookie(name, "", -1);
 };
 
@@ -140,9 +106,8 @@ function eraseCookie(name) {
 
 var settings = {};
 
-function initSettings(callback /*, ...callbackArgs */) {
+export function initSettings (callback /*, ...callbackArgs */) {
     "use strict";
-
     var callbackArgs = Array.prototype.slice.call(arguments, 1);
     if (window.chrome && window.chrome.storage) {
         window.chrome.storage.sync.get(function (cfg) {
@@ -160,9 +125,8 @@ function initSettings(callback /*, ...callbackArgs */) {
 };
 
 // No days means only for this browser session
-function writeSetting(name, value) {
+export function writeSetting (name, value) {
     "use strict";
-
     if (window.chrome && window.chrome.storage) {
         if (settings[name] !== value) {
             settings[name] = value;
@@ -173,9 +137,8 @@ function writeSetting(name, value) {
     }
 };
 
-function readSetting(name, defaultValue) {
+export function readSetting (name, defaultValue) {
     "use strict";
-
     var value;
     if (window.chrome && window.chrome.storage) {
         value = settings[name];
@@ -192,9 +155,8 @@ function readSetting(name, defaultValue) {
     }
 };
 
-function eraseSetting(name) {
+export function eraseSetting (name) {
     "use strict";
-
     if (window.chrome && window.chrome.storage) {
         window.chrome.storage.sync.remove(name);
         delete settings[name];
@@ -203,7 +165,7 @@ function eraseSetting(name) {
     }
 };
 
-function injectParamIfMissing(path, param, value) {
+export function injectParamIfMissing (path, param, value) {
     // force pretend that we're dealing with a relative path
     // (assume that we wanted an extra if we pass one in)
     path = "/" + path;
@@ -219,9 +181,7 @@ function injectParamIfMissing(path, param, value) {
         query = [];
     }
 
-    if (!query.some(function (v) {
-        return v.startsWith(param_eq);
-    })) {
+    if (!query.some(function (v) { return v.startsWith(param_eq); })) {
         query.push(param_eq + encodeURIComponent(value));
         elem.search = "?" + query.join("&");
     }
@@ -239,7 +199,7 @@ function injectParamIfMissing(path, param, value) {
 // IE11 support or polyfill promises and fetch in IE11.
 // resolve will receive an object on success, while reject
 // will receive either an event or an error on failure.
-function fetchJSON(path, resolve, reject) {
+export function fetchJSON(path, resolve, reject) {
     // NB: IE11 doesn't support JSON as a responseType
     var req = new XMLHttpRequest();
     req.open('GET', path);

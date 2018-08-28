@@ -1,32 +1,35 @@
-'use strict';
+/*
+ * Websock: high-performance binary WebSockets
+ * Copyright (C) 2012 Joel Martin
+ * Licensed under MPL 2.0 (see LICENSE.txt)
+ *
+ * Websock is similar to the standard WebSocket object but with extra
+ * buffer handling.
+ *
+ * Websock has built-in receive queue buffering; the message event
+ * does not contain actual data but is simply a notification that
+ * there is new data available. Several rQ* methods are available to
+ * read binary data off of the receive queue.
+ */
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = Websock;
+import * as Log from './util/logging.js';
 
-var _logging = require('./util/logging.js');
-
-var Log = _interopRequireWildcard(_logging);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function Websock() {
+export default function Websock() {
     "use strict";
 
-    this._websocket = null; // WebSocket object
+    this._websocket = null;  // WebSocket object
 
-    this._rQi = 0; // Receive queue index
-    this._rQlen = 0; // Next write position in the receive queue
+    this._rQi = 0;           // Receive queue index
+    this._rQlen = 0;         // Next write position in the receive queue
     this._rQbufferSize = 1024 * 1024 * 4; // Receive queue buffer size (4 MiB)
     this._rQmax = this._rQbufferSize / 8;
     // called in init: this._rQ = new Uint8Array(this._rQbufferSize);
     this._rQ = null; // Receive queue
 
-    this._sQbufferSize = 1024 * 10; // 10 KiB
+    this._sQbufferSize = 1024 * 10;  // 10 KiB
     // called in init: this._sQ = new Uint8Array(this._sQbufferSize);
     this._sQlen = 0;
-    this._sQ = null; // Send queue
+    this._sQ = null;  // Send queue
 
     this._eventHandlers = {
         'message': function () {},
@@ -34,44 +37,29 @@ function Websock() {
         'close': function () {},
         'error': function () {}
     };
-} /*
-   * Websock: high-performance binary WebSockets
-   * Copyright (C) 2012 Joel Martin
-   * Licensed under MPL 2.0 (see LICENSE.txt)
-   *
-   * Websock is similar to the standard WebSocket object but with extra
-   * buffer handling.
-   *
-   * Websock has built-in receive queue buffering; the message event
-   * does not contain actual data but is simply a notification that
-   * there is new data available. Several rQ* methods are available to
-   * read binary data off of the receive queue.
-   */
-
-;
+};
 
 // this has performance issues in some versions Chromium, and
 // doesn't gain a tremendous amount of performance increase in Firefox
 // at the moment.  It may be valuable to turn it on in the future.
 var ENABLE_COPYWITHIN = false;
 
-var MAX_RQ_GROW_SIZE = 40 * 1024 * 1024; // 40 MiB
+var MAX_RQ_GROW_SIZE = 40 * 1024 * 1024;  // 40 MiB
 
-var typedArrayToString = function () {
+var typedArrayToString = (function () {
     // This is only for PhantomJS, which doesn't like apply-ing
     // with Typed Arrays
     try {
         var arr = new Uint8Array([1, 2, 3]);
         String.fromCharCode.apply(null, arr);
-        return function (a) {
-            return String.fromCharCode.apply(null, a);
-        };
+        return function (a) { return String.fromCharCode.apply(null, a); };
     } catch (ex) {
         return function (a) {
-            return String.fromCharCode.apply(null, Array.prototype.slice.call(a));
+            return String.fromCharCode.apply(
+                null, Array.prototype.slice.call(a));
         };
     }
-}();
+})();
 
 Websock.prototype = {
     // Getters and Setters
@@ -114,34 +102,32 @@ Websock.prototype = {
 
     // TODO(directxman12): test performance with these vs a DataView
     rQshift16: function () {
-        return (this._rQ[this._rQi++] << 8) + this._rQ[this._rQi++];
+        return (this._rQ[this._rQi++] << 8) +
+               this._rQ[this._rQi++];
     },
 
     rQshift32: function () {
-        return (this._rQ[this._rQi++] << 24) + (this._rQ[this._rQi++] << 16) + (this._rQ[this._rQi++] << 8) + this._rQ[this._rQi++];
+        return (this._rQ[this._rQi++] << 24) +
+               (this._rQ[this._rQi++] << 16) +
+               (this._rQ[this._rQi++] << 8) +
+               this._rQ[this._rQi++];
     },
 
     rQshiftStr: function (len) {
-        if (typeof len === 'undefined') {
-            len = this.rQlen();
-        }
+        if (typeof(len) === 'undefined') { len = this.rQlen(); }
         var arr = new Uint8Array(this._rQ.buffer, this._rQi, len);
         this._rQi += len;
         return typedArrayToString(arr);
     },
 
     rQshiftBytes: function (len) {
-        if (typeof len === 'undefined') {
-            len = this.rQlen();
-        }
+        if (typeof(len) === 'undefined') { len = this.rQlen(); }
         this._rQi += len;
         return new Uint8Array(this._rQ.buffer, this._rQi - len, len);
     },
 
     rQshiftTo: function (target, len) {
-        if (len === undefined) {
-            len = this.rQlen();
-        }
+        if (len === undefined) { len = this.rQlen(); }
         // TODO: make this just use set with views when using a ArrayBuffer to store the rQ
         target.set(new Uint8Array(this._rQ.buffer, this._rQi, len));
         this._rQi += len;
@@ -225,7 +211,7 @@ Websock.prototype = {
         this._websocket.binaryType = 'arraybuffer';
 
         this._websocket.onmessage = this._recv_message.bind(this);
-        this._websocket.onopen = function () {
+        this._websocket.onopen = (function () {
             Log.Debug('>> WebSock.onopen');
             if (this._websocket.protocol) {
                 Log.Info("Server choose sub-protocol: " + this._websocket.protocol);
@@ -233,29 +219,28 @@ Websock.prototype = {
 
             this._eventHandlers.open();
             Log.Debug("<< WebSock.onopen");
-        }.bind(this);
-        this._websocket.onclose = function (e) {
+        }).bind(this);
+        this._websocket.onclose = (function (e) {
             Log.Debug(">> WebSock.onclose");
             this._eventHandlers.close(e);
             Log.Debug("<< WebSock.onclose");
-        }.bind(this);
-        this._websocket.onerror = function (e) {
+        }).bind(this);
+        this._websocket.onerror = (function (e) {
             Log.Debug(">> WebSock.onerror: " + e);
             this._eventHandlers.error(e);
             Log.Debug("<< WebSock.onerror: " + e);
-        }.bind(this);
+        }).bind(this);
     },
 
     close: function () {
         if (this._websocket) {
-            if (this._websocket.readyState === WebSocket.OPEN || this._websocket.readyState === WebSocket.CONNECTING) {
+            if ((this._websocket.readyState === WebSocket.OPEN) ||
+                    (this._websocket.readyState === WebSocket.CONNECTING)) {
                 Log.Info("Closing WebSocket connection");
                 this._websocket.close();
             }
 
-            this._websocket.onmessage = function (e) {
-                return;
-            };
+            this._websocket.onmessage = function (e) { return; };
         }
     },
 

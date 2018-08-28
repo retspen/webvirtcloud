@@ -1,12 +1,3 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.getPointerEvent = getPointerEvent;
-exports.stopEvent = stopEvent;
-exports.setCapture = setCapture;
-exports.releaseCapture = releaseCapture;
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2012 Joel Martin
@@ -19,11 +10,11 @@ exports.releaseCapture = releaseCapture;
  * Cross-browser event and position routines
  */
 
-function getPointerEvent(e) {
+export function getPointerEvent (e) {
     return e.changedTouches ? e.changedTouches[0] : e.touches ? e.touches[0] : e;
 };
 
-function stopEvent(e) {
+export function stopEvent (e) {
     e.stopPropagation();
     e.preventDefault();
 };
@@ -65,13 +56,14 @@ var _captureObserver = new MutationObserver(_captureElemChanged);
 
 var _captureIndex = 0;
 
-function setCapture(elem) {
+export function setCapture (elem) {
     if (elem.setCapture) {
 
         elem.setCapture();
 
         // IE releases capture on 'click' events which might not trigger
         elem.addEventListener('mouseup', releaseCapture);
+
     } else {
         // Release any existing capture in case this method is
         // called multiple times without coordination
@@ -103,7 +95,7 @@ function setCapture(elem) {
         _captureIndex++;
 
         // Track cursor and get initial cursor
-        _captureObserver.observe(elem, { attributes: true });
+        _captureObserver.observe(elem, {attributes:true});
         _captureElemChanged();
 
         captureElem.style.display = "";
@@ -115,10 +107,11 @@ function setCapture(elem) {
     }
 };
 
-function releaseCapture() {
+export function releaseCapture () {
     if (document.releaseCapture) {
 
         document.releaseCapture();
+
     } else {
         if (!_captureElem) {
             return;
@@ -126,7 +119,7 @@ function releaseCapture() {
 
         // There might be events already queued, so we need to wait for
         // them to flush. E.g. contextmenu in Microsoft Edge
-        window.setTimeout(function (expected) {
+        window.setTimeout(function(expected) {
             // Only clear it if it's the expected grab (i.e. no one
             // else has initiated a new grab)
             if (_captureIndex === expected) {

@@ -204,6 +204,30 @@ function sendCtrlAltDel()
     }
 }
 
+function sendCtrlAltFN(f) {
+    if (sc && sc.inputs && sc.inputs.state === "ready"){
+        var keys_code=[KEY_F1,KEY_F2,KEY_F3,KEY_F4,KEY_F5,KEY_F6,KEY_F7,KEY_F8,KEY_F9,KEY_F10,KEY_F11,KEY_F12];
+
+        if (keys_code[f]==undefined) {
+            return;
+        }
+        var key = new SpiceMsgcKeyDown();
+        var msg = new SpiceMiniData();
+
+        update_modifier(true, KEY_LCtrl, sc);
+        update_modifier(true, KEY_Alt, sc);
+
+        key.code = keys_code[f];
+        msg.build_msg(SPICE_MSGC_INPUTS_KEY_DOWN, key);
+        sc.inputs.send_msg(msg);
+        msg.build_msg(SPICE_MSGC_INPUTS_KEY_UP, key);
+        sc.inputs.send_msg(msg);
+
+        if(Ctrl_state == false) update_modifier(false, KEY_LCtrl, sc);
+        if(Alt_state == false) update_modifier(false, KEY_Alt, sc);
+    }
+}
+
 function update_modifier(state, code, sc)
 {
     var msg = new SpiceMiniData();

@@ -1,8 +1,3 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-   value: true
-});
 /*
  * noVNC: HTML5 VNC client
  * Copyright 2017 Pierre Ossman for Cendio AB
@@ -12,9 +7,9 @@ Object.defineProperty(exports, "__esModule", {
  */
 
 var EventTargetMixin = {
-   _listeners: null,
+    _listeners: null,
 
-   addEventListener: function (type, callback) {
+   addEventListener: function(type, callback) {
       if (!this._listeners) {
          this._listeners = new Map();
       }
@@ -24,14 +19,14 @@ var EventTargetMixin = {
       this._listeners.get(type).add(callback);
    },
 
-   removeEventListener: function (type, callback) {
+   removeEventListener: function(type, callback) {
       if (!this._listeners || !this._listeners.has(type)) {
          return;
       }
       this._listeners.get(type).delete(callback);
    },
 
-   dispatchEvent: function (event) {
+   dispatchEvent: function(event) {
       if (!this._listeners || !this._listeners.has(event.type)) {
          return true;
       }
@@ -39,7 +34,7 @@ var EventTargetMixin = {
          callback.call(this, event);
       }, this);
       return !event.defaultPrevented;
-   }
+   },
 };
 
-exports.default = EventTargetMixin;
+export default EventTargetMixin;
