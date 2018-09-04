@@ -1279,6 +1279,8 @@
             image = new_vname + "-" + disk_minus_suffix;
         } else if (disk_name.lastIndexOf('.') > -1 && disk_dot_suffix.length <= 7) {
             image = new_vname + "." + disk_dot_suffix
+        } else if (new_vname != disk_name) {
+            image = new_vname
         } else {
             image = new_vname + '-clone';
         }
