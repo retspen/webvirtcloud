@@ -565,14 +565,14 @@ def instance(request, compute_id, vname):
                 conn.create_snapshot(name)
                 msg = _("New snapshot")
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#restoresnapshot')
+                return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
             if 'delete_snapshot' in request.POST:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
                 msg = _("Delete snapshot")
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#restoresnapshot')
+                return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
             if 'revert_snapshot' in request.POST:
                 snap_name = request.POST.get('name', '')

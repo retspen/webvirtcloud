@@ -512,7 +512,7 @@
                                             </li>
                                             <li role="presentation">
                                                 <a href="#managesnapshot" aria-controls="managesnapshot" role="tab" data-toggle="tab">
-                                                    {% trans "Manage Snapshot" %}
+                                                    {% trans "Manage Snapshots" %}
                                                 </a>
                                             </li>
                                         </ul>
@@ -560,7 +560,7 @@
                                                                             <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
                                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
                                                                                 {% ifequal status 5 %}
-                                                                                    <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" onclick="return confirm('Are you sure?')">
+                                                                                    <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" title="Revert to this Snapshot" onclick="return confirm('Are you sure?')">
                                                                                         <span class="glyphicon glyphicon-save"></span>
                                                                                     </button>
                                                                                 {% else %}
@@ -573,7 +573,7 @@
                                                                         <td style="width:30px;">
                                                                             <form action="" method="post" role="form">{% csrf_token %}
                                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                                <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                                <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" title="Delete Snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                                                     <span class="glyphicon glyphicon-trash"></span>
                                                                                 </button>
                                                                             </form>
