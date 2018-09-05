@@ -321,7 +321,12 @@
                                             {% ifequal status 1 %}
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vdiconsole">
                                                     <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
-                                                    <a href="#" class="btn btn-lg btn-success pull-right" id="vdi_url" >{% trans "VDI" %}</a>
+                                                <div class="input-group">
+                                                    <input type="text" class="input-lg disabled form-control" disabled id="vdi_url_input"/>
+                                                    <span class="input-group-btn">
+                                                        <a href="#" class="btn btn-lg btn-success" id="vdi_url" >{% trans "VDI" %}</a>
+                                                    </span>
+                                                </div>
                                                 <div class="clearfix"></div>
                                             </div>
                                             {% endifequal %}
@@ -1337,6 +1342,7 @@
     $(document).ready(function () {
         // set vdi url
         $.get("/datasource/vdi/{{ vname }}/", function(data) {
+            $("#vdi_url_input").attr("value", data);
             $("#vdi_url").attr("href", data);
         });
     });
