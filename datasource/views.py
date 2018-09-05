@@ -7,12 +7,14 @@ from libvirt import libvirtError
 import json
 import socket
 
-OS_VERSIONS = [ 'latest', '' ]
+OS_VERSIONS = ['latest', '']
 OS_UUID = "iid-dswebvirtcloud"
+
 
 def os_index(request):
     response = '\n'.join(OS_VERSIONS)
     return HttpResponse(response)
+
 
 def os_metadata_json(request, version):
     """
@@ -27,8 +29,9 @@ def os_metadata_json(request, version):
         response = { 'uuid': OS_UUID, 'hostname': hostname }
         return HttpResponse(json.dumps(response))
     else:
-        err = 'Invalid version: %s' % version
+        err = 'Invalid version: {}'.format(version)
         raise Http404(err)
+
 
 def os_userdata(request, version):
     """
@@ -51,8 +54,9 @@ def os_userdata(request, version):
 
         return render(request, 'user_data', locals())
     else:
-        err = 'Invalid version: %s' % version
+        err = 'Invalid version: {}'.format(version)
         raise Http404(err)
+
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -62,9 +66,14 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+
 def get_hostname_by_ip(ip):
-    addrs = socket.gethostbyaddr(ip)
+    try:
+        addrs = socket.gethostbyaddr(ip)
+    except Exception:
+        addrs = [ip,]
     return addrs[0]
+
 
 def get_vdi_url(request, vname):
     instance = Instance.objects.get(name=vname)
