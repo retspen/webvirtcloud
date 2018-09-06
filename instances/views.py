@@ -274,6 +274,12 @@ def instance(request, compute_id, vname):
         return free_names
 
     def check_user_quota(instance, cpu, memory, disk_size):
+        ua = request.user.userattributes
+        msg = ""
+
+        if request.user.is_superuser:
+            return msg
+
         user_instances = UserInstance.objects.filter(user_id=request.user.id, instance__is_template=False)
         instance += user_instances.count()
         for usr_inst in user_instances:
@@ -290,8 +296,6 @@ def instance(request, compute_id, vname):
                     if disk['size']:
                         disk_size += int(disk['size'])>>30
         
-        ua = request.user.userattributes
-        msg = ""
         if ua.max_instances > 0 and instance > ua.max_instances:
             msg = "instance"
             if settings.QUOTA_DEBUG:
