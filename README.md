@@ -32,7 +32,7 @@ print(''.join([random.SystemRandom().choice(haystack) for _ in range(50)]))
 ### Install WebVirtCloud panel (Ubuntu)
 
 ```bash
-sudo apt-get -y install git python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
+sudo apt-get -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
@@ -218,6 +218,25 @@ Go to http://serverip and you should see the login screen.
 login: admin
 password: admin
 </pre>
+
+### Configuring Compute SSH connection
+This is a short example of configuring cloud and compute side of the ssh connection.
+
+On the webvirtcloud machine you need to generate ssh keys and optionally disable StrictHostKeyChecking.
+```
+chown www-data -R ~www-data
+sudo -u www-data ssh-keygen
+cat > ~www-data/.ssh/config << EOF
+Host *
+StrictHostKeyChecking no
+EOF
+chown www-data -R ~www-data/.ssh/config
+```
+
+You need to put cloud public key into authorized keys on the compute node. Simpliest way of doing this is to use ssh tool from the webvirtcloud server.
+```
+sudo -u www-data ssh-copy-id root@compute1
+```
 
 ### Cloud-init
 Currently supports only root ssh authorized keys and hostname. Example configuration of the cloud-init client follows.
