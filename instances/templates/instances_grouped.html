@@ -14,7 +14,9 @@
     <tbody class="searchable">
     {% for host, inst  in all_host_vms.items %}
         <tr class="active" style="font-weight: bold;border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
-            <td><span class="fa fa-server"></span> </td>
+            <td>
+                <span id="collapse_host_instances_{{ host.1 }}" class="glyphicon glyphicon-chevron-up" onclick="hide_host_instances('{{ host.1 }}');"></span>
+            </td>
             <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
             <td></td>
             <td>
@@ -32,7 +34,7 @@
         </tr>
 
         {% for vm, info in inst.items %}
-            <tr>
+            <tr host="{{ host.1 }}">
                 <td style="text-align: right">{{ forloop.counter }} </td>
                 <td>&emsp; <a href="{% url 'instance' host.0 vm %}">{{ vm }}</a><br>
                     <small><em>{{ info.title }}</em></small>
@@ -120,3 +122,14 @@
     {% endfor %}
     </tbody>
 </table>
+{% block script %}
+<script>
+function hide_host_instances(host) {
+    var rows = $('table tr');
+
+    host_rows = rows.filter('[host='+host+']');
+    host_rows.toggle();
+    $('span#collapse_host_instances_'+host).toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
+}
+</script>
+{% endblock %}
