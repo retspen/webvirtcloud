@@ -245,7 +245,10 @@ class wvmInstance(wvmConnect):
                     try:
                         dev = disk.xpath('target/@dev')[0]
                         src_fl = disk.xpath('source/@file|source/@dev|source/@name|source/@volume')[0]
-                        disk_format = disk.xpath('driver/@type')[0]
+                        try:
+                            disk_format = disk.xpath('driver/@type')[0]
+                        except:
+                            pass
                         try:
                             vol = self.get_volume_by_path(src_fl)
                             volume = vol.name()
@@ -719,6 +722,28 @@ class wvmInstance(wvmConnect):
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
                 
+                source_protocol = elm.get('protocol')
+                if source_protocol == 'rbd':
+                    source_name = elm.get('name')
+                    clone_name = "%s/%s" % (os.path.dirname(source_name), target_file)
+                    elm.set('name', clone_name)
+
+                    vol = self.get_volume_by_path(source_name)
+                    vol_format = util.get_xml_path(vol.XMLDesc(0),
+                                                   "/volume/target/format/@type")
+
+                    vol_clone_xml = """
+                                    <volume type='network'>
+                                        <name>%s</name>
+                                        <capacity>0</capacity>
+                                        <allocation>0</allocation>
+                                        <target>
+                                            <format type='%s'/>
+                                        </target>
+                                    </volume>""" % (target_file, vol_format)
+                    stg = vol.storagePoolLookupByVolume()
+                    stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
+
                 source_dev = elm.get('dev')
                 if source_dev:
                     clone_path = os.path.join(os.path.dirname(source_dev), target_file)
