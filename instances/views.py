@@ -226,24 +226,6 @@ def instance(request, compute_id, vname):
         if not userinstance:
             return HttpResponseRedirect(reverse('index'))
 
-    def show_clone_disk(disks, vname=''):
-        clone_disk = []
-        for disk in disks:
-            if disk['image'] is None:
-                continue
-            if disk['image'].count("-") and disk['image'].rsplit("-", 1)[0] == vname:
-                name, suffix = disk['image'].rsplit("-", 1)
-                image = name + "-clone" + "-" + suffix
-            elif disk['image'].count(".") and len(disk['image'].rsplit(".", 1)[1]) <= 7:
-                name, suffix = disk['image'].rsplit(".", 1)
-                image = name + "-clone" + "." + suffix
-            else:
-                image = disk['image'] + "-clone"
-            clone_disk.append(
-                {'dev': disk['dev'], 'storage': disk['storage'],
-                 'image': image, 'format': disk['format']})
-        return clone_disk
-    
     def filesizefstr(size_str):
         if size_str == '':
             return 0
@@ -373,7 +355,6 @@ def instance(request, compute_id, vname):
         snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k:k['date'])
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
         has_managed_save_image = conn.get_managed_save_image()
-        clone_disks = show_clone_disk(disks, vname)
         console_passwd = conn.get_console_passwd()
         clone_free_names = get_clone_free_names()
         user_quota_msg = check_user_quota(0, 0, 0, 0)
@@ -766,16 +747,10 @@ def instance(request, compute_id, vname):
                         auto_vname = clone_free_names[0]
                         clone_data['name'] = auto_vname
                         clone_data['clone-net-mac-0'] = _get_dhcp_mac_address(auto_vname)
-                        for post in clone_data.keys():
-                            if post.startswith('disk-'):
-                                disk_name = clone_data[post]
-                                if "-" in disk_name:
-                                    suffix = disk_name.split("-")[-1]
-                                    disk_name = '-'.join((auto_vname, suffix))
-                                else:
-                                    suffix = disk_name.split(".")[-1]
-                                    disk_name = '.'.join((auto_vname, suffix))
-                                clone_data[post] = disk_name
+                        for disk in disks:
+                            disk_dev = "disk-{}".format(disk['dev'])
+                            disk_name = get_clone_disk_name(disk, vname, auto_vname)
+                            clone_data[disk_dev] = disk_name
                     
                     if not request.user.is_superuser and quota_msg:
                         msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
@@ -1022,6 +997,34 @@ def check_instance(request, vname):
         data['exists'] = True
     return HttpResponse(json.dumps(data))
 
+
+def get_clone_disk_name(disk, prefix, clone_name=''):
+    if not disk['image']:
+        return None
+    if disk['image'].startswith(prefix) and clone_name:
+        suffix = disk['image'][len(prefix):]
+        image = "{}{}".format(clone_name, suffix)
+    elif "." in disk['image'] and len(disk['image'].rsplit(".", 1)[1]) <= 7:
+        name, suffix = disk['image'].rsplit(".", 1)
+        image = "{}-clone.{}".format(name, suffix)
+    else:
+        image = "{}-clone".format(disk['image'])
+    return image
+
+def _get_clone_disks(disks, vname=''):
+    clone_disks = []
+    for disk in disks:
+        new_image = get_clone_disk_name(disk, vname)
+        if not new_image:
+            continue
+        new_disk = {
+            'dev': disk['dev'],
+            'storage': disk['storage'],
+            'image': new_image,
+            'format': disk['format']
+        }
+        clone_disks.append(new_disk)
+    return clone_disks
 
 def sshkeys(request, vname):
     """
