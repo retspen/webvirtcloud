@@ -34,7 +34,8 @@
                 <h3 class="page-header">{% trans "Basic details" %}</h3>
                 <div class="col-xs-4 col-sm-3">
                     <p>{% trans "Hostname" %}</p>
-                    <p>{% trans "Hypervisor" %}</p>
+                    <p>{% trans "Hypervisors" %}</p>
+                    <p>{% trans "Emulator" %}</p>
                     <p>{% trans "Memory" %}</p>
                     <p>{% trans "Architecture" %}</p>
                     <p>{% trans "Logical CPUs" %}</p>
@@ -44,7 +45,14 @@
                 </div>
                 <div class="col-xs-8 col-sm-7">
                     <p>{{ hostname }}</p>
-                    <p>{{ hypervisor }}</p>
+                    <p>{% for arch, hpv in hypervisor.items %}
+                          <span class="glyphicon glyphicon-chevron-right"></span>
+                          <span class="label label-default">{{ arch }}</span>
+                          {% for h in hpv %}
+                              <span class="label label-primary">{{ h }}</span>{% endfor %}
+                        {% endfor %}
+                    </p>
+                    <p>{{ emulator }}</p>
                     <p>{{ host_memory|filesizeformat }}</p>
                     <p>{{ host_arch }}</p>
                     <p>{{ logical_cpu }}</p>
