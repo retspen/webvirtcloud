@@ -67,6 +67,6 @@ class wvmHostDetails(wvmConnect):
         info.append(self.wvm.getURI()) #uri
         return info
 
-    def hypervisor_type(self):
-        """Return hypervisor type"""
-        return get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch/domain/@type")
+
+
+
