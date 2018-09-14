@@ -10,7 +10,8 @@ from instances.models import Instance
 from vrtManager.create import wvmCreate
 from vrtManager import util
 from libvirt import libvirtError
-
+from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+from django.contrib import messages
 
 @login_required
 def create_instance(request, compute_id):
@@ -27,7 +28,7 @@ def create_instance(request, compute_id):
     storages = []
     networks = []
     meta_prealloc = False
-    computes = Compute.objects.all()
+    #computes = Compute.objects.all()
     compute = get_object_or_404(Compute, pk=compute_id)
     flavors = Flavor.objects.filter().order_by('id')
 
@@ -40,7 +41,9 @@ def create_instance(request, compute_id):
         storages = sorted(conn.get_storages(only_actives=True))
         networks = sorted(conn.get_networks())
         instances = conn.get_instances()
+        videos = conn.get_video()
         cache_modes = sorted(conn.get_cache_modes().items())
+        listener_addr = QEMU_CONSOLE_LISTEN_ADDRESSES
         mac_auto = util.randomMAC()
         get_images = sorted(conn.get_storages_images())
     except libvirtError as lib_err:
@@ -110,8 +113,13 @@ def create_instance(request, compute_id):
                                     error_messages.append(lib_err.message)
                         elif data['template']:
                             templ_path = conn.get_volume_path(data['template'])
-                            clone_path = conn.clone_from_template(data['name'], templ_path, metadata=meta_prealloc)
-                            volumes[clone_path] = conn.get_volume_type(clone_path)
+                            dest_vol = conn.get_volume_path(data["name"] + ".img")
+                            if dest_vol:
+                                error_msg = _("Image has already exist. Please check volumes or change instance name")
+                                error_messages.append(error_msg)
+                            else:
+                                clone_path = conn.clone_from_template(data['name'], templ_path, metadata=meta_prealloc)
+                                volumes[clone_path] = conn.get_volume_type(clone_path)
                         else:
                             if not data['images']:
                                 error_msg = _("First you need to create or select an image")
@@ -131,12 +139,14 @@ def create_instance(request, compute_id):
                             try:
                                 conn.create_instance(data['name'], data['memory'], data['vcpu'], data['host_model'],
                                                      uuid, volumes, data['cache_mode'], data['networks'], data['virtio'],
+                                                     data["console_pass"], data["listener_addr"], None, data["video"],
                                                      data['mac'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
+                                messages.success(request,"Instance is created.")
                                 return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
-                                if data['hdd_size']:
+                                if data['hdd_size'] or volumes[clone_path]:
                                     conn.delete_volume(volumes.keys()[0])
                                 error_messages.append(lib_err)
         conn.close()

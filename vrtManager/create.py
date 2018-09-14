@@ -2,6 +2,7 @@ import string
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
+from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 
 
@@ -148,7 +149,7 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(path)
         vol.delete()
 
-    def create_instance(self, name, memory, vcpu, host_model, uuid, images, cache_mode, networks, virtio, mac=None):
+    def create_instance(self, name, memory, vcpu, host_model, uuid, images, cache_mode, networks, virtio, console_pass, listen_addr, nwfilter=None, video="cirrus", mac=None ):
         """
         Create VM function
         """
@@ -228,20 +229,24 @@ class wvmCreate(wvmConnect):
             xml += """<interface type='network'>"""
             if mac:
                 xml += """<mac address='%s'/>""" % mac
-            xml += """<source network='%s'/>
-                      <filterref filter='clean-traffic'/>""" % net
+            xml += """<source network='%s'/>""" % net
+            if nwfilter:
+                xml += """<filterref filter='%s'/>""" % nwfilter
             if virtio:
                 xml += """<model type='virtio'/>"""
             xml += """</interface>"""
 
+        if console_pass is None: console_pass = "passwd='" + util.randomPasswd() + "'"
+        else: console_pass = "passwd='" + console_pass + "'"
+
         xml += """  <input type='mouse' bus='ps2'/>
                     <input type='tablet' bus='usb'/>
-                    <graphics type='%s' port='-1' autoport='yes' passwd='%s' listen='127.0.0.1'/>
+                    <graphics type='%s' port='-1' autoport='yes' %s listen='%s'/>
                     <console type='pty'/>
                     <video>
-                      <model type='cirrus'/>
+                      <model type='%s'/>
                     </video>
                     <memballoon model='virtio'/>
                   </devices>
-                </domain>""" % (QEMU_CONSOLE_DEFAULT_TYPE, util.randomPasswd())
+                </domain>""" % (QEMU_CONSOLE_DEFAULT_TYPE, console_pass, listen_addr, video)
         self._defineXML(xml)
