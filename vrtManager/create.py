@@ -149,7 +149,7 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(path)
         vol.delete()
 
-    def create_instance(self, name, memory, vcpu, host_model, uuid, images, cache_mode, networks, virtio, console_pass, listen_addr, nwfilter=None, video="cirrus", mac=None ):
+    def create_instance(self, name, memory, vcpu, host_model, uuid, images, cache_mode, networks, virtio, listen_addr, nwfilter=None, video="cirrus", console_pass="random", mac=None):
         """
         Create VM function
         """
@@ -236,8 +236,11 @@ class wvmCreate(wvmConnect):
                 xml += """<model type='virtio'/>"""
             xml += """</interface>"""
 
-        if console_pass is None: console_pass = "passwd='" + util.randomPasswd() + "'"
-        else: console_pass = "passwd='" + console_pass + "'"
+        if console_pass == "random":
+            console_pass = "passwd='" + util.randomPasswd() + "'"
+        else:
+            if not console_pass == "":
+                console_pass = "passwd='" + console_pass + "'"
 
         xml += """  <input type='mouse' bus='ps2'/>
                     <input type='tablet' bus='usb'/>

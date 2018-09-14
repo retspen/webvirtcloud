@@ -139,7 +139,7 @@ def create_instance(request, compute_id):
                             try:
                                 conn.create_instance(data['name'], data['memory'], data['vcpu'], data['host_model'],
                                                      uuid, volumes, data['cache_mode'], data['networks'], data['virtio'],
-                                                     data["console_pass"], data["listener_addr"], None, data["video"],
+                                                     data["listener_addr"], None, data["video"], data["console_pass"],
                                                      data['mac'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
