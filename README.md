@@ -213,6 +213,17 @@ Done!!
 
 Go to http://serverip and you should see the login screen.
 
+### Alternative running novncd via runit
+Alternative to running nonvcd via supervisor is runit.
+
+On Debian systems install runit and configure novncd service
+```
+apt install runit runit-systemd
+mkdir /etc/service/novncd/
+ln -s /srv/webvirtcloud/conf/runit/novncd.sh /etc/service/novncd/run
+systemctl start runit.service
+```
+
 ### Default credentials
 <pre>
 login: admin

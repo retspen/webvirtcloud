@@ -919,7 +919,7 @@
                                                         {% endif %}
                                                         {% if request.user.is_superuser %}
                                                             <p style="font-weight:bold;">{% trans "Storage devices" %}</p>
-                                                            {% for disk in clone_disks %}
+                                                            {% for disk in disks %}
                                                                 <div class="form-group">
                                                                     <label class="col-sm-3 control-label" style="font-weight:normal;">{{ disk.dev }} ({{ disk.storage }})</label>
                                                                     <div class="col-sm-4">
@@ -934,7 +934,7 @@
                                                                 </div>
                                                             {% endfor %}
                                                         {% else %}
-                                                            {% for disk in clone_disks %}
+                                                            {% for disk in disks %}
                                                                 <input id="disk_name-{{ disk.dev }}" type="hidden" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
                                                             {% endfor %}
                                                         {% endif %}
@@ -1271,17 +1271,13 @@
 </script>
 <script>
     function update_clone_disk_name(new_vname) {
-        vname = '{{ vname }}-clone';
-        {% for disk in clone_disks %}
+        vname = '{{ vname }}';
+        {% for disk in disks %}
         disk_name = '{{ disk.image }}';
-        disk_minus = disk_name.split('-');
-        disk_minus_suffix = disk_minus[disk_minus.length-1];
-        disk_minus.pop();
-        disk_minus_name = disk_minus.join('-');
         disk_dot = disk_name.split('.')
         disk_dot_suffix = disk_dot[disk_dot.length-1];
-        if (disk_name.lastIndexOf('-') > -1 && disk_minus_name == vname) {
-            image = new_vname + "-" + disk_minus_suffix;
+        if (disk_name.startsWith(vname)) {
+            image = disk_name.replace(vname, new_vname);
         } else if (disk_name.lastIndexOf('.') > -1 && disk_dot_suffix.length <= 7) {
             image = new_vname + "." + disk_dot_suffix
         } else if (new_vname != disk_name) {
@@ -1352,6 +1348,7 @@
     $(document).ready(function () {
         random_mac('clone-net-mac-0');
         random_mac('add-net-mac');
+        update_clone_disk_name($('#clone_name').val());
     });
 {% else %}
     $('#select_clone_name').on('change', function () {

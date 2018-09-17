@@ -1,4 +1,18 @@
 #!/bin/sh
+
 # `/sbin/setuser www-data` runs the given command as the user `www-data`.
-cd /srv/webvirtcloud
-exec /sbin/setuser www-data /srv/webvirtcloud/venv/bin/python /srv/webvirtcloud/console/novncd >> /var/log/novncd.log 2>&1
+RUNAS=`which setuser`
+[ -z $RUNAS ] && RUNAS="`which sudo` -u"
+USER=www-data
+
+DJANGO_PROJECT=/srv/webvirtcloud
+PYTHON=$DJANGO_PROJECT/venv/bin/python
+NOVNCD=$DJANGO_PROJECT/console/novncd
+
+# make novncd debug, verbose
+#PARAMS="-d -v"
+
+LOG=/var/log/novncd.log
+
+cd $DJANGO_PROJECT
+exec $RUNAS $USER $PYTHON $NOVNCD $PARAMS >> $LOG 2>&1
