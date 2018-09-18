@@ -388,6 +388,10 @@
                                                                 <label class="col-sm-3 control-label">{% trans "Video" %}</label>
                                                                 <div class="col-sm-6">
                                                                     <select name="video" class="form-control">
+                                                                        {% if not videos %}
+                                                                            <option value="vga">vga</option>
+                                                                            <option value="cirrus">cirrus</option>
+                                                                        {% endif %}
                                                                         {% for video in videos %}
                                                                             <option value="{{ video }}">{{ video }}</option>
                                                                         {% endfor %}
