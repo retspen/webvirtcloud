@@ -65,7 +65,7 @@
              <div class="form-group">
                 <label>{% trans "Filter:" %}</label>
                  <select id="nwfilter_select" name="nwfilters_select" class="form-control">
-                    <option value="None" selected>None</option>
+                    <option value="" selected>None</option>
                     {% for nwf in nwfilters_all %}
                         <option value="{{ nwf.name }}">{{ nwf.name }}</option>
                     {% endfor %}
