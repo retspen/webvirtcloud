@@ -74,10 +74,10 @@ def create_instance(request, compute_id):
                 delete_flavor.delete()
                 return HttpResponseRedirect(request.get_full_path())
             if 'create_xml' in request.POST:
-                xml = request.POST.get('from_xml', '')
+                xml = request.POST.get('dom_xml', '')
                 try:
                     name = util.get_xml_path(xml, '/domain/name')
-                except util.etree.ParserError:
+                except util.etree.Error as err:
                     name = None
                 if name in instances:
                     error_msg = _("A virtual machine with this name already exists")

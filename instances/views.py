@@ -451,7 +451,7 @@ def instance(request, compute_id, vname):
                     else:
                         error_messages.append(msg)
                 else:
-                    msg = _("Please shutdow down your instance and then try again")
+                    msg = _("Please shutdown down your instance and then try again")
                     error_messages.append(msg)
 
             if 'addpublickey' in request.POST:
@@ -473,7 +473,7 @@ def instance(request, compute_id, vname):
                     else:
                         error_messages.append(msg)
                 else:
-                    msg = _("Please shutdow down your instance and then try again")
+                    msg = _("Please shutdown down your instance and then try again")
                     error_messages.append(msg)
 
             if 'resize' in request.POST and (request.user.is_superuser or request.user.is_staff or userinstance.is_change):

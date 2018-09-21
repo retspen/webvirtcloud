@@ -279,7 +279,8 @@
                         <div class="well">
                             <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
-                                    <textarea id="editor" name="from_xml"></textarea>
+                                     <input type="hidden" name="dom_xml"/>
+                                    <textarea id="editor"></textarea>
                                 </div>
                                 <button type="submit" class="btn btn-primary" name="create_xml" onclick="showPleaseWaitDialog()">
                                     {% trans "Create" %}
@@ -536,5 +537,10 @@
 <script>
     var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
+
+    var input = $('input[name="dom_xml"]');
+    editor.getSession().on("change",function () {
+        input.val(editor.getSession().getValue());
+    })
 </script>
 {% endblock %}
