@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+{% block title %}{% trans "NWFilters" %} - {{ compute.name }}{% endblock %}
+{% block content %}
+   <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            {% include 'create_nwfilter_block.html' %}
+            <h1 class="page-header">{% trans "NWFilter:" %} {{ name }}</h1>
+            <ol class="breadcrumb">
+                <li class="active">
+                    <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-sitemap"></i> <a href="{% url 'networks' compute.id %}">{% trans "Networks" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-filter"></i> {% trans "NWFilters" %}
+                </li>
+                <li>
+                    <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <!-- /.row -->
+
+    {% include 'errors_block.html' %}
+    {% include 'messages_block.html' %}
+
+       <div class="row">
+                <div class="col-xs-6 col-sm-4">
+                    <p>{% trans "UUID:" %}</p>
+                    <p>{% trans "Name:" %}</p>
+                </div>
+
+                <div class="col-xs-6 col-sm-8">
+                    <p>{{ uuid }}</p>
+                    <p>{{ name }}</p>
+                </div>
+
+       </div>
+    <div class="row">
+         <p><strong>{% trans "XML:" %}</strong></p>
+        <form class="form-inline" method="post" role="form">{% csrf_token %}
+         <div class="col-xs-12" id="xmlheight">
+            <input type="hidden" name="edit_xml"/>
+            <textarea id="edit_editor">{{ xml }}</textarea>
+         </div>
+            <button type="submit" class="btn btn-primary pull-right" name="edit_nwfilter">
+                {% trans "Edit" %}
+            </button>
+        </form>
+    </div>
+    <div class="row">
+        <p><strong>{% trans "Filter References:" %}</strong></p>
+        <form class="form-inline pull-right" method="post" role="form">{% csrf_token %}
+             <div class="form-group">
+                <label>{% trans "Filter:" %}</label>
+                 <select id="nwfilter_select" name="nwfilters_select" class="form-control">
+                    <option value="None" selected>None</option>
+                    {% for nwf in nwfilters_all %}
+                        <option value="{{ nwf.name }}">{{ nwf.name }}</option>
+                    {% endfor %}
+                 </select>
+
+                <button type="submit" class="btn btn-success pull-right" name="add_nwfilter_ref">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                </button>
+            </div>
+        </form>
+
+    </div>
+    <div class="row">
+             <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th style="width: 45px;">#</th>
+                        <th>{% trans "Reference" %}</th>
+                        <th colspan="3">{% trans "Action" %}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for ref in refs %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ ref }}</td>
+                            <td style="width:30px;">
+                                <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                    <input type="hidden" name="ref" value="{{ ref }}">
+                                    <button type="submit" class="btn btn-sm btn-default" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+             </div>
+    </div>
+    <div class="row">
+        <p><strong>{% trans "Rules:" %}</strong></p>
+        <a href="#AddNWFilterRule" type="button" class="btn btn-success pull-right" data-toggle="modal">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+        </a>
+
+    <!-- Modal Secret -->
+    <div class="modal fade" id="AddNWFilterRule" tabindex="-1" role="dialog" aria-labelledby="AddNWFilterRule" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">{% trans "Add New NWFilter Rule" %}</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                         <div class="form-group">
+                            <div class="col-xs-12" id="xmlheight">
+                                <input type="hidden" name="nwfilterrule_xml"/>
+                                <textarea id="rule_editor"></textarea>
+                            </div>
+                             <p><small><em>If there is a rule which has same attributes it replaces that rule...</em></small></p>
+                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="submit" class="btn btn-primary" name="add_nwfilter_rule">{% trans "Add" %}</button>
+                        </div>
+                    </form>
+                </div> <!-- /.modal-content -->
+            </div>
+        </div> <!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    </div>
+    <div class="row">
+             <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th style="width: 45px;">{% trans "Rule" %}</th>
+                        <th>{% trans "ActionType" %}</th>
+                        <th>{% trans "Direction" %}</th>
+                        <th>{% trans "Priority" %}</th>
+                        <th>{% trans "Statematch" %}</th>
+                        <th>{% trans "Directives" %}</th>
+                        <th colspan="3">{% trans "Action" %}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for rule in rules %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ rule.action }}</td>
+                            <td>{{ rule.direction }}</td>
+                            <td>{{ rule.priority }}</td>
+                            <td>{{ rule.statematch }}</td>
+                            <td>{{ rule.directives }}</td>
+                            <td style="width:30px;">
+                                <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                    <input type="hidden" name="action" value="{{ rule.action }}">
+                                    <input type="hidden" name="direction" value="{{ rule.direction }}">
+                                    <input type="hidden" name="priority" value="{{ rule.priority }}">
+                                    <button type="submit" class="btn btn-sm btn-default" name="del_nwfilter_rule" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+             </div>
+    </div>
+
+
+{% endblock %}
+
+{% block script %}
+    <script src="{% static "js/sortable.min.js" %}"></script>
+    <script>
+        $(document).ready(function () {
+            (function ($) {
+                $('#filter').keyup(function () {
+                    var rex = new RegExp($(this).val(), 'i');
+                    $('.searchable tr').hide();
+                    $('.searchable tr').filter(function () {
+                        return rex.test($(this).text());
+                    }).show();
+                })
+            }(jQuery));
+        });
+    </script>
+    <script src="{% static "js/ace.js" %}"></script>
+    <script>
+        var editor = ace.edit("edit_editor");
+        editor.getSession().setMode("ace/mode/xml");
+
+        var edit_input = $('input[name="edit_xml"]');
+        editor.getSession().on("change",function () {
+        edit_input.val(editor.getSession().getValue());
+        })
+
+        var rule_editor = ace.edit("rule_editor");
+        rule_editor.getSession().setMode("ace/mode/xml");
+
+        var rule_input = $('input[name="nwfilterrule_xml"]');
+        rule_editor.getSession().on("change",function () {
+        rule_input.val(rule_editor.getSession().getValue());
+        })
+    </script>
+
+{% endblock %}

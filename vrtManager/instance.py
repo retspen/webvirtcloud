@@ -487,8 +487,7 @@ class wvmInstance(wvmConnect):
         return self._defineXML(newxml)
     
     def get_console_socket(self):
-        socket = util.get_xml_path(self._XMLDesc(0),
-                                   "/domain/devices/graphics/@socket")
+        socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@socket")
         return socket
 
     def get_console_type(self):
