@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+   app:
+     build: .
+     image: wvcapp:latest
+     ports:
+       - "8000:8000"
+       - "6080:6080"
+     volumes:
+     - ./backend:/app
+     command: python3 -m http.server 9000 --bind 127.0.0.1
+     environment:
+       DB_HOST: mariadb
+       DB_USER: root
+       DB_PASSWORD: root
+       DJANGO_SETTINGS_MODULE: webvirtcloud.settings.dev
+       BROKER_URL: "amqp://guest:guest@rabbitmq:5672"
+     depends_on:
+       - rabbitmq
+       - mariadb
+   mariadb:
+     image: mariadb:latest
+     ports:
+     - "3306:3306"
+     environment:
+       MYSQL_ROOT_PASSWORD: root
+     restart: always
+   rabbitmq:
+     image: rabbitmq:latest
+     restart: always

@@ -1,0 +1,5 @@
+<network>
+  <name>private</name>
+  <forward mode='bridge'/>
+  <bridge name='br-int'/>
+</network>

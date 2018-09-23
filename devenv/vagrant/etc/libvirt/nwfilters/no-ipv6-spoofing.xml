@@ -1,0 +1,5 @@
+<filter name='no-ipv6-spoofing' chain='ipv6' priority='-600'>
+  <rule action='drop' direction='out' priority='500'>
+    <ipv6 match='no' srcipaddr='$IPV6'/>
+  </rule>
+</filter>

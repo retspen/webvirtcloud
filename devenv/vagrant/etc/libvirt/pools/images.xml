@@ -1,0 +1,6 @@
+<pool type='dir'>
+  <name>images</name>
+  <target>
+    <path>/var/lib/libvirt/images</path>
+  </target>
+</pool>

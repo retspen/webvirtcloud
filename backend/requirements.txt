@@ -1,0 +1,8 @@
+Django==2.0.8
+djangorestframework==3.8.2
+libvirt-python==4.6.0
+passlib==1.7.1
+paramiko==2.4.1
+django-rest-auth==0.9.3
+django-allauth==0.37.1
+mysqlclient==1.3.13

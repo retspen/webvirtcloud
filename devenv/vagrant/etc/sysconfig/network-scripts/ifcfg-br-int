@@ -1,0 +1,6 @@
+DEVICE=br-int
+TYPE=Bridge
+ONBOOT=yes
+BOOTPROTO=none
+NM_CONTROLLED=no
+DELAY=0

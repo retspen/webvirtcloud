@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# HubGridCloud libvirt qemu hook
+#
+
+domain_name="$1"
+domain_task="$2"
+network="169.254.0.0/16"
+
+
+zeroconf_add() {
+    # Get VNET interface
+    target=$(xmlstarlet select -t -m "//devices/interface[@type='bridge']" -v "concat(target/@dev, ' ')" -n | head -1)
+    iface=$(echo ${target} | cut -d- -f2)
+
+    # Add rule for 169.254.0.0/16
+    ebtables -t nat -I "I-${iface}-ipv4-ip" 2 -p IPv4 --ip-src "${network}" -j RETURN
+    ebtables -t nat -I "I-${iface}-arp-ip" -p ARP --arp-ip-src "${network}" -j RETURN
+}
+
+
+case "${domain_task}" in
+  prepare)
+    ;;
+  started)
+    zeroconf_add
+    ;;
+  stopped)
+    ;;
+  reconnect)
+    zeroconf_add
+    ;;
+  *)
+    exit 0
+    echo "qemu hook called with unexpected options $*" >&2
+    ;;
+esac
+
+exit 0

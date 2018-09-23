@@ -1,0 +1,6 @@
+-r requirements.txt
+flake8
+bpython
+django-cors-headers
+django-rest-swagger
+django-debug-toolbar

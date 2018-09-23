@@ -1,0 +1,6 @@
+<pool type='dir'>
+  <name>isos</name>
+  <target>
+    <path>/var/lib/libvirt/isos</path>
+  </target>
+</pool>

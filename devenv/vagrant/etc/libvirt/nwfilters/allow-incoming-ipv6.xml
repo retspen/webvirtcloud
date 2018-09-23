@@ -1,0 +1,3 @@
+<filter name='allow-incoming-ipv6' chain='ipv6' priority='-600'>
+  <rule action='accept' direction='in' priority='500'/>
+</filter>

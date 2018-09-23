@@ -1,0 +1,6 @@
+<pool type='dir'>
+  <name>backups</name>
+  <target>
+    <path>/mnt/backups</path>
+  </target>
+</pool>

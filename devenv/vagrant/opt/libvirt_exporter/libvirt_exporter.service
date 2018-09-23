@@ -1,0 +1,12 @@
+[Unit]
+Description=LibVirt Exporter for VM metrics
+Documentation=https://github.com/retspen/libvirt_exporter
+After=network-online.target
+
+[Service]
+Restart=always
+WorkingDirectory=/opt/libvirt_exporter-0.1.0.linux-amd64/
+ExecStart=/opt/libvirt_exporter-0.1.0.linux-amd64/libvirt_exporter --web.listen-address=localhost:9177
+
+[Install]
+WantedBy=multi-user.target

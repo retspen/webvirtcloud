@@ -1,4 +1,0 @@
--r ../conf/requirements.txt
-pep8==1.7.1
-pyflakes==2.0.0
-pylint==1.9.2

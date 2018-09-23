@@ -1,0 +1,19 @@
+<filter name='clean-traffic-ipv6' chain='root'>
+  <filterref filter='no-mac-spoofing'/>
+  <filterref filter='no-ip-spoofing'/>
+  <rule action='accept' direction='out' priority='-650'>
+    <mac protocolid='ipv4'/>
+  </rule>
+  <filterref filter='no-ipv6-spoofing'/>
+  <rule action='accept' direction='out' priority='-650'>
+    <mac protocolid='ipv6'/>
+  </rule>
+  <filterref filter='allow-incoming-ipv4'/>
+  <filterref filter='allow-incoming-ipv6'/>
+  <filterref filter='no-arp-spoofing'/>
+  <rule action='accept' direction='inout' priority='-500'>
+    <mac protocolid='arp'/>
+  </rule>
+  <filterref filter='no-other-l2-traffic'/>
+  <filterref filter='qemu-announce-self'/>
+</filter>

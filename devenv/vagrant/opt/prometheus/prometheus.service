@@ -1,0 +1,12 @@
+[Unit]
+Description=Prometheus Server 2.3.2
+Documentation=https://prometheus.io/docs/introduction/overview/
+After=network-online.target
+
+[Service]
+Restart=always
+WorkingDirectory=/opt/prometheus-2.3.2.linux-amd64/
+ExecStart=/opt/prometheus-2.3.2.linux-amd64/prometheus
+
+[Install]
+WantedBy=multi-user.target
