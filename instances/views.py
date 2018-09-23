@@ -314,7 +314,32 @@ def instance(request, compute_id, vname):
             return (network_source_pack[1], network_source_pack[0])
         else:
             return (network_source_pack[0], 'net')
-            
+
+    def migrate_instance(new_compute, instance, live=False, unsafe=False, xml_del=False, offline=False):
+        status = connection_manager.host_is_up(new_compute.type, new_compute.hostname)
+        if not status:
+            return
+        if new_compute == instance.compute:
+            return
+        conn_migrate = wvmInstances(new_compute.hostname,
+                                    new_compute.login,
+                                    new_compute.password,
+                                    new_compute.type)
+        conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline)
+        instance.compute = new_compute
+        instance.save()
+        conn_migrate.close()
+        conn_new = wvmInstance(new_compute.hostname,
+                               new_compute.login,
+                               new_compute.password,
+                               new_compute.type,
+                               instance.name)
+        if autostart:
+            conn_new.set_autostart(1)
+            conn_new.close()
+        msg = _("Migrate to %s" % new_compute.hostname)
+        addlogmsg(request.user.username, instance.name, msg)
+
     try:
         conn = wvmInstance(compute.hostname,
                            compute.login,
@@ -334,11 +359,11 @@ def instance(request, compute_id, vname):
         description = conn.get_description()
         disks = conn.get_disk_device()
         media = conn.get_media_device()
-        networks = conn.get_net_device()
         if len(media) != 0:
             media_iso = sorted(conn.get_iso_media())
         else:
             media_iso = []
+        networks = conn.get_net_device()
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
@@ -364,7 +389,6 @@ def instance(request, compute_id, vname):
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
         formats = conn.get_image_formats()
 
-
         busses = conn.get_busses()
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
@@ -376,9 +400,13 @@ def instance(request, compute_id, vname):
             if instance.uuid != uuid:
                 instance.uuid = uuid
                 instance.save()
+                msg = _("Fixing uuid %s" % uuid)
+                addlogmsg(request.user.username, instance.name, msg)
         except Instance.DoesNotExist:
             instance = Instance(compute_id=compute_id, name=vname, uuid=uuid)
             instance.save()
+            msg = _("Instance.DoesNotExist: Creating new instance")
+            addlogmsg(request.user.username, instance.name, msg)
 
         userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
 
@@ -654,26 +682,11 @@ def instance(request, compute_id, vname):
                     unsafe = request.POST.get('unsafe_migrate', False)
                     xml_del = request.POST.get('xml_delete', False)
                     offline = request.POST.get('offline_migrate', False)
+
                     new_compute = Compute.objects.get(id=compute_id)
-                    conn_migrate = wvmInstances(new_compute.hostname,
-                                                new_compute.login,
-                                                new_compute.password,
-                                                new_compute.type)
-                    conn_migrate.moveto(conn, vname, live, unsafe, xml_del, offline)
-                    instance.compute = new_compute
-                    instance.save()
-                    conn_migrate.close()
-                    if autostart:
-                        conn_new = wvmInstance(new_compute.hostname,
-                                               new_compute.login,
-                                               new_compute.password,
-                                               new_compute.type,
-                                               vname)
-                        conn_new.set_autostart(1)
-                        conn_new.close()
-                    msg = _("Migrate to %s" % new_compute.hostname)
-                    addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(reverse('instance', args=[compute_id, vname]))
+                    migrate_instance(new_compute, instance, live, unsafe, xml_del, offline)
+
+                    return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
 
                 if 'change_network' in request.POST:
                     network_data = {}
@@ -773,7 +786,10 @@ def instance(request, compute_id, vname):
 
                         msg = _("Clone of '%s'" % instance.name)
                         addlogmsg(request.user.username, new_instance.name, msg)
-                        return HttpResponseRedirect(reverse('instance', args=[compute_id, clone_data['name']]))
+                        if settings.CLONE_INSTANCE_AUTO_MIGRATE:
+                            new_compute = Compute.objects.order_by('?').first()
+                            migrate_instance(new_compute, new_instance, xml_del=True, offline=True)
+                        return HttpResponseRedirect(reverse('instance', args=[new_instance.compute.id, new_instance.name]))
 
                 if 'change_options' in request.POST:
                     instance.is_template = request.POST.get('is_template', False)
