@@ -321,7 +321,12 @@
                                             {% ifequal status 1 %}
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vdiconsole">
                                                     <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
-                                                    <a href="#" class="btn btn-lg btn-success pull-right" id="vdi_url" >{% trans "VDI" %}</a>
+                                                <div class="input-group">
+                                                    <input type="text" class="input-lg disabled form-control" disabled id="vdi_url_input"/>
+                                                    <span class="input-group-btn">
+                                                        <a href="#" class="btn btn-lg btn-success" id="vdi_url" >{% trans "VDI" %}</a>
+                                                    </span>
+                                                </div>
                                                 <div class="clearfix"></div>
                                             </div>
                                             {% endifequal %}
@@ -511,8 +516,8 @@
                                                 </a>
                                             </li>
                                             <li role="presentation">
-                                                <a href="#restoresnapshot" aria-controls="restoresnapshot" role="tab" data-toggle="tab">
-                                                    {% trans "Restore From Snapshot" %}
+                                                <a href="#managesnapshot" aria-controls="managesnapshot" role="tab" data-toggle="tab">
+                                                    {% trans "Manage Snapshots" %}
                                                 </a>
                                             </li>
                                         </ul>
@@ -538,10 +543,10 @@
                                                     <p>{% trans "To take a snapshot please Power Off the instance." %}</p>
                                                 {% endifequal %}
                                             </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="restoresnapshot">
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="managesnapshot">
                                                {% ifequal status 5 %}
                                                     {% if snapshots %}
-                                                        <p>{% trans "Choose a snapshot for restore" %}</p>
+                                                        <p>{% trans "Choose a snapshot for restore/delete" %}</p>
                                                         <div class="table-responsive">
                                                             <table class="table">
                                                                 <thead>
@@ -560,7 +565,7 @@
                                                                             <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
                                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
                                                                                 {% ifequal status 5 %}
-                                                                                    <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" onclick="return confirm('Are you sure?')">
+                                                                                    <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" title="Revert to this Snapshot" onclick="return confirm('Are you sure?')">
                                                                                         <span class="glyphicon glyphicon-save"></span>
                                                                                     </button>
                                                                                 {% else %}
@@ -573,7 +578,7 @@
                                                                         <td style="width:30px;">
                                                                             <form action="" method="post" role="form">{% csrf_token %}
                                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                                <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                                <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" title="Delete Snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                                                     <span class="glyphicon glyphicon-trash"></span>
                                                                                 </button>
                                                                             </form>
@@ -1335,6 +1340,7 @@
     $(document).ready(function () {
         // set vdi url
         $.get("/datasource/vdi/{{ vname }}/", function(data) {
+            $("#vdi_url_input").attr("value", data);
             $("#vdi_url").attr("href", data);
         });
     });
@@ -1550,7 +1556,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#takesnapshot', '#restoresnapshot'])) {
+    if (~$.inArray(hash, ['#takesnapshot', '#managesnapshot'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#snapshots') {

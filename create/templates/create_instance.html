@@ -14,8 +14,8 @@
                 </div>
             </div>
             <!-- /.row -->
-
             {% include 'errors_block.html' %}
+            {% include 'pleasewaitdialog.html' %}
 
             <div class="row">
                 <div class="col-lg-12">
@@ -109,13 +109,43 @@
                                 </div>
                             </div>
                             <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "Video" %}</label>
+                                <div class="col-sm-6">
+                                    <select name="video" class="form-control">
+                                        {% if not videos %}
+                                            <option value="vga">vga</option>
+                                            <option value="cirrus">cirrus</option>
+                                        {% endif %}
+                                        {% for video in videos %}
+                                            <option value="{{ video }}">{{ video }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
+                                <div class="col-sm-6">
+                                    <select name="listener_addr" class="form-control">
+                                        {% for addr, label in listener_addr %}
+                                            <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
                                 <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
                                 <div class="col-sm-6">
                                     <input type="checkbox" name="virtio" value="true" checked>
                                 </div>
                             </div>
                             {% if storages %}
-                                <button type="submit" class="btn btn-primary" name="create" value="1">
+                                <button type="submit" class="btn btn-primary" name="create" onclick="showPleaseWaitDialog()" value="1">
                                     {% trans "Create" %}
                                 </button>
                             {% else %}
@@ -202,8 +232,39 @@
                                         <input type="checkbox" name="virtio" value="true" checked>
                                     </div>
                                 </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "Video" %}</label>
+                                    <div class="col-sm-6">
+                                        <select name="video" class="form-control">
+                                            {% if not videos %}
+                                                <option value="vga">vga</option>
+                                                <option value="cirrus">cirrus</option>
+                                            {% endif %}
+                                            {% for video in videos %}
+                                                <option value="{{ video }}">{{ video }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
+                                    <div class="col-sm-6">
+                                        <select name="listener_addr" class="form-control">
+                                            {% for addr, label in listener_addr %}
+                                                <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
                                 {% if storages %}
-                                    <button type="submit" class="btn btn-primary" name="create" value="1">
+                                    <button type="submit" class="btn btn-primary" name="create" value="1" onclick="showPleaseWaitDialog()">
                                         {% trans "Create" %}
                                     </button>
                                 {% else %}
@@ -218,9 +279,10 @@
                         <div class="well">
                             <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
-                                    <textarea id="editor" name="from_xml"></textarea>
+                                     <input type="hidden" name="dom_xml"/>
+                                    <textarea id="editor"></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary" name="create_xml">
+                                <button type="submit" class="btn btn-primary" name="create_xml" onclick="showPleaseWaitDialog()">
                                     {% trans "Create" %}
                                 </button>
                             </form>
@@ -298,6 +360,16 @@
                                                                 </div>
                                                             </div>
                                                             <div class="form-group">
+                                                                <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
+                                                                <div class="col-sm-6">
+                                                                    <select id="cache_mode" name="cache_mode" class="form-control">
+                                                                        {% for mode, name in cache_modes %}
+                                                                            <option value="{{ mode }}">{% trans name %}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group">
                                                                 <label class="col-sm-3 control-label">{% trans "Network" %}</label>
                                                                 <div class="col-sm-6">
                                                                     <select name="networks" class="form-control">
@@ -311,6 +383,36 @@
                                                                 <label class="col-sm-3 control-label">{% trans "MAC" %}</label>
                                                                 <div class="col-sm-6">
                                                                     <input type="text" class="form-control" name="mac" maxlength="17" value="{{ mac_auto }}" required pattern="[a-zA-Z0-9:]+">
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label class="col-sm-3 control-label">{% trans "Video" %}</label>
+                                                                <div class="col-sm-6">
+                                                                    <select name="video" class="form-control">
+                                                                        {% if not videos %}
+                                                                            <option value="vga">vga</option>
+                                                                            <option value="cirrus">cirrus</option>
+                                                                        {% endif %}
+                                                                        {% for video in videos %}
+                                                                            <option value="{{ video }}">{{ video }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
+                                                                <div class="col-sm-6">
+                                                                    <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
+                                                                <div class="col-sm-6">
+                                                                    <select name="listener_addr" class="form-control">
+                                                                        {% for addr, label in listener_addr %}
+                                                                            <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
                                                                 </div>
                                                             </div>
                                                             <div class="form-group">
@@ -435,5 +537,10 @@
 <script>
     var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
+
+    var input = $('input[name="dom_xml"]');
+    editor.getSession().on("change",function () {
+        input.val(editor.getSession().getValue());
+    })
 </script>
 {% endblock %}
