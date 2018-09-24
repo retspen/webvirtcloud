@@ -788,7 +788,7 @@ class wvmInstance(wvmConnect):
             bridge_name = net.bridgeName()
         return bridge_name
         
-    def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio'):
+    def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio', nwfilter=None):
         tree = ElementTree.fromstring(self._XMLDesc(0))
         bridge_name = self.get_bridge_name(source, source_type)
         xml_interface = """
@@ -796,8 +796,13 @@ class wvmInstance(wvmConnect):
           <mac address='%s'/>
           <source bridge='%s'/>
           <model type='%s'/>
-        </interface>
-        """ % (interface_type, mac_address, bridge_name, model)
+          """ % (interface_type, mac_address, bridge_name, model)
+        if nwfilter:
+            xml_interface += """
+            <filterref filter='%s'/>
+            """ % nwfilter
+        xml_interface += """</interface>"""
+
         if self.get_status() == 5:
             devices = tree.find('devices')
             elm_interface = ElementTree.fromstring(xml_interface)

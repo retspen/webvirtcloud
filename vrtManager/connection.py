@@ -391,7 +391,7 @@ class wvmConnect(object):
 
     def get_nwfilters(self):
         nwfilters = []
-        for nwfilter in self.wvm.listAllNWFilters():
+        for nwfilter in self.wvm.listNWFilters():
             nwfilters.append(nwfilter)
         return nwfilters
 

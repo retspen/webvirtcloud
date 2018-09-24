@@ -364,6 +364,7 @@ def instance(request, compute_id, vname):
         else:
             media_iso = []
         networks = conn.get_net_device()
+        nwfilters = conn.get_nwfilters()
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
@@ -708,9 +709,10 @@ def instance(request, compute_id, vname):
 
                 if 'add_network' in request.POST:
                     mac = request.POST.get('add-net-mac')
+                    nwfilter = request.POST.get('nwfilter')
                     (source, source_type) = get_network_tuple(request.POST.get('add-net-network'))
 
-                    conn.add_network(mac, source, source_type)
+                    conn.add_network(mac, source, source_type, nwfilter=nwfilter)
                     msg = _("Edit network")
                     addlogmsg(request.user.username, instance.name, msg)
                     msg = _("Network Devices are changed. Please reboot instance to activate.")

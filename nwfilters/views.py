@@ -98,7 +98,7 @@ def nwfilters(request, compute_id):
                 addlogmsg(request.user.username, compute.hostname, msg)
 
         for nwf in conn.get_nwfilters():
-            nwfilters_all.append(conn.get_nwfilter_info(nwf.name()))
+            nwfilters_all.append(conn.get_nwfilter_info(nwf))
 
         conn.close()
     except libvirtError as lib_err:
@@ -132,7 +132,7 @@ def nwfilter(request, compute_id, nwfltr):
                                     compute.type)
 
         for nwf in conn.get_nwfilters():
-            nwfilters_all.append(conn.get_nwfilter_info(nwf.name()))
+            nwfilters_all.append(conn.get_nwfilter_info(nwf))
 
         uuid = nwfilter.get_uuid()
         name = nwfilter.get_name()

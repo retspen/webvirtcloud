@@ -22,7 +22,7 @@
                     <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
                 </li>
                 <li>
-                    <i class="fa fa-filter"></i> {% trans "NWFilters" %}
+                    <i class="fa fa-filter"></i> <a href="{% url 'nwfilters' compute.id %}">{% trans "NWFilters" %}</a>
                 </li>
                 <li>
                     <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
