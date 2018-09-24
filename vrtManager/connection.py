@@ -389,6 +389,12 @@ class wvmConnect(object):
             interface.append(inface)
         return interface
 
+    def get_nwfilters(self):
+        nwfilters = []
+        for nwfilter in self.wvm.listAllNWFilters():
+            nwfilters.append(nwfilter)
+        return nwfilters
+
     def get_cache_modes(self):
         """Get cache available modes"""
         return {
@@ -443,7 +449,6 @@ class wvmConnect(object):
 
     def get_video(self):
         """ Get available graphics video types """
-
         def get_video_list(ctx):
             result = []
             for video_enum in ctx.xpath('/domainCapabilities/devices/video/enum'):
@@ -469,6 +474,9 @@ class wvmConnect(object):
 
     def get_network(self, net):
         return self.wvm.networkLookupByName(net)
+
+    def get_nwfilter(self, name):
+        return self.wvm.nwfilterLookupByName(name)
 
     def get_instance(self, name):
         return self.wvm.lookupByName(name)
