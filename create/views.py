@@ -143,7 +143,7 @@ def create_instance(request, compute_id):
                                                      data['mac'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
-                                messages.success(request,"Instance is created.")
+                                messages.success(request, _("Instance is created."))
                                 return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
                                 if data['hdd_size'] or volumes[clone_path]:
