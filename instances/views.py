@@ -348,6 +348,7 @@ def instance(request, compute_id, vname):
                            vname)
         compute_networks = sorted(conn.get_networks())
         compute_interfaces = sorted(conn.get_ifaces())
+        compute_nwfilters = conn.get_nwfilters()
         status = conn.get_status()
         autostart = conn.get_autostart()
         vcpu = conn.get_vcpu()
@@ -364,7 +365,7 @@ def instance(request, compute_id, vname):
         else:
             media_iso = []
         networks = conn.get_net_device()
-        nwfilters = conn.get_nwfilters()
+
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
@@ -690,6 +691,7 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
 
                 if 'change_network' in request.POST:
+                    msg = _("Change network")
                     network_data = {}
 
                     for post in request.POST:
@@ -701,24 +703,31 @@ def instance(request, compute_id, vname):
                             network_data[post] = request.POST.get(post, '')
 
                     conn.change_network(network_data)
-                    msg = _("Edit network")
                     addlogmsg(request.user.username, instance.name, msg)
-                    msg = _("Network Devices are changed. Please reboot instance to activate.")
-                    messages.success(request, msg)
+                    if conn.get_status() != 5: messages.success(request, _("Network Devices are changed. Please reboot instance to activate."))
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_network' in request.POST:
+                    msg = _("Add network")
                     mac = request.POST.get('add-net-mac')
-                    nwfilter = request.POST.get('nwfilter')
+                    nwfilter = request.POST.get('add-net-nwfilter')
                     (source, source_type) = get_network_tuple(request.POST.get('add-net-network'))
 
                     conn.add_network(mac, source, source_type, nwfilter=nwfilter)
-                    msg = _("Edit network")
+
                     addlogmsg(request.user.username, instance.name, msg)
-                    msg = _("Network Devices are changed. Please reboot instance to activate.")
-                    messages.success(request, msg)
+                    if conn.get_status() != 5: messages.success(request, _("Network Device is added. Please reboot instance to activate."))
                     return HttpResponseRedirect(request.get_full_path() + '#network')
-                
+
+                if 'delete_network' in request.POST:
+                    msg = _("Delete network")
+                    mac_address = request.POST.get('delete_network', '')
+
+                    conn.delete_network(mac_address)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    if conn.get_status() != 5: messages.success(request, _("Network Device is deleted. Please reboot instance to activate."))
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
                 if 'add_owner' in request.POST:
                     user_id = int(request.POST.get('user_id', ''))
                     

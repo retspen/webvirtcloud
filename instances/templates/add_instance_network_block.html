@@ -36,9 +36,9 @@
                         <div class="form-group">
                             <label class="col-sm-4 control-label">{% trans "NWFilter" %}</label>
                             <div class="col-sm-6">
-                                <select class="form-control" name="nwfilter">
+                                <select class="form-control" name="add-net-nwfilter">
                                     <option value="">{% trans "None" %}</option>
-                                    {% for nwfilter in nwfilters %}
+                                    {% for nwfilter in compute_nwfilters %}
                                         <option value="{{ nwfilter }}">{{ nwfilter }}</option>
                                     {% endfor %}
                                 </select>

@@ -232,12 +232,13 @@ class wvmInstance(wvmConnect):
                 mac_host = net.xpath('mac/@address')[0]
                 network_host = net.xpath('source/@network|source/@bridge|source/@dev')[0]
                 target_host = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
+                filterref_host = '' if not net.xpath('filterref/@filter') else net.xpath('filterref/@filter')[0]
                 try:
                     net = self.get_network(network_host)
                     ip = get_mac_ipaddr(net, mac_host)
                 except libvirtError as e:
                     ip = None
-                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host,'ip': ip})
+                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host,'ip': ip, 'filterref': filterref_host})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=networks)
@@ -810,20 +811,42 @@ class wvmInstance(wvmConnect):
             xmldom = ElementTree.tostring(tree)
             self._defineXML(xmldom)
 
+    def delete_network(self, mac_address):
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+        devices = tree.find('devices')
+        for interface in tree.findall('devices/interface'):
+            source = interface.find('mac')
+            if source.get('address', '') == mac_address:
+                source = None
+                devices.remove(interface)
+                new_xml = ElementTree.tostring(tree)
+                self._defineXML(new_xml)
+
     def change_network(self, network_data):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)
-
         for num, interface in enumerate(tree.findall('devices/interface')):
             net_source = network_data['net-source-' + str(num)]
             net_source_type = network_data['net-source-' + str(num) + '-type']
             net_mac = network_data['net-mac-' + str(num)]
+            net_filter = network_data['net-nwfilter-' + str(num)]
             bridge_name = self.get_bridge_name(net_source, net_source_type)
             if interface.get('type') == 'bridge':
                 source = interface.find('mac')
                 source.set('address', net_mac)
                 source = interface.find('source')
                 source.set('bridge', bridge_name)
+                source = interface.find('filterref')
+
+                if net_filter:
+                    if source is not None: source.set('filter', net_filter)
+                    else:
+                        element = ElementTree.Element("filterref")
+                        element.attrib['filter'] = net_filter
+                        interface.append(element)
+                else:
+                    if source is not None: interface.remove(source)
+
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
