@@ -106,6 +106,13 @@ WS_HOST = '0.0.0.0'
 # Websock public port
 WS_PUBLIC_HOST = None
 
+# Websock public port - default is 80 - uncomment 443 and comment 80 if you want to use vnc over https
+WS_PUBLIC_PORT = 80
+#WS_PUBLIC_PORT = 443
+
+# Websock pubic path
+WS_PUBLIC_PATH = '/novncd/'
+
 # Websock SSL connection
 WS_CERT = None
 
