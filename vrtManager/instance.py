@@ -187,6 +187,19 @@ class wvmInstance(wvmConnect):
         title = util.get_xml_path(self._XMLDesc(0), "/domain/title")
         return title if title else ''
 
+    def get_filterrefs(self):
+
+        def filterrefs(ctx):
+            result = []
+            for net in ctx.xpath('/domain/devices/interface'):
+                filterref = net.xpath('filterref/@filter')
+                if filterref:
+                    result.append(filterref[0])
+            return result
+
+        return util.get_xml_path(self._XMLDesc(0), func=filterrefs)
+
+
     def get_description(self):
         description = util.get_xml_path(self._XMLDesc(0), "/domain/description")
         return description if description else ''
@@ -219,12 +232,13 @@ class wvmInstance(wvmConnect):
                 mac_host = net.xpath('mac/@address')[0]
                 network_host = net.xpath('source/@network|source/@bridge|source/@dev')[0]
                 target_host = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
+                filterref_host = '' if not net.xpath('filterref/@filter') else net.xpath('filterref/@filter')[0]
                 try:
                     net = self.get_network(network_host)
                     ip = get_mac_ipaddr(net, mac_host)
                 except libvirtError as e:
                     ip = None
-                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host,'ip': ip})
+                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host,'ip': ip, 'filterref': filterref_host})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=networks)
@@ -487,8 +501,7 @@ class wvmInstance(wvmConnect):
         return self._defineXML(newxml)
     
     def get_console_socket(self):
-        socket = util.get_xml_path(self._XMLDesc(0),
-                                   "/domain/devices/graphics/@socket")
+        socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@socket")
         return socket
 
     def get_console_type(self):
@@ -700,13 +713,11 @@ class wvmInstance(wvmConnect):
                 source_file = elm.get('file')
                 if source_file:
                     clone_dev_path.append(source_file)
-                    clone_path = os.path.join(os.path.dirname(source_file),
-                                              target_file)
+                    clone_path = os.path.join(os.path.dirname(source_file), target_file)
                     elm.set('file', clone_path)
 
                     vol = self.get_volume_by_path(source_file)
-                    vol_format = util.get_xml_path(vol.XMLDesc(0),
-                                                   "/volume/target/format/@type")
+                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
 
                     if vol_format == 'qcow2' and meta_prealloc:
                         meta_prealloc = True
@@ -729,8 +740,7 @@ class wvmInstance(wvmConnect):
                     elm.set('name', clone_name)
 
                     vol = self.get_volume_by_path(source_name)
-                    vol_format = util.get_xml_path(vol.XMLDesc(0),
-                                                   "/volume/target/format/@type")
+                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
 
                     vol_clone_xml = """
                                     <volume type='network'>
@@ -776,7 +786,7 @@ class wvmInstance(wvmConnect):
             bridge_name = net.bridgeName()
         return bridge_name
         
-    def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio'):
+    def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio', nwfilter=None):
         tree = ElementTree.fromstring(self._XMLDesc(0))
         bridge_name = self.get_bridge_name(source, source_type)
         xml_interface = """
@@ -784,8 +794,13 @@ class wvmInstance(wvmConnect):
           <mac address='%s'/>
           <source bridge='%s'/>
           <model type='%s'/>
-        </interface>
-        """ % (interface_type, mac_address, bridge_name, model)
+          """ % (interface_type, mac_address, bridge_name, model)
+        if nwfilter:
+            xml_interface += """
+            <filterref filter='%s'/>
+            """ % nwfilter
+        xml_interface += """</interface>"""
+
         if self.get_status() == 5:
             devices = tree.find('devices')
             elm_interface = ElementTree.fromstring(xml_interface)
@@ -793,20 +808,42 @@ class wvmInstance(wvmConnect):
             xmldom = ElementTree.tostring(tree)
             self._defineXML(xmldom)
 
+    def delete_network(self, mac_address):
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+        devices = tree.find('devices')
+        for interface in tree.findall('devices/interface'):
+            source = interface.find('mac')
+            if source.get('address', '') == mac_address:
+                source = None
+                devices.remove(interface)
+                new_xml = ElementTree.tostring(tree)
+                self._defineXML(new_xml)
+
     def change_network(self, network_data):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)
-
         for num, interface in enumerate(tree.findall('devices/interface')):
             net_source = network_data['net-source-' + str(num)]
             net_source_type = network_data['net-source-' + str(num) + '-type']
             net_mac = network_data['net-mac-' + str(num)]
+            net_filter = network_data['net-nwfilter-' + str(num)]
             bridge_name = self.get_bridge_name(net_source, net_source_type)
             if interface.get('type') == 'bridge':
                 source = interface.find('mac')
                 source.set('address', net_mac)
                 source = interface.find('source')
                 source.set('bridge', bridge_name)
+                source = interface.find('filterref')
+
+                if net_filter:
+                    if source is not None: source.set('filter', net_filter)
+                    else:
+                        element = ElementTree.Element("filterref")
+                        element.attrib['filter'] = net_filter
+                        interface.append(element)
+                else:
+                    if source is not None: interface.remove(source)
+
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 

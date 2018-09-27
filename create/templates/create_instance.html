@@ -108,6 +108,17 @@
                                     </select>
                                 </div>
                             </div>
+                             <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
+                                <div class="col-sm-6">
+                                    <select name="nwfilter" class="form-control">
+                                        <option value="">{% trans "None" %}</option>
+                                        {% for nwfilter in nwfilters %}
+                                            <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <label class="col-sm-3 control-label">{% trans "Video" %}</label>
                                 <div class="col-sm-6">
@@ -222,6 +233,17 @@
                                         <select name="networks" class="form-control">
                                             {% for network in networks %}
                                                 <option value="{{ network }}">{{ network }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
+                                    <div class="col-sm-6">
+                                        <select name="nwfilter" class="form-control">
+                                            <option value="">{% trans "None" %}</option>
+                                            {% for nwfilter in nwfilters %}
+                                                <option value="{{ nwfilter }}">{{ nwfilter }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -375,6 +397,17 @@
                                                                     <select name="networks" class="form-control">
                                                                         {% for network in networks %}
                                                                             <option value="{{ network }}">{{ network }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
+                                                                <div class="col-sm-6">
+                                                                    <select name="nwfilter" class="form-control">
+                                                                        <option value="">{% trans "None" %}</option>
+                                                                        {% for nwfilter in nwfilters %}
+                                                                            <option value="{{ nwfilter }}">{{ nwfilter }}</option>
                                                                         {% endfor %}
                                                                     </select>
                                                                 </div>

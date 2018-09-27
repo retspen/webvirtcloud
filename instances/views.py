@@ -38,7 +38,7 @@ def index(request):
 
 
 @login_required
-def instances(request):
+def instances(request, compute_id=None):
     """
     :param request:
     :return:
@@ -47,7 +47,11 @@ def instances(request):
     error_messages = []
     all_host_vms = {}
     all_user_vms = {}
-    computes = Compute.objects.all().order_by("name")
+
+    if not compute_id:
+        computes = Compute.objects.all().order_by("name")
+    else:
+        computes = [Compute.objects.get(id=compute_id),]
 
     def get_userinstances_info(instance):
         info = {}
@@ -195,8 +199,11 @@ def instances(request):
 
     view_style = settings.VIEW_INSTANCES_LIST_STYLE
 
-    return render(request, 'instances.html', locals())
+    if compute_id:
+        compute = computes[0]
+        return render(request, 'compute_instances.html', locals())
 
+    return render(request, 'instances.html', locals())
 
 @login_required
 def instance(request, compute_id, vname):
@@ -348,6 +355,7 @@ def instance(request, compute_id, vname):
                            vname)
         compute_networks = sorted(conn.get_networks())
         compute_interfaces = sorted(conn.get_ifaces())
+        compute_nwfilters = conn.get_nwfilters()
         status = conn.get_status()
         autostart = conn.get_autostart()
         vcpu = conn.get_vcpu()
@@ -364,6 +372,7 @@ def instance(request, compute_id, vname):
         else:
             media_iso = []
         networks = conn.get_net_device()
+
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
@@ -387,6 +396,7 @@ def instance(request, compute_id, vname):
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
+        default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
         formats = conn.get_image_formats()
 
         busses = conn.get_busses()
@@ -544,14 +554,14 @@ def instance(request, compute_id, vname):
                                    compute.type)
                 storage = request.POST.get('storage', '')
                 name = request.POST.get('name', '')
-                format = request.POST.get('format', '')
+                format = request.POST.get('format', default_format)
                 size = request.POST.get('size', 0)
                 meta_prealloc = request.POST.get('meta_prealloc', False)
-                bus = request.POST.get('bus', '')
-                cache = request.POST.get('cache', '')
+                bus = request.POST.get('bus', default_bus)
+                cache = request.POST.get('cache', default_cache)
                 target = get_new_disk_dev(disks, bus)
                 
-                path = connCreate.create_volume(storage, name, size, format, meta_prealloc)
+                path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach new disk')
                 addlogmsg(request.user.username, instance.name, msg)
@@ -689,6 +699,7 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
 
                 if 'change_network' in request.POST:
+                    msg = _("Change network")
                     network_data = {}
 
                     for post in request.POST:
@@ -700,23 +711,31 @@ def instance(request, compute_id, vname):
                             network_data[post] = request.POST.get(post, '')
 
                     conn.change_network(network_data)
-                    msg = _("Edit network")
                     addlogmsg(request.user.username, instance.name, msg)
-                    msg = _("Network Devices are changed. Please reboot instance to activate.")
-                    messages.success(request, msg)
+                    if conn.get_status() != 5: messages.success(request, _("Network Devices are changed. Please reboot instance to activate."))
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_network' in request.POST:
+                    msg = _("Add network")
                     mac = request.POST.get('add-net-mac')
+                    nwfilter = request.POST.get('add-net-nwfilter')
                     (source, source_type) = get_network_tuple(request.POST.get('add-net-network'))
 
-                    conn.add_network(mac, source, source_type)
-                    msg = _("Edit network")
+                    conn.add_network(mac, source, source_type, nwfilter=nwfilter)
+
                     addlogmsg(request.user.username, instance.name, msg)
-                    msg = _("Network Devices are changed. Please reboot instance to activate.")
-                    messages.success(request, msg)
+                    if conn.get_status() != 5: messages.success(request, _("Network Device is added. Please reboot instance to activate."))
                     return HttpResponseRedirect(request.get_full_path() + '#network')
-                
+
+                if 'delete_network' in request.POST:
+                    msg = _("Delete network")
+                    mac_address = request.POST.get('delete_network', '')
+
+                    conn.delete_network(mac_address)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    if conn.get_status() != 5: messages.success(request, _("Network Device is deleted. Please reboot instance to activate."))
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
                 if 'add_owner' in request.POST:
                     user_id = int(request.POST.get('user_id', ''))
                     

@@ -33,12 +33,24 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">{% trans "NWFilter" %}</label>
+                            <div class="col-sm-6">
+                                <select class="form-control" name="add-net-nwfilter">
+                                    <option value="">{% trans "None" %}</option>
+                                    {% for nwfilter in compute_nwfilters %}
+                                        <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
+
                         <div class="modal-footer">
                             <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
                             <button type="submit" class="btn btn-primary" name="add_network">{% trans "Add" %}</button>
                         </div>
                     </form>
+                </div>
             </div> <!-- /.modal-content -->
         </div> <!-- /.modal-dialog -->
     </div> <!-- /.modal -->

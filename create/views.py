@@ -28,7 +28,6 @@ def create_instance(request, compute_id):
     storages = []
     networks = []
     meta_prealloc = False
-    #computes = Compute.objects.all()
     compute = get_object_or_404(Compute, pk=compute_id)
     flavors = Flavor.objects.filter().order_by('id')
 
@@ -40,6 +39,7 @@ def create_instance(request, compute_id):
 
         storages = sorted(conn.get_storages(only_actives=True))
         networks = sorted(conn.get_networks())
+        nwfilters = conn.get_nwfilters()
         instances = conn.get_instances()
         videos = conn.get_video()
         cache_modes = sorted(conn.get_cache_modes().items())
@@ -139,11 +139,11 @@ def create_instance(request, compute_id):
                             try:
                                 conn.create_instance(data['name'], data['memory'], data['vcpu'], data['host_model'],
                                                      uuid, volumes, data['cache_mode'], data['networks'], data['virtio'],
-                                                     data["listener_addr"], None, data["video"], data["console_pass"],
+                                                     data["listener_addr"], data["nwfilter"], data["video"], data["console_pass"],
                                                      data['mac'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
-                                messages.success(request,"Instance is created.")
+                                messages.success(request, _("Instance is created."))
                                 return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
                                 if data['hdd_size'] or volumes[clone_path]:

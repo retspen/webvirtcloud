@@ -220,6 +220,7 @@
         //var port = WebUtil.getConfigVar('port', window.location.port);
         var host = '{{ ws_host }}';
         var port = '{{ ws_port }}';
+	var wspath = '{{ ws_path }}';
 
         // if port == 80 (or 443) then it won't be present and should be
         // set manually
@@ -263,7 +264,7 @@
                 url = 'ws';
             }
 
-            url += '://' + host;
+            url += '://' + host + wspath;
             if(port) {
                 url += ':' + port;
             }
