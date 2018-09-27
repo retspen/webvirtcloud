@@ -12,6 +12,9 @@
                         <li class="active">
                             <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
                         </li>
+                        <li class="active">
+                            <i class="fa fa-server"></i> <a href="{% url 'compute_instances' compute.id %}">{% trans "Instances" %}</a>
+                        </li>
                         <li>
                             <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
                         </li>

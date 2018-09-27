@@ -134,6 +134,28 @@ def computes(request):
                     error_messages.append(msg_err.as_text())
     return render(request, 'computes.html', locals())
 
+@login_required
+def compute_instances(request, compute_id):
+    """
+    :param request:
+    :return:
+    """
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('index'))
+    error_messages = []
+    compute = get_object_or_404(Compute, pk=compute_id)
+    try:
+        conn = wvmHostDetails(compute.hostname,
+                              compute.login,
+                              compute.password,
+                              compute.type)
+        hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
+        hypervisor = conn.hypervisor_type()
+        mem_usage = conn.get_memory_usage()
+        conn.close()
+    except libvirtError as lib_err:
+        error_messages.append(lib_err)
+    return render(request, 'compute_instances.html', locals())
 
 @login_required
 def overview(request, compute_id):

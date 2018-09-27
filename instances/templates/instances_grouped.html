@@ -15,6 +15,7 @@
     {% for host, inst  in all_host_vms.items %}
         <tr class="active" style="font-weight: bold;border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
             <td>
+                <span style="text-align:center;">{{ inst.items|length }}</span>
                 <span id="collapse_host_instances_{{ host.1 }}" class="glyphicon glyphicon-chevron-up" onclick="hide_host_instances('{{ host.1 }}');"></span>
             </td>
             <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>

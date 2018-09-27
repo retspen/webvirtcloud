@@ -45,7 +45,7 @@
         <p>{% trans "Pool type:" %}</p>
         <p>{% trans "Pool path:" %}</p>
         <p>{% trans "Pool status:" %}</p>
-        <p>{% trans "Size:" %} ({{ size|filesizeformat }} / {{ used|filesizeformat }})</p>
+        <p>{% trans "Size:" %} (Used: {{ used|filesizeformat }} / From total: {{ size|filesizeformat }})</p>
         <p>{% trans "State:" %}</p>
         <p>{% trans "Autostart:" %}</p>
     </div>

@@ -8,6 +8,7 @@ from create.views import create_instance
 from interfaces.views import interfaces, interface
 from console.views import console
 from nwfilters.views import nwfilters, nwfilter
+from computes.views import computes
 # from django.contrib import admin
 
 urlpatterns = [
@@ -15,8 +16,13 @@ urlpatterns = [
     url(r'^instances/$', instances, name='instances'),
 
     url(r'^instance/', include('instances.urls')),
+    url(r'^instances/$', instances, name='instances'),
+
     url(r'^accounts/', include('accounts.urls')),
+
     url(r'^computes/', include('computes.urls')),
+    url(r'^computes/', computes, name='computes'),
+
     url(r'^logs/', include('logs.urls')),
     url(r'^datasource/', include('datasource.urls')),
 

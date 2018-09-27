@@ -38,7 +38,7 @@ def index(request):
 
 
 @login_required
-def instances(request):
+def instances(request, compute_id=None):
     """
     :param request:
     :return:
@@ -47,7 +47,11 @@ def instances(request):
     error_messages = []
     all_host_vms = {}
     all_user_vms = {}
-    computes = Compute.objects.all().order_by("name")
+
+    if not compute_id:
+        computes = Compute.objects.all().order_by("name")
+    else:
+        computes = [Compute.objects.get(id=compute_id),]
 
     def get_userinstances_info(instance):
         info = {}
@@ -195,8 +199,11 @@ def instances(request):
 
     view_style = settings.VIEW_INSTANCES_LIST_STYLE
 
-    return render(request, 'instances.html', locals())
+    if compute_id:
+        compute = computes[0]
+        return render(request, 'compute_instances.html', locals())
 
+    return render(request, 'instances.html', locals())
 
 @login_required
 def instance(request, compute_id, vname):
