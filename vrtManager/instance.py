@@ -713,13 +713,11 @@ class wvmInstance(wvmConnect):
                 source_file = elm.get('file')
                 if source_file:
                     clone_dev_path.append(source_file)
-                    clone_path = os.path.join(os.path.dirname(source_file),
-                                              target_file)
+                    clone_path = os.path.join(os.path.dirname(source_file), target_file)
                     elm.set('file', clone_path)
 
                     vol = self.get_volume_by_path(source_file)
-                    vol_format = util.get_xml_path(vol.XMLDesc(0),
-                                                   "/volume/target/format/@type")
+                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
 
                     if vol_format == 'qcow2' and meta_prealloc:
                         meta_prealloc = True
@@ -742,8 +740,7 @@ class wvmInstance(wvmConnect):
                     elm.set('name', clone_name)
 
                     vol = self.get_volume_by_path(source_name)
-                    vol_format = util.get_xml_path(vol.XMLDesc(0),
-                                                   "/volume/target/format/@type")
+                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
 
                     vol_clone_xml = """
                                     <volume type='network'>

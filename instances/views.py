@@ -389,6 +389,7 @@ def instance(request, compute_id, vname):
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
+        default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
         formats = conn.get_image_formats()
 
         busses = conn.get_busses()
@@ -546,14 +547,14 @@ def instance(request, compute_id, vname):
                                    compute.type)
                 storage = request.POST.get('storage', '')
                 name = request.POST.get('name', '')
-                format = request.POST.get('format', '')
+                format = request.POST.get('format', default_format)
                 size = request.POST.get('size', 0)
                 meta_prealloc = request.POST.get('meta_prealloc', False)
-                bus = request.POST.get('bus', '')
-                cache = request.POST.get('cache', '')
+                bus = request.POST.get('bus', default_bus)
+                cache = request.POST.get('cache', default_cache)
                 target = get_new_disk_dev(disks, bus)
                 
-                path = connCreate.create_volume(storage, name, size, format, meta_prealloc)
+                path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach new disk')
                 addlogmsg(request.user.username, instance.name, msg)
