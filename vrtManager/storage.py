@@ -233,7 +233,7 @@ class wvmStorage(wvmConnect):
                         <lazy_refcounts/>
                     </features>
                 </target>
-            </volume>""" % (name, size, alloc, vol_fmt, owner, owner)
+            </volume>""" % (name, size, alloc, vol_fmt, owner['uid'], owner['guid'])
         self._createXML(xml, metadata)
 
     def clone_volume(self, name, target_file, vol_fmt=None, metadata=False, owner=owner):
@@ -261,5 +261,5 @@ class wvmStorage(wvmConnect):
                         <lazy_refcounts/>
                     </features>
                 </target>
-            </volume>""" % (target_file, vol_fmt, owner,owner)
+            </volume>""" % (target_file, vol_fmt, owner['uid'],owner['guid'])
         self._createXMLFrom(xml, vol, metadata)

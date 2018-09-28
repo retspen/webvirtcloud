@@ -19,7 +19,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'dashboards',
     'computes',
     'console',
     'networks',
@@ -153,5 +152,5 @@ VIEW_INSTANCES_LIST_STYLE = 'grouped'
 INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
 INSTANCE_VOLUME_DEFAULT_BUS = 'virtio'
 INSTANCE_VOLUME_DEFAULT_CACHE = 'directsync'
-# up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)
-INSTANCE_VOLUME_DEFAULT_OWNER = 0
+# [uid,guid] values are up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)
+INSTANCE_VOLUME_DEFAULT_OWNER = [107, 107]
