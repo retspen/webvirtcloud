@@ -15,7 +15,7 @@
             <div id="navbar" class="navbar-collapse collapse">
               <ul class="nav navbar-nav">
                 <li {% class_active request "^/instance" %}>
-                    <a href="{% url 'instances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
+                    <a href="{% url 'allinstances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
                 </li>
                 {% if request.user.is_superuser %}
                     <li {% class_active request "^/compute" %}{% class_active request "^/create" %}>
