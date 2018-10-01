@@ -359,7 +359,7 @@ def instance(request, compute_id, vname):
                 msg = _("Destroy")
                 addlogmsg(request.user.username, instance_name, msg)
 
-                return HttpResponseRedirect(reverse('instances'))
+                return HttpResponseRedirect(reverse('allinstances'))
 
             if 'rootpasswd' in request.POST:
                 passwd = request.POST.get('passwd', '')

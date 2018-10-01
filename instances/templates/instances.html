@@ -192,7 +192,7 @@
     <script>
         function goto_compute() {
             var compute = $("#compute_select").val();
-            window.location = "/compute/" + compute + "/create/";
+            window.location.href = "{% url 'create_instance' 1 %}".replace(1, compute);
         }
     </script>
 {% endif %}

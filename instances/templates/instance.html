@@ -1261,7 +1261,7 @@
 </script>
 <script>
     function random_mac(net) {
-        $.getJSON('/instance/random_mac_address/', function(data) {
+        $.getJSON('{% url 'random_mac_address' %}', function (data) {
             $('input[name="'+net+'"]').val(data['mac']);
         });
     };
@@ -1278,14 +1278,15 @@
 <script>
     function guess_mac_address(src_elem, net) {
         new_vname = $(src_elem).val();
-        $.getJSON('/instance/guess_mac_address/' + new_vname + '/', function(data) {
+        guess_mac_address_url = "{% url 'guess_mac_address' 1 %}".replace(1, new_vname);
+        $.getJSON(guess_mac_address_url, function(data) {
             $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
         });
     }
 </script>
 <script>
     function guess_clone_name() {
-        $.getJSON('/instance/guess_clone_name/', function(data) {
+        $.getJSON('{% url 'guess_clone_name' %}', function(data) {
             guessed_name = data['name'].split(".")[0];
             $('#clone_name').val(guessed_name);
             update_clone_disk_name(guessed_name);
@@ -1363,7 +1364,8 @@
     });
     $(document).ready(function () {
         // set vdi url
-        $.get("/datasource/vdi/{{ vname }}/", function(data) {
+
+        $.get("{% url 'vdi_url' vname %}", function(data) {
             $("#vdi_url_input").attr("value", data);
             $("#vdi_url").attr("href", data);
         });
@@ -1592,7 +1594,8 @@
 </script>
 <script>
     function update_logs_table(vname) {
-        $.getJSON('/logs/vm_logs/'+vname+'/', function(data) {
+        logurl = "{% url 'vm_logs' 1 %}".replace(1, vname);
+        $.getJSON(logurl, function(data) {
             var logs = "";
             $.each(data, function(id) {
                 row = data[id];
