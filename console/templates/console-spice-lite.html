@@ -108,6 +108,7 @@
             function connect()
             {
                 var host, port, password, scheme = "ws://", uri;
+                console.log('>> connect');
 
                 // By default, use the host and port of server that served this file
                 //host = spice_query_var('host', window.location.hostname);
@@ -170,6 +171,7 @@
                     disconnect();
                 }
 
+                console.log('<< connect');
 
             }
 
