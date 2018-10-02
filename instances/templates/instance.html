@@ -833,39 +833,63 @@
                                             {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
                                                     <p>
-                                                    {% trans "Assign network device to bridge" %}
-                                                    {% include 'add_instance_network_block.html' %}
+                                                        {% trans "Assign network device to bridge" %}
+                                                        {% include 'add_instance_network_block.html' %}
                                                     </p>
-                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                        <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                    <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                <div class="col-xs-12 col-sm-12">
+                                                    <form method="post" role="form">{% csrf_token %}
                                                         {% for network in networks %}
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
-                                                                <div class="col-sm-3">
-                                                                    <input type="text" class="form-control" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                            <div class="panel panel-default">
+                                                                <div class="panel-heading">
+                                                                    <label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
                                                                 </div>
-                                                                <div class="col-sm-3">
-                                                                    <input type="text" class="form-control" name="net-source-{{ forloop.counter0 }}" value="{{ network.nic }}" disabled/>
+                                                                <div class="panel-body">
+                                                                    <div class="form-group form-inline">
+                                                                        <label class="col-sm-2 col-sm-offset-1 control-label">{% trans "MAC" %} </label>
+                                                                        <input class="form-control" type="text" value="{{ network.mac }}" readonly/>
+                                                                        <label class="control-label"><em>to</em></label>
+                                                                        <input class="form-control" type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                                    </div>
+                                                                    <div class="form-group form-inline">
+                                                                        <label class="col-sm-2 col-sm-offset-1 control-label">{% trans "NIC" %} </label>
+                                                                        <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
+                                                                        <label class="control-label"><em>to</em></label>
+                                                                        <select class="form-control" name="net-source-{{ forloop.counter0 }}">
+                                                                            {% for c_net in compute_networks %}
+                                                                                <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>Network {{ c_net }}</option>
+                                                                            {% endfor %}
+                                                                            {% for c_iface in compute_interfaces %}
+                                                                                <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>Interface {{ c_iface }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="form-group form-inline">
+                                                                        <label class="col-sm-2 col-sm-offset-1">{% trans "Filter" %} </label>
+                                                                        <input class="form-control" type="text" value="{{ network.filterref }}" readonly/>
+                                                                        <label class="control-label"><em>to</em></label>
+                                                                        <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
+                                                                            <option value="">{% trans "None" %}</option>
+                                                                            {% for c_filters in compute_nwfilters %}
+                                                                                <option value="{{ c_filters }}" {% ifequal c_filters network.filterref  %} selected {% endifequal %}>{{ c_filters }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
-                                                                <div class="col-sm-3">
-                                                                    <select name="net-source-{{ forloop.counter0 }}" class="form-control" id="network_select" onchange="network_select_enable()">
-                                                                        {% for c_nets in compute_networks %}
-                                                                            <option value="net:{{ c_nets }}" {% if c_nets == network.nic %}selected{% endif %}>Network {{ c_nets }}</option>
-                                                                        {% endfor %}
-                                                                        {% for c_iface in compute_interfaces %}
-                                                                            <option value="iface:{{ c_iface }}" {% if c_iface == network.nic %}selected{% endif %}>Interface {{ c_iface }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
+
+                                                                <div class="panel-footer">
+                                                                    <button class="btn btn-sm btn-primary" name="change_network" title="{% trans "Change" %}">{% trans "Change" %}</button>
+                                                                    <button class="btn btn-sm pull-right btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">{% trans "Delete" %}</button>
                                                                 </div>
                                                             </div>
                                                         {% endfor %}
-                                                        {% ifequal status 5 %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" id="btn_change_network" name="change_network" disabled>{% trans "Change" %}</button>
-                                                        {% else %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" id="btn_change_network" name="change_network" disabled>{% trans "Change" %}</button>
-                                                        {% endifequal %}
                                                     </form>
+
+
+
+                                                </div>
                                                     <div class="clearfix"></div>
+
                                                 </div>
                                             {% endif %}
                                             {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
@@ -1237,7 +1261,7 @@
 </script>
 <script>
     function random_mac(net) {
-        $.getJSON('/instance/random_mac_address/', function(data) {
+        $.getJSON('{% url 'random_mac_address' %}', function (data) {
             $('input[name="'+net+'"]').val(data['mac']);
         });
     };
@@ -1254,14 +1278,15 @@
 <script>
     function guess_mac_address(src_elem, net) {
         new_vname = $(src_elem).val();
-        $.getJSON('/instance/guess_mac_address/' + new_vname + '/', function(data) {
+        guess_mac_address_url = "{% url 'guess_mac_address' 1 %}".replace(1, new_vname);
+        $.getJSON(guess_mac_address_url, function(data) {
             $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
         });
     }
 </script>
 <script>
     function guess_clone_name() {
-        $.getJSON('/instance/guess_clone_name/', function(data) {
+        $.getJSON('{% url 'guess_clone_name' %}', function(data) {
             guessed_name = data['name'].split(".")[0];
             $('#clone_name').val(guessed_name);
             update_clone_disk_name(guessed_name);
@@ -1339,7 +1364,8 @@
     });
     $(document).ready(function () {
         // set vdi url
-        $.get("/datasource/vdi/{{ vname }}/", function(data) {
+
+        $.get("{% url 'vdi_url' vname %}", function(data) {
             $("#vdi_url_input").attr("value", data);
             $("#vdi_url").attr("href", data);
         });
@@ -1370,12 +1396,6 @@
         });
     });
 </script>
-<script>
-    function network_select_enable(){
-        // set network button enabled
-        $('button[name="change_network"]').removeAttr('disabled');
-    }
- </script>
 <script src="{% static "js/Chart.min.js" %}"></script>
 <script>
     $('#chartgraphs').on('shown.bs.tab', function (event) {
@@ -1574,7 +1594,8 @@
 </script>
 <script>
     function update_logs_table(vname) {
-        $.getJSON('/logs/vm_logs/'+vname+'/', function(data) {
+        logurl = "{% url 'vm_logs' 1 %}".replace(1, vname);
+        $.getJSON(logurl, function(data) {
             var logs = "";
             $.each(data, function(id) {
                 row = data[id];

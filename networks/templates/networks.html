@@ -12,6 +12,9 @@
                             <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
                         </li>
                         <li>
+                            <i class="fa fa-server"></i> <a href="{% url 'instances' compute.id %}">{% trans "Instances" %}</a>
+                        </li>
+                        <li>
                             <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
                         </li>
                         <li>
@@ -19,6 +22,9 @@
                         </li>
                         <li>
                             <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
+                        </li>
+                        <li>
+                            <i class="fa fa-filter"></i> <a href="{% url 'nwfilters' compute.id %}">{% trans "NWFilters" %}</a>
                         </li>
                         <li>
                             <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
