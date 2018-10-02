@@ -138,10 +138,14 @@ def instances(request):
                                 instance.compute.password,
                                 instance.compute.type)
             if 'poweron' in request.POST:
-                msg = _("Power On")
-                addlogmsg(request.user.username, instance.name, msg)
-                conn.start(name)
-                return HttpResponseRedirect(request.get_full_path())
+                if instance.is_template:
+                    msg = _("Templates cannot be started.")
+                    error_messages.append(msg)
+                else:
+                    msg = _("Power On")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    conn.start(name)
+                    return HttpResponseRedirect(request.get_full_path())
 
             if 'poweroff' in request.POST:
                 msg = _("Power Off")
@@ -412,10 +416,14 @@ def instance(request, compute_id, vname):
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
-                conn.start()
-                msg = _("Power On")
-                addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#poweron')
+                if instance.is_template:
+                    msg = _("Templates cannot be started.")
+                    error_messages.append(msg)
+                else:
+                    conn.start()
+                    msg = _("Power On")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#poweron')
 
             if 'powercycle' in request.POST:
                 conn.force_shutdown()
