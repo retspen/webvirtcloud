@@ -10,7 +10,9 @@
                 <div class="row">
                     <div class="col-lg-12">
                         {% if request.user.is_superuser %}
-                            {% include 'create_inst_block.html' %}
+                             <a href="{% url 'create_instance' compute.id %}" type="button" class="btn btn-success btn-header pull-right" data-toggle="modal">
+                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                             </a>
                         {% endif %}
                         {% if all_host_vms or all_user_vms %}
                             <div class="pull-right search">
