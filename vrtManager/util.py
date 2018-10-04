@@ -2,6 +2,7 @@ import random
 import lxml.etree as etree
 import libvirt
 import string
+import re
 
 
 def is_kvm_available(xml):
@@ -26,8 +27,11 @@ def randomMAC():
 def randomUUID():
     """Generate a random UUID."""
 
-    u = [random.randint(0, 255) for dummy in range(0, 16)]
-    return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2, "%02x" * 6]) % tuple(u)
+    u = [random.randint(0, 255) for ignore in range(0, 16)]
+    u[6] = (u[6] & 0x0F) | (4 << 4)
+    u[8] = (u[8] & 0x3F) | (2 << 6)
+    return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2,
+                     "%02x" * 6]) % tuple(u)
 
 
 def randomPasswd(length=12, alphabet=string.letters + string.digits):
@@ -129,3 +133,23 @@ def pretty_bytes(val):
         return "%2.2f GB" % (val / (1024.0 * 1024.0 * 1024.0))
     else:
         return "%2.2f MB" % (val / (1024.0 * 1024.0))
+
+
+def validate_uuid(val):
+    if type(val) is not str:
+        raise ValueError("UUID must be a string.")
+
+    form = re.match("[a-fA-F0-9]{8}[-]([a-fA-F0-9]{4}[-]){3}[a-fA-F0-9]{12}$",
+                    val)
+    if form is None:
+        form = re.match("[a-fA-F0-9]{32}$", val)
+        if form is None:
+            raise ValueError(
+                  "UUID must be a 32-digit hexadecimal number. It may take "
+                    "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
+                    "omit hyphens altogether.")
+
+        else:   # UUID had no dashes, so add them in
+            val = (val[0:8] + "-" + val[8:12] + "-" + val[12:16] +
+                   "-" + val[16:20] + "-" + val[20:32])
+    return val
