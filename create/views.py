@@ -99,6 +99,8 @@ def create_instance(request, compute_id):
                         if data['name'] in instances:
                             msg = _("A virtual machine with this name already exists")
                             error_messages.append(msg)
+                        if Instance.objects.filter(name__exact=data['name']):
+                            messages.warning(request,_("There is an instance with same name. Are you sure?"))
                     if not error_messages:
                         if data['hdd_size']:
                             if not data['mac']:
