@@ -76,6 +76,10 @@ class wvmCreate(wvmConnect):
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
             </volume>""" % (name, size, alloc, image_format, owner['uid'], owner['guid'])
         stg.createXML(xml, metadata)

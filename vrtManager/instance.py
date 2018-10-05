@@ -10,6 +10,7 @@ from datetime import datetime
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage
 from webvirtcloud.settings import QEMU_CONSOLE_TYPES
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
 
 
 class wvmInstances(wvmConnect):
@@ -721,6 +722,7 @@ class wvmInstance(wvmConnect):
 
                     if vol_format == 'qcow2' and meta_prealloc:
                         meta_prealloc = True
+
                     vol_clone_xml = """
                                     <volume>
                                         <name>%s</name>
@@ -729,7 +731,17 @@ class wvmInstance(wvmConnect):
                                         <target>
                                             <format type='%s'/>
                                         </target>
-                                    </volume>""" % (target_file, vol_format)
+                                        <permissions>
+                                            <owner>%s</owner>
+                                            <group>%s</group>
+                                            <mode>0644</mode>
+                                            <label>virt_image_t</label>
+                                        </permissions>
+                                        <compat>1.1</compat>
+                                        <features>
+                                            <lazy_refcounts/>
+                                        </features>
+                                    </volume>""" % (target_file, vol_format, owner['uid'], owner['guid'])
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
                 
