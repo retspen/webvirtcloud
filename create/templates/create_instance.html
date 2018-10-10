@@ -89,7 +89,8 @@
                                 <div class="col-sm-6">
                                     <select id="cache_mode" name="cache_mode" class="form-control">
                                         {% for mode, name in cache_modes %}
-                                            <option value="{{ mode }}">{% trans name %}</option>
+                                            <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                                {% trans name %}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -222,7 +223,8 @@
                                     <div class="col-sm-6">
                                         <select id="cache_mode" name="cache_mode" class="form-control">
                                             {% for mode, name in cache_modes %}
-                                                <option value="{{ mode }}">{% trans name %}</option>
+                                                <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                                {% trans name %}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -386,7 +388,8 @@
                                                                 <div class="col-sm-6">
                                                                     <select id="cache_mode" name="cache_mode" class="form-control">
                                                                         {% for mode, name in cache_modes %}
-                                                                            <option value="{{ mode }}">{% trans name %}</option>
+                                                                            <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                                                            {% trans name %}</option>
                                                                         {% endfor %}
                                                                     </select>
                                                                 </div>

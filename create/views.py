@@ -11,6 +11,7 @@ from vrtManager.create import wvmCreate
 from vrtManager import util
 from libvirt import libvirtError
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_CACHE
 from django.contrib import messages
 
 @login_required
@@ -43,6 +44,7 @@ def create_instance(request, compute_id):
         instances = conn.get_instances()
         videos = conn.get_video()
         cache_modes = sorted(conn.get_cache_modes().items())
+        default_cache = INSTANCE_VOLUME_DEFAULT_CACHE
         listener_addr = QEMU_CONSOLE_LISTEN_ADDRESSES
         mac_auto = util.randomMAC()
         get_images = sorted(conn.get_storages_images())
