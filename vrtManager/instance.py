@@ -259,6 +259,7 @@ class wvmInstance(wvmConnect):
                 if device == 'disk':
                     try:
                         dev = disk.xpath('target/@dev')[0]
+                        bus = disk.xpath('target/@bus')[0]
                         src_fl = disk.xpath('source/@file|source/@dev|source/@name|source/@volume')[0]
                         try:
                             disk_format = disk.xpath('driver/@type')[0]
@@ -267,7 +268,9 @@ class wvmInstance(wvmConnect):
                         try:
                             vol = self.get_volume_by_path(src_fl)
                             volume = vol.name()
+
                             disk_size = vol.info()[1]
+                            used_size = vol.info()[2]
                             stg = vol.storagePoolLookupByVolume()
                             storage = stg.name()
                         except libvirtError:
@@ -276,8 +279,8 @@ class wvmInstance(wvmConnect):
                         pass
                     finally:
                         result.append(
-                            {'dev': dev, 'image': volume, 'storage': storage, 'path': src_fl,
-                             'format': disk_format, 'size': disk_size})
+                            {'dev': dev, 'bus': bus, 'image': volume, 'storage': storage, 'path': src_fl,
+                             'format': disk_format, 'size': disk_size, 'used': used_size})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)
@@ -375,6 +378,25 @@ class wvmInstance(wvmConnect):
             devices.append(elm_disk)
             xmldom = ElementTree.tostring(tree)
             self._defineXML(xmldom)
+
+    def detach_disk(self, dev, image):
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+
+        for disk in tree.findall("./devices/disk[@device='disk']"):
+            source = disk.find("source")
+            target = disk.find("target")
+            if source.get("file") == image and target.get("dev") == dev:
+                devices = tree.find('devices')
+                devices.remove(disk)
+
+                if self.get_status() == 1:
+                    xml_disk = ElementTree.tostring(disk)
+                    yyy = self.instance.detachDevice(xml_disk)
+                    xmldom = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+                if self.get_status() == 5:
+                    xmldom = ElementTree.tostring(tree)
+                break
+        self._defineXML(xmldom)
 
     def cpu_usage(self):
         cpu_usage = {}
@@ -628,7 +650,7 @@ class wvmInstance(wvmConnect):
                         iso.append(img)
         return iso
 
-    def delete_disk(self):
+    def delete_all_disks(self):
         disks = self.get_disk_device()
         for disk in disks:
             vol = self.get_volume_by_path(disk.get('path'))

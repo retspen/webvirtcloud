@@ -342,7 +342,7 @@ def instance(request, compute_id, vname):
                 if request.POST.get('delete_disk', ''):
                     for snap in snapshots:
                         conn.snapshot_delete(snap['name'])
-                    conn.delete_disk()
+                    conn.delete_all_disks()
                 conn.delete()
 
                 instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -457,7 +457,34 @@ def instance(request, compute_id, vname):
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach new disk')
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#resize')
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
+
+            if 'delvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
+                connDelete = wvmCreate(compute.hostname,
+                                       compute.login,
+                                       compute.password,
+                                       compute.type)
+                dev = request.POST.get('dev', '')
+                path = request.POST.get('path', '')
+
+                conn.detach_disk(dev, path)
+                connDelete.delete_volume(path)
+
+                msg = _('Delete disk')
+                addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
+
+            if 'detachvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
+                connDelete = wvmCreate(compute.hostname,
+                                       compute.login,
+                                       compute.password,
+                                       compute.type)
+                dev = request.POST.get('dev', '')
+                path = request.POST.get('path', '')
+                conn.detach_disk(dev, path)
+                msg = _('Detach disk')
+                addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'umount_iso' in request.POST:
                 image = request.POST.get('path', '')
@@ -1154,7 +1181,7 @@ def delete_instance(instance, delete_disk=False):
                 print("Deleting snapshot {}".format(snap['name']))
                 conn.snapshot_delete(snap['name'])
             print("Deleting disks")
-            conn.delete_disk()
+            conn.delete_all_disks()
 
         conn.delete()
         instance.delete()
