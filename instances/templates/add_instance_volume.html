@@ -1,0 +1,91 @@
+{% load i18n %}
+{% if request.user.is_superuser and status == 5 %}
+<a href="#addvol" type="button" class="btn btn-success pull-right" data-toggle="modal">
+    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+</a>
+
+<!-- Modal pool -->
+<div class="modal fade" id="addvol" tabindex="-1" role="dialog" aria-labelledby="addInstanceVolumeLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">{% trans "Add Instance Volume" %}</h4>
+            </div>
+        <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                <div class="modal-body">
+
+                    <p style="font-weight:bold;">{% trans "Volume parameters" %}</p>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Storage" %}</label>
+                        <div class="col-sm-4">
+                            <select name="storage" class="form-control image-format">
+                                {% for storage in storages %}
+                                    <option value="{{ storage }}">{{ storage }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Name" %}</label>
+                        <div class="col-sm-4">
+                            <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Format" %}</label>
+                        <div class="col-sm-4">
+                            <select name="format" class="form-control image-format">
+                                {% for format in formats %}
+                                    <option value="{{ format }}" {% if format == default_format %}selected{% endif %}>{% trans format %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Size" %}</label>
+                        <div class="col-sm-4">
+                            <input type="text" class="form-control" name="size" value="10" maxlength="3" required pattern="[0-9]+">
+                        </div>
+                        <label class="col-sm-1 control-label">{% trans "GB" %}</label>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Bus" %}</label>
+                        <div class="col-sm-4">
+                            <select name="bus" class="form-control image-format">
+                                {% for bus in busses %}
+                                    <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Cache" %}</label>
+                        <div class="col-sm-4">
+                            <select name="cache" class="form-control image-format">
+                                {% for mode, name in cache_modes %}
+                                    <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>{% trans name %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group meta-prealloc">
+                        <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Metadata" %}</label>
+                        <div class="col-sm-4">
+                            <input type="checkbox" name="meta_prealloc" value="true">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    {% ifequal status 5 %}
+                    <button type="submit" class="btn btn-lg btn-success pull-right" name="addvolume">{% trans "Add volume" %}</button>
+                    {% else %}
+                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Add volume" %}</button>
+                    {% endifequal %}
+                </div>
+            </form>
+
+        </div> <!-- /.modal-content -->
+    </div> <!-- /.modal-dialog -->
+</div> <!-- /.modal -->
+{% endif %}
