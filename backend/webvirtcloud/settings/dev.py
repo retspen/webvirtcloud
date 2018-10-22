@@ -39,8 +39,6 @@ CORS_ORIGIN_WHITELIST = (
 
 # Swagger settings
 SWAGGER_SETTINGS = {
-    'LOGIN_URL': 'login',
-    'LOGOUT_URL': 'logout',
     'VALIDATOR_URL': None,
     'JSON_EDITOR': True,
     'USE_SESSION_AUTH': True,

@@ -58,6 +58,16 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
+REST_SESSION_LOGIN = True
+
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'user.serializers.SignUpView',
+}
+
+REST_AUTH_SERIALIZERS = {
+    'LOGIN_SERIALIZER':  'user.serializers.SignInView',
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
