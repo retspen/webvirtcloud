@@ -100,6 +100,9 @@
 
                 host = document.getElementById("host").value;
                 port = document.getElementById("port").value;
+                if (window.location.protocol == 'https:') {
+                    scheme = "wss://";
+                }
                 password = document.getElementById("password").value;
 
 

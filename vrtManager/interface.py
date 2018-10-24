@@ -81,7 +81,7 @@ class wvmInterface(wvmConnect):
     def get_ipv4_type(self):
         try:
             xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
-            ipaddr = util.get_xml_path(xml, "/interface/protocol/ip/@address")
+            ipaddr = util.get_xml_path(xml, "/interface/protocol[@family='ipv4']/ip/@address")
             if ipaddr:
                 return 'static'
             else:
@@ -91,8 +91,8 @@ class wvmInterface(wvmConnect):
 
     def get_ipv4(self):
         xml = self._XMLDesc()
-        int_ipv4_ip = util.get_xml_path(xml, "/interface/protocol/ip/@address")
-        int_ipv4_mask = util.get_xml_path(xml, "/interface/protocol/ip/@prefix")
+        int_ipv4_ip = util.get_xml_path(xml, "/interface/protocol[@family='ipv4']/ip/@address")
+        int_ipv4_mask = util.get_xml_path(xml, "/interface/protocol[@family='ipv4']/ip/@prefix")
         if not int_ipv4_ip or not int_ipv4_mask:
             return None
         else:
@@ -101,7 +101,7 @@ class wvmInterface(wvmConnect):
     def get_ipv6_type(self):
         try:
             xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
-            ipaddr = util.get_xml_path(xml, "/interface/protocol[2]/ip/@address")
+            ipaddr = util.get_xml_path(xml, "/interface/protocol[@family='ipv6']/ip/@address")
             if ipaddr:
                 return 'static'
             else:
@@ -111,8 +111,8 @@ class wvmInterface(wvmConnect):
 
     def get_ipv6(self):
         xml = self._XMLDesc()
-        int_ipv6_ip = util.get_xml_path(xml, "/interface/protocol[2]/ip/@address")
-        int_ipv6_mask = util.get_xml_path(xml, "/interface/protocol[2]/ip/@prefix")
+        int_ipv6_ip = util.get_xml_path(xml, "/interface/protocol[@family='ipv6']/ip/@address")
+        int_ipv6_mask = util.get_xml_path(xml, "/interface/protocol[@family='ipv6']/ip/@prefix")
         if not int_ipv6_ip or not int_ipv6_mask:
             return None
         else:
