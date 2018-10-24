@@ -72,12 +72,14 @@
                                         {% trans "Resize" %}
                                     </a>
                                 </li>
-                                <li role="presentation">
-                                    <a href="#snapshots" class="action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
-                                        <span id="action-block" class="glyphicon glyphicon-camera" aria-hidden="true"></span>
-                                        {% trans "Snapshots" %}
-                                    </a>
-                                </li>
+                                {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                    <li role="presentation">
+                                        <a href="#snapshots" class="action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
+                                            <span id="action-block" class="glyphicon glyphicon-camera" aria-hidden="true"></span>
+                                            {% trans "Snapshots" %}
+                                        </a>
+                                    </li>
+                                {% endif %}
                                 <li role="presentation">
                                     <a href="#settings" class="action-button" aria-controls="settings" role="tab" data-toggle="tab">
                                         <span id="action-block" class="glyphicon glyphicon-cog" aria-hidden="true"></span>
@@ -609,7 +611,7 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-sm-2">
-                                                                    {% if media_iso %}
+                                                                    {% if media_iso and request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
                                                                         <button type="submit" class="btn btn-sm btn-success pull-left" name="mount_iso" value="{{ cd.dev }}" style="margin-top: 2px;">{% trans "Mount" %}</button>
                                                                     {% else %}
                                                                         <button class="btn btn-sm btn-success pull-left disabled" name="mount_iso" style="margin-top: 2px;">{% trans "Mount" %}</button>
@@ -621,7 +623,11 @@
                                                                 </div>
                                                                 <div class="col-sm-2">
                                                                     <input type="hidden" name="path" value="{{ cd.path }}">
-                                                                    <button type="submit" class="btn btn-sm btn-success pull-left" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
+                                                                    {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                                                        <button type="submit" class="btn btn-sm btn-success pull-left" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
+                                                                    {% else %}
+                                                                        <button class="btn btn-sm btn-success pull-left disabled" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
+                                                                    {% endif %}
                                                                 </div>
                                                             {% endif %}
                                                         </div>
