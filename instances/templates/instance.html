@@ -639,10 +639,8 @@
                                                     <table class="table table-hover">
                                                         <thead>
                                                             <th>{% trans "Device" %}</th>
-                                                            <th>{% trans "Format" %}</th>
                                                             <th>{% trans "Used" %}</th>
                                                             <th>{% trans "Capacity" %}</th>
-                                                            <th>{% trans "Bus" %}</th>
                                                             <th>{% trans "Storage" %}</th>
                                                             <th>{% trans "Source" %}</th>
                                                             <th style="width:100px;">{% trans "Action" %}</th>
@@ -650,15 +648,26 @@
                                                         <tbody>
                                                         {% for disk in disks %}
                                                             <tr>
-
-                                                                <td>{{ disk.dev }}<br>{{ disk.target }}</td>
-                                                                <td>{{ disk.format }}</td>
+                                                                <td>
+                                                                    <button type="submit" class="btn btn-sm btn-default"
+                                                                            name="details"
+                                                                            title="{% trans "Details" %}"
+                                                                            tabindex="0"
+                                                                            data-trigger="focus"
+                                                                            data-toggle="popover"
+                                                                            data-html="true"
+                                                                            data-content="<strong>Bus:</strong> {{ disk.bus }} <br/> <strong>Format:</strong> {{ disk.format }}">
+                                                                        <i class="fa fa-info"></i>
+                                                                    </button>
+                                                                    {{ disk.dev }}
+                                                                    <br>
+                                                                    {{ disk.target }}
+                                                                </td>
                                                                 <td>{{ disk.used | filesizeformat}}</td>
                                                                 <td>{{ disk.size | filesizeformat }}</td>
-                                                                <td>{{ disk.bus }}</td>
                                                                 <td>{{ disk.storage }}</td>
                                                                 <td>{{ disk.path }}</td>
-                                                                <td style="width:30px;">
+                                                                <td>
                                                                     <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
                                                                         <input type="hidden" name="path" value="{{ disk.path }}">
                                                                         <input type="hidden" name="dev" value="{{ disk.dev }}">
@@ -1623,5 +1632,12 @@
             $("#logs_table > tbody").html(logs);
         });
     }
+</script>
+    <script type="text/javascript">
+$(document).ready(function(){
+    $('[data-toggle="popover"]').popover({
+        placement : 'top'
+    });
+});
 </script>
 {% endblock %}
