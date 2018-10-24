@@ -20,6 +20,7 @@ from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
 from vrtManager.create import wvmCreate
+from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
 from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from logs.views import addlogmsg
@@ -171,7 +172,7 @@ def instance(request, compute_id, vname):
                                    usr_inst.instance.name)
                 cpu += int(conn.get_vcpu())
                 memory += int(conn.get_memory())
-                for disk in conn.get_disk_device():
+                for disk in conn.get_disk_devices():
                     if disk['size']:
                         disk_size += int(disk['size']) >> 30
 
@@ -255,8 +256,8 @@ def instance(request, compute_id, vname):
         cur_memory = conn.get_cur_memory()
         title = conn.get_title()
         description = conn.get_description()
-        disks = conn.get_disk_device()
-        media = conn.get_media_device()
+        disks = conn.get_disk_devices()
+        media = conn.get_media_devices()
         if len(media) != 0:
             media_iso = sorted(conn.get_iso_media())
         else:
@@ -439,7 +440,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'addvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
+            if 'addnewvol' in request.POST and (request.user.is_superuser or userinstance.is_change):
                 connCreate = wvmCreate(compute.hostname,
                                        compute.login,
                                        compute.password,
@@ -457,6 +458,26 @@ def instance(request, compute_id, vname):
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach new disk')
                 addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
+
+            if 'addexistingvol' in request.POST and (request.user.is_superuser or userinstance.is_change):
+                storage = request.POST.get('selected_storage', '')
+                name = request.POST.get('vols', '')
+                bus = request.POST.get('bus', default_bus)
+                cache = request.POST.get('cache', default_cache)
+
+                connCreate = wvmStorage(compute.hostname,
+                                       compute.login,
+                                       compute.password,
+                                       compute.type,
+                                       storage)
+
+                format = connCreate.get_volume_type(name)
+                path = connCreate.get_target_path()
+                target = get_new_disk_dev(disks, bus)
+                source = path + "/" + name;
+
+                conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'delvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
@@ -1056,7 +1077,7 @@ def _get_dhcp_mac_address(vname):
 
 @login_required
 def guess_mac_address(request, vname):
-    data = { 'vname': vname }
+    data = {'vname': vname}
     mac = _get_dhcp_mac_address(vname)
     if not mac:
         mac = _get_random_mac_address()
@@ -1100,7 +1121,7 @@ def guess_clone_name(request):
 @login_required
 def check_instance(request, vname):
     check_instance = Instance.objects.filter(name=vname)
-    data = { 'vname': vname, 'exists': False }
+    data = {'vname': vname, 'exists': False}
     if check_instance:
         data['exists'] = True
     return HttpResponse(json.dumps(data))
@@ -1119,6 +1140,7 @@ def get_clone_disk_name(disk, prefix, clone_name=''):
         image = "{}-clone".format(disk['image'])
     return image
 
+
 def _get_clone_disks(disks, vname=''):
     clone_disks = []
     for disk in disks:
@@ -1133,6 +1155,7 @@ def _get_clone_disks(disks, vname=''):
         }
         clone_disks.append(new_disk)
     return clone_disks
+
 
 def sshkeys(request, vname):
     """

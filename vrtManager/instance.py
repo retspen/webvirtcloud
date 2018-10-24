@@ -244,7 +244,7 @@ class wvmInstance(wvmConnect):
 
         return util.get_xml_path(self._XMLDesc(0), func=networks)
 
-    def get_disk_device(self):
+    def get_disk_devices(self):
         def disks(doc):
             result = []
             dev = None
@@ -285,7 +285,7 @@ class wvmInstance(wvmConnect):
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)
 
-    def get_media_device(self):
+    def get_media_devices(self):
         def disks(doc):
             result = []
             dev = None
@@ -651,7 +651,7 @@ class wvmInstance(wvmConnect):
         return iso
 
     def delete_all_disks(self):
-        disks = self.get_disk_device()
+        disks = self.get_disk_devices()
         for disk in disks:
             vol = self.get_volume_by_path(disk.get('path'))
             vol.delete(0)

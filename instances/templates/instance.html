@@ -631,8 +631,8 @@
                                             </div>
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
                                                  <p style="font-weight:bold;">
-                                                        {% trans "Instance Volumes" %}
-                                                        {% include 'add_instance_volume.html' %}
+                                                     {% trans "Instance Volumes" %}
+                                                     {% include 'add_instance_volume.html' %}
                                                  </p>
 
                                                  <div class="col-xs-12 col-sm-12">
@@ -648,38 +648,39 @@
                                                             <th style="width:100px;">{% trans "Action" %}</th>
                                                         </thead>
                                                         <tbody>
-                                                            {% for disk in disks %}
-                                                                <tr>
-                                                                    <td>{{ disk.dev }}<br>{{ disk.target }}</td>
-                                                                    <td>{{ disk.format }}</td>
-                                                                    <td>{{ disk.used | filesizeformat}}</td>
-                                                                    <td>{{ disk.size | filesizeformat }}</td>
-                                                                    <td>{{ disk.bus }}</td>
-                                                                    <td>{{ disk.storage }}</td>
-                                                                    <td>{{ disk.path }}</td>
-                                                                    <td style="width:30px;">
-                                                                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
-                                                                            <input type="hidden" name="path" value="{{ disk.path }}">
-                                                                            <input type="hidden" name="dev" value="{{ disk.dev }}">
-                                                                            {% ifequal status 5 %}
-                                                                                <button type="submit" class="btn btn-sm btn-default" name="detachvolume" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                                    <i class="fa fa-eject"></i>
-                                                                                </button>
-                                                                                <button type="submit" class="btn btn-sm btn-default" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                                    <i class="fa fa-trash"></i>
-                                                                                </button>
-                                                                            {% else %}
-                                                                                <button class="btn btn-sm btn-default disabled" name="detachvolume" title="{% trans "Detach" %}">
-                                                                                    <i class="fa fa-eject"></i>
-                                                                                </button>
-                                                                                <button class="btn btn-sm btn-default disabled" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                                    <i class="fa fa-trash"></i>
-                                                                                </button>
-                                                                            {% endifequal %}
-                                                                        </form>
-                                                                    </td>
-                                                                </tr>
-                                                            {% endfor %}
+                                                        {% for disk in disks %}
+                                                            <tr>
+
+                                                                <td>{{ disk.dev }}<br>{{ disk.target }}</td>
+                                                                <td>{{ disk.format }}</td>
+                                                                <td>{{ disk.used | filesizeformat}}</td>
+                                                                <td>{{ disk.size | filesizeformat }}</td>
+                                                                <td>{{ disk.bus }}</td>
+                                                                <td>{{ disk.storage }}</td>
+                                                                <td>{{ disk.path }}</td>
+                                                                <td style="width:30px;">
+                                                                    <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                        <input type="hidden" name="path" value="{{ disk.path }}">
+                                                                        <input type="hidden" name="dev" value="{{ disk.dev }}">
+                                                                        {% ifequal status 5 %}
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="detachvolume" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                                <i class="fa fa-eject"></i>
+                                                                            </button>
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        {% else %}
+                                                                            <button class="btn btn-sm btn-default disabled" name="detachvolume" title="{% trans "Detach" %}">
+                                                                                <i class="fa fa-eject"></i>
+                                                                            </button>
+                                                                            <button class="btn btn-sm btn-default disabled" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        {% endifequal %}
+                                                                    </form>
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
                                                          </tbody>
                                                     </table>
                                                 </div>
@@ -1228,6 +1229,39 @@
 {% block script %}
 <script src="{% static "js/ace.js" %}" type="text/javascript" charset="utf-8"></script>
 <script>
+    function get_volumes(comp_id, pool) {
+        vol_params = comp_id + " " + pool;
+
+        vol_url = "/computes/" + comp_id + "/storage/" + pool + "/?get_volumes";
+        var select = document.getElementById("vols");
+
+        while (select.options.length){
+            select.removeChild(select.options[0]);
+        }
+
+        var input_sto = document.getElementById('selected_storage');
+        input_sto.value = pool;
+
+        $.getJSON(vol_url, function(data) {
+            if (data.length > 0) {
+                select.disabled = false;
+            }
+             var opt = document.createElement('option');
+             opt.value = '';
+             opt.innerHTML = 'None';
+             select.appendChild(opt);
+            for (i = 0; i < data.length; i++){
+                 var opt = document.createElement('option');
+                 opt.value = data[i]['name'];
+                 opt.innerHTML = data[i]['name'];
+                 select.appendChild(opt);
+            }
+
+        });
+    }
+</script>
+
+<script>
     var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
 
@@ -1238,13 +1272,13 @@
 </script>
 <script>
     function open_console(view_style) {
-        window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}&view=' +view_style +'', '', 'width=850,height=600')
+        window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}&view=' + view_style +'', '', 'width=850,height=600')
     }
 </script>
 <script>
     function random_mac(net) {
         $.getJSON('{% url 'random_mac_address' %}', function (data) {
-            $('input[name="'+net+'"]').val(data['mac']);
+            $('input[name="' + net + '"]').val(data['mac']);
         });
     };
 </script>

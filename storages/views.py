@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
@@ -8,6 +8,7 @@ from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
 from libvirt import libvirtError
 from django.contrib import messages
+import json
 
 @login_required
 def storages(request, compute_id):
@@ -204,6 +205,12 @@ def storage(request, compute_id, pool):
             else:
                 for msg_err in form.errors.values():
                     error_messages.append(msg_err.as_text())
+    if request.method == 'GET':
+        if 'get_volumes' in request.GET:
+            conn.close()
+            return HttpResponse(json.dumps(sorted(volumes)))
+
     conn.close()
 
     return render(request, 'storage.html', locals())
+
