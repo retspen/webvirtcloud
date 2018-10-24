@@ -741,11 +741,16 @@ def instance(request, compute_id, vname):
                         msg = _("Instance mac '%s' invalid format!" % clone_data['clone-net-mac-0'])
                         error_messages.append(msg)
                     else:
-                        new_uuid = conn.clone_instance(clone_data)
-                        new_instance = Instance(compute_id=compute_id, name=clone_data['name'], uuid=new_uuid)
+                        new_instance = Instance(compute_id=compute_id, name=clone_data['name'])
                         new_instance.save()
-                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id,
-                                                    is_delete=True)
+                        try:
+                            new_uuid = conn.clone_instance(clone_data)
+                            new_instance.uuid = new_uuid
+                            new_instance.save()
+                        except Exception as e:
+                            new_instance.delete()
+                            raise e
+                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
                         userinstance.save()
 
                         msg = _("Clone of '%s'" % instance.name)
