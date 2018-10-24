@@ -6,497 +6,518 @@
     <link href="{% static "css/bootstrap-multiselect.css" %}" rel="stylesheet">
 {% endblock %}
 {% block content %}
-            <!-- Page Heading -->
-            <div class="row">
-                <div class="col-lg-12">
-                    {% include 'create_flav_block.html' %}
-                    <h1 class="page-header">{% trans "New instance on" %} {{ compute.name }}</h1>
-                </div>
-            </div>
-            <!-- /.row -->
-            {% include 'errors_block.html' %}
-            {% include 'pleasewaitdialog.html' %}
+    <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header">{% trans "New instance on" %} {{ compute.name }}</h1>
+        </div>
+    </div>
+    <!-- /.row -->
+    {% include 'errors_block.html' %}
+    {% include 'pleasewaitdialog.html' %}
 
-            <div class="row">
-                <div class="col-lg-12">
-                    <p>
-                        <a class="btn btn-success" data-toggle="collapse" href="#addCustom" aria-expanded="false" aria-controls="addCustom">
+    <div class="row" id="max-width-page">
+        <div class="col-lg-12">
+            <div role="tabpanel">
+            <!-- Nav tabs -->
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active">
+                        <a href="#flavor" aria-controls="flavor" role="tab" data-toggle="tab">
+                            {% trans "Flavor" %}
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#addCustom" aria-controls="addCustom" role="tab" data-toggle="tab">
                             {% trans "Custom" %}
                         </a>
-                        <a class="btn btn-success" data-toggle="collapse" href="#addFromTemp" aria-expanded="false" aria-controls="addFromTemp">
+                    </li>
+                    <li role="presentation">
+                        <a href="#addFromTemp" aria-controls="addFromTemp" role="tab" data-toggle="tab">
                             {% trans "Template" %}
                         </a>
-                         <a class="btn btn-success" data-toggle="collapse" href="#addFromXML" aria-expanded="false" aria-controls="addFromXML">
+                    </li>
+                    <li role="presentation">
+                        <a href="#addFromXML" aria-controls="addFromXML" role="tab" data-toggle="tab">
                             {% trans "XML" %}
                         </a>
-                    </p>
-                    <div class="collapse" id="addCustom">
-                        <div class="well">
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
+                    </li>
+                </ul>
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="flavor">
+                        {% if not flavors %}
+                            <div class="col-lg-12">
+                                <div class="alert alert-warning alert-dismissable">
+                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                                    <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Flavors" %}
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="checkbox" name="host_model" value="true" checked>
-                                </div>
-                                <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
-                                </div>
-                                <label class="col-sm-1 control-label">{% trans "MB" %}</label>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
-                                <div class="col-sm-6">
-                                    <ul id="img-list">
-                                        <!-- populated from javascript -->
-                                    </ul>
-                                    <input id="images" name="images" type="hidden" value=""/>
-                                    <select id="image-control" name="image-control" class="form-control" multiple="multiple">
-                                        {% if get_images %}
-                                            {% for name in get_images %}
-                                                <option value="{{ name }}">{{ name }}</option>
-                                            {% endfor %}
-                                        {% else %}
-                                            <option value="">{% trans "None" %}</option>
-                                        {% endif %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group meta-prealloc">
-                                <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
-                                </div>
-                                <label class="col-lg-1 control-label">{% trans "Image" %}</label>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
-                                <div class="col-sm-6">
-                                    <select id="cache_mode" name="cache_mode" class="form-control">
-                                        {% for mode, name in cache_modes %}
-                                            <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
-                                                {% trans name %}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "Network" %}</label>
-                                <div class="col-sm-6">
-                                    <ul id="net-list">
-                                        <!-- populated from javascript -->
-                                    </ul>
-                                    <input id="networks" type="hidden" name="networks" value=""/>
-                                    <select id="network-control" name="network-control" class="form-control" multiple="multiple">
-                                        {% for network in networks %}
-                                            <option value="{{ network }}">{{ network }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                             <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
-                                <div class="col-sm-6">
-                                    <select name="nwfilter" class="form-control">
-                                        <option value="">{% trans "None" %}</option>
-                                        {% for nwfilter in nwfilters %}
-                                            <option value="{{ nwfilter }}">{{ nwfilter }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "Video" %}</label>
-                                <div class="col-sm-6">
-                                    <select name="video" class="form-control">
-                                        {% if not videos %}
-                                            <option value="vga">vga</option>
-                                            <option value="cirrus">cirrus</option>
-                                        {% endif %}
-                                        {% for video in videos %}
-                                            <option value="{{ video }}">{{ video }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
-                                <div class="col-sm-6">
-                                    <select name="listener_addr" class="form-control">
-                                        {% for addr, label in listener_addr %}
-                                            <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="checkbox" name="virtio" value="true" checked>
-                                </div>
-                            </div>
-                            {% if storages %}
-                                <button type="submit" class="btn btn-primary" name="create" onclick="showPleaseWaitDialog()" value="1">
-                                    {% trans "Create" %}
-                                </button>
-                            {% else %}
-                                <button class="btn btn-primary disabled">
-                                    {% trans "Create" %}
-                                </button>
-                            {% endif %}
-                        </form>
-                        </div>
-                    </div>
-                    <div class="collapse" id="addFromTemp">
-                        <div class="well">
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="checkbox" name="host_model" value="true" checked>
-                                    </div>
-                                    <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
-                                    </div>
-                                    <label class="col-sm-1 control-label">{% trans "MB" %}</label>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
-                                    <div class="col-sm-6">
-                                        <select name="template" class="form-control">
-                                            {% if get_images %}
-                                                {% for name in get_images %}
-                                                    <option value="{{ name }}">{{ name }}</option>
-                                                {% endfor %}
-                                            {% else %}
-                                                <option value="">{% trans "None" %}</option>
-                                            {% endif %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group meta-prealloc">
-                                    <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
-                                    </div>
-                                    <label class="col-lg-1 control-label">{% trans "Image" %}</label>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
-                                    <div class="col-sm-6">
-                                        <select id="cache_mode" name="cache_mode" class="form-control">
-                                            {% for mode, name in cache_modes %}
-                                                <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
-                                                {% trans name %}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Network" %}</label>
-                                    <div class="col-sm-6">
-                                        <select name="networks" class="form-control">
-                                            {% for network in networks %}
-                                                <option value="{{ network }}">{{ network }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
-                                    <div class="col-sm-6">
-                                        <select name="nwfilter" class="form-control">
-                                            <option value="">{% trans "None" %}</option>
-                                            {% for nwfilter in nwfilters %}
-                                                <option value="{{ nwfilter }}">{{ nwfilter }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="checkbox" name="virtio" value="true" checked>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Video" %}</label>
-                                    <div class="col-sm-6">
-                                        <select name="video" class="form-control">
-                                            {% if not videos %}
-                                                <option value="vga">vga</option>
-                                                <option value="cirrus">cirrus</option>
-                                            {% endif %}
-                                            {% for video in videos %}
-                                                <option value="{{ video }}">{{ video }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
-                                    <div class="col-sm-6">
-                                        <select name="listener_addr" class="form-control">
-                                            {% for addr, label in listener_addr %}
-                                                <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {% if storages %}
-                                    <button type="submit" class="btn btn-primary" name="create" value="1" onclick="showPleaseWaitDialog()">
-                                        {% trans "Create" %}
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-primary disabled">
-                                        {% trans "Create" %}
-                                    </button>
-                                {% endif %}
-                            </form>
-                        </div>
-                    </div>
-                    <div class="collapse" id="addFromXML">
-                        <div class="well">
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                <div class="col-sm-12" id="xmlheight">
-                                     <input type="hidden" name="dom_xml"/>
-                                    <textarea id="editor"></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary" name="create_xml" onclick="showPleaseWaitDialog()">
-                                    {% trans "Create" %}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                {% if not flavors %}
-                    <div class="col-lg-12">
-                        <div class="alert alert-warning alert-dismissable">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Flavors" %}
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="col-lg-12">
-                        <h3 class="page-header">{% trans "Create from flavor" %}</h3>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
-                            <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>{% trans "Name" %}</th>
-                                <th>{% trans "VCPU's" %}</th>
-                                <th>{% trans "RAM" %}</th>
-                                <th>{% trans "HDD" %}</th>
-                                <th colspan="2">{% trans "Action" %}</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for flavor in flavors %}
+                        {% else %}
+                            {% include 'create_flav_block.html' %}
+                            <h3 class="page-header">{% trans "Create from flavor" %}</h3>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                <thead>
                                 <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ flavor.label }}</td>
-                                    <td>{{ flavor.vcpu }}</td>
-                                    <td>{{ flavor.memory }} {% trans "MB" %}</td>
-                                    <td>{{ flavor.disk }} {% trans "GB" %}</td>
-                                    <td style="width:5px;">
-                                        <div class="modal fade" id="addVMflavor{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="addVMFlavorLabel" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                                                        <h4 class="modal-title">{% trans "Create Virtual Machine" %} ({{ flavor.label }})</h4>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" class="form-control" name="name"
-                                                                           placeholder="{% trans "Name" %}" maxlength="14" required
-                                                                           pattern="[a-zA-Z0-9\.\-_]+">
-                                                                    <input type="hidden" name="vcpu" value="{{ flavor.vcpu }}">
-                                                                    <input type="hidden" name="memory" value="{{ flavor.memory }}">
-                                                                    <input type="hidden" name="hdd_size" value="{{ flavor.disk }}">
+                                    <th>#</th>
+                                    <th>{% trans "Name" %}</th>
+                                    <th>{% trans "VCPU's" %}</th>
+                                    <th>{% trans "RAM" %}</th>
+                                    <th>{% trans "HDD" %}</th>
+                                    <th colspan="2">{% trans "Action" %}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for flavor in flavors %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ flavor.label }}</td>
+                                        <td>{{ flavor.vcpu }}</td>
+                                        <td>{{ flavor.memory }} {% trans "MB" %}</td>
+                                        <td>{{ flavor.disk }} {% trans "GB" %}</td>
+                                        <td style="width:5px;">
+                                            <div class="modal fade" id="addVMflavor{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="addVMFlavorLabel" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                                            <h4 class="modal-title">{% trans "Create Virtual Machine" %} ({{ flavor.label }})</h4>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <input type="text" class="form-control" name="name"
+                                                                               placeholder="{% trans "Name" %}" maxlength="14" required
+                                                                               pattern="[a-zA-Z0-9\.\-_]+">
+                                                                        <input type="hidden" name="vcpu" value="{{ flavor.vcpu }}">
+                                                                        <input type="hidden" name="memory" value="{{ flavor.memory }}">
+                                                                        <input type="hidden" name="hdd_size" value="{{ flavor.disk }}">
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "Storage" %}</label>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Storage" %}</label>
 
-                                                                <div class="col-sm-6">
-                                                                    <input type="hidden" name="cache_mode" value="default">
-                                                                    <select name="storage" class="form-control">
-                                                                        {% if storages %}
-                                                                            {% for storage in storages %}
-                                                                                <option value="{{ storage }}">{{ storage }}</option>
+                                                                    <div class="col-sm-6">
+                                                                        <input type="hidden" name="cache_mode" value="default">
+                                                                        <select name="storage" class="form-control">
+                                                                            {% if storages %}
+                                                                                {% for storage in storages %}
+                                                                                    <option value="{{ storage }}">{{ storage }}</option>
+                                                                                {% endfor %}
+                                                                            {% else %}
+                                                                                <option value="">{% trans "None" %}</option>
+                                                                            {% endif %}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <select id="cache_mode" name="cache_mode" class="form-control">
+                                                                            {% for mode, name in cache_modes %}
+                                                                                <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                                                                {% trans name %}</option>
                                                                             {% endfor %}
-                                                                        {% else %}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Network" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <select name="networks" class="form-control">
+                                                                            {% for network in networks %}
+                                                                                <option value="{{ network }}">{{ network }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <select name="nwfilter" class="form-control">
                                                                             <option value="">{% trans "None" %}</option>
-                                                                        {% endif %}
-                                                                    </select>
+                                                                            {% for nwfilter in nwfilters %}
+                                                                                <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <select id="cache_mode" name="cache_mode" class="form-control">
-                                                                        {% for mode, name in cache_modes %}
-                                                                            <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
-                                                                            {% trans name %}</option>
-                                                                        {% endfor %}
-                                                                    </select>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "MAC" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <input type="text" class="form-control" name="mac" maxlength="17" value="{{ mac_auto }}" required pattern="[a-zA-Z0-9:]+">
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "Network" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <select name="networks" class="form-control">
-                                                                        {% for network in networks %}
-                                                                            <option value="{{ network }}">{{ network }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Video" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <select name="video" class="form-control">
+                                                                            {% if not videos %}
+                                                                                <option value="vga">vga</option>
+                                                                                <option value="cirrus">cirrus</option>
+                                                                            {% endif %}
+                                                                            {% for video in videos %}
+                                                                                <option value="{{ video }}">{{ video }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <select name="nwfilter" class="form-control">
-                                                                        <option value="">{% trans "None" %}</option>
-                                                                        {% for nwfilter in nwfilters %}
-                                                                            <option value="{{ nwfilter }}">{{ nwfilter }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "MAC" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" class="form-control" name="mac" maxlength="17" value="{{ mac_auto }}" required pattern="[a-zA-Z0-9:]+">
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <select name="listener_addr" class="form-control">
+                                                                            {% for addr, label in listener_addr %}
+                                                                                <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "Video" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <select name="video" class="form-control">
-                                                                        {% if not videos %}
-                                                                            <option value="vga">vga</option>
-                                                                            <option value="cirrus">cirrus</option>
-                                                                        {% endif %}
-                                                                        {% for video in videos %}
-                                                                            <option value="{{ video }}">{{ video }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <input type="checkbox" name="host_model" value="true" checked>
+                                                                    </div>
+                                                                    <label class="col-lg-1 control-label">{% trans "CPU" %}</label>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <input type="checkbox" name="virtio" value="true" checked>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <select name="listener_addr" class="form-control">
-                                                                        {% for addr, label in listener_addr %}
-                                                                            <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="checkbox" name="host_model" value="true" checked>
-                                                                </div>
-                                                                <label class="col-lg-1 control-label">{% trans "CPU" %}</label>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="checkbox" name="virtio" value="true" checked>
-                                                                </div>
-                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                                                            {% if storages %}
+                                                                <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
+                                                            {% else %}
+                                                                <button class="btn btn-primary disabled">{% trans "Create" %}</button>
+                                                            {% endif %}
+                                                        </div>
+                                                            </form>
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-                                                        {% if storages %}
-                                                            <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
-                                                        {% else %}
-                                                            <button class="btn btn-primary disabled">{% trans "Create" %}</button>
-                                                        {% endif %}
-                                                    </div>
-                                                        </form>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <a data-toggle="modal" href="#addVMflavor{{ forloop.counter }}" class="btn btn-sm btn-default">
-                                            <span class="glyphicon glyphicon-plus"></span>
-                                        </a>
-                                    </td>
-                                    <td style="width:5px;">
-                                        <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                            <input type="hidden" name="flavor" value="{{ flavor.id }}">
-                                            <button type="submit" class="btn btn-sm btn-default" name="delete_flavor" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                <span class="glyphicon glyphicon-trash"></span>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                                            <a data-toggle="modal" href="#addVMflavor{{ forloop.counter }}" class="btn btn-sm btn-default">
+                                                <span class="glyphicon glyphicon-plus"></span>
+                                            </a>
+                                        </td>
+                                        <td style="width:5px;">
+                                            <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                <input type="hidden" name="flavor" value="{{ flavor.id }}">
+                                                <button type="submit" class="btn btn-sm btn-default" name="delete_flavor" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                    <span class="glyphicon glyphicon-trash"></span>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                <div class="clearfix"></div>
+            </div>
+
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addCustom">
+                <div class="well">
+                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
                         </div>
                     </div>
-                {% endif %}
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
+                        <div class="col-sm-6">
+                            <input type="checkbox" name="host_model" value="true" checked>
+                        </div>
+                        <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
+                        </div>
+                        <label class="col-sm-1 control-label">{% trans "MB" %}</label>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
+                        <div class="col-sm-6">
+                            <ul id="img-list">
+                                <!-- populated from javascript -->
+                            </ul>
+                            <input id="images" name="images" type="hidden" value=""/>
+                            <select id="image-control" name="image-control" class="form-control" multiple="multiple">
+                                {% if get_images %}
+                                    {% for name in get_images %}
+                                        <option value="{{ name }}">{{ name }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="">{% trans "None" %}</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group meta-prealloc">
+                        <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
+                        <div class="col-sm-6">
+                            <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
+                        </div>
+                        <label class="col-lg-1 control-label">{% trans "Image" %}</label>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
+                        <div class="col-sm-6">
+                            <select id="cache_mode" name="cache_mode" class="form-control">
+                                {% for mode, name in cache_modes %}
+                                    <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                        {% trans name %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "Network" %}</label>
+                        <div class="col-sm-6">
+                            <ul id="net-list">
+                                <!-- populated from javascript -->
+                            </ul>
+                            <input id="networks" type="hidden" name="networks" value=""/>
+                            <select id="network-control" name="network-control" class="form-control" multiple="multiple">
+                                {% for network in networks %}
+                                    <option value="{{ network }}">{{ network }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                     <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
+                        <div class="col-sm-6">
+                            <select name="nwfilter" class="form-control">
+                                <option value="">{% trans "None" %}</option>
+                                {% for nwfilter in nwfilters %}
+                                    <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "Video" %}</label>
+                        <div class="col-sm-6">
+                            <select name="video" class="form-control">
+                                {% if not videos %}
+                                    <option value="vga">vga</option>
+                                    <option value="cirrus">cirrus</option>
+                                {% endif %}
+                                {% for video in videos %}
+                                    <option value="{{ video }}">{{ video }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
+                        <div class="col-sm-6">
+                            <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
+                        <div class="col-sm-6">
+                            <select name="listener_addr" class="form-control">
+                                {% for addr, label in listener_addr %}
+                                    <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
+                        <div class="col-sm-6">
+                            <input type="checkbox" name="virtio" value="true" checked>
+                        </div>
+                    </div>
+                    {% if storages %}
+                        <button type="submit" class="btn btn-primary" name="create" onclick="showPleaseWaitDialog()" value="1">
+                            {% trans "Create" %}
+                        </button>
+                    {% else %}
+                        <button class="btn btn-primary disabled">
+                            {% trans "Create" %}
+                        </button>
+                    {% endif %}
+                </form>
+                </div>
+                <div class="clearfix"></div>
             </div>
+
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromTemp">
+                <div class="well">
+                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="host_model" value="true" checked>
+                            </div>
+                            <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
+                            </div>
+                            <label class="col-sm-1 control-label">{% trans "MB" %}</label>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
+                            <div class="col-sm-6">
+                                <select name="template" class="form-control">
+                                    {% if get_images %}
+                                        {% for name in get_images %}
+                                            <option value="{{ name }}">{{ name }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="">{% trans "None" %}</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group meta-prealloc">
+                            <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
+                            </div>
+                            <label class="col-lg-1 control-label">{% trans "Image" %}</label>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
+                            <div class="col-sm-6">
+                                <select id="cache_mode" name="cache_mode" class="form-control">
+                                    {% for mode, name in cache_modes %}
+                                        <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                        {% trans name %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Network" %}</label>
+                            <div class="col-sm-6">
+                                <select name="networks" class="form-control">
+                                    {% for network in networks %}
+                                        <option value="{{ network }}">{{ network }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
+                            <div class="col-sm-6">
+                                <select name="nwfilter" class="form-control">
+                                    <option value="">{% trans "None" %}</option>
+                                    {% for nwfilter in nwfilters %}
+                                        <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="virtio" value="true" checked>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Video" %}</label>
+                            <div class="col-sm-6">
+                                <select name="video" class="form-control">
+                                    {% if not videos %}
+                                        <option value="vga">vga</option>
+                                        <option value="cirrus">cirrus</option>
+                                    {% endif %}
+                                    {% for video in videos %}
+                                        <option value="{{ video }}">{{ video }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
+                            <div class="col-sm-6">
+                                <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
+                            <div class="col-sm-6">
+                                <select name="listener_addr" class="form-control">
+                                    {% for addr, label in listener_addr %}
+                                        <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        {% if storages %}
+                            <button type="submit" class="btn btn-primary" name="create" value="1" onclick="showPleaseWaitDialog()">
+                                {% trans "Create" %}
+                            </button>
+                        {% else %}
+                            <button class="btn btn-primary disabled">
+                                {% trans "Create" %}
+                            </button>
+                        {% endif %}
+                    </form>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromXML">
+                <div class="well">
+                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                        <div class="col-sm-12" id="xmlheight">
+                             <input type="hidden" name="dom_xml"/>
+                            <textarea id="editor"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" name="create_xml" onclick="showPleaseWaitDialog()">
+                            {% trans "Create" %}
+                        </button>
+                    </form>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+             <!-- /Tab panes -->
+    </div>
+
 {% endblock %}
 {% block script %}
 <script src="{% static "js/bootstrap-multiselect.js" %}"></script>
