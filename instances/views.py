@@ -471,10 +471,10 @@ def instance(request, compute_id, vname):
                 cache = request.POST.get('cache', default_cache)
 
                 connCreate = wvmStorage(compute.hostname,
-                                       compute.login,
-                                       compute.password,
-                                       compute.type,
-                                       storage)
+                                        compute.login,
+                                        compute.password,
+                                        compute.type,
+                                        storage)
 
                 format = connCreate.get_volume_type(name)
                 path = connCreate.get_target_path()
@@ -482,6 +482,8 @@ def instance(request, compute_id, vname):
                 source = path + "/" + name;
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
+                msg = _('Attach Existing disk')
+                addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'delvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
