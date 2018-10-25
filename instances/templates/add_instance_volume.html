@@ -103,14 +103,14 @@
                                     <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Storage" %}</label>
                                     <div class="col-sm-4">
                                         <div class="dropdown">
-                                          <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{% trans 'Select Pool...' %}
+                                          <button id="select_storage" class="btn dropdown-toggle" type="button" data-toggle="dropdown">{% trans 'Select Pool...' %}
                                           <span class="caret"></span></button>
                                           <ul class="dropdown-menu">
                                               {% for storage in storages %}
                                                   <li><a href="#" onclick="get_volumes({{ compute_id }}, '{{ storage }}')">{{ storage }}</a></li>
                                               {% endfor %}
                                           </ul>
-                                            <input id="selected_storage" name="selected_storage" type="hidden" value=""/>
+                                          <input id="selected_storage" name="selected_storage" hidden/>
                                         </div>
                                     </div>
                                 </div>

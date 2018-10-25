@@ -1253,8 +1253,13 @@
             select.removeChild(select.options[0]);
         }
 
-        var input_sto = document.getElementById('selected_storage');
-        input_sto.value = pool;
+        var sto_drop = document.getElementById('select_storage');
+        sto_drop.value = pool;
+        sto_drop.innerHTML = pool + "<span class=\"caret\"></span>";
+
+        var sto_input = document.getElementById('selected_storage');
+        sto_input.value = pool;
+        sto_input.innerHTML = pool;
 
         $.getJSON(vol_url, function(data) {
             if (data.length > 0) {
