@@ -12,9 +12,6 @@
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                 <h4 class="modal-title">{% trans "Add Instance Volume" %}</h4>
             </div>
-
-
-
             <div class="modal-body">
                 <div class="row">
                     <ul class="nav nav-tabs">
@@ -103,7 +100,7 @@
                                     <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Storage" %}</label>
                                     <div class="col-sm-4">
                                         <div class="dropdown">
-                                          <button id="select_storage" class="btn dropdown-toggle" type="button" data-toggle="dropdown">{% trans 'Select Pool...' %}
+                                          <button id="select_storage" class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown">{% trans 'Select Pool...' %}
                                           <span class="caret"></span></button>
                                           <ul class="dropdown-menu">
                                               {% for storage in storages %}

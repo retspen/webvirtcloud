@@ -1244,8 +1244,6 @@
 <script src="{% static "js/ace.js" %}" type="text/javascript" charset="utf-8"></script>
 <script>
     function get_volumes(comp_id, pool) {
-        vol_params = comp_id + " " + pool;
-
         vol_url = "/computes/" + comp_id + "/storage/" + pool + "/?get_volumes";
         var select = document.getElementById("vols");
 
