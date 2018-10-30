@@ -3,6 +3,7 @@ from vrtManager import util
 from vrtManager.connection import wvmConnect
 from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as default_owner
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 
 
@@ -52,7 +53,7 @@ class wvmCreate(wvmConnect):
         """Get guest capabilities"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
 
-    def create_volume(self, storage, name, size, image_format=image_format, metadata=False):
+    def create_volume(self, storage, name, size, image_format=image_format, metadata=False, owner=default_owner):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
@@ -70,13 +71,17 @@ class wvmCreate(wvmConnect):
                 <target>
                     <format type='%s'/>
                      <permissions>
-                        <owner>107</owner>
-                        <group>107</group>
+                        <owner>%s</owner>
+                        <group>%s</group>
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
+                    <compat>1.1</compat>
+                    <features>
+                        <lazy_refcounts/>
+                    </features>
                 </target>
-            </volume>""" % (name, size, alloc, image_format)
+            </volume>""" % (name, size, alloc, image_format, owner['uid'], owner['guid'])
         stg.createXML(xml, metadata)
         try:
             stg.refresh(0)
@@ -110,7 +115,7 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(vol_path)
         return vol.storagePoolLookupByVolume()
 
-    def clone_from_template(self, clone, template, metadata=False):
+    def clone_from_template(self, clone, template, metadata=False, owner=default_owner):
         vol = self.get_volume_by_path(template)
         stg = vol.storagePoolLookupByVolume()
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
@@ -127,8 +132,8 @@ class wvmCreate(wvmConnect):
                 <target>
                     <format type='%s'/>
                      <permissions>
-                        <owner>107</owner>
-                        <group>107</group>
+                        <owner>%s</owner>
+                        <group>%s</group>
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
@@ -137,7 +142,7 @@ class wvmCreate(wvmConnect):
                         <lazy_refcounts/>
                     </features>
                 </target>
-            </volume>""" % (clone, format)
+            </volume>""" % (clone, format, owner['uid'], owner['guid'])
         stg.createXMLFrom(xml, vol, metadata)
         clone_vol = stg.storageVolLookupByName(clone)
         return clone_vol.path()

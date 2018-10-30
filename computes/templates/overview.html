@@ -12,6 +12,9 @@
                             <i class="fa fa-dashboard"></i> {% trans "Overview" %}
                         </li>
                         <li>
+                            <i class="fa fa-server"></i> <a href="{% url 'instances' compute.id %}">{% trans "Instances" %}</a>
+                        </li>
+                        <li>
                             <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
                         </li>
                         <li>
@@ -19,6 +22,9 @@
                         </li>
                         <li>
                             <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
+                        </li>
+                        <li>
+                            <i class="fa fa-filter"></i> <a href="{% url 'nwfilters' compute.id %}">{% trans "NWFilters" %}</a>
                         </li>
                         <li>
                             <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
@@ -43,7 +49,7 @@
                     <p>{% trans "Connection" %}</p>
 					<p>{% trans "Details" %}</p>
                 </div>
-                <div class="col-xs-8 col-sm-7">
+                <div class="col-xs-8 col-sm-9">
                     <p>{{ hostname }}</p>
                     <p>{% for arch, hpv in hypervisor.items %}
                           <span class="glyphicon glyphicon-chevron-right"></span>

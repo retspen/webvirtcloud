@@ -354,9 +354,10 @@ class wvmConnect(object):
 
     def get_dom_cap_xml(self):
         """ Return domcapabilities xml"""
-        emulatorbin = self.emulator()
-        machine = self.machine()
+
         arch = self.wvm.getInfo()[0]
+        machine = self.get_machines(arch)
+        emulatorbin = self.get_emulator(arch)
         virttype = self.hypervisor_type()[arch][0]
         return self.wvm.getDomainCapabilities(emulatorbin, arch, machine, virttype)
 
@@ -389,6 +390,12 @@ class wvmConnect(object):
             interface.append(inface)
         return interface
 
+    def get_nwfilters(self):
+        nwfilters = []
+        for nwfilter in self.wvm.listNWFilters():
+            nwfilters.append(nwfilter)
+        return nwfilters
+
     def get_cache_modes(self):
         """Get cache available modes"""
         return {
@@ -411,13 +418,23 @@ class wvmConnect(object):
             return result
         return util.get_xml_path(self.get_cap_xml(), func=hypervisors)
 
-    def emulator(self):
+    def get_emulator(self, arch):
         """Return emulator """
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch/emulator")
+        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch[@name='{}']/emulator".format(arch))
 
-    def machine(self):
+    def get_emulators(self):
+        def emulators(ctx):
+            result = {}
+            for arch in ctx.xpath('/capabilities/guest/arch'):
+                emulator = arch.xpath('emulator')
+                arch_name = arch.xpath('@name')[0]
+                result[arch_name]= emulator
+            return result
+        return util.get_xml_path(self.get_cap_xml(), func=emulators)
+
+    def get_machines(self, arch):
         """ Return machine type of emulation"""
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch/machine")
+        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch[@name='{}']/machine".format(arch))
 
     def get_busses(self):
         """Get available busses"""
@@ -443,7 +460,6 @@ class wvmConnect(object):
 
     def get_video(self):
         """ Get available graphics video types """
-
         def get_video_list(ctx):
             result = []
             for video_enum in ctx.xpath('/domainCapabilities/devices/video/enum'):
@@ -469,6 +485,9 @@ class wvmConnect(object):
 
     def get_network(self, net):
         return self.wvm.networkLookupByName(net)
+
+    def get_nwfilter(self, name):
+        return self.wvm.nwfilterLookupByName(name)
 
     def get_instance(self, name):
         return self.wvm.lookupByName(name)

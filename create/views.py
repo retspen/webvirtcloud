@@ -11,6 +11,7 @@ from vrtManager.create import wvmCreate
 from vrtManager import util
 from libvirt import libvirtError
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_CACHE
 from django.contrib import messages
 
 @login_required
@@ -28,7 +29,6 @@ def create_instance(request, compute_id):
     storages = []
     networks = []
     meta_prealloc = False
-    #computes = Compute.objects.all()
     compute = get_object_or_404(Compute, pk=compute_id)
     flavors = Flavor.objects.filter().order_by('id')
 
@@ -40,9 +40,11 @@ def create_instance(request, compute_id):
 
         storages = sorted(conn.get_storages(only_actives=True))
         networks = sorted(conn.get_networks())
+        nwfilters = conn.get_nwfilters()
         instances = conn.get_instances()
         videos = conn.get_video()
         cache_modes = sorted(conn.get_cache_modes().items())
+        default_cache = INSTANCE_VOLUME_DEFAULT_CACHE
         listener_addr = QEMU_CONSOLE_LISTEN_ADDRESSES
         mac_auto = util.randomMAC()
         get_images = sorted(conn.get_storages_images())
@@ -99,6 +101,8 @@ def create_instance(request, compute_id):
                         if data['name'] in instances:
                             msg = _("A virtual machine with this name already exists")
                             error_messages.append(msg)
+                        if Instance.objects.filter(name__exact=data['name']):
+                            messages.warning(request,_("There is an instance with same name. Are you sure?"))
                     if not error_messages:
                         if data['hdd_size']:
                             if not data['mac']:
@@ -139,11 +143,11 @@ def create_instance(request, compute_id):
                             try:
                                 conn.create_instance(data['name'], data['memory'], data['vcpu'], data['host_model'],
                                                      uuid, volumes, data['cache_mode'], data['networks'], data['virtio'],
-                                                     data["listener_addr"], None, data["video"], data["console_pass"],
+                                                     data["listener_addr"], data["nwfilter"], data["video"], data["console_pass"],
                                                      data['mac'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
-                                messages.success(request,"Instance is created.")
+                                messages.success(request, _("Instance is created."))
                                 return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
                                 if data['hdd_size'] or volumes[clone_path]:

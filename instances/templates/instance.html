@@ -72,12 +72,14 @@
                                         {% trans "Resize" %}
                                     </a>
                                 </li>
-                                <li role="presentation">
-                                    <a href="#snapshots" class="action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
-                                        <span id="action-block" class="glyphicon glyphicon-camera" aria-hidden="true"></span>
-                                        {% trans "Snapshots" %}
-                                    </a>
-                                </li>
+                                {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                    <li role="presentation">
+                                        <a href="#snapshots" class="action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
+                                            <span id="action-block" class="glyphicon glyphicon-camera" aria-hidden="true"></span>
+                                            {% trans "Snapshots" %}
+                                        </a>
+                                    </li>
+                                {% endif %}
                                 <li role="presentation">
                                     <a href="#settings" class="action-button" aria-controls="settings" role="tab" data-toggle="tab">
                                         <span id="action-block" class="glyphicon glyphicon-cog" aria-hidden="true"></span>
@@ -342,11 +344,6 @@
                                                     {% trans "Resize Instance" %}
                                                 </a>
                                             </li>
-                                            <li role="presentation">
-                                                <a href="#addvolume" aria-controls="addvolume" role="tab" data-toggle="tab">
-                                                    {% trans "Add New Volume" %}
-                                                </a>
-                                            </li>
                                         </ul>
                                         <!-- Tab panes -->
                                         <div class="tab-content">
@@ -428,81 +425,7 @@
                                                 {% endif %}
                                                 <div class="clearfix"></div>
                                             </div>
-                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addvolume">
-                                                {% if request.user.is_superuser or userinstance.is_change %}
-                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                        <p style="font-weight:bold;">{% trans "Volume parameters" %}</p>
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Storage" %}</label>
-                                                            <div class="col-sm-4">
-                                                                <select name="storage" class="form-control image-format">
-                                                                {% for storage in storages %}
-                                                                    <option value="{{ storage }}">{{ storage }}</option>
-                                                                {% endfor %}
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Name" %}</label>
-                                                            <div class="col-sm-4">
-                                                                <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Format" %}</label>
-                                                            <div class="col-sm-4">
-                                                                <select name="format" class="form-control image-format">
-                                                                {% for format in formats %}
-                                                                    <option value="{{ format }}" {% if format == default_format %}selected{% endif %}>{% trans format %}</option>
-                                                                {% endfor %}
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Size" %}</label>
-                                                            <div class="col-sm-4">
-                                                                <input type="text" class="form-control" name="size" value="10" maxlength="3" required pattern="[0-9]+">
-                                                            </div>
-                                                            <label class="col-sm-1 control-label">{% trans "GB" %}</label>
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Bus" %}</label>
-                                                            <div class="col-sm-4">
-                                                                <select name="bus" class="form-control image-format">
-                                                                {% for bus in busses %}
-                                                                    <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
-                                                                {% endfor %}
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Cache" %}</label>
-                                                            <div class="col-sm-4">
-                                                                <select name="cache" class="form-control image-format">
-                                                                {% for mode, name in cache_modes %}
-                                                                    <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>{% trans name %}</option>
-                                                                {% endfor %}
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-group meta-prealloc">
-                                                            <label class="col-sm-3 control-label" style="font-weight:normal;">{% trans "Metadata" %}</label>
-                                                            <div class="col-sm-4">
-                                                                <input type="checkbox" name="meta_prealloc" value="true">
-                                                            </div>
-                                                        </div>
-                                                        {% ifequal status 5 %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="addvolume">{% trans "Add volume" %}</button>
-                                                        {% else %}
-                                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Add volume" %}</button>
-                                                        {% endifequal %}
-                                                    </form>
-                                                {% else %}
-                                                    {% trans "You don't have permission for resizing instance" %}
-                                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Add volume" %}</button>
-                                                {% endif %}
-                                                <div class="clearfix"></div>
-                                            </div>
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -607,6 +530,11 @@
                                                     {% trans "Media" %}
                                                 </a>
                                             </li>
+                                            <li role="presentation">
+                                                <a href="#disks" aria-controls="disks" role="tab" data-toggle="tab">
+                                                    {% trans "Disk" %}
+                                                </a>
+                                            </li>
                                             {% if request.user.is_superuser %}
                                                 <li role="presentation">
                                                     <a href="#autostart" aria-controls="autostart" role="tab" data-toggle="tab">
@@ -614,6 +542,7 @@
                                                     </a>
                                                 </li>
                                             {% endif %}
+
                                             {% if request.user.is_superuser or userinstance.is_vnc %}
                                                 <li role="presentation">
                                                     <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
@@ -682,7 +611,7 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-sm-2">
-                                                                    {% if media_iso %}
+                                                                    {% if media_iso and request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
                                                                         <button type="submit" class="btn btn-sm btn-success pull-left" name="mount_iso" value="{{ cd.dev }}" style="margin-top: 2px;">{% trans "Mount" %}</button>
                                                                     {% else %}
                                                                         <button class="btn btn-sm btn-success pull-left disabled" name="mount_iso" style="margin-top: 2px;">{% trans "Mount" %}</button>
@@ -694,7 +623,11 @@
                                                                 </div>
                                                                 <div class="col-sm-2">
                                                                     <input type="hidden" name="path" value="{{ cd.path }}">
-                                                                    <button type="submit" class="btn btn-sm btn-success pull-left" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
+                                                                    {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                                                        <button type="submit" class="btn btn-sm btn-success pull-left" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
+                                                                    {% else %}
+                                                                        <button class="btn btn-sm btn-success pull-left disabled" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
+                                                                    {% endif %}
                                                                 </div>
                                                             {% endif %}
                                                         </div>
@@ -702,6 +635,73 @@
                                                 {% endfor %}
                                                 <div class="clearfix"></div>
                                             </div>
+                                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
+                                                 <p style="font-weight:bold;">
+                                                     {% trans "Instance Volumes" %}
+                                                     {% include 'add_instance_volume.html' %}
+                                                 </p>
+
+                                                 <div class="col-xs-12 col-sm-12">
+                                                    <table class="table table-hover">
+                                                        <thead>
+                                                            <th>{% trans "Device" %}</th>
+                                                            <th>{% trans "Used" %}</th>
+                                                            <th>{% trans "Capacity" %}</th>
+                                                            <th>{% trans "Storage" %}</th>
+                                                            <th>{% trans "Source" %}</th>
+                                                            <th style="width:100px;">{% trans "Action" %}</th>
+                                                        </thead>
+                                                        <tbody>
+                                                        {% for disk in disks %}
+                                                            <tr>
+                                                                <td>
+                                                                    <button type="submit" class="btn btn-sm btn-default"
+                                                                            name="details"
+                                                                            title="{% trans "Details" %}"
+                                                                            tabindex="0"
+                                                                            data-trigger="focus"
+                                                                            data-toggle="popover"
+                                                                            data-html="true"
+                                                                            data-content="<strong>Bus:</strong> {{ disk.bus }} <br/> <strong>Format:</strong> {{ disk.format }}">
+                                                                        <i class="fa fa-info"></i>
+                                                                    </button>
+                                                                    {{ disk.dev }}
+                                                                    <br>
+                                                                    {{ disk.target }}
+                                                                </td>
+                                                                <td>{{ disk.used | filesizeformat}}</td>
+                                                                <td>{{ disk.size | filesizeformat }}</td>
+                                                                <td>{{ disk.storage }}</td>
+                                                                <td>{{ disk.path }}</td>
+                                                                <td>
+                                                                    <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                        <input type="hidden" name="path" value="{{ disk.path }}">
+                                                                        <input type="hidden" name="dev" value="{{ disk.dev }}">
+                                                                        {% ifequal status 5 %}
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="detachvolume" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
+                                                                                <i class="fa fa-eject"></i>
+                                                                            </button>
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete volume?" %}')">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        {% else %}
+                                                                            <button class="btn btn-sm btn-default disabled" name="detachvolume" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume after shutdown?" %}')">
+                                                                                <i class="fa fa-eject"></i>
+                                                                            </button>
+                                                                            <button class="btn btn-sm btn-default disabled" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete after shutdown?" %}')">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        {% endifequal %}
+                                                                    </form>
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                         </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="clearfix"></div>
+                                            </div>
+
                                             {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="autostart">
                                                     <p>{% trans "Autostart your instance when host server is power on" %}</p>
@@ -833,39 +833,60 @@
                                             {% if request.user.is_superuser %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
                                                     <p>
-                                                    {% trans "Assign network device to bridge" %}
-                                                    {% include 'add_instance_network_block.html' %}
+                                                        {% trans "Assign network device to bridge" %}
+                                                        {% include 'add_instance_network_block.html' %}
                                                     </p>
-                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                        <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                    <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+                                                <div class="col-xs-12 col-sm-12">
+                                                    <form method="post" role="form">{% csrf_token %}
                                                         {% for network in networks %}
-                                                            <div class="form-group">
-                                                                <label class="col-sm-3 control-label" style="font-weight:normal;">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
-                                                                <div class="col-sm-3">
-                                                                    <input type="text" class="form-control" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                            <div class="panel panel-default">
+                                                                <div class="panel-heading">
+                                                                    <label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
                                                                 </div>
-                                                                <div class="col-sm-3">
-                                                                    <input type="text" class="form-control" name="net-source-{{ forloop.counter0 }}" value="{{ network.nic }}" disabled/>
+                                                                <div class="panel-body">
+                                                                    <div class="form-group form-inline">
+                                                                        <label class="col-sm-2 col-sm-offset-1 control-label">{% trans "MAC" %} </label>
+                                                                        <input class="form-control" type="text" value="{{ network.mac }}" readonly/>
+                                                                        <label class="control-label"><em>to</em></label>
+                                                                        <input class="form-control" type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                                    </div>
+                                                                    <div class="form-group form-inline">
+                                                                        <label class="col-sm-2 col-sm-offset-1 control-label">{% trans "NIC" %} </label>
+                                                                        <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
+                                                                        <label class="control-label"><em>to</em></label>
+                                                                        <select class="form-control" name="net-source-{{ forloop.counter0 }}">
+                                                                            {% for c_net in compute_networks %}
+                                                                                <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>Network {{ c_net }}</option>
+                                                                            {% endfor %}
+                                                                            {% for c_iface in compute_interfaces %}
+                                                                                <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>Interface {{ c_iface }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="form-group form-inline">
+                                                                        <label class="col-sm-2 col-sm-offset-1">{% trans "Filter" %} </label>
+                                                                        <input class="form-control" type="text" value="{{ network.filterref }}" readonly/>
+                                                                        <label class="control-label"><em>to</em></label>
+                                                                        <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
+                                                                            <option value="">{% trans "None" %}</option>
+                                                                            {% for c_filters in compute_nwfilters %}
+                                                                                <option value="{{ c_filters }}" {% ifequal c_filters network.filterref  %} selected {% endifequal %}>{{ c_filters }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
-                                                                <div class="col-sm-3">
-                                                                    <select name="net-source-{{ forloop.counter0 }}" class="form-control" id="network_select" onchange="network_select_enable()">
-                                                                        {% for c_nets in compute_networks %}
-                                                                            <option value="net:{{ c_nets }}" {% if c_nets == network.nic %}selected{% endif %}>Network {{ c_nets }}</option>
-                                                                        {% endfor %}
-                                                                        {% for c_iface in compute_interfaces %}
-                                                                            <option value="iface:{{ c_iface }}" {% if c_iface == network.nic %}selected{% endif %}>Interface {{ c_iface }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
+
+                                                                <div class="panel-footer">
+                                                                    <button class="btn btn-sm btn-primary" name="change_network" title="{% trans "Change" %}">{% trans "Change" %}</button>
+                                                                    <button class="btn btn-sm pull-right btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">{% trans "Delete" %}</button>
                                                                 </div>
                                                             </div>
                                                         {% endfor %}
-                                                        {% ifequal status 5 %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" id="btn_change_network" name="change_network" disabled>{% trans "Change" %}</button>
-                                                        {% else %}
-                                                            <button type="submit" class="btn btn-lg btn-success pull-right" id="btn_change_network" name="change_network" disabled>{% trans "Change" %}</button>
-                                                        {% endifequal %}
                                                     </form>
+                                                </div>
                                                     <div class="clearfix"></div>
+
                                                 </div>
                                             {% endif %}
                                             {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
@@ -926,7 +947,7 @@
                                                                         <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
                                                                     </div>
                                                                     {% ifequal disk.format 'qcow2' %}
-                                                                        <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">Metadata</label>
+                                                                        <label class="col-sm-2 control-label" style="font-weight:normal;margin-left:-35px;">{% trans 'Metadata' %}</label>
                                                                         <div class="col-sm-1">
                                                                             <input type="checkbox" name="meta-{{ disk.dev }}" value="true" style="margin-top: 10px;">
                                                                         </div>
@@ -1222,6 +1243,42 @@
 {% block script %}
 <script src="{% static "js/ace.js" %}" type="text/javascript" charset="utf-8"></script>
 <script>
+    function get_volumes(comp_id, pool) {
+        vol_url = "/computes/" + comp_id + "/storage/" + pool + "/?get_volumes";
+        var select = document.getElementById("vols");
+
+        while (select.options.length){
+            select.removeChild(select.options[0]);
+        }
+
+        var sto_drop = document.getElementById('select_storage');
+        sto_drop.value = pool;
+        sto_drop.innerHTML = pool + "<span class=\"caret\"></span>";
+
+        var sto_input = document.getElementById('selected_storage');
+        sto_input.value = pool;
+        sto_input.innerHTML = pool;
+
+        $.getJSON(vol_url, function(data) {
+            if (data.length > 0) {
+                select.disabled = false;
+            }
+             var opt = document.createElement('option');
+             opt.value = '';
+             opt.innerHTML = 'None';
+             select.appendChild(opt);
+            for (i = 0; i < data.length; i++){
+                 var opt = document.createElement('option');
+                 opt.value = data[i]['name'];
+                 opt.innerHTML = data[i]['name'];
+                 select.appendChild(opt);
+            }
+
+        });
+    }
+</script>
+
+<script>
     var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
 
@@ -1232,13 +1289,13 @@
 </script>
 <script>
     function open_console(view_style) {
-        window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}&view=' +view_style +'', '', 'width=850,height=600')
+        window.open('{% url 'console' %}?token={{ compute_id }}-{{ uuid }}&view=' + view_style +'', '', 'width=850,height=600')
     }
 </script>
 <script>
     function random_mac(net) {
-        $.getJSON('/instance/random_mac_address/', function(data) {
-            $('input[name="'+net+'"]').val(data['mac']);
+        $.getJSON('{% url 'random_mac_address' %}', function (data) {
+            $('input[name="' + net + '"]').val(data['mac']);
         });
     };
 </script>
@@ -1254,14 +1311,15 @@
 <script>
     function guess_mac_address(src_elem, net) {
         new_vname = $(src_elem).val();
-        $.getJSON('/instance/guess_mac_address/' + new_vname + '/', function(data) {
+        guess_mac_address_url = "{% url 'guess_mac_address' 1 %}".replace(1, new_vname);
+        $.getJSON(guess_mac_address_url, function(data) {
             $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
         });
     }
 </script>
 <script>
     function guess_clone_name() {
-        $.getJSON('/instance/guess_clone_name/', function(data) {
+        $.getJSON('{% url 'guess_clone_name' %}', function(data) {
             guessed_name = data['name'].split(".")[0];
             $('#clone_name').val(guessed_name);
             update_clone_disk_name(guessed_name);
@@ -1339,7 +1397,8 @@
     });
     $(document).ready(function () {
         // set vdi url
-        $.get("/datasource/vdi/{{ vname }}/", function(data) {
+
+        $.get("{% url 'vdi_url' vname %}", function(data) {
             $("#vdi_url_input").attr("value", data);
             $("#vdi_url").attr("href", data);
         });
@@ -1370,12 +1429,6 @@
         });
     });
 </script>
-<script>
-    function network_select_enable(){
-        // set network button enabled
-        $('button[name="change_network"]').removeAttr('disabled');
-    }
- </script>
 <script src="{% static "js/Chart.min.js" %}"></script>
 <script>
     $('#chartgraphs').on('shown.bs.tab', function (event) {
@@ -1541,7 +1594,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#media', '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate', '#options', '#users'])) {
+    if (~$.inArray(hash, ['#media', "#disks", '#network', '#clone', '#autostart', '#xmledit', '#vncsettings', '#migrate', '#options', '#users'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#settings') {
@@ -1574,7 +1627,8 @@
 </script>
 <script>
     function update_logs_table(vname) {
-        $.getJSON('/logs/vm_logs/'+vname+'/', function(data) {
+        logurl = "{% url 'vm_logs' 1 %}".replace(1, vname);
+        $.getJSON(logurl, function(data) {
             var logs = "";
             $.each(data, function(id) {
                 row = data[id];
@@ -1586,5 +1640,12 @@
             $("#logs_table > tbody").html(logs);
         });
     }
+</script>
+    <script type="text/javascript">
+$(document).ready(function(){
+    $('[data-toggle="popover"]').popover({
+        placement : 'top'
+    });
+});
 </script>
 {% endblock %}

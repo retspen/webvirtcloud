@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
@@ -8,6 +8,7 @@ from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
 from libvirt import libvirtError
 from django.contrib import messages
+import json
 
 @login_required
 def storages(request, compute_id):
@@ -155,7 +156,7 @@ def storage(request, compute_id, pool):
                     meta_prealloc = True
                 try:
                     conn.create_volume(data['name'], data['size'], data['format'], meta_prealloc)
-                    messages.success("Image file {} is created successfully".format(data['name']+".img"))
+                    messages.success(request, _("Image file {} is created successfully".format(data['name']+".img")))
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)
@@ -167,7 +168,7 @@ def storage(request, compute_id, pool):
             try:
                 vol = conn.get_volume(volname)
                 vol.delete(0)
-                messages.success(request,_('Volume: {} is deleted.'.format(volname)))
+                messages.success(request, _('Volume: {} is deleted.'.format(volname)))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
@@ -197,14 +198,19 @@ def storage(request, compute_id, pool):
                         format = None
                     try:
                         conn.clone_volume(data['image'], data['name'], format, meta_prealloc)
-                        messages.success(request, _("{} image cloned as {} successfully".format(data['image'],
-                                                                                                data['name'] + ".img")))
+                        messages.success(request, _("{} image cloned as {} successfully".format(data['image'], data['name'] + ".img")))
                         return HttpResponseRedirect(request.get_full_path())
                     except libvirtError as lib_err:
                         error_messages.append(lib_err)
             else:
                 for msg_err in form.errors.values():
                     error_messages.append(msg_err.as_text())
+    if request.method == 'GET':
+        if 'get_volumes' in request.GET:
+            conn.close()
+            return HttpResponse(json.dumps(sorted(volumes)))
+
     conn.close()
 
     return render(request, 'storage.html', locals())
+
