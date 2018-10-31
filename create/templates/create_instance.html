@@ -540,6 +540,9 @@
 
     $(document).ready(function () {
         $('#image-control').multiselect({
+            enableCaseInsensitiveFiltering: true,
+            maxHeight: 400,
+            inheritClass: true,
             buttonText: function (options, select) {
                 return 'Add image <b class="caret"></b>';
             },
