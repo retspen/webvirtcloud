@@ -252,8 +252,9 @@ class wvmInstance(wvmConnect):
             storage = None
             src_fl = None
             disk_format = None
+            used_size = None
             disk_size = None
-
+            
             for disk in doc.xpath('/domain/devices/disk'):
                 device = disk.xpath('@device')[0]
                 if device == 'disk':
