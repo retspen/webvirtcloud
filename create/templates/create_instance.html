@@ -544,7 +544,7 @@
             maxHeight: 400,
             inheritClass: true,
             buttonText: function (options, select) {
-                return 'Add image <b class="caret"></b>';
+                return 'Add image';
             },
             buttonTitle: function (options, select) {
                 return '';
@@ -568,8 +568,9 @@
         });
 
         $('#network-control').multiselect({
+            inheritClass: true,
             buttonText: function (options, select) {
-                return 'Add network <b class="caret"></b>';
+                return 'Add network';
             },
             buttonTitle: function (options, select) {
                 return '';
