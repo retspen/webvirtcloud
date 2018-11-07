@@ -1421,6 +1421,13 @@
 {% endif %}
 </script>
 <script>
+$(document).ready(function(){
+    $('[data-toggle="popover"]').popover({
+        placement : 'top'
+    });
+});
+</script>
+<script>
     $(function () {
         $('.js-custom__checkbox').change(function () {
             var container  = $(this).closest('.js-custom__container');
@@ -1640,12 +1647,5 @@
             $("#logs_table > tbody").html(logs);
         });
     }
-</script>
-    <script type="text/javascript">
-$(document).ready(function(){
-    $('[data-toggle="popover"]').popover({
-        placement : 'top'
-    });
-});
 </script>
 {% endblock %}

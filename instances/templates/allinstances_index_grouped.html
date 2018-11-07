@@ -2,7 +2,7 @@
 <table class="table table-hover table-striped sortable-theme-bootstrap">
     <thead>
     <tr>
-        <th>#</th>
+        <th><a href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a> </th>
         <th>{% trans "Name" %}<br>{% trans "Description" %}</th></th>
         <th>{% trans "User"%}</th>
         <th>{% trans "Status" %}</th>
@@ -124,6 +124,11 @@
 </table>
 {% block script %}
 <script>
+function hide_all_host_instances() {
+    var rows = $('table tr');
+    all_host_rows = rows.filter('[host]');
+    all_host_rows.toggle();
+}
 function hide_host_instances(host) {
     var rows = $('table tr');
 
