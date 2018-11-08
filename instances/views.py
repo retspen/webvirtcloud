@@ -310,6 +310,7 @@ def instance(request, compute_id, vname):
             addlogmsg(request.user.username, instance.name, msg)
 
         userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
+        allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
@@ -444,7 +445,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'addnewvol' in request.POST and (request.user.is_superuser or userinstance.is_change):
+            if 'addnewvol' in request.POST and allow_admin_or_not_template:
                 connCreate = wvmCreate(compute.hostname,
                                        compute.login,
                                        compute.password,
@@ -464,7 +465,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'addexistingvol' in request.POST and (request.user.is_superuser or userinstance.is_change):
+            if 'addexistingvol' in request.POST and allow_admin_or_not_template:
                 storage = request.POST.get('selected_storage', '')
                 name = request.POST.get('vols', '')
                 bus = request.POST.get('bus', default_bus)
@@ -486,7 +487,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'delvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
+            if 'delvolume' in request.POST and allow_admin_or_not_template:
                 connDelete = wvmCreate(compute.hostname,
                                        compute.login,
                                        compute.password,
@@ -501,7 +502,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'detachvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
+            if 'detachvolume' in request.POST and allow_admin_or_not_template:
                 connDelete = wvmCreate(compute.hostname,
                                        compute.login,
                                        compute.password,
@@ -513,7 +514,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'umount_iso' in request.POST and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'umount_iso' in request.POST and allow_admin_or_not_template:
                 image = request.POST.get('path', '')
                 dev = request.POST.get('umount_iso', '')
                 conn.umount_iso(dev, image)
@@ -521,7 +522,7 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#media')
 
-            if 'mount_iso' in request.POST  and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'mount_iso' in request.POST and allow_admin_or_not_template:
                 image = request.POST.get('media', '')
                 dev = request.POST.get('mount_iso', '')
                 conn.mount_iso(dev, image)
@@ -529,21 +530,21 @@ def instance(request, compute_id, vname):
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#media')
 
-            if 'snapshot' in request.POST  and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'snapshot' in request.POST and allow_admin_or_not_template:
                 name = request.POST.get('name', '')
                 conn.create_snapshot(name)
                 msg = _("New snapshot")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
-            if 'delete_snapshot' in request.POST and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'delete_snapshot' in request.POST and allow_admin_or_not_template:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
                 msg = _("Delete snapshot")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
-            if 'revert_snapshot' in request.POST and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'revert_snapshot' in request.POST and allow_admin_or_not_template:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_revert(snap_name)
                 msg = _("Successful revert snapshot: ")

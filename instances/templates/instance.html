@@ -72,7 +72,7 @@
                                         {% trans "Resize" %}
                                     </a>
                                 </li>
-                                {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                {% if allow_admin_or_not_template %}
                                     <li role="presentation">
                                         <a href="#snapshots" class="action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
                                             <span id="action-block" class="glyphicon glyphicon-camera" aria-hidden="true"></span>
@@ -611,10 +611,10 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-sm-2">
-                                                                    {% if media_iso and request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                                                    {% if media_iso and allow_admin_or_not_template %}
                                                                         <button type="submit" class="btn btn-sm btn-success pull-left" name="mount_iso" value="{{ cd.dev }}" style="margin-top: 2px;">{% trans "Mount" %}</button>
                                                                     {% else %}
-                                                                        <button class="btn btn-sm btn-success pull-left disabled" name="mount_iso" style="margin-top: 2px;">{% trans "Mount" %}</button>
+                                                                        <button class="btn btn-sm btn-success pull-left disabled" style="margin-top: 2px;">{% trans "Mount" %}</button>
                                                                     {% endif %}
                                                                 </div>
                                                             {% else %}
@@ -623,7 +623,7 @@
                                                                 </div>
                                                                 <div class="col-sm-2">
                                                                     <input type="hidden" name="path" value="{{ cd.path }}">
-                                                                    {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                                                    {% if allow_admin_or_not_template %}
                                                                         <button type="submit" class="btn btn-sm btn-success pull-left" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
                                                                     {% else %}
                                                                         <button class="btn btn-sm btn-success pull-left disabled" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
