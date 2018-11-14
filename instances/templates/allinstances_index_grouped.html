@@ -128,6 +128,7 @@ function hide_all_host_instances() {
     var rows = $('table tr');
     all_host_rows = rows.filter('[host]');
     all_host_rows.toggle();
+    $('span[id^=collapse_host_instances_]').toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
 }
 function hide_host_instances(host) {
     var rows = $('table tr');
