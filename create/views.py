@@ -13,6 +13,7 @@ from libvirt import libvirtError
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_CACHE
 from django.contrib import messages
+from logs.views import addlogmsg
 
 @login_required
 def create_instance(request, compute_id):
@@ -147,7 +148,9 @@ def create_instance(request, compute_id):
                                                      data['mac'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
-                                messages.success(request, _("Instance is created."))
+                                msg = _("Instance is created.")
+                                messages.success(request, msg)
+                                addlogmsg(request.user.username, create_instance.name, msg)
                                 return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
                                 if data['hdd_size'] or volumes[clone_path]:
