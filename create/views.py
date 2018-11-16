@@ -48,7 +48,7 @@ def create_instance(request, compute_id):
         default_cache = INSTANCE_VOLUME_DEFAULT_CACHE
         listener_addr = QEMU_CONSOLE_LISTEN_ADDRESSES
         mac_auto = util.randomMAC()
-        get_images = sorted(conn.get_storages_images())
+        #get_images = sorted(conn.get_storages_images())
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
@@ -157,5 +157,4 @@ def create_instance(request, compute_id):
                                     conn.delete_volume(volumes.keys()[0])
                                 error_messages.append(lib_err)
         conn.close()
-
     return render(request, 'create_instance.html', locals())

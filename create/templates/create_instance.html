@@ -16,6 +16,22 @@
     {% include 'errors_block.html' %}
     {% include 'pleasewaitdialog.html' %}
 
+
+    {% if form.errors %}
+    {% for field in form %}
+        {% for error in field.errors %}
+            <div class="alert alert-danger">
+                <strong>{{ error|escape }}</strong>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+        <div class="alert alert-danger">
+            <strong>{{ error|escape }}</strong>
+        </div>
+    {% endfor %}
+{% endif %}
+
     <div class="row" id="max-width-page">
         <div class="col-lg-12">
             <div role="tabpanel">
@@ -223,9 +239,9 @@
                                 </tbody>
                             </table>
                         </div>
-                    {% endif %}
-                <div class="clearfix"></div>
-            </div>
+                        {% endif %}
+                        <div class="clearfix"></div>
+                    </div>
 
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addCustom">
                 <div class="well">
@@ -239,7 +255,7 @@
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
                         <div class="col-sm-6">
-                            <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
+                            <input type="text" class="form-control" name="vcpu" value="1" maxlength="2" required pattern="[0-9]">
                         </div>
                     </div>
                     <div class="form-group">
@@ -256,24 +272,36 @@
                         </div>
                         <label class="col-sm-1 control-label">{% trans "MB" %}</label>
                     </div>
+                    <div id="disk_list_div" class="form-group" hidden>
+                        <label id="added_disks" class="col-sm-3 control-label">{% trans "Added Disks" %}</label>
+                        <div class="col-sm-6">
+                         <ul id="img-list" class="form-row">
+                              <!-- populated from javascript -->
+                          </ul>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
-                        <div class="col-sm-6">
-                            <ul id="img-list">
-                                <!-- populated from javascript -->
-                            </ul>
-                            <input id="images" name="images" type="hidden" value=""/>
-                            <select id="image-control" name="image-control" class="form-control" multiple="multiple">
-                                {% if get_images %}
-                                    {% for name in get_images %}
-                                        <option value="{{ name }}">{{ name }}</option>
+                        <input id="images" name="images" type="hidden" value=""/>
+                        <div class="col-sm-3">
+                            <select id="storage-control" name="storage-control" class="form-control" onchange="get_cust_vols({{ compute_id }}, value);">
+                                {% if storages %}
+                                    <option value disabled selected>{% trans "Select pool..." %}</option>
+                                    {% for storage in storages %}
+                                        <option value="{{ storage }}" >{{ storage }}</option>
                                     {% endfor %}
                                 {% else %}
                                     <option value="">{% trans "None" %}</option>
                                 {% endif %}
                             </select>
                         </div>
+                        <div class="col-sm-3">
+                            <select id="image-control" name="image-control" multiple="multiple">
+                                <!-- populated from javascript -->
+                            </select>
+                        </div>
                     </div>
+
                     <div class="form-group meta-prealloc">
                         <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
                         <div class="col-sm-6">
@@ -354,7 +382,7 @@
                         </div>
                     </div>
                     {% if storages %}
-                        <button type="submit" class="btn btn-primary" name="create" onclick="showPleaseWaitDialog()" value="1">
+                        <button type="submit" class="btn btn-primary" name="create" formnovalidate onclick="showPleaseWaitDialog()" value="1">
                             {% trans "Create" %}
                         </button>
                     {% else %}
@@ -379,7 +407,7 @@
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
                             <div class="col-sm-6">
-                                <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required pattern="[0-9]">
+                                <input type="text" class="form-control" name="vcpu" value="1" maxlength="2" required pattern="[0-9]">
                             </div>
                         </div>
                         <div class="form-group">
@@ -396,17 +424,25 @@
                             </div>
                             <label class="col-sm-1 control-label">{% trans "MB" %}</label>
                         </div>
+
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
-                            <div class="col-sm-6">
-                                <select name="template" class="form-control">
-                                    {% if get_images %}
-                                        {% for name in get_images %}
-                                            <option value="{{ name }}">{{ name }}</option>
+                            <input id="images" name="images" type="hidden" value=""/>
+                            <div class="col-sm-3">
+                                <select id="temp-storage-control" name="temp-storage-control" class="form-control" onchange="get_template_vols({{ compute_id }}, value);">
+                                    {% if storages %}
+                                        <option value disabled selected>{% trans "Select pool" %}...</option>
+                                        {% for storage in storages %}
+                                            <option value="{{ storage }}" >{{ storage }}</option>
                                         {% endfor %}
                                     {% else %}
                                         <option value="">{% trans "None" %}</option>
                                     {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-sm-3">
+                                <select id="template" class="form-control" name="template" disabled>
+                                    <!-- populated from javascript -->
                                 </select>
                             </div>
                         </div>
@@ -487,7 +523,7 @@
                         </div>
 
                         {% if storages %}
-                            <button type="submit" class="btn btn-primary" name="create" value="1" onclick="showPleaseWaitDialog()">
+                            <button type="submit" class="btn btn-primary" name="create" value="1" formnovalidate onclick="showPleaseWaitDialog()">
                                 {% trans "Create" %}
                             </button>
                         {% else %}
@@ -539,12 +575,14 @@
     }
 
     $(document).ready(function () {
-        $('#image-control').multiselect({
+
+          $('#image-control').multiselect({
+            disableIfEmpty: true,
             enableCaseInsensitiveFiltering: true,
             maxHeight: 400,
             inheritClass: true,
             buttonText: function (options, select) {
-                return 'Add image';
+                return 'Add image...';
             },
             buttonTitle: function (options, select) {
                 return '';
@@ -552,20 +590,26 @@
             onChange: function (element, checked) {
                 var input_value = toggleValue($('#images').val(), element.val(), checked);
                 $('#images').val(input_value);
+
                 var selected_list_html = '';
                 var counter = 0;
                 if (input_value != '') {
-                    $.each(input_value.split(','), function (index, value) {
+                       $('#disk_list_div').show();
+                       $.each(input_value.split(','), function (index, value) {
                         var li = '<li>hdd' + counter +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\')">x</a></li>';
+                                '<a class="btn-link" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)">x</a></li>';
                         selected_list_html += li;
                         counter++;
                     });
+                }else {
+                    $('#disk_list_div').hide();
                 }
                 $('#img-list').html(selected_list_html);
+
             }
         });
+
 
         $('#network-control').multiselect({
             inheritClass: true,
@@ -584,7 +628,7 @@
                     $.each(input_value.split(','), function (index, value) {
                         var li = '<li>eth' + counter +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link" onclick="javascript:$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\')">x</a></li>';
+                                '<a class="btn-link" onclick="javascript:$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)">x</a></li>';
                         selected_list_html += li;
                         counter++;
                     });
@@ -593,7 +637,31 @@
             }
         });
     });
+
+    function get_cust_vols(compute_id, pool) {
+        get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
+        $.getJSON(get_vol_url, function (data) {
+            $("#image-control").find('option').remove();
+            $.each(data['vols'], function(i, item) {
+                $("#image-control").append('<option value=' + item +'>' + item + '</option>');
+
+            });
+            $('#image-control').multiselect('rebuild');
+        });
+    }
+
+    function get_template_vols(compute_id, pool) {
+        get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
+        $.getJSON(get_vol_url, function (data) {
+            $("#template").find('option').remove();
+            $.each(data['vols'], function(i, item) {
+                $("#template").append('<option value=' + item +'>' + item + '</option>');
+            });
+        });
+        $("#template").removeAttr("disabled");
+    }
 </script>
+
 <script src="{% static "js/ace.js" %}"></script>
 <script>
     var editor = ace.edit("editor");
