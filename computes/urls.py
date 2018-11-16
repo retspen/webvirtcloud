@@ -1,5 +1,5 @@
 from django.conf.urls import url
-from storages.views import storages, storage
+from storages.views import storages, storage, get_volumes
 from networks.views import networks, network
 from secrets.views import secrets
 from create.views import create_instance
@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^(?P<compute_id>[0-9]+)/statistics$', compute_graph, name='compute_graph'),
     url(r'^(?P<compute_id>[0-9]+)/instances/$', instances, name='instances'),
     url(r'^(?P<compute_id>[0-9]+)/storages/$', storages, name='storages'),
+    url(r'^(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.\/]+)/volumes$', get_volumes, name='volumes'),
     url(r'^(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.\/]+)/$', storage, name='storage'),
     url(r'^(?P<compute_id>[0-9]+)/networks/$', networks, name='networks'),
     url(r'^(?P<compute_id>[0-9]+)/network/(?P<pool>[\w\-\.]+)/$', network, name='network'),
