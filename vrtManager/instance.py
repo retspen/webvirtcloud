@@ -1,7 +1,8 @@
 import time
 import os.path
 try:
-    from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE, VIR_MIGRATE_UNSAFE
+    from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE, VIR_MIGRATE_UNSAFE, VIR_DOMAIN_RUNNING, \
+        VIR_DOMAIN_AFFECT_LIVE, VIR_DOMAIN_AFFECT_CONFIG
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 from vrtManager import util
@@ -614,8 +615,14 @@ class wvmInstance(wvmConnect):
         """
         Function change ram and cpu on vds.
         """
+
         memory = int(memory) * 1024
         cur_memory = int(cur_memory) * 1024
+        # if dom is running change only ram
+        if self.get_status() == VIR_DOMAIN_RUNNING:
+            self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_LIVE)
+            self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_CONFIG)
+            return
 
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)
@@ -905,4 +912,7 @@ class wvmInstance(wvmConnect):
 
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
+
+    def set_memory(self, size, flags=0):
+        self.instance.setMemoryFlags(size, flags)
 

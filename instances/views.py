@@ -265,7 +265,7 @@ def instance(request, compute_id, vname):
         networks = conn.get_net_device()
 
         vcpu_range = conn.get_max_cpus()
-        memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
+        memory_range = [256, 512, 768, 1024, 2048, 3072, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
             insort(memory_range, memory)
         if cur_memory not in memory_range:
