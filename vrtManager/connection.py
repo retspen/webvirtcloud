@@ -436,8 +436,8 @@ class wvmConnect(object):
         """ Return machine type of emulation"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch[@name='{}']/machine".format(arch))
 
-    def get_busses(self):
-        """Get available busses"""
+    def get_disk_bus_types(self):
+        """Get available disk bus types list"""
 
         def get_bus_list(ctx):
             result = []
@@ -449,6 +449,18 @@ class wvmConnect(object):
         # return [ 'ide', 'scsi', 'usb', 'virtio' ]
         return util.get_xml_path(self.get_dom_cap_xml(), func=get_bus_list)
 
+    def get_disk_device_types(self):
+        """Get available disk device type list"""
+
+        def get_device_list(ctx):
+            result = []
+            for disk_enum in ctx.xpath('/domainCapabilities/devices/disk/enum'):
+                if disk_enum.xpath("@name")[0] == "diskDevice":
+                    for values in disk_enum: result.append(values.text)
+            return result
+
+        # return [ 'disk', 'cdrom', 'floppy', 'lun' ]
+        return util.get_xml_path(self.get_dom_cap_xml(), func=get_device_list)
 
     def get_image_formats(self):
         """Get available image formats"""
