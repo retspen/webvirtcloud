@@ -4,7 +4,7 @@ from networks.views import networks, network
 from secrets.views import secrets
 from create.views import create_instance
 from interfaces.views import interfaces, interface
-from computes.views import overview, compute_graph, computes
+from computes.views import overview, compute_graph, computes, get_compute_disk_buses
 from instances.views import instances
 from nwfilters.views import nwfilter, nwfilters
 
@@ -24,4 +24,5 @@ urlpatterns = [
     url(r'^(?P<compute_id>[0-9]+)/nwfilter/(?P<nwfltr>[\w\-\.\:]+)/$', nwfilter, name='nwfilter'),
     url(r'^(?P<compute_id>[0-9]+)/secrets/$', secrets, name='secrets'),
     url(r'^(?P<compute_id>[0-9]+)/create/$', create_instance, name='create_instance'),
+    url(r'^(?P<compute_id>[0-9]+)/disk/(?P<disk>[\w\-\.\/]+)/buses$', get_compute_disk_buses, name='buses'),
 ]
