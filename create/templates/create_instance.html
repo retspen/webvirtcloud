@@ -248,33 +248,33 @@
                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
+                        <div class="col-sm-7">
+                            <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <input type="text" class="form-control" name="vcpu" value="1" maxlength="2" required pattern="[0-9]">
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <input type="checkbox" name="host_model" value="true" checked>
                         </div>
                         <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
                         </div>
                         <label class="col-sm-1 control-label">{% trans "MB" %}</label>
                     </div>
                     <div id="disk_list_div" class="form-group" hidden>
                         <label id="added_disks" class="col-sm-3 control-label">{% trans "Added Disks" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                          <ul id="img-list" class="form-row">
                               <!-- populated from javascript -->
                           </ul>
@@ -295,8 +295,8 @@
                                 {% endif %}
                             </select>
                         </div>
-                        <div class="col-sm-3">
-                            <select id="image-control" name="image-control" multiple="multiple">
+                        <div class="col-sm-4">
+                            <select id="image-control" class="form-control" name="image-control" multiple="multiple">
                                 <!-- populated from javascript -->
                             </select>
                         </div>
@@ -304,14 +304,14 @@
 
                     <div class="form-group meta-prealloc">
                         <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
                         </div>
                         <label class="col-lg-1 control-label">{% trans "Image" %}</label>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <select id="cache_mode" name="cache_mode" class="form-control">
                                 {% for mode, name in cache_modes %}
                                     <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
@@ -322,7 +322,7 @@
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Network" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <ul id="net-list">
                                 <!-- populated from javascript -->
                             </ul>
@@ -336,7 +336,7 @@
                     </div>
                      <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <select name="nwfilter" class="form-control">
                                 <option value="">{% trans "None" %}</option>
                                 {% for nwfilter in nwfilters %}
@@ -347,7 +347,7 @@
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Video" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <select name="video" class="form-control">
                                 {% if not videos %}
                                     <option value="vga">vga</option>
@@ -361,13 +361,13 @@
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <select name="listener_addr" class="form-control">
                                 {% for addr, label in listener_addr %}
                                     <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
@@ -377,7 +377,7 @@
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
-                        <div class="col-sm-6">
+                        <div class="col-sm-7">
                             <input type="checkbox" name="virtio" value="true" checked>
                         </div>
                     </div>
@@ -400,26 +400,26 @@
                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-                            <div class="col-sm-6">
-                                <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="14" required pattern="[a-zA-Z0-9\.\-_]+">
+                            <div class="col-sm-7">
+                                <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <input type="text" class="form-control" name="vcpu" value="1" maxlength="2" required pattern="[0-9]">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <input type="checkbox" name="host_model" value="true" checked>
                             </div>
                             <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <input type="text" class="form-control" name="memory" value="512" maxlength="5" required pattern="[0-9]+">
                             </div>
                             <label class="col-sm-1 control-label">{% trans "MB" %}</label>
@@ -440,7 +440,7 @@
                                     {% endif %}
                                 </select>
                             </div>
-                            <div class="col-sm-3">
+                            <div class="col-sm-4">
                                 <select id="template" class="form-control" name="template" disabled>
                                     <!-- populated from javascript -->
                                 </select>
@@ -448,14 +448,14 @@
                         </div>
                         <div class="form-group meta-prealloc">
                             <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
                             </div>
                             <label class="col-lg-1 control-label">{% trans "Image" %}</label>
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "HDD cache mode" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <select id="cache_mode" name="cache_mode" class="form-control">
                                     {% for mode, name in cache_modes %}
                                         <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
@@ -466,7 +466,7 @@
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Network" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <select name="networks" class="form-control">
                                     {% for network in networks %}
                                         <option value="{{ network }}">{{ network }}</option>
@@ -476,7 +476,7 @@
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "NWFilter" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <select name="nwfilter" class="form-control">
                                     <option value="">{% trans "None" %}</option>
                                     {% for nwfilter in nwfilters %}
@@ -486,14 +486,8 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" name="virtio" value="true" checked>
-                            </div>
-                        </div>
-                        <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Video" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <select name="video" class="form-control">
                                     {% if not videos %}
                                         <option value="vga">vga</option>
@@ -507,18 +501,24 @@
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Console Access" %}</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-7">
                                 <select name="listener_addr" class="form-control">
                                     {% for addr, label in listener_addr %}
                                         <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
                                     {% endfor %}
                                 </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
+                            <div class="col-sm-7">
+                                <input type="checkbox" name="virtio" value="true" checked>
                             </div>
                         </div>
 
@@ -581,6 +581,9 @@
             enableCaseInsensitiveFiltering: true,
             maxHeight: 400,
             inheritClass: true,
+            buttonWidth:function (options, select) {
+                return '100%';
+            },
             buttonText: function (options, select) {
                 return 'Add image...';
             },
@@ -596,9 +599,22 @@
                 if (input_value != '') {
                        $('#disk_list_div').show();
                        $.each(input_value.split(','), function (index, value) {
-                        var li = '<li>hdd' + counter +
+                            var li = '<li>hdd' + counter + ' - ' +
+                                '<select name="device' + counter + '" class="image-format" onchange="get_disk_bus_choices({{ compute_id }},' + counter + ', value);">' +
+                                    '{% for dev in disk_devices %}' +
+                                        '<option value=' + '"{{ dev }}">' + '{% trans dev %}</option>' +
+                                    '{% endfor %}' +
+                                '</select>' +
+                                '<select id="bus' + counter + '" name="bus' + counter + '" class="image-format">' +
+                                    '{% for bus in disk_buses %}' +
+                                        '<option value=' + '"{{ bus }}"' +
+                                            '{% if bus == default_bus %}selected{% endif %}>' +
+                                               '{% trans bus %}</option>' +
+                                    '{% endfor %}' +
+                                '</select>' +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)">x</a></li>';
+                                '<a class="btn-link pull-right" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a>' +
+                            '</li>';
                         selected_list_html += li;
                         counter++;
                     });
@@ -619,6 +635,9 @@
             buttonTitle: function (options, select) {
                 return '';
             },
+            buttonWidth:function (options, select) {
+                return '100%';
+            },
             onChange: function (element, checked) {
                 var input_value = toggleValue($('#networks').val(), element.val(), checked);
                 $('#networks').val(input_value);
@@ -628,7 +647,7 @@
                     $.each(input_value.split(','), function (index, value) {
                         var li = '<li>eth' + counter +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link" onclick="javascript:$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)">x</a></li>';
+                                '<a class="btn-link pull-right" onclick="javascript:$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></a></li>';
                         selected_list_html += li;
                         counter++;
                     });
@@ -638,13 +657,14 @@
         });
     });
 
+
+
     function get_cust_vols(compute_id, pool) {
         get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
         $.getJSON(get_vol_url, function (data) {
             $("#image-control").find('option').remove();
             $.each(data['vols'], function(i, item) {
                 $("#image-control").append('<option value=' + item +'>' + item + '</option>');
-
             });
             $('#image-control').multiselect('rebuild');
         });
@@ -659,6 +679,17 @@
             });
         });
         $("#template").removeAttr("disabled");
+    }
+
+     function get_disk_bus_choices(compute_id, dev_idx, disk_type){
+        get_diskBus_url = "/computes/" + compute_id + "/disk/" + disk_type + "/buses";
+
+        $.getJSON(get_diskBus_url, function (data) {
+            $("#bus" + dev_idx).find('option').remove();
+            $.each(data['bus'], function(i, item) {
+                $("#bus" + dev_idx).append('<option value=' + item +'>' + item + '</option>');
+            });
+        });
     }
 </script>
 
