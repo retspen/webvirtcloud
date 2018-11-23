@@ -298,6 +298,7 @@ class wvmInstance(wvmConnect):
                 if device == 'cdrom':
                     try:
                         dev = media.xpath('target/@dev')[0]
+                        bus = media.xpath('target/@bus')[0]
                         try:
                             src_fl = media.xpath('source/@file')[0]
                             vol = self.get_volume_by_path(src_fl)
@@ -310,7 +311,7 @@ class wvmInstance(wvmConnect):
                     except:
                         pass
                     finally:
-                        result.append({'dev': dev, 'image': volume, 'storage': storage, 'path': src_fl})
+                        result.append({'dev': dev, 'image': volume, 'storage': storage, 'path': src_fl, 'bus': bus})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)
@@ -364,7 +365,7 @@ class wvmInstance(wvmConnect):
             xmldom = ElementTree.tostring(tree)
         self._defineXML(xmldom)
 
-    def attach_disk(self, source, target, sourcetype='file', type='disk', driver='qemu', subdriver='raw', cache='none', targetbus='ide'):
+    def attach_disk(self, source, target, sourcetype='file', device='disk', driver='qemu', subdriver='raw', cache='none', targetbus='ide'):
         tree = ElementTree.fromstring(self._XMLDesc(0))
         xml_disk = """
         <disk type='%s' device='%s'>
@@ -372,7 +373,7 @@ class wvmInstance(wvmConnect):
           <source file='%s'/>
           <target dev='%s' bus='%s'/>
         </disk>
-        """ % (sourcetype, type, driver, subdriver, cache, source, target, targetbus)
+        """ % (sourcetype, device, driver, subdriver, cache, source, target, targetbus)
         if self.get_status() == 5:
             devices = tree.find('devices')
             elm_disk = ElementTree.fromstring(xml_disk)
@@ -380,19 +381,18 @@ class wvmInstance(wvmConnect):
             xmldom = ElementTree.tostring(tree)
             self._defineXML(xmldom)
 
-    def detach_disk(self, dev, image):
+    def detach_disk(self, dev):
         tree = ElementTree.fromstring(self._XMLDesc(0))
 
-        for disk in tree.findall("./devices/disk[@device='disk']"):
-            source = disk.find("source")
+        for disk in tree.findall("./devices/disk"):
             target = disk.find("target")
-            if source.get("file") == image and target.get("dev") == dev:
+            if target.get("dev") == dev:
                 devices = tree.find('devices')
                 devices.remove(disk)
 
                 if self.get_status() == 1:
                     xml_disk = ElementTree.tostring(disk)
-                    yyy = self.instance.detachDevice(xml_disk)
+                    ret = self.instance.detachDevice(xml_disk)
                     xmldom = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
                 if self.get_status() == 5:
                     xmldom = ElementTree.tostring(tree)
