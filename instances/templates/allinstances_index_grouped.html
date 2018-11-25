@@ -129,7 +129,7 @@ function hide_host_instances(host) {
 
     host_rows = rows.filter("[host='"+host+"']");
     host_rows.toggle();
-    $('span#collapse_host_instances_'+host).toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
+    $("span[id='collapse_host_instances_"+host+"']").toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
 }
 </script>
 {% endblock %}
