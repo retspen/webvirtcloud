@@ -154,7 +154,7 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(path)
         vol.delete()
 
-    def create_instance(self, name, memory, vcpu, host_model, uuid, images, cache_mode, networks, virtio, listen_addr, nwfilter=None, video="cirrus", console_pass="random", mac=None):
+    def create_instance(self, name, memory, vcpu, host_model, uuid, images, cache_mode, networks, virtio, listen_addr, nwfilter=None, video="cirrus", console_pass="random", mac=None, qemu_ga=False):
         """
         Create VM function
         """
@@ -260,11 +260,21 @@ class wvmCreate(wvmConnect):
         xml += """  <input type='mouse' bus='ps2'/>
                     <input type='tablet' bus='usb'/>
                     <graphics type='%s' port='-1' autoport='yes' %s listen='%s'/>
-                    <console type='pty'/>
-                    <video>
+                    <console type='pty'/> """ % (QEMU_CONSOLE_DEFAULT_TYPE, console_pass, listen_addr)
+
+        if qemu_ga:
+            xml += """ <channel type='unix'>
+                            <target type='virtio' name='org.qemu.guest_agent.0'/>
+                       </channel>"""
+
+        xml += """ <video>
                       <model type='%s'/>
-                    </video>
-                    <memballoon model='virtio'/>
-                  </devices>
-                </domain>""" % (QEMU_CONSOLE_DEFAULT_TYPE, console_pass, listen_addr, video)
+                   </video>
+                   <memballoon model='virtio'/>
+              </devices>
+            </domain>""" % video
+
+
+
+
         self._defineXML(xml)

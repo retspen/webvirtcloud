@@ -53,7 +53,6 @@ def create_instance(request, compute_id):
         disk_devices = conn.get_disk_device_types()
         disk_buses = conn.get_disk_bus_types()
         default_bus = INSTANCE_VOLUME_DEFAULT_BUS
-        #get_images = sorted(conn.get_storages_images())
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
@@ -173,7 +172,7 @@ def create_instance(request, compute_id):
                                 conn.create_instance(data['name'], data['memory'], data['vcpu'], data['host_model'],
                                                      uuid, volume_list, data['cache_mode'], data['networks'], data['virtio'],
                                                      data["listener_addr"], data["nwfilter"], data["video"], data["console_pass"],
-                                                     data['mac'])
+                                                     data['mac'], data['qemu_ga'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
                                 msg = _("Instance is created.")

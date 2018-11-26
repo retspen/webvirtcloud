@@ -46,6 +46,7 @@ class NewVMForm(forms.Form):
     hdd_size = forms.IntegerField(required=False)
     meta_prealloc = forms.BooleanField(required=False)
     virtio = forms.BooleanField(required=False)
+    qemu_ga = forms.BooleanField(required=False)
     mac = forms.CharField(required=False)
     console_pass = forms.CharField(required=False,empty_value="", widget=forms.PasswordInput())
     video = forms.CharField(error_messages={'required': _('Please select a graphic display')})
