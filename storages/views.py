@@ -205,12 +205,23 @@ def storage(request, compute_id, pool):
             else:
                 for msg_err in form.errors.values():
                     error_messages.append(msg_err.as_text())
-    if request.method == 'GET':
-        if 'get_volumes' in request.GET:
-            conn.close()
-            return HttpResponse(json.dumps(sorted(volumes)))
 
     conn.close()
 
     return render(request, 'storage.html', locals())
 
+
+@login_required
+def get_volumes(request, compute_id, pool):
+    data = {}
+    compute = get_object_or_404(Compute, pk=compute_id)
+    try:
+        conn = wvmStorage(compute.hostname,
+                          compute.login,
+                          compute.password,
+                          compute.type,
+                          pool)
+    except libvirtError as liberr:
+        pass
+    data['vols'] = sorted(conn.get_volumes())
+    return HttpResponse(json.dumps(data))

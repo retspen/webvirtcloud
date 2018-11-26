@@ -93,7 +93,7 @@ class wvmCreate(wvmConnect):
     def get_volume_type(self, path):
         vol = self.get_volume_by_path(path)
         vol_type = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        if vol_type == 'unknown':
+        if vol_type == 'unknown' or vol_type == 'iso':
             return 'raw'
         if vol_type:
             return vol_type
@@ -189,10 +189,17 @@ class wvmCreate(wvmConnect):
                   <on_crash>restart</on_crash>
                   <devices>"""
 
-        disk_letters = list(string.lowercase)
-        for image, img_type in images.items():
-            stg = self.get_storage_by_vol_path(image)
+        vd_disk_letters = list(string.lowercase)
+        fd_disk_letters = list(string.lowercase)
+        hd_disk_letters = list(string.lowercase)
+        sd_disk_letters = list(string.lowercase)
+        add_cd = True
+        #for image, img_type in images.items():
+        for volume in images:
+            stg = self.get_storage_by_vol_path(volume['path'])
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
+
+            if volume['device'] == 'cdrom': add_cd = False
 
             if stg_type == 'rbd':
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
@@ -201,7 +208,7 @@ class wvmCreate(wvmConnect):
                             <auth username='%s'>
                                 <secret type='ceph' uuid='%s'/>
                             </auth>
-                            <source protocol='rbd' name='%s'>""" % (img_type, cache_mode, ceph_user, secret_uuid, image)
+                            <source protocol='rbd' name='%s'>""" % (volume['type'], cache_mode, ceph_user, secret_uuid, volume['path'])
                 if isinstance(ceph_hosts, list):
                     for host in ceph_hosts:
                         if host.get('port'):
@@ -213,23 +220,26 @@ class wvmCreate(wvmConnect):
                 xml += """
                             </source>"""
             else:
-                xml += """<disk type='file' device='disk'>
+                xml += """<disk type='file' device='%s'>
                             <driver name='qemu' type='%s' cache='%s'/>
-                            <source file='%s'/>""" % (img_type, cache_mode, image)
+                            <source file='%s'/>""" % (volume['device'], volume['type'], cache_mode, volume['path'])
 
-            if virtio:
-                xml += """<target dev='vd%s' bus='virtio'/>""" % (disk_letters.pop(0),)
+            if volume['bus'] == 'virtio':
+                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), volume['bus'])
+            elif volume['bus'] == 'ide':
+                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), volume['bus'])
+            elif volume['bus'] == 'fdc':
+                xml += """<target dev='fd%s' bus='%s'/>""" % (fd_disk_letters.pop(0), volume['bus'])
             else:
-                xml += """<target dev='sd%s' bus='ide'/>""" % (disk_letters.pop(0),)
+                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), volume['bus'])
             xml += """</disk>"""
-
-        xml += """  <disk type='file' device='cdrom'>
-                      <driver name='qemu' type='raw'/>
-                      <source file=''/>
-                      <target dev='hda' bus='ide'/>
-                      <readonly/>
-                      <address type='drive' controller='0' bus='1' target='0' unit='1'/>
-                    </disk>"""
+        if add_cd:
+            xml += """  <disk type='file' device='cdrom'>
+                          <driver name='qemu' type='raw'/>
+                          <source file=''/>
+                          <target dev='hd%s' bus='ide'/>
+                          <readonly/>
+                        </disk>""" % (hd_disk_letters.pop(0),)
         for net in networks.split(','):
             xml += """<interface type='network'>"""
             if mac:

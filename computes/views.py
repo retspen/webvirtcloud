@@ -9,7 +9,7 @@ from instances.models import Instance
 from accounts.models import UserInstance
 from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHostForm, ComputeAddTlsForm, ComputeAddSocketForm
 from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager
+from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager, wvmConnect
 from libvirt import libvirtError
 
 
@@ -225,3 +225,32 @@ def compute_graph(request, compute_id):
     response.cookies['mem'] = datasets['mem']
     response.write(data)
     return response
+
+
+@login_required
+def get_compute_disk_buses(request, compute_id, disk):
+    data = {}
+    compute = get_object_or_404(Compute, pk=compute_id)
+    try:
+        conn = wvmConnect(compute.hostname,
+                          compute.login,
+                          compute.password,
+                          compute.type)
+
+        disk_device_types = conn.get_disk_device_types()
+        disk_bus_types = conn.get_disk_bus_types()
+
+        if disk in disk_device_types:
+            if disk == 'disk':
+                data['bus'] = sorted(disk_device_types)
+            elif disk == 'cdrom':
+                data['bus'] = ['ide', 'sata', 'scsi',]
+            elif disk == 'floppy':
+                data['bus'] = ['fdc',]
+            elif disk == 'lun':
+                data['bus'] = ['scsi',]
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))
+

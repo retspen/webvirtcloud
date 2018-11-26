@@ -12,7 +12,10 @@ from vrtManager import util
 from libvirt import libvirtError
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_CACHE
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_BUS
 from django.contrib import messages
+from logs.views import addlogmsg
+
 
 @login_required
 def create_instance(request, compute_id):
@@ -47,7 +50,10 @@ def create_instance(request, compute_id):
         default_cache = INSTANCE_VOLUME_DEFAULT_CACHE
         listener_addr = QEMU_CONSOLE_LISTEN_ADDRESSES
         mac_auto = util.randomMAC()
-        get_images = sorted(conn.get_storages_images())
+        disk_devices = conn.get_disk_device_types()
+        disk_buses = conn.get_disk_bus_types()
+        default_bus = INSTANCE_VOLUME_DEFAULT_BUS
+        #get_images = sorted(conn.get_storages_images())
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
@@ -91,7 +97,9 @@ def create_instance(request, compute_id):
                     except libvirtError as lib_err:
                         error_messages.append(lib_err.message)
             if 'create' in request.POST:
-                volumes = {}
+                volume_list = []
+
+                clone_path = ""
                 form = NewVMForm(request.POST)
                 if form.is_valid():
                     data = form.cleaned_data
@@ -112,7 +120,13 @@ def create_instance(request, compute_id):
                                 try:
                                     path = conn.create_volume(data['storage'], data['name'], data['hdd_size'],
                                                               metadata=meta_prealloc)
-                                    volumes[path] = conn.get_volume_type(path)
+                                    volume = dict()
+                                    volume['path'] = path
+                                    volume['type'] = conn.get_volume_type(path)
+                                    volume['device'] = 'disk'
+                                    volume['bus'] = 'virtio'
+                                    volume_list.append(volume)
+                                    #volumes[path] = conn.get_volume_type(path)
                                 except libvirtError as lib_err:
                                     error_messages.append(lib_err.message)
                         elif data['template']:
@@ -123,16 +137,31 @@ def create_instance(request, compute_id):
                                 error_messages.append(error_msg)
                             else:
                                 clone_path = conn.clone_from_template(data['name'], templ_path, metadata=meta_prealloc)
-                                volumes[clone_path] = conn.get_volume_type(clone_path)
+                                volume = dict()
+                                volume['path'] = clone_path
+                                volume['type'] = conn.get_volume_type(clone_path)
+                                volume['device'] = 'disk'
+                                volume['bus'] = 'virtio'
+                                volume_list.append(volume)
+                                #volumes[clone_path] = conn.get_volume_type(clone_path)
                         else:
                             if not data['images']:
                                 error_msg = _("First you need to create or select an image")
                                 error_messages.append(error_msg)
                             else:
-                                for vol in data['images'].split(','):
+                                for idx, vol in enumerate(data['images'].split(',')):
                                     try:
+
                                         path = conn.get_volume_path(vol)
-                                        volumes[path] = conn.get_volume_type(path)
+                                        volume = dict()
+                                        volume['path'] = path
+                                        volume['type'] = conn.get_volume_type(path)
+                                        volume['device'] = request.POST.get('device' + str(idx), '')
+                                        volume['bus'] = request.POST.get('bus' + str(idx), '')
+                                        volume_list.append(volume)
+
+                                        #volumes[path] = conn.get_volume_type(path)
+
                                     except libvirtError as lib_err:
                                         error_messages.append(lib_err.message)
                         if data['cache_mode'] not in conn.get_cache_modes():
@@ -142,17 +171,19 @@ def create_instance(request, compute_id):
                             uuid = util.randomUUID()
                             try:
                                 conn.create_instance(data['name'], data['memory'], data['vcpu'], data['host_model'],
-                                                     uuid, volumes, data['cache_mode'], data['networks'], data['virtio'],
+                                                     uuid, volume_list, data['cache_mode'], data['networks'], data['virtio'],
                                                      data["listener_addr"], data["nwfilter"], data["video"], data["console_pass"],
                                                      data['mac'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()
-                                messages.success(request, _("Instance is created."))
+                                msg = _("Instance is created.")
+                                messages.success(request, msg)
+                                addlogmsg(request.user.username, create_instance.name, msg)
                                 return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
-                                if data['hdd_size'] or volumes[clone_path]:
-                                    conn.delete_volume(volumes.keys()[0])
+                                if data['hdd_size'] or volume_list.count() > 0:
+                                    for vol in volume_list:
+                                        conn.delete_volume(vol['path'])
                                 error_messages.append(lib_err)
         conn.close()
-
     return render(request, 'create_instance.html', locals())

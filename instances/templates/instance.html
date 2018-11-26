@@ -72,7 +72,7 @@
                                         {% trans "Resize" %}
                                     </a>
                                 </li>
-                                {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                {% if allow_admin_or_not_template %}
                                     <li role="presentation">
                                         <a href="#snapshots" class="action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
                                             <span id="action-block" class="glyphicon glyphicon-camera" aria-hidden="true"></span>
@@ -416,7 +416,7 @@
                                                         {% ifequal status 5 %}
                                                             <button type="submit" class="btn btn-lg btn-success pull-right" name="resize">{% trans "Resize" %}</button>
                                                         {% else %}
-                                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                                            <button class="btn btn-lg btn-success pull-right disabled" name="resize">{% trans "Resize" %}</button>
                                                         {% endifequal %}
                                                     </form>
                                                 {% else %}
@@ -594,10 +594,30 @@
                                         <!-- Tab panes -->
                                         <div class="tab-content">
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="media">
+                                            {% if request.user.is_superuser and status == 5 %}
+                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                    <div class="form-group">
+                                                        <div class="col-sm-12">
+                                                            <button type="submit" name="add_cdrom" type="button" class="btn btn-success pull-right">
+                                                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            {% endif %}
                                                 {% for cd in media %}
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
-                                                            <label class="col-sm-2 control-label">{% trans "CDROM" %} {{ forloop.counter }}</label>
+                                                            <a class="col-sm-2 control-label"
+                                                                    name="details"
+                                                                    title="{% trans "Details" %}"
+                                                                    tabindex="0"
+                                                                    data-trigger="focus"
+                                                                    data-toggle="popover"
+                                                                    data-html="true"
+                                                                    data-content="<strong>Bus:</strong> {{ cd.bus }} <br/> <strong>Dev:</strong> {{ cd.dev }}">
+                                                                {% trans "CDROM" %} {{ forloop.counter }}
+                                                            </a>
                                                             {% if not cd.image %}
                                                                 <div class="col-sm-6">
                                                                     <select name="media" class="form-control">
@@ -611,19 +631,22 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-sm-2">
-                                                                    {% if media_iso and request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                                                    {% if media_iso and allow_admin_or_not_template %}
                                                                         <button type="submit" class="btn btn-sm btn-success pull-left" name="mount_iso" value="{{ cd.dev }}" style="margin-top: 2px;">{% trans "Mount" %}</button>
+                                                                        {% if status == 5 %}
+                                                                            <button type="submit" class="btn btn-sm btn-danger pull-left" name="detach_cdrom" value="{{ cd.dev }}" style="margin-top: 2px;"><i class="glyphicon glyphicon-remove-circle"></i></button>
+                                                                        {% endif %}
                                                                     {% else %}
-                                                                        <button class="btn btn-sm btn-success pull-left disabled" name="mount_iso" style="margin-top: 2px;">{% trans "Mount" %}</button>
+                                                                        <button class="btn btn-sm btn-success pull-left disabled" style="margin-top: 2px;">{% trans "Mount" %}</button>
                                                                     {% endif %}
                                                                 </div>
                                                             {% else %}
-                                                                <div class="col-sm-5">
-                                                                    <p>{{ cd.image }}</p>
+                                                                <div class="col-sm-6">
+                                                                    <input class="form-control" value="{{ cd.image }}" disabled/>
                                                                 </div>
                                                                 <div class="col-sm-2">
                                                                     <input type="hidden" name="path" value="{{ cd.path }}">
-                                                                    {% if request.user.is_superuser or request.user.is_staff or not userinstance.is_template %}
+                                                                    {% if allow_admin_or_not_template %}
                                                                         <button type="submit" class="btn btn-sm btn-success pull-left" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
                                                                     {% else %}
                                                                         <button class="btn btn-sm btn-success pull-left disabled" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
@@ -677,18 +700,20 @@
                                                                     <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
                                                                         <input type="hidden" name="path" value="{{ disk.path }}">
                                                                         <input type="hidden" name="dev" value="{{ disk.dev }}">
+                                                                        <input type="hidden" name="storage" value="{{ disk.storage }}">
+                                                                        <input type="hidden" name="name" value="{{ disk.image }}">
                                                                         {% ifequal status 5 %}
-                                                                            <button type="submit" class="btn btn-sm btn-default" name="detachvolume" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
                                                                                 <i class="fa fa-eject"></i>
                                                                             </button>
-                                                                            <button type="submit" class="btn btn-sm btn-default" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete volume?" %}')">
+                                                                            <button type="submit" class="btn btn-sm btn-default" name="delete_vol" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete volume?" %}')">
                                                                                 <i class="fa fa-trash"></i>
                                                                             </button>
                                                                         {% else %}
-                                                                            <button class="btn btn-sm btn-default disabled" name="detachvolume" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume after shutdown?" %}')">
+                                                                            <button class="btn btn-sm btn-default disabled" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume after shutdown?" %}')">
                                                                                 <i class="fa fa-eject"></i>
                                                                             </button>
-                                                                            <button class="btn btn-sm btn-default disabled" name="delvolume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete after shutdown?" %}')">
+                                                                            <button class="btn btn-sm btn-default disabled" name="delete_vol" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete after shutdown?" %}')">
                                                                                 <i class="fa fa-trash"></i>
                                                                             </button>
                                                                         {% endifequal %}
@@ -1243,13 +1268,20 @@
 {% block script %}
 <script src="{% static "js/ace.js" %}" type="text/javascript" charset="utf-8"></script>
 <script>
-    function get_volumes(comp_id, pool) {
-        vol_url = "/computes/" + comp_id + "/storage/" + pool + "/?get_volumes";
-        var select = document.getElementById("vols");
+    function get_volumes(compute_id, pool) {
 
-        while (select.options.length){
-            select.removeChild(select.options[0]);
-        }
+
+        get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
+        $.getJSON(get_vol_url, function (data) {
+            $("#vols").find('option').remove();
+            $("#vols").removeAttr("disabled");
+
+            $.each(data['vols'], function(i, item) {
+                $("#vols").append('<option value=' + item +'>' + item + '</option>');
+
+            });
+
+        });
 
         var sto_drop = document.getElementById('select_storage');
         sto_drop.value = pool;
@@ -1259,22 +1291,6 @@
         sto_input.value = pool;
         sto_input.innerHTML = pool;
 
-        $.getJSON(vol_url, function(data) {
-            if (data.length > 0) {
-                select.disabled = false;
-            }
-             var opt = document.createElement('option');
-             opt.value = '';
-             opt.innerHTML = 'None';
-             select.appendChild(opt);
-            for (i = 0; i < data.length; i++){
-                 var opt = document.createElement('option');
-                 opt.value = data[i]['name'];
-                 opt.innerHTML = data[i]['name'];
-                 select.appendChild(opt);
-            }
-
-        });
     }
 </script>
 
@@ -1419,6 +1435,13 @@
         guess_mac_address('#select_clone_name', 0);
     });
 {% endif %}
+</script>
+<script>
+$(document).ready(function(){
+    $('[data-toggle="popover"]').popover({
+        placement : 'top'
+    });
+});
 </script>
 <script>
     $(function () {
@@ -1640,12 +1663,5 @@
             $("#logs_table > tbody").html(logs);
         });
     }
-</script>
-    <script type="text/javascript">
-$(document).ready(function(){
-    $('[data-toggle="popover"]').popover({
-        placement : 'top'
-    });
-});
 </script>
 {% endblock %}
