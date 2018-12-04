@@ -17,7 +17,10 @@
             <td>
                 <span id="collapse_host_instances_{{ host.1 }}" class="glyphicon glyphicon-chevron-up" onclick="hide_host_instances('{{ host.1 }}');"></span>
             </td>
-            <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a></td>
+            <td>
+                <a href="{% url 'overview' host.0 %}">{{ host.1 }}</a>
+                <span id="inst_count_badge_{{ host.1 }}" class="badge hidden">{{ inst.items|length }}</span>
+            </td>
             <td></td>
             <td>
                 {% ifequal host.2 1 %}<span class="label label-success">{% trans "Active" %}</span>{% endifequal %}
@@ -129,13 +132,14 @@ function hide_all_host_instances() {
     all_host_rows = rows.filter('[host]');
     all_host_rows.toggle();
     $('span[id^=collapse_host_instances_]').toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
+    $('span[id^=inst_count_badge_]').toggleClass("hidden");
 }
 function hide_host_instances(host) {
     var rows = $('table tr');
-
     host_rows = rows.filter("[host='"+host+"']");
     host_rows.toggle();
     $("span[id='collapse_host_instances_"+host+"']").toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
+    $("span[id='inst_count_badge_"+host+"']").toggleClass("hidden");
 }
 </script>
 {% endblock %}
