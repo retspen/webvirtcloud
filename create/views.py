@@ -125,7 +125,6 @@ def create_instance(request, compute_id):
                                     volume['device'] = 'disk'
                                     volume['bus'] = 'virtio'
                                     volume_list.append(volume)
-                                    #volumes[path] = conn.get_volume_type(path)
                                 except libvirtError as lib_err:
                                     error_messages.append(lib_err.message)
                         elif data['template']:
@@ -142,7 +141,6 @@ def create_instance(request, compute_id):
                                 volume['device'] = 'disk'
                                 volume['bus'] = 'virtio'
                                 volume_list.append(volume)
-                                #volumes[clone_path] = conn.get_volume_type(clone_path)
                         else:
                             if not data['images']:
                                 error_msg = _("First you need to create or select an image")
@@ -158,9 +156,6 @@ def create_instance(request, compute_id):
                                         volume['device'] = request.POST.get('device' + str(idx), '')
                                         volume['bus'] = request.POST.get('bus' + str(idx), '')
                                         volume_list.append(volume)
-
-                                        #volumes[path] = conn.get_volume_type(path)
-
                                     except libvirtError as lib_err:
                                         error_messages.append(lib_err.message)
                         if data['cache_mode'] not in conn.get_cache_modes():
