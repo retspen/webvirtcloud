@@ -361,6 +361,24 @@ class wvmConnect(object):
         virttype = self.hypervisor_type()[arch][0]
         return self.wvm.getDomainCapabilities(emulatorbin, arch, machine, virttype)
 
+    def get_version(self):
+        ver = self.wvm.getVersion()
+        major = ver / 1000000
+        ver = ver % 1000000
+        minor = ver / 1000
+        ver = ver % 1000
+        release = ver
+        return "%s.%s.%s" % (major,minor,release)
+
+    def get_lib_version(self):
+        ver = self.wvm.getLibVersion()
+        major = ver / 1000000
+        ver %= 1000000
+        minor = ver / 1000
+        ver %= 1000
+        release = ver
+        return "%s.%s.%s" % (major,minor,release)
+
     def is_kvm_supported(self):
         """Return KVM capabilities."""
         return util.is_kvm_available(self.get_cap_xml())

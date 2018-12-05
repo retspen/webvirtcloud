@@ -157,6 +157,8 @@ def overview(request, compute_id):
         hypervisor = conn.hypervisor_type()
         mem_usage = conn.get_memory_usage()
         emulator = conn.get_emulator(host_arch)
+        version = conn.get_version()
+        lib_version = conn.get_lib_version()
         conn.close()
     except libvirtError as lib_err:
         error_messages.append(lib_err)
