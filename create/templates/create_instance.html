@@ -441,7 +441,7 @@
                             <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
                             <input id="images" name="images" type="hidden" value=""/>
                             <div class="col-sm-3">
-                                <select id="temp-storage-control" name="temp-storage-control" class="form-control" onchange="get_template_vols({{ compute_id }}, value);">
+                                <select id="storage" name="storage" class="form-control" onchange="get_template_vols({{ compute_id }}, value);">
                                     {% if storages %}
                                         <option value disabled selected>{% trans "Select pool" %}...</option>
                                         {% for storage in storages %}
