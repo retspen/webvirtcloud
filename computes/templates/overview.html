@@ -42,6 +42,7 @@
                     <p>{% trans "Hostname" %}</p>
                     <p>{% trans "Hypervisors" %}</p>
                     <p>{% trans "Emulator" %}</p>
+                    <p>{% trans "Version" %}</p>
                     <p>{% trans "Memory" %}</p>
                     <p>{% trans "Architecture" %}</p>
                     <p>{% trans "Logical CPUs" %}</p>
@@ -55,10 +56,17 @@
                           <span class="glyphicon glyphicon-chevron-right"></span>
                           <span class="label label-default">{{ arch }}</span>
                           {% for h in hpv %}
-                              <span class="label label-primary">{{ h }}</span>{% endfor %}
+                              <span class="label label-primary">{{ h }}</span>
+                          {% endfor %}
                         {% endfor %}
                     </p>
                     <p>{{ emulator }}</p>
+                    <p>
+                        <span class="label label-default">{% trans 'Qemu' %} </span>
+                        <span class="label label-primary">{{ version }}</span> &nbsp;
+                        <span class="label label-default">{% trans 'Libvirt' %} </span>
+                        <span class="label label-primary">{{ lib_version }}</span> &nbsp;
+                    </p>
                     <p>{{ host_memory|filesizeformat }}</p>
                     <p>{{ host_arch }}</p>
                     <p>{{ logical_cpu }}</p>

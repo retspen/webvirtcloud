@@ -197,12 +197,18 @@ def instance(request, compute_id, vname):
     def get_new_disk_dev(disks, bus):
         if bus == "virtio":
             dev_base = "vd"
+        elif bus == "ide":
+            dev_base = "hd"
+        elif bus == "fdc":
+            dev_base = "fd"
         else:
             dev_base = "sd"
-        existing_devs = [disk['dev'] for disk in disks]
+        existing_disk_devs = [disk['dev'] for disk in disks]
+        # cd-rom bus could be virtio/sata, because of that we should check it also
+        existing_media_devs = [disk['dev'] for disk in media]
         for l in string.lowercase:
             dev = dev_base + l
-            if dev not in existing_devs:
+            if dev not in existing_disk_devs and dev not in existing_media_devs:
                 return dev
         raise Exception(_('None available device name'))
 
@@ -265,7 +271,7 @@ def instance(request, compute_id, vname):
         networks = conn.get_net_device()
 
         vcpu_range = conn.get_max_cpus()
-        memory_range = [256, 512, 768, 1024, 2048, 4096, 6144, 8192, 16384]
+        memory_range = [256, 512, 768, 1024, 2048, 3072, 4096, 6144, 8192, 16384]
         if memory not in memory_range:
             insort(memory_range, memory)
         if cur_memory not in memory_range:
@@ -290,7 +296,7 @@ def instance(request, compute_id, vname):
         default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
         formats = conn.get_image_formats()
 
-        busses = conn.get_busses()
+        busses = conn.get_disk_bus_types()
         default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
         show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
@@ -310,6 +316,7 @@ def instance(request, compute_id, vname):
             addlogmsg(request.user.username, instance.name, msg)
 
         userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
+        allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
@@ -444,7 +451,7 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'addnewvol' in request.POST and (request.user.is_superuser or userinstance.is_change):
+            if 'add_new_vol' in request.POST and allow_admin_or_not_template:
                 connCreate = wvmCreate(compute.hostname,
                                        compute.login,
                                        compute.password,
@@ -460,11 +467,11 @@ def instance(request, compute_id, vname):
 
                 path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
-                msg = _('Attach new disk')
+                msg = _('Attach new disk: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'addexistingvol' in request.POST and (request.user.is_superuser or userinstance.is_change):
+            if 'add_existing_vol' in request.POST and allow_admin_or_not_template:
                 storage = request.POST.get('selected_storage', '')
                 name = request.POST.get('vols', '')
                 bus = request.POST.get('bus', default_bus)
@@ -482,68 +489,83 @@ def instance(request, compute_id, vname):
                 source = path + "/" + name;
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
-                msg = _('Attach Existing disk')
+                msg = _('Attach Existing disk: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'delvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
-                connDelete = wvmCreate(compute.hostname,
-                                       compute.login,
-                                       compute.password,
-                                       compute.type)
+            if 'delete_vol' in request.POST and allow_admin_or_not_template:
+                storage = request.POST.get('storage', '')
+                connDelete = wvmStorage(compute.hostname,
+                                        compute.login,
+                                        compute.password,
+                                        compute.type,
+                                        storage)
                 dev = request.POST.get('dev', '')
                 path = request.POST.get('path', '')
+                name = request.POST.get('name', '')
 
-                conn.detach_disk(dev, path)
-                connDelete.delete_volume(path)
+                conn.detach_disk(dev)
+                connDelete.del_volume(name)
 
-                msg = _('Delete disk')
+                msg = _('Delete disk: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'detachvolume' in request.POST and (request.user.is_superuser or userinstance.is_change):
-                connDelete = wvmCreate(compute.hostname,
-                                       compute.login,
-                                       compute.password,
-                                       compute.type)
-                dev = request.POST.get('dev', '')
+            if 'detach_vol' in request.POST and allow_admin_or_not_template:
+                dev = request.POST.get('detach_vol', '')
                 path = request.POST.get('path', '')
-                conn.detach_disk(dev, path)
-                msg = _('Detach disk')
+                conn.detach_disk(dev)
+                msg = _('Detach disk: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
-            if 'umount_iso' in request.POST and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'add_cdrom' in request.POST and allow_admin_or_not_template:
+                bus = request.POST.get('bus', 'ide')
+                target = get_new_disk_dev(media, bus)
+                conn.attach_disk("", target, device='cdrom', cache='none', targetbus=bus)
+                msg = _('Add CD-Rom: ' + target)
+                addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#media')
+
+            if 'detach_cdrom' in request.POST and allow_admin_or_not_template:
+                dev = request.POST.get('detach_cdrom', '')
+                path = request.POST.get('path', '')
+                conn.detach_disk(dev)
+                msg = _('Detach CD-Rom: ' + dev)
+                addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#media')
+
+            if 'umount_iso' in request.POST and allow_admin_or_not_template:
                 image = request.POST.get('path', '')
                 dev = request.POST.get('umount_iso', '')
                 conn.umount_iso(dev, image)
-                msg = _("Mount media")
+                msg = _("Mount media: " + dev)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#media')
 
-            if 'mount_iso' in request.POST  and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'mount_iso' in request.POST and allow_admin_or_not_template:
                 image = request.POST.get('media', '')
                 dev = request.POST.get('mount_iso', '')
                 conn.mount_iso(dev, image)
-                msg = _("Umount media")
+                msg = _("Umount media: " + dev)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#media')
 
-            if 'snapshot' in request.POST  and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'snapshot' in request.POST and allow_admin_or_not_template:
                 name = request.POST.get('name', '')
                 conn.create_snapshot(name)
-                msg = _("New snapshot")
+                msg = _("New snapshot :" + name)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
-            if 'delete_snapshot' in request.POST and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'delete_snapshot' in request.POST and allow_admin_or_not_template:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
-                msg = _("Delete snapshot")
+                msg = _("Delete snapshot :" + snap_name)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
-            if 'revert_snapshot' in request.POST and (request.user.is_superuser or request.user.is_staff or not userinstance.is_template):
+            if 'revert_snapshot' in request.POST and allow_admin_or_not_template:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_revert(snap_name)
                 msg = _("Successful revert snapshot: ")

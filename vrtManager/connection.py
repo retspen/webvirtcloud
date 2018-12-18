@@ -361,6 +361,24 @@ class wvmConnect(object):
         virttype = self.hypervisor_type()[arch][0]
         return self.wvm.getDomainCapabilities(emulatorbin, arch, machine, virttype)
 
+    def get_version(self):
+        ver = self.wvm.getVersion()
+        major = ver / 1000000
+        ver = ver % 1000000
+        minor = ver / 1000
+        ver = ver % 1000
+        release = ver
+        return "%s.%s.%s" % (major,minor,release)
+
+    def get_lib_version(self):
+        ver = self.wvm.getLibVersion()
+        major = ver / 1000000
+        ver %= 1000000
+        minor = ver / 1000
+        ver %= 1000
+        release = ver
+        return "%s.%s.%s" % (major,minor,release)
+
     def is_kvm_supported(self):
         """Return KVM capabilities."""
         return util.is_kvm_available(self.get_cap_xml())
@@ -436,8 +454,8 @@ class wvmConnect(object):
         """ Return machine type of emulation"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch[@name='{}']/machine".format(arch))
 
-    def get_busses(self):
-        """Get available busses"""
+    def get_disk_bus_types(self):
+        """Get available disk bus types list"""
 
         def get_bus_list(ctx):
             result = []
@@ -449,6 +467,18 @@ class wvmConnect(object):
         # return [ 'ide', 'scsi', 'usb', 'virtio' ]
         return util.get_xml_path(self.get_dom_cap_xml(), func=get_bus_list)
 
+    def get_disk_device_types(self):
+        """Get available disk device type list"""
+
+        def get_device_list(ctx):
+            result = []
+            for disk_enum in ctx.xpath('/domainCapabilities/devices/disk/enum'):
+                if disk_enum.xpath("@name")[0] == "diskDevice":
+                    for values in disk_enum: result.append(values.text)
+            return result
+
+        # return [ 'disk', 'cdrom', 'floppy', 'lun' ]
+        return util.get_xml_path(self.get_dom_cap_xml(), func=get_device_list)
 
     def get_image_formats(self):
         """Get available image formats"""
