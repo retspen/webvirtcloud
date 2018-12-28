@@ -100,8 +100,11 @@ class wvmCreate(wvmConnect):
         else:
             return 'raw'
 
-    def get_volume_path(self, volume):
-        storages = self.get_storages(only_actives=True)
+    def get_volume_path(self, volume, pool=None):
+        if not pool:
+            storages = self.get_storages(only_actives=True)
+        else:
+            storages = [pool,]
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:

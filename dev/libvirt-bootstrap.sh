@@ -590,15 +590,23 @@ daemons_running_opensuse() {
 #
 install_ubuntu() {
     apt-get update || return 1
-    apt-get -y install kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
+    if [ $DISTRO_MAJOR_VERSION -lt 18 ]; then
+       apt-get -y install kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
+    else
+       apt install -y qemu-kvm libvirt-bin bridge-utils virt-manager sasl2-bin python-guestfs supervisor || return 1
+    fi
+
+
     return 0
 }
 
 install_ubuntu_post() {
     if [ -f /etc/default/libvirt-bin ]; then
         sed -i 's/libvirtd_opts="-d"/libvirtd_opts="-d -l"/g' /etc/default/libvirt-bin
+    elif [ -f /etc/default/libvirtd ]; then
+        sed -i 's/libvirtd_opts="-d"/libvirtd_opts="-d -l"/g' /etc/default/libvirtd
     else
-        echoerror "/etc/default/libvirt-bin not found. Exiting..."
+        echoerror "/etc/default/libvirt-bin or /etc/default/libvirtd not found. Exiting..."
         exit 1
     fi
     if [ -f /etc/libvirt/libvirtd.conf ]; then

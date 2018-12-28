@@ -221,6 +221,7 @@ def get_volumes(request, compute_id, pool):
                           compute.password,
                           compute.type,
                           pool)
+        conn.refresh()
     except libvirtError as liberr:
         pass
     data['vols'] = sorted(conn.get_volumes())
