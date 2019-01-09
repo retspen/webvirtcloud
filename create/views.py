@@ -134,7 +134,7 @@ def create_instance(request, compute_id):
                                 error_msg = _("Image has already exist. Please check volumes or change instance name")
                                 error_messages.append(error_msg)
                             else:
-                                clone_path = conn.clone_from_template(data['name'], templ_path, metadata=meta_prealloc)
+                                clone_path = conn.clone_from_template(data['name'], templ_path, data['storage'], metadata=meta_prealloc)
                                 volume = dict()
                                 volume['path'] = clone_path
                                 volume['type'] = conn.get_volume_type(clone_path)
