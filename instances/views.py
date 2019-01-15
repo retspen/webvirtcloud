@@ -255,6 +255,8 @@ def instance(request, compute_id, vname):
         compute_nwfilters = conn.get_nwfilters()
         status = conn.get_status()
         autostart = conn.get_autostart()
+        bootmenu = conn.get_bootmenu()
+        boot_order = conn.get_bootorder()
         vcpu = conn.get_vcpu()
         cur_vcpu = conn.get_cur_vcpu()
         uuid = conn.get_uuid()
@@ -525,7 +527,7 @@ def instance(request, compute_id, vname):
                 conn.attach_disk("", target, device='cdrom', cache='none', targetbus=bus)
                 msg = _('Add CD-Rom: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#media')
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'detach_cdrom' in request.POST and allow_admin_or_not_template:
                 dev = request.POST.get('detach_cdrom', '')
@@ -533,7 +535,7 @@ def instance(request, compute_id, vname):
                 conn.detach_disk(dev)
                 msg = _('Detach CD-Rom: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#media')
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'umount_iso' in request.POST and allow_admin_or_not_template:
                 image = request.POST.get('path', '')
@@ -541,7 +543,7 @@ def instance(request, compute_id, vname):
                 conn.umount_iso(dev, image)
                 msg = _("Mount media: " + dev)
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#media')
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'mount_iso' in request.POST and allow_admin_or_not_template:
                 image = request.POST.get('media', '')
@@ -549,7 +551,7 @@ def instance(request, compute_id, vname):
                 conn.mount_iso(dev, image)
                 msg = _("Umount media: " + dev)
                 addlogmsg(request.user.username, instance.name, msg)
-                return HttpResponseRedirect(request.get_full_path() + '#media')
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'snapshot' in request.POST and allow_admin_or_not_template:
                 name = request.POST.get('name', '')
@@ -591,13 +593,37 @@ def instance(request, compute_id, vname):
                     conn.set_autostart(1)
                     msg = _("Set autostart")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#autostart')
+                    return HttpResponseRedirect(request.get_full_path() + '#boot_opt')
 
                 if 'unset_autostart' in request.POST:
                     conn.set_autostart(0)
                     msg = _("Unset autostart")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#autostart')
+                    return HttpResponseRedirect(request.get_full_path() + '#boot_opt')
+
+                if 'set_bootmenu' in request.POST:
+                    conn.set_bootmenu(1)
+                    msg = _("Enable boot menu")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#boot_opt')
+
+                if 'unset_bootmenu' in request.POST:
+                    conn.set_bootmenu(0)
+                    msg = _("Disable boot menu")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#boot_opt')
+
+                if 'set_bootorder' in request.POST:
+                    bootorder = request.POST.get('bootorder', '')
+                    if bootorder:
+                        order_list = {}
+                        for idx, val in enumerate(bootorder.split(',')):
+                            type, dev = val.split(':', 1)
+                            order_list[idx] = {"type": type, "dev": dev}
+                        conn.set_bootorder(order_list)
+                        msg = _("Set boot order")
+                        addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#boot_opt')
 
                 if 'change_xml' in request.POST:
                     exit_xml = request.POST.get('inst_xml', '')

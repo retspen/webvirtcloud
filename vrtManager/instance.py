@@ -248,7 +248,7 @@ class wvmInstance(wvmConnect):
         def disks(doc):
             result = []
             dev = volume = storage = src_file = None
-            disk_format = used_size = disk_size = None
+            disk_format = used_size = disk_size = disk_cache = None
             
             for disk in doc.xpath('/domain/devices/disk'):
                 device = disk.xpath('@device')[0]
@@ -259,6 +259,9 @@ class wvmInstance(wvmConnect):
                         src_file = disk.xpath('source/@file|source/@dev|source/@name|source/@volume')[0]
                         try:
                             disk_format = disk.xpath('driver/@type')[0]
+                        except:
+                            pass
+                        try:
                             disk_cache = disk.xpath('driver/@cache')[0]
                         except:
                             pass
@@ -309,6 +312,121 @@ class wvmInstance(wvmConnect):
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)
+
+    def get_bootmenu(self):
+        menu = util.get_xml_path(self._XMLDesc(0), "/domain/os/bootmenu/@enable")
+        return True if menu == 'yes' else False
+
+    def set_bootmenu(self, flag):
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+        os = tree.find('os')
+        menu = os.find("bootmenu")
+
+        if menu == None:
+            bootmenu = ElementTree.fromstring("<bootmenu enable='yes'/>")
+            os.append(bootmenu)
+            menu = os.find("bootmenu")
+
+        if flag == 0:  # Disable
+            menu.attrib['enable'] = 'no'
+        elif flag == 1:  # Enable
+            menu.attrib['enable'] = 'yes'
+        elif flag == -1:  # Remove
+            os.remove(menu)
+        else:
+            raise Exception('Unknown boot menu option, please choose one of 0:disable, 1:enable, -1:remove')
+
+        xmldom = ElementTree.tostring(tree)
+        self._defineXML(xmldom)
+
+    def get_bootorder(self):
+        boot_order = {}
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+        os = tree.find('os')
+        boot = os.findall('boot')
+
+        for idx, b in enumerate(boot):
+            dev = b.get('dev')
+            if dev == 'hd':
+                target = "disk"
+                type = "file"
+            elif dev == 'fd':
+                target = "floppy"
+                type = "file"
+            elif dev == 'cdrom':
+                target = "cdrom"
+                type = "file"
+            elif dev == 'network':
+                target = "network"
+                type = "network"
+            boot_order[idx] = {"type": type, "dev": dev, "target": target}
+
+        devices = tree.find('devices')
+        for dev in devices:
+            dev_target = dev_type = dev_device = dev_alias = None
+            boot_dev = dev.find('boot')
+            if boot_dev != None:
+                idx = boot_dev.get('order')
+                dev_type = dev.get('type')
+                dev_device = dev.get('device')
+
+                if dev_type == 'file':
+                    dev_target = dev.find('target').get('dev')
+
+                elif dev_type == 'network':
+                    dev_mac = dev.find('mac').get('address')
+                    dev_device = "network"
+                    dev_target = "nic-{}".format(dev_mac[9:])
+                elif dev_type == 'usb':
+                    pass
+
+                boot_order[int(idx)-1] = {"type": dev_type, "dev": dev_device, "target": dev_target}
+
+        return boot_order
+
+    def set_bootorder(self, devorder):
+        if not devorder:
+            return
+
+        def remove_bootorder():
+            tree = ElementTree.fromstring(self._XMLDesc(0))
+            os = tree.find('os')
+            boot = os.findall('boot')
+            # Remove old style boot order
+            for b in boot:
+                os.remove(b)
+            # Remove rest of them
+            for dev in tree.find('devices'):
+                boot_dev = dev.find('boot')
+                if boot_dev != None:
+                    dev.remove(boot_dev)
+            return tree
+
+        tree = remove_bootorder()
+
+        for idx, dev in devorder.items():
+            order = ElementTree.fromstring("<boot order='{}'/>".format(idx + 1))
+            if dev['type'] == 'disk':
+                devices = tree.findall("./devices/disk[@device='disk']")
+                for d in devices:
+                    device = d.find("./target[@dev='{}']".format(dev['dev']))
+                    if device != None:
+                        d.append(order)
+            elif dev['type'] == 'cdrom':
+                devices = tree.findall("./devices/disk[@device='cdrom']")
+                for d in devices:
+                    device = d.find("./target[@dev='{}']".format(dev['dev']))
+                    if device != None:
+                        d.append(order)
+            elif dev['type'] == 'network':
+                devices = tree.findall("./devices/interface[@type='network']")
+                for d in devices:
+                    device = d.find("mac[@address='{}']".format(dev['dev']))
+                    if device != None:
+                        d.append(order)
+            else:
+                raise Exception('Invalid Device Type for boot order')
+        self._defineXML(ElementTree.tostring(tree))
 
     def mount_iso(self, dev, image):
         def attach_iso(dev, disk, vol):
