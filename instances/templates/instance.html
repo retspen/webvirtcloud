@@ -40,7 +40,7 @@
                         </div>
                     </div>
                     {% if user_quota_msg %}
-                        <span class="label label-warning">{{ user_quota_msg|capfirst }} quota reached.</span>
+                        <span class="label label-warning">{{ user_quota_msg|capfirst }} {% trans "quota reached" %}.</span>
                     {% endif %}
                     <hr>
                 </div>
@@ -187,23 +187,18 @@
                                                 {% endif %}
                                             {% endifequal %}
                                             {% ifequal status 3 %}
-                                                {% if request.user.is_superuser %}
-                                                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                                                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                                                <form action="" method="post" role="form">{% csrf_token %}
+                                                    {% if request.user.is_superuser %}
                                                         <p>{% trans "This action restore the instance after suspend." %}</p>
-                                                         <form action="" method="post" role="form">{% csrf_token %}
-                                                            <input type="submit" name="resume" class="btn btn-lg btn-success pull-right" value="{% trans "Resume" %}">
-                                                            <div class="clearfix"></div>
-                                                        </form>
-                                                    </div>
-                                                {% else %}
-                                                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                                                        <input type="submit" name="resume" class="btn btn-lg btn-success pull-right" value="{% trans "Resume" %}">
+                                                    {% else %}
                                                         <p>{% trans "Administrator blocked your instance." %}</p>
-                                                         <form action="" method="post" role="form">{% csrf_token %}
-                                                            <button class="btn btn-lg btn-success disabled pull-right">{% trans "Resume" %}</button>
-                                                            <div class="clearfix"></div>
-                                                        </form>
-                                                    </div>
-                                                {% endif %}
+                                                        <button class="btn btn-lg btn-success disabled pull-right">{% trans "Resume" %}</button>
+                                                    {% endif %}
+                                                     <div class="clearfix"></div>
+                                                </form>
+                                                </div>
                                             {% endifequal %}
                                             {% ifequal status 5 %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
@@ -270,7 +265,6 @@
                                                             <li><a href="#" title="Console port: {{ console_port }}" onclick="open_console('full')">{% trans "Console - Full" %}</a></li>
                                                         </ul>
                                                     </div>
-
                                                 {% else %}
                                                     <button class="btn btn-lg btn-success pull-right disabled">{% trans "Console" %}</button>
                                                 {% endifequal %}
@@ -350,7 +344,7 @@
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
                                                 {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                        <p style="font-weight:bold;">{% trans "Logical host CPUs:" %} {{ vcpu_host }}</p>
+                                                        <p style="font-weight:bold;">{% trans "Logical host CPUs" %} : {{ vcpu_host }}</p>
                                                         <div class="form-group">
                                                             <label class="col-sm-4 control-label" style="font-weight:normal;"> {% trans "Current allocation" %}</label>
                                                             <div class="col-sm-4">
@@ -381,8 +375,7 @@
                                                             <div class="col-sm-4 js-custom__container">
                                                                 <select name="cur_memory" class="form-control js-custom__toggle">
                                                                     {% for mem in memory_range %}
-                                                                        <option value="{{ mem }}"
-                                                                                {% if mem == cur_memory %}selected{% endif %}>{{ mem }}</option>
+                                                                        <option value="{{ mem }}" {% if mem == cur_memory %}selected{% endif %}>{{ mem }}</option>
                                                                     {% endfor %}
                                                                 </select>
                                                                 <input type="text" name="cur_memory_custom" class="form-control js-custom__toggle" style="display: none" />
@@ -392,7 +385,6 @@
                                                         <div class="form-group">
                                                             <label class="col-sm-4 control-label"
                                                                    style="font-weight:normal;">{% trans "Maximum allocation" %} ({% trans "MB" %})</label>
-
                                                             <div class="col-sm-4 js-custom__container">
                                                                 <select name="memory" class="form-control js-custom__toggle">
                                                                     {% for mem in memory_range %}
@@ -425,7 +417,6 @@
                                                 {% endif %}
                                                 <div class="clearfix"></div>
                                             </div>
-                                            
                                         </div>
                                     </div>
                                 </div>
@@ -473,11 +464,11 @@
                                                         <div class="table-responsive">
                                                             <table class="table">
                                                                 <thead>
-                                                                <tr>
-                                                                    <th>{% trans "Name" %}</th>
-                                                                    <th>{% trans "Date" %}</th>
-                                                                    <th colspan="2">{% trans "Action" %}</th>
-                                                                </tr>
+                                                                    <tr>
+                                                                        <th>{% trans "Name" %}</th>
+                                                                        <th>{% trans "Date" %}</th>
+                                                                        <th colspan="2">{% trans "Action" %}</th>
+                                                                    </tr>
                                                                 </thead>
                                                                 <tbody>
                                                                 {% for snap in snapshots %}
@@ -602,7 +593,6 @@
                                                             </div>
                                                         </div>
                                                     </form>
-
                                                     <p style="font-weight:bold;">{% trans 'Boot Order' %}</p>
                                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                         <div class="form-group">
@@ -610,9 +600,9 @@
                                                             {% ifequal status 5 %}
                                                                 <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
                                                                 {% ifequal bootmenu 0 %}
-                                                                    <input type="submit" class="btn btn-success" name="set_bootmenu" value="{% trans "Enable" %}">
+                                                                    <input type="submit" class="btn btn-success" name="set_bootmenu" title="Show boot menu" value="{% trans "Enable" %}">
                                                                 {% else %}
-                                                                    <input type="submit" class="btn btn-danger" name="unset_bootmenu" value="{% trans "Disable" %}">
+                                                                    <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="Hide boot menu" value="{% trans "Disable" %}">
                                                                 {% endifequal %}
                                                             {% else %}
                                                                 <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}
@@ -647,10 +637,10 @@
                                                                 </div>
                                                                 <div class="col-sm-3">
                                                                     <div class="row" style="margin-top: 2em;">
-                                                                        <a href="#" id="boot_order_up" class="btn btn-default"><span class="glyphicon glyphicon-arrow-up" title="up"></span></a>
+                                                                        <a href="#" id="boot_order_up" class="btn btn-default"><span class="glyphicon glyphicon-arrow-up" title="up: move selected devices"></span></a>
                                                                     </div>
                                                                     <div class="row" style="margin-top: 1em;">
-                                                                        <a href="#" id="boot_order_down" class="btn btn-default"><span class="glyphicon glyphicon-arrow-down" title="down"></span></a>
+                                                                        <a href="#" id="boot_order_down" class="btn btn-default"><span class="glyphicon glyphicon-arrow-down" title="down: move selected devices"></span></a>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -661,7 +651,6 @@
                                                     {% endifequal %}
                                                     <div class="clearfix"></div>
                                                 </div>
-
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
                                                     {% if status == 5 %}
                                                         <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
@@ -703,7 +692,7 @@
                                                                         {% if media_iso and allow_admin_or_not_template %}
                                                                             <button type="submit" class="btn btn-sm btn-success pull-left" name="mount_iso" value="{{ cd.dev }}" style="margin-top: 2px;">{% trans "Mount" %}</button>
                                                                             {% if status == 5 %}
-                                                                                <button type="submit" class="btn btn-sm btn-danger pull-left" name="detach_cdrom" value="{{ cd.dev }}" style="margin-top: 2px;"><i class="glyphicon glyphicon-remove-circle"></i></button>
+                                                                                <button type="submit" class="btn btn-sm btn-danger pull-left" title="Detach CD-Rom (remove device)" name="detach_cdrom" value="{{ cd.dev }}" style="margin-top: 2px;"><i class="glyphicon glyphicon-remove-circle"></i></button>
                                                                             {% endif %}
                                                                         {% else %}
                                                                             <button class="btn btn-sm btn-success pull-left disabled" style="margin-top: 2px;">{% trans "Mount" %}</button>
@@ -1505,8 +1494,6 @@ $(document).ready(function () {
                 // Highlight pre-selected checkboxes
                 if (checkbox.prop("checked"))
                     checkbox.parent().addClass("multiselect-on");
-
-
                 // Highlight checkboxes that the user selects
                 checkbox.click(function() {
                     if (checkbox.prop("checked"))
@@ -1550,7 +1537,6 @@ $(document).ready(function () {
     });
 
 });
-
 </script>
 <script>
     $(function () {
