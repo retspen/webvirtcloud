@@ -177,7 +177,7 @@ def compute_graph(request, compute_id):
     datasets = {}
     cookies = {}
     compute = get_object_or_404(Compute, pk=compute_id)
-    curent_time = time.strftime("%H:%M:%S")
+    current_time = time.strftime("%H:%M:%S")
 
     try:
         conn = wvmHostDetails(compute.hostname,
@@ -208,7 +208,7 @@ def compute_graph(request, compute_id):
         datasets['mem'] = eval(cookies['mem'])
         datasets['timer'] = eval(cookies['timer'])
 
-    datasets['timer'].append(curent_time)
+    datasets['timer'].append(current_time)
     datasets['cpu'].append(int(cpu_usage['usage']))
     datasets['mem'].append(int(mem_usage['usage']) / 1048576)
 

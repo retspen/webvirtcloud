@@ -691,11 +691,11 @@
                                                                     <div class="col-sm-2">
                                                                         {% if media_iso and allow_admin_or_not_template %}
                                                                             <button type="submit" class="btn btn-sm btn-success pull-left" name="mount_iso" value="{{ cd.dev }}" style="margin-top: 2px;">{% trans "Mount" %}</button>
-                                                                            {% if status == 5 %}
-                                                                                <button type="submit" class="btn btn-sm btn-danger pull-left" title="Detach CD-Rom (remove device)" name="detach_cdrom" value="{{ cd.dev }}" style="margin-top: 2px;"><i class="glyphicon glyphicon-remove-circle"></i></button>
-                                                                            {% endif %}
                                                                         {% else %}
                                                                             <button class="btn btn-sm btn-success pull-left disabled" style="margin-top: 2px;">{% trans "Mount" %}</button>
+                                                                        {% endif %}
+                                                                        {% if status == 5 and allow_admin_or_not_template %}
+                                                                            <button type="submit" class="btn btn-sm btn-danger pull-left" title="Detach CD-Rom (remove device)" name="detach_cdrom" value="{{ cd.dev }}" style="margin-top: 2px;"><i class="glyphicon glyphicon-remove-circle"></i></button>
                                                                         {% endif %}
                                                                     </div>
                                                                 {% else %}

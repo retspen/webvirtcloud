@@ -52,16 +52,16 @@ def allinstances(request):
     else:
         for comp in computes:
             try:
-                all_host_vms.update(get_host_instances(request,comp))
+                all_host_vms.update(get_host_instances(request, comp))
             except libvirtError as lib_err:
                 error_messages.append(lib_err)
 
     if request.method == 'POST':
         try:
-            instances_actions(request)
+            return instances_actions(request)
         except libvirtError as lib_err:
             error_messages.append(lib_err)
-            addlogmsg(request.user.username, instance.name, lib_err.message)
+            addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err.message)
 
     view_style = settings.VIEW_INSTANCES_LIST_STYLE
 
@@ -88,10 +88,10 @@ def instances(request, compute_id):
 
     if request.method == 'POST':
         try:
-            instances_actions(request)
+            return instances_actions(request)
         except libvirtError as lib_err:
             error_messages.append(lib_err)
-            addlogmsg(request.user.username, instance.name, lib_err.message)
+            addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err.message)
 
     return render(request, 'instances.html', locals())
 
@@ -828,7 +828,6 @@ def instance(request, compute_id, vname):
                     msg = _("Edit options")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#options')
-
         conn.close()
 
     except libvirtError as lib_err:
@@ -863,7 +862,7 @@ def inst_status(request, compute_id, vname):
     return response
 
 
-def get_host_instances(request,comp):
+def get_host_instances(request, comp):
 
     def refresh_instance_database(comp, inst_name, info):
         def get_userinstances_info(instance):
@@ -909,7 +908,6 @@ def get_host_instances(request,comp):
     status = connection_manager.host_is_up(comp.type, comp.hostname)
 
     if status:
-
         conn = wvmHostDetails(comp, comp.login, comp.password, comp.type)
         comp_node_info = conn.get_node_info()
         comp_mem = conn.get_memory_usage()
@@ -932,6 +930,7 @@ def get_host_instances(request,comp):
         conn.close()
 
     return all_host_vms
+
 
 def get_user_instances(request):
     all_user_vms = {}
@@ -1001,7 +1000,6 @@ def instances_actions(request):
         return response
 
     if request.user.is_superuser:
-
         if 'suspend' in request.POST:
             msg = _("Suspend")
             addlogmsg(request.user.username, instance.name, msg)
@@ -1029,7 +1027,7 @@ def inst_graph(request, compute_id, vname):
     datasets_net = {}
     cookies = {}
     points = 5
-    curent_time = time.strftime("%H:%M:%S")
+    current_time = time.strftime("%H:%M:%S")
     compute = get_object_or_404(Compute, pk=compute_id)
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
@@ -1056,18 +1054,15 @@ def inst_graph(request, compute_id, vname):
             cookies['net'] = request.COOKIES['net']
             cookies['timer'] = request.COOKIES['timer']
         except KeyError:
-            cookies['cpu'] = None
-            cookies['blk'] = None
-            cookies['net'] = None
+            cookies['cpu'] = cookies['blk'] = cookies['net'] = None
 
         if not cookies['cpu']:
-            datasets['cpu'] = [0] * points
-            datasets['timer'] = [0] * points
+            datasets['timer'] = datasets['cpu'] = [0] * points
         else:
             datasets['cpu'] = eval(cookies['cpu'])
             datasets['timer'] = eval(cookies['timer'])
 
-        datasets['timer'].append(curent_time)
+        datasets['timer'].append(current_time)
         datasets['cpu'].append(int(cpu_usage['cpu']))
 
         datasets['timer'] = check_points(datasets['timer'])
@@ -1075,8 +1070,7 @@ def inst_graph(request, compute_id, vname):
 
         for blk in blk_usage:
             if not cookies['blk']:
-                datasets_wr = [0] * points
-                datasets_rd = [0] * points
+                datasets_rd = datasets_wr = [0] * points
             else:
                 datasets['blk'] = eval(cookies['blk'])
                 datasets_rd = datasets['blk'][blk['dev']][0]
@@ -1093,8 +1087,7 @@ def inst_graph(request, compute_id, vname):
 
         for net in net_usage:
             if not cookies['net']:
-                datasets_rx = [0] * points
-                datasets_tx = [0] * points
+                datasets_tx = datasets_rx = [0] * points
             else:
                 datasets['net'] = eval(cookies['net'])
                 datasets_rx = datasets['net'][net['dev']][0]
@@ -1159,7 +1152,7 @@ def _get_random_mac_address():
 
 @login_required
 def random_mac_address(request):
-    data = {}
+    data = dict()
     data['mac'] = _get_random_mac_address()
     return HttpResponse(json.dumps(data))
 
@@ -1183,9 +1176,9 @@ def guess_clone_name(request):
 
 @login_required
 def check_instance(request, vname):
-    check_instance = Instance.objects.filter(name=vname)
+    instance = Instance.objects.filter(name=vname)
     data = {'vname': vname, 'exists': False}
-    if check_instance:
+    if instance:
         data['exists'] = True
     return HttpResponse(json.dumps(data))
 
