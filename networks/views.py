@@ -8,6 +8,7 @@ from networks.forms import AddNetPool
 from vrtManager.network import wvmNetwork, wvmNetworks
 from vrtManager.network import network_size
 from libvirt import libvirtError
+from django.contrib import messages
 
 
 @login_required
@@ -118,6 +119,33 @@ def network(request, compute_id, pool):
         if 'unset_autostart' in request.POST:
             try:
                 conn.set_autostart(0)
+                return HttpResponseRedirect(request.get_full_path())
+            except libvirtError as lib_err:
+                error_messages.append(lib_err.message)
+        if 'modify_fixed_address' in request.POST:
+            name = request.POST.get('name', '')
+            address = request.POST.get('address', '')
+            mac = request.POST.get('mac', '')
+            try:
+                ret_val = conn.modify_fixed_address(name, address, mac)
+                messages.success(request, "Fixed Address Operation Completed.")
+                return HttpResponseRedirect(request.get_full_path())
+            except libvirtError as lib_err:
+                error_messages.append(lib_err.message)
+            except ValueError as val_err:
+                error_messages.append(val_err.message)
+        if 'delete_fixed_address' in request.POST:
+            mac = request.POST.get('mac', '')
+            conn.delete_fixed_address(mac)
+            messages.success(request, "Fixed Address is Deleted.")
+            return HttpResponseRedirect(request.get_full_path())
+
+        if 'modify_dhcp_range' in request.POST:
+            range_start = request.POST.get('range_start', '')
+            range_end = request.POST.get('range_end', '')
+            try:
+                conn.modify_dhcp_range(range_start, range_end)
+                messages.success(request, "DHCP Range is Changed.")
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)

@@ -118,9 +118,13 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(vol_path)
         return vol.storagePoolLookupByVolume()
 
-    def clone_from_template(self, clone, template, metadata=False, owner=default_owner):
+    def clone_from_template(self, clone, template, storage=None, metadata=False, owner=default_owner):
         vol = self.get_volume_by_path(template)
-        stg = vol.storagePoolLookupByVolume()
+        if not storage:
+            stg = vol.storagePoolLookupByVolume()
+        else:
+            stg = self.get_storage(storage)
+
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
         if storage_type == 'dir':
