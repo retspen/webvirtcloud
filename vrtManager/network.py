@@ -1,6 +1,10 @@
 from vrtManager import util
 from vrtManager.IPy import IP
 from vrtManager.connection import wvmConnect
+from xml.etree import ElementTree
+from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST
+from libvirt import VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_UPDATE_COMMAND_MODIFY
+from libvirt import VIR_NETWORK_UPDATE_AFFECT_LIVE, VIR_NETWORK_UPDATE_AFFECT_CONFIG, VIR_NETWORK_UPDATE_AFFECT_CURRENT
 
 
 def network_size(net, dhcp=None):
@@ -106,6 +110,9 @@ class wvmNetwork(wvmConnect):
     def delete(self):
         self.net.undefine()
 
+    def update(self, command, section, parentIndex, xml, flags=0):
+        return self.net.update(command, section, parentIndex, xml, flags)
+
     def get_ipv4_network(self):
         xml = self._XMLDesc(0)
         if util.get_xml_path(xml, "/network/ip") is None:
@@ -175,3 +182,40 @@ class wvmNetwork(wvmConnect):
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=network)
+
+    def modify_fixed_address(self, name, address, mac):
+        util.validate_macaddr(mac)
+        new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, name, address)
+        new_host_xml = ElementTree.fromstring(new_xml)
+
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+        hosts = tree.findall("./ip/dhcp/host")
+
+        host = None
+        for h in hosts:
+            if h.get('mac') == mac:
+                host = h
+                break
+        if host is None:
+
+            self.update(VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_SECTION_IP_DHCP_HOST, -1, new_xml,
+                        VIR_NETWORK_UPDATE_AFFECT_CURRENT)
+        else:
+            # change the host
+            if host.get('name') == new_host_xml.get('name') and host.get('ip') == new_host_xml.get('ip'):
+                return False
+            else:
+                res = self.update(VIR_NETWORK_UPDATE_COMMAND_MODIFY, VIR_NETWORK_SECTION_IP_DHCP_HOST, -1, new_xml,
+                                  VIR_NETWORK_UPDATE_AFFECT_CURRENT)
+
+    def delete_fixed_address(self, mac):
+        util.validate_macaddr(mac)
+        tree = ElementTree.fromstring(self._XMLDesc(0))
+        hosts = tree.findall("./ip/dhcp/host")
+
+        for h in hosts:
+            if h.get('mac') == mac:
+                new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, h.get('name'), h.get('ip'))
+                self.update(VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_SECTION_IP_DHCP_HOST, -1, new_xml,
+                            VIR_NETWORK_UPDATE_AFFECT_CURRENT)
+                break
