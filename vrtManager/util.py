@@ -153,3 +153,15 @@ def validate_uuid(val):
             val = (val[0:8] + "-" + val[8:12] + "-" + val[12:16] +
                    "-" + val[16:20] + "-" + val[20:32])
     return val
+
+
+def validate_macaddr(val):
+    if val is None:
+        return
+
+    if not (isinstance(val, str) or isinstance(val, basestring)):
+        raise ValueError("MAC address must be a string.")
+
+    form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)
+    if form is None:
+        raise ValueError("MAC address must be of the format AA:BB:CC:DD:EE:FF, was '%s'" % val)
