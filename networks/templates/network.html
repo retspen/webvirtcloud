@@ -34,6 +34,7 @@
             <!-- /.row -->
 
             {% include 'errors_block.html' %}
+            {% include 'messages_block.html' %}
 
             <div class="row">
                 <div class="col-xs-6 col-sm-4">
@@ -66,9 +67,11 @@
                     </p>
                 </div>
             </div>
-            {% if state %}
+            {#{% if state %}#}
                 <div class="row">
-                    <h3 class="page-header">{% trans "IPv4 configuration" %}</h3>
+                    <h3 class="page-header">{% trans "IPv4 Configuration" %}</h3>
+                </div>
+                <div class="row">
                     <div class="col-xs-6 col-sm-4">
                         <p>{% trans "IPv4 Forwarding:" %}</p>
                         <p>{% trans "Network:" %}</p>
@@ -102,43 +105,81 @@
                             {% endif %}
                         </p>
                         {% if ipv4_dhcp_range_start and ipv4_dhcp_range_end %}
-                            <p>{{ ipv4_dhcp_range_start }}</p>
-                            <p>{{ ipv4_dhcp_range_end }}</p>
+                            <form method="post" role="form">{% csrf_token %}
+                                {% if state %}
+                                    <p>{{ ipv4_dhcp_range_start }}</p>
+                                    <p>{{ ipv4_dhcp_range_end }}</p>
+                                {%  else %}
+                                    <p><input name="range_start" value="{{ ipv4_dhcp_range_start }}"/></p>
+                                    <p><input name="range_end" value="{{ ipv4_dhcp_range_end }}"/></p>
+                                    <div class="col-xs-10 col-sm-8">
+                                        <input type="submit" class="btn btn-primary btn-block" value="Apply"
+                                               name="modify_dhcp_range"
+                                               title="Edit DHCP Range" onclick="return confirm('{% trans "Are you sure?" %}')"/>
+                                    </div>
+                                {% endif %}
+                            </form>
                         {% endif %}
                     </div>
                 </div>
-                {% if fixed_address %}
+                {% ifequal ipv4_forward.0 'nat' %}
+                    {% if state %}
+                        {% include 'modify_fixed_address.html' %}
+                    {% endif %}
                     <div class="row">
                         <h3 class="page-header">{% trans "Fixed Address" %}</h3>
+                    </div>
+                {% endifequal %}
+                {% if fixed_address %}
+                    <div class="row">
                         <div class="col-xs-12">
                             <div class="panel-group" id="accordion">
                                 <div class="panel panel-default">
                                     <div class="panel-heading">
                                         <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-                                            Show
+                                            {% trans 'Show' %}
                                         </a>
                                     </div>
                                     <div id="collapseOne" class="panel-collapse collapse">
                                         <div class="panel-body">
-                                            <div class="input-append form-inline pull-right" style="">
+
+                                            <div class="input-append form-inline pull-right">
                                                 <div class="form-group">
                                                     <input type="text" class="form-control" id="filter_input">
                                                 </div>
                                                 <input type="button" class="btn btn-default" id="filter_button" value="Filter">
-                                                <button type="button" class="btn btn-default" id="filter_clear">Clear</button>
+                                                <button type="button" class="btn btn-default" id="filter_clear">{% trans 'Clear' %}</button>
                                             </div>
                                             <table class="table table-hover">
                                                 <thead>
                                                 <tr>
-                                                    <th style="text-align: center">{% trans "Address" %}</th>
                                                     <th style="text-align: center">{% trans "MAC" %}</th>
+                                                    <th style="text-align: center">{% trans "Address" %}</th>
+                                                    <th style="text-align: center">{% trans "Name" %}</th>
+                                                    <th style="text-align: center">{% trans "Action" %}</th>
                                                 </tr>
                                                 </thead>
                                                 <tbody style="text-align: center">
                                                 {% for fix in fixed_address %}
                                                     <tr>
-                                                        <td>{{ fix.host }}</td>
-                                                        <td>{{ fix.mac }}</td>
+                                                    <form method="post" role="form">{% csrf_token %}
+                                                        <td><label class="form-control" disabled="true">{{ fix.mac }}</label></td>
+                                                        <td><input class="form-control" value="{{ fix.ip }}" name="address" /></td>
+                                                        <td><input class="form-control" value="{{ fix.name }}" name="name" /></td>
+                                                            <td>
+                                                                <input hidden name="mac" value="{{ fix.mac }}"/>
+                                                                <button type="submit" class="btn btn-sm btn-primary"
+                                                                        name="modify_fixed_address"
+                                                                        title="Edit entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                    <i class="glyphicon glyphicon-save"></i>
+                                                                </button>
+                                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                                        name="delete_fixed_address"
+                                                                        title="Delete entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                    <i class="glyphicon glyphicon-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </form>
                                                     </tr>
                                                 {% endfor %}
                                                 </tbody>
@@ -149,7 +190,7 @@
                             </div>
                         </div>
                     </div>
-                {% endif %}
+                {#{% endif %}#}
             {% endif %}
 {% endblock %}
 {% block script %}
@@ -175,7 +216,6 @@
                 $('tbody tr:not(:Contains(\'' + filter_val + '\'))').hide();
             }
         });
-
         // add event button labeled "clear"
         $('#filter_clear').click(function (event) {
             $('#filter_input').val('');

@@ -176,13 +176,14 @@ class wvmNetwork(wvmConnect):
         def network(doc):
             result = []
             for net in doc.xpath('/network/ip/dhcp/host'):
-                host = net.xpath('@ip')[0]
+                ip = net.xpath('@ip')[0]
                 mac = net.xpath('@mac')[0]
-                result.append({'host': host, 'mac': mac})
+                name = net.xpath('@name')[0]
+                result.append({'ip': ip, 'mac': mac, 'name': name})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=network)
-
+    
     def modify_fixed_address(self, name, address, mac):
         util.validate_macaddr(mac)
         new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, name, IP(address))
