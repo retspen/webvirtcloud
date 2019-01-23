@@ -178,7 +178,9 @@ class wvmNetwork(wvmConnect):
             for net in doc.xpath('/network/ip/dhcp/host'):
                 ip = net.xpath('@ip')[0]
                 mac = net.xpath('@mac')[0]
-                name = net.xpath('@name')[0]
+                name = net.xpath('@name')
+                name = name[0] if name else ""
+
                 result.append({'ip': ip, 'mac': mac, 'name': name})
             return result
 
@@ -186,7 +188,10 @@ class wvmNetwork(wvmConnect):
     
     def modify_fixed_address(self, name, address, mac):
         util.validate_macaddr(mac)
-        new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, name, IP(address))
+        if name:
+            new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, name, IP(address))
+        else:
+            new_xml = '<host mac="{}" ip="{}"/>'.format(mac, IP(address))
         new_host_xml = ElementTree.fromstring(new_xml)
 
         tree = ElementTree.fromstring(self._XMLDesc(0))
