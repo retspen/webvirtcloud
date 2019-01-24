@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load staticfiles %}
 {% block title %}{% trans "Network" %} - {{ pool }}{% endblock %}
 {% block content %}
            <!-- Page Heading -->
@@ -38,10 +39,10 @@
 
             <div class="row">
                 <div class="col-xs-6 col-sm-4">
-                    <p>{% trans "Network name:" %}</p>
-                    <p>{% trans "Device:" %}</p>
-                    <p>{% trans "State" %}</p>
-                    <p>{% trans "Autostart" %}</p>
+                    <p>{% trans "Network name" %}:</p>
+                    <p>{% trans "Device" %}:</p>
+                    <p>{% trans "State" %}:</p>
+                    <p>{% trans "Autostart" %}:</p>
                 </div>
                 <div class="col-xs-6 col-sm-6">
                     <p>{{ pool }}</p>
@@ -67,11 +68,35 @@
                     </p>
                 </div>
             </div>
-            {#{% if state %}#}
-                <div class="row">
-                    <h3 class="page-header">{% trans "IPv4 Configuration" %}</h3>
+        <div class="row">
+                <h3 class="page-header"></h3>
+            </div>
+            <div class="panel-group" id="accordion">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+                            {% trans 'XML' %}
+                        </a>
+                    </div>
+                    <div id="collapseOne" class="panel-collapse collapse">
+                        <div class="panel-body">
+                          <form class="form-inline" method="post" role="form">{% csrf_token %}
+                             <div class="col-xs-12" id="xmlheight">
+                                <input type="hidden" name="edit_xml"/>
+                                <textarea id="edit_editor">{{ xml }}</textarea>
+                             </div>
+                             <button type="submit" class="btn btn-primary pull-right" name="edit_network">
+                                {% trans "Edit" %}
+                             </button>
+                          </form>
+                        </div>
+                    </div>
                 </div>
-                <div class="row">
+            </div>
+            <div class="row">
+                <h3 class="page-header">{% trans "IPv4 Configuration" %}</h3>
+            </div>
+            <div class="row">
                     <div class="col-xs-6 col-sm-4">
                         <p>{% trans "IPv4 Forwarding:" %}</p>
                         <p>{% trans "Network:" %}</p>
@@ -122,75 +147,74 @@
                         {% endif %}
                     </div>
                 </div>
-                {% ifequal ipv4_forward.0 'nat' %}
-                    {% if state %}
-                        {% include 'modify_fixed_address.html' %}
-                    {% endif %}
-                    <div class="row">
-                        <h3 class="page-header">{% trans "Fixed Address" %}</h3>
-                    </div>
-                {% endifequal %}
-                {% if fixed_address %}
-                    <div class="row">
-                        <div class="col-xs-12">
-                            <div class="panel-group" id="accordion">
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">
-                                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-                                            {% trans 'Show' %}
-                                        </a>
-                                    </div>
-                                    <div id="collapseOne" class="panel-collapse collapse">
-                                        <div class="panel-body">
+            {% ifequal ipv4_forward.0 'nat' %}
+                {% if state %}
+                    {% include 'modify_fixed_address.html' %}
+                {% endif %}
+                <div class="row">
+                    <h3 class="page-header">{% trans "Fixed Address" %}</h3>
+                </div>
+            {% endifequal %}
+            {% if fixed_address %}
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="panel-group" id="accordion">
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+                                        {% trans 'Show' %}
+                                    </a>
+                                </div>
+                                <div id="collapseOne" class="panel-collapse collapse">
+                                    <div class="panel-body">
 
-                                            <div class="input-append form-inline pull-right">
-                                                <div class="form-group">
-                                                    <input type="text" class="form-control" id="filter_input">
-                                                </div>
-                                                <input type="button" class="btn btn-default" id="filter_button" value="Filter">
-                                                <button type="button" class="btn btn-default" id="filter_clear">{% trans 'Clear' %}</button>
+                                        <div class="input-append form-inline pull-right">
+                                            <div class="form-group">
+                                                <input type="text" class="form-control" id="filter_input">
                                             </div>
-                                            <table class="table table-hover">
-                                                <thead>
-                                                <tr>
-                                                    <th style="text-align: center">{% trans "MAC" %}</th>
-                                                    <th style="text-align: center">{% trans "Address" %}</th>
-                                                    <th style="text-align: center">{% trans "Name" %}</th>
-                                                    <th style="text-align: center">{% trans "Action" %}</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody style="text-align: center">
-                                                {% for fix in fixed_address %}
-                                                    <tr>
-                                                    <form method="post" role="form">{% csrf_token %}
-                                                        <td><label class="form-control" disabled="true">{{ fix.mac }}</label></td>
-                                                        <td><input class="form-control" value="{{ fix.ip }}" name="address" /></td>
-                                                        <td><input class="form-control" value="{{ fix.name }}" name="name" /></td>
-                                                            <td>
-                                                                <input hidden name="mac" value="{{ fix.mac }}"/>
-                                                                <button type="submit" class="btn btn-sm btn-primary"
-                                                                        name="modify_fixed_address"
-                                                                        title="Edit entry" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                    <i class="glyphicon glyphicon-save"></i>
-                                                                </button>
-                                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                                        name="delete_fixed_address"
-                                                                        title="Delete entry" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                    <i class="glyphicon glyphicon-trash"></i>
-                                                                </button>
-                                                            </td>
-                                                        </form>
-                                                    </tr>
-                                                {% endfor %}
-                                                </tbody>
-                                            </table>
+                                            <input type="button" class="btn btn-default" id="filter_button" value="Filter">
+                                            <button type="button" class="btn btn-default" id="filter_clear">{% trans 'Clear' %}</button>
                                         </div>
+                                        <table class="table table-hover">
+                                            <thead>
+                                            <tr>
+                                                <th style="text-align: center">{% trans "MAC" %}</th>
+                                                <th style="text-align: center">{% trans "Address" %}</th>
+                                                <th style="text-align: center">{% trans "Name" %}</th>
+                                                <th style="text-align: center">{% trans "Action" %}</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody style="text-align: center">
+                                            {% for fix in fixed_address %}
+                                                <tr>
+                                                <form method="post" role="form">{% csrf_token %}
+                                                    <td><label class="form-control" disabled="true">{{ fix.mac }}</label></td>
+                                                    <td><input class="form-control" value="{{ fix.ip }}" name="address" /></td>
+                                                    <td><input class="form-control" value="{{ fix.name }}" name="name" /></td>
+                                                        <td>
+                                                            <input hidden name="mac" value="{{ fix.mac }}"/>
+                                                            <button type="submit" class="btn btn-sm btn-primary"
+                                                                    name="modify_fixed_address"
+                                                                    title="Edit entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                <i class="glyphicon glyphicon-save"></i>
+                                                            </button>
+                                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                                    name="delete_fixed_address"
+                                                                    title="Delete entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                <i class="glyphicon glyphicon-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </form>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                {#{% endif %}#}
+                </div>
             {% endif %}
 {% endblock %}
 {% block script %}
@@ -228,6 +252,16 @@
                 $('#filter_button').click();
             }
         });
+    });
+</script>
+<script src="{% static "js/ace.js" %}"></script>
+<script>
+    var editor = ace.edit("edit_editor");
+    editor.getSession().setMode("ace/mode/xml");
+
+    var edit_input = $('input[name="edit_xml"]');
+    editor.getSession().on("change", function () {
+        edit_input.val(editor.getSession().getValue());
     });
 </script>
 {% endblock %}

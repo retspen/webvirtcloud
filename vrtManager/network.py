@@ -2,7 +2,7 @@ from vrtManager import util
 from vrtManager.IPy import IP
 from vrtManager.connection import wvmConnect
 from xml.etree import ElementTree
-from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST, VIR_NETWORK_SECTION_IP_DHCP_RANGE
+from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST
 from libvirt import VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_UPDATE_COMMAND_MODIFY
 from libvirt import VIR_NETWORK_UPDATE_AFFECT_LIVE, VIR_NETWORK_UPDATE_AFFECT_CONFIG
 
