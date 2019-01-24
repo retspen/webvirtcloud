@@ -616,7 +616,9 @@
                                                                     <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="Hide boot menu" value="{% trans "Disable" %}">
                                                                 {% endifequal %}
                                                             {% else %}
-                                                                <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}
+                                                                {% ifequal bootmenu 0  %}
+                                                                    <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}
+                                                                {% endifequal %}
                                                             {% endifequal %}
                                                             </p>
                                                             </div>

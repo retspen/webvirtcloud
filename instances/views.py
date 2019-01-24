@@ -622,6 +622,11 @@ def instance(request, compute_id, vname):
                             order_list[idx] = {"type": type, "dev": dev}
                         conn.set_bootorder(order_list)
                         msg = _("Set boot order")
+
+                        if not conn.get_status() == 5:
+                            messages.success(request, _("Boot menu changes applied. But it will be activated after shutdown"))
+                        else:
+                            messages.success(request, _("Boot order changed successfully."))
                         addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#boot_opt')
 
