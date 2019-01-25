@@ -6,7 +6,6 @@
    <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            {% include 'create_nwfilter_block.html' %}
             <h1 class="page-header">{% trans "NWFilter:" %} {{ name }}</h1>
             <ol class="breadcrumb">
                 <li class="active">
@@ -74,28 +73,27 @@
             </div>
         </div>
     </div>
+
+    <form class="form-inline pull-right" method="post" role="form">{% csrf_token %}
+        <div class="form-group">
+            <label>{% trans "Filter" %}:</label>
+            <select id="nwfilter_select" name="nwfilters_select" class="form-control">
+                <option value="" selected>{% trans 'None' %}</option>
+                {% for nwf in nwfilters_all %}
+                    <option value="{{ nwf.name }}">{{ nwf.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-success pull-right" name="add_nwfilter_ref">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            </button>
+        </div>
+    </form>
     <div class="row">
         <h3 class="page-header">{% trans "Filter References" %}</h3>
     </div>
-    <div class="row">
-        <form class="form-inline pull-right" method="post" role="form">{% csrf_token %}
-            <div class="form-group">
-                <label>{% trans "Filter" %}:</label>
-                <select id="nwfilter_select" name="nwfilters_select" class="form-control">
-                    <option value="" selected>{% trans 'None' %}</option>
-                    {% for nwf in nwfilters_all %}
-                        <option value="{{ nwf.name }}">{{ nwf.name }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-success pull-right" name="add_nwfilter_ref">
-                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                </button>
-            </div>
-        </form>
-    </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped">
+    <div class="col-xs-12 col-sm-12">
+        <table class="table table-hover">
             <thead>
                 <th style="width: 45px;">#</th>
                 <th>{% trans "Reference" %}</th>
@@ -107,7 +105,7 @@
                     <td>{{ forloop.counter }}</td>
                     <td>{{ ref }}</td>
                     <td style="width:30px;">
-                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                        <form action="" method="post" role="form">{% csrf_token %}
                             <input type="hidden" name="ref" value="{{ ref }}">
                             <button type="submit" class="btn btn-sm btn-default" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                 <i class="fa fa-trash"></i>
@@ -120,14 +118,14 @@
         </table>
     </div>
 
+    {% include 'add_nwf_rule.html' %}
     <div class="row">
-        {% include 'add_nwf_rule.html' %}
         <h3 class="page-header">{% trans "Rules" %}</h3>
     </div>
-    <div class="table-responsive">
-        <table class="table table-striped">
+    <div class="col-xs-12 col-sm-12">
+        <table class="table table-hover">
             <thead>
-                <th style="width: 45px;">{% trans "Rule" %}</th>
+                <th style="width:45px;">{% trans "Rule" %}</th>
                 <th>{% trans "ActionType" %}</th>
                 <th>{% trans "Direction" %}</th>
                 <th>{% trans "Priority" %}</th>
@@ -145,7 +143,7 @@
                     <td>{{ rule.statematch }}</td>
                     <td>{{ rule.directives }}</td>
                     <td>
-                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                        <form action="" method="post" role="form">{% csrf_token %}
                             <input type="hidden" name="action" value="{{ rule.action }}">
                             <input type="hidden" name="direction" value="{{ rule.direction }}">
                             <input type="hidden" name="priority" value="{{ rule.priority }}">
