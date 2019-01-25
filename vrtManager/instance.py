@@ -994,6 +994,21 @@ class wvmInstance(wvmConnect):
                         interface.append(element)
                 else:
                     if source is not None: interface.remove(source)
+            elif interface.get('type') == 'network':
+                source = interface.find('mac')
+                source.set('address', net_mac)
+                source = interface.find('source')
+                source.set('network', net_source)
+                source = interface.find('filterref')
+
+                if net_filter:
+                    if source is not None: source.set('filter', net_filter)
+                    else:
+                        element = ElementTree.Element("filterref")
+                        element.attrib['filter'] = net_filter
+                        interface.append(element)
+                else:
+                    if source is not None: interface.remove(source)
 
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
