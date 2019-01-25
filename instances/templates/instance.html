@@ -809,6 +809,7 @@
                                                             <div class="panel panel-default">
                                                                 <div class="panel-heading">
                                                                     <label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
+                                                                    <button class="btn btn-sm pull-right btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}" onclick="return confirm('{% trans "Are you sure?" %}')">{% trans "Delete" %}</button>
                                                                 </div>
                                                                 <div class="panel-body">
                                                                     <div class="form-group form-inline">
@@ -841,18 +842,13 @@
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>
-                                                                </div>
-
-                                                                <div class="panel-footer">
-                                                                    <button class="btn btn-sm btn-primary" name="change_network" title="{% trans "Change" %}">{% trans "Change" %}</button>
-                                                                    <button class="btn btn-sm pull-right btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">{% trans "Delete" %}</button>
+                                                                    <button class="btn btn-sm btn-primary btn-block" name="change_network" title="{% trans "Apply Network Changes" %}">{% trans "Apply" %}</button>
                                                                 </div>
                                                             </div>
                                                         {% endfor %}
                                                     </form>
                                                 </div>
                                                     <div class="clearfix"></div>
-
                                                 </div>
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
                                                     <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
