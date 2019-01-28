@@ -88,6 +88,7 @@ def network(request, compute_id, pool):
         ipv4_dhcp_range_end = conn.get_ipv4_dhcp_range_end()
         ipv4_network = conn.get_ipv4_network()
         fixed_address = conn.get_mac_ipaddr()
+        xml = conn._XMLDesc(0)
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
@@ -139,7 +140,6 @@ def network(request, compute_id, pool):
             conn.delete_fixed_address(mac)
             messages.success(request, "Fixed Address is Deleted.")
             return HttpResponseRedirect(request.get_full_path())
-
         if 'modify_dhcp_range' in request.POST:
             range_start = request.POST.get('range_start', '')
             range_end = request.POST.get('range_end', '')
@@ -149,6 +149,22 @@ def network(request, compute_id, pool):
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
+        if 'edit_network' in request.POST:
+            edit_xml = request.POST.get('edit_xml', '')
+            if edit_xml:
+                try:
+                    new_conn = wvmNetworks(compute.hostname,
+                                   compute.login,
+                                   compute.password,
+                                   compute.type)
+                    conn.define_network(edit_xml)
+                    if conn.is_active():
+                        messages.success(request, _("Network XML is changed. Stop and start network to activate new config."))
+                    else:
+                        messages.success(request, _("Network XML is changed."))
+                    return HttpResponseRedirect(request.get_full_path())
+                except libvirtError as lib_err:
+                    error_messages.append(lib_err.message)
 
     conn.close()
 

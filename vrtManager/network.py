@@ -2,7 +2,7 @@ from vrtManager import util
 from vrtManager.IPy import IP
 from vrtManager.connection import wvmConnect
 from xml.etree import ElementTree
-from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST, VIR_NETWORK_SECTION_IP_DHCP_RANGE
+from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST
 from libvirt import VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_UPDATE_COMMAND_MODIFY
 from libvirt import VIR_NETWORK_UPDATE_AFFECT_LIVE, VIR_NETWORK_UPDATE_AFFECT_CONFIG
 
@@ -178,7 +178,9 @@ class wvmNetwork(wvmConnect):
             for net in doc.xpath('/network/ip/dhcp/host'):
                 ip = net.xpath('@ip')[0]
                 mac = net.xpath('@mac')[0]
-                name = net.xpath('@name')[0]
+                name = net.xpath('@name')
+                name = name[0] if name else ""
+
                 result.append({'ip': ip, 'mac': mac, 'name': name})
             return result
 
@@ -186,7 +188,10 @@ class wvmNetwork(wvmConnect):
     
     def modify_fixed_address(self, name, address, mac):
         util.validate_macaddr(mac)
-        new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, name, IP(address))
+        if name:
+            new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, name, IP(address))
+        else:
+            new_xml = '<host mac="{}" ip="{}"/>'.format(mac, IP(address))
         new_host_xml = ElementTree.fromstring(new_xml)
 
         tree = ElementTree.fromstring(self._XMLDesc(0))
