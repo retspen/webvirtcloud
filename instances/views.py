@@ -194,7 +194,7 @@ def instance(request, compute_id, vname):
                 msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
         return msg
 
-    def get_new_disk_dev(disks, bus):
+    def get_new_disk_dev(media, disks, bus):
         if bus == "virtio":
             dev_base = "vd"
         elif bus == "ide":
@@ -465,7 +465,7 @@ def instance(request, compute_id, vname):
                 meta_prealloc = request.POST.get('meta_prealloc', False)
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
-                target = get_new_disk_dev(disks, bus)
+                target = get_new_disk_dev(None, disks, bus)
 
                 path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
@@ -487,7 +487,7 @@ def instance(request, compute_id, vname):
 
                 format = connCreate.get_volume_type(name)
                 path = connCreate.get_target_path()
-                target = get_new_disk_dev(disks, bus)
+                target = get_new_disk_dev(None, disks, bus)
                 source = path + "/" + name;
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
@@ -523,9 +523,9 @@ def instance(request, compute_id, vname):
 
             if 'add_cdrom' in request.POST and allow_admin_or_not_template:
                 bus = request.POST.get('bus', 'ide')
-                target = get_new_disk_dev(media, bus)
+                target = get_new_disk_dev(media, disks, bus)
                 conn.attach_disk("", target, device='cdrom', cache='none', targetbus=bus)
-                msg = _('Add CD-Rom: ' + target)
+                msg = _('Add CD-ROM: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
