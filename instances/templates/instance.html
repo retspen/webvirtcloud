@@ -726,8 +726,12 @@
                                                                 {% endif %}
                                                             </div>
                                                         </form>
+                                                    {% empty %}
+                                                        <div class="col-sm-offset-3 col-sm-6">
+                                                            <div class="well well-sm">{% trans 'There is not any CD-ROM device.' %}</div>
+                                                        </div>
                                                     {% endfor %}
-
+                                                    <div class="clearfix"></div>
                                                     <p style="font-weight:bold;">
                                                         {% trans "Instance Volume" %}
                                                         {% include 'add_instance_volume.html' %}
@@ -824,10 +828,10 @@
                                                                         <label class="control-label"><em>to</em></label>
                                                                         <select class="form-control" name="net-source-{{ forloop.counter0 }}">
                                                                             {% for c_net in compute_networks %}
-                                                                                <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>Network {{ c_net }}</option>
+                                                                                <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>{% trans 'Network' %} {{ c_net }}</option>
                                                                             {% endfor %}
                                                                             {% for c_iface in compute_interfaces %}
-                                                                                <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>Interface {{ c_iface }}</option>
+                                                                                <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>{% trans 'Interface' %} {{ c_iface }}</option>
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>
@@ -1210,7 +1214,7 @@
                                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="graphs">
                                                 <div class="panel panel-success">
                                                     <div class="panel-heading">
-                                                        <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "CPU usage" %}</h3>
+                                                        <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "CPU Usage" %}</h3>
                                                     </div>
                                                     <div class="panel-body">
                                                         <div class="flot-chart">
@@ -1223,7 +1227,7 @@
                                                 {% for net in networks %}
                                                     <div class="panel panel-info">
                                                         <div class="panel-heading">
-                                                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "Bandwidth device:" %} eth{{ forloop.counter0 }}</h3>
+                                                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}</h3>
                                                         </div>
                                                         <div class="panel-body">
                                                             <div class="flot-chart">
@@ -1237,7 +1241,7 @@
                                                 {% for disk in disks %}
                                                     <div class="panel panel-warning">
                                                         <div class="panel-heading">
-                                                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "Disk I/O device:" %} {{ disk.dev }}</h3>
+                                                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "Disk I/O device" %}: {{ disk.dev }}</h3>
                                                         </div>
                                                         <div class="panel-body">
                                                             <div class="flot-chart">

@@ -187,10 +187,10 @@
                                             <tbody style="text-align: center">
                                             {% for fix in fixed_address %}
                                                 <tr>
-                                                <form method="post" role="form">{% csrf_token %}
-                                                    <td><label class="form-control" disabled="true">{{ fix.mac }}</label></td>
-                                                    <td><input class="form-control" value="{{ fix.ip }}" name="address" /></td>
-                                                    <td><input class="form-control" value="{{ fix.name }}" name="name" /></td>
+                                                    <form method="post" role="form">{% csrf_token %}
+                                                        <td><label class="form-control" disabled="true">{{ fix.mac }}</label></td>
+                                                        <td><input class="form-control" value="{{ fix.ip }}" name="address" /></td>
+                                                        <td><input class="form-control" value="{{ fix.name }}" name="name" /></td>
                                                         <td>
                                                             <input hidden name="mac" value="{{ fix.mac }}"/>
                                                             <button type="submit" class="btn btn-sm btn-primary"
