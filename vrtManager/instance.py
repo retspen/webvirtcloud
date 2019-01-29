@@ -479,13 +479,15 @@ class wvmInstance(wvmConnect):
 
     def attach_disk(self, source, target, sourcetype='file', device='disk', driver='qemu', subdriver='raw', cache='none', targetbus='ide'):
         tree = ElementTree.fromstring(self._XMLDesc(0))
-        xml_disk = """
-        <disk type='%s' device='%s'>
-          <driver name='%s' type='%s' cache='%s'/>
-          <source file='%s'/>
+        xml_disk = "<disk type='%s' device='%s'>" % (sourcetype, device)
+        if device == 'cdrom':
+            xml_disk += "<driver name='%s' type='%s'/>" % (driver, subdriver)
+        elif device == 'disk':
+            xml_disk += "<driver name='%s' type='%s' cache='%s'/>" % (driver, subdriver, cache)
+        xml_disk += """<source file='%s'/>
           <target dev='%s' bus='%s'/>
         </disk>
-        """ % (sourcetype, device, driver, subdriver, cache, source, target, targetbus)
+        """ % (source, target, targetbus)
         if self.get_status() == 5:
             devices = tree.find('devices')
             elm_disk = ElementTree.fromstring(xml_disk)
