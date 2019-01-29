@@ -805,13 +805,16 @@
                                                 </div>
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
                                                     <p>
-                                                        {% trans "Assign network device to bridge" %}
+                                                        {% trans "Add a network device" %}
                                                         {% include 'add_instance_network_block.html' %}
                                                     </p>
-                                                    <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+
                                                 <div class="col-xs-12 col-sm-12">
                                                     <form method="post" role="form">{% csrf_token %}
                                                         {% for network in networks %}
+                                                            {% if forloop.first %}
+                                                                <p><strong>{% trans "Network Devices" %}</strong></p>
+                                                            {% endif %}
                                                             <div class="panel panel-default">
                                                                 <div class="panel-heading">
                                                                     <label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
