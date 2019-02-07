@@ -74,7 +74,7 @@ def instances(request, compute_id):
     :param request:
     :return:
     """
-
+    all_host_vms = {}
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
@@ -880,12 +880,21 @@ def get_host_instances(request, comp):
                 info['first_user'] = None
             return info
 
+        # Multiple Instance Name Check
         instances = Instance.objects.filter(name=inst_name)
         if instances.count() > 1:
             for i in instances:
                 user_instances_count = UserInstance.objects.filter(instance=i).count()
                 if user_instances_count == 0:
-                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple records."))
+                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple(Instance Name) records."))
+                    i.delete()
+
+        # Multiple UUID Check
+        instances = Instance.objects.filter(uuid=info['uuid'])
+        if instances.count() > 1:
+            for i in instances:
+                if i.name != inst_name:
+                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple(UUID) records."))
                     i.delete()
 
         try:
