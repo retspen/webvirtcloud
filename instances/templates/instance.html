@@ -634,7 +634,7 @@
                                                             <input id="bootorder" name="bootorder" hidden>
                                                             <div class="form-group">
                                                                 <div class="col-sm-6 col-sm-offset-2">
-                                                                    <div id="b_order" class="multiselect">
+                                                                    <div id="b_order" class="multipleselect">
                                                                         {% for disk in disks %}
                                                                             <label><input type="checkbox" name="disk:{{ disk.dev }}" value="disk:{{ disk.dev }}" onclick="set_orderlist($('#bootorder'))" />{{ disk.dev }} - {{ disk.image }}</label>
                                                                         {% endfor %}
