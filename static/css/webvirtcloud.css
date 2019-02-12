@@ -134,7 +134,7 @@ p {
     min-width: 250px;
 }
 
-.multiselect {
+.multipleselect {
     width:27em;
     height:10em;
     border:solid 2px #c0c0c0;
@@ -143,11 +143,11 @@ p {
     margin: 0.9em;
 }
 
-.multiselect label {
+.multipleselect label {
     display:block;
 }
 
-.multiselect-on {
+.multipleselect-on {
     color:#ffffff;
     background-color:#000099;
 }

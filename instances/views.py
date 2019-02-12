@@ -74,7 +74,7 @@ def instances(request, compute_id):
     :param request:
     :return:
     """
-
+    all_host_vms = {}
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
@@ -194,7 +194,7 @@ def instance(request, compute_id, vname):
                 msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
         return msg
 
-    def get_new_disk_dev(disks, bus):
+    def get_new_disk_dev(media, disks, bus):
         if bus == "virtio":
             dev_base = "vd"
         elif bus == "ide":
@@ -465,7 +465,7 @@ def instance(request, compute_id, vname):
                 meta_prealloc = request.POST.get('meta_prealloc', False)
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
-                target = get_new_disk_dev(disks, bus)
+                target = get_new_disk_dev(None, disks, bus)
 
                 path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
@@ -487,7 +487,7 @@ def instance(request, compute_id, vname):
 
                 format = connCreate.get_volume_type(name)
                 path = connCreate.get_target_path()
-                target = get_new_disk_dev(disks, bus)
+                target = get_new_disk_dev(None, disks, bus)
                 source = path + "/" + name;
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
@@ -523,9 +523,9 @@ def instance(request, compute_id, vname):
 
             if 'add_cdrom' in request.POST and allow_admin_or_not_template:
                 bus = request.POST.get('bus', 'ide')
-                target = get_new_disk_dev(media, bus)
+                target = get_new_disk_dev(media, disks, bus)
                 conn.attach_disk("", target, device='cdrom', cache='none', targetbus=bus)
-                msg = _('Add CD-Rom: ' + target)
+                msg = _('Add CD-ROM: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -880,12 +880,21 @@ def get_host_instances(request, comp):
                 info['first_user'] = None
             return info
 
+        # Multiple Instance Name Check
         instances = Instance.objects.filter(name=inst_name)
         if instances.count() > 1:
             for i in instances:
                 user_instances_count = UserInstance.objects.filter(instance=i).count()
                 if user_instances_count == 0:
-                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple records."))
+                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple(Instance Name) records."))
+                    i.delete()
+
+        # Multiple UUID Check
+        instances = Instance.objects.filter(uuid=info['uuid'])
+        if instances.count() > 1:
+            for i in instances:
+                if i.name != inst_name:
+                    addlogmsg(request.user.username, i.name, _("Deleting due to multiple(UUID) records."))
                     i.delete()
 
         try:

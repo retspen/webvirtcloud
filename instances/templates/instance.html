@@ -475,11 +475,9 @@
                                                         <div class="table-responsive">
                                                             <table class="table">
                                                                 <thead>
-                                                                    <tr>
-                                                                        <th>{% trans "Name" %}</th>
-                                                                        <th>{% trans "Date" %}</th>
-                                                                        <th colspan="2">{% trans "Action" %}</th>
-                                                                    </tr>
+                                                                    <th>{% trans "Name" %}</th>
+                                                                    <th>{% trans "Date" %}</th>
+                                                                    <th colspan="2">{% trans "Action" %}</th>
                                                                 </thead>
                                                                 <tbody>
                                                                 {% for snap in snapshots %}
@@ -605,25 +603,25 @@
                                                         </div>
                                                     </form>
                                                     <p style="font-weight:bold;">{% trans 'Boot Order' %}</p>
-                                                    <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                        <div class="form-group">
-                                                            <div class="col-sm-12 col-sm-offset-2">
-                                                            {% ifequal status 5 %}
-                                                                <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
-                                                                {% ifequal bootmenu 0 %}
-                                                                    <input type="submit" class="btn btn-success" name="set_bootmenu" title="Show boot menu" value="{% trans "Enable" %}">
+                                                        <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                            <div class="form-group">
+                                                                <div class="col-sm-12 col-sm-offset-2">
+                                                                {% ifequal status 5 %}
+                                                                    <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
+                                                                    {% ifequal bootmenu 0 %}
+                                                                        <input type="submit" class="btn btn-success" name="set_bootmenu" title="Show boot menu" value="{% trans "Enable" %}">
+                                                                    {% else %}
+                                                                        <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="Hide boot menu" value="{% trans "Disable" %}">
+                                                                    {% endifequal %}
                                                                 {% else %}
-                                                                    <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="Hide boot menu" value="{% trans "Disable" %}">
+                                                                    {% ifequal bootmenu 0  %}
+                                                                        <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}</p>
+                                                                    {% endifequal %}
                                                                 {% endifequal %}
-                                                            {% else %}
-                                                                {% ifequal bootmenu 0  %}
-                                                                    <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}
-                                                                {% endifequal %}
-                                                            {% endifequal %}
-                                                            </p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </form>
+                                                        </form>
+                                                    </p>
                                                     {% ifequal bootmenu 1  %}
                                                         <div class="col-sm-6 col-sm-offset-2">
                                                         <div class="well">
@@ -636,7 +634,7 @@
                                                             <input id="bootorder" name="bootorder" hidden>
                                                             <div class="form-group">
                                                                 <div class="col-sm-6 col-sm-offset-2">
-                                                                    <div id="b_order" class="multiselect">
+                                                                    <div id="b_order" class="multipleselect">
                                                                         {% for disk in disks %}
                                                                             <label><input type="checkbox" name="disk:{{ disk.dev }}" value="disk:{{ disk.dev }}" onclick="set_orderlist($('#bootorder'))" />{{ disk.dev }} - {{ disk.image }}</label>
                                                                         {% endfor %}
@@ -665,16 +663,20 @@
                                                     <div class="clearfix"></div>
                                                 </div>
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
-                                                    {% if status == 5 %}
-                                                        <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                            <p style="font-weight:bold;">
-                                                                {% trans "Instance Media" %}
-                                                                <button type="submit" name="add_cdrom" type="button" class="btn btn-success pull-right" title="Add CD-Rom">
-                                                                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                                                                </button>
-                                                            </p>
-                                                        </form>
+                                                <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                                    <p style="font-weight:bold;">
+                                                        {% trans "Instance Media" %}
+                                                        {% if status == 5 %}
+                                                            <button type="submit" name="add_cdrom" type="button" class="btn btn-success pull-right" title="Add CD-ROM">
+                                                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                                            </button>
+                                                    {% else %}
+                                                        <button type="submit" type="button" class="btn btn-success disabled pull-right" title="Add CD-ROM" disabled>
+                                                            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                                        </button>
                                                     {% endif %}
+                                                    </p>
+                                                </form>
                                                     {% for cd in media %}
                                                         <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                                             <div class="form-group">
@@ -803,13 +805,16 @@
                                                 </div>
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
                                                     <p>
-                                                        {% trans "Assign network device to bridge" %}
+                                                        {% trans "Add a network device" %}
                                                         {% include 'add_instance_network_block.html' %}
                                                     </p>
-                                                    <p style="font-weight:bold;">{% trans "Network devices" %}</p>
+
                                                 <div class="col-xs-12 col-sm-12">
                                                     <form method="post" role="form">{% csrf_token %}
                                                         {% for network in networks %}
+                                                            {% if forloop.first %}
+                                                                <p><strong>{% trans "Network Devices" %}</strong></p>
+                                                            {% endif %}
                                                             <div class="panel panel-default">
                                                                 <div class="panel-heading">
                                                                     <label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
