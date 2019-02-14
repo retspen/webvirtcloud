@@ -195,6 +195,8 @@ def instance(request, compute_id, vname):
         return msg
 
     def get_new_disk_dev(media, disks, bus):
+        existing_disk_devs = []
+        existing_media_devs = []
         if bus == "virtio":
             dev_base = "vd"
         elif bus == "ide":
@@ -203,9 +205,14 @@ def instance(request, compute_id, vname):
             dev_base = "fd"
         else:
             dev_base = "sd"
-        existing_disk_devs = [disk['dev'] for disk in disks]
+
+        if disks:
+            existing_disk_devs = [disk['dev'] for disk in disks]
+
         # cd-rom bus could be virtio/sata, because of that we should check it also
-        existing_media_devs = [disk['dev'] for disk in media]
+        if media:
+            existing_media_devs = [m['dev'] for m in media]
+
         for l in string.lowercase:
             dev = dev_base + l
             if dev not in existing_disk_devs and dev not in existing_media_devs:
@@ -465,7 +472,7 @@ def instance(request, compute_id, vname):
                 meta_prealloc = request.POST.get('meta_prealloc', False)
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
-                target = get_new_disk_dev(None, disks, bus)
+                target = get_new_disk_dev(media, disks, bus)
 
                 path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
@@ -487,7 +494,7 @@ def instance(request, compute_id, vname):
 
                 format = connCreate.get_volume_type(name)
                 path = connCreate.get_target_path()
-                target = get_new_disk_dev(None, disks, bus)
+                target = get_new_disk_dev(media, disks, bus)
                 source = path + "/" + name;
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
