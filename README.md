@@ -1,4 +1,4 @@
-## WebVirtCloud Beta
+## WebVirtCloud
 
 
 ## Features
