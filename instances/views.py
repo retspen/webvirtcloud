@@ -469,7 +469,7 @@ def instance(request, compute_id, vname):
                 name = request.POST.get('name', '')
                 format = request.POST.get('format', default_format)
                 size = request.POST.get('size', 0)
-                meta_prealloc = request.POST.get('meta_prealloc', False)
+                meta_prealloc = True if request.POST.get('meta_prealloc', False) else False
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
                 target = get_new_disk_dev(media, disks, bus)
@@ -774,7 +774,7 @@ def instance(request, compute_id, vname):
 
             if request.user.is_superuser or request.user.userattributes.can_clone_instances:
                 if 'clone' in request.POST:
-                    clone_data = {}
+                    clone_data = dict
                     clone_data['name'] = request.POST.get('name', '')
 
                     disk_sum = sum([disk['size'] >> 30 for disk in disks])
