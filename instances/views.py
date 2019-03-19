@@ -774,7 +774,7 @@ def instance(request, compute_id, vname):
 
             if request.user.is_superuser or request.user.userattributes.can_clone_instances:
                 if 'clone' in request.POST:
-                    clone_data = dict
+                    clone_data = dict()
                     clone_data['name'] = request.POST.get('name', '')
 
                     disk_sum = sum([disk['size'] >> 30 for disk in disks])

@@ -1398,19 +1398,21 @@
     function update_clone_disk_name(new_vname) {
         vname = '{{ vname }}';
         {% for disk in disks %}
-        disk_name = '{{ disk.image }}';
-        disk_dot = disk_name.split('.')
-        disk_dot_suffix = disk_dot[disk_dot.length-1];
-        if (disk_name.startsWith(vname)) {
-            image = disk_name.replace(vname, new_vname);
-        } else if (disk_name.lastIndexOf('.') > -1 && disk_dot_suffix.length <= 7) {
-            image = new_vname + "." + disk_dot_suffix
-        } else if (new_vname != disk_name) {
-            image = new_vname
-        } else {
-            image = new_vname + '-clone';
-        }
-        $('#disk_name-{{ disk.dev }}').val(image);
+            disk_name = '{{ disk.image }}';
+            disk_dot = disk_name.split('.')
+            disk_dot_suffix = disk_dot[disk_dot.length-1];
+            if (disk_name.startsWith(vname)) {
+                image = disk_name.replace(vname, new_vname);
+            } else if (disk_name.lastIndexOf('.') > -1 && disk_dot_suffix.length <= 7) {
+                disk_dot.pop();
+                disk_name_only = disk_dot.join('-')
+                image = new_vname + "-" + disk_name_only + "." + disk_dot_suffix
+            } else if (new_vname != disk_name) {
+                image = new_vname
+            } else {
+                image = new_vname + '-clone';
+            }
+            $('#disk_name-{{ disk.dev }}').val(image);
         {% endfor %} 
     }
 </script>
