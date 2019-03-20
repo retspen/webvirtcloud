@@ -58,7 +58,10 @@ class wvmCreate(wvmConnect):
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         if storage_type == 'dir':
-            name += '.img'
+            if image_format in ('qcow', 'qcow2'):
+                name += '.' + image_format
+            else:
+                name += '.img'
             alloc = 0
         else:
             alloc = size
