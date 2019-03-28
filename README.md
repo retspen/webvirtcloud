@@ -267,14 +267,14 @@ python manage.py migrate
 sudo service supervisor restart
 ```
 ### Screenshots
-Instance Detail:</br>
-<img src="doc/images/instance.PNG" width="95%" align="center"></img>
+Instance Detail:
+<img src="doc/images/instance.PNG" width="95%" align="center"/>
 Instance List:</br>
-<img src="doc/images/grouped.PNG" width="47%"></img>
-<img src="doc/images/nongrouped.PNG" width="51%"></img>
+<img src="doc/images/grouped.PNG" width="47%"/>
+<img src="doc/images/nongrouped.PNG" width="51%"/>
 Other: </br>
-<img src="doc/images/hosts.PNG" width="52%"></img>
-<img src="doc/images/log.PNG" width="47%"></img>
+<img src="doc/images/hosts.PNG" width="52%"/>
+<img src="doc/images/log.PNG" width="47%"/>
 
 ### License
 
