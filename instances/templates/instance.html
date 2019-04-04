@@ -525,17 +525,18 @@
                                     <div role="tabpanel">
                                         <!-- Nav tabs -->
                                         <ul class="nav nav-tabs" role="tablist">
-                                            <li role="presentation" class="active">
-                                                <a href="#boot_opt" aria-controls="boot" role="tab" data-toggle="tab">
-                                                    {% trans "Boot" %}
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#disks" aria-controls="disks" role="tab" data-toggle="tab">
-                                                    {% trans "Disk" %}
-                                                </a>
-                                            </li>
-
+                                            {% if request.user.is_superuser %}
+                                                <li role="presentation" class="active">
+                                                    <a href="#boot_opt" aria-controls="boot" role="tab" data-toggle="tab">
+                                                        {% trans "Boot" %}
+                                                    </a>
+                                                </li>
+                                                <li role="presentation">
+                                                    <a href="#disks" aria-controls="disks" role="tab" data-toggle="tab">
+                                                        {% trans "Disk" %}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
                                             {% if request.user.is_superuser or userinstance.is_vnc %}
                                                 <li role="presentation">
                                                     <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
