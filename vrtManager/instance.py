@@ -871,18 +871,19 @@ class wvmInstance(wvmConnect):
                                         <allocation>0</allocation>
                                         <target>
                                             <format type='%s'/>
+                                            <permissions>
+                                                <owner>%s</owner>
+                                                <group>%s</group>
+                                                <mode>0644</mode>
+                                                <label>virt_image_t</label>
+                                            </permissions>
+                                            <compat>1.1</compat>
+                                            <features>
+                                                <lazy_refcounts/>
+                                            </features>
                                         </target>
-                                        <permissions>
-                                            <owner>%s</owner>
-                                            <group>%s</group>
-                                            <mode>0644</mode>
-                                            <label>virt_image_t</label>
-                                        </permissions>
-                                        <compat>1.1</compat>
-                                        <features>
-                                            <lazy_refcounts/>
-                                        </features>
                                     </volume>""" % (target_file, vol_format, owner['uid'], owner['guid'])
+
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
                 
