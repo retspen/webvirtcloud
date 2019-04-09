@@ -375,7 +375,7 @@ __check_end_of_life_versions
 #
 install_centos() {
     if [ $DISTRO_MAJOR_VERSION -ge 6 ]; then
-        yum -y install qemu-kvm libvirt bridge-utils python-libguestfs supervisor cyrus-sasl-md5 || return 1
+        yum -y install qemu-kvm libvirt bridge-utils python-libguestfs libguestfs-tools supervisor cyrus-sasl-md5 epel-release || return 1
     fi
     return 0
 }
