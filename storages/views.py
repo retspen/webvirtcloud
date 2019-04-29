@@ -155,8 +155,8 @@ def storage(request, compute_id, pool):
                 if data['meta_prealloc'] and data['format'] == 'qcow2':
                     meta_prealloc = True
                 try:
-                    conn.create_volume(data['name'], data['size'], data['format'], meta_prealloc)
-                    messages.success(request, _("Image file {} is created successfully".format(data['name']+".img")))
+                    name = conn.create_volume(data['name'], data['size'], data['format'], meta_prealloc)
+                    messages.success(request, _("Image file {} is created successfully".format(name)))
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)
@@ -184,10 +184,10 @@ def storage(request, compute_id, pool):
             form = CloneImage(request.POST)
             if form.is_valid():
                 data = form.cleaned_data
-                img_name = data['name'] + '.img'
+                img_name = data['name']
                 meta_prealloc = 0
                 if img_name in conn.update_volumes():
-                    msg = _("Name of volume name already use")
+                    msg = _("Name of volume already in use")
                     error_messages.append(msg)
                 if not error_messages:
                     if data['convert']:
@@ -197,8 +197,8 @@ def storage(request, compute_id, pool):
                     else:
                         format = None
                     try:
-                        conn.clone_volume(data['image'], data['name'], format, meta_prealloc)
-                        messages.success(request, _("{} image cloned as {} successfully".format(data['image'], data['name'] + ".img")))
+                        name = conn.clone_volume(data['image'], data['name'], format, meta_prealloc)
+                        messages.success(request, _("{} image cloned as {} successfully".format(data['image'], name)))
                         return HttpResponseRedirect(request.get_full_path())
                     except libvirtError as lib_err:
                         error_messages.append(lib_err)
