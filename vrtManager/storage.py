@@ -230,22 +230,31 @@ class wvmStorage(wvmConnect):
                         <group>%s</group>
                         <mode>0644</mode>
                         <label>virt_image_t</label>
-                    </permissions>
-                    <compat>1.1</compat>
-                    <features>
-                        <lazy_refcounts/>
-                    </features>
-                </target>
-            </volume>""" % (name, size, alloc, vol_fmt, owner['uid'], owner['guid'])
+                    </permissions>""" % (name, size, alloc, vol_fmt, owner['uid'], owner['guid'])
+        if vol_fmt == 'qcow2':
+            xml += """
+                      <compat>1.1</compat>
+                      <features>
+                         <lazy_refcounts/>
+                      </features>"""
+        xml += """
+                  </target>
+                </volume>"""
         self._createXML(xml, metadata)
+        return name
 
     def clone_volume(self, name, target_file, vol_fmt=None, metadata=False, owner=owner):
-        storage_type = self.get_type()
-        if storage_type == 'dir':
-            target_file += '.img'
         vol = self.get_volume(name)
         if not vol_fmt:
             vol_fmt = self.get_volume_type(name)
+
+        storage_type = self.get_type()
+        if storage_type == 'dir':
+            if vol_fmt in ('qcow', 'qcow2'):
+                target_file += '.' + vol_fmt
+            else:
+                target_file += '.img'
+
         xml = """
             <volume>
                 <name>%s</name>
@@ -258,11 +267,14 @@ class wvmStorage(wvmConnect):
                         <group>%s</group>
                         <mode>0644</mode>
                         <label>virt_image_t</label>
-                    </permissions>
+                    </permissions>""" % (target_file, vol_fmt, owner['uid'], owner['guid'])
+        if vol_fmt == 'qcow2':
+            xml += """
                     <compat>1.1</compat>
                     <features>
                         <lazy_refcounts/>
-                    </features>
-                </target>
-            </volume>""" % (target_file, vol_fmt, owner['uid'],owner['guid'])
+                    </features>"""
+        xml += """ </target>
+            </volume>"""
         self._createXMLFrom(xml, vol, metadata)
+        return target_file
