@@ -269,7 +269,7 @@
                                                         <button type="button" class="btn btn-lg btn-success " onclick="open_console('lite')">Console</button>
                                                         <button type="button" class="btn btn-lg btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                             <span class="caret"></span>
-                                                            <span class="sr-only">Toggle Dropdown</span>
+                                                            <span class="sr-only">{%  trans 'Toggle Dropdown' %}</span>
                                                         </button>
                                                         <ul class="dropdown-menu">
                                                             <li><a href="#" title="Console port: {{ console_port }}" onclick="open_console('lite')">{% trans "Console - Lite" %}</a></li>
@@ -537,10 +537,10 @@
                                                     </a>
                                                 </li>
                                             {% endif %}
-                                            {% if request.user.is_superuser or userinstance.is_vnc %}
+                                            {% if request.user.is_superuser or request.user.is_staff or userinstance.is_vnc %}
                                                 <li role="presentation">
                                                     <a href="#vncsettings" aria-controls="vncsettings" role="tab" data-toggle="tab">
-                                                        {% trans "VNC" %}
+                                                        {% trans "Console" %}
                                                     </a>
                                                 </li>
                                             {% endif %}
@@ -963,7 +963,7 @@
                                                     <div class="clearfix"></div>
                                                 </div>
                                             {% endif %}
-                                            {% if request.user.is_superuser or userinstance.is_vnc %}
+                                            {% if request.user.is_superuser or request.user.is_staff or userinstance.is_vnc %}
                                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
                                                     <p>{% trans "To set console's type, shutdown the instance." %}</p>
                                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}

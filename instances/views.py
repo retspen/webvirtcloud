@@ -645,7 +645,7 @@ def instance(request, compute_id, vname):
                         addlogmsg(request.user.username, instance.name, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#xmledit')
 
-            if request.user.is_superuser or userinstance.is_vnc:
+            if request.user.is_superuser or request.user.is_staff or userinstance.is_vnc:
                 if 'set_console_passwd' in request.POST:
                     if request.POST.get('auto_pass', ''):
                         passwd = randomPasswd()
