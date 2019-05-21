@@ -16,17 +16,17 @@ class wvmHostDetails(wvmConnect):
         """
         Function return memory usage on node.
         """
-        get_all_mem = self.wvm.getInfo()[1] * 1048576
-        get_freemem = self.wvm.getMemoryStats(-1, 0)
-        if type(get_freemem) == dict:
-            free = (get_freemem.values()[0] +
-                    get_freemem.values()[2] +
-                    get_freemem.values()[3]) * 1024
-            percent = (100 - ((free * 100) / get_all_mem))
-            usage = (get_all_mem - free)
-            mem_usage = {'usage': usage, 'percent': percent}
+        all_mem = self.wvm.getInfo()[1] * 1048576
+        freemem = self.wvm.getMemoryStats(-1, 0)
+        if type(freemem) == dict:
+            free = (freemem.values()[0] +
+                    freemem.values()[2] +
+                    freemem.values()[3]) * 1024
+            percent = (100 - ((free * 100) / all_mem))
+            usage = (all_mem - free)
+            mem_usage = {'total': all_mem, 'usage': usage, 'percent': percent}
         else:
-            mem_usage = {'usage': None, 'percent': None}
+            mem_usage = {'total': None, 'usage': None, 'percent': None}
         return mem_usage
 
     def get_cpu_usage(self):
