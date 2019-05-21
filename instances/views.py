@@ -1040,23 +1040,12 @@ def inst_graph(request, compute_id, vname):
     :param request:
     :return:
     """
-
-    datasets = {}
     json_blk = []
-    datasets_blk = {}
     json_net = []
-    datasets_net = {}
-    cookies = {}
-    points = 5
-    current_time = time.strftime("%H:%M:%S")
+
     compute = get_object_or_404(Compute, pk=compute_id)
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
-
-    def check_points(dataset):
-        if len(dataset) > points:
-            dataset.pop(0)
-        return dataset
 
     try:
         conn = wvmInstance(compute.hostname,
@@ -1065,71 +1054,24 @@ def inst_graph(request, compute_id, vname):
                            compute.type,
                            vname)
         cpu_usage = conn.cpu_usage()
+        mem_usage = conn.mem_usage()
         blk_usage = conn.disk_usage()
         net_usage = conn.net_usage()
         conn.close()
 
-        try:
-            cookies['cpu'] = request.COOKIES['cpu']
-            cookies['blk'] = request.COOKIES['blk']
-            cookies['net'] = request.COOKIES['net']
-            cookies['timer'] = request.COOKIES['timer']
-        except KeyError:
-            cookies['cpu'] = cookies['blk'] = cookies['net'] = None
-
-        if not cookies['cpu']:
-            datasets['timer'] = datasets['cpu'] = [0] * points
-        else:
-            datasets['cpu'] = eval(cookies['cpu'])
-            datasets['timer'] = eval(cookies['timer'])
-
-        datasets['timer'].append(current_time)
-        datasets['cpu'].append(int(cpu_usage['cpu']))
-
-        datasets['timer'] = check_points(datasets['timer'])
-        datasets['cpu'] = check_points(datasets['cpu'])
-
+        current_time = time.strftime("%H:%M:%S")
         for blk in blk_usage:
-            if not cookies['blk']:
-                datasets_rd = datasets_wr = [0] * points
-            else:
-                datasets['blk'] = eval(cookies['blk'])
-                datasets_rd = datasets['blk'][blk['dev']][0]
-                datasets_wr = datasets['blk'][blk['dev']][1]
-
-                datasets_rd.append(int(blk['rd']) / 1048576)
-                datasets_wr.append(int(blk['wr']) / 1048576)
-
-                datasets_rd = check_points(datasets_rd)
-                datasets_wr = check_points(datasets_wr)
-
-            json_blk.append({'dev': blk['dev'], 'data': [datasets_rd, datasets_wr]})
-            datasets_blk[blk['dev']] = [datasets_rd, datasets_wr]
+            json_blk.append({'dev': blk['dev'], 'data': [int(blk['rd']) / 1048576, int(blk['wr']) / 1048576]})
 
         for net in net_usage:
-            if not cookies['net']:
-                datasets_tx = datasets_rx = [0] * points
-            else:
-                datasets['net'] = eval(cookies['net'])
-                datasets_rx = datasets['net'][net['dev']][0]
-                datasets_tx = datasets['net'][net['dev']][1]
+            json_net.append({'dev': net['dev'], 'data': [int(net['rx']) / 1048576, int(net['tx']) / 1048576]})
 
-                datasets_rx.append(int(net['rx']) / 1048576)
-                datasets_tx.append(int(net['tx']) / 1048576)
+        data = json.dumps({'cpudata': int(cpu_usage['cpu']),
+                           'memdata': mem_usage,
+                           'blkdata': json_blk,
+                           'netdata': json_net,
+                           'timeline': current_time})
 
-                datasets_rx = check_points(datasets_rx)
-                datasets_tx = check_points(datasets_tx)
-
-            json_net.append({'dev': net['dev'], 'data': [datasets_rx, datasets_tx]})
-            datasets_net[net['dev']] = [datasets_rx, datasets_tx]
-
-        data = json.dumps({'cpudata': datasets['cpu'], 'blkdata': json_blk,
-                           'netdata': json_net, 'timeline': datasets['timer']})
-
-        response.cookies['cpu'] = datasets['cpu']
-        response.cookies['timer'] = datasets['timer']
-        response.cookies['blk'] = datasets_blk
-        response.cookies['net'] = datasets_net
     except libvirtError:
         data = json.dumps({'error': 'Error 500'})
 

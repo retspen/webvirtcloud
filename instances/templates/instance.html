@@ -1230,6 +1230,18 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <div class="panel panel-default">
+                                                    <div class="panel-heading">
+                                                        <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "Memory Usage" %}</h3>
+                                                    </div>
+                                                    <div class="panel-body">
+                                                        <div class="flot-chart">
+                                                            <div class="flot-chart-content" id="flot-moving-line-chart" style="padding: 0px; position: relative;">
+                                                                <canvas id="memChart" width="735" height="160"></canvas>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 {% for net in networks %}
                                                     <div class="panel panel-info">
                                                         <div class="panel-heading">
@@ -1332,7 +1344,6 @@
 
             $.each(data['vols'], function(i, item) {
                 $("#vols").append('<option value=' + item +'>' + item + '</option>');
-
             })
         });
 
@@ -1568,136 +1579,274 @@ $(document).ready(function () {
         });
     });
 </script>
-<script src="{% static "js/Chart.min.js" %}"></script>
+<script src="{% static "js/Chart.bundle.min.js" %}"></script>
 <script>
     $('#chartgraphs').on('shown.bs.tab', function (event) {
-        var cpuLineData = {
-            labels : [0, 0, 0, 0, 0],
-            datasets : [
-                {
-                    fillColor: "rgba(44,127,184,0.5)",
-                    strokeColor: "rgba(44,127,184,1)",
-                    pointColor: "rgba(44,127,184,1)",
-                    pointStrokeColor: "#fff",
-                    data: [0, 0, 0, 0, 0]
-                }
-            ]
-        };
-        var diskLineData = {
-            labels : [0, 0, 0, 0, 0],
-            datasets : [
-                {
-                    fillColor: "rgba(127,205,187,0.5)",
-                    strokeColor: "rgba(127,205,187,1)",
-                    pointColor: "rgba(127,205,187,1)",
-                    pointStrokeColor: "#fff",
-                    data: [0, 0, 0, 0, 0],
-                    label: "Read"
-                },
-                {
-                    fillColor: "rgba(44,127,184,0.5)",
-                    strokeColor: "rgba(44,127,184,1)",
-                    pointColor: "rgba(44,127,184,1)",
-                    pointStrokeColor: "#fff",
-                    data: [0, 0, 0, 0, 0],
-                    label: "Write"
-                },
-            ]
-        };
-        var netLineData = {
-            labels : [0, 0, 0, 0, 0],
-            datasets : [
-               {
-                    fillColor: "rgba(127,205,187,0.5)",
-                    strokeColor: "rgba(127,205,187,1)",
-                    pointColor: "rgba(127,205,187,1)",
-                    pointStrokeColor: "#fff",
-                    data: [0, 0, 0, 0, 0],
-                    label: "Inbound"
-               },
-               {
-                    fillColor: "rgba(44,127,184,0.5)",
-                    strokeColor: "rgba(44,127,184,1)",
-                    pointColor: "rgba(44,127,184,1)",
-                    pointStrokeColor: "#fff",
-                    data: [0, 0, 0, 0, 0],
-                    label: "Outbound"
-               },
-            ]
-        };
-        var cpuOpt = {
-            animation: false,
-            pointDotRadius: 2,
-            scaleLabel: "<%=value%> %",
-            tooltipTemplate: "<%=value%> %",
-            scaleShowGridLines : false,
-            scaleOverride: true,
-            scaleSteps: 5,
-            scaleStepWidth: 20,
-            scaleStartValue: 0,
-            responsive: true
-        };
-        var diskOpt = {
-            animation: false,
-            pointDotRadius: 2,
-            scaleLabel: "<%=value%> Mb/s",
-            multiTooltipTemplate: "<%=datasetLabel%> - <%=value%> Mb/s",
-            scaleShowGridLines : false,
-            responsive: true
-        };
-        var netOpt = {
-            animation: false,
-            pointDotRadius: 2,
-            scaleLabel: "<%=value%> Mbps",
-            multiTooltipTemplate: "<%=datasetLabel%> - <%=value%> Mbps",
-            scaleShowGridLines : false,
-            responsive: true,
-        };
 
         var cpu_ctx = $("#cpuChart").get(0).getContext("2d");
-        var cpuChart = new Chart(cpu_ctx).Line(cpuLineData, cpuOpt);
+        var cpuChart = new Chart(cpu_ctx, {
+            type: 'line',
+            data: {
+                datasets : [{
+                    backgroundColor: "rgba(44,127,184,0.5)",
+                    label: "Usage"
+                }]
+            },
+            options: {
+                responsive: true,
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes:[{
+                        offset: false,
+                        ticks: {
+                            beginAtZero: false,
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            maxRotation: 0,
+                            minRotation: 0,
+                            stepSize: 10,
+                        },
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            suggestedMax: 100,
+                            suggestedMin: 0,
+                            stepSize: 20,
+                            callback: function(value, index, values) {
+                                return value + ' %';
+                            }
+                        },
+                    }],
+                },
+                tooltips: {
+                     callbacks: {
+                         label: function (tooltipItem, chart) {
+                             var label = chart.datasets[tooltipItem.datasetIndex].label || '';
+                             if (label) {
+                                label += ': ';
+                             }
+                             return label += tooltipItem.yLabel + ' %';
+                         }
+                     }
+                }
+            }
+        });
+
+        var mem_ctx = $("#memChart").get(0).getContext("2d");
+        var memChart = new Chart(mem_ctx, {
+            type: 'line',
+            data: {
+                datasets : [{
+                    label: "Usage"
+                }]
+            },
+            options: {
+                responsive: true,
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes:[{
+                        offset: false,
+                        ticks: {
+                            beginAtZero: false,
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            maxRotation: 0,
+                            minRotation: 0,
+                            stepSize: 10,
+                        },
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            suggestedMax: 100,
+                            suggestedMin: 0,
+                            stepSize: 20,
+                            callback: function(value, index, values) {
+                                return value + ' MB';
+                            }
+                        },
+                    }],
+                },
+                tooltips: {
+                     callbacks: {
+                         label: function (tooltipItem, chart) {
+                             var label = chart.datasets[tooltipItem.datasetIndex].label || '';
+                             if (label) {
+                                label += '(RSS): ';
+                             }
+                             return label += tooltipItem.yLabel + ' MB';
+                         }
+                     }
+                }
+            }
+        });
 
         var diskChart = {};
         {% for disk in disks %}
             var disk_ctx_{{ disk.dev }} = $("#blk{{ disk.dev }}Chart").get(0).getContext("2d");
-            diskChart['{{ disk.dev }}'] = new Chart(disk_ctx_{{ disk.dev }}).Line(diskLineData, diskOpt);
+            diskChart['{{ disk.dev }}'] = new Chart(disk_ctx_{{ disk.dev }}, {
+                type: 'line',
+                data: {
+                    datasets : [{
+                        backgroundColor: "rgba(127,205,187,0.5)",
+                        label: "Read"
+                    },
+                    {
+                        backgroundColor: "rgba(44,127,184,0.5)",
+                        label: "Write"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    legend: {
+                        display: false
+                    },
+                    scales: {
+                        xAxes:[{
+                            offset: false,
+                            ticks: {
+                                beginAtZero: false,
+                                autoSkip: true,
+                                maxTicksLimit: 10,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                stepSize: 10,
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                suggestedmax: 100,
+                                suggestedMin: 0,
+                                callback: function(value, index, values) {
+                                    return value + ' Mb/s';
+                                }
+                            },
+                        }],
+                    },
+                    tooltips: {
+                         callbacks: {
+                             label: function (tooltipItem, chart) {
+                                 var label = chart.datasets[tooltipItem.datasetIndex].label || '';
+                                 if (label) {
+                                    label += ': ';
+                                 }
+                                 return label += tooltipItem.yLabel + ' Mb/s';
+                             }
+                         }
+                    }
+                }
+            });
         {% endfor %}
 
         var netChart = {};
         {% for net in networks %}
             var net_ctx_{{ forloop.counter0 }} = $("#netEth{{ forloop.counter0 }}Chart").get(0).getContext("2d");
-            netChart['{{ forloop.counter0 }}'] = new Chart(net_ctx_{{ forloop.counter0 }}).Line(netLineData, netOpt);
+            netChart['{{ forloop.counter0 }}'] = new Chart(net_ctx_{{ forloop.counter0 }}, {
+                type: 'line',
+                data: {
+                   datasets : [
+                       {
+                            backgroundColor: "rgba(127,205,187,0.5)",
+                            label: "Inbound"
+                       },
+                       {
+                            backgroundColor: "rgba(44,127,184,0.5)",
+                            label: "Outbound"
+                       }]
+                },
+                options: {
+                    responsive: true,
+                    legend: {
+                        display: false
+                    },
+                    scales: {
+                        xAxes:[{
+                            offset: false,
+                            ticks: {
+                                beginAtZero: false,
+                                autoSkip: true,
+                                maxTicksLimit: 10,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                stepSize: 10,
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                suggestedMax: 100,
+                                suggestedMin: 0,
+                                callback: function(value, index, values) {
+                                    return value + ' Mbps';
+                                }
+                            },
+                        }],
+                    },
+                    tooltips: {
+                         callbacks: {
+                             label: function (tooltipItem, chart) {
+                                 var label = chart.datasets[tooltipItem.datasetIndex].label || '';
+                                 if (label) {
+                                    label += ': ';
+                                 }
+                                 return label += tooltipItem.yLabel + ' Mbps';
+                             }
+                         }
+                    }
+                }
+            });
         {% endfor %}
 
         window.setInterval(function graph_usage() {
             $.getJSON('{% url 'inst_graph' compute_id vname %}', function (data) {
-                cpuChart.scale.xLabels = data.timeline;
-                for (var i = 0; i < data.cpudata.length; i++) {
-                    cpuChart.datasets[0].points[i].value = data.cpudata[i];
+
+                cpuChart.data.labels.push(data.timeline);
+
+                cpuChart.data.datasets[0].data.push(data.cpudata);
+                if (cpuChart.data.datasets[0].data.length > 10){
+                    cpuChart.data.labels.shift();
+                    cpuChart.data.datasets[0].data.shift();
                 }
                 cpuChart.update();
 
-                for (var j = 0; j < data.blkdata.length; j++) {
-                    diskChart[data.blkdata[j].dev].scale.xLabels = data.timeline;
+                memChart.data.labels.push(data.timeline);
 
-                    for (var i = 0; i < data.blkdata[j].data[0].length; i++) {
-                        diskChart[data.blkdata[j].dev].datasets[0].points[i].label = 'Time: ' + data.timeline[i];
-                        diskChart[data.blkdata[j].dev].datasets[0].points[i].value = data.blkdata[j].data[0][i];
-                        diskChart[data.blkdata[j].dev].datasets[1].points[i].value = data.blkdata[j].data[1][i];
+
+                memChart.options.scales.yAxes[0].ticks.max = parseInt(data.memdata.total / 1024);
+                memChart.options.scales.yAxes[0].ticks.stepSize = parseInt(data.memdata.total / (1024 * 5));
+                memChart.data.datasets[0].data.push(data.memdata.used / 1024);
+                if (memChart.data.datasets[0].data.length > 10){
+                    memChart.data.labels.shift();
+                    memChart.data.datasets[0].data.shift();
+                }
+                memChart.update();
+
+
+                for (let j = 0; j < data.blkdata.length; j++) {
+                    diskChart[data.blkdata[j].dev].data.labels.push(data.timeline);
+
+                    diskChart[data.blkdata[j].dev].data.datasets[0].data.push(data.blkdata[0].data[0]);
+                    diskChart[data.blkdata[j].dev].data.datasets[1].data.push(data.blkdata[0].data[1]);
+                    if (diskChart[data.blkdata[j].dev].data.datasets[0].data.length > 10){
+                        diskChart[data.blkdata[j].dev].data.labels.shift();
+                        diskChart[data.blkdata[j].dev].data.datasets[0].data.shift();
+                        diskChart[data.blkdata[j].dev].data.datasets[1].data.shift();
                     }
-
                     diskChart[data.blkdata[j].dev].update();
                 }
 
-                for (var j = 0; j < data.netdata.length; j++) {
-                    netChart[data.netdata[j].dev].scale.xLabels = data.timeline;
+                for (let j = 0; j < data.netdata.length; j++) {
+                    netChart[data.netdata[j].dev].data.labels.push(data.timeline);
 
-                    for (var i = 0; i < data.netdata[j].data[0].length; i++) {
-                        netChart[data.netdata[j].dev].datasets[0].points[i].label = 'Time: ' + data.timeline[i];
-                        netChart[data.netdata[j].dev].datasets[0].points[i].value = data.netdata[j].data[0][i];
-                        netChart[data.netdata[j].dev].datasets[1].points[i].value = data.netdata[j].data[1][i];
+                    netChart[data.netdata[j].dev].data.datasets[0].data.push(data.netdata[0].data[0]);
+                    netChart[data.netdata[j].dev].data.datasets[1].data.push(data.netdata[0].data[1]);
+                    if (netChart[data.netdata[j].dev].data.datasets[0].data.length > 10){
+                        netChart[data.netdata[j].dev].data.labels.shift();
+                        netChart[data.netdata[j].dev].data.datasets[0].data.shift();
+                        netChart[data.netdata[j].dev].data.datasets[1].data.shift();
                     }
-
                     netChart[data.netdata[j].dev].update();
                 }
             });
