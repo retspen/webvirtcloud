@@ -80,7 +80,7 @@
                     <h3 class="page-header">{% trans "Performance" %}</h3>
                     <div class="panel panel-success">
                         <div class="panel-heading">
-                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "CPU utilization" %}</h3>
+                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "CPU Utilization" %}</h3>
                         </div>
                         <div class="panel-body">
                             <div class="flot-chart">
@@ -92,7 +92,7 @@
                     </div>
                     <div class="panel panel-info">
                         <div class="panel-heading">
-                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "RAM utilization" %}</h3>
+                            <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> {% trans "RAM Utilization" %}</h3>
                         </div>
                         <div class="panel-body">
                             <div class="flot-chart">
@@ -106,66 +106,128 @@
             </div>
 {% endblock %}
 {% block script %}
-<script src="{% static "js/Chart.min.js" %}"></script>
+<script src="{% static "js/Chart.bundle.min.js" %}"></script>
 <script>
-    var cpuLineData = {
-        labels : [0, 0, 0, 0, 0],
-        datasets : [
-            {
-                fillColor: "rgba(241,72,70,0.5)",
-                strokeColor: "rgba(241,72,70,1)",
-                pointColor : "rgba(241,72,70,1)",
-                pointStrokeColor : "#fff",
-                pointHighlightFill : "#fff",
-                pointHighlightStroke : "rgba(220,220,220,1)",
-                data : [0, 0, 0, 0, 0]
-            }
-        ]
-    }
 
     var cpu_ctx = document.getElementById("cpuChart").getContext("2d");
-    var cpuChart = new Chart(cpu_ctx).Line(cpuLineData, {
-        animation: false,
-        pointDotRadius: 2,
-        scaleLabel: "<%=value%> %",
-        scaleOverride: true,
-        scaleSteps: 5,
-        scaleStepWidth: 20,
-        scaleStartValue: 0,
-        responsive: true
+    var cpuChart = new Chart(cpu_ctx, {
+        type: 'line',
+        data: {
+            datasets : [{
+                label: 'Usage',
+                backgroundColor: "rgba(241,72,70,0.5)",
+                pointRadius: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            legend: {
+                display: false
+            },
+            scales: {
+                xAxes:[{
+                    offset: false,
+                    ticks: {
+                        beginAtZero: false,
+                        autoSkip: true,
+                        maxTicksLimit: 10,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        stepSize: 10,
+                    },
+                }],
+                yAxes: [{
+                    ticks: {
+                        max: 100,
+                        min: 0,
+                        stepSize: 20,
+                        callback: function(value, index, values) {
+                            return value + ' %';
+                        }
+                    },
+                }],
+            },
+            tooltips: {
+                 callbacks: {
+                     label: function (tooltipItem, chart) {
+                         var label = chart.datasets[tooltipItem.datasetIndex].label || '';
+                         if (label) {
+                            label += ': ';
+                         }
+                         return label += tooltipItem.yLabel + ' %';
+                     }
+                 }
+            }
+        }
     });
 
-    var memLineData = {
-        labels : [0, 0, 0, 0, 0],
-        datasets : [
-            {
-                fillColor : "rgba(249,134,33,0.5)",
-                strokeColor : "rgba(249,134,33,1)",
-                pointColor : "rgba(249,134,33,1)",
-                pointStrokeColor : "#fff",
-                pointHighlightFill : "#fff",
-                pointHighlightStroke : "rgba(151,187,205,1)",
-                data : [0, 0, 0, 0, 0]
+    var mem_ctx = document.getElementById("memChart").getContext("2d");
+    var memChart = new Chart(mem_ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                pointRadius: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            legend: {
+                display: false
+            },
+            scales: {
+                xAxes:[{
+                    offset: false,
+                    ticks: {
+                        beginAtZero: false,
+                        autoSkip: true,
+                        maxTicksLimit: 10,
+                        maxRotation: 0,
+                        minRotation: 0
+                    }
+                }],
+                yAxes: [{
+                    ticks:{
+                        suggestedMin: 0,
+                        suggestedMax: 100,
+                        callback: function(value, index, values) {
+                            return value + ' MB';
+                        }
+                    },
+                }],
+            },
+            tooltips: {
+                 callbacks: {
+                     label: function (tooltipItem, chart) {
+                         var label = chart.datasets[tooltipItem.datasetIndex].label || '';
+                         if (label) {
+                            label += ': ';
+                         }
+                         return label += tooltipItem.yLabel  + ' MB';
+                     }
+                 }
             }
-        ]
-    }
-
-    var mem_ctx = $("#memChart").get(0).getContext("2d");
-    var memChart = new Chart(mem_ctx).Line(memLineData, {
-        animation: false,
-        pointDotRadius: 2,
-        scaleLabel: "<%=value%> Mb",
-        responsive: true
+        }
     });
 
     window.setInterval(function graph_usage() {
         $.getJSON('{% url 'compute_graph' compute_id %}', function (data) {
-            cpuChart.scale.xLabels = data.timeline;
-            memChart.scale.xLabels = data.timeline;
-            for (var i = 0; i < 5; i++) {
-                cpuChart.datasets[0].points[i].value = data.cpudata[i];
-                memChart.datasets[0].points[i].value = data.memdata[i];
+            cpuChart.data.labels.push(data.timeline);
+            memChart.data.labels.push(data.timeline);
+
+            cpuChart.data.datasets[0].data.push(data.cpudata);
+            if (cpuChart.data.datasets[0].data.length > 10){
+                cpuChart.data.labels.shift();
+                cpuChart.data.datasets[0].data.shift();
             }
+            memChart.options.scales.yAxes[0].ticks.max = parseInt(data.memdata.total / 1048576);
+            memChart.options.scales.yAxes[0].ticks.stepSize = parseInt(data.memdata.total / (1048576 * 5));
+            memChart.data.datasets[0].data.push(parseInt(data.memdata.usage / 1048576));
+
+            if (memChart.data.datasets[0].data.length > 10){
+                memChart.data.labels.shift();
+                memChart.data.datasets[0].data.shift();
+            }
+
             cpuChart.update();
             memChart.update();
         });

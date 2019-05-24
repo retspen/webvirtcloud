@@ -1,5 +1,6 @@
 import time
 import json
+from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, get_object_or_404
@@ -172,59 +173,25 @@ def compute_graph(request, compute_id):
     :param request:
     :return:
     """
-
-    points = 5
-    datasets = {}
-    cookies = {}
     compute = get_object_or_404(Compute, pk=compute_id)
-    current_time = time.strftime("%H:%M:%S")
-
     try:
         conn = wvmHostDetails(compute.hostname,
                               compute.login,
                               compute.password,
                               compute.type)
+        current_time = timezone.now().strftime("%H:%M:%S")
         cpu_usage = conn.get_cpu_usage()
         mem_usage = conn.get_memory_usage()
         conn.close()
     except libvirtError:
-        cpu_usage = 0
-        mem_usage = 0
+        cpu_usage = {'usage': 0}
+        mem_usage = {'usage': 0}
 
-    try:
-        cookies['cpu'] = request.COOKIES['cpu']
-        cookies['mem'] = request.COOKIES['mem']
-        cookies['timer'] = request.COOKIES['timer']
-    except KeyError:
-        cookies['cpu'] = None
-        cookies['mem'] = None
-
-    if not cookies['cpu'] or not cookies['mem']:
-        datasets['cpu'] = [0] * points
-        datasets['mem'] = [0] * points
-        datasets['timer'] = [0] * points
-    else:
-        datasets['cpu'] = eval(cookies['cpu'])
-        datasets['mem'] = eval(cookies['mem'])
-        datasets['timer'] = eval(cookies['timer'])
-
-    datasets['timer'].append(current_time)
-    datasets['cpu'].append(int(cpu_usage['usage']))
-    datasets['mem'].append(int(mem_usage['usage']) / 1048576)
-
-    if len(datasets['timer']) > points:
-        datasets['timer'].pop(0)
-    if len(datasets['cpu']) > points:
-        datasets['cpu'].pop(0)
-    if len(datasets['mem']) > points:
-        datasets['mem'].pop(0)
-
-    data = json.dumps({'cpudata': datasets['cpu'], 'memdata': datasets['mem'], 'timeline': datasets['timer']})
+    data = json.dumps({'cpudata': cpu_usage['usage'],
+                       'memdata': mem_usage,
+                       'timeline': current_time})
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
-    response.cookies['cpu'] = datasets['cpu']
-    response.cookies['timer'] = datasets['timer']
-    response.cookies['mem'] = datasets['mem']
     response.write(data)
     return response
 

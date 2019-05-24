@@ -526,6 +526,22 @@ class wvmInstance(wvmConnect):
             cpu_usage['cpu'] = 0
         return cpu_usage
 
+    def mem_usage(self):
+        mem_usage = {}
+        if self.get_status() == 1:
+            mem_stats = self.instance.memoryStats()
+            rss = mem_stats['rss'] if mem_stats['rss'] else 0
+            total = mem_stats['actual'] if mem_stats['actual'] else 0
+            available = total - rss
+            if available < 0: available = 0
+
+            mem_usage['used'] = rss
+            mem_usage['total'] = total
+        else:
+            mem_usage['used'] = 0
+            mem_usage['total'] = 0
+        return mem_usage
+
     def disk_usage(self):
         devices = []
         dev_usage = []
