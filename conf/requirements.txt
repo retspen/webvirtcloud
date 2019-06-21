@@ -1,7 +1,7 @@
-Django==1.11.20
+Django==1.11.21
 websockify==0.8.0
 gunicorn==19.9.0
 lxml==4.2.5
-libvirt-python==4.10.0
+libvirt-python==5.3.0
 pytz
 rwlock
