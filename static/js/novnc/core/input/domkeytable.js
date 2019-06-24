@@ -1,6 +1,6 @@
 /*
  * noVNC: HTML5 VNC client
- * Copyright (C) 2017 Pierre Ossman for Cendio AB
+ * Copyright (C) 2018 The noVNC Authors
  * Licensed under MPL 2.0 or any later version (see LICENSE.txt)
  */
 
@@ -13,28 +13,25 @@ import KeyTable from "./keysym.js";
  * See https://www.w3.org/TR/uievents-key/ for possible values.
  */
 
-var DOMKeyTable = {};
+const DOMKeyTable = {};
 
-function addStandard(key, standard)
-{
-    if (standard === undefined) throw "Undefined keysym for key \"" + key + "\"";
-    if (key in DOMKeyTable) throw "Duplicate entry for key \"" + key + "\"";
+function addStandard(key, standard) {
+    if (standard === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
+    if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
     DOMKeyTable[key] = [standard, standard, standard, standard];
 }
 
-function addLeftRight(key, left, right)
-{
-    if (left === undefined) throw "Undefined keysym for key \"" + key + "\"";
-    if (right === undefined) throw "Undefined keysym for key \"" + key + "\"";
-    if (key in DOMKeyTable) throw "Duplicate entry for key \"" + key + "\"";
+function addLeftRight(key, left, right) {
+    if (left === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
+    if (right === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
+    if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
     DOMKeyTable[key] = [left, left, right, left];
 }
 
-function addNumpad(key, standard, numpad)
-{
-    if (standard === undefined) throw "Undefined keysym for key \"" + key + "\"";
-    if (numpad === undefined) throw "Undefined keysym for key \"" + key + "\"";
-    if (key in DOMKeyTable) throw "Duplicate entry for key \"" + key + "\"";
+function addNumpad(key, standard, numpad) {
+    if (standard === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
+    if (numpad === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
+    if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
     DOMKeyTable[key] = [standard, standard, standard, numpad];
 }
 
@@ -75,7 +72,7 @@ addNumpad("PageUp", KeyTable.XK_Prior, KeyTable.XK_KP_Prior);
 // 2.5. Editing Keys
 
 addStandard("Backspace", KeyTable.XK_BackSpace);
-addStandard("Clear", KeyTable.XK_Clear);
+addNumpad("Clear", KeyTable.XK_Clear, KeyTable.XK_KP_Begin);
 addStandard("Copy", KeyTable.XF86XK_Copy);
 // - CrSel
 addStandard("Cut", KeyTable.XF86XK_Cut);
