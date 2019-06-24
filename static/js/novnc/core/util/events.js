@@ -1,6 +1,6 @@
 /*
  * noVNC: HTML5 VNC client
- * Copyright (C) 2012 Joel Martin
+ * Copyright (C) 2018 The noVNC Authors
  * Licensed under MPL 2.0 (see LICENSE.txt)
  *
  * See README.md for usage and integration instructions.
@@ -10,24 +10,24 @@
  * Cross-browser event and position routines
  */
 
-export function getPointerEvent (e) {
+export function getPointerEvent(e) {
     return e.changedTouches ? e.changedTouches[0] : e.touches ? e.touches[0] : e;
-};
+}
 
-export function stopEvent (e) {
+export function stopEvent(e) {
     e.stopPropagation();
     e.preventDefault();
-};
+}
 
 // Emulate Element.setCapture() when not supported
-var _captureRecursion = false;
-var _captureElem = null;
+let _captureRecursion = false;
+let _captureElem = null;
 function _captureProxy(e) {
     // Recursion protection as we'll see our own event
     if (_captureRecursion) return;
 
     // Clone the event as we cannot dispatch an already dispatched event
-    var newEv = new e.constructor(e.type, e);
+    const newEv = new e.constructor(e.type, e);
 
     _captureRecursion = true;
     _captureElem.dispatchEvent(newEv);
@@ -45,18 +45,19 @@ function _captureProxy(e) {
     if (e.type === "mouseup") {
         releaseCapture();
     }
-};
+}
 
 // Follow cursor style of target element
 function _captureElemChanged() {
-    var captureElem = document.getElementById("noVNC_mouse_capture_elem");
+    const captureElem = document.getElementById("noVNC_mouse_capture_elem");
     captureElem.style.cursor = window.getComputedStyle(_captureElem).cursor;
-};
-var _captureObserver = new MutationObserver(_captureElemChanged);
+}
 
-var _captureIndex = 0;
+const _captureObserver = new MutationObserver(_captureElemChanged);
 
-export function setCapture (elem) {
+let _captureIndex = 0;
+
+export function setCapture(elem) {
     if (elem.setCapture) {
 
         elem.setCapture();
@@ -69,7 +70,7 @@ export function setCapture (elem) {
         // called multiple times without coordination
         releaseCapture();
 
-        var captureElem = document.getElementById("noVNC_mouse_capture_elem");
+        let captureElem = document.getElementById("noVNC_mouse_capture_elem");
 
         if (captureElem === null) {
             captureElem = document.createElement("div");
@@ -95,7 +96,7 @@ export function setCapture (elem) {
         _captureIndex++;
 
         // Track cursor and get initial cursor
-        _captureObserver.observe(elem, {attributes:true});
+        _captureObserver.observe(elem, {attributes: true});
         _captureElemChanged();
 
         captureElem.style.display = "";
@@ -105,9 +106,9 @@ export function setCapture (elem) {
         window.addEventListener('mousemove', _captureProxy);
         window.addEventListener('mouseup', _captureProxy);
     }
-};
+}
 
-export function releaseCapture () {
+export function releaseCapture() {
     if (document.releaseCapture) {
 
         document.releaseCapture();
@@ -119,7 +120,7 @@ export function releaseCapture () {
 
         // There might be events already queued, so we need to wait for
         // them to flush. E.g. contextmenu in Microsoft Edge
-        window.setTimeout(function(expected) {
+        window.setTimeout((expected) => {
             // Only clear it if it's the expected grab (i.e. no one
             // else has initiated a new grab)
             if (_captureIndex === expected) {
@@ -129,10 +130,10 @@ export function releaseCapture () {
 
         _captureObserver.disconnect();
 
-        var captureElem = document.getElementById("noVNC_mouse_capture_elem");
+        const captureElem = document.getElementById("noVNC_mouse_capture_elem");
         captureElem.style.display = "none";
 
         window.removeEventListener('mousemove', _captureProxy);
         window.removeEventListener('mouseup', _captureProxy);
     }
-};
+}

@@ -689,8 +689,6 @@
         });
     });
 
-
-
     function get_cust_vols(compute_id, pool) {
         get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
         $.getJSON(get_vol_url, function (data) {
@@ -716,7 +714,7 @@
 
     }
 
-     function get_disk_bus_choices(compute_id, dev_idx, disk_type){
+    function get_disk_bus_choices(compute_id, dev_idx, disk_type){
         get_diskBus_url = "/computes/" + compute_id + "/disk/" + disk_type + "/buses";
 
         $.getJSON(get_diskBus_url, function (data) {

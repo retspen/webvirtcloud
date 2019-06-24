@@ -488,12 +488,11 @@ class wvmInstance(wvmConnect):
           <target dev='%s' bus='%s'/>
         </disk>
         """ % (source, target, targetbus)
+        if self.get_status() == 1:
+            self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_LIVE)
+            self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
         if self.get_status() == 5:
-            devices = tree.find('devices')
-            elm_disk = ElementTree.fromstring(xml_disk)
-            devices.append(elm_disk)
-            xmldom = ElementTree.tostring(tree)
-            self._defineXML(xmldom)
+            self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
 
     def detach_disk(self, dev):
         tree = ElementTree.fromstring(self._XMLDesc(0))

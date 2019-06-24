@@ -1,6 +1,6 @@
 /*
  * noVNC: HTML5 VNC client
- * Copyright (C) 2017 Pierre Ossman for Cendio AB
+ * Copyright (C) 2018 The noVNC Authors
  * Licensed under MPL 2.0 or any later version (see LICENSE.txt)
  */
 
@@ -13,6 +13,7 @@ export default {
     0x08: 'Backspace',
     0x09: 'Tab',
     0x0a: 'NumpadClear',
+    0x0c: 'Numpad5', // IE11 sends evt.keyCode: 12 when numlock is off
     0x0d: 'Enter',
     0x10: 'ShiftLeft',
     0x11: 'ControlLeft',

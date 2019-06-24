@@ -1,6 +1,6 @@
 /*
  * Websock: high-performance binary WebSockets
- * Copyright (C) 2012 Joel Martin
+ * Copyright (C) 2018 The noVNC Authors
  * Licensed under MPL 2.0 (see LICENSE.txt)
  *
  * Websock is similar to the standard WebSocket object but with extra
@@ -14,143 +14,120 @@
 
 import * as Log from './util/logging.js';
 
-export default function Websock() {
-    "use strict";
-
-    this._websocket = null;  // WebSocket object
-
-    this._rQi = 0;           // Receive queue index
-    this._rQlen = 0;         // Next write position in the receive queue
-    this._rQbufferSize = 1024 * 1024 * 4; // Receive queue buffer size (4 MiB)
-    this._rQmax = this._rQbufferSize / 8;
-    // called in init: this._rQ = new Uint8Array(this._rQbufferSize);
-    this._rQ = null; // Receive queue
-
-    this._sQbufferSize = 1024 * 10;  // 10 KiB
-    // called in init: this._sQ = new Uint8Array(this._sQbufferSize);
-    this._sQlen = 0;
-    this._sQ = null;  // Send queue
-
-    this._eventHandlers = {
-        'message': function () {},
-        'open': function () {},
-        'close': function () {},
-        'error': function () {}
-    };
-};
-
 // this has performance issues in some versions Chromium, and
 // doesn't gain a tremendous amount of performance increase in Firefox
 // at the moment.  It may be valuable to turn it on in the future.
-var ENABLE_COPYWITHIN = false;
+const ENABLE_COPYWITHIN = false;
+const MAX_RQ_GROW_SIZE = 40 * 1024 * 1024;  // 40 MiB
 
-var MAX_RQ_GROW_SIZE = 40 * 1024 * 1024;  // 40 MiB
+export default class Websock {
+    constructor() {
+        this._websocket = null;  // WebSocket object
 
-var typedArrayToString = (function () {
-    // This is only for PhantomJS, which doesn't like apply-ing
-    // with Typed Arrays
-    try {
-        var arr = new Uint8Array([1, 2, 3]);
-        String.fromCharCode.apply(null, arr);
-        return function (a) { return String.fromCharCode.apply(null, a); };
-    } catch (ex) {
-        return function (a) {
-            return String.fromCharCode.apply(
-                null, Array.prototype.slice.call(a));
+        this._rQi = 0;           // Receive queue index
+        this._rQlen = 0;         // Next write position in the receive queue
+        this._rQbufferSize = 1024 * 1024 * 4; // Receive queue buffer size (4 MiB)
+        this._rQmax = this._rQbufferSize / 8;
+        // called in init: this._rQ = new Uint8Array(this._rQbufferSize);
+        this._rQ = null; // Receive queue
+
+        this._sQbufferSize = 1024 * 10;  // 10 KiB
+        // called in init: this._sQ = new Uint8Array(this._sQbufferSize);
+        this._sQlen = 0;
+        this._sQ = null;  // Send queue
+
+        this._eventHandlers = {
+            message: () => {},
+            open: () => {},
+            close: () => {},
+            error: () => {}
         };
     }
-})();
 
-Websock.prototype = {
     // Getters and Setters
-    get_sQ: function () {
+    get sQ() {
         return this._sQ;
-    },
+    }
 
-    get_rQ: function () {
+    get rQ() {
         return this._rQ;
-    },
+    }
 
-    get_rQi: function () {
+    get rQi() {
         return this._rQi;
-    },
+    }
 
-    set_rQi: function (val) {
+    set rQi(val) {
         this._rQi = val;
-    },
+    }
 
     // Receive Queue
-    rQlen: function () {
+    get rQlen() {
         return this._rQlen - this._rQi;
-    },
+    }
 
-    rQpeek8: function () {
+    rQpeek8() {
         return this._rQ[this._rQi];
-    },
+    }
 
-    rQshift8: function () {
-        return this._rQ[this._rQi++];
-    },
+    rQskipBytes(bytes) {
+        this._rQi += bytes;
+    }
 
-    rQskip8: function () {
-        this._rQi++;
-    },
+    rQshift8() {
+        return this._rQshift(1);
+    }
 
-    rQskipBytes: function (num) {
-        this._rQi += num;
-    },
+    rQshift16() {
+        return this._rQshift(2);
+    }
+
+    rQshift32() {
+        return this._rQshift(4);
+    }
 
     // TODO(directxman12): test performance with these vs a DataView
-    rQshift16: function () {
-        return (this._rQ[this._rQi++] << 8) +
-               this._rQ[this._rQi++];
-    },
+    _rQshift(bytes) {
+        let res = 0;
+        for (let byte = bytes - 1; byte >= 0; byte--) {
+            res += this._rQ[this._rQi++] << (byte * 8);
+        }
+        return res;
+    }
 
-    rQshift32: function () {
-        return (this._rQ[this._rQi++] << 24) +
-               (this._rQ[this._rQi++] << 16) +
-               (this._rQ[this._rQi++] << 8) +
-               this._rQ[this._rQi++];
-    },
+    rQshiftStr(len) {
+        if (typeof(len) === 'undefined') { len = this.rQlen; }
+        let str = "";
+        // Handle large arrays in steps to avoid long strings on the stack
+        for (let i = 0; i < len; i += 4096) {
+            let part = this.rQshiftBytes(Math.min(4096, len - i));
+            str += String.fromCharCode.apply(null, part);
+        }
+        return str;
+    }
 
-    rQshiftStr: function (len) {
-        if (typeof(len) === 'undefined') { len = this.rQlen(); }
-        var arr = new Uint8Array(this._rQ.buffer, this._rQi, len);
-        this._rQi += len;
-        return typedArrayToString(arr);
-    },
-
-    rQshiftBytes: function (len) {
-        if (typeof(len) === 'undefined') { len = this.rQlen(); }
+    rQshiftBytes(len) {
+        if (typeof(len) === 'undefined') { len = this.rQlen; }
         this._rQi += len;
         return new Uint8Array(this._rQ.buffer, this._rQi - len, len);
-    },
+    }
 
-    rQshiftTo: function (target, len) {
-        if (len === undefined) { len = this.rQlen(); }
+    rQshiftTo(target, len) {
+        if (len === undefined) { len = this.rQlen; }
         // TODO: make this just use set with views when using a ArrayBuffer to store the rQ
         target.set(new Uint8Array(this._rQ.buffer, this._rQi, len));
         this._rQi += len;
-    },
+    }
 
-    rQwhole: function () {
-        return new Uint8Array(this._rQ.buffer, 0, this._rQlen);
-    },
-
-    rQslice: function (start, end) {
-        if (end) {
-            return new Uint8Array(this._rQ.buffer, this._rQi + start, end - start);
-        } else {
-            return new Uint8Array(this._rQ.buffer, this._rQi + start, this._rQlen - this._rQi - start);
-        }
-    },
+    rQslice(start, end = this.rQlen) {
+        return new Uint8Array(this._rQ.buffer, this._rQi + start, end - start);
+    }
 
     // Check to see if we must wait for 'num' bytes (default to FBU.bytes)
     // to be available in the receive queue. Return true if we need to
     // wait (and possibly print a debug message), otherwise false.
-    rQwait: function (msg, num, goback) {
-        var rQlen = this._rQlen - this._rQi; // Skip rQlen() function call
-        if (rQlen < num) {
+    rQwait(msg, num, goback) {
+        if (this.rQlen < num) {
             if (goback) {
                 if (this._rQi < goback) {
                     throw new Error("rQwait cannot backup " + goback + " bytes");
@@ -160,58 +137,55 @@ Websock.prototype = {
             return true; // true means need more data
         }
         return false;
-    },
+    }
 
     // Send Queue
 
-    flush: function () {
+    flush() {
         if (this._sQlen > 0 && this._websocket.readyState === WebSocket.OPEN) {
             this._websocket.send(this._encode_message());
             this._sQlen = 0;
         }
-    },
+    }
 
-    send: function (arr) {
+    send(arr) {
         this._sQ.set(arr, this._sQlen);
         this._sQlen += arr.length;
         this.flush();
-    },
+    }
 
-    send_string: function (str) {
-        this.send(str.split('').map(function (chr) {
-            return chr.charCodeAt(0);
-        }));
-    },
+    send_string(str) {
+        this.send(str.split('').map(chr => chr.charCodeAt(0)));
+    }
 
     // Event Handlers
-    off: function (evt) {
-        this._eventHandlers[evt] = function () {};
-    },
+    off(evt) {
+        this._eventHandlers[evt] = () => {};
+    }
 
-    on: function (evt, handler) {
+    on(evt, handler) {
         this._eventHandlers[evt] = handler;
-    },
+    }
 
-    _allocate_buffers: function () {
+    _allocate_buffers() {
         this._rQ = new Uint8Array(this._rQbufferSize);
         this._sQ = new Uint8Array(this._sQbufferSize);
-    },
+    }
 
-    init: function () {
+    init() {
         this._allocate_buffers();
         this._rQi = 0;
         this._websocket = null;
-    },
+    }
 
-    open: function (uri, protocols) {
-        var ws_schema = uri.match(/^([a-z]+):\/\//)[1];
+    open(uri, protocols) {
         this.init();
 
         this._websocket = new WebSocket(uri, protocols);
         this._websocket.binaryType = 'arraybuffer';
 
         this._websocket.onmessage = this._recv_message.bind(this);
-        this._websocket.onopen = (function () {
+        this._websocket.onopen = () => {
             Log.Debug('>> WebSock.onopen');
             if (this._websocket.protocol) {
                 Log.Info("Server choose sub-protocol: " + this._websocket.protocol);
@@ -219,20 +193,20 @@ Websock.prototype = {
 
             this._eventHandlers.open();
             Log.Debug("<< WebSock.onopen");
-        }).bind(this);
-        this._websocket.onclose = (function (e) {
+        };
+        this._websocket.onclose = (e) => {
             Log.Debug(">> WebSock.onclose");
             this._eventHandlers.close(e);
             Log.Debug("<< WebSock.onclose");
-        }).bind(this);
-        this._websocket.onerror = (function (e) {
+        };
+        this._websocket.onerror = (e) => {
             Log.Debug(">> WebSock.onerror: " + e);
             this._eventHandlers.error(e);
             Log.Debug("<< WebSock.onerror: " + e);
-        }).bind(this);
-    },
+        };
+    }
 
-    close: function () {
+    close() {
         if (this._websocket) {
             if ((this._websocket.readyState === WebSocket.OPEN) ||
                     (this._websocket.readyState === WebSocket.CONNECTING)) {
@@ -240,39 +214,39 @@ Websock.prototype = {
                 this._websocket.close();
             }
 
-            this._websocket.onmessage = function (e) { return; };
+            this._websocket.onmessage = () => {};
         }
-    },
+    }
 
     // private methods
-    _encode_message: function () {
+    _encode_message() {
         // Put in a binary arraybuffer
         // according to the spec, you can send ArrayBufferViews with the send method
         return new Uint8Array(this._sQ.buffer, 0, this._sQlen);
-    },
+    }
 
-    _expand_compact_rQ: function (min_fit) {
-        var resizeNeeded = min_fit || this._rQlen - this._rQi > this._rQbufferSize / 2;
+    _expand_compact_rQ(min_fit) {
+        const resizeNeeded = min_fit || this.rQlen > this._rQbufferSize / 2;
         if (resizeNeeded) {
             if (!min_fit) {
                 // just double the size if we need to do compaction
                 this._rQbufferSize *= 2;
             } else {
                 // otherwise, make sure we satisy rQlen - rQi + min_fit < rQbufferSize / 8
-                this._rQbufferSize = (this._rQlen - this._rQi + min_fit) * 8;
+                this._rQbufferSize = (this.rQlen + min_fit) * 8;
             }
         }
 
         // we don't want to grow unboundedly
         if (this._rQbufferSize > MAX_RQ_GROW_SIZE) {
             this._rQbufferSize = MAX_RQ_GROW_SIZE;
-            if (this._rQbufferSize - this._rQlen - this._rQi < min_fit) {
-                throw new Exception("Receive Queue buffer exceeded " + MAX_RQ_GROW_SIZE + " bytes, and the new message could not fit");
+            if (this._rQbufferSize - this.rQlen < min_fit) {
+                throw new Error("Receive Queue buffer exceeded " + MAX_RQ_GROW_SIZE + " bytes, and the new message could not fit");
             }
         }
 
         if (resizeNeeded) {
-            var old_rQbuffer = this._rQ.buffer;
+            const old_rQbuffer = this._rQ.buffer;
             this._rQmax = this._rQbufferSize / 8;
             this._rQ = new Uint8Array(this._rQbufferSize);
             this._rQ.set(new Uint8Array(old_rQbuffer, this._rQi));
@@ -286,21 +260,21 @@ Websock.prototype = {
 
         this._rQlen = this._rQlen - this._rQi;
         this._rQi = 0;
-    },
+    }
 
-    _decode_message: function (data) {
+    _decode_message(data) {
         // push arraybuffer values onto the end
-        var u8 = new Uint8Array(data);
+        const u8 = new Uint8Array(data);
         if (u8.length > this._rQbufferSize - this._rQlen) {
             this._expand_compact_rQ(u8.length);
         }
         this._rQ.set(u8, this._rQlen);
         this._rQlen += u8.length;
-    },
+    }
 
-    _recv_message: function (e) {
+    _recv_message(e) {
         this._decode_message(e.data);
-        if (this.rQlen() > 0) {
+        if (this.rQlen > 0) {
             this._eventHandlers.message();
             // Compact the receive queue
             if (this._rQlen == this._rQi) {
@@ -313,4 +287,4 @@ Websock.prototype = {
             Log.Debug("Ignoring empty message");
         }
     }
-};
+}
