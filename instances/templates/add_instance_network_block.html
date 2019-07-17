@@ -1,5 +1,5 @@
 {% load i18n %}
-{% if request.user.is_superuser and status == 5 %}
+{% if request.user.is_superuser %}
     <a href="#addInstanceNetwork" type="button" class="btn btn-success pull-right" data-toggle="modal">
         <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
     </a>
