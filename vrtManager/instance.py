@@ -970,13 +970,6 @@ class wvmInstance(wvmConnect):
             """ % nwfilter
         xml_interface += """</interface>"""
 
-        # if self.get_status() == 5:
-        #     devices = tree.find('devices')
-        #     elm_interface = ElementTree.fromstring(xml_interface)
-        #     devices.append(elm_interface)
-        #     xmldom = ElementTree.tostring(tree)
-        #     self._defineXML(xmldom)
-
         if self.get_status() == 1:
             self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_LIVE)
             self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_CONFIG)
