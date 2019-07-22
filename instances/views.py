@@ -928,7 +928,7 @@ def get_host_instances(request, comp):
     all_host_vms = {}
     status = connection_manager.host_is_up(comp.type, comp.hostname)
 
-    if status:
+    if status is True:
         conn = wvmHostDetails(comp, comp.login, comp.password, comp.type)
         comp_node_info = conn.get_node_info()
         comp_mem = conn.get_memory_usage()
@@ -949,7 +949,8 @@ def get_host_instances(request, comp):
                 refresh_instance_database(comp_info, vm, info)
 
         conn.close()
-
+    else:
+        raise libvirtError("Problem occured with {} - {}".format(comp.name, status))
     return all_host_vms
 
 
