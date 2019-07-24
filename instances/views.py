@@ -718,7 +718,7 @@ def instance(request, compute_id, vname):
 
                     conn.change_network(network_data)
                     addlogmsg(request.user.username, instance.name, msg)
-                    msg = _("Network Devices are changed. Please reboot instance to activate.")
+                    msg = _("Network Device Config is changed. Please shutdown instance to activate.")
                     if conn.get_status() != 5: messages.success(request, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
@@ -729,11 +729,7 @@ def instance(request, compute_id, vname):
                     (source, source_type) = get_network_tuple(request.POST.get('add-net-network'))
 
                     conn.add_network(mac, source, source_type, nwfilter=nwfilter)
-
                     addlogmsg(request.user.username, instance.name, msg)
-                    msg = _("Network Device is added. Please reboot instance to activate.")
-                    if conn.get_status() != 5: messages.success(request, msg)
-
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'delete_network' in request.POST:
@@ -742,8 +738,6 @@ def instance(request, compute_id, vname):
 
                     conn.delete_network(mac_address)
                     addlogmsg(request.user.username, instance.name, msg)
-                    msg =  _("Network Device is deleted. Please reboot instance to activate.")
-                    if conn.get_status() != 5: messages.success(request, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_owner' in request.POST:

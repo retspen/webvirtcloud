@@ -970,12 +970,11 @@ class wvmInstance(wvmConnect):
             """ % nwfilter
         xml_interface += """</interface>"""
 
+        if self.get_status() == 1:
+            self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_LIVE)
+            self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_CONFIG)
         if self.get_status() == 5:
-            devices = tree.find('devices')
-            elm_interface = ElementTree.fromstring(xml_interface)
-            devices.append(elm_interface)
-            xmldom = ElementTree.tostring(tree)
-            self._defineXML(xmldom)
+            self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_CONFIG)
 
     def delete_network(self, mac_address):
         tree = ElementTree.fromstring(self._XMLDesc(0))
@@ -983,10 +982,13 @@ class wvmInstance(wvmConnect):
         for interface in tree.findall('devices/interface'):
             source = interface.find('mac')
             if source.get('address', '') == mac_address:
-                source = None
-                devices.remove(interface)
-                new_xml = ElementTree.tostring(tree)
-                self._defineXML(new_xml)
+                new_xml = ElementTree.tostring(interface)
+
+                if self.get_status() == 1:
+                    self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_LIVE)
+                    self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
+                if self.get_status() == 5:
+                    self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
 
     def change_network(self, network_data):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
