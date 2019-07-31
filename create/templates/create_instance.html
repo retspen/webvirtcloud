@@ -224,7 +224,7 @@
                                                                 <button class="btn btn-primary disabled">{% trans "Create" %}</button>
                                                             {% endif %}
                                                         </div>
-                                                            </form>
+                                                        </form>
                                                     </div>
                                                 </div>
                                             </div>
@@ -436,7 +436,6 @@
                             </div>
                             <label class="col-sm-1 control-label">{% trans "MB" %}</label>
                         </div>
-
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
                             <input id="images" name="images" type="hidden" value=""/>
@@ -582,8 +581,7 @@
                 </div>
                 <div class="clearfix"></div>
             </div>
-        </div>
-             <!-- /Tab panes -->
+        </div><!-- /Tab panes -->
     </div>
 
 {% endblock %}
@@ -607,7 +605,6 @@
     }
 
     $(document).ready(function () {
-
           $('#image-control').multiselect({
             disableIfEmpty: true,
             enableCaseInsensitiveFiltering: true,
@@ -716,7 +713,6 @@
 
     function get_disk_bus_choices(compute_id, dev_idx, disk_type){
         get_diskBus_url = "/computes/" + compute_id + "/disk/" + disk_type + "/buses";
-
         $.getJSON(get_diskBus_url, function (data) {
             $("#bus" + dev_idx).find('option').remove();
             $.each(data['bus'], function(i, item) {

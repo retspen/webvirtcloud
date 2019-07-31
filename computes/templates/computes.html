@@ -2,251 +2,250 @@
 {% load i18n %}
 {% block title %}{% trans "Computes" %}{% endblock %}
 {% block content %}
-            <!-- Page Heading -->
-            <div class="row">
-                <div class="col-lg-12">
-                    {% include 'create_comp_block.html' %}
-                    <h1 class="page-header">{% trans "Computes" %}</h1>
-                </div>
-            </div>
-            <!-- /.row -->
+    <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            {% include 'create_comp_block.html' %}
+            <h1 class="page-header">{% trans "Computes" %}</h1>
+        </div>
+    </div>
+    <!-- /.row -->
 
-            {% include 'errors_block.html' %}
+    {% include 'errors_block.html' %}
 
-            <div class="row">
-                {% if computes_info %}
-                    {% for compute in computes_info %}
-                        <div id="{{ compute.name }}" class="col-xs-12 col-sm-4">
-                            <div class="panel {% if compute.status %}panel-success{% else %}panel-danger{% endif %} panel-data">
-                                <div class="panel-heading">
-                                    {% ifequal compute.status 1 %}
-                                        <h3 class="panel-title">
-                                            <a href="{% url 'overview' compute.id %}"><strong>{{ compute.name }}</strong></a>
-                                            <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right" title="{% trans "Edit" %}">
-                                                <i class="fa fa-cog"></i>
-                                            </a>
-                                        </h3>
-                                    {% else %}
-                                        <h3 class="panel-title"><strong>{{ compute.name }}</strong>
-                                            <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right" title="{% trans "Edit" %}">
-                                                <span class="glyphicon glyphicon-cog"></span>
-                                            </a>
-                                        </h3>
-                                    {% endifequal %}
+    <div class="row">
+        {% if computes_info %}
+            {% for compute in computes_info %}
+                <div id="{{ compute.name }}" class="col-xs-12 col-sm-4">
+                    <div class="panel {% if compute.status %}panel-success{% else %}panel-danger{% endif %} panel-data">
+                        <div class="panel-heading">
+                            {% ifequal compute.status 1 %}
+                                <h3 class="panel-title">
+                                    <a href="{% url 'overview' compute.id %}"><strong>{{ compute.name }}</strong></a>
+                                    <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right" title="{% trans "Edit" %}">
+                                        <i class="fa fa-cog"></i>
+                                    </a>
+                                </h3>
+                            {% else %}
+                                <h3 class="panel-title"><strong>{{ compute.name }}</strong>
+                                    <a data-toggle="modal" href="#editHost{{ compute.id }}" class="pull-right" title="{% trans "Edit" %}">
+                                        <span class="glyphicon glyphicon-cog"></span>
+                                    </a>
+                                </h3>
+                            {% endifequal %}
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-4 col-sm-4">
+                                    <p><strong>{% trans "Status" %}:</strong></p>
                                 </div>
-                                <div class="panel-body">
-                                    <div class="row">
-                                        <div class="col-xs-4 col-sm-4">
-                                            <p><strong>{% trans "Status:" %}</strong></p>
-                                        </div>
-                                        <div class="col-xs-4 col-sm-6">
-                                            {% if compute.status %}
-                                                <p>{% trans "Connected" %}</p>
-                                            {% else %}
-                                                <p>{% trans "Not Connected" %}</p>
-                                            {% endif %}
-											{% if compute.details %}
-												<p>{% trans compute.details %}</p>
-											{% else %}
-												<p>{% trans "No details available" %}</p>
-											{% endif %}
-                                        </div>
-                                    </div>
-
-                                    <!-- Modal Edit -->
-                                    <div class="modal fade" id="editHost{{ compute.id }}" tabindex="-1" role="dialog" aria-labelledby="editHostLabel" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                                                    <h4 class="modal-title">{% trans "Edit connection" %}</h4>
-                                                </div>
-                                                {% ifequal compute.type 1 %}
-                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                        <div class="modal-body">
-
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Label" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="hidden" name="host_id" value="{{ compute.id }}">
-                                                                    <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "FQDN / IP" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="hostname" class="form-control" value="{{ compute.hostname }}" required pattern="[a-z0-9\.\-_]+">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Username" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="login" class="form-control" value="{{ compute.login }}">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Password" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="password" name="password" class="form-control" value="{{ compute.password }}">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Details" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
-                                                                </div>
-                                                            </div></div>
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="pull-left btn btn-danger" name="host_del">
-                                                                {% trans "Delete" %}
-                                                            </button>
-                                                            <button type="button" class="btn btn-default" data-dismiss="modal">
-                                                                {% trans "Close" %}
-                                                            </button>
-                                                            <button type="submit" class="btn btn-primary" name="host_edit">
-                                                                {% trans "Change" %}
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                {% endifequal %}
-                                                {% ifequal compute.type 2 %}
-                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                        <div class="modal-body">
-                                                            <p class="modal-body">{% trans "Need create ssh <a href='https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization'>authorization key</a>. If you have another SSH port on your server, you can add IP:PORT like '192.168.1.1:2222'." %}</p>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Label" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="hidden" name="host_id" value="{{ compute.id }}">
-                                                                    <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "FQDN / IP" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="hostname" class="form-control" value="{{ compute.hostname }}" required pattern="[a-z0-9\:\.\-_]+">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Username" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="login" class="form-control" value="{{ compute.login }}">
-                                                                    <input type="hidden" name="password" value="{{ compute.password }}">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Details" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="pull-left btn btn-danger" name="host_del">
-                                                                {% trans "Delete" %}
-                                                            </button>
-                                                            <button type="button" class="btn btn-default" data-dismiss="modal">
-                                                                {% trans "Close" %}
-                                                            </button>
-                                                            <button type="submit" class="btn btn-primary" name="host_edit">
-                                                                {% trans "Change" %}
-                                                            </button>
-
-                                                        </div>
-                                                    </form>
-                                                {% endifequal %}
-                                                {% ifequal compute.type 3 %}
-                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                        <div class="modal-body">
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Label" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="hidden" name="host_id" value="{{ compute.id }}">
-                                                                    <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "FQDN / IP" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="hostname" class="form-control" value="{{ compute.hostname }}" required pattern="[a-z0-9\:\.\-_]+">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Username" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="login" class="form-control" placeholder="{% trans "Name" %}">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Password" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="password" name="password" class="form-control" value="{{ compute.password }}">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Details" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="pull-left btn btn-danger" name="host_del">
-                                                                {% trans "Delete" %}
-                                                            </button>
-                                                            <button type="button" class="btn btn-default" data-dismiss="modal">
-                                                                {% trans "Close" %}
-                                                            </button>
-                                                            <button type="submit" class="btn btn-primary" name="host_edit">
-                                                                {% trans "Change" %}
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                {% endifequal %}
-                                                {% ifequal compute.type 4 %}
-                                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                                        <div class="modal-body">
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Label" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="hidden" name="host_id" value="{{ compute.id }}">
-                                                                    <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
-                                                                </div>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label class="col-sm-4 control-label">{% trans "Details" %}</label>
-                                                                <div class="col-sm-6">
-                                                                    <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="pull-left btn btn-danger" name="host_del">
-                                                                {% trans "Delete" %}
-                                                            </button>
-                                                            <button type="button" class="btn btn-default" data-dismiss="modal">
-                                                                {% trans "Close" %}
-                                                            </button>
-                                                            <button type="submit" class="btn btn-primary" name="host_edit">
-                                                                {% trans "Change" %}
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                {% endifequal %}
-                                            </div><!-- /.modal-content -->
-                                        </div><!-- /.modal-dialog -->
-                                    </div><!-- /.modal -->
-
+                                <div class="col-xs-4 col-sm-6">
+                                    {% if compute.status %}
+                                        <p>{% trans "Connected" %}</p>
+                                    {% else %}
+                                        <p>{% trans "Not Connected" %}</p>
+                                    {% endif %}
+                                    {% if compute.details %}
+                                        <p>{% trans compute.details %}</p>
+                                    {% else %}
+                                        <p>{% trans "No details available" %}</p>
+                                    {% endif %}
                                 </div>
                             </div>
+
+                            <!-- Modal Edit -->
+                            <div class="modal fade" id="editHost{{ compute.id }}" tabindex="-1" role="dialog" aria-labelledby="editHostLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                            <h4 class="modal-title">{% trans "Edit connection" %}</h4>
+                                        </div>
+                                        {% ifequal compute.type 1 %}
+                                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                <div class="modal-body">
+
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Label" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="hidden" name="host_id" value="{{ compute.id }}">
+                                                            <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "FQDN / IP" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="hostname" class="form-control" value="{{ compute.hostname }}" required pattern="[a-z0-9\.\-_]+">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Username" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="login" class="form-control" value="{{ compute.login }}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Password" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="password" name="password" class="form-control" value="{{ compute.password }}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Details" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
+                                                        </div>
+                                                    </div></div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="pull-left btn btn-danger" name="host_del">
+                                                        {% trans "Delete" %}
+                                                    </button>
+                                                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                                                        {% trans "Close" %}
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary" name="host_edit">
+                                                        {% trans "Change" %}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        {% endifequal %}
+                                        {% ifequal compute.type 2 %}
+                                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                <div class="modal-body">
+                                                    <p class="modal-body">{% trans "Need create ssh <a href='https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization'>authorization key</a>. If you have another SSH port on your server, you can add IP:PORT like '192.168.1.1:2222'." %}</p>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Label" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="hidden" name="host_id" value="{{ compute.id }}">
+                                                            <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "FQDN / IP" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="hostname" class="form-control" value="{{ compute.hostname }}" required pattern="[a-z0-9\:\.\-_]+">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Username" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="login" class="form-control" value="{{ compute.login }}">
+                                                            <input type="hidden" name="password" value="{{ compute.password }}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Details" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="pull-left btn btn-danger" name="host_del">
+                                                        {% trans "Delete" %}
+                                                    </button>
+                                                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                                                        {% trans "Close" %}
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary" name="host_edit">
+                                                        {% trans "Change" %}
+                                                    </button>
+
+                                                </div>
+                                            </form>
+                                        {% endifequal %}
+                                        {% ifequal compute.type 3 %}
+                                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                <div class="modal-body">
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Label" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="hidden" name="host_id" value="{{ compute.id }}">
+                                                            <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "FQDN / IP" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="hostname" class="form-control" value="{{ compute.hostname }}" required pattern="[a-z0-9\:\.\-_]+">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Username" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="login" class="form-control" placeholder="{% trans "Name" %}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Password" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="password" name="password" class="form-control" value="{{ compute.password }}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Details" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="pull-left btn btn-danger" name="host_del">
+                                                        {% trans "Delete" %}
+                                                    </button>
+                                                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                                                        {% trans "Close" %}
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary" name="host_edit">
+                                                        {% trans "Change" %}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        {% endifequal %}
+                                        {% ifequal compute.type 4 %}
+                                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                                <div class="modal-body">
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Label" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="hidden" name="host_id" value="{{ compute.id }}">
+                                                            <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-4 control-label">{% trans "Details" %}</label>
+                                                        <div class="col-sm-6">
+                                                            <input type="text" name="details" class="form-control" placeholder="Details" value="{{ compute.details }}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="pull-left btn btn-danger" name="host_del">
+                                                        {% trans "Delete" %}
+                                                    </button>
+                                                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                                                        {% trans "Close" %}
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary" name="host_edit">
+                                                        {% trans "Change" %}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        {% endifequal %}
+                                    </div><!-- /.modal-content -->
+                                </div><!-- /.modal-dialog -->
+                            </div><!-- /.modal -->
                         </div>
-                    {% endfor %}
-                {% else %}
-                   <div class="col-lg-12">
-                        <div class="alert alert-warning alert-dismissable">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Computes" %}
-                        </div>
-                   </div>
-                {% endif %}
-            </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+           <div class="col-lg-12">
+                <div class="alert alert-warning alert-dismissable">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Computes" %}
+                </div>
+           </div>
+        {% endif %}
+    </div>
 {% endblock %}
