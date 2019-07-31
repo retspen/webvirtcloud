@@ -988,6 +988,12 @@ def instances_actions(request):
         conn.shutdown(name)
         return HttpResponseRedirect(request.get_full_path())
 
+    if 'powerforce' in request.POST:
+        conn.force_shutdown()
+        msg = _("Force Off")
+        addlogmsg(request.user.username, instance.name, msg)
+        return HttpResponseRedirect(request.get_full_path())
+
     if 'powercycle' in request.POST:
         msg = _("Power Cycle")
         conn.force_shutdown(name)
