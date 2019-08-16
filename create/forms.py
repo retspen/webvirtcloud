@@ -2,7 +2,7 @@ import re
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from create.models import Flavor
-from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+from webvirt.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 
 
 class FlavorAddForm(forms.Form):

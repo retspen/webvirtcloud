@@ -10,9 +10,9 @@ from instances.models import Instance
 from vrtManager.create import wvmCreate
 from vrtManager import util
 from libvirt import libvirtError
-from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_CACHE
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_BUS
+from webvirt.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_CACHE
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_BUS
 from django.contrib import messages
 from logs.views import addlogmsg
 

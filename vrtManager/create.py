@@ -1,9 +1,9 @@
 import string
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as default_owner
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
+from webvirt.settings import QEMU_CONSOLE_DEFAULT_TYPE
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_OWNER as default_owner
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 
 
 def get_rbd_storage_data(stg):

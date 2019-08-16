@@ -1,6 +1,6 @@
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
 
 
 class wvmStorages(wvmConnect):

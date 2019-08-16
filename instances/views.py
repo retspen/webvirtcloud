@@ -1077,7 +1077,7 @@ def inst_graph(request, compute_id, vname):
 
 
 def _get_dhcp_mac_address(vname):
-    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
+    dhcp_file = '/srv/webvirt/dhcpd.conf'
     mac = ''
     if os.path.isfile(dhcp_file):
         with open(dhcp_file, 'r') as f:
@@ -1119,7 +1119,7 @@ def random_mac_address(request):
 
 @login_required
 def guess_clone_name(request):
-    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
+    dhcp_file = '/srv/webvirt/dhcpd.conf'
     prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
     if os.path.isfile(dhcp_file):
         instance_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
