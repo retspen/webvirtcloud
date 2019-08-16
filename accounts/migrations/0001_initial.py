@@ -1,5 +1,6 @@
 from django.db import models, migrations
 from django.conf import settings
+from django.db.models import CASCADE
 
 
 class Migration(migrations.Migration):
@@ -16,8 +17,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('is_change', models.BooleanField(default=False)),
                 ('is_delete', models.BooleanField(default=False)),
-                ('instance', models.ForeignKey(to='instances.Instance')),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+                ('instance', models.ForeignKey(to='instances.Instance', on_delete=CASCADE)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=CASCADE)),
             ],
             options={
             },
