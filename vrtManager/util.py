@@ -34,9 +34,9 @@ def randomUUID():
                      "%02x" * 6]) % tuple(u)
 
 
-def randomPasswd(length=12, alphabet=string.letters + string.digits):
+def randomPasswd(length=12, alphabet=string.ascii_letters + string.digits):
     """Generate a random password"""
-    return ''.join([random.choice(alphabet) for i in xrange(length)])
+    return ''.join([random.choice(alphabet) for i in range(length)])
 
 
 def get_max_vcpus(conn, type=None):
@@ -75,7 +75,7 @@ def compareMAC(p, q):
         else:
             return -1
 
-    for i in xrange(len(pa)):
+    for i in range(len(pa)):
         n = int(pa[i], 0x10) - int(qa[i], 0x10)
         if n > 0:
             return 1
@@ -110,7 +110,7 @@ def get_xpath(doc, path):
     if ret is not None:
         if type(ret) == list:
             if len(ret) >= 1:
-                if hasattr(ret[0],'text'):
+                if hasattr(ret[0], 'text'):
                     result = ret[0].text
                 else:
                     result = ret[0]
@@ -118,6 +118,7 @@ def get_xpath(doc, path):
             result = ret
 
     return result
+
 
 def pretty_mem(val):
     val = int(val)
@@ -145,13 +146,11 @@ def validate_uuid(val):
         form = re.match("[a-fA-F0-9]{32}$", val)
         if form is None:
             raise ValueError(
-                  "UUID must be a 32-digit hexadecimal number. It may take "
-                    "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
-                    "omit hyphens altogether.")
+                  "UUID must be a 32-digit hexadecimal number. It may take the form "
+                  "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may omit hyphens altogether.")
 
         else:   # UUID had no dashes, so add them in
-            val = (val[0:8] + "-" + val[8:12] + "-" + val[12:16] +
-                   "-" + val[16:20] + "-" + val[20:32])
+            val = (val[0:8] + "-" + val[8:12] + "-" + val[12:16] + "-" + val[16:20] + "-" + val[20:32])
     return val
 
 
@@ -159,7 +158,7 @@ def validate_macaddr(val):
     if val is None:
         return
 
-    if not (isinstance(val, str) or isinstance(val, basestring)):
+    if not (isinstance(val, str) or isinstance(val, str)):
         raise ValueError("MAC address must be a string.")
 
     form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)

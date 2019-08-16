@@ -24,10 +24,11 @@ class UserSSHKey(models.Model):
     def __unicode__(self):
         return self.keyname
 
+
 class UserAttributes(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     can_clone_instances = models.BooleanField(default=True)
-    max_instances = models.IntegerField(default=1, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1),])
+    max_instances = models.IntegerField(default=1, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1)])
     max_cpus = models.IntegerField(default=1, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1)])
     max_memory = models.IntegerField(default=2048, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1)])
     max_disk_size = models.IntegerField(default=20, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1)])
@@ -48,7 +49,7 @@ class UserAttributes(models.Model):
                 instance = Instance.objects.get(name=instance_name)
                 user_instance = UserInstance(user=user, instance=instance)
                 user_instance.save()
-    
+
     @staticmethod
     def configure_user(user):
         UserAttributes.create_missing_userattributes(user)

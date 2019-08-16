@@ -27,6 +27,7 @@ from logs.views import addlogmsg
 from django.conf import settings
 from django.contrib import messages
 
+
 @login_required
 def index(request):
     """
@@ -129,17 +130,17 @@ def instance(request, compute_id, vname):
             return 0
         size_str = size_str.encode('ascii', 'ignore').upper().translate(None, " B")
         if 'K' == size_str[-1]:
-            return long(float(size_str[:-1])) << 10
+            return int(float(size_str[:-1])) << 10
         elif 'M' == size_str[-1]:
-            return long(float(size_str[:-1])) << 20
+            return int(float(size_str[:-1])) << 20
         elif 'G' == size_str[-1]:
-            return long(float(size_str[:-1])) << 30
+            return int(float(size_str[:-1])) << 30
         elif 'T' == size_str[-1]:
-            return long(float(size_str[:-1])) << 40
+            return int(float(size_str[:-1])) << 40
         elif 'P' == size_str[-1]:
-            return long(float(size_str[:-1])) << 50
+            return int(float(size_str[:-1])) << 50
         else:
-            return long(float(size_str))
+            return int(float(size_str))
 
     def get_clone_free_names(size=10):
         prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
@@ -213,7 +214,7 @@ def instance(request, compute_id, vname):
         if media:
             existing_media_devs = [m['dev'] for m in media]
 
-        for l in string.lowercase:
+        for l in string.ascii_lowercase:
             dev = dev_base + l
             if dev not in existing_disk_devs and dev not in existing_media_devs:
                 return dev
@@ -495,7 +496,7 @@ def instance(request, compute_id, vname):
                 format = connCreate.get_volume_type(name)
                 path = connCreate.get_target_path()
                 target = get_new_disk_dev(media, disks, bus)
-                source = path + "/" + name;
+                source = path + "/" + name
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach Existing disk: ' + target)
@@ -719,7 +720,8 @@ def instance(request, compute_id, vname):
                     conn.change_network(network_data)
                     addlogmsg(request.user.username, instance.name, msg)
                     msg = _("Network Device Config is changed. Please shutdown instance to activate.")
-                    if conn.get_status() != 5: messages.success(request, msg)
+                    if conn.get_status() != 5:
+                        messages.success(request, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_network' in request.POST:
@@ -904,17 +906,17 @@ def get_host_instances(request, comp):
                 inst_on_db.save()
 
             all_host_vms[comp["id"],
-                           comp["name"],
-                           comp["status"],
-                           comp["cpu"],
-                           comp["mem_size"],
-                           comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
             all_host_vms[comp["id"],
-                           comp["name"],
-                           comp["status"],
-                           comp["cpu"],
-                           comp["mem_size"],
-                           comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
         except Instance.DoesNotExist:
             inst_on_db = Instance(compute_id=comp["id"], name=inst_name, uuid=info['uuid'])
             inst_on_db.save()
@@ -1177,10 +1179,9 @@ def sshkeys(request, vname):
     :param vm:
     :return:
     """
-
     instance_keys = []
     userinstances = UserInstance.objects.filter(instance__name=vname)
-    
+
     for ui in userinstances:
         keys = UserSSHKey.objects.filter(user=ui.user)
         for k in keys:
@@ -1213,7 +1214,7 @@ def delete_instance(instance, delete_disk=False):
             print("Forcing shutdown")
             conn.force_shutdown()
         if delete_disk:
-            snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k:k['date'])
+            snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k: k['date'])
             for snap in snapshots:
                 print("Deleting snapshot {}".format(snap['name']))
                 conn.snapshot_delete(snap['name'])
@@ -1228,4 +1229,3 @@ def delete_instance(instance, delete_disk=False):
     except libvirtError as lib_err:
         print("Error removing instance {} on compute {}".format(instance_name, compute.hostname))
         raise lib_err
-

@@ -11,7 +11,6 @@ from django.conf import settings
 from django.core.validators import ValidationError
 
 
-
 @login_required
 def profile(request):
     """
@@ -70,6 +69,7 @@ def profile(request):
             return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
 
+
 @login_required
 def accounts(request):
     """
@@ -103,7 +103,8 @@ def accounts(request):
             user_pass = request.POST.get('user_pass', '')
             user_edit = User.objects.get(id=user_id)
 
-            if user_pass != '': user_edit.set_password(user_pass)
+            if user_pass != '':
+                user_edit.set_password(user_pass)
             user_edit.is_staff = CHECKBOX_MAPPING.get(request.POST.get('user_is_staff', 'off'))
             user_edit.is_superuser = CHECKBOX_MAPPING.get(request.POST.get('user_is_superuser', 'off'))
             user_edit.save()
@@ -185,12 +186,12 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
-            
+
             if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
             else:
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id))
-            
+
             if check_inst:
                 msg = _("Instance already added")
                 error_messages.append(msg)

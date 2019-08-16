@@ -1,4 +1,3 @@
-import time
 import json
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
@@ -44,7 +43,7 @@ def computes(request):
     error_messages = []
     computes = Compute.objects.filter().order_by('name')
     computes_info = get_hosts_status(computes)
-    
+
     if request.method == 'POST':
         if 'host_del' in request.POST:
             compute_id = request.POST.get('host_id', '')
@@ -213,13 +212,12 @@ def get_compute_disk_buses(request, compute_id, disk):
             if disk == 'disk':
                 data['bus'] = sorted(disk_device_types)
             elif disk == 'cdrom':
-                data['bus'] = ['ide', 'sata', 'scsi',]
+                data['bus'] = ['ide', 'sata', 'scsi']
             elif disk == 'floppy':
-                data['bus'] = ['fdc',]
+                data['bus'] = ['fdc']
             elif disk == 'lun':
-                data['bus'] = ['scsi',]
+                data['bus'] = ['scsi']
     except libvirtError:
         pass
 
     return HttpResponse(json.dumps(data))
-

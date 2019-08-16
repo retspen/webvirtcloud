@@ -10,6 +10,7 @@ from libvirt import libvirtError
 from django.contrib import messages
 import json
 
+
 @login_required
 def storages(request, compute_id):
     """

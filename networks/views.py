@@ -153,13 +153,11 @@ def network(request, compute_id, pool):
             edit_xml = request.POST.get('edit_xml', '')
             if edit_xml:
                 try:
-                    new_conn = wvmNetworks(compute.hostname,
-                                   compute.login,
-                                   compute.password,
-                                   compute.type)
+                    new_conn = wvmNetworks(compute.hostname, compute.login, compute.password, compute.type)
                     conn.define_network(edit_xml)
                     if conn.is_active():
-                        messages.success(request, _("Network XML is changed. Stop and start network to activate new config."))
+                        messages.success(request,
+                                         _("Network XML is changed. Stop and start network to activate new config."))
                     else:
                         messages.success(request, _("Network XML is changed."))
                     return HttpResponseRedirect(request.get_full_path())
