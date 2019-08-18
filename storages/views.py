@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.translation import ugettext_lazy as _
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from storages.forms import AddStgPool, AddImage, CloneImage
@@ -9,6 +9,7 @@ from vrtManager.storage import wvmStorage, wvmStorages
 from libvirt import libvirtError
 from django.contrib import messages
 import json
+
 
 @login_required
 def storages(request, compute_id):

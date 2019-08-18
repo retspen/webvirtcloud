@@ -12,7 +12,7 @@ class wvmNWFilters(wvmConnect):
     def create_nwfilter(self, xml):
         self.wvm.nwfilterDefineXML(xml)
 
-    def clone_nwfilter(self,name, cln_name):
+    def clone_nwfilter(self, name, cln_name):
         nwfilter = self.get_nwfilter(name)
         if nwfilter:
             tree = ElementTree.fromstring(nwfilter.XMLDesc(0))

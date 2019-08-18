@@ -10,8 +10,8 @@ from xml.etree import ElementTree
 from datetime import datetime
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage
-from webvirtcloud.settings import QEMU_CONSOLE_TYPES
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
+from webvirt.settings import QEMU_CONSOLE_TYPES
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
 
 
 class wvmInstances(wvmConnect):
@@ -212,7 +212,7 @@ class wvmInstance(wvmConnect):
         """Get number of physical CPUs."""
         hostinfo = self.wvm.getInfo()
         pcpus = hostinfo[4] * hostinfo[5] * hostinfo[6] * hostinfo[7]
-        range_pcpus = xrange(1, int(pcpus + 1))
+        range_pcpus = range(1, int(pcpus + 1))
         return range_pcpus
 
     def get_net_device(self):
@@ -249,7 +249,7 @@ class wvmInstance(wvmConnect):
             result = []
             dev = volume = storage = src_file = None
             disk_format = used_size = disk_size = disk_cache = None
-            
+
             for disk in doc.xpath('/domain/devices/disk'):
                 device = disk.xpath('@device')[0]
                 if device == 'disk':
@@ -322,7 +322,7 @@ class wvmInstance(wvmConnect):
         os = tree.find('os')
         menu = os.find("bootmenu")
 
-        if menu == None:
+        if menu is None:
             bootmenu = ElementTree.fromstring("<bootmenu enable='yes'/>")
             os.append(bootmenu)
             menu = os.find("bootmenu")
@@ -365,7 +365,7 @@ class wvmInstance(wvmConnect):
         for dev in devices:
             dev_target = dev_type = dev_device = dev_alias = None
             boot_dev = dev.find('boot')
-            if boot_dev != None:
+            if boot_dev is not None:
                 idx = boot_dev.get('order')
                 dev_type = dev.get('type')
                 dev_device = dev.get('device')
@@ -398,7 +398,7 @@ class wvmInstance(wvmConnect):
             # Remove rest of them
             for dev in tree.find('devices'):
                 boot_dev = dev.find('boot')
-                if boot_dev != None:
+                if boot_dev is not None:
                     dev.remove(boot_dev)
             return tree
 
@@ -410,19 +410,19 @@ class wvmInstance(wvmConnect):
                 devices = tree.findall("./devices/disk[@device='disk']")
                 for d in devices:
                     device = d.find("./target[@dev='{}']".format(dev['dev']))
-                    if device != None:
+                    if device is not None:
                         d.append(order)
             elif dev['type'] == 'cdrom':
                 devices = tree.findall("./devices/disk[@device='cdrom']")
                 for d in devices:
                     device = d.find("./target[@dev='{}']".format(dev['dev']))
-                    if device != None:
+                    if device is not None:
                         d.append(order)
             elif dev['type'] == 'network':
                 devices = tree.findall("./devices/interface[@type='network']")
                 for d in devices:
                     device = d.find("mac[@address='{}']".format(dev['dev']))
-                    if device != None:
+                    if device is not None:
                         d.append(order)
             else:
                 raise Exception('Invalid Device Type for boot order')
@@ -520,7 +520,7 @@ class wvmInstance(wvmConnect):
             time.sleep(1)
             cpu_use_now = self.instance.info()[4]
             diff_usage = cpu_use_now - cpu_use_ago
-            cpu_usage['cpu'] = 100 * diff_usage / (1 * nbcore * 10 ** 9L)
+            cpu_usage['cpu'] = 100 * diff_usage / (1 * nbcore * 10 ** 9)
         else:
             cpu_usage['cpu'] = 0
         return cpu_usage
@@ -532,7 +532,8 @@ class wvmInstance(wvmConnect):
             rss = mem_stats['rss'] if mem_stats['rss'] else 0
             total = mem_stats['actual'] if mem_stats['actual'] else 0
             available = total - rss
-            if available < 0: available = 0
+            if available < 0:
+                available = 0
 
             mem_usage['used'] = rss
             mem_usage['total'] = total
@@ -622,7 +623,7 @@ class wvmInstance(wvmConnect):
         if listen_addr is None:
             listen_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/listen/@address")
             if listen_addr is None:
-                    return "127.0.0.1"
+                return "127.0.0.1"
         return listen_addr
 
     def set_console_listen_addr(self, listen_addr):
@@ -650,13 +651,13 @@ class wvmInstance(wvmConnect):
                 pass
         newxml = ElementTree.tostring(root)
         return self._defineXML(newxml)
-    
+
     def get_console_socket(self):
         socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@socket")
         return socket
 
     def get_console_type(self):
-        console_type = util.get_xml_path(self._XMLDesc(0),"/domain/devices/graphics/@type")
+        console_type = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@type")
         return console_type
 
     def set_console_type(self, console_type):
@@ -765,7 +766,7 @@ class wvmInstance(wvmConnect):
             source_dev = disk['path']
             vol = self.get_volume_by_path(source_dev)
             vol.resize(disk['size_new'])
-        
+
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
@@ -901,7 +902,7 @@ class wvmInstance(wvmConnect):
 
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
-                
+
                 source_protocol = elm.get('protocol')
                 if source_protocol == 'rbd':
                     source_name = elm.get('name')
@@ -927,13 +928,13 @@ class wvmInstance(wvmConnect):
                 if source_dev:
                     clone_path = os.path.join(os.path.dirname(source_dev), target_file)
                     elm.set('dev', clone_path)
-                    
+
                     vol = self.get_volume_by_path(source_dev)
                     stg = vol.storagePoolLookupByVolume()
-                    
+
                     vol_name = util.get_xml_path(vol.XMLDesc(0), "/volume/name")
                     pool_name = util.get_xml_path(stg.XMLDesc(0), "/pool/name")
-                    
+
                     storage = self.get_wvmStorage(pool_name)
                     storage.clone_volume(vol_name, target_file)
 
@@ -954,7 +955,7 @@ class wvmInstance(wvmConnect):
             net = self.get_network(source)
             bridge_name = net.bridgeName()
         return bridge_name
-        
+
     def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio', nwfilter=None):
         tree = ElementTree.fromstring(self._XMLDesc(0))
         bridge_name = self.get_bridge_name(source, source_type)
@@ -1007,13 +1008,15 @@ class wvmInstance(wvmConnect):
                 source = interface.find('filterref')
 
                 if net_filter:
-                    if source is not None: source.set('filter', net_filter)
+                    if source is not None:
+                        source.set('filter', net_filter)
                     else:
                         element = ElementTree.Element("filterref")
                         element.attrib['filter'] = net_filter
                         interface.append(element)
                 else:
-                    if source is not None: interface.remove(source)
+                    if source is not None:
+                        interface.remove(source)
             elif interface.get('type') == 'network':
                 source = interface.find('mac')
                 source.set('address', net_mac)
@@ -1022,13 +1025,15 @@ class wvmInstance(wvmConnect):
                 source = interface.find('filterref')
 
                 if net_filter:
-                    if source is not None: source.set('filter', net_filter)
+                    if source is not None:
+                        source.set('filter', net_filter)
                     else:
                         element = ElementTree.Element("filterref")
                         element.attrib['filter'] = net_filter
                         interface.append(element)
                 else:
-                    if source is not None: interface.remove(source)
+                    if source is not None:
+                        interface.remove(source)
 
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
@@ -1038,7 +1043,7 @@ class wvmInstance(wvmConnect):
             option = tree.find(o)
             option_value = options.get(o, '').strip()
             if not option_value:
-                if not option is None:
+                if option is not None:
                     tree.remove(option)
             else:
                 if option is None:
@@ -1059,4 +1064,3 @@ class wvmInstance(wvmConnect):
 
     def set_memory(self, size, flags=0):
         self.instance.setMemoryFlags(size, flags)
-

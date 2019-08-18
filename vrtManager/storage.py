@@ -1,6 +1,6 @@
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
 
 
 class wvmStorages(wvmConnect):
@@ -143,13 +143,13 @@ class wvmStorage(wvmConnect):
         return util.get_xml_path(self._XMLDesc(0), "/pool/target/path")
 
     def get_allocation(self):
-        return long(util.get_xml_path(self._XMLDesc(0), "/pool/allocation"))
+        return int(util.get_xml_path(self._XMLDesc(0), "/pool/allocation"))
 
     def get_available(self):
-        return long(util.get_xml_path(self._XMLDesc(0), "/pool/available"))
+        return int(util.get_xml_path(self._XMLDesc(0), "/pool/available"))
 
     def get_capacity(self):
-        return long(util.get_xml_path(self._XMLDesc(0), "/pool/capacity"))
+        return int(util.get_xml_path(self._XMLDesc(0), "/pool/capacity"))
 
     def get_pretty_allocation(self):
         return util.pretty_bytes(self.get_allocation())

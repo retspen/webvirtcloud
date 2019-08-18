@@ -1,10 +1,9 @@
 import string
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
-from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as default_owner
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
+from webvirt.settings import QEMU_CONSOLE_DEFAULT_TYPE
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_OWNER as default_owner
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 
 
 def get_rbd_storage_data(stg):
@@ -107,7 +106,7 @@ class wvmCreate(wvmConnect):
         if not pool:
             storages = self.get_storages(only_actives=True)
         else:
-            storages = [pool,]
+            storages = [pool]
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
@@ -204,12 +203,13 @@ class wvmCreate(wvmConnect):
         hd_disk_letters = list(string.lowercase)
         sd_disk_letters = list(string.lowercase)
         add_cd = True
-        #for image, img_type in images.items():
+        # for image, img_type in images.items():
         for volume in images:
             stg = self.get_storage_by_vol_path(volume['path'])
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
 
-            if volume['device'] == 'cdrom': add_cd = False
+            if volume['device'] == 'cdrom':
+                add_cd = False
 
             if stg_type == 'rbd':
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
@@ -283,8 +283,5 @@ class wvmCreate(wvmConnect):
                    <memballoon model='virtio'/>
               </devices>
             </domain>""" % video
-
-
-
 
         self._defineXML(xml)

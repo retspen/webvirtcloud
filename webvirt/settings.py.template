@@ -1,5 +1,5 @@
 """
-Django settings for webvirtcloud project.
+Django settings for webvirt project.
 
 """
 
@@ -47,14 +47,13 @@ MIDDLEWARE_CLASSES = (
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     #'django.contrib.auth.backends.RemoteUserBackend',
-    #'accounts.backends.MyRemoteUserBackend',
 )
 
 LOGIN_URL = '/accounts/login'
 
-ROOT_URLCONF = 'webvirtcloud.urls'
+ROOT_URLCONF = 'webvirt.urls'
 
-WSGI_APPLICATION = 'webvirtcloud.wsgi.application'
+WSGI_APPLICATION = 'webvirt.wsgi.application'
 
 DATABASES = {
     'default': {
