@@ -1,6 +1,5 @@
 from django.db import models, migrations
 from django.conf import settings
-from django.db.models import CASCADE
 
 
 class Migration(migrations.Migration):
@@ -17,7 +16,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('keyname', models.CharField(max_length=25)),
                 ('keypublic', models.CharField(max_length=500)),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=CASCADE)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
         ),
     ]

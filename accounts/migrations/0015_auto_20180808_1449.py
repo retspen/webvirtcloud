@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db import migrations, models
-from django.db.models import DO_NOTHING
 
 
 class Migration(migrations.Migration):
@@ -13,6 +12,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='usersshkey',
             name='user',
-            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=DO_NOTHING),
+            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING),
         ),
     ]
