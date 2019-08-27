@@ -341,17 +341,27 @@
                     </div>
                     <div role="tabpanel" class="tab-pane" id="resize">
                         <div role="tabpanel">
-                        <!-- Nav tabs -->
-                        <ul class="nav nav-tabs" role="tablist">
-                            <li role="presentation" class="active">
-                                <a href="#resizevm" aria-controls="resizevm" role="tab" data-toggle="tab">
-                                    {% trans "Resize Instance" %}
-                                </a>
-                            </li>
-                        </ul>
-                        <!-- Tab panes -->
+                            <!-- Nav tabs -->
+                            <ul class="nav nav-tabs" role="tablist">
+                                <li role="presentation" class="active">
+                                    <a href="#resizevm_cpu" aria-controls="resizevm_cpu" role="tab" data-toggle="tab">
+                                        {% trans "CPU" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#resizevm_mem" aria-controls="resizevm_mem" role="tab" data-toggle="tab">
+                                        {% trans "Memory" %}
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="#resizevm_disk" aria-controls="resizevm_disk" role="tab" data-toggle="tab">
+                                        {% trans "Disk" %}
+                                    </a>
+                                </li>
+                            </ul>
+                            <!-- Tab panes -->
                         <div class="tab-content">
-                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm">
+                            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm_cpu">
                                 {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                         <p style="font-weight:bold;">{% trans "Logical host CPUs" %} : {{ vcpu_host }}</p>
@@ -379,6 +389,22 @@
                                                 </select>
                                             </div>
                                         </div>
+
+                                        {% ifequal status 5 %}
+                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="resizevm_cpu">{% trans "Resize" %}</button>
+                                        {% else %}
+                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                        {% endifequal %}
+                                    </form>
+                                {% else %}
+                                    {% trans "You don't have permission for resizing instance" %}
+                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                {% endif %}
+                                <div class="clearfix"></div>
+                            </div>
+                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_mem">
+                                {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
+                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                         <p style="font-weight:bold;">{% trans "Total host memory:" %} {{ memory_host|filesizeformat }}</p>
                                         <div class="form-group">
                                             <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Current allocation" %} ({% trans "MB" %})</label>
@@ -406,6 +432,21 @@
                                                 <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
                                             </div>
                                         </div>
+                                        {% ifequal status 5 %}
+                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="resizevm_mem">{% trans "Resize" %}</button>
+                                        {% else %}
+                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                        {% endifequal %}
+                                    </form>
+                                {% else %}
+                                    {% trans "You don't have permission for resizing instance" %}
+                                    <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
+                                {% endif %}
+                                <div class="clearfix"></div>
+                            </div>
+                            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_disk">
+                                {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
+                                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                         <p style="font-weight:bold;">{% trans "Disk allocation (B):" %}</p>
                                         {% for disk in disks %}
                                         <div class="form-group">
@@ -416,9 +457,9 @@
                                         </div>
                                         {% endfor %}
                                         {% ifequal status 5 %}
-                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="resize">{% trans "Resize" %}</button>
+                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="resizevm_disk">{% trans "Resize" %}</button>
                                         {% else %}
-                                            <button class="btn btn-lg btn-success pull-right disabled" name="resize">{% trans "Resize" %}</button>
+                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
                                         {% endifequal %}
                                     </form>
                                 {% else %}
@@ -1867,7 +1908,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#resize'])) {
+    if (~$.inArray(hash, ['#resize', "resizevm_cpu", "resizevm_mem", "resizevm_disk"])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#resize') {

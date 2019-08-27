@@ -460,6 +460,69 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
+            if 'resizevm_cpu' in request.POST and (
+                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+                new_vcpu = request.POST.get('vcpu', '')
+                new_cur_vcpu = request.POST.get('cur_vcpu', '')
+
+                quota_msg = check_user_quota(0, int(new_vcpu) - vcpu, 0, 0)
+                if not request.user.is_superuser and quota_msg:
+                    msg = _("User %s quota reached, cannot resize CPU of '%s'!" % (quota_msg, instance.name))
+                    error_messages.append(msg)
+                else:
+                    cur_vcpu = new_cur_vcpu
+                    vcpu = new_vcpu
+                    conn.resize_cpu(cur_vcpu, vcpu)
+                    msg = _("Resize CPU")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
+            if 'resizevm_mem' in request.POST and (
+                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+                new_memory = request.POST.get('memory', '')
+                new_memory_custom = request.POST.get('memory_custom', '')
+                if new_memory_custom:
+                    new_memory = new_memory_custom
+                new_cur_memory = request.POST.get('cur_memory', '')
+                new_cur_memory_custom = request.POST.get('cur_memory_custom', '')
+                if new_cur_memory_custom:
+                    new_cur_memory = new_cur_memory_custom
+                quota_msg = check_user_quota(0, 0, int(new_memory) - memory, 0)
+                if not request.user.is_superuser and quota_msg:
+                    msg = _("User %s quota reached, cannot resize memory of '%s'!" % (quota_msg, instance.name))
+                    error_messages.append(msg)
+                else:
+                    cur_memory = new_cur_memory
+                    memory = new_memory
+                    conn.resize_mem(cur_memory, memory)
+                    msg = _("Resize Memory")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
+            if 'resizevm_disk' in request.POST and (
+                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+                disks_new = []
+                for disk in disks:
+                    input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
+                    if input_disk_size > disk['size'] + (64 << 20):
+                        disk['size_new'] = input_disk_size
+                        disks_new.append(disk)
+                disk_sum = sum([disk['size'] >> 30 for disk in disks_new])
+                disk_new_sum = sum([disk['size_new'] >> 30 for disk in disks_new])
+                quota_msg = check_user_quota(0, 0, 0, disk_new_sum - disk_sum)
+                if not request.user.is_superuser and quota_msg:
+                    msg = _("User %s quota reached, cannot resize disks of '%s'!" % (quota_msg, instance.name))
+                    error_messages.append(msg)
+                else:
+                    cur_memory = new_cur_memory
+                    memory = new_memory
+                    cur_vcpu = new_cur_vcpu
+                    vcpu = new_vcpu
+                    conn.resize(cur_memory, memory, cur_vcpu, vcpu, disks_new)
+                    msg = _("Resize")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
             if 'add_new_vol' in request.POST and allow_admin_or_not_template:
                 connCreate = wvmCreate(compute.hostname,
                                        compute.login,

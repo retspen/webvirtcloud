@@ -741,7 +741,6 @@ class wvmInstance(wvmConnect):
         """
         Function change ram and cpu on vds.
         """
-
         memory = int(memory) * 1024
         cur_memory = int(cur_memory) * 1024
         # if dom is running change only ram
@@ -766,6 +765,58 @@ class wvmInstance(wvmConnect):
             vol = self.get_volume_by_path(source_dev)
             vol.resize(disk['size_new'])
         
+        new_xml = ElementTree.tostring(tree)
+        self._defineXML(new_xml)
+
+    def resize_cpu(self, cur_vcpu, vcpu):
+        """
+        Function change ram and cpu on vds.
+        """
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        set_vcpu = tree.find('vcpu')
+        set_vcpu.text = vcpu
+        set_vcpu.set('current', cur_vcpu)
+
+        new_xml = ElementTree.tostring(tree)
+        self._defineXML(new_xml)
+
+    def resize_mem(self, cur_memory, memory):
+        """
+        Function change ram and cpu on vds.
+        """
+        memory = int(memory) * 1024
+        cur_memory = int(cur_memory) * 1024
+        # if dom is running change only ram
+        if self.get_status() == VIR_DOMAIN_RUNNING:
+            self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_LIVE)
+            self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_CONFIG)
+            return
+
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        set_mem = tree.find('memory')
+        set_mem.text = str(memory)
+        set_cur_mem = tree.find('currentMemory')
+        set_cur_mem.text = str(cur_memory)
+
+        new_xml = ElementTree.tostring(tree)
+        self._defineXML(new_xml)
+
+    def resize_disk(self, disks=[]):
+        """
+        Function change disks on vds.
+        """
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = ElementTree.fromstring(xml)
+
+        for disk in disks:
+            source_dev = disk['path']
+            vol = self.get_volume_by_path(source_dev)
+            vol.resize(disk['size_new'])
+
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
