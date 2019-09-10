@@ -27,6 +27,7 @@ from logs.views import addlogmsg
 from django.conf import settings
 from django.contrib import messages
 
+
 @login_required
 def index(request):
     """
@@ -514,20 +515,16 @@ def instance(request, compute_id, vname):
                     msg = _("User %s quota reached, cannot resize disks of '%s'!" % (quota_msg, instance.name))
                     error_messages.append(msg)
                 else:
-                    cur_memory = new_cur_memory
-                    memory = new_memory
-                    cur_vcpu = new_cur_vcpu
-                    vcpu = new_vcpu
-                    conn.resize(cur_memory, memory, cur_vcpu, vcpu, disks_new)
+                    conn.resize_disk(disks_new)
                     msg = _("Resize")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'add_new_vol' in request.POST and allow_admin_or_not_template:
-                connCreate = wvmCreate(compute.hostname,
-                                       compute.login,
-                                       compute.password,
-                                       compute.type)
+                conn_create = wvmCreate(compute.hostname,
+                                        compute.login,
+                                        compute.password,
+                                        compute.type)
                 storage = request.POST.get('storage', '')
                 name = request.POST.get('name', '')
                 format = request.POST.get('format', default_format)
@@ -537,7 +534,7 @@ def instance(request, compute_id, vname):
                 cache = request.POST.get('cache', default_cache)
                 target = get_new_disk_dev(media, disks, bus)
 
-                path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
+                path = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach new disk {} ({})'.format(name, format))
                 addlogmsg(request.user.username, instance.name, msg)
@@ -549,16 +546,16 @@ def instance(request, compute_id, vname):
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
 
-                connCreate = wvmStorage(compute.hostname,
-                                        compute.login,
-                                        compute.password,
-                                        compute.type,
-                                        storage)
+                conn_create = wvmStorage(compute.hostname,
+                                         compute.login,
+                                         compute.password,
+                                         compute.type,
+                                         storage)
 
-                format = connCreate.get_volume_type(name)
-                path = connCreate.get_target_path()
+                format = conn_create.get_volume_type(name)
+                path = conn_create.get_target_path()
                 target = get_new_disk_dev(media, disks, bus)
-                source = path + "/" + name;
+                source = path + "/" + name
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach Existing disk: ' + target)
@@ -567,17 +564,17 @@ def instance(request, compute_id, vname):
 
             if 'delete_vol' in request.POST and allow_admin_or_not_template:
                 storage = request.POST.get('storage', '')
-                connDelete = wvmStorage(compute.hostname,
-                                        compute.login,
-                                        compute.password,
-                                        compute.type,
-                                        storage)
+                conn_delete = wvmStorage(compute.hostname,
+                                         compute.login,
+                                         compute.password,
+                                         compute.type,
+                                         storage)
                 dev = request.POST.get('dev', '')
                 path = request.POST.get('path', '')
                 name = request.POST.get('name', '')
 
                 conn.detach_disk(dev)
-                connDelete.del_volume(name)
+                conn_delete.del_volume(name)
 
                 msg = _('Delete disk: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)
@@ -688,8 +685,8 @@ def instance(request, compute_id, vname):
                     if bootorder:
                         order_list = {}
                         for idx, val in enumerate(bootorder.split(',')):
-                            type, dev = val.split(':', 1)
-                            order_list[idx] = {"type": type, "dev": dev}
+                            dev_type, dev = val.split(':', 1)
+                            order_list[idx] = {"type": dev_type, "dev": dev}
                         conn.set_bootorder(order_list)
                         msg = _("Set boot order")
 
@@ -859,7 +856,7 @@ def instance(request, compute_id, vname):
                     elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
                         msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
                         error_messages.append(msg)
-                    elif not re.match(r'^([0-9A-F]{2})(\:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'],
+                    elif not re.match(r'^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'],
                                       re.IGNORECASE):
                         msg = _("Instance mac '%s' invalid format!" % clone_data['clone-net-mac-0'])
                         error_messages.append(msg)
@@ -967,17 +964,17 @@ def get_host_instances(request, comp):
                 inst_on_db.save()
 
             all_host_vms[comp["id"],
-                           comp["name"],
-                           comp["status"],
-                           comp["cpu"],
-                           comp["mem_size"],
-                           comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
             all_host_vms[comp["id"],
-                           comp["name"],
-                           comp["status"],
-                           comp["cpu"],
-                           comp["mem_size"],
-                           comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
         except Instance.DoesNotExist:
             inst_on_db = Instance(compute_id=comp["id"], name=inst_name, uuid=info['uuid'])
             inst_on_db.save()
@@ -1052,7 +1049,7 @@ def instances_actions(request):
         return HttpResponseRedirect(request.get_full_path())
 
     if 'powerforce' in request.POST:
-        conn.force_shutdown()
+        conn.force_shutdown(name)
         msg = _("Force Off")
         addlogmsg(request.user.username, instance.name, msg)
         return HttpResponseRedirect(request.get_full_path())
@@ -1243,7 +1240,7 @@ def _get_clone_disks(disks, vname=''):
 def sshkeys(request, vname):
     """
     :param request:
-    :param vm:
+    :param vname:
     :return:
     """
 
@@ -1282,7 +1279,7 @@ def delete_instance(instance, delete_disk=False):
             print("Forcing shutdown")
             conn.force_shutdown()
         if delete_disk:
-            snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k:k['date'])
+            snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k: k['date'])
             for snap in snapshots:
                 print("Deleting snapshot {}".format(snap['name']))
                 conn.snapshot_delete(snap['name'])
