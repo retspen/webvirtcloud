@@ -10,7 +10,9 @@ import json
 
 def addlogmsg(user, instance, message):
     """
-    :param request:
+    :param user:
+    :param instance:
+    :param message:
     :return:
     """
     add_log_msg = Logs(user=user, instance=instance, message=message)
@@ -21,6 +23,7 @@ def addlogmsg(user, instance, message):
 def showlogs(request, page=1):
     """
     :param request:
+    :param page:
     :return:
     """
 
@@ -36,11 +39,12 @@ def showlogs(request, page=1):
 
     return render(request, 'showlogs.html', locals())
 
+
 @login_required
 def vm_logs(request, vname):
     """
     :param request:
-    :param vm:
+    :param vname:
     :return:
     """
     
@@ -51,7 +55,7 @@ def vm_logs(request, vname):
     logs_ = Logs.objects.filter(instance=vm.name, date__gte=vm.created).order_by('-date')
     logs = []
     for l in logs_:
-        log = {}
+        log = dict()
         log['user'] = l.user
         log['instance'] = l.instance
         log['message'] = l.message

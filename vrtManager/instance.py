@@ -96,7 +96,7 @@ class wvmInstances(wvmConnect):
         if listen_addr is None:
             listen_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/listen/@address")
             if listen_addr is None:
-                    return "None"
+                return "None"
         return listen_addr
 
     def graphics_port(self, name):
@@ -237,9 +237,9 @@ class wvmInstance(wvmConnect):
                 try:
                     net = self.get_network(network_host)
                     ip = get_mac_ipaddr(net, mac_host)
-                except libvirtError as e:
+                except libvirtError:
                     ip = None
-                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host,'ip': ip, 'filterref': filterref_host})
+                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host, 'ip': ip, 'filterref': filterref_host})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=networks)
@@ -322,7 +322,7 @@ class wvmInstance(wvmConnect):
         os = tree.find('os')
         menu = os.find("bootmenu")
 
-        if menu == None:
+        if menu is None:
             bootmenu = ElementTree.fromstring("<bootmenu enable='yes'/>")
             os.append(bootmenu)
             menu = os.find("bootmenu")
@@ -365,7 +365,7 @@ class wvmInstance(wvmConnect):
         for dev in devices:
             dev_target = dev_type = dev_device = dev_alias = None
             boot_dev = dev.find('boot')
-            if boot_dev != None:
+            if boot_dev is not None:
                 idx = boot_dev.get('order')
                 dev_type = dev.get('type')
                 dev_device = dev.get('device')
@@ -398,7 +398,7 @@ class wvmInstance(wvmConnect):
             # Remove rest of them
             for dev in tree.find('devices'):
                 boot_dev = dev.find('boot')
-                if boot_dev != None:
+                if boot_dev is not None:
                     dev.remove(boot_dev)
             return tree
 
@@ -410,19 +410,19 @@ class wvmInstance(wvmConnect):
                 devices = tree.findall("./devices/disk[@device='disk']")
                 for d in devices:
                     device = d.find("./target[@dev='{}']".format(dev['dev']))
-                    if device != None:
+                    if device is not None:
                         d.append(order)
             elif dev['type'] == 'cdrom':
                 devices = tree.findall("./devices/disk[@device='cdrom']")
                 for d in devices:
                     device = d.find("./target[@dev='{}']".format(dev['dev']))
-                    if device != None:
+                    if device is not None:
                         d.append(order)
             elif dev['type'] == 'network':
                 devices = tree.findall("./devices/interface[@type='network']")
                 for d in devices:
                     device = d.find("mac[@address='{}']".format(dev['dev']))
-                    if device != None:
+                    if device is not None:
                         d.append(order)
             else:
                 raise Exception('Invalid Device Type for boot order')
@@ -478,7 +478,6 @@ class wvmInstance(wvmConnect):
         self._defineXML(xmldom)
 
     def attach_disk(self, source, target, sourcetype='file', device='disk', driver='qemu', subdriver='raw', cache='none', targetbus='ide'):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
         xml_disk = "<disk type='%s' device='%s'>" % (sourcetype, device)
         if device == 'cdrom':
             xml_disk += "<driver name='%s' type='%s'/>" % (driver, subdriver)
@@ -622,7 +621,7 @@ class wvmInstance(wvmConnect):
         if listen_addr is None:
             listen_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/listen/@address")
             if listen_addr is None:
-                    return "127.0.0.1"
+                return "127.0.0.1"
         return listen_addr
 
     def set_console_listen_addr(self, listen_addr):
@@ -656,7 +655,7 @@ class wvmInstance(wvmConnect):
         return socket
 
     def get_console_type(self):
-        console_type = util.get_xml_path(self._XMLDesc(0),"/domain/devices/graphics/@type")
+        console_type = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@type")
         return console_type
 
     def set_console_type(self, console_type):
@@ -805,7 +804,7 @@ class wvmInstance(wvmConnect):
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
-    def resize_disk(self, disks=[]):
+    def resize_disk(self, disks):
         """
         Function change disks on vds.
         """
@@ -1007,7 +1006,6 @@ class wvmInstance(wvmConnect):
         return bridge_name
         
     def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio', nwfilter=None):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
         bridge_name = self.get_bridge_name(source, source_type)
         xml_interface = """
         <interface type='%s'>
@@ -1029,7 +1027,6 @@ class wvmInstance(wvmConnect):
 
     def delete_network(self, mac_address):
         tree = ElementTree.fromstring(self._XMLDesc(0))
-        devices = tree.find('devices')
         for interface in tree.findall('devices/interface'):
             source = interface.find('mac')
             if source.get('address', '') == mac_address:
@@ -1089,7 +1086,7 @@ class wvmInstance(wvmConnect):
             option = tree.find(o)
             option_value = options.get(o, '').strip()
             if not option_value:
-                if not option is None:
+                if option is not None:
                     tree.remove(option)
             else:
                 if option is None:

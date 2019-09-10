@@ -26,7 +26,7 @@ def os_metadata_json(request, version):
     if version == 'latest':
         ip = get_client_ip(request)
         hostname = get_hostname_by_ip(ip)
-        response = { 'uuid': OS_UUID, 'hostname': hostname }
+        response = {'uuid': OS_UUID, 'hostname': hostname}
         return HttpResponse(json.dumps(response))
     else:
         err = 'Invalid version: {}'.format(version)
@@ -70,8 +70,8 @@ def get_client_ip(request):
 def get_hostname_by_ip(ip):
     try:
         addrs = socket.gethostbyaddr(ip)
-    except Exception:
-        addrs = [ip,]
+    except:
+        addrs = [ip]
     return addrs[0]
 
 

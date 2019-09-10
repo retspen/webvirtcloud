@@ -21,6 +21,7 @@ from logs.views import addlogmsg
 def create_instance(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
 
@@ -109,7 +110,7 @@ def create_instance(request, compute_id):
                             msg = _("A virtual machine with this name already exists")
                             error_messages.append(msg)
                         if Instance.objects.filter(name__exact=data['name']):
-                            messages.warning(request,_("There is an instance with same name. Are you sure?"))
+                            messages.warning(request, _("There is an instance with same name. Are you sure?"))
                     if not error_messages:
                         if data['hdd_size']:
                             if not data['mac']:
@@ -175,7 +176,7 @@ def create_instance(request, compute_id):
                                 addlogmsg(request.user.username, create_instance.name, msg)
                                 return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
-                                if data['hdd_size'] or volume_list.count() > 0:
+                                if data['hdd_size'] or len(volume_list) > 0:
                                     for vol in volume_list:
                                         conn.delete_volume(vol['path'])
                                 error_messages.append(lib_err)

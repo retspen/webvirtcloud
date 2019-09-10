@@ -10,10 +10,12 @@ from libvirt import libvirtError
 from django.contrib import messages
 import json
 
+
 @login_required
 def storages(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
 
@@ -72,6 +74,8 @@ def storages(request, compute_id):
 def storage(request, compute_id, pool):
     """
     :param request:
+    :param compute_id:
+    :param pool:
     :return:
     """
 

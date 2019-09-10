@@ -1,4 +1,3 @@
-import time
 import json
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
@@ -140,6 +139,7 @@ def computes(request):
 def overview(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
 
@@ -171,6 +171,7 @@ def overview(request, compute_id):
 def compute_graph(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
     compute = get_object_or_404(Compute, pk=compute_id)
@@ -207,17 +208,16 @@ def get_compute_disk_buses(request, compute_id, disk):
                           compute.type)
 
         disk_device_types = conn.get_disk_device_types()
-        disk_bus_types = conn.get_disk_bus_types()
 
         if disk in disk_device_types:
             if disk == 'disk':
                 data['bus'] = sorted(disk_device_types)
             elif disk == 'cdrom':
-                data['bus'] = ['ide', 'sata', 'scsi',]
+                data['bus'] = ['ide', 'sata', 'scsi']
             elif disk == 'floppy':
-                data['bus'] = ['fdc',]
+                data['bus'] = ['fdc']
             elif disk == 'lun':
-                data['bus'] = ['scsi',]
+                data['bus'] = ['scsi']
     except libvirtError:
         pass
 

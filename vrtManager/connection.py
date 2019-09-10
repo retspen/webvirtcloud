@@ -2,7 +2,7 @@ import libvirt
 import threading
 import socket
 from vrtManager import util
-from rwlock import ReadWriteLock
+from vrtManager.rwlock import ReadWriteLock
 from django.conf import settings
 from libvirt import libvirtError
 

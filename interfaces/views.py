@@ -12,6 +12,7 @@ from libvirt import libvirtError
 def interfaces(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
 
@@ -60,6 +61,7 @@ def interfaces(request, compute_id):
 def interface(request, compute_id, iface):
     """
     :param request:
+    :param iface:
     :return:
     """
 
