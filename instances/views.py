@@ -101,11 +101,12 @@ def instances(request, compute_id):
 def instance(request, compute_id, vname):
     """
     :param request:
+    :param compute_id:
+    :param vname:
     :return:
     """
 
     error_messages = []
-    # messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     computes = Compute.objects.all().order_by('name')
     computes_count = computes.count()
@@ -258,9 +259,6 @@ def instance(request, compute_id, vname):
                            compute.password,
                            compute.type,
                            vname)
-        compute_networks = sorted(conn.get_networks())
-        compute_interfaces = sorted(conn.get_ifaces())
-        compute_nwfilters = conn.get_nwfilters()
         status = conn.get_status()
         autostart = conn.get_autostart()
         bootmenu = conn.get_bootmenu()
@@ -272,13 +270,13 @@ def instance(request, compute_id, vname):
         cur_memory = conn.get_cur_memory()
         title = conn.get_title()
         description = conn.get_description()
+        networks = conn.get_net_device()
         disks = conn.get_disk_devices()
         media = conn.get_media_devices()
         if len(media) != 0:
             media_iso = sorted(conn.get_iso_media())
         else:
             media_iso = []
-        networks = conn.get_net_device()
 
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 3072, 4096, 6144, 8192, 16384]
@@ -286,8 +284,6 @@ def instance(request, compute_id, vname):
             insort(memory_range, memory)
         if cur_memory not in memory_range:
             insort(memory_range, cur_memory)
-        memory_host = conn.get_max_memory()
-        vcpu_host = len(vcpu_range)
         telnet_port = conn.get_telnet_port()
         console_type = conn.get_console_type()
         console_port = conn.get_console_port()
@@ -299,18 +295,16 @@ def instance(request, compute_id, vname):
         console_passwd = conn.get_console_passwd()
         clone_free_names = get_clone_free_names()
         user_quota_msg = check_user_quota(0, 0, 0, 0)
-        storages = sorted(conn.get_storages())
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
         default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
         formats = conn.get_image_formats()
 
-        busses = conn.get_disk_bus_types()
-        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
         show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
         clone_instance_auto_name = settings.CLONE_INSTANCE_AUTO_NAME
+        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -327,6 +321,15 @@ def instance(request, compute_id, vname):
 
         userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
         allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+
+        # Host resources
+        vcpu_host = len(vcpu_range)
+        memory_host = conn.get_max_memory()
+        bus_host = conn.get_disk_bus_types()
+        networks_host = sorted(conn.get_networks())
+        interfaces_host = sorted(conn.get_ifaces())
+        nwfilters_host = conn.get_nwfilters()
+        storages_host = sorted(conn.get_storages(True))
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
@@ -502,7 +505,7 @@ def instance(request, compute_id, vname):
 
             if 'resizevm_disk' in request.POST and (
                     request.user.is_superuser or request.user.is_staff or userinstance.is_change):
-                disks_new = []
+                disks_new = list()
                 for disk in disks:
                     input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
                     if input_disk_size > disk['size'] + (64 << 20):
@@ -907,6 +910,8 @@ def instance(request, compute_id, vname):
 def inst_status(request, compute_id, vname):
     """
     :param request:
+    :param compute_id:
+    :param vname:
     :return:
     """
 

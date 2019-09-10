@@ -28,7 +28,7 @@
                                     <label class="col-sm-3 control-label">{% trans "Storage" %}</label>
                                     <div class="col-sm-4">
                                         <select name="storage" class="form-control image-format">
-                                            {% for storage in storages %}
+                                            {% for storage in storages_host %}
                                                 <option value="{{ storage }}">{{ storage }}</option>
                                             {% endfor %}
                                         </select>

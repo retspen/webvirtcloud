@@ -873,10 +873,10 @@
                                                 <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
                                                 <label class="control-label"><em>to</em></label>
                                                 <select class="form-control" name="net-source-{{ forloop.counter0 }}">
-                                                    {% for c_net in compute_networks %}
+                                                    {% for c_net in networks_host %}
                                                         <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>{% trans 'Network' %} {{ c_net }}</option>
                                                     {% endfor %}
-                                                    {% for c_iface in compute_interfaces %}
+                                                    {% for c_iface in interfaces_host %}
                                                         <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>{% trans 'Interface' %} {{ c_iface }}</option>
                                                     {% endfor %}
                                                 </select>
@@ -887,7 +887,7 @@
                                                 <label class="control-label"><em>to</em></label>
                                                 <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
                                                     <option value="">{% trans "None" %}</option>
-                                                    {% for c_filters in compute_nwfilters %}
+                                                    {% for c_filters in nwfilters_host %}
                                                         <option value="{{ c_filters }}" {% ifequal c_filters network.filterref  %} selected {% endifequal %}>{{ c_filters }}</option>
                                                     {% endfor %}
                                                 </select>
