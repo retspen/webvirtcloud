@@ -42,9 +42,6 @@ def create_instance(request, compute_id):
                          compute.password,
                          compute.type)
 
-        storages = sorted(conn.get_storages(only_actives=True))
-        networks = sorted(conn.get_networks())
-        nwfilters = conn.get_nwfilters()
         instances = conn.get_instances()
         videos = conn.get_video()
         cache_modes = sorted(conn.get_cache_modes().items())
@@ -54,6 +51,9 @@ def create_instance(request, compute_id):
         disk_devices = conn.get_disk_device_types()
         disk_buses = conn.get_disk_bus_types()
         default_bus = INSTANCE_VOLUME_DEFAULT_BUS
+        networks = sorted(conn.get_networks())
+        nwfilters = conn.get_nwfilters()
+        storages = sorted(conn.get_storages(only_actives=True))
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
@@ -149,7 +149,6 @@ def create_instance(request, compute_id):
                             else:
                                 for idx, vol in enumerate(data['images'].split(',')):
                                     try:
-
                                         path = conn.get_volume_path(vol)
                                         volume = dict()
                                         volume['path'] = path
