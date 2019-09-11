@@ -1098,7 +1098,7 @@ def instances_actions(request):
             addlogmsg(request.user.username, instance.name, msg)
             conn.resume(name)
             return HttpResponseRedirect(request.get_full_path())
-
+    return HttpResponseRedirect(request.get_full_path())
 
 @login_required
 def inst_graph(request, compute_id, vname):
