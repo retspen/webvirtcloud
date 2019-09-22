@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from create.models import Flavor
@@ -10,9 +10,9 @@ from instances.models import Instance
 from vrtManager.create import wvmCreate
 from vrtManager import util
 from libvirt import libvirtError
-from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_CACHE
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_BUS
+from webvirt.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_CACHE
+from webvirt.settings import INSTANCE_VOLUME_DEFAULT_BUS
 from django.contrib import messages
 from logs.views import addlogmsg
 
@@ -109,7 +109,7 @@ def create_instance(request, compute_id):
                             msg = _("A virtual machine with this name already exists")
                             error_messages.append(msg)
                         if Instance.objects.filter(name__exact=data['name']):
-                            messages.warning(request,_("There is an instance with same name. Are you sure?"))
+                            messages.warning(request, _("There is an instance with same name. Are you sure?"))
                     if not error_messages:
                         if data['hdd_size']:
                             if not data['mac']:

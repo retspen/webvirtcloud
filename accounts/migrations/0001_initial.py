@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.db import models, migrations
 from django.conf import settings
 
@@ -19,8 +16,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('is_change', models.BooleanField(default=False)),
                 ('is_delete', models.BooleanField(default=False)),
-                ('instance', models.ForeignKey(to='instances.Instance')),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+                ('instance', models.ForeignKey(to='instances.Instance', on_delete=models.CASCADE)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
             },

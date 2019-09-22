@@ -27,6 +27,7 @@ import os
 import socket
 import signal
 import logging
+from functools import reduce
 
 
 class Tunnel(object):

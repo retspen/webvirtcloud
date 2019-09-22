@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from networks.forms import AddNetPool
@@ -153,13 +153,11 @@ def network(request, compute_id, pool):
             edit_xml = request.POST.get('edit_xml', '')
             if edit_xml:
                 try:
-                    new_conn = wvmNetworks(compute.hostname,
-                                   compute.login,
-                                   compute.password,
-                                   compute.type)
+                    new_conn = wvmNetworks(compute.hostname, compute.login, compute.password, compute.type)
                     conn.define_network(edit_xml)
                     if conn.is_active():
-                        messages.success(request, _("Network XML is changed. Stop and start network to activate new config."))
+                        messages.success(request,
+                                         _("Network XML is changed. Stop and start network to activate new config."))
                     else:
                         messages.success(request, _("Network XML is changed."))
                     return HttpResponseRedirect(request.get_full_path())

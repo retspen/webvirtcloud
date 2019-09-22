@@ -19,9 +19,7 @@ class wvmHostDetails(wvmConnect):
         all_mem = self.wvm.getInfo()[1] * 1048576
         freemem = self.wvm.getMemoryStats(-1, 0)
         if type(freemem) == dict:
-            free = (freemem.values()[0] +
-                    freemem.values()[2] +
-                    freemem.values()[3]) * 1024
+            free = (freemem.values()[0] + freemem.values()[2] + freemem.values()[3]) * 1024
             percent = (100 - ((free * 100) / all_mem))
             usage = (all_mem - free)
             mem_usage = {'total': all_mem, 'usage': usage, 'percent': percent}
@@ -59,14 +57,10 @@ class wvmHostDetails(wvmConnect):
         Function return host server information: hostname, cpu, memory, ...
         """
         info = []
-        info.append(self.wvm.getHostname()) # hostname
-        info.append(self.wvm.getInfo()[0]) # architecture
-        info.append(self.wvm.getInfo()[1] * 1048576) # memory
-        info.append(self.wvm.getInfo()[2]) # cpu core count
-        info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version)) # cpu version
-        info.append(self.wvm.getURI()) #uri
+        info.append(self.wvm.getHostname())  # hostname
+        info.append(self.wvm.getInfo()[0])  # architecture
+        info.append(self.wvm.getInfo()[1] * 1048576)  # memory
+        info.append(self.wvm.getInfo()[2])  # cpu core count
+        info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version))  # cpu version
+        info.append(self.wvm.getURI())  # uri
         return info
-
-
-
-

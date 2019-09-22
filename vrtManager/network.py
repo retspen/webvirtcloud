@@ -185,7 +185,7 @@ class wvmNetwork(wvmConnect):
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=network)
-    
+
     def modify_fixed_address(self, name, address, mac):
         util.validate_macaddr(mac)
         if name:
@@ -204,14 +204,14 @@ class wvmNetwork(wvmConnect):
                 break
         if host is None:
             self.update(VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_SECTION_IP_DHCP_HOST, -1, new_xml,
-                        VIR_NETWORK_UPDATE_AFFECT_LIVE|VIR_NETWORK_UPDATE_AFFECT_CONFIG)
+                        VIR_NETWORK_UPDATE_AFFECT_LIVE | VIR_NETWORK_UPDATE_AFFECT_CONFIG)
         else:
             # change the host
             if host.get('name') == new_host_xml.get('name') and host.get('ip') == new_host_xml.get('ip'):
                 return False
             else:
                 self.update(VIR_NETWORK_UPDATE_COMMAND_MODIFY, VIR_NETWORK_SECTION_IP_DHCP_HOST, -1, new_xml,
-                            VIR_NETWORK_UPDATE_AFFECT_LIVE|VIR_NETWORK_UPDATE_AFFECT_CONFIG)
+                            VIR_NETWORK_UPDATE_AFFECT_LIVE | VIR_NETWORK_UPDATE_AFFECT_CONFIG)
 
     def delete_fixed_address(self, mac):
         util.validate_macaddr(mac)
@@ -222,7 +222,7 @@ class wvmNetwork(wvmConnect):
             if h.get('mac') == mac:
                 new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(mac, h.get('name'), h.get('ip'))
                 self.update(VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_SECTION_IP_DHCP_HOST, -1, new_xml,
-                            VIR_NETWORK_UPDATE_AFFECT_LIVE|VIR_NETWORK_UPDATE_AFFECT_CONFIG)
+                            VIR_NETWORK_UPDATE_AFFECT_LIVE | VIR_NETWORK_UPDATE_AFFECT_CONFIG)
                 break
 
     def modify_dhcp_range(self, range_start, range_end):
