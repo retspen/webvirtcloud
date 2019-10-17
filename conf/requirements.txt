@@ -1,4 +1,4 @@
-Django==1.11.21
+Django==1.11.23
 websockify==0.8.0
 gunicorn==19.9.0
 lxml==4.2.5
