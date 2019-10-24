@@ -7,11 +7,11 @@ class wvmSecrets(wvmConnect):
         xml = """<secret ephemeral='%s' private='%s'>
                     <usage type='%s'>""" % (ephemeral, private, secret_type)
         if secret_type == 'ceph':
-            xml += """<name>%s</name>""" % (data)
+            xml += """<name>%s</name>""" % data
         if secret_type == 'volume':
-            xml += """<volume>%s</volume>""" % (data)
+            xml += """<volume>%s</volume>""" % data
         if secret_type == 'iscsi':
-            xml += """<target>%s</target>""" % (data)
+            xml += """<target>%s</target>""" % data
         xml += """</usage>
                  </secret>"""
         self.wvm.secretDefineXML(xml)

@@ -2,53 +2,53 @@
 {% load i18n %}
 {% block title %}{% trans "Logs" %}{% endblock %}
 {% block content %}
-            <!-- Page Heading -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header">{% trans "Logs" %}</h1>
-                </div>
-            </div>
-            <!-- /.row -->
+    <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header">{% trans "Logs" %}</h1>
+        </div>
+    </div>
+    <!-- /.row -->
 
-            {% include 'errors_block.html' %}
+    {% include 'errors_block.html' %}
 
-            <div class="row">
+    <div class="row">
+        <div class="col-lg-12">
+            {% if not logs %}
                 <div class="col-lg-12">
-                    {% if not logs %}
-                        <div class="col-lg-12">
-                            <div class="alert alert-warning alert-dismissable">
-                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                                <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "You don't have any Logs" %}
-                            </div>
-                        </div>
-                    {% else %}
-                        {% include "paging.html" %}
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>{% trans "Date" %}</th>
-                                        <th>{% trans "User" %}</th>
-                                        <th>{% trans "Instance" %}</th>
-                                        <th>{% trans "Message" %}</th>
-                                        </tr>
-                                </thead>
-                                <tbody>
-                                    {% for log in logs %}
-                                        <tr>
-                                            <td>{{ log.id }}</td>
-                                            <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
-                                            <td>{{ log.user }}</a></td>
-                                            <td>{{ log.instance }}</a></td>
-                                            <td>{{ log.message }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% include "paging.html" %}
-                    {% endif %}
+                    <div class="alert alert-warning alert-dismissable">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Logs" %}
+                    </div>
                 </div>
-            </div>
+            {% else %}
+                {% include "paging.html" %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>{% trans "Date" %}</th>
+                                <th>{% trans "User" %}</th>
+                                <th>{% trans "Instance" %}</th>
+                                <th>{% trans "Message" %}</th>
+                                </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.id }}</td>
+                                    <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
+                                    <td>{{ log.user }}</td>
+                                    <td>{{ log.instance }}</td>
+                                    <td>{{ log.message }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include "paging.html" %}
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}

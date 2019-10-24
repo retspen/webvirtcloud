@@ -6,140 +6,140 @@
     <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
 {% endblock %}
 {% block content %}
-                <!-- Page Heading -->
-                <div class="row">
-                    <div class="col-lg-12">
-                        {% if request.user.is_superuser %}
-                            {% include 'create_inst_block.html' %}
-                        {% endif %}
-                        {% if all_host_vms or all_user_vms %}
-                            <div class="pull-right search">
-                                <input id="filter" class="form-control" type="text" placeholder="Search">
+    <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            {% if request.user.is_superuser %}
+                {% include 'create_inst_block.html' %}
+            {% endif %}
+            {% if all_host_vms or all_user_vms %}
+                <div class="pull-right search">
+                    <input id="filter" class="form-control" type="text" placeholder="Search">
+                </div>
+            {% endif %}
+            <h1 class="page-header">{% trans "Instances" %}</h1>
+        </div>
+    </div>
+    <!-- /.row -->
+
+    {% include 'errors_block.html' %}
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="table-responsive">
+                {% if request.user.is_superuser %}
+                    {% if not all_host_vms %}
+                        <div class="col-lg-12">
+                            <div class="alert alert-warning alert-dismissable">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times</button>
+                                <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "You don't have any Instance" %}
                             </div>
-                        {% endif %}
-                        <h1 class="page-header">{% trans "Instances" %}</h1>
-                    </div>
-                </div>
-                <!-- /.row -->
-
-                {% include 'errors_block.html' %}
-
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="table-responsive">
-                            {% if request.user.is_superuser %}
-                                {% if not all_host_vms %}
-                                    <div class="col-lg-12">
-                                        <div class="alert alert-warning alert-dismissable">
-                                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times</button>
-                                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "You don't have any Instance" %}
-                                        </div>
-                                    </div>
-                                {% else %}
-                                   {% ifequal view_style "nongrouped"  %}
-                                       {% include 'allinstances_index_nongrouped.html' %}
-                                   {% endifequal %}
-                                   {% ifequal view_style "grouped" %}
-                                       {% include 'allinstances_index_grouped.html' %}
-                                   {% endifequal %}
-                                {% endif %}
-                            {% else %}
-                                {% if not all_user_vms %}
-                                    <div class="col-lg-12">
-                                        <div class="alert alert-warning alert-dismissable">
-                                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "You don't have any Instance" %}
-                                        </div>
-                                    </div>
-                                {% else  %}
-                                    <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
-                                        <thead>
-                                            <tr>
-                                                <th>{% trans 'Name' %}</th>
-                                                <th>{% trans 'Status' %}</th>
-                                                <th>{% trans 'VCPU' %}</th>
-                                                <th>{% trans 'Memory' %}</th>
-                                                <th data-sortable="false" style="width: 165px;">{% trans 'Actions' %}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="searchable">
-                                            {% for inst, vm in all_user_vms.items %}
-                                                <tr>
-                                                    <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a><br><small><em>{{ vm.title }}</em></small></td>
-                                                    <td>{% ifequal vm.status 1 %}
-                                                            <span class="text-success">{% trans "Active" %}</span>
-                                                        {% endifequal %}
-                                                        {% ifequal vm.status 5 %}
-                                                            <span class="text-danger">{% trans "Off" %}</span>
-                                                        {% endifequal %}
-                                                        {% ifequal vm.status 3 %}
-                                                            <span class="text-warning">{% trans "Suspend" %}</span>
-                                                        {% endifequal %}
-                                                    </td>
-                                                    <td>{{ vm.vcpu }}</td>
-                                                    <td>{{ vm.memory }} {% trans "MB" %}</td>
-                                                    <td><form action="" method="post" role="form">{% csrf_token %}
-                                                            <input type="hidden" name="name" value="{{ vm.name }}"/>
-                                                            <input type="hidden" name="compute_id" value="{{ vm.compute_id }}"/>
-                                                            {% ifequal vm.status 5 %}
-                                                                {% if inst.instance.is_template %}
-                                                                    <button class="btn btn-sm btn-default" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ vm.compute_id }}, '{{ vm.name }}');">
-                                                                        <span class="glyphicon glyphicon-duplicate"></span>
-                                                                    </button>
-                                                                {% else %}
-                                                                    <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
-                                                                        <span class="glyphicon glyphicon-play"></span>
-                                                                    </button>
-                                                                {% endif %}
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
-                                                                    <span class="glyphicon glyphicon-off"></span>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
-                                                                    <span class="glyphicon glyphicon-refresh"></span>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}">
-                                                                    <span class="glyphicon glyphicon-eye-open"></span>
-                                                                </button>
-                                                            {% endifequal %}
-                                                            {% ifequal vm.status 3 %}
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}">
-                                                                    <span class="glyphicon glyphicon-play"></span>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
-                                                                    <span class="glyphicon glyphicon-off"></span>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
-                                                                    <span class="glyphicon glyphicon-refresh"></span>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "VNC/Spice Console" %}">
-                                                                    <span class="glyphicon glyphicon-eye-open"></span>
-                                                                </button>
-                                                            {% endifequal %}
-                                                            {% ifequal vm.status 1 %}
-                                                                <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}">
-                                                                    <span class="glyphicon glyphicon-play"></span>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-default" type="submit" name="poweroff" title="{% trans "Power Off" %}">
-                                                                    <span class="glyphicon glyphicon-off"></span>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-default" type="submit" name="powercycle" title="{% trans "Power Cycle" %}" onclick="return confirm('Are you sure?')">
-                                                                    <span class="glyphicon glyphicon-refresh"></span>
-                                                                </button>
-                                                                <a href="#" class="btn btn-sm btn-default" onclick='open_console("{{ vm.compute_id }}-{{ vm.uuid }}")' title="{% trans "Console" %}">
-                                                                    <span class="glyphicon glyphicon-eye-open"></span>
-                                                                </a>
-                                                            {% endifequal %}
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                {% endif %}
-                            {% endif %}
                         </div>
-                    </div>
-                </div>
+                    {% else %}
+                       {% ifequal view_style "nongrouped"  %}
+                           {% include 'allinstances_index_nongrouped.html' %}
+                       {% endifequal %}
+                       {% ifequal view_style "grouped" %}
+                           {% include 'allinstances_index_grouped.html' %}
+                       {% endifequal %}
+                    {% endif %}
+                {% else %}
+                    {% if not all_user_vms %}
+                        <div class="col-lg-12">
+                            <div class="alert alert-warning alert-dismissable">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                                <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Instance" %}
+                            </div>
+                        </div>
+                    {% else  %}
+                        <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
+                            <thead>
+                                <tr>
+                                    <th>{% trans 'Name' %}</th>
+                                    <th>{% trans 'Status' %}</th>
+                                    <th>{% trans 'VCPU' %}</th>
+                                    <th>{% trans 'Memory' %}</th>
+                                    <th data-sortable="false" style="width: 165px;">{% trans 'Actions' %}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="searchable">
+                                {% for inst, vm in all_user_vms.items %}
+                                    <tr>
+                                        <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a><br><small><em>{{ vm.title }}</em></small></td>
+                                        <td>{% ifequal vm.status 1 %}
+                                                <span class="text-success">{% trans "Active" %}</span>
+                                            {% endifequal %}
+                                            {% ifequal vm.status 5 %}
+                                                <span class="text-danger">{% trans "Off" %}</span>
+                                            {% endifequal %}
+                                            {% ifequal vm.status 3 %}
+                                                <span class="text-warning">{% trans "Suspend" %}</span>
+                                            {% endifequal %}
+                                        </td>
+                                        <td>{{ vm.vcpu }}</td>
+                                        <td>{{ vm.memory }} {% trans "MB" %}</td>
+                                        <td><form action="" method="post" role="form">{% csrf_token %}
+                                                <input type="hidden" name="name" value="{{ vm.name }}"/>
+                                                <input type="hidden" name="compute_id" value="{{ vm.compute_id }}"/>
+                                                {% ifequal vm.status 5 %}
+                                                    {% if inst.instance.is_template %}
+                                                        <button class="btn btn-sm btn-default" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ vm.compute_id }}, '{{ vm.name }}');">
+                                                            <span class="glyphicon glyphicon-duplicate"></span>
+                                                        </button>
+                                                    {% else %}
+                                                        <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
+                                                            <span class="glyphicon glyphicon-play"></span>
+                                                        </button>
+                                                    {% endif %}
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
+                                                        <span class="glyphicon glyphicon-off"></span>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
+                                                        <span class="glyphicon glyphicon-refresh"></span>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}">
+                                                        <span class="glyphicon glyphicon-eye-open"></span>
+                                                    </button>
+                                                {% endifequal %}
+                                                {% ifequal vm.status 3 %}
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}">
+                                                        <span class="glyphicon glyphicon-play"></span>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}">
+                                                        <span class="glyphicon glyphicon-off"></span>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}">
+                                                        <span class="glyphicon glyphicon-refresh"></span>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "VNC/Spice Console" %}">
+                                                        <span class="glyphicon glyphicon-eye-open"></span>
+                                                    </button>
+                                                {% endifequal %}
+                                                {% ifequal vm.status 1 %}
+                                                    <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}">
+                                                        <span class="glyphicon glyphicon-play"></span>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-default" type="submit" name="poweroff" title="{% trans "Power Off" %}">
+                                                        <span class="glyphicon glyphicon-off"></span>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-default" type="submit" name="powercycle" title="{% trans "Power Cycle" %}" onclick="return confirm('Are you sure?')">
+                                                        <span class="glyphicon glyphicon-refresh"></span>
+                                                    </button>
+                                                    <a href="#" class="btn btn-sm btn-default" onclick='open_console("{{ vm.compute_id }}-{{ vm.uuid }}")' title="{% trans "Console" %}">
+                                                        <span class="glyphicon glyphicon-eye-open"></span>
+                                                    </a>
+                                                {% endifequal %}
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
 {% endblock %}
 {% block script %}
 <script src="{% static "js/sortable.min.js" %}"></script>

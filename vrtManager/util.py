@@ -110,7 +110,7 @@ def get_xpath(doc, path):
     if ret is not None:
         if type(ret) == list:
             if len(ret) >= 1:
-                if hasattr(ret[0],'text'):
+                if hasattr(ret[0], 'text'):
                     result = ret[0].text
                 else:
                     result = ret[0]
@@ -118,6 +118,7 @@ def get_xpath(doc, path):
             result = ret
 
     return result
+
 
 def pretty_mem(val):
     val = int(val)
@@ -146,8 +147,8 @@ def validate_uuid(val):
         if form is None:
             raise ValueError(
                   "UUID must be a 32-digit hexadecimal number. It may take "
-                    "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
-                    "omit hyphens altogether.")
+                  "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
+                  "omit hyphens altogether.")
 
         else:   # UUID had no dashes, so add them in
             val = (val[0:8] + "-" + val[8:12] + "-" + val[12:16] +

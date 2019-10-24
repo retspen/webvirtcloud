@@ -2,72 +2,72 @@
 {% load i18n %}
 {% block title %}{% trans "Interface" %} - {{ iface }}{% endblock %}
 {% block content %}
-           <!-- Page Heading -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header">{% trans "Interface:" %} {{ iface }}</h1>
-                    <ol class="breadcrumb">
-                        <li class="active">
-                            <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-server"></i> <a href="{% url 'instances' compute.id %}">{% trans "Instances" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-sitemap"></i> <a href="{% url 'networks' compute.id %}">{% trans "Networks" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-filter"></i> <a href="{% url 'nwfilters' compute.id %}">{% trans "NWFilters" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
-                        </li>
-                    </ol>
-                </div>
-            </div>
-            <!-- /.row -->
+   <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header">{% trans "Interface:" %} {{ iface }}</h1>
+            <ol class="breadcrumb">
+                <li class="active">
+                    <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-server"></i> <a href="{% url 'instances' compute.id %}">{% trans "Instances" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-sitemap"></i> <a href="{% url 'networks' compute.id %}">{% trans "Networks" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-filter"></i> <a href="{% url 'nwfilters' compute.id %}">{% trans "NWFilters" %}</a>
+                </li>
+                <li>
+                    <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <!-- /.row -->
 
-            {% include 'errors_block.html' %}
+    {% include 'errors_block.html' %}
 
-            <div class="row">
-                <div class="col-xs-6 col-sm-4">
-                    <p>{% trans "Interface:" %}</p>
-                    <p>{% trans "IPv4:" %} ({% ifequal ipv4 None %}None{% else %}{{ ipv4_type }}{% endifequal %})</p>
-                    <p>{% trans "IPv6:" %} ({% ifequal ipv6 None %}None{% else %}{{ ipv6_type }}{% endifequal %})</p>
-                    <p>{% trans "MAC Adress:" %}</p>
-                    <p>{% trans "Interface Type:" %}</p>
-                    {% ifequal itype 'bridge' %}
-                        <p>{% trans "Bridge device" %}</p>
+    <div class="row">
+        <div class="col-xs-6 col-sm-4">
+            <p>{% trans "Interface" %}:</p>
+            <p>{% trans "IPv4" %}: ({% ifequal ipv4 None %}{% trans 'None' %}{% else %}{{ ipv4_type }}{% endifequal %})</p>
+            <p>{% trans "IPv6" %}: ({% ifequal ipv6 None %}{% trans 'None' %}{% else %}{{ ipv6_type }}{% endifequal %})</p>
+            <p>{% trans "MAC Adress" %}:</p>
+            <p>{% trans "Interface Type" %}:</p>
+            {% ifequal itype 'bridge' %}
+                <p>{% trans "Bridge device" %}</p>
+            {% endifequal %}
+            <p>{% trans "Boot Mode" %}:</p>
+            <p>{% trans "State" %}:</p>
+        </div>
+        <div class="col-xs-6 col-sm-6">
+            <p><strong>{{ iface }}</strong></p>
+            <p>{{ ipv4 }}</p>
+            <p>{{ ipv6 }}</p>
+            <p>{{ mac }}</p>
+            <p>{{ itype }}</p>
+            {% ifequal itype 'bridge' %}
+                <p>{{ bridge }}</p>
+            {% endifequal %}
+            <p>{{ start_mode }}</p>
+            <p>
+                <form action="" method="post" role="form">{% csrf_token %}
+                    {% ifequal state 0 %}
+                        <input type="submit" class="btn btn-xs btn-default" name="start" value="{% trans "Start" %}">
+                        <input type="submit" class="btn btn-xs btn-default" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                    {% else %}
+                        <input type="submit" class="btn btn-xs btn-default" name="stop" value="{% trans "Stop" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                     {% endifequal %}
-                    <p>{% trans "Boot Mode:" %}</p>
-                    <p>{% trans "State:" %}</p>
-                </div>
-                <div class="col-xs-6 col-sm-6">
-                    <p><strong>{{ iface }}</strong></p>
-                    <p>{{ ipv4 }}</p>
-                    <p>{{ ipv6 }}</p>
-                    <p>{{ mac }}</p>
-                    <p>{{ itype }}</p>
-                    {% ifequal itype 'bridge' %}
-                        <p>{{ bridge }}</p>
-                    {% endifequal %}
-                    <p>{{ start_mode }}</p>
-                    <p>
-                        <form action="" method="post" role="form">{% csrf_token %}
-                            {% ifequal state 0 %}
-                                <input type="submit" class="btn btn-xs btn-default" name="start" value="{% trans "Start" %}">
-                                <input type="submit" class="btn btn-xs btn-default" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                            {% else %}
-                                <input type="submit" class="btn btn-xs btn-default" name="stop" value="{% trans "Stop" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                            {% endifequal %}
-                        </form>
-                    </p>
-                </div>
-            </div>
+                </form>
+            </p>
+        </div>
+    </div>
 {% endblock %}

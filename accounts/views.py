@@ -2,14 +2,12 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from accounts.models import *
 from instances.models import Instance
 from accounts.forms import UserAddForm
 from django.conf import settings
 from django.core.validators import ValidationError
-
 
 
 @login_required
@@ -69,6 +67,7 @@ def profile(request):
             delkeypublic.delete()
             return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
+
 
 @login_required
 def accounts(request):
@@ -154,6 +153,7 @@ def accounts(request):
 def account(request, user_id):
     """
     :param request:
+    :param user_id:
     :return:
     """
 

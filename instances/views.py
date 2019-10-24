@@ -27,6 +27,7 @@ from logs.views import addlogmsg
 from django.conf import settings
 from django.contrib import messages
 
+
 @login_required
 def index(request):
     """
@@ -100,11 +101,12 @@ def instances(request, compute_id):
 def instance(request, compute_id, vname):
     """
     :param request:
+    :param compute_id:
+    :param vname:
     :return:
     """
 
     error_messages = []
-    # messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     computes = Compute.objects.all().order_by('name')
     computes_count = computes.count()
@@ -257,9 +259,6 @@ def instance(request, compute_id, vname):
                            compute.password,
                            compute.type,
                            vname)
-        compute_networks = sorted(conn.get_networks())
-        compute_interfaces = sorted(conn.get_ifaces())
-        compute_nwfilters = conn.get_nwfilters()
         status = conn.get_status()
         autostart = conn.get_autostart()
         bootmenu = conn.get_bootmenu()
@@ -271,13 +270,13 @@ def instance(request, compute_id, vname):
         cur_memory = conn.get_cur_memory()
         title = conn.get_title()
         description = conn.get_description()
+        networks = conn.get_net_device()
         disks = conn.get_disk_devices()
         media = conn.get_media_devices()
         if len(media) != 0:
             media_iso = sorted(conn.get_iso_media())
         else:
             media_iso = []
-        networks = conn.get_net_device()
 
         vcpu_range = conn.get_max_cpus()
         memory_range = [256, 512, 768, 1024, 2048, 3072, 4096, 6144, 8192, 16384]
@@ -285,8 +284,6 @@ def instance(request, compute_id, vname):
             insort(memory_range, memory)
         if cur_memory not in memory_range:
             insort(memory_range, cur_memory)
-        memory_host = conn.get_max_memory()
-        vcpu_host = len(vcpu_range)
         telnet_port = conn.get_telnet_port()
         console_type = conn.get_console_type()
         console_port = conn.get_console_port()
@@ -298,18 +295,16 @@ def instance(request, compute_id, vname):
         console_passwd = conn.get_console_passwd()
         clone_free_names = get_clone_free_names()
         user_quota_msg = check_user_quota(0, 0, 0, 0)
-        storages = sorted(conn.get_storages())
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
         default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
         formats = conn.get_image_formats()
 
-        busses = conn.get_disk_bus_types()
-        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
         show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
         show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
         clone_instance_auto_name = settings.CLONE_INSTANCE_AUTO_NAME
+        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -326,6 +321,15 @@ def instance(request, compute_id, vname):
 
         userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
         allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+
+        # Host resources
+        vcpu_host = len(vcpu_range)
+        memory_host = conn.get_max_memory()
+        bus_host = conn.get_disk_bus_types()
+        networks_host = sorted(conn.get_networks())
+        interfaces_host = sorted(conn.get_ifaces())
+        nwfilters_host = conn.get_nwfilters()
+        storages_host = sorted(conn.get_storages(True))
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
@@ -460,11 +464,70 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
+            if 'resizevm_cpu' in request.POST and (
+                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+                new_vcpu = request.POST.get('vcpu', '')
+                new_cur_vcpu = request.POST.get('cur_vcpu', '')
+
+                quota_msg = check_user_quota(0, int(new_vcpu) - vcpu, 0, 0)
+                if not request.user.is_superuser and quota_msg:
+                    msg = _("User %s quota reached, cannot resize CPU of '%s'!" % (quota_msg, instance.name))
+                    error_messages.append(msg)
+                else:
+                    cur_vcpu = new_cur_vcpu
+                    vcpu = new_vcpu
+                    conn.resize_cpu(cur_vcpu, vcpu)
+                    msg = _("Resize CPU")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
+            if 'resizevm_mem' in request.POST and (
+                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+                new_memory = request.POST.get('memory', '')
+                new_memory_custom = request.POST.get('memory_custom', '')
+                if new_memory_custom:
+                    new_memory = new_memory_custom
+                new_cur_memory = request.POST.get('cur_memory', '')
+                new_cur_memory_custom = request.POST.get('cur_memory_custom', '')
+                if new_cur_memory_custom:
+                    new_cur_memory = new_cur_memory_custom
+                quota_msg = check_user_quota(0, 0, int(new_memory) - memory, 0)
+                if not request.user.is_superuser and quota_msg:
+                    msg = _("User %s quota reached, cannot resize memory of '%s'!" % (quota_msg, instance.name))
+                    error_messages.append(msg)
+                else:
+                    cur_memory = new_cur_memory
+                    memory = new_memory
+                    conn.resize_mem(cur_memory, memory)
+                    msg = _("Resize Memory")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
+            if 'resizevm_disk' in request.POST and (
+                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+                disks_new = list()
+                for disk in disks:
+                    input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
+                    if input_disk_size > disk['size'] + (64 << 20):
+                        disk['size_new'] = input_disk_size
+                        disks_new.append(disk)
+                disk_sum = sum([disk['size'] >> 30 for disk in disks_new])
+                disk_new_sum = sum([disk['size_new'] >> 30 for disk in disks_new])
+                quota_msg = check_user_quota(0, 0, 0, disk_new_sum - disk_sum)
+                if not request.user.is_superuser and quota_msg:
+                    msg = _("User %s quota reached, cannot resize disks of '%s'!" % (quota_msg, instance.name))
+                    error_messages.append(msg)
+                else:
+                    conn.resize_disk(disks_new)
+                    msg = _("Resize")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
             if 'add_new_vol' in request.POST and allow_admin_or_not_template:
-                connCreate = wvmCreate(compute.hostname,
-                                       compute.login,
-                                       compute.password,
-                                       compute.type)
+                conn_create = wvmCreate(compute.hostname,
+                                        compute.login,
+                                        compute.password,
+                                        compute.type)
                 storage = request.POST.get('storage', '')
                 name = request.POST.get('name', '')
                 format = request.POST.get('format', default_format)
@@ -474,7 +537,7 @@ def instance(request, compute_id, vname):
                 cache = request.POST.get('cache', default_cache)
                 target = get_new_disk_dev(media, disks, bus)
 
-                path = connCreate.create_volume(storage, name, size, format, meta_prealloc, default_owner)
+                path = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_owner)
                 conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach new disk {} ({})'.format(name, format))
                 addlogmsg(request.user.username, instance.name, msg)
@@ -486,16 +549,16 @@ def instance(request, compute_id, vname):
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
 
-                connCreate = wvmStorage(compute.hostname,
-                                        compute.login,
-                                        compute.password,
-                                        compute.type,
-                                        storage)
+                conn_create = wvmStorage(compute.hostname,
+                                         compute.login,
+                                         compute.password,
+                                         compute.type,
+                                         storage)
 
-                format = connCreate.get_volume_type(name)
-                path = connCreate.get_target_path()
+                format = conn_create.get_volume_type(name)
+                path = conn_create.get_target_path()
                 target = get_new_disk_dev(media, disks, bus)
-                source = path + "/" + name;
+                source = path + "/" + name
 
                 conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
                 msg = _('Attach Existing disk: ' + target)
@@ -504,17 +567,17 @@ def instance(request, compute_id, vname):
 
             if 'delete_vol' in request.POST and allow_admin_or_not_template:
                 storage = request.POST.get('storage', '')
-                connDelete = wvmStorage(compute.hostname,
-                                        compute.login,
-                                        compute.password,
-                                        compute.type,
-                                        storage)
+                conn_delete = wvmStorage(compute.hostname,
+                                         compute.login,
+                                         compute.password,
+                                         compute.type,
+                                         storage)
                 dev = request.POST.get('dev', '')
                 path = request.POST.get('path', '')
                 name = request.POST.get('name', '')
 
                 conn.detach_disk(dev)
-                connDelete.del_volume(name)
+                conn_delete.del_volume(name)
 
                 msg = _('Delete disk: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)
@@ -625,8 +688,8 @@ def instance(request, compute_id, vname):
                     if bootorder:
                         order_list = {}
                         for idx, val in enumerate(bootorder.split(',')):
-                            type, dev = val.split(':', 1)
-                            order_list[idx] = {"type": type, "dev": dev}
+                            dev_type, dev = val.split(':', 1)
+                            order_list[idx] = {"type": dev_type, "dev": dev}
                         conn.set_bootorder(order_list)
                         msg = _("Set boot order")
 
@@ -796,7 +859,7 @@ def instance(request, compute_id, vname):
                     elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
                         msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
                         error_messages.append(msg)
-                    elif not re.match(r'^([0-9A-F]{2})(\:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'],
+                    elif not re.match(r'^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'],
                                       re.IGNORECASE):
                         msg = _("Instance mac '%s' invalid format!" % clone_data['clone-net-mac-0'])
                         error_messages.append(msg)
@@ -847,6 +910,8 @@ def instance(request, compute_id, vname):
 def inst_status(request, compute_id, vname):
     """
     :param request:
+    :param compute_id:
+    :param vname:
     :return:
     """
 
@@ -904,17 +969,17 @@ def get_host_instances(request, comp):
                 inst_on_db.save()
 
             all_host_vms[comp["id"],
-                           comp["name"],
-                           comp["status"],
-                           comp["cpu"],
-                           comp["mem_size"],
-                           comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
             all_host_vms[comp["id"],
-                           comp["name"],
-                           comp["status"],
-                           comp["cpu"],
-                           comp["mem_size"],
-                           comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
+                         comp["name"],
+                         comp["status"],
+                         comp["cpu"],
+                         comp["mem_size"],
+                         comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
         except Instance.DoesNotExist:
             inst_on_db = Instance(compute_id=comp["id"], name=inst_name, uuid=info['uuid'])
             inst_on_db.save()
@@ -988,6 +1053,12 @@ def instances_actions(request):
         conn.shutdown(name)
         return HttpResponseRedirect(request.get_full_path())
 
+    if 'powerforce' in request.POST:
+        conn.force_shutdown(name)
+        msg = _("Force Off")
+        addlogmsg(request.user.username, instance.name, msg)
+        return HttpResponseRedirect(request.get_full_path())
+
     if 'powercycle' in request.POST:
         msg = _("Power Cycle")
         conn.force_shutdown(name)
@@ -1027,7 +1098,7 @@ def instances_actions(request):
             addlogmsg(request.user.username, instance.name, msg)
             conn.resume(name)
             return HttpResponseRedirect(request.get_full_path())
-
+    return HttpResponseRedirect(request.get_full_path())
 
 @login_required
 def inst_graph(request, compute_id, vname):
@@ -1174,7 +1245,7 @@ def _get_clone_disks(disks, vname=''):
 def sshkeys(request, vname):
     """
     :param request:
-    :param vm:
+    :param vname:
     :return:
     """
 
@@ -1213,7 +1284,7 @@ def delete_instance(instance, delete_disk=False):
             print("Forcing shutdown")
             conn.force_shutdown()
         if delete_disk:
-            snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k:k['date'])
+            snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k: k['date'])
             for snap in snapshots:
                 print("Deleting snapshot {}".format(snap['name']))
                 conn.snapshot_delete(snap['name'])

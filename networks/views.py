@@ -15,6 +15,7 @@ from django.contrib import messages
 def networks(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
 
@@ -64,6 +65,8 @@ def networks(request, compute_id):
 def network(request, compute_id, pool):
     """
     :param request:
+    :param compute_id:
+    :param pool:
     :return:
     """
 
@@ -91,6 +94,7 @@ def network(request, compute_id, pool):
         xml = conn._XMLDesc(0)
     except libvirtError as lib_err:
         error_messages.append(lib_err)
+        return HttpResponseRedirect(reverse('networks', args=compute_id))
 
     if request.method == 'POST':
         if 'start' in request.POST:
@@ -154,9 +158,9 @@ def network(request, compute_id, pool):
             if edit_xml:
                 try:
                     new_conn = wvmNetworks(compute.hostname,
-                                   compute.login,
-                                   compute.password,
-                                   compute.type)
+                                           compute.login,
+                                           compute.password,
+                                           compute.type)
                     conn.define_network(edit_xml)
                     if conn.is_active():
                         messages.success(request, _("Network XML is changed. Stop and start network to activate new config."))
