@@ -38,7 +38,7 @@ class wvmCreate(wvmConnect):
             except:
                 pass
             for img in stg.listVolumes():
-                if img.endswith('.iso'):
+                if img.lower().endswith('.iso'):
                     pass
                 else:
                     images.append(img)
