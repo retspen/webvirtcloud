@@ -99,7 +99,7 @@
                                               <button id="select_storage" class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown">{% trans 'Select Pool...' %}
                                               <span class="caret"></span></button>
                                               <ul class="dropdown-menu">
-                                                  {% for storage in storages %}
+                                                  {% for storage in storages_host %}
                                                       <li><a href="#" onclick="get_volumes({{ compute_id }}, '{{ storage }}')">{{ storage }}</a></li>
                                                   {% endfor %}
                                               </ul>
@@ -120,7 +120,7 @@
                                         <label class="col-sm-3 control-label">{% trans "Bus" %}</label>
                                         <div class="col-sm-4">
                                             <select name="bus" class="form-control image-format">
-                                                {% for bus in busses %}
+                                                {% for bus in bus_host %}
                                                     <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
                                                 {% endfor %}
                                             </select>
