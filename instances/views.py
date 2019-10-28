@@ -576,10 +576,14 @@ def instance(request, compute_id, vname):
                 path = request.POST.get('path', '')
                 name = request.POST.get('name', '')
 
-                conn.detach_disk(dev)
-                conn_delete.del_volume(name)
-
                 msg = _('Delete disk: ' + dev)
+                conn.detach_disk(dev)
+                try:
+                    conn_delete.del_volume(name)
+                except libvirtError as err:
+                    msg = _('The disk: ' + dev + ' is detached but not deleted. ' + err.message)
+                    messages.warning(request, msg)
+
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
