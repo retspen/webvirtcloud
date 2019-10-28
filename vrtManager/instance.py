@@ -528,8 +528,8 @@ class wvmInstance(wvmConnect):
         mem_usage = {}
         if self.get_status() == 1:
             mem_stats = self.instance.memoryStats()
-            rss = mem_stats['rss'] if mem_stats['rss'] else 0
-            total = mem_stats['actual'] if mem_stats['actual'] else 0
+            rss = mem_stats['rss'] if 'rss' in mem_stats else 0
+            total = mem_stats['actual'] if 'actual' in mem_stats else 0
             available = total - rss
             if available < 0: available = 0
 
