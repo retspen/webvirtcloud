@@ -4,12 +4,12 @@
 {% block content %}
     <div class="row">
         <div class="col-xs-12" style="text-align: center;">
-            <h1>Oops!</h1>
+            <h1>{% trans 'Oops!'%}</h1>
 
             <p class="lead">{% trans "404 Not Found" %}</p>
 
             <p>{% trans "The requested page was not found on this server." %}</p>
-            <a class="btn btn-medium btn-success" href="javascript:history.back()">&larr; Back</a>
+            <a class="btn btn-medium btn-success" href="javascript:history.back()">&larr; {% trans 'Back'%}</a>
         </div>
     </div>
 {% endblock %}
