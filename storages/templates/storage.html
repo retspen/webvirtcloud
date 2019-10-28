@@ -44,11 +44,12 @@
 
     <div class="row">
         <div class="col-xs-6 col-sm-6">
-            <p>{% trans "Pool name" %}:</p>
-            <p>{% trans "Pool type" %}:</p>
-            <p>{% trans "Pool path" %}:</p>
-            <p>{% trans "Pool status" %}:</p>
-            <p>{% trans "Size" %}: ({{ size|filesizeformat }} / {{ used|filesizeformat }})</p>
+            <p>{% trans "Pool Name" %}:</p>
+            <p>{% trans "Pool Type" %}:</p>
+            <p>{% trans "Pool Path" %}:</p>
+            <p>{% trans "Pool Status" %}:</p>
+            <p>{% trans "Size" %}:</p>
+            <p>{% trans "Usage" %}({{ percent }}%):</p>
             <p>{% trans "State" %}:</p>
             <p>{% trans "Autostart" %}:</p>
         </div>
@@ -57,7 +58,8 @@
             <p>{% if not type %}{% trans "None" %}{% else %}{{ type }}{% endif %}</p>
             <p>{% if not path %}{% trans "None" %}{% else %}{{ path }}{% endif %}</p>
             <p>{% if not status %}{% trans "None" %}{% else %}{{ status }}{% endif %}</p>
-            <p>{% trans "Usage" %}: {{ percent }}%</p>
+            <p>{{ size|filesizeformat }}</p>
+            <p>{{ used|filesizeformat }}</p>
             <p>
             <form action="" method="post" role="form">{% csrf_token %}
                 {% ifequal state 0 %}
