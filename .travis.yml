@@ -2,14 +2,14 @@ language: python
 python:
   - "2.7"
 env:
-  - DJANGO=1.11.21
+  - DJANGO=1.11.23
 install:
   - pip install -r dev/requirements.txt
 script:
   - pep8 --exclude=IPy.py --ignore=E501 vrtManager accounts computes \
-                                        console create instances interfaces \
-                                        networks secrets storages
-  - pyflakes vrtManager accounts computes console create instances interfaces \
-             networks secrets storages
+                                        console create datasource instances interfaces \
+                                        logs networks nwfilters secrets storages
+  - pyflakes vrtManager accounts computes console create datasource instances interfaces \
+             nwfilters networks secrets storages logs
   - python manage.py migrate
   - python manage.py test --settings=webvirtcloud.settings-dev
