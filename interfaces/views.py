@@ -61,6 +61,7 @@ def interfaces(request, compute_id):
 def interface(request, compute_id, iface):
     """
     :param request:
+    :param compute_id:
     :param iface:
     :return:
     """

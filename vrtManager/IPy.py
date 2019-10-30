@@ -318,9 +318,9 @@ class IPint(object):
                 (self._ipversion == 6 and self._prefixlen == 128):
             if self.NoPrefixForSingleIp:
                 want = 0
-        if want == None:
+        if want is None:
             want = self.WantPrefixLen
-            if want == None:
+            if want is None:
                 want = 1
         if want:
             if want == 2:
@@ -354,7 +354,7 @@ class IPint(object):
         """
 
         bits = _ipVersionToLen(self._ipversion)
-        if self.WantPrefixLen == None and wantprefixlen == None:
+        if self.WantPrefixLen is None and wantprefixlen is None:
             wantprefixlen = 0
         ret = _intToBin(self.ip)
         return '0' * (bits - len(ret)) + ret + self._printPrefix(wantprefixlen)
@@ -370,7 +370,7 @@ class IPint(object):
         'ffff:ffff:ffff:ffff:ffff:f:f:fffc/127'
         """
 
-        if self.WantPrefixLen == None and wantprefixlen == None:
+        if self.WantPrefixLen is None and wantprefixlen is None:
             wantprefixlen = 1
 
         if self._ipversion == 4:
@@ -413,7 +413,7 @@ class IPint(object):
         2001:658:22a:cafe:200:0:0:1
         """
 
-        if self.WantPrefixLen == None and wantprefixlen == None:
+        if self.WantPrefixLen is None and wantprefixlen is None:
             wantprefixlen = 1
 
         if self._ipversion == 4:
@@ -434,7 +434,7 @@ class IPint(object):
         2001:0658:022a:cafe:0200:0000:0000:0001
         """
 
-        if self.WantPrefixLen == None and wantprefixlen == None:
+        if self.WantPrefixLen is None and wantprefixlen is None:
             wantprefixlen = 1
 
         return intToIp(self.ip, self._ipversion) + self._printPrefix(wantprefixlen)
@@ -448,7 +448,7 @@ class IPint(object):
         0x20010658022acafe0200000000000001
         """
 
-        if self.WantPrefixLen == None and wantprefixlen == None:
+        if self.WantPrefixLen is None and wantprefixlen is None:
             wantprefixlen = 0
 
         x = '0x%x' % self.ip
@@ -463,7 +463,7 @@ class IPint(object):
         42540616829182469433547762482097946625
         """
 
-        if self.WantPrefixLen == None and wantprefixlen == None:
+        if self.WantPrefixLen is None and wantprefixlen is None:
             wantprefixlen = 0
 
         x = '%d' % self.ip
