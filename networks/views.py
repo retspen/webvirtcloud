@@ -161,7 +161,7 @@ def network(request, compute_id, pool):
                                            compute.login,
                                            compute.password,
                                            compute.type)
-                    conn.define_network(edit_xml)
+                    new_conn.define_network(edit_xml)
                     if conn.is_active():
                         messages.success(request, _("Network XML is changed. Stop and start network to activate new config."))
                     else:
