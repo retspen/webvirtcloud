@@ -61,6 +61,7 @@ def interfaces(request, compute_id):
 def interface(request, compute_id, iface):
     """
     :param request:
+    :param compute_id:
     :param iface:
     :return:
     """
@@ -87,6 +88,7 @@ def interface(request, compute_id, iface):
         ipv6 = conn.get_ipv6()
         ipv6_type = conn.get_ipv6_type()
         bridge = conn.get_bridge()
+        slave_ifaces = conn.get_bridge_slave_ifaces()
 
         if request.method == 'POST':
             if 'stop' in request.POST:

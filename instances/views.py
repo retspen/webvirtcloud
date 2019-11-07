@@ -73,6 +73,7 @@ def allinstances(request):
 def instances(request, compute_id):
     """
     :param request:
+    :param compute_id
     :return:
     """
     all_host_vms = {}
@@ -224,9 +225,9 @@ def instance(request, compute_id, vname):
     def get_network_tuple(network_source_str):
         network_source_pack = network_source_str.split(":", 1)
         if len(network_source_pack) > 1:
-            return (network_source_pack[1], network_source_pack[0])
+            return network_source_pack[1], network_source_pack[0]
         else:
-            return (network_source_pack[0], 'net')
+            return network_source_pack[0], 'net'
 
     def migrate_instance(new_compute, instance, live=False, unsafe=False, xml_del=False, offline=False):
         status = connection_manager.host_is_up(new_compute.type, new_compute.hostname)
@@ -1104,10 +1105,13 @@ def instances_actions(request):
             return HttpResponseRedirect(request.get_full_path())
     return HttpResponseRedirect(request.get_full_path())
 
+
 @login_required
 def inst_graph(request, compute_id, vname):
     """
     :param request:
+    :param compute_id:
+    :param vname:
     :return:
     """
     json_blk = []
@@ -1298,7 +1302,7 @@ def delete_instance(instance, delete_disk=False):
         conn.delete()
         instance.delete()
 
-        print("Instance {} on compute {} sucessfully deleted".format(instance_name, compute.hostname))
+        print("Instance {} on compute {} successfully deleted".format(instance_name, compute.hostname))
 
     except libvirtError as lib_err:
         print("Error removing instance {} on compute {}".format(instance_name, compute.hostname))

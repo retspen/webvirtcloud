@@ -247,7 +247,7 @@ class wvmInstance(wvmConnect):
     def get_disk_devices(self):
         def disks(doc):
             result = []
-            dev = volume = storage = src_file = None
+            dev = volume = storage = src_file = bus = None
             disk_format = used_size = disk_size = disk_cache = None
             
             for disk in doc.xpath('/domain/devices/disk'):
@@ -288,7 +288,7 @@ class wvmInstance(wvmConnect):
     def get_media_devices(self):
         def disks(doc):
             result = []
-            dev = volume = storage = None
+            dev = volume = storage = bus = None
             src_file = None
             for media in doc.xpath('/domain/devices/disk'):
                 device = media.xpath('@device')[0]
@@ -341,6 +341,7 @@ class wvmInstance(wvmConnect):
 
     def get_bootorder(self):
         boot_order = {}
+        type = target = None
         tree = ElementTree.fromstring(self._XMLDesc(0))
         os = tree.find('os')
         boot = os.findall('boot')
@@ -363,7 +364,7 @@ class wvmInstance(wvmConnect):
 
         devices = tree.find('devices')
         for dev in devices:
-            dev_target = dev_type = dev_device = dev_alias = None
+            dev_target = None
             boot_dev = dev.find('boot')
             if boot_dev is not None:
                 idx = boot_dev.get('order')
@@ -439,6 +440,7 @@ class wvmInstance(wvmConnect):
                             disk.insert(2, src_media)
                             return True
 
+        vol = None
         storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)

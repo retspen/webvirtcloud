@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
@@ -19,6 +18,7 @@ from logs.views import addlogmsg
 def nwfilters(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
 
@@ -31,9 +31,9 @@ def nwfilters(request, compute_id):
 
     try:
         conn = wvmNWFilters(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type)
+                            compute.login,
+                            compute.password,
+                            compute.type)
 
         if request.method == 'POST':
             if 'create_nwfilter' in request.POST:
@@ -63,7 +63,7 @@ def nwfilters(request, compute_id):
                             addlogmsg(request.user.username, compute.hostname, lib_err.message)
 
             if 'del_nwfilter' in request.POST:
-                name = request.POST.get('nwfiltername','')
+                name = request.POST.get('nwfiltername', '')
                 msg = _("Deleting NWFilter: %s" % name)
                 in_use = False
                 nwfilter = conn.get_nwfilter(name)
@@ -71,7 +71,6 @@ def nwfilters(request, compute_id):
                 is_conn = wvmInstances(compute.hostname, compute.login, compute.password, compute.type)
                 instances = is_conn.get_instances()
                 for inst in instances:
-                #    if in_use: break
                     i_conn = wvmInstance(compute.hostname, compute.login, compute.password, compute.type, inst)
                     dom_filterrefs = i_conn.get_filterrefs()
 
@@ -90,10 +89,10 @@ def nwfilters(request, compute_id):
 
             if 'cln_nwfilter' in request.POST:
 
-                name = request.POST.get('nwfiltername','')
+                name = request.POST.get('nwfiltername', '')
                 cln_name = request.POST.get('cln_name', name + '-clone')
 
-                conn.clone_nwfilter(name,cln_name)
+                conn.clone_nwfilter(name, cln_name)
                 msg = _("Cloning NWFilter %s as %s" % (name, cln_name))
                 addlogmsg(request.user.username, compute.hostname, msg)
 
@@ -122,14 +121,14 @@ def nwfilter(request, compute_id, nwfltr):
 
     try:
         nwfilter = wvmNWFilter(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type,
-                           nwfltr)
+                               compute.login,
+                               compute.password,
+                               compute.type,
+                               nwfltr)
         conn = wvmNWFilters(compute.hostname,
-                                    compute.login,
-                                    compute.password,
-                                    compute.type)
+                            compute.login,
+                            compute.password,
+                            compute.type)
 
         for nwf in conn.get_nwfilters():
             nwfilters_all.append(conn.get_nwfilter_info(nwf))

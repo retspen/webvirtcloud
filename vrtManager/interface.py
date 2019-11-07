@@ -1,5 +1,6 @@
 from vrtManager.connection import wvmConnect
 from vrtManager import util
+from xml.etree import ElementTree
 from libvirt import VIR_INTERFACE_XML_INACTIVE
 
 
@@ -119,9 +120,34 @@ class wvmInterface(wvmConnect):
             return int_ipv6_ip + '/' + int_ipv6_mask
 
     def get_bridge(self):
+        bridge = None
         if self.get_type() == 'bridge':
-            xml = self._XMLDesc()
-            return util.get_xml_path(xml, "/interface/bridge/interface/@name")
+            bridge = util.get_xml_path(self._XMLDesc(), "/interface/bridge/interface/@name")
+            for iface in self.get_bridge_slave_ifaces():
+                if iface.get('state') == 'up' and iface.get('speed') is not 'unknown':
+                    bridge = iface.get('name')
+                    return bridge
+            return bridge
+        else:
+            return None
+
+    def get_bridge_slave_ifaces(self):
+        ifaces = list()
+        if self.get_type() == 'bridge':
+            tree = ElementTree.fromstring(self._XMLDesc())
+            for iface in tree.findall("./bridge/"):
+                address = state = speed = None
+                name = iface.get('name')
+                type = iface.get('type')
+                link = iface.find('link')
+                if link is not None:
+                    state = link.get('state')
+                    speed = link.get('speed')
+                mac = iface.find('mac')
+                if mac is not None:
+                    address = mac.get('address')
+                ifaces.append({'name': name, 'type': type, 'state': state, 'speed': speed, 'mac': address})
+            return ifaces
         else:
             return None
 
