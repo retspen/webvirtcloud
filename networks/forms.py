@@ -9,7 +9,7 @@ class AddNetPool(forms.Form):
     subnet = forms.CharField(error_messages={'required': _('No subnet has been entered')},
                              max_length=20)
     forward = forms.CharField(max_length=100)
-    dhcp = forms.BooleanField(required=False)
+    dhcp4 = forms.BooleanField(required=False)
     fixed = forms.BooleanField(required=False)
     bridge_name = forms.CharField(max_length=20, required=False)
     openvswitch = forms.BooleanField(required=False)

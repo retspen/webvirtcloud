@@ -38,7 +38,7 @@ class wvmNetworks(wvmConnect):
     def define_network(self, xml):
         self.wvm.networkDefineXML(xml)
 
-    def create_network(self, name, forward, gateway, mask, dhcp, bridge, openvswitch, fixed=False):
+    def create_network(self, name, forward, gateway, mask, dhcp4, bridge, openvswitch, fixed=False):
         xml = """
             <network>
                 <name>%s</name>""" % name
@@ -55,12 +55,12 @@ class wvmNetworks(wvmConnect):
         if forward != 'bridge':
             xml += """
                         <ip address='%s' netmask='%s'>""" % (gateway, mask)
-            if dhcp:
+            if dhcp4:
                 xml += """<dhcp>
-                            <range start='%s' end='%s' />""" % (dhcp[0], dhcp[1])
+                            <range start='%s' end='%s' />""" % (dhcp4[0], dhcp4[1])
                 if fixed:
-                    fist_oct = int(dhcp[0].strip().split('.')[3])
-                    last_oct = int(dhcp[1].strip().split('.')[3])
+                    fist_oct = int(dhcp4[0].strip().split('.')[3])
+                    last_oct = int(dhcp4[1].strip().split('.')[3])
                     for ip in range(fist_oct, last_oct + 1):
                         xml += """<host mac='%s' ip='%s.%s' />""" % (util.randomMAC(), gateway[:-2], ip)
                 xml += """</dhcp>"""
@@ -119,7 +119,7 @@ class wvmNetwork(wvmConnect):
         ip_networks = dict()
         xml = self._XMLDesc(0)
         if util.get_xml_path(xml, "/network/ip") is None:
-            return None
+            return ip_networks
         tree = etree.fromstring(xml)
         ips = tree.findall('.ip')
         for ip in ips:
@@ -143,6 +143,11 @@ class wvmNetwork(wvmConnect):
                 ret = IP(str(address_str))
             ip_networks[family] = ret
         return ip_networks
+
+    def get_network_mac(self):
+        xml = self._XMLDesc(0)
+        mac = util.get_xml_path(xml, "/network/mac/@address")
+        return mac
 
     def get_network_forward(self):
         xml = self._XMLDesc(0)

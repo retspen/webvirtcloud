@@ -43,13 +43,13 @@ def networks(request, compute_id):
                     if data['forward'] == 'bridge' and data['bridge_name'] == '':
                         error_messages.append('Please enter bridge name')
                     try:
-                        gateway, netmask, dhcp = network_size(data['subnet'], data['dhcp'])
+                        gateway, netmask, dhcp4 = network_size(data['subnet'], data['dhcp4'])
                     except:
                         error_msg = _("Input subnet pool error")
                         error_messages.append(error_msg)
                     if not error_messages:
                         conn.create_network(data['name'], data['forward'], gateway, netmask,
-                                            dhcp, data['bridge_name'], data['openvswitch'], data['fixed'])
+                                            dhcp4, data['bridge_name'], data['openvswitch'], data['fixed'])
                         return HttpResponseRedirect(reverse('network', args=[compute_id, data['name']]))
                 else:
                     for msg_err in form.errors.values():
@@ -86,6 +86,7 @@ def network(request, compute_id, pool):
         state = conn.is_active()
         device = conn.get_bridge_device()
         autostart = conn.get_autostart()
+        net_mac = conn.get_network_mac()
         net_forward = conn.get_network_forward()
         dhcp_range_start = ipv4_dhcp_range_end = dict()
 
