@@ -31,6 +31,7 @@ def networks(request, compute_id):
                            compute.password,
                            compute.type)
         networks = conn.get_networks_info()
+        dhcp4 = netmask = gateway = ''
 
         if request.method == 'POST':
             if 'create' in request.POST:
@@ -42,11 +43,8 @@ def networks(request, compute_id):
                         error_messages.append(msg)
                     if data['forward'] == 'bridge' and data['bridge_name'] == '':
                         error_messages.append('Please enter bridge name')
-                    try:
+                    if data['subnet']:
                         gateway, netmask, dhcp4 = network_size(data['subnet'], data['dhcp4'])
-                    except:
-                        error_msg = _("Input subnet pool error")
-                        error_messages.append(error_msg)
                     if not error_messages:
                         conn.create_network(data['name'], data['forward'], gateway, netmask,
                                             dhcp4, data['bridge_name'], data['openvswitch'], data['fixed'])

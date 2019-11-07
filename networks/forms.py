@@ -7,7 +7,7 @@ class AddNetPool(forms.Form):
     name = forms.CharField(error_messages={'required': _('No pool name has been entered')},
                            max_length=20)
     subnet = forms.CharField(error_messages={'required': _('No subnet has been entered')},
-                             max_length=20)
+                             max_length=20, required=False)
     forward = forms.CharField(max_length=100)
     dhcp4 = forms.BooleanField(required=False)
     fixed = forms.BooleanField(required=False)
@@ -25,7 +25,7 @@ class AddNetPool(forms.Form):
 
     def clean_subnet(self):
         subnet = self.cleaned_data['subnet']
-        have_symbol = re.match('^[0-9./]+$', subnet)
+        have_symbol = re.match('^[0-9./]+$', subnet if subnet else ".")
         if not have_symbol:
             raise forms.ValidationError(_('The pool subnet must not contain any special characters'))
         elif len(subnet) > 20:

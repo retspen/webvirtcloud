@@ -13,7 +13,7 @@
                     <h4 class="modal-title">{% trans "Add New Network" %}</h4>
                 </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
+                    <form class="form-horizontal" method="post" action="" role="form" novalidate>{% csrf_token %}
                         <div class="form-group">
                             <label class="col-sm-4 control-label">{% trans "Name" %}</label>
                             <div class="col-sm-6">
