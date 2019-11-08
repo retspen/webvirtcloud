@@ -7,14 +7,18 @@ from libvirt import VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_UPDATE_COMM
 from libvirt import VIR_NETWORK_UPDATE_AFFECT_LIVE, VIR_NETWORK_UPDATE_AFFECT_CONFIG
 
 
-def network_size(net, dhcp=None):
+def network_size(subnet, dhcp=None):
     """
     Func return gateway, mask and dhcp pool.
     """
-    mask = IP(net).strNetmask()
-    addr = IP(net)
-    gateway = addr[1].strNormal()
-    dhcp_pool = [addr[2].strNormal(), addr[addr.len() - 2].strNormal()]
+    mask = IP(subnet).strNetmask()
+    addr = IP(subnet)
+    gateway = addr[1].strCompressed()
+    if addr.version() == 4:
+        dhcp_pool = [addr[2].strCompressed(), addr[addr.len() - 2].strCompressed()]
+    if addr.version() == 6:
+        mask = mask.lstrip('/') if '/' in mask else mask
+        dhcp_pool = [IP(addr[0].strCompressed() + hex(256)), IP(addr[0].strCompressed() + hex(512 - 1))]
     if dhcp:
         return gateway, mask, dhcp_pool
     else:
@@ -30,15 +34,18 @@ class wvmNetworks(wvmConnect):
             net = self.get_network(network)
             net_status = net.isActive()
             net_bridge = net.bridgeName()
-            net_forwd = util.get_xml_path(net.XMLDesc(0), "/network/forward/@mode")
+            net_forward = util.get_xml_path(net.XMLDesc(0), "/network/forward/@mode")
             networks.append({'name': network, 'status': net_status,
-                             'device': net_bridge, 'forward': net_forwd})
+                             'device': net_bridge, 'forward': net_forward})
         return networks
 
     def define_network(self, xml):
         self.wvm.networkDefineXML(xml)
 
-    def create_network(self, name, forward, gateway, mask, dhcp, bridge, openvswitch, fixed=False):
+    def create_network(self, name, forward,
+                       ipv4, gateway, mask, dhcp4,
+                       ipv6, gateway6, prefix6, dhcp6,
+                       bridge, openvswitch, fixed=False):
         xml = """
             <network>
                 <name>%s</name>""" % name
@@ -53,19 +60,25 @@ class wvmNetworks(wvmConnect):
         if openvswitch is True:
             xml += """<virtualport type='openvswitch'/>"""
         if forward != 'bridge':
-            xml += """
-                        <ip address='%s' netmask='%s'>""" % (gateway, mask)
-            if dhcp:
-                xml += """<dhcp>
-                            <range start='%s' end='%s' />""" % (dhcp[0], dhcp[1])
-                if fixed:
-                    fist_oct = int(dhcp[0].strip().split('.')[3])
-                    last_oct = int(dhcp[1].strip().split('.')[3])
-                    for ip in range(fist_oct, last_oct + 1):
-                        xml += """<host mac='%s' ip='%s.%s' />""" % (util.randomMAC(), gateway[:-2], ip)
-                xml += """</dhcp>"""
-
-            xml += """</ip>"""
+            if ipv4:
+                xml += """<ip address='%s' netmask='%s'>""" % (gateway, mask)
+                if dhcp4:
+                    xml += """<dhcp>
+                                <range start='%s' end='%s' />""" % (dhcp4[0], dhcp4[1])
+                    if fixed:
+                        fist_oct = int(dhcp4[0].strip().split('.')[3])
+                        last_oct = int(dhcp4[1].strip().split('.')[3])
+                        for ip in range(fist_oct, last_oct + 1):
+                            xml += """<host mac='%s' ip='%s.%s' />""" % (util.randomMAC(), gateway[:-2], ip)
+                    xml += """</dhcp>"""
+                xml += """</ip>"""
+            if ipv6:
+                xml += """<ip family='ipv6' address='%s' prefix='%s'>""" % (gateway6, prefix6)
+                if dhcp6:
+                    xml += """<dhcp>
+                                 <range start='%s' end='%s' />""" % (dhcp6[0], dhcp6[1])
+                    xml += """</dhcp>"""
+                xml += """</ip>"""
         xml += """</network>"""
         self.define_network(xml)
         net = self.get_network(name)
@@ -119,7 +132,7 @@ class wvmNetwork(wvmConnect):
         ip_networks = dict()
         xml = self._XMLDesc(0)
         if util.get_xml_path(xml, "/network/ip") is None:
-            return None
+            return ip_networks
         tree = etree.fromstring(xml)
         ips = tree.findall('.ip')
         for ip in ips:
@@ -143,6 +156,11 @@ class wvmNetwork(wvmConnect):
                 ret = IP(str(address_str))
             ip_networks[family] = ret
         return ip_networks
+
+    def get_network_mac(self):
+        xml = self._XMLDesc(0)
+        mac = util.get_xml_path(xml, "/network/mac/@address")
+        return mac
 
     def get_network_forward(self):
         xml = self._XMLDesc(0)
