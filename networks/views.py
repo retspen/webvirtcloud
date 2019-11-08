@@ -31,6 +31,9 @@ def networks(request, compute_id):
                            compute.password,
                            compute.type)
         networks = conn.get_networks_info()
+        dhcp4 = netmask4 = gateway4 = ''
+        dhcp6 = prefix6 = gateway6 = ''
+        ipv4 = ipv6 = False
 
         if request.method == 'POST':
             if 'create' in request.POST:
@@ -38,18 +41,24 @@ def networks(request, compute_id):
                 if form.is_valid():
                     data = form.cleaned_data
                     if data['name'] in networks:
-                        msg = _("Pool name already in use")
+                        msg = _("Network pool name already in use")
                         error_messages.append(msg)
                     if data['forward'] == 'bridge' and data['bridge_name'] == '':
                         error_messages.append('Please enter bridge name')
-                    try:
-                        gateway, netmask, dhcp = network_size(data['subnet'], data['dhcp'])
-                    except:
-                        error_msg = _("Input subnet pool error")
-                        error_messages.append(error_msg)
+                    if data['subnet']:
+                        ipv4 = True
+                        gateway4, netmask4, dhcp4 = network_size(data['subnet'], data['dhcp4'])
+                    if data['subnet6']:
+                        ipv6 = True
+                        gateway6, prefix6, dhcp6 = network_size(data['subnet6'], data['dhcp6'])
+                        if prefix6 != '64':
+                            error_messages.append('For libvirt, the IPv6 network prefix must be /64')
                     if not error_messages:
-                        conn.create_network(data['name'], data['forward'], gateway, netmask,
-                                            dhcp, data['bridge_name'], data['openvswitch'], data['fixed'])
+                        conn.create_network(data['name'],
+                                            data['forward'],
+                                            ipv4, gateway4, netmask4, dhcp4,
+                                            ipv6, gateway6, prefix6, dhcp6,
+                                            data['bridge_name'], data['openvswitch'], data['fixed'])
                         return HttpResponseRedirect(reverse('network', args=[compute_id, data['name']]))
                 else:
                     for msg_err in form.errors.values():
@@ -86,11 +95,25 @@ def network(request, compute_id, pool):
         state = conn.is_active()
         device = conn.get_bridge_device()
         autostart = conn.get_autostart()
-        ipv4_forward = conn.get_ipv4_forward()
-        ipv4_dhcp_range_start = conn.get_ipv4_dhcp_range_start()
-        ipv4_dhcp_range_end = conn.get_ipv4_dhcp_range_end()
-        ipv4_network = conn.get_ipv4_network()
-        fixed_address = conn.get_mac_ipaddr()
+        net_mac = conn.get_network_mac()
+        net_forward = conn.get_network_forward()
+        dhcp_range_start = ipv4_dhcp_range_end = dict()
+
+        ip_networks = conn.get_ip_networks()
+        for family, ip_network in ip_networks.items():
+            if family == "ipv4":
+                ipv4_dhcp_range_start = conn.get_dhcp_range_start(family)
+                ipv4_dhcp_range_end = conn.get_dhcp_range_end(family)
+                ipv4_network = ip_network
+                ipv4_fixed_address = conn.get_dhcp_host_addr(family)
+            elif family == "ipv6":
+                ipv6_dhcp_range_start = conn.get_dhcp_range_start(family)
+                ipv6_dhcp_range_end = conn.get_dhcp_range_end(family)
+                ipv6_network = ip_network
+                ipv6_fixed_address = conn.get_dhcp_host_addr(family)
+            else:
+                raise Exception("Unknown Network Family")
+
         xml = conn._XMLDesc(0)
     except libvirtError as lib_err:
         error_messages.append(lib_err)
@@ -130,26 +153,34 @@ def network(request, compute_id, pool):
         if 'modify_fixed_address' in request.POST:
             name = request.POST.get('name', '')
             address = request.POST.get('address', '')
-            mac = request.POST.get('mac', '')
+            family = request.POST.get('family', 'ipv4')
+
+            if family == 'ipv4':
+                mac_duid = request.POST.get('mac', '')
+            if family == 'ipv6':
+                mac_duid = request.POST.get('id', '')
+
             try:
-                ret_val = conn.modify_fixed_address(name, address, mac)
-                messages.success(request, "Fixed Address Operation Completed.")
+                ret_val = conn.modify_fixed_address(name, address, mac_duid, family)
+                messages.success(request, "{} Fixed Address Operation Completed.".format(family.upper()))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
             except ValueError as val_err:
                 error_messages.append(val_err.message)
         if 'delete_fixed_address' in request.POST:
-            mac = request.POST.get('mac', '')
-            conn.delete_fixed_address(mac)
-            messages.success(request, "Fixed Address is Deleted.")
+            ip = request.POST.get('address', '')
+            family = request.POST.get('family', 'ipv4')
+            conn.delete_fixed_address(ip, family)
+            messages.success(request, "{} Fixed Address is Deleted.".format(family.upper()))
             return HttpResponseRedirect(request.get_full_path())
         if 'modify_dhcp_range' in request.POST:
             range_start = request.POST.get('range_start', '')
             range_end = request.POST.get('range_end', '')
+            family = request.POST.get('family', 'ipv4')
             try:
-                conn.modify_dhcp_range(range_start, range_end)
-                messages.success(request, "DHCP Range is Changed.")
+                conn.modify_dhcp_range(range_start, range_end, family)
+                messages.success(request, "{} DHCP Range is Changed.".format(family.upper()))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
@@ -161,7 +192,7 @@ def network(request, compute_id, pool):
                                            compute.login,
                                            compute.password,
                                            compute.type)
-                    conn.define_network(edit_xml)
+                    new_conn.define_network(edit_xml)
                     if conn.is_active():
                         messages.success(request, _("Network XML is changed. Stop and start network to activate new config."))
                     else:

@@ -6,10 +6,13 @@ from django.utils.translation import ugettext_lazy as _
 class AddNetPool(forms.Form):
     name = forms.CharField(error_messages={'required': _('No pool name has been entered')},
                            max_length=20)
-    subnet = forms.CharField(error_messages={'required': _('No subnet has been entered')},
-                             max_length=20)
+    subnet = forms.CharField(error_messages={'required': _('No IPv4 subnet has been entered')},
+                             max_length=20, required=False)
+    subnet6 = forms.CharField(error_messages={'required': _('No IPv6 subnet has been entered')},
+                             max_length=42, required=False)
     forward = forms.CharField(max_length=100)
-    dhcp = forms.BooleanField(required=False)
+    dhcp4 = forms.BooleanField(required=False)
+    dhcp6 = forms.BooleanField(required=False)
     fixed = forms.BooleanField(required=False)
     bridge_name = forms.CharField(max_length=20, required=False)
     openvswitch = forms.BooleanField(required=False)
@@ -25,11 +28,20 @@ class AddNetPool(forms.Form):
 
     def clean_subnet(self):
         subnet = self.cleaned_data['subnet']
-        have_symbol = re.match('^[0-9./]+$', subnet)
+        have_symbol = re.match('^[0-9./]+$', subnet if subnet else ".")
         if not have_symbol:
             raise forms.ValidationError(_('The pool subnet must not contain any special characters'))
         elif len(subnet) > 20:
             raise forms.ValidationError(_('The pool subnet must not exceed 20 characters'))
+        return subnet
+
+    def clean_subnet6(self):
+        subnet = self.cleaned_data['subnet6']
+        have_symbol = re.match('^[0-9a-fA-F:/]+$', subnet if subnet else ":")
+        if not have_symbol:
+            raise forms.ValidationError(_('The pool subnet must not contain any special characters'))
+        elif len(subnet) > 42:
+            raise forms.ValidationError(_('The pool subnet must not exceed 42 characters'))
         return subnet
 
     def clean_bridge_name(self):

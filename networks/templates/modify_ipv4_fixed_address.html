@@ -1,0 +1,53 @@
+{% load i18n %}
+{% if request.user.is_superuser %}
+    <a href="#AddFixedNet4" type="button" class="btn btn-success pull-right" data-toggle="modal">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+    </a>
+
+    <!-- Modal pool -->
+    <div class="modal fade" id="AddFixedNet4" tabindex="-1" role="dialog" aria-labelledby="AddFixedNet4Label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">{% trans "Add IPv4 Fixed Address" %}</h4>
+                </div>
+                <form  method="post" action="" role="form">{% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">{% trans "Subnet Pool" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" readonly class="form-control" name="subnet" value="{{ ipv4_network }}" required pattern="[0-9\/\.]+">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">{% trans "MAC" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="mac" required pattern="[0-9\/\:]+">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">{% trans "Name" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="name" pattern="[a-zA-Z0-9_]+">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">{% trans "Address" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="address" required pattern="[0-9\/\.]+">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="modal-footer">
+                     <input name="family" value="ipv4" hidden/>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="submit" class="btn btn-primary" name="modify_fixed_address">{% trans "Create" %}</button>
+                </div>
+                </form>
+            </div> <!-- /.modal-content -->
+        </div> <!-- /.modal-dialog -->
+    </div> <!-- /.modal -->
+{% endif %}

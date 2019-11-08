@@ -13,29 +13,11 @@
                     <h4 class="modal-title">{% trans "Add New Network" %}</h4>
                 </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
+                    <form class="form-horizontal" method="post" action="" role="form" novalidate>{% csrf_token %}
                         <div class="form-group">
                             <label class="col-sm-4 control-label">{% trans "Name" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" class="form-control" name="name" placeholder="default" required pattern="[a-zA-Z0-9_]+">
-                            </div>
-                        </div>
-                        <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-4 control-label">{% trans "Subnet pool" %}</label>
-                            <div class="col-sm-6">
-                                <input type="text" class="form-control" name="subnet" value="192.168.100.0/24" required pattern="[0-9\/\.]+">
-                            </div>
-                        </div>
-                        <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-4 control-label">{% trans "DHCP" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" name="dhcp" value="true" checked>
-                            </div>
-                        </div>
-                        <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-4 control-label">{% trans "Fixed Address" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" name="fixed" value="true">
                             </div>
                         </div>
                         <div class="form-group">
@@ -47,6 +29,42 @@
                                     <option value="none">{% trans "ISOLATE" %}</option>
                                     <option value="bridge">{% trans "BRIDGE" %}</option>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="form-group bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 control-label">{% trans "IPv4 Subnet pool" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="subnet" value="" placeholder="192.168.100.0/24" required pattern="[0-9\/\.]+">
+                            </div>
+                        </div>
+                        <div class="form-group bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 control-label">{% trans "DHCPv4" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="dhcp4" value="true" checked>
+                            </div>
+                        </div>
+                        <div class="form-group bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 control-label">{% trans "Fixed Address" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="fixed" value="true">
+                            </div>
+                        </div>
+                        <div class="form-group bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 control-label">{% trans "Enable IPv6" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" id="enable_ipv6" name="enable_ipv6" value="false">
+                            </div>
+                        </div>
+                        <div class="form-group bridge_name_form_group_dhcp ipv6_group">
+                            <label class="col-sm-4 control-label">{% trans "IPv6 Subnet pool" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="subnet6" value="" placeholder="fd00:dead:baba:1::/64" required pattern="[0-9\/\.]+">
+                            </div>
+                        </div>
+                        <div class="form-group bridge_name_form_group_dhcp ipv6_group">
+                            <label class="col-sm-4 control-label">{% trans "DHCPv6" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="dhcp6" value="true">
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group">

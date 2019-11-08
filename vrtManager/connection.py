@@ -124,16 +124,7 @@ class wvmConnection(object):
             # on server shutdown libvirt module gets freed before the close callbacks are called
             # so we just check here if it is still present
             if libvirt is not None:
-                if (reason == libvirt.VIR_CONNECT_CLOSE_REASON_ERROR):
-                    self.last_error = 'connection closed: Misc I/O error'
-                elif (reason == libvirt.VIR_CONNECT_CLOSE_REASON_EOF):
-                    self.last_error = 'connection closed: End-of-file from server'
-                elif (reason == libvirt.VIR_CONNECT_CLOSE_REASON_KEEPALIVE):
-                    self.last_error = 'connection closed: Keepalive timer triggered'
-                elif (reason == libvirt.VIR_CONNECT_CLOSE_REASON_CLIENT):
-                    self.last_error = 'connection closed: Client requested it'
-                else:
-                    self.last_error = 'connection closed: Unknown error'
+                self.last_error = reason
 
             # prevent other threads from using the connection (in the future)
             self.connection = None
@@ -255,11 +246,11 @@ class wvmConnectionManager(object):
         """
         self._connections_lock.acquireRead()
         try:
-            if (host in self._connections):
+            if host in self._connections:
                 connections = self._connections[host]
 
                 for connection in connections:
-                    if (connection.login == login and connection.passwd == passwd and connection.type == conn):
+                    if connection.login == login and connection.passwd == passwd and connection.type == conn:
                         return connection
         finally:
             self._connections_lock.release()
@@ -278,13 +269,13 @@ class wvmConnectionManager(object):
 
         connection = self._search_connection(host, login, passwd, conn)
 
-        if (connection is None):
+        if connection is None:
             self._connections_lock.acquireWrite()
             try:
                 # we have to search for the connection again after aquireing the write lock
                 # as the thread previously holding the write lock may have already added our connection
                 connection = self._search_connection(host, login, passwd, conn)
-                if (connection is None):
+                if connection is None:
                     # create a new connection if a matching connection does not already exist
                     connection = wvmConnection(host, login, passwd, conn)
 
@@ -317,7 +308,7 @@ class wvmConnectionManager(object):
             socket_host.settimeout(1)
             if conn_type == CONN_SSH:
                 if ':' in hostname:
-                    LIBVIRT_HOST, PORT = (hostname).split(":")
+                    LIBVIRT_HOST, PORT = hostname.split(":")
                     PORT = int(PORT)
                 else:
                     PORT = SSH_PORT
@@ -331,6 +322,7 @@ class wvmConnectionManager(object):
             return True
         except Exception as err:
             return err
+
 
 connection_manager = wvmConnectionManager(
     settings.LIBVIRT_KEEPALIVE_INTERVAL if hasattr(settings, 'LIBVIRT_KEEPALIVE_INTERVAL') else 5,
@@ -368,7 +360,7 @@ class wvmConnect(object):
         minor = ver / 1000
         ver = ver % 1000
         release = ver
-        return "%s.%s.%s" % (major,minor,release)
+        return "%s.%s.%s" % (major, minor, release)
 
     def get_lib_version(self):
         ver = self.wvm.getLibVersion()
@@ -432,7 +424,7 @@ class wvmConnect(object):
             for arch in ctx.xpath('/capabilities/guest/arch'):
                 domain_types = arch.xpath('domain/@type')
                 arch_name = arch.xpath('@name')[0]
-                result[arch_name]= domain_types
+                result[arch_name] = domain_types
             return result
         return util.get_xml_path(self.get_cap_xml(), func=hypervisors)
 
@@ -446,7 +438,7 @@ class wvmConnect(object):
             for arch in ctx.xpath('/capabilities/guest/arch'):
                 emulator = arch.xpath('emulator')
                 arch_name = arch.xpath('@name')[0]
-                result[arch_name]= emulator
+                result[arch_name] = emulator
             return result
         return util.get_xml_path(self.get_cap_xml(), func=emulators)
 
@@ -460,8 +452,8 @@ class wvmConnect(object):
         def get_bus_list(ctx):
             result = []
             for disk_enum in ctx.xpath('/domainCapabilities/devices/disk/enum'):
-               if disk_enum.xpath("@name")[0] == "bus":
-                   for values in disk_enum: result.append(values.text)
+                if disk_enum.xpath("@name")[0] == "bus":
+                    for values in disk_enum: result.append(values.text)
             return result
 
         # return [ 'ide', 'scsi', 'usb', 'virtio' ]
@@ -482,11 +474,11 @@ class wvmConnect(object):
 
     def get_image_formats(self):
         """Get available image formats"""
-        return [ 'raw', 'qcow', 'qcow2' ]
+        return ['raw', 'qcow', 'qcow2']
 
     def get_file_extensions(self):
         """Get available image filename extensions"""
-        return [ 'img', 'qcow', 'qcow2' ]
+        return ['img', 'qcow', 'qcow2']
 
     def get_video(self):
         """ Get available graphics video types """
@@ -496,7 +488,7 @@ class wvmConnect(object):
                 if video_enum.xpath("@name")[0] == "modelType":
                     for values in video_enum: result.append(values.text)
             return result
-        return util.get_xml_path(self.get_dom_cap_xml(),func=get_video_list)
+        return util.get_xml_path(self.get_dom_cap_xml(), func=get_video_list)
 
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
@@ -560,6 +552,7 @@ class wvmConnect(object):
 
     def get_host_instances(self, raw_mem_size=False):
         vname = {}
+
         def get_info(doc):
             mem = util.get_xpath(doc, "/domain/currentMemory")
             mem = int(mem) / 1024
@@ -574,7 +567,7 @@ class wvmConnect(object):
             title = title if title else ''
             description = util.get_xpath(doc, "/domain/description")
             description = description if description else ''
-            return (mem, vcpu, title, description)
+            return mem, vcpu, title, description
         for name in self.get_instances():
             dom = self.get_instance(name)
             xml = dom.XMLDesc(0)
@@ -592,6 +585,7 @@ class wvmConnect(object):
     def get_user_instances(self, name):
         dom = self.get_instance(name)
         xml = dom.XMLDesc(0)
+
         def get_info(ctx):
             mem = util.get_xpath(ctx, "/domain/currentMemory")
             mem = int(mem) / 1024
@@ -604,7 +598,7 @@ class wvmConnect(object):
             title = title if title else ''
             description = util.get_xpath(ctx, "/domain/description")
             description = description if description else ''
-            return (mem, vcpu, title, description)
+            return mem, vcpu, title, description
         (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
         return {
             'name': dom.name(),

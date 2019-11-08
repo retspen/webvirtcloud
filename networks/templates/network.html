@@ -39,14 +39,16 @@
 
     <div class="row">
         <div class="col-xs-6 col-sm-4">
-            <p>{% trans "Network name" %}:</p>
+            <p>{% trans "Network Name" %}:</p>
             <p>{% trans "Device" %}:</p>
+            <p>{% trans "MAC" %}:</p>
             <p>{% trans "State" %}:</p>
             <p>{% trans "Autostart" %}:</p>
         </div>
         <div class="col-xs-6 col-sm-6">
             <p>{{ pool }}</p>
             <p>{{ device }}</p>
+            <p>{{ net_mac }}</p>
             <p>
                 <form action="" method="post" role="form">{% csrf_token %}
                     {% ifequal state 0 %}
@@ -68,6 +70,7 @@
             </p>
         </div>
     </div>
+
     <div class="row">
         <h3 class="page-header"></h3>
     </div>
@@ -93,35 +96,36 @@
             </div>
         </div>
     </div>
-    <div class="row">
+
+     <div class="row">
         <h3 class="page-header">{% trans "IPv4 Configuration" %}</h3>
     </div>
     <div class="row">
             <div class="col-xs-6 col-sm-4">
-                <p>{% trans "IPv4 Forwarding:" %}</p>
-                <p>{% trans "Network:" %}</p>
-                <p>{% trans "DHCP:" %}</p>
+                <p>{% trans "IPv4 Forwarding" %}:</p>
+                <p>{% trans "Network" %}:</p>
+                <p>{% trans "DHCP" %}:</p>
                 {% if ipv4_dhcp_range_start and ipv4_dhcp_range_end %}
-                    <p>{% trans "Start:" %}</p>
-                    <p>{% trans "End:" %}</p>
+                    <p>{% trans "Start" %}:</p>
+                    <p>{% trans "End" %}:</p>
                 {% endif %}
             </div>
              <div class="col-xs-6 col-sm-4">
                 <p>
-                    {% ifequal ipv4_forward.0 'nat' %}
+                    {% ifequal net_forward.0 'nat' %}
                         {% trans "NAT" %}
                     {% endifequal %}
-                    {% ifequal ipv4_forward.0 'route' %}
+                    {% ifequal net_forward.0 'route' %}
                         {% trans "ROUTE" %}
                     {% endifequal %}
-                    {% ifequal ipv4_forward.0 'bridge' %}
+                    {% ifequal net_forward.0 'bridge' %}
                         {% trans "BRIDGE" %}
                     {% endifequal %}
-                    {% if not ipv4_forward.0 %}
+                    {% if not net_forward.0 %}
                         {% trans "ISOLATE" %}
                     {% endif %}
                 </p>
-                <p>{{ ipv4_network }}</p>
+                <p>{{ ipv4_network|default:"-"  }}</p>
                 <p>
                     {% if ipv4_dhcp_range_start and ipv4_dhcp_range_end %}
                         <span class="text-success">{% trans "ON" %}</span>
@@ -137,6 +141,7 @@
                         {%  else %}
                             <p><input name="range_start" value="{{ ipv4_dhcp_range_start }}"/></p>
                             <p><input name="range_end" value="{{ ipv4_dhcp_range_end }}"/></p>
+                            <input hidden name="family" value="ipv4"/>
                             <div class="col-xs-10 col-sm-8">
                                 <input type="submit" class="btn btn-primary btn-block" value="Apply"
                                        name="modify_dhcp_range"
@@ -147,15 +152,15 @@
                 {% endif %}
             </div>
         </div>
-    {% ifequal ipv4_forward.0 'nat' %}
+    {% if ipv4_dhcp_range_start and ipv4_dhcp_range_end %}
         {% if state %}
-            {% include 'modify_fixed_address.html' %}
+            {% include 'modify_ipv4_fixed_address.html' %}
         {% endif %}
         <div class="row">
-            <h3 class="page-header">{% trans "Fixed Address" %}</h3>
+            <h3 class="page-header">{% trans "IPv4 Fixed Address" %}</h3>
         </div>
-    {% endifequal %}
-    {% if fixed_address %}
+    {% endif %}
+    {% if ipv4_fixed_address %}
         <div class="row">
             <div class="col-xs-12">
                 <div class="panel-group" id="accordion">
@@ -175,7 +180,7 @@
                                     <input type="button" class="btn btn-default" id="filter_button" value="Filter">
                                     <button type="button" class="btn btn-default" id="filter_clear">{% trans 'Clear' %}</button>
                                 </div>
-                                <table class="table table-hover">
+                                <table id="ipv4_table" class="table table-hover">
                                     <thead>
                                     <tr>
                                         <th style="text-align: center">{% trans "MAC" %}</th>
@@ -185,14 +190,132 @@
                                     </tr>
                                     </thead>
                                     <tbody style="text-align: center">
-                                    {% for fix in fixed_address %}
+                                    {% for fix4 in ipv4_fixed_address %}
                                         <tr>
                                             <form method="post" role="form">{% csrf_token %}
-                                                <td><label class="form-control" disabled="true">{{ fix.mac }}</label></td>
-                                                <td><input class="form-control" value="{{ fix.ip }}" name="address" /></td>
-                                                <td><input class="form-control" value="{{ fix.name }}" name="name" /></td>
+                                                <td><input class="form-control" value="{{ fix4.mac }}" name="mac" readonly/></td>
+                                                <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
+                                                <td><input class="form-control" value="{{ fix4.name }}" name="name" /></td>
                                                 <td>
-                                                    <input hidden name="mac" value="{{ fix.mac }}"/>
+                                                    <input hidden name="family" value="ipv4"/>
+                                                    <button type="submit" class="btn btn-sm btn-primary"
+                                                            name="modify_fixed_address"
+                                                            title="Edit entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <i class="glyphicon glyphicon-save"></i>
+                                                    </button>
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                            name="delete_fixed_address"
+                                                            title="Delete entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <i class="glyphicon glyphicon-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </form>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <h3 class="page-header">{% trans "IPv6 Configuration" %}</h3>
+    </div>
+    <div class="row">
+            <div class="col-xs-6 col-sm-4">
+                <p>{% trans "IPv6 Forwarding" %}:</p>
+                <p>{% trans "Network" %}:</p>
+                <p>{% trans "DHCP" %}:</p>
+                {% if ipv6_dhcp_range_start and ipv6_dhcp_range_end %}
+                    <p>{% trans "Start" %}:</p>
+                    <p>{% trans "End" %}:</p>
+                {% endif %}
+            </div>
+             <div class="col-xs-6 col-sm-4">
+                <p>
+                    {% if not net_forward.0 %}
+                        {% trans "ISOLATE" %}
+                    {% else %}
+                        {% trans "ROUTE" %}
+                    {% endif %}
+                </p>
+                <p>{{ ipv6_network|default:"-" }}</p>
+                <p>
+                    {% if ipv6_dhcp_range_start and ipv6_dhcp_range_end %}
+                        <span class="text-success">{% trans "ON" %}</span>
+                    {% else %}
+                        <span class="text-danger">{% trans "OFF" %}</span>
+                    {% endif %}
+                </p>
+                {% if ipv6_dhcp_range_start and ipv6_dhcp_range_end %}
+                    <form method="post" role="form">{% csrf_token %}
+                        {% if state %}
+                            <p>{{ ipv6_dhcp_range_start }}</p>
+                            <p>{{ ipv6_dhcp_range_end }}</p>
+                        {%  else %}
+                            <p><input name="range_start" value="{{ ipv6_dhcp_range_start }}"/></p>
+                            <p><input name="range_end" value="{{ ipv6_dhcp_range_end }}"/></p>
+                            <input hidden name="family" value="ipv6"/>
+                            <div class="col-xs-10 col-sm-8">
+                                <input type="submit" class="btn btn-primary btn-block" value="Apply"
+                                       name="modify_dhcp_range"
+                                       title="Edit DHCP Range" onclick="return confirm('{% trans "Are you sure?" %}')"/>
+                            </div>
+                        {% endif %}
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+     {% if ipv6_dhcp_range_start and ipv6_dhcp_range_end %}
+        {% if state %}
+            {% include 'modify_ipv6_fixed_address.html' %}
+        {% endif %}
+        <div class="row">
+            <h3 class="page-header">{% trans "IPv6 Fixed Address" %}</h3>
+        </div>
+    {% endif %}
+    {% if ipv6_fixed_address %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="panel-group" id="accordion">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseIPv6">
+                                {% trans 'Show' %}
+                            </a>
+                        </div>
+                        <div id="collapseIPv6" class="panel-collapse collapse">
+                            <div class="panel-body">
+
+                                <div class="input-append form-inline pull-right">
+                                    <div class="form-group">
+                                        <input type="text" class="form-control" id="filter_input_ipv6">
+                                    </div>
+                                    <input type="button" class="btn btn-default" id="filter_button_ipv6" value="Filter">
+                                    <button type="button" class="btn btn-default" id="filter_clear_ipv6">{% trans 'Clear' %}</button>
+                                </div>
+                                <table id="ipv6_table" class="table table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th style="text-align: center">{% trans "ID" %}</th>
+                                        <th style="text-align: center">{% trans "Address" %}</th>
+                                        <th style="text-align: center">{% trans "Name" %}</th>
+                                        <th style="text-align: center">{% trans "Action" %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody style="text-align: center">
+                                    {% for fix6 in ipv6_fixed_address %}
+                                        <tr>
+                                            <form method="post" role="form">{% csrf_token %}
+                                                <td><input class="form-control" value="{{ fix6.id }}" name="id" readonly/></td>
+                                                <td><input class="form-control" value="{{ fix6.ip }}" name="address" /></td>
+                                                <td><input class="form-control" value="{{ fix6.name }}" name="name" /></td>
+                                                <td>
+                                                    <input hidden name="family" value="ipv6"/>
                                                     <button type="submit" class="btn btn-sm btn-primary"
                                                             name="modify_fixed_address"
                                                             title="Edit entry" onclick="return confirm('{% trans "Are you sure?" %}')">
@@ -229,15 +352,17 @@
         // add event button labeled "filter"
         $('#filter_button').click(function (event) {
             // get value
-            var filter_val = $('#filter_input').val();
+            let filter_val = $('#filter_input').val();
             if (filter_val == '') {
                 // show all
-                $('tbody tr').show();
+                $('#ipv4_table tbody tr').show();
             } else {
-                // show only matches
-                $('tbody tr:Contains(\'' + filter_val + '\')').show();
                 // hide non-matching items
-                $('tbody tr:not(:Contains(\'' + filter_val + '\'))').hide();
+                let row_not_contains4 = $('#ipv4_table tbody tr input:not([value*=\'' + filter_val + '\'])');
+                row_not_contains4.closest('tr').hide();
+                // show only matches
+                let row_contains4 =  $('#ipv4_table tbody tr input[value*=\'' + filter_val + '\']');
+                row_contains4.closest('tr').show();
             }
         });
         // add event button labeled "clear"
@@ -250,6 +375,35 @@
         $('#filter_input').keyup(function (event) {
             if (event.keyCode == 13) {
                 $('#filter_button').click();
+            }
+        });
+
+        // add event button labeled "filter"
+        $('#filter_button_ipv6').click(function (event) {
+            // get value
+            let filter_val = $('#filter_input_ipv6').val();
+            if (filter_val == '') {
+                // show all
+                $('#ipv6_table tbody tr').show();
+            } else {
+                // hide non-matching items
+                let row_not_contains6 = $('#ipv6_table tbody tr input:not([value*=\'' + filter_val + '\'])');
+                row_not_contains6.closest('tr').hide();
+                // show only matches
+                let row_contains6 =  $('#ipv6_table tbody tr input[value*=\'' + filter_val + '\']');
+                row_contains6.closest('tr').show();
+            }
+        });
+        // add event button labeled "clear"
+        $('#filter_clear_ipv6').click(function (event) {
+            $('#filter_input_ipv6').val('');
+            $('#filter_button_ipv6').click();
+        });
+
+        // trigger filter when enter key pressed
+        $('#filter_input_ipv6').keyup(function (event) {
+            if (event.keyCode == 13) {
+                $('#filter_button_ipv6').click();
             }
         });
     });

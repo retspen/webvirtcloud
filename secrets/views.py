@@ -12,6 +12,7 @@ from libvirt import libvirtError
 def secrets(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
 

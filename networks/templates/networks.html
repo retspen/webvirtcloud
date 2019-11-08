@@ -41,7 +41,7 @@
             <div class="col-lg-12">
                 <div class="alert alert-warning alert-dismissable">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <i class="fa fa-exclamation-triangle"></i><strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Networks" %}
+                    <i class="fa fa-exclamation-triangle"></i><strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any network" %}
                 </div>
             </div>
         {% else %}
@@ -54,8 +54,8 @@
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-xs-4 col-sm-4">
-                                    <p><strong>{% trans "Device:" %}</strong></p>
-                                    <p><strong>{% trans "Forward:" %}</strong></p>
+                                    <p><strong>{% trans "Device" %}:</strong></p>
+                                    <p><strong>{% trans "Forward" %}:</strong></p>
                                 </div>
                                 <div class="col-xs-6 col-sm-7">
                                     <p>{{ pool.device }}</p>
@@ -79,6 +79,14 @@
             } else {
                 $('.bridge_name_form_group').hide();
                 $('.bridge_name_form_group_dhcp').show();
+            }
+        }).change();
+
+        $('#enable_ipv6').change(function (eventObject) {
+            if ($(this).is(':checked')) {
+                $('.ipv6_group').show();
+            } else {
+                $('.ipv6_group').hide();
             }
         }).change();
     });

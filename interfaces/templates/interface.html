@@ -38,12 +38,12 @@
     <div class="row">
         <div class="col-xs-6 col-sm-4">
             <p>{% trans "Interface" %}:</p>
-            <p>{% trans "IPv4" %}: ({% ifequal ipv4 None %}{% trans 'None' %}{% else %}{{ ipv4_type }}{% endifequal %})</p>
-            <p>{% trans "IPv6" %}: ({% ifequal ipv6 None %}{% trans 'None' %}{% else %}{{ ipv6_type }}{% endifequal %})</p>
+            <p>{% trans "IPv4" %} ({% ifequal ipv4 None %}{% trans 'None' %}{% else %}{{ ipv4_type }}{% endifequal %}):</p>
+            <p>{% trans "IPv6" %} ({% ifequal ipv6 None %}{% trans 'None' %}{% else %}{{ ipv6_type }}{% endifequal %}):</p>
             <p>{% trans "MAC Adress" %}:</p>
             <p>{% trans "Interface Type" %}:</p>
             {% ifequal itype 'bridge' %}
-                <p>{% trans "Bridge device" %}</p>
+                <p>{% trans "Bridge Device" %}:</p>
             {% endifequal %}
             <p>{% trans "Boot Mode" %}:</p>
             <p>{% trans "State" %}:</p>
@@ -69,5 +69,33 @@
                 </form>
             </p>
         </div>
+        <div class="col-sm-12">
+            {% ifequal itype 'bridge' %}
+            <table class="table table-bordered">
+            <caption>{% trans 'Slaves' %}</caption>
+                <thead>
+                <tr class="active">
+                    <td>{% trans 'MAC' %}</td>
+                    <td>{% trans 'Name' %}</td>
+                    <td>{% trans 'Type' %}</td>
+                    <td>{% trans 'Speed' %}</td>
+                    <td>{% trans 'State' %}</td>
+                </tr>
+                </thead>
+                <tbody>
+                {% for iface in slave_ifaces %}
+                    <tr>
+                        <td>{{ iface.mac }}</td>
+                        <td>{{ iface.name }}</td>
+                        <td>{{ iface.type }}</td>
+                        <td>{{ iface.speed }}</td>
+                        <td>{{ iface.state }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% endifequal %}
+        </div>
     </div>
+
 {% endblock %}
