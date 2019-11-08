@@ -105,7 +105,7 @@
                                                                     <label class="col-sm-3 control-label">{% trans "Name" %}</label>
                                                                     <div class="col-sm-6">
                                                                         <input type="text" class="form-control" name="name"
-                                                                               placeholder="{% trans "Name" %}" maxlength="14" required
+                                                                               placeholder="{% trans "Name" %}" maxlength="64" required
                                                                                pattern="[a-zA-Z0-9\.\-_]+">
                                                                         <input type="hidden" name="vcpu" value="{{ flavor.vcpu }}">
                                                                         <input type="hidden" name="memory" value="{{ flavor.memory }}">
@@ -183,7 +183,7 @@
                                                                 <div class="form-group">
                                                                     <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                                                                        <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
                                                                     </div>
                                                                 </div>
                                                                 <div class="form-group">
@@ -255,7 +255,7 @@
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Name" %}</label>
                         <div class="col-sm-7">
-                            <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
+                            <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="64" required pattern="[a-zA-Z0-9\.\-_]+">
                         </div>
                     </div>
                     <div class="form-group">
@@ -368,7 +368,7 @@
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
                         <div class="col-sm-7">
-                            <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                            <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
                         </div>
                     </div>
                     <div class="form-group">
@@ -413,7 +413,7 @@
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Name" %}</label>
                             <div class="col-sm-7">
-                                <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
+                                <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="64" required pattern="[a-zA-Z0-9\.\-_]+">
                             </div>
                         </div>
                         <div class="form-group">
@@ -527,7 +527,7 @@
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Console Password" %}</label>
                             <div class="col-sm-7">
-                                <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="14">
+                                <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
                             </div>
                         </div>
                         <div class="form-group">
