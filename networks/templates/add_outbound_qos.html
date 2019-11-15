@@ -1,0 +1,40 @@
+{% load i18n %}
+{% if request.user.is_superuser %}
+    <a href="#AddInboundQos" type="button" class="btn btn-success pull-right" data-toggle="modal">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+    </a>
+
+    <!-- Modal pool -->
+    <div class="modal fade" id="AddInboundQos" tabindex="-1" role="dialog" aria-labelledby="AddInboundQosLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">{% trans "Add Inbound Qos for Network" %}</h4>
+                </div>
+                <form class="form-horizontal" method="post" action="" role="form" novalidate>{% csrf_token %}
+                    <div class="modal-body">
+                        <div class="form-group col-sm-4 ">
+                            <label for="qos_inbound_av">{% trans "Average" %}:</label>
+                            <input id="qos_inbound_av" class="form-control" name="qos_inbound_average" value="{{ att.average }}"/>
+                        </div>
+                        <div class="form-group col-sm-4">
+                            <label for="qos_inbound_peak">{% trans "Peak" %}:</label>
+                            <input id="qos_inbound_peak" class="form-control" name="qos_inbound_peak" value="{{ att.peak }}"/>
+                        </div>
+                        <div class="form-group col-sm-4">
+                            <label for="qos_inbound_burst">{% trans "Burst" %}:</label>
+                            <input id="qos_inbound_burst" class="form-control" name="qos_inbound_burst" value="{{ att.burst }}"/></p>
+                        </div>
+                    </div> <!-- /.modal-content -->
+                    <div class="modal-footer">
+                        <input name="qos_direction" value="inbound" hidden/>
+                        <div class="col-sm-6">
+                            <button class="btn btn-primary btn-block" name="set_qos">{% trans 'Save' %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div> <!-- /.modal-dialog -->
+    </div> <!-- /.modal -->
+{% endif %}
