@@ -97,7 +97,7 @@
         </div>
     </div>
 
-     <div class="row">
+    <div class="row">
         <h3 class="page-header">{% trans "IPv4 Configuration" %}</h3>
     </div>
     <div class="row">
@@ -172,7 +172,6 @@
                         </div>
                         <div id="collapseTwo" class="panel-collapse collapse">
                             <div class="panel-body">
-
                                 <div class="input-append form-inline pull-right">
                                     <div class="form-group">
                                         <input type="text" class="form-control" id="filter_input">
@@ -339,6 +338,60 @@
             </div>
         </div>
     {% endif %}
+
+        {% ifequal state 0 %}
+        {% include 'add_outbound_qos.html' %}
+        {% include 'add_inbound_qos.html' %}
+    {% endifequal %}
+
+    <div class="row">
+        <h3 class="page-header">{% trans "Qos Configuration" %}
+        </h3>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th style="text-align: center">{% trans "Direction" %}</th>
+                    <th style="text-align: center">{% trans "Average" %}</th>
+                    <th style="text-align: center">{% trans "Peak" %}</th>
+                    <th style="text-align: center">{% trans "Burst" %}</th>
+                    <th style="text-align: center">{% trans "Actions" %}</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for q, att in qos.items %}
+                    <form method="post" role="form">{% csrf_token %}
+                        <tr>
+                            <td><label class="control-label">{{ q | capfirst }}</label></td>
+                            <td><input id="qos_{{ q }}_av" class="form-control" name="qos_{{ q }}_average"
+                                       value="{{ att.average }}"/></td>
+                            <td><input id="qos_{{ q }}_peak" class="form-control" name="qos_{{ q }}_peak"
+                                       value="{{ att.peak }}"/></td>
+                            <td><input id="qos_{{ q }}_burst" class="form-control" name="qos_{{ q }}_burst"
+                                       value="{{ att.burst }}"/></td>
+                            <td>
+                                <input name="qos_direction" value="{{ q }}" hidden/>
+                                <button type="submit" class="btn btn-sm btn-primary"
+                                        name="set_qos"
+                                        title="Edit Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                    <i class="glyphicon glyphicon-save"></i>
+                                </button>
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        name="unset_qos"
+                                        title="Delete Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                    <i class="glyphicon glyphicon-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </form>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 {% endblock %}
 {% block script %}
 <script>

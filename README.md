@@ -2,10 +2,19 @@
 
 
 ## Features
-
+* QEMU/KVM Hypervisor Management
+* QEMU/KVM Instance Management - Create, Delete, Update
+* Hypervisor & Instance web based stats
+* Manage Multiple QEMU/KVM Hypervisor
+* Manage Hypervisor Datastore pools
+* Manage Hypervisor Networks
+* Instance Console Access with Browsers
+* Libvirt API based web management UI
+* User Based Authorization and Authentication 
 * User can add SSH public key to root in Instance (Tested only Ubuntu)
 * User can change root password in Instance (Tested only Ubuntu)
 * Supports cloud-init datasource interface
+ 
 
 ### Warning!!!
 
@@ -67,7 +76,7 @@ wget -O - https://clck.ru/9V9fH | sudo sh
 ### Install WebVirtCloud panel (CentOS)
 
 ```bash
-sudo yum -y install python-virtualenv python-devel libvirt-devel glibc gcc nginx supervisor python-lxml git python-libguestfs
+sudo yum -y install python-virtualenv python-devel libvirt-devel glibc gcc nginx supervisor python-lxml git python-libguestfs iproute-tc
 ```
 
 #### Creating directories and cloning repo
