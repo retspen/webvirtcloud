@@ -290,3 +290,60 @@ class wvmNetwork(wvmConnect):
                             parent_index,
                             VIR_NETWORK_UPDATE_AFFECT_LIVE | VIR_NETWORK_UPDATE_AFFECT_CONFIG)
 
+    def get_qos(self):
+        qos_values = dict()
+        tree = etree.fromstring(self._XMLDesc(0))
+        qos = tree.xpath("/network/bandwidth")
+        if qos:
+            qos = qos[0]
+
+            in_qos = qos.find('inbound')
+            if in_qos is not None:
+                in_av = in_qos.get('average')
+                in_peak = in_qos.get('peak')
+                in_burst = in_qos.get('burst')
+                qos_values['inbound'] = {'average': in_av, 'peak': in_peak, 'burst': in_burst}
+
+            out_qos = qos.find('outbound')
+            if out_qos is not None:
+                out_av = out_qos.get('average')
+                out_peak = out_qos.get('peak')
+                out_burst = out_qos.get('burst')
+                qos_values['outbound'] = {'average': out_av, 'peak': out_peak, 'burst': out_burst}
+        return qos_values
+
+    def set_qos(self, direction, average, peak, burst):
+        if direction == "inbound":
+            xml = "<inbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+        elif direction == "outbound":
+            xml = "<outbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+        else:
+            raise Exception('Direction must be inbound or outbound')
+
+        tree = etree.fromstring(self._XMLDesc(0))
+
+        band = tree.xpath("/network/bandwidth")
+        if len(band) == 0:
+            xml = "<bandwidth>" + xml + "</bandwidth>"
+            tree.append(etree.fromstring(xml))
+        else:
+            direct = band[0].find(direction)
+            if direct is not None:
+                parent = direct.getparent()
+                parent.remove(direct)
+                parent.append(etree.fromstring(xml))
+            else:
+                band[0].append(etree.fromstring(xml))
+        new_xml = etree.tostring(tree)
+        self.wvm.networkDefineXML(new_xml)
+
+    def unset_qos(self, direction):
+        tree = etree.fromstring(self._XMLDesc(0))
+        for direct in tree.xpath("/network/bandwidth/{}".format(direction)):
+            parent = direct.getparent()
+            parent.remove(direct)
+
+        self.wvm.networkDefineXML(etree.tostring(tree))
+
+    def edit_network(self, new_xml):
+        self.wvm.networkDefineXML(new_xml)

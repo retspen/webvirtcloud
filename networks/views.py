@@ -97,6 +97,7 @@ def network(request, compute_id, pool):
         autostart = conn.get_autostart()
         net_mac = conn.get_network_mac()
         net_forward = conn.get_network_forward()
+        qos = conn.get_qos()
         dhcp_range_start = ipv4_dhcp_range_end = dict()
 
         ip_networks = conn.get_ip_networks()
@@ -187,20 +188,37 @@ def network(request, compute_id, pool):
         if 'edit_network' in request.POST:
             edit_xml = request.POST.get('edit_xml', '')
             if edit_xml:
-                try:
-                    new_conn = wvmNetworks(compute.hostname,
-                                           compute.login,
-                                           compute.password,
-                                           compute.type)
-                    new_conn.define_network(edit_xml)
-                    if conn.is_active():
-                        messages.success(request, _("Network XML is changed. Stop and start network to activate new config."))
-                    else:
-                        messages.success(request, _("Network XML is changed."))
-                    return HttpResponseRedirect(request.get_full_path())
-                except libvirtError as lib_err:
-                    error_messages.append(lib_err.message)
+                conn.edit_network(edit_xml)
+                if conn.is_active():
+                    messages.success(request, _("Network XML is changed. \\"
+                                                "Stop and start network to activate new config."))
+                else:
+                    messages.success(request, _("Network XML is changed."))
+                return HttpResponseRedirect(request.get_full_path())
 
+        if 'set_qos' in request.POST:
+            qos_dir = request.POST.get('qos_direction', '')
+            average = request.POST.get('qos_{}_average'.format(qos_dir), '')
+            peak = request.POST.get('qos_{}_peak'.format(qos_dir), '')
+            burst = request.POST.get('qos_{}_burst'.format(qos_dir), '')
+
+            conn.set_qos(qos_dir, average, peak, burst)
+            if conn.is_active():
+                messages.success(request, "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
+                                 "Stop and start network to activate new config")
+            else:
+                messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+            return HttpResponseRedirect(request.get_full_path())
+        if 'unset_qos' in request.POST:
+            qos_dir = request.POST.get('qos_direction', '')
+            conn.unset_qos(qos_dir)
+
+            if conn.is_active():
+                messages.success(request, "{} Qos is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
+                                 "Stop and start network to activate new config.")
+            else:
+                messages.success(request, "{} Qos is deleted".format(qos_dir.capitalize()))
+            return HttpResponseRedirect(request.get_full_path())
     conn.close()
 
     return render(request, 'network.html', locals())
