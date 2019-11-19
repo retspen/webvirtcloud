@@ -1,41 +1,51 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddOutboundQos" type="button" class="btn btn-success pull-right" data-toggle="modal"  title="add outbound qos">
-        <span class="glyphicon glyphicon-arrow-up" aria-hidden="true"></span>
+    <a href="#AddQos" type="button" class="btn btn-sm btn-success pull-right" data-toggle="modal" title="add qos">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
     </a>
 
     <!-- Modal pool -->
-    <div class="modal fade" id="AddOutboundQos" tabindex="-1" role="dialog" aria-labelledby="AddOutboundQosLabel"
+    <div class="modal fade" id="AddQos" tabindex="-1" role="dialog" aria-labelledby="AddQosLabel"
          aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Add Outbound Qos for Network" %}</h4>
+                    <h4 class="modal-title">{% trans "Add Inbound Qos for Network" %}</h4>
                 </div>
-
                 <div class="modal-body">
                     <form class="form-horizontal" method="post" name="set_qos" role="form">{% csrf_token %}
                     <div class="form-group">
+                        <label class="col-sm-4 control-label">{% trans "Direction" %}:</label>
+                        <div class="col-sm-6">
+                            <select class="form-control" name="qos_direction">
+                                <option value="inbound">{% trans 'Inbound' %}</option>
+                                <option value="outbound">{% trans 'Outbound' %}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label class="col-sm-4 control-label">{% trans "Average" %}:</label>
                         <div class="col-sm-6">
-                        <input class="form-control" name="qos_outbound_average" required pattern="[0-9]+"/>
+                        <input class="form-control" name="qos_inbound_average" placeholder="kilobytes"
+                               required pattern="[0-9]+"/>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-4 control-label">{% trans "Peak" %}:</label>
                         <div class="col-sm-6">
-                        <input class="form-control" name="qos_outbound_peak"
+                        <input class="form-control" name="qos_inbound_peak" placeholder="kilobytes"
                                required pattern="[0-9]+"/>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-4 control-label">{% trans "Burst" %}:</label>
                         <div class="col-sm-6">
-                        <input class="form-control" name="qos_outbound_burst" required pattern="[0-9]+"/>
+                        <input class="form-control" name="qos_inbound_burst" placeholder="kilobytes"
+                               required pattern="[0-9]+"/>
                         </div>
                     </div>
-                    <input name="qos_direction" value="outbound" hidden/>
+
                 </div>
 
                 <div class="modal-footer">
