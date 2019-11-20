@@ -480,7 +480,7 @@ class wvmConnect(object):
         """Get available image filename extensions"""
         return ['img', 'qcow', 'qcow2']
 
-    def get_video(self):
+    def get_video_models(self):
         """ Get available graphics video types """
         def get_video_list(ctx):
             result = []

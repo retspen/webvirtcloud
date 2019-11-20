@@ -43,7 +43,7 @@ def create_instance(request, compute_id):
                          compute.type)
 
         instances = conn.get_instances()
-        videos = conn.get_video()
+        videos = conn.get_video_models()
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = INSTANCE_VOLUME_DEFAULT_CACHE
         listener_addr = QEMU_CONSOLE_LISTEN_ADDRESSES

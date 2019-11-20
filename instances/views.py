@@ -291,6 +291,7 @@ def instance(request, compute_id, vname):
         console_port = conn.get_console_port()
         console_keymap = conn.get_console_keymap()
         console_listen_address = conn.get_console_listen_addr()
+        video_model = conn.get_video_model()
         snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k: k['date'])
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
         has_managed_save_image = conn.get_managed_save_image()
@@ -328,6 +329,7 @@ def instance(request, compute_id, vname):
         vcpu_host = len(vcpu_range)
         memory_host = conn.get_max_memory()
         bus_host = conn.get_disk_bus_types()
+        videos_host = conn.get_video_models()
         networks_host = sorted(conn.get_networks())
         interfaces_host = sorted(conn.get_ifaces())
         nwfilters_host = conn.get_nwfilters()
@@ -764,6 +766,13 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
             if request.user.is_superuser:
+                if 'set_video_model' in request.POST:
+                    video_model = request.POST.get('video_model', 'vga')
+                    conn.set_video_model(video_model)
+                    msg = _("Set Video Model")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#options')
+
                 if 'migrate' in request.POST:
                     compute_id = request.POST.get('compute_id', '')
                     live = request.POST.get('live_migrate', False)

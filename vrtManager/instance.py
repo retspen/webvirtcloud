@@ -763,6 +763,28 @@ class wvmInstance(wvmConnect):
     def get_console_keymap(self):
         return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@keymap") or ''
 
+    def get_video_model(self):
+        """ :return only primary video card"""
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = etree.fromstring(xml)
+        video_models = tree.xpath("/domain/devices/video/model")
+        for model in video_models:
+            if model.get('primary') == 'yes' or len(video_models) == 1:
+                return model.get('type')
+
+    def set_video_model(self, model):
+        """ Changes only primary video card"""
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = etree.fromstring(xml)
+        video_models = tree.xpath("/domain/devices/video/model")
+        video_xml = "<model type='{}'/>".format(model)
+        for model in video_models:
+            if model.get('primary') == 'yes' or len(video_models) == 1:
+                parent = model.getparent()
+                parent.remove(model)
+                parent.append(etree.fromstring(video_xml))
+                self._defineXML(etree.tostring(tree))
+
     def resize(self, cur_memory, memory, cur_vcpu, vcpu, disks=[]):
         """
         Function change ram and cpu on vds.
