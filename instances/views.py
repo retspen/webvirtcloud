@@ -481,7 +481,7 @@ def instance(request, compute_id, vname):
                     conn.resize_cpu(cur_vcpu, vcpu)
                     msg = _("Resize CPU")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'resizevm_mem' in request.POST and (request.user.is_superuser or
                                                    request.user.is_staff or
@@ -504,7 +504,7 @@ def instance(request, compute_id, vname):
                     conn.resize_mem(cur_memory, memory)
                     msg = _("Resize Memory")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'resizevm_disk' in request.POST and (
                     request.user.is_superuser or request.user.is_staff or userinstance.is_change):
@@ -524,7 +524,7 @@ def instance(request, compute_id, vname):
                     conn.resize_disk(disks_new)
                     msg = _("Resize")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'add_new_vol' in request.POST and allow_admin_or_not_template:
                 conn_create = wvmCreate(compute.hostname,
@@ -1052,7 +1052,7 @@ def get_host_instances(request, comp):
 
         conn.close()
     else:
-        raise libvirtError("Problem occured with {} - {}".format(comp.name, status))
+        raise libvirtError("Problem occurred with {} - {}".format(comp.name, status))
     return all_host_vms
 
 

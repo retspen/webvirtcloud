@@ -432,11 +432,7 @@
                                                 <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
                                             </div>
                                         </div>
-                                        {% ifequal status 5 %}
-                                            <button type="submit" class="btn btn-lg btn-success pull-right" name="resizevm_mem">{% trans "Resize" %}</button>
-                                        {% else %}
-                                            <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
-                                        {% endifequal %}
+                                        <button type="submit" class="btn btn-lg btn-success pull-right" name="resizevm_mem">{% trans "Resize" %}</button>
                                     </form>
                                 {% else %}
                                     {% trans "You don't have permission for resizing instance" %}
@@ -951,8 +947,8 @@
                                     </thead>
                                     <tbody>
                                     {% for q, attrs in qos.items %}
-                                            {% for att in attrs  %}
-                                                <form method="post" role="form">{% csrf_token %}
+                                        {% for att in attrs  %}
+                                            <form method="post" role="form">{% csrf_token %}
                                             <tr>
                                                 <td><label class="control-label">{{ q }} {{ att.direction | capfirst }}</label></td>
                                                 <td><input id="qos_average" class="form-control" name="qos_average"
@@ -976,9 +972,8 @@
                                                     </button>
                                                 </td>
                                             </tr>
-                                                </form>
+                                            </form>
                                             {% endfor %}
-
                                     {% endfor %}
                                     </tbody>
                                 </table>
