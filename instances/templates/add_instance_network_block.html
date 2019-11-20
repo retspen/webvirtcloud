@@ -25,10 +25,10 @@
                             <div class="col-sm-6">
                                 <select class="form-control" name="add-net-network">
                                     {% for c_net in networks_host %}
-                                        <option value="net:{{ c_net }}">{% trans 'Network' %} {{ c_net }}</option>
+                                        <option value="net:{{ c_net }}">Network {{ c_net }}</option>
                                     {% endfor %}
                                     {% for c_iface in interfaces_host %}
-                                        <option value="iface:{{ c_iface }}">{% trans 'Interface'%} {{ c_iface }}</option>
+                                        <option value="iface:{{ c_iface }}">Interface {{ c_iface }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
