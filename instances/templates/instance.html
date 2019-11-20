@@ -851,53 +851,139 @@
                             </p>
 
                             <div class="col-xs-12 col-sm-12">
-                                <form method="post" role="form">{% csrf_token %}
-                                {% for network in networks %}
-                                    {% if forloop.first %}
-                                        <p><strong>{% trans "Network Devices" %}</strong></p>
-                                    {% endif %}
-                                    <div class="panel panel-default">
-                                        <div class="panel-heading">
-                                            <label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label>
-                                            <button class="btn btn-sm pull-right btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}" onclick="return confirm('{% trans "Are you sure?" %}')">{% trans "Delete" %}</button>
-                                        </div>
-                                        <div class="panel-body">
-                                            <div class="form-group form-inline">
-                                                <label class="col-sm-2 col-sm-offset-1 control-label">{% trans "MAC" %} </label>
-                                                <input class="form-control" type="text" value="{{ network.mac }}" readonly/>
-                                                <label class="control-label"><em>to</em></label>
-                                                <input class="form-control" type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label class="col-sm-2 col-sm-offset-1 control-label">{% trans "NIC" %} </label>
-                                                <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
-                                                <label class="control-label"><em>to</em></label>
-                                                <select class="form-control" name="net-source-{{ forloop.counter0 }}">
-                                                    {% for c_net in networks_host %}
-                                                        <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>{% trans 'Network' %} {{ c_net }}</option>
-                                                    {% endfor %}
-                                                    {% for c_iface in interfaces_host %}
-                                                        <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>{% trans 'Interface' %} {{ c_iface }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label class="col-sm-2 col-sm-offset-1">{% trans "Filter" %} </label>
-                                                <input class="form-control" type="text" value="{{ network.filterref }}" readonly/>
-                                                <label class="control-label"><em>to</em></label>
-                                                <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
-                                                    <option value="">{% trans "None" %}</option>
-                                                    {% for c_filters in nwfilters_host %}
-                                                        <option value="{{ c_filters }}" {% ifequal c_filters network.filterref  %} selected {% endifequal %}>{{ c_filters }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            <button class="btn btn-sm btn-primary btn-block" name="change_network" title="{% trans "Apply Network Changes" %}">{% trans "Apply" %}</button>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </form>
+                                <p><strong>{% trans "Network Devices" %}</strong></p>
+                                <table class="table table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>{% trans 'Name' %}</th>
+                                        <th>{% trans 'MAC' %}</th>
+                                        <th>{% trans 'NIC' %}</th>
+                                        <th>{% trans 'Filter' %}</th>
+                                        <th>{% trans 'Actions' %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for network in networks %}
+                                        <tr>
+                                            <td class="col-sm-2"><label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label></td>
+                                            <td><input class="form-control" type="text" value="{{ network.mac }}" readonly/></td>
+                                            <td><input class="form-control" type="text" value="{{ network.nic }}" readonly/></td>
+                                            <td><input class="form-control" type="text" value="{{ network.filterref }}" readonly/></td>
+                                            <td class="col-sm-2">
+                                            <form class="form-horizontal" method="post" name="set_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
+                                                <button data-target="#editInstanceNetwork{{ forloop.counter0 }}" type="button" class="btn btn-sm btn-primary"
+                                                        title="Edit NIC" data-toggle="modal">
+                                                    <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                                                </button>
+
+                                                <div class="modal fade" id="editInstanceNetwork{{ forloop.counter0 }}" role="dialog" aria-labelledby="editInstanceNetworkLabel" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                                                <h4 class="modal-title">{% trans "Edit Instance Network" %}</h4>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="form-group form-inline">
+                                                                    <label class="col-sm-2 control-label">{% trans "MAC" %} </label>
+                                                                    <input class="form-control" type="text" value="{{ network.mac }}" readonly/>
+                                                                    <label class="control-label"><em>to</em></label>
+                                                                    <input class="form-control" type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
+                                                                </div>
+                                                                <div class="form-group form-inline">
+                                                                    <label class="col-sm-2 control-label">{% trans "NIC" %} </label>
+                                                                    <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
+                                                                    <label class="control-label"><em>to</em></label>
+                                                                    <select class="form-control" name="net-source-{{ forloop.counter0 }}">
+                                                                        {% for c_net in networks_host %}
+                                                                            <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>{% trans 'Network' %} {{ c_net }}</option>
+                                                                        {% endfor %}
+                                                                        {% for c_iface in interfaces_host %}
+                                                                            <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>{% trans 'Interface' %} {{ c_iface }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="form-group form-inline">
+                                                                    <label class="col-sm-2 control-label">{% trans "Filter" %} </label>
+                                                                    <input class="form-control" type="text" value="{{ network.filterref }}" readonly/>
+                                                                    <label class="control-label"><em>to</em></label>
+                                                                    <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
+                                                                        <option value="">{% trans "None" %}</option>
+                                                                        {% for c_filters in nwfilters_host %}
+                                                                            <option value="{{ c_filters }}" {% ifequal c_filters network.filterref  %} selected {% endifequal %}>{{ c_filters }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+                                                                <button class="btn btn-sm btn-primary btn-block" name="change_network" title="{% trans "Apply Network Changes" %}">{% trans "Apply" %}</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
+                                                    onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                    <i class="glyphicon glyphicon-trash"></i>
+                                                </button>
+
+                                                {% include 'add_network_qos.html' with id=forloop.counter0 %}
+                                            </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
+
+                            {% if qos %}
+                            <div class="col-xs-10 col-sm-10">
+                                <p><strong>{% trans "Qos Configuration" %}</strong></p>
+                            </div>
+                            <div class="col-xs-12 col-sm-12">
+                                <table class="table table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>{% trans "Direction" %}</th>
+                                        <th>{% trans "Average" %}</th>
+                                        <th>{% trans "Peak" %}</th>
+                                        <th>{% trans "Burst" %}</th>
+                                        <th>{% trans "Actions" %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for q, attrs in qos.items %}
+                                            {% for att in attrs  %}
+                                                <form method="post" role="form">{% csrf_token %}
+                                            <tr>
+                                                <td><label class="control-label">{{ q }} {{ att.direction | capfirst }}</label></td>
+                                                <td><input id="qos_average" class="form-control" name="qos_average"
+                                                           value="{{ att.average|default:'' }}"/></td>
+                                                <td><input id="qos_peak" class="form-control" name="qos_peak"
+                                                           value="{{ att.peak|default:'' }}"/></td>
+                                                <td><input id="qos_burst" class="form-control" name="qos_burst"
+                                                           value="{{ att.burst|default:'' }}"/></td>
+                                                <td class="col-sm-2">
+                                                    <input name="qos_direction" value="{{ att.direction }}" hidden/>
+                                                    <input name="net-mac" value="{{ q }}" hidden/>
+                                                    <button type="submit" class="btn btn-sm btn-primary"
+                                                            name="set_qos" data-toggle="modal"
+                                                            title="Edit Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <i class="glyphicon glyphicon-save"></i>
+                                                    </button>
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                            name="unset_qos"
+                                                            title="Delete Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <i class="glyphicon glyphicon-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                                </form>
+                                            {% endfor %}
+
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
                             <div class="clearfix"></div>
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">

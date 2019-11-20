@@ -1,11 +1,11 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddQos" type="button" class="btn btn-sm btn-success pull-right" data-toggle="modal" title="add qos">
+    <a href="#AddQos{{ id }}" type="button" class="btn btn-sm btn-success pull-right" data-toggle="modal" title="add qos">
         <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
     </a>
 
     <!-- Modal pool -->
-    <div class="modal fade" id="AddQos" tabindex="-1" role="dialog" aria-labelledby="AddQosLabel"
+    <div class="modal fade" id="AddQos{{ id }}" tabindex="-1" role="dialog" aria-labelledby="AddQosLabel"
          aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -14,7 +14,6 @@
                     <h4 class="modal-title">{% trans "Add Inbound Qos for Network" %}</h4>
                 </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" name="set_qos" role="form">{% csrf_token %}
                     <div class="form-group">
                         <label class="col-sm-4 control-label">{% trans "Direction" %}:</label>
                         <div class="col-sm-6">
@@ -27,32 +26,30 @@
                     <div class="form-group">
                         <label class="col-sm-4 control-label">{% trans "Average" %}:</label>
                         <div class="col-sm-6">
-                        <input class="form-control" name="qos_inbound_average" placeholder="kilobytes"
+                        <input class="form-control" name="qos_average" placeholder="kilobytes"
                                required pattern="[0-9]+"/>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-4 control-label">{% trans "Peak" %}:</label>
                         <div class="col-sm-6">
-                        <input class="form-control" name="qos_inbound_peak" placeholder="kilobytes"
-                               required pattern="[0-9]+"/>
+                        <input class="form-control" name="qos_peak" placeholder="kilobytes"
+                               pattern="[0-9]+"/>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-sm-4 control-label">{% trans "Burst" %}:</label>
                         <div class="col-sm-6">
-                        <input class="form-control" name="qos_inbound_burst" placeholder="kilobytes"
-                               required pattern="[0-9]+"/>
+                        <input class="form-control" name="qos_burst" placeholder="kilobytes"
+                               pattern="[0-9]+"/>
                         </div>
                     </div>
-
                 </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">{% trans 'Close' %}</button>
                     <button type="submit" class="btn btn-primary" name="set_qos">{% trans 'Save' %}</button>
                 </div>
-                    </form>
             </div>
         </div> <!-- /.modal-dialog -->
     </div> <!-- /.modal -->

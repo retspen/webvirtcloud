@@ -272,6 +272,7 @@ def instance(request, compute_id, vname):
         title = conn.get_title()
         description = conn.get_description()
         networks = conn.get_net_device()
+        qos = conn.get_all_qos()
         disks = conn.get_disk_devices()
         media = conn.get_media_devices()
         if len(media) != 0:
@@ -482,8 +483,9 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'resizevm_mem' in request.POST and (
-                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+            if 'resizevm_mem' in request.POST and (request.user.is_superuser or
+                                                   request.user.is_staff or
+                                                   userinstance.is_change):
                 new_memory = request.POST.get('memory', '')
                 new_memory_custom = request.POST.get('memory_custom', '')
                 if new_memory_custom:
@@ -699,7 +701,8 @@ def instance(request, compute_id, vname):
                         msg = _("Set boot order")
 
                         if not conn.get_status() == 5:
-                            messages.success(request, _("Boot menu changes applied. But it will be activated after shutdown"))
+                            messages.success(request, _("Boot menu changes applied. " +
+                                                        "But it will be activated after shutdown"))
                         else:
                             messages.success(request, _("Boot order changed successfully."))
                         addlogmsg(request.user.username, instance.name, msg)
@@ -727,7 +730,8 @@ def instance(request, compute_id, vname):
                             error_messages.append(msg)
                     if not error_messages:
                         if not conn.set_console_passwd(passwd):
-                            msg = _("Error setting console password. You should check that your instance have an graphic device.")
+                            msg = _("Error setting console password. " +
+                                    "You should check that your instance have an graphic device.")
                             error_messages.append(msg)
                         else:
                             msg = _("Set VNC password")
@@ -806,6 +810,40 @@ def instance(request, compute_id, vname):
 
                     conn.delete_network(mac_address)
                     addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
+                if 'set_qos' in request.POST:
+                    qos_dir = request.POST.get('qos_direction', '')
+                    average = request.POST.get('qos_average') or 0
+                    peak = request.POST.get('qos_peak') or 0
+                    burst = request.POST.get('qos_burst') or 0
+                    keys = request.POST.keys()
+                    mac_key = [key for key in keys if 'mac' in key]
+                    if mac_key: mac = request.POST.get(mac_key[0])
+
+                    try:
+                        conn.set_qos(mac, qos_dir, average, peak, burst)
+                        if conn.get_status() == 5:
+                            messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+                        else:
+                            messages.success(request,
+                                             "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
+                                             "Stop and start network to activate new config")
+
+                    except libvirtError as le:
+                        messages.error(request, le.message)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+                if 'unset_qos' in request.POST:
+                    qos_dir = request.POST.get('qos_direction', '')
+                    mac = request.POST.get('net-mac')
+                    conn.unset_qos(mac, qos_dir)
+
+                    if conn.get_status() == 5:
+                        messages.success(request, "{} Qos is deleted".format(qos_dir.capitalize()))
+                    else:
+                        messages.success(request,
+                                         "{} Qos is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
+                                         "Stop and start network to activate new config.")
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_owner' in request.POST:
