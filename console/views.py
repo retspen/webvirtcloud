@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
-from webvirtcloud.settings import WS_PORT
+from webvirtcloud.settings import WS_PUBLIC_PORT
 from webvirtcloud.settings import WS_PUBLIC_HOST
 from libvirt import libvirtError
 
@@ -38,7 +38,7 @@ def console(request):
         console_websocket_port = None
         console_passwd = None
 
-    ws_port = console_websocket_port if console_websocket_port else WS_PORT
+    ws_port = console_websocket_port if console_websocket_port else WS_PUBLIC_PORT
     ws_host = WS_PUBLIC_HOST if WS_PUBLIC_HOST else request.get_host()
 
     if ':' in ws_host:

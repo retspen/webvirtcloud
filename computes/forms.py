@@ -6,7 +6,7 @@ from computes.models import Compute
 
 class ComputeAddTcpForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
+                           max_length=64)
     hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
                                max_length=100)
     login = forms.CharField(error_messages={'required': _('No login has been entered')},
@@ -45,7 +45,7 @@ class ComputeAddTcpForm(forms.Form):
 
 class ComputeAddSshForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
+                           max_length=64)
     hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
                                max_length=100)
     login = forms.CharField(error_messages={'required': _('No login has been entered')},
@@ -82,7 +82,7 @@ class ComputeAddSshForm(forms.Form):
 
 class ComputeAddTlsForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
+                           max_length=64)
     hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
                                max_length=100)
     login = forms.CharField(error_messages={'required': _('No login has been entered')},
@@ -122,7 +122,7 @@ class ComputeAddTlsForm(forms.Form):
 class ComputeEditHostForm(forms.Form):
     host_id = forms.CharField()
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
+                           max_length=64)
     hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
                                max_length=100)
     login = forms.CharField(error_messages={'required': _('No login has been entered')},
@@ -152,7 +152,7 @@ class ComputeEditHostForm(forms.Form):
 
 class ComputeAddSocketForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
+                           max_length=64)
     details = forms.CharField(error_messages={'required': _('No details has been entred')},
                            max_length=50)
 

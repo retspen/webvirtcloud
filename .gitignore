@@ -3,6 +3,7 @@ venv
 .vscode
 .idea
 .DS_*
+.webvirtcloud
 *.pyc
 db.sqlite3*
 console/cert.pem*

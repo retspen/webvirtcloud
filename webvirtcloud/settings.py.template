@@ -104,6 +104,9 @@ WS_PORT = 6080
 WS_HOST = '0.0.0.0'
 
 # Websock public port
+WS_PUBLIC_PORT = '443'
+
+# Websock public host
 WS_PUBLIC_HOST = None
 
 # Websock SSL connection
