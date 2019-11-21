@@ -480,7 +480,7 @@ class wvmConnect(object):
         """Get available image filename extensions"""
         return ['img', 'qcow', 'qcow2']
 
-    def get_video(self):
+    def get_video_models(self):
         """ Get available graphics video types """
         def get_video_list(ctx):
             result = []
@@ -507,6 +507,15 @@ class wvmConnect(object):
 
     def get_network(self, net):
         return self.wvm.networkLookupByName(net)
+
+    def get_network_forward(self, net_name):
+        def get_forward(doc):
+            forward_mode = util.get_xpath(doc, '/network/forward/@mode')
+            return forward_mode or 'isolated'
+
+        net = self.get_network(net_name)
+        xml = net.XMLDesc(0)
+        return util.get_xml_path(xml, func=get_forward)
 
     def get_nwfilter(self, name):
         return self.wvm.nwfilterLookupByName(name)

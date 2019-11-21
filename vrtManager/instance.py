@@ -7,6 +7,7 @@ except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 from vrtManager import util
 from xml.etree import ElementTree
+from lxml import etree
 from datetime import datetime
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage
@@ -157,6 +158,12 @@ class wvmInstance(wvmConnect):
         return self.wvm.defineXML(xml)
 
     def get_status(self):
+        """
+            VIR_DOMAIN_NOSTATE = 0
+            VIR_DOMAIN_RUNNING = 1
+            VIR_DOMAIN_PAUSED = 3
+            VIR_DOMAIN_SHUTOFF = 5
+        """
         return self.instance.info()[0]
 
     def get_autostart(self):
@@ -229,17 +236,38 @@ class wvmInstance(wvmConnect):
 
         def networks(ctx):
             result = []
+            inbound = outbound = []
             for net in ctx.xpath('/domain/devices/interface'):
-                mac_host = net.xpath('mac/@address')[0]
-                network_host = net.xpath('source/@network|source/@bridge|source/@dev')[0]
-                target_host = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
-                filterref_host = '' if not net.xpath('filterref/@filter') else net.xpath('filterref/@filter')[0]
+                mac_inst = net.xpath('mac/@address')[0]
+                nic_inst = net.xpath('source/@network|source/@bridge|source/@dev')[0]
+                target_inst = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
+                filterref_inst = '' if not net.xpath('filterref/@filter') else net.xpath('filterref/@filter')[0]
+                if net.xpath('bandwidth/inbound'):
+                    in_attr = net.xpath('bandwidth/inbound')[0]
+                    in_av = in_attr.get('average')
+                    in_peak = in_attr.get('peak')
+                    in_burst = in_attr.get('burst')
+                    inbound = {'average': in_av, 'peak': in_peak, 'burst': in_burst}
+                if net.xpath('bandwidth/outbound'):
+                    out_attr = net.xpath('bandwidth/outbound')[0]
+                    out_av = out_attr.get('average')
+                    out_peak = out_attr.get('peak')
+                    out_burst = out_attr.get('burst')
+                    outbound = {'average': out_av, 'peak': out_peak, 'burst': out_burst}
+
                 try:
-                    net = self.get_network(network_host)
-                    ip = get_mac_ipaddr(net, mac_host)
+                    net = self.get_network(nic_inst)
+                    ip = get_mac_ipaddr(net, mac_inst)
                 except libvirtError:
                     ip = None
-                result.append({'mac': mac_host, 'nic': network_host, 'target': target_host, 'ip': ip, 'filterref': filterref_host})
+                result.append({'mac': mac_inst,
+                               'nic': nic_inst,
+                               'target': target_inst,
+                               'ip': ip,
+                               'filterref': filterref_inst,
+                               'inbound': inbound,
+                               'outbound': outbound,
+                               })
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=networks)
@@ -680,8 +708,7 @@ class wvmInstance(wvmConnect):
     def get_console_port(self, console_type=None):
         if console_type is None:
             console_type = self.get_console_type()
-        port = util.get_xml_path(self._XMLDesc(0),
-                                 "/domain/devices/graphics[@type='%s']/@port" % console_type)
+        port = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics[@type='%s']/@port" % console_type)
         return port
 
     def get_console_websocket_port(self):
@@ -691,8 +718,7 @@ class wvmInstance(wvmConnect):
         return websocket_port
 
     def get_console_passwd(self):
-        return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE),
-                                 "/domain/devices/graphics/@passwd")
+        return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd")
 
     def set_console_passwd(self, passwd):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
@@ -735,8 +761,29 @@ class wvmInstance(wvmConnect):
         self._defineXML(newxml)
 
     def get_console_keymap(self):
-        return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE),
-                                 "/domain/devices/graphics/@keymap") or ''
+        return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@keymap") or ''
+
+    def get_video_model(self):
+        """ :return only primary video card"""
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = etree.fromstring(xml)
+        video_models = tree.xpath("/domain/devices/video/model")
+        for model in video_models:
+            if model.get('primary') == 'yes' or len(video_models) == 1:
+                return model.get('type')
+
+    def set_video_model(self, model):
+        """ Changes only primary video card"""
+        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        tree = etree.fromstring(xml)
+        video_models = tree.xpath("/domain/devices/video/model")
+        video_xml = "<model type='{}'/>".format(model)
+        for model in video_models:
+            if model.get('primary') == 'yes' or len(video_models) == 1:
+                parent = model.getparent()
+                parent.remove(model)
+                parent.append(etree.fromstring(video_xml))
+                self._defineXML(etree.tostring(tree))
 
     def resize(self, cur_memory, memory, cur_vcpu, vcpu, disks=[]):
         """
@@ -1007,25 +1054,34 @@ class wvmInstance(wvmConnect):
             bridge_name = net.bridgeName()
         return bridge_name
         
-    def add_network(self, mac_address, source, source_type='net', interface_type='bridge', model='virtio', nwfilter=None):
+    def add_network(self, mac_address, source, source_type='net', model='virtio', nwfilter=None):
         bridge_name = self.get_bridge_name(source, source_type)
-        xml_interface = """
-        <interface type='%s'>
-          <mac address='%s'/>
-          <source bridge='%s'/>
-          <model type='%s'/>
-          """ % (interface_type, mac_address, bridge_name, model)
+
+        forward_mode = self.get_network_forward(source)
+        if forward_mode in ['nat', 'isolated', 'routed']:
+            interface_type = 'network'
+        else:
+            interface_type = 'bridge'
+
+        xml_iface = """
+          <interface type='%s'>
+          <mac address='%s'/>""" % (interface_type, mac_address)
+        if interface_type == 'network':
+            xml_iface += """<source network='%s'/>""" % source
+        else:
+            xml_iface += """<source bridge='%s'/>""" % bridge_name
+        xml_iface += """<model type='%s'/>""" % model
         if nwfilter:
-            xml_interface += """
+            xml_iface += """
             <filterref filter='%s'/>
             """ % nwfilter
-        xml_interface += """</interface>"""
+        xml_iface += """</interface>"""
 
         if self.get_status() == 1:
-            self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_LIVE)
-            self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_CONFIG)
+            self.instance.attachDeviceFlags(xml_iface, VIR_DOMAIN_AFFECT_LIVE)
+            self.instance.attachDeviceFlags(xml_iface, VIR_DOMAIN_AFFECT_CONFIG)
         if self.get_status() == 5:
-            self.instance.attachDeviceFlags(xml_interface, VIR_DOMAIN_AFFECT_CONFIG)
+            self.instance.attachDeviceFlags(xml_iface, VIR_DOMAIN_AFFECT_CONFIG)
 
     def delete_network(self, mac_address):
         tree = ElementTree.fromstring(self._XMLDesc(0))
@@ -1044,10 +1100,11 @@ class wvmInstance(wvmConnect):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)
         for num, interface in enumerate(tree.findall('devices/interface')):
-            net_source = network_data['net-source-' + str(num)]
-            net_source_type = network_data['net-source-' + str(num) + '-type']
-            net_mac = network_data['net-mac-' + str(num)]
-            net_filter = network_data['net-nwfilter-' + str(num)]
+            net_mac = network_data.get('net-mac-' + str(num))
+            if net_mac is None: continue
+            net_source = network_data.get('net-source-' + str(num))
+            net_source_type = network_data.get('net-source-' + str(num) + '-type')
+            net_filter = network_data.get('net-nwfilter-' + str(num))
             bridge_name = self.get_bridge_name(net_source, net_source_type)
             if interface.get('type') == 'bridge':
                 source = interface.find('mac')
@@ -1103,10 +1160,78 @@ class wvmInstance(wvmConnect):
         tree = ElementTree.fromstring(xml)
 
         self._set_options(tree, options)
-
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
     def set_memory(self, size, flags=0):
         self.instance.setMemoryFlags(size, flags)
+
+    def get_all_qos(self):
+        qos_values = dict()
+        tree = etree.fromstring(self._XMLDesc(0))
+        qos = tree.xpath("/domain/devices/interface")
+
+        for q in qos:
+            bound_list = list()
+            mac = q.xpath('mac/@address')
+            band = q.find('bandwidth')
+            if band is not None:
+                in_qos = band.find('inbound')
+                if in_qos is not None:
+                    in_av = in_qos.get('average')
+                    in_peak = in_qos.get('peak')
+                    in_burst = in_qos.get('burst')
+                    in_floor = in_qos.get('floor')
+                    bound_list.append({'direction': 'inbound', 'average': in_av, 'peak': in_peak, 'floor': in_floor, 'burst': in_burst})
+
+                out_qos = band.find('outbound')
+                if out_qos is not None:
+                    out_av = out_qos.get('average')
+                    out_peak = out_qos.get('peak')
+                    out_burst = out_qos.get('burst')
+                    bound_list.append({'direction': 'outbound', 'average': out_av, 'peak': out_peak, 'burst': out_burst})
+                qos_values[mac[0]] = bound_list
+        return qos_values
+
+    def set_qos(self, mac, direction, average, peak, burst):
+        if direction == "inbound":
+            xml = "<inbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+        elif direction == "outbound":
+            xml = "<outbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+        else:
+            raise Exception('Direction must be inbound or outbound')
+
+        tree = etree.fromstring(self._XMLDesc(0))
+
+        macs = tree.xpath("/domain/devices/interface/mac")
+        for cur_mac in macs:
+
+            if cur_mac.get("address") == mac:
+                interface = cur_mac.getparent()
+                band = interface.find('bandwidth')
+                if band is None:
+                    xml = "<bandwidth>" + xml + "</bandwidth>"
+                    interface.append(etree.fromstring(xml))
+                else:
+                    direct = band.find(direction)
+                    if direct is not None:
+                        parent = direct.getparent()
+                        parent.remove(direct)
+                        parent.append(etree.fromstring(xml))
+                    else:
+                        band.append(etree.fromstring(xml))
+        new_xml = etree.tostring(tree)
+        self.wvm.defineXML(new_xml)
+
+    def unset_qos(self, mac, direction):
+        tree = etree.fromstring(self._XMLDesc(0))
+        for direct in tree.xpath("/domain/devices/interface/bandwidth/{}".format(direction)):
+            band_el = direct.getparent()
+            interface_el = band_el.getparent() # parent bandwidth,it parent is interface
+            parent_mac = interface_el.xpath('mac/@address')
+            if parent_mac[0] == mac:
+                band_el.remove(direct)
+
+        self.wvm.defineXML(etree.tostring(tree))
+
 

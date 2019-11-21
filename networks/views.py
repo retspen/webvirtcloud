@@ -195,19 +195,21 @@ def network(request, compute_id, pool):
                 else:
                     messages.success(request, _("Network XML is changed."))
                 return HttpResponseRedirect(request.get_full_path())
-
         if 'set_qos' in request.POST:
             qos_dir = request.POST.get('qos_direction', '')
-            average = request.POST.get('qos_{}_average'.format(qos_dir), '')
-            peak = request.POST.get('qos_{}_peak'.format(qos_dir), '')
-            burst = request.POST.get('qos_{}_burst'.format(qos_dir), '')
+            average = request.POST.get('qos_average') or 0
+            peak = request.POST.get('qos_peak') or 0
+            burst = request.POST.get('qos_burst') or 0
 
-            conn.set_qos(qos_dir, average, peak, burst)
-            if conn.is_active():
-                messages.success(request, "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
-                                 "Stop and start network to activate new config")
-            else:
-                messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+            try:
+                conn.set_qos(qos_dir, average, peak, burst)
+                if conn.is_active():
+                    messages.success(request, "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
+                                     "Stop and start network to activate new config")
+                else:
+                    messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+            except libvirtError as le:
+                messages.error(request, le.message)
             return HttpResponseRedirect(request.get_full_path())
         if 'unset_qos' in request.POST:
             qos_dir = request.POST.get('qos_direction', '')

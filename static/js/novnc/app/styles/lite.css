@@ -21,9 +21,9 @@ html {
 }
 
 #noVNC_status_bar {
+  margin-top: 52px;
   width: 100%;
-  display:flex;
-  justify-content: space-between;
+  display: flex;
 }
 
 #noVNC_status {

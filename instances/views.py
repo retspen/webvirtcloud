@@ -272,6 +272,7 @@ def instance(request, compute_id, vname):
         title = conn.get_title()
         description = conn.get_description()
         networks = conn.get_net_device()
+        qos = conn.get_all_qos()
         disks = conn.get_disk_devices()
         media = conn.get_media_devices()
         if len(media) != 0:
@@ -290,6 +291,7 @@ def instance(request, compute_id, vname):
         console_port = conn.get_console_port()
         console_keymap = conn.get_console_keymap()
         console_listen_address = conn.get_console_listen_addr()
+        video_model = conn.get_video_model()
         snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k: k['date'])
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
         has_managed_save_image = conn.get_managed_save_image()
@@ -327,6 +329,7 @@ def instance(request, compute_id, vname):
         vcpu_host = len(vcpu_range)
         memory_host = conn.get_max_memory()
         bus_host = conn.get_disk_bus_types()
+        videos_host = conn.get_video_models()
         networks_host = sorted(conn.get_networks())
         interfaces_host = sorted(conn.get_ifaces())
         nwfilters_host = conn.get_nwfilters()
@@ -480,10 +483,11 @@ def instance(request, compute_id, vname):
                     conn.resize_cpu(cur_vcpu, vcpu)
                     msg = _("Resize CPU")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'resizevm_mem' in request.POST and (
-                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+            if 'resizevm_mem' in request.POST and (request.user.is_superuser or
+                                                   request.user.is_staff or
+                                                   userinstance.is_change):
                 new_memory = request.POST.get('memory', '')
                 new_memory_custom = request.POST.get('memory_custom', '')
                 if new_memory_custom:
@@ -502,7 +506,7 @@ def instance(request, compute_id, vname):
                     conn.resize_mem(cur_memory, memory)
                     msg = _("Resize Memory")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'resizevm_disk' in request.POST and (
                     request.user.is_superuser or request.user.is_staff or userinstance.is_change):
@@ -522,7 +526,7 @@ def instance(request, compute_id, vname):
                     conn.resize_disk(disks_new)
                     msg = _("Resize")
                     addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+                return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'add_new_vol' in request.POST and allow_admin_or_not_template:
                 conn_create = wvmCreate(compute.hostname,
@@ -699,7 +703,8 @@ def instance(request, compute_id, vname):
                         msg = _("Set boot order")
 
                         if not conn.get_status() == 5:
-                            messages.success(request, _("Boot menu changes applied. But it will be activated after shutdown"))
+                            messages.success(request, _("Boot menu changes applied. " +
+                                                        "But it will be activated after shutdown"))
                         else:
                             messages.success(request, _("Boot order changed successfully."))
                         addlogmsg(request.user.username, instance.name, msg)
@@ -727,7 +732,8 @@ def instance(request, compute_id, vname):
                             error_messages.append(msg)
                     if not error_messages:
                         if not conn.set_console_passwd(passwd):
-                            msg = _("Error setting console password. You should check that your instance have an graphic device.")
+                            msg = _("Error setting console password. " +
+                                    "You should check that your instance have an graphic device.")
                             error_messages.append(msg)
                         else:
                             msg = _("Set VNC password")
@@ -760,6 +766,13 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
             if request.user.is_superuser:
+                if 'set_video_model' in request.POST:
+                    video_model = request.POST.get('video_model', 'vga')
+                    conn.set_video_model(video_model)
+                    msg = _("Set Video Model")
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#options')
+
                 if 'migrate' in request.POST:
                     compute_id = request.POST.get('compute_id', '')
                     live = request.POST.get('live_migrate', False)
@@ -806,6 +819,40 @@ def instance(request, compute_id, vname):
 
                     conn.delete_network(mac_address)
                     addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
+                if 'set_qos' in request.POST:
+                    qos_dir = request.POST.get('qos_direction', '')
+                    average = request.POST.get('qos_average') or 0
+                    peak = request.POST.get('qos_peak') or 0
+                    burst = request.POST.get('qos_burst') or 0
+                    keys = request.POST.keys()
+                    mac_key = [key for key in keys if 'mac' in key]
+                    if mac_key: mac = request.POST.get(mac_key[0])
+
+                    try:
+                        conn.set_qos(mac, qos_dir, average, peak, burst)
+                        if conn.get_status() == 5:
+                            messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+                        else:
+                            messages.success(request,
+                                             "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
+                                             "Stop and start network to activate new config")
+
+                    except libvirtError as le:
+                        messages.error(request, le.message)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+                if 'unset_qos' in request.POST:
+                    qos_dir = request.POST.get('qos_direction', '')
+                    mac = request.POST.get('net-mac')
+                    conn.unset_qos(mac, qos_dir)
+
+                    if conn.get_status() == 5:
+                        messages.success(request, "{} Qos is deleted".format(qos_dir.capitalize()))
+                    else:
+                        messages.success(request,
+                                         "{} Qos is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
+                                         "Stop and start network to activate new config.")
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_owner' in request.POST:
@@ -1014,7 +1061,7 @@ def get_host_instances(request, comp):
 
         conn.close()
     else:
-        raise libvirtError("Problem occured with {} - {}".format(comp.name, status))
+        raise libvirtError("Problem occurred with {} - {}".format(comp.name, status))
     return all_host_vms
 
 
