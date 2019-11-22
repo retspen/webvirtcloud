@@ -662,7 +662,10 @@ daemons_running_ubuntu() {
 #
 install_debian() {
     apt-get update || return 1
-    apt-get -y install qemu-kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
+    if [ $DISTRO_MAJOR_VERSION -lt 10 ]; then
+	apt-get -y install qemu-kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
+    else
+	apt-get -y install qemu qemu-kvm qemu-system qemu-utils libvirt-clients libvirt-daemon-system sasl2-bin virtinst supervisor || return 1
     return 0
 }
 
