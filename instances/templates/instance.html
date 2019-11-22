@@ -855,6 +855,7 @@
                                         <th>{% trans 'MAC' %}</th>
                                         <th>{% trans 'NIC' %}</th>
                                         <th>{% trans 'Filter' %}</th>
+                                        <th>{% trans 'Qos' %}</th>
                                         <th>{% trans 'Actions' %}</th>
                                     </tr>
                                     </thead>
@@ -865,6 +866,12 @@
                                             <td><input class="form-control" type="text" value="{{ network.mac }}" readonly/></td>
                                             <td><input class="form-control" type="text" value="{{ network.nic }}" readonly/></td>
                                             <td><input class="form-control" type="text" value="{{ network.filterref }}" readonly/></td>
+                                            <td>
+                                                <form class="form-horizontal" method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
+                                                    <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>
+                                                    {% include 'add_network_qos.html' with id=forloop.counter0 %}
+                                                </form>
+                                            </td>
                                             <td class="col-sm-2">
                                             <form class="form-horizontal" method="post" name="set_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                                 <button data-target="#editInstanceNetwork{{ forloop.counter0 }}" type="button" class="btn btn-sm btn-primary"
@@ -920,8 +927,6 @@
                                                     onclick="return confirm('{% trans "Are you sure?" %}')">
                                                     <i class="glyphicon glyphicon-trash"></i>
                                                 </button>
-
-                                                {% include 'add_network_qos.html' with id=forloop.counter0 %}
                                             </form>
                                             </td>
                                         </tr>
