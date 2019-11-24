@@ -666,6 +666,7 @@ install_debian() {
 	apt-get -y install qemu-kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     else
 	apt-get -y install qemu qemu-kvm qemu-system qemu-utils libvirt-clients libvirt-daemon-system sasl2-bin virtinst supervisor || return 1
+    fi
     return 0
 }
 
