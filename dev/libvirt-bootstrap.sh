@@ -396,7 +396,8 @@ install_centos_post() {
         exit 1
     fi
     if [ -f /etc/libvirt/qemu.conf ]; then
-        sed -i 's/#vnc_listen/vnc_listen/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*vnc_listen.*/vnc_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*spice_listen.*/spice_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
     else
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
         exit 1
@@ -487,7 +488,8 @@ install_fedora_post() {
         exit 1
     fi
     if [ -f /etc/libvirt/qemu.conf ]; then
-        sed -i 's/#vnc_listen/vnc_listen/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*vnc_listen.*/vnc_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*spice_listen.*/spice_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
     else
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
         exit 1
@@ -548,7 +550,8 @@ install_opensuse_post() {
         exit 1
     fi
     if [ -f /etc/libvirt/qemu.conf ]; then
-        sed -i 's/#vnc_listen/vnc_listen/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*vnc_listen.*/vnc_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*spice_listen.*/spice_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
     else
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
         exit 1
@@ -618,11 +621,9 @@ install_ubuntu_post() {
         exit 1
     fi
     if [ -f /etc/libvirt/qemu.conf ]; then
-        if ([ $DISTRO_MAJOR_VERSION -eq 12 ] && [ $DISTRO_MINOR_VERSION -eq 04 ]); then
-            sed -i 's/# vnc_listen/vnc_listen/g' /etc/libvirt/qemu.conf
-        else
-            sed -i 's/#vnc_listen/vnc_listen/g' /etc/libvirt/qemu.conf
-        fi
+        sed -i 's/#[ ]*vnc_listen.*/vnc_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*spice_listen.*/spice_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
+
     else
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
         exit 1
@@ -663,9 +664,9 @@ daemons_running_ubuntu() {
 install_debian() {
     apt-get update || return 1
     if [ $DISTRO_MAJOR_VERSION -lt 10 ]; then
-	apt-get -y install qemu-kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
+	    apt-get -y install qemu-kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     else
-	apt-get -y install qemu qemu-kvm qemu-system qemu-utils libvirt-clients libvirt-daemon-system sasl2-bin virtinst supervisor || return 1
+	    apt-get -y install qemu qemu-kvm qemu-system qemu-utils libvirt-clients libvirt-daemon-system sasl2-bin virtinst supervisor || return 1
     fi
     return 0
 }
@@ -697,9 +698,17 @@ install_debian_post() {
         exit 1
     fi
     if [ -f /etc/libvirt/qemu.conf ]; then
-        sed -i 's/# vnc_listen/vnc_listen/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*vnc_listen.*/vnc_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
+        sed -i 's/#[ ]*spice_listen.*/spice_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
     else
         echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
+        exit 1
+    fi
+    if [ -f /etc/sasl2/libvirt.conf ]; then
+        sed -i 's/: gssapi/: digest-md5/g' /etc/sasl2/libvirt.conf
+        sed -i 's/#sasldb_path/sasldb_path/g' /etc/sasl2/libvirt.conf
+    else
+        echoerror "/etc/sasl2/libvirt.conf not found. Exiting..."
         exit 1
     fi
     if [ -f /etc/supervisor/supervisord.conf ]; then
