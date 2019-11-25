@@ -103,8 +103,8 @@ WS_PORT = 6080
 # Websock host
 WS_HOST = '0.0.0.0'
 
-# Websock public port
-WS_PUBLIC_PORT = '443'
+# Websock public port - 80 or 443 if reverse-proxy, else 6080
+WS_PUBLIC_PORT = 6080
 
 # Websock public host
 WS_PUBLIC_HOST = None
