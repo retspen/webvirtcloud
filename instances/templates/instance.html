@@ -363,10 +363,11 @@
                         <div class="tab-content">
                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm_cpu">
                                 {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
+                                    {% if status == 5 or not vcpus %}
                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                         <p style="font-weight:bold;">{% trans "Logical host CPUs" %} : {{ vcpu_host }}</p>
                                         <div class="form-group">
-                                            <label class="col-sm-4 control-label" style="font-weight:normal;"> {% trans "Current allocation" %}</label>
+                                            <label class="col-sm-4 control-label" style="font-weight:normal;"> {% trans "Current Allocation" %}</label>
                                             <div class="col-sm-4">
                                                 <select name="cur_vcpu" class="form-control">
                                                     {% for cpu in vcpu_range %}
@@ -380,7 +381,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group">
-                                            <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Maximum allocation" %}</label>
+                                            <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Maximum Allocation" %}</label>
                                             <div class="col-sm-4">
                                                 <select name="vcpu" class="form-control">
                                                     {% for cpu in vcpu_range %}
@@ -396,6 +397,28 @@
                                             <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
                                         {% endifequal %}
                                     </form>
+                                    <div class="clearfix"></div>
+                                    {% else %}
+                                        <p style="font-weight:bold;">{% trans "Logical Instance Active/Maximum CPUs" %} : {{ cur_vcpu }} / {{ vcpu }} </p>
+                                        <div class="col-sm-3"></div>
+                                        <div class="col-sm-6">
+                                            {% for id, vcpu in vcpus.items %}
+                                                <form method="post" role="form">{% csrf_token %}
+                                                <div class="col-sm-3">
+                                                     <input name="id" value="{{ id }}" hidden/>
+                                                     {% if vcpu.enabled == 'yes' and vcpu.hotpluggable == "yes" %}
+                                                            <button type="submit" class="btn btn-block btn-success" value="False" name="set_vcpu" title="Disable">{{ id }}</button>
+                                                     {% elif vcpu.enabled == 'yes' and vcpu.hotpluggable == "no" %}
+                                                            <button type="button" class="btn btn btn-block btn-info" title="Constant">{{ id }}</button>
+                                                     {% else %}
+                                                            <button type="submit" class="btn btn btn-block btn-default" value="True" name="set_vcpu" title="Enable">{{ id }}</button>
+                                                     {% endif %}
+                                                </div>
+                                                </form>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="col-sm-3"></div>
+                                    {% endif %}
                                 {% else %}
                                     {% trans "You don't have permission for resizing instance" %}
                                     <button class="btn btn-lg btn-success pull-right disabled">{% trans "Resize" %}</button>
@@ -1351,6 +1374,30 @@
                                           {% else %}
                                             <button class="btn btn-success disabled" name="set_video_model">{% trans "Set" %}</button>
                                           {% endifequal %}
+                                        </span>
+                                      </div>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="clearfix"></div>
+                        </div>
+                         <div class="well">
+                            <p>{% trans "To set instance vCPUs hotpluggable" %}</p>
+                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                <div class="form-group">
+                                    <label for="video_model_select" class="col-sm-3 control-label">{% trans "vCPU Hot Plug" %}</label>
+                                    <div class="col-sm-6">
+                                      <div class="input-group">
+                                        <select id="vcpu_hotplug" class="form-control" name="vcpu_hotplug">
+                                            <option value="True" {% if vcpus %} selected {% endif %}>{% trans 'Enabled' %}</option>
+                                            <option value="False" {% if not vcpus %} selected {% endif %}>{% trans 'Disabled' %}</option>
+                                        </select>
+                                        <span class="input-group-btn">
+                                        {% if status == 5 %}
+                                            <button type="submit" class="btn btn-success" name="set_vcpu_hotplug">{% trans "Set" %}</button>
+                                        {% else %}
+                                            <button class="btn btn-success" name="set_vcpu_hotplug" disabled>{% trans "Set" %}</button>
+                                        {% endif %}
                                         </span>
                                       </div>
                                     </div>

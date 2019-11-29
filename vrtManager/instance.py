@@ -5,10 +5,12 @@ try:
         VIR_DOMAIN_AFFECT_LIVE, VIR_DOMAIN_AFFECT_CONFIG
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
+
 from vrtManager import util
 from xml.etree import ElementTree
 from lxml import etree
 from datetime import datetime
+from collections import OrderedDict
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage
 from webvirtcloud.settings import QEMU_CONSOLE_TYPES
@@ -183,6 +185,18 @@ class wvmInstance(wvmConnect):
         cur_vcpu = util.get_xml_path(self._XMLDesc(0), "/domain/vcpu/@current")
         if cur_vcpu:
             return int(cur_vcpu)
+
+    def get_vcpus(self):
+        vcpus = OrderedDict()
+        tree = etree.fromstring(self._XMLDesc(0))
+        for vcpu in tree.xpath("/domain/vcpus/vcpu"):
+            id = vcpu.get("id")
+            enabled = vcpu.get("enabled")
+            hotplug = vcpu.get("hotpluggable")
+            order = vcpu.get("order")
+            vcpus[id] = {"enabled": enabled, "hotpluggable": hotplug, "order": order}
+
+        return vcpus
 
     def get_memory(self):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/memory")
@@ -554,6 +568,35 @@ class wvmInstance(wvmConnect):
             cpu_usage['cpu'] = 0
         return cpu_usage
 
+    def set_vcpu(self, cpu_id, enabled):
+        self.instance.setVcpu(str(cpu_id), enabled)
+
+    def set_vcpu_hotplug(self, status, vcpus_hotplug=0):
+        """ vcpus_hotplug = 0 make all vpus hotpluggable """
+        vcpus_hotplug = int(self.get_vcpu()) if vcpus_hotplug == 0 else vcpus_hotplug
+        if self.get_status() == 5: # shutoff
+            if status:
+                xml = """ <vcpus>"""
+                xml += """<vcpu id='0' enabled='yes' hotpluggable='no' order='1'/>"""
+                for i in range(1, vcpus_hotplug):
+                    xml += """<vcpu id='{}' enabled='yes' hotpluggable='yes' order='{}'/>""".format(i, i+1)
+                xml += """</vcpus>"""
+
+                tree = etree.fromstring(self._XMLDesc(0))
+                vcpus = tree.xpath("/domain/vcpus")
+                if not vcpus:
+                    tree.append(etree.fromstring(xml))
+                    self._defineXML(etree.tostring(tree))
+            else:
+                tree = etree.fromstring(self._XMLDesc(0))
+                vcpus = tree.xpath("/domain/vcpus")
+                for vcpu in vcpus:
+                    parent = vcpu.getparent()
+                    parent.remove(vcpu)
+                    self._defineXML(etree.tostring(tree))
+        else:
+            raise libvirtError("Please shutdown the instance then try to enable vCPU hotplug")
+
     def mem_usage(self):
         mem_usage = {}
         if self.get_status() == 1:
@@ -785,50 +828,26 @@ class wvmInstance(wvmConnect):
                 parent.append(etree.fromstring(video_xml))
                 self._defineXML(etree.tostring(tree))
 
-    def resize(self, cur_memory, memory, cur_vcpu, vcpu, disks=[]):
-        """
-        Function change ram and cpu on vds.
-        """
-        memory = int(memory) * 1024
-        cur_memory = int(cur_memory) * 1024
-        # if dom is running change only ram
-        if self.get_status() == VIR_DOMAIN_RUNNING:
-            self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_LIVE)
-            self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_CONFIG)
-            return
-
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
-
-        set_mem = tree.find('memory')
-        set_mem.text = str(memory)
-        set_cur_mem = tree.find('currentMemory')
-        set_cur_mem.text = str(cur_memory)
-        set_vcpu = tree.find('vcpu')
-        set_vcpu.text = vcpu
-        set_vcpu.set('current', cur_vcpu)
-
-        for disk in disks:
-            source_dev = disk['path']
-            vol = self.get_volume_by_path(source_dev)
-            vol.resize(disk['size_new'])
-        
-        new_xml = ElementTree.tostring(tree)
-        self._defineXML(new_xml)
-
     def resize_cpu(self, cur_vcpu, vcpu):
         """
-        Function change ram and cpu on vds.
+        Function change ram and cpu on instance.
         """
+        is_vcpus_enabled = self.get_vcpus()
+        if is_vcpus_enabled:
+            self.set_vcpu_hotplug(False)
+
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
+        tree = etree.fromstring(xml)
 
         set_vcpu = tree.find('vcpu')
         set_vcpu.text = vcpu
         set_vcpu.set('current', cur_vcpu)
 
-        new_xml = ElementTree.tostring(tree)
+        new_xml = etree.tostring(tree)
         self._defineXML(new_xml)
+
+        if is_vcpus_enabled:
+            self.set_vcpu_hotplug(True, int(cur_vcpu))
 
     def resize_mem(self, cur_memory, memory):
         """
