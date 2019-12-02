@@ -26,6 +26,7 @@ from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
 from logs.views import addlogmsg
 from django.conf import settings
 from django.contrib import messages
+from collections import OrderedDict
 
 
 @login_required
@@ -44,7 +45,7 @@ def allinstances(request):
     :param request:
     :return:
     """
-    all_host_vms = {}
+    all_host_vms = OrderedDict()
     error_messages = []
     computes = Compute.objects.all().order_by("name")
 
@@ -76,7 +77,7 @@ def instances(request, compute_id):
     :param compute_id
     :return:
     """
-    all_host_vms = {}
+    all_host_vms = OrderedDict()
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
@@ -266,6 +267,7 @@ def instance(request, compute_id, vname):
         boot_order = conn.get_bootorder()
         vcpu = conn.get_vcpu()
         cur_vcpu = conn.get_cur_vcpu()
+        vcpus = conn.get_vcpus()
         uuid = conn.get_uuid()
         memory = conn.get_memory()
         cur_memory = conn.get_cur_memory()
@@ -668,6 +670,29 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#suspend')
 
+                if 'set_vcpu' in request.POST:
+                    id = request.POST.get('id', '')
+                    enabled = request.POST.get('set_vcpu', '')
+                    if enabled == 'True':
+                        conn.set_vcpu(id, 1)
+                    else:
+                        conn.set_vcpu(id, 0)
+                    msg = _("vCPU {} is enabled={}".format(id, enabled))
+                    messages.success(request, msg)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
+                if 'set_vcpu_hotplug' in request.POST:
+                    status = request.POST.get('vcpu_hotplug', '')
+                    msg = _("vCPU Hot-plug is enabled={}".format(status))
+                    try:
+                        conn.set_vcpu_hotplug(eval(status))
+                    except libvirtError as lib_err:
+                        messages.error(request, lib_err.message)
+                    messages.success(request, msg)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#resize')
+
                 if 'set_autostart' in request.POST:
                     conn.set_autostart(1)
                     msg = _("Set autostart")
@@ -1036,7 +1061,7 @@ def get_host_instances(request, comp):
             inst_on_db = Instance(compute_id=comp["id"], name=inst_name, uuid=info['uuid'])
             inst_on_db.save()
 
-    all_host_vms = {}
+    all_host_vms = OrderedDict()
     status = connection_manager.host_is_up(comp.type, comp.hostname)
 
     if status is True:

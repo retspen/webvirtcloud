@@ -52,14 +52,33 @@
         </div>
         <div class="col-xs-8 col-sm-9">
             <p>{{ hostname }}</p>
-            <p>{% for arch, hpv in hypervisor.items %}
-                  <span class="glyphicon glyphicon-chevron-right"></span>
-                  <span class="label label-default">{{ arch }}</span>
-                  {% for h in hpv %}
-                      <span class="label label-primary">{{ h }}</span>
-                  {% endfor %}
-                {% endfor %}
-            </p>
+            <p><div class="btn-group" style="margin-left: 8px">
+            {% for arch, hpv in hypervisor.items %}
+                {% if forloop.counter < 4 %}
+                <div class="btn-group" >
+                    <button class="btn btn-xs btn-default dropdown-toggle" type="button" id="dropdownMenuButton{{ forloop.counter0 }}" data-toggle="dropdown">
+                        {{ arch }}
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ forloop.counter0 }}" role="menu">
+                        {% for h in hpv %}
+                            <li><a href="#">{{ h }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% else %}
+                    <button class="btn btn-xs btn-default dropdown-toggle" type="button" id="dropdownMenuButton{{ forloop.counter0 }}" data-toggle="dropdown">
+                        {{ hypervisor|length }} {% trans 'more' %}...
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ forloop.counter0 }}" role="menu">
+                        {% for arc in hypervisor.keys %}
+                                <li><a href="#">{{ arc }}</a></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endfor %}
+            </div></p>
             <p>{{ emulator }}</p>
             <p>
                 <span class="label label-default">Qemu</span>
