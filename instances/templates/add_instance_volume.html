@@ -61,7 +61,7 @@
                                     <label class="col-sm-3 control-label">{% trans "Bus" %}</label>
                                     <div class="col-sm-4">
                                         <select name="bus" class="form-control image-format">
-                                            {% for bus in busses %}
+                                            {% for bus in bus_host %}
                                                 <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
                                             {% endfor %}
                                         </select>
