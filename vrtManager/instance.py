@@ -2,7 +2,7 @@ import time
 import os.path
 try:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE, VIR_MIGRATE_UNSAFE, VIR_DOMAIN_RUNNING, \
-        VIR_DOMAIN_AFFECT_LIVE, VIR_DOMAIN_AFFECT_CONFIG
+        VIR_DOMAIN_AFFECT_LIVE, VIR_DOMAIN_AFFECT_CONFIG, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
@@ -150,8 +150,8 @@ class wvmInstance(wvmConnect):
     def resume(self):
         self.instance.resume()
 
-    def delete(self):
-        self.instance.undefine()
+    def delete(self, flags=0):
+        self.instance.undefineFlags(flags)
 
     def _XMLDesc(self, flag):
         return self.instance.XMLDesc(flag)
@@ -185,6 +185,15 @@ class wvmInstance(wvmConnect):
         cur_vcpu = util.get_xml_path(self._XMLDesc(0), "/domain/vcpu/@current")
         if cur_vcpu:
             return int(cur_vcpu)
+
+    def get_arch(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@arch")
+
+    def get_machine_type(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@machine")
+
+    def get_nvram(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/os/nvram")
 
     def get_vcpus(self):
         vcpus = OrderedDict()

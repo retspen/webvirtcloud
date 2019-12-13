@@ -1524,9 +1524,17 @@
                                                 <div class="checkbox" style="margin-left: 8px;">
                                                     <label>
                                                         <input type="checkbox" name="delete_disk" value="true" checked>
-                                                        <strong>{% trans "Remove Instance's data" %}</strong>
+                                                        <strong>{% trans "Remove Instance's disks" %}</strong>
                                                     </label>
                                                 </div>
+                                                {% if nvram %}
+                                                <div class="checkbox" style="margin-left: 8px;">
+                                                    <label>
+                                                        <input type="checkbox" name="delete_nvram" value="true" checked>
+                                                        <strong>{% trans "Remove Instance's NVRAM" %}</strong>
+                                                    </label>
+                                                </div>
+                                                {% endif %}
                                                 <button type="submit" class="btn btn-lg btn-success pull-right" name="delete">{% trans "Destroy" %}</button>
                                             </form>
                                         {% endifequal %}
