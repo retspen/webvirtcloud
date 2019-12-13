@@ -1,6 +1,7 @@
 import libvirt
 import threading
 import socket
+import re
 from vrtManager import util
 from vrtManager.rwlock import ReadWriteLock
 from django.conf import settings
@@ -344,14 +345,87 @@ class wvmConnect(object):
         """Return xml capabilities"""
         return self.wvm.getCapabilities()
 
-    def get_dom_cap_xml(self):
-        """ Return domcapabilities xml"""
-
-        arch = self.wvm.getInfo()[0]
-        machine = self.get_machines(arch)
+    def get_dom_cap_xml(self, arch, machine):
+        """ Return domain capabilities xml"""
         emulatorbin = self.get_emulator(arch)
-        virttype = self.hypervisor_type()[arch][0]
+        virttype = self.get_hypervisors_domain_types()[arch][0]
+
+        machine_types = self.get_machine_types(arch)
+        if not machine or machine not in machine_types:
+            machine = 'pc' if 'pc' in machine_types else machine_types[0]
         return self.wvm.getDomainCapabilities(emulatorbin, arch, machine, virttype)
+
+    def get_capabilities(self, arch):
+        """ Host Capabilities for specified architecture """
+        def guests(ctx):
+            result = dict()
+            for arch_el in ctx.xpath("/capabilities/guest/arch[@name='{}']".format(arch)):
+                result["wordsize"] = arch_el.find("wordsize").text
+                result["emulator"] = arch_el.find("emulator").text
+                result["domain"] = [v for v in arch_el.xpath("domain/@type")]
+
+                result["machines"] = []
+                for m in arch_el.xpath("machine"):
+                    result["machines"].append({"machine": m.text,
+                                               "max_cpu": m.get("maxCpus"),
+                                               "canonical": m.get("canonical")})
+
+                guest_el = arch_el.getparent()
+                for f in guest_el.xpath("features"):
+                    result["features"] = [t.tag for t in f.getchildren()]
+
+                result["os_type"] = guest_el.find("os_type").text
+
+            return result
+        return util.get_xml_path(self.get_cap_xml(), func=guests)
+
+    def get_dom_capabilities(self, arch, machine):
+        """Return domain capabilities"""
+        result = dict()
+
+        xml = self.get_dom_cap_xml(arch, machine)
+        result["path"] = util.get_xml_path(xml,"/domainCapabilities/path")
+        result["domain"] = util.get_xml_path(xml, "/domainCapabilities/domain")
+        result["machine"] = util.get_xml_path(xml, "/domainCapabilities/machine")
+        result["vcpu_max"] = util.get_xml_path(xml, "/domainCapabilities/vcpu/@max")
+        result["iothreads_support"] = util.get_xml_path(xml, "/domainCapabilities/iothreads/@supported")
+        result["os_support"] = util.get_xml_path(xml, "/domainCapabilities/os/@supported")
+
+        result["loader_support"] = util.get_xml_path(xml, "/domainCapabilities/os/loader/@supported")
+        if result["loader_support"] == 'yes':
+            result["loaders"] = self.get_os_loaders(arch, machine)
+            result["loader_enums"] = self.get_os_loader_enums(arch, machine)
+
+        result["cpu_modes"] = self.get_cpu_modes(arch, machine)
+        if "custom" in result["cpu_modes"]:
+            # supported and unknown cpu models
+            result["cpu_custom_models"] = self.get_cpu_custom_types(arch, machine)
+
+        result["disk_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/disk/@supported")
+        if result["disk_support"] == 'yes':
+            result["disk_devices"] = self.get_disk_device_types(arch, machine)
+            result["disk_bus"] = self.get_disk_bus_types(arch, machine)
+
+        result["graphics_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/graphics/@supported")
+        if result["graphics_support"] == 'yes':
+            result["graphics_types"] = self.get_graphics_types(arch, machine)
+
+        result["video_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/video/@supported")
+        if result["video_support"] == 'yes':
+            result["video_types"] = self.get_video_models(arch, machine)
+
+        result["hostdev_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/hostdev/@supported")
+        if result["hostdev_support"] == 'yes':
+            result["hostdev_types"] = self.get_hostdev_modes(arch, machine)
+            result["hostdev_startup_policies"] = self.get_hostdev_startup_policies(arch, machine)
+            result["hostdev_subsys_types"] = self.get_hostdev_subsys_types(arch, machine)
+
+        result["features_gic_support"] = util.get_xml_path(xml, "/domainCapabilities/features/gic/@supported")
+        result["features_genid_support"] = util.get_xml_path(xml, "/domainCapabilities/features/genid/@supported")
+        result["features_vmcoreinfo_support"] = util.get_xml_path(xml, "/domainCapabilities/features/vmcoreinfo/@supported")
+        result["features_sev_support"] = util.get_xml_path(xml, "/domainCapabilities/features/sev/@supported")
+
+        return result
 
     def get_version(self):
         ver = self.wvm.getVersion()
@@ -417,7 +491,7 @@ class wvmConnect(object):
             'unsafe': 'Unsafe',  # since libvirt 0.9.7
         }
 
-    def hypervisor_type(self):
+    def get_hypervisors_domain_types(self):
         """Return hypervisor type"""
         def hypervisors(ctx):
             result = {}
@@ -428,9 +502,33 @@ class wvmConnect(object):
             return result
         return util.get_xml_path(self.get_cap_xml(), func=hypervisors)
 
+    def get_hypervisors_machines(self):
+        """Return hypervisor and its machine types"""
+        def machines(ctx):
+            result = dict()
+            for arche in ctx.xpath('/capabilities/guest/arch'):
+                arch = arche.get("name")
+
+                result[arch] = self.get_machine_types(arch)
+            return result
+        return util.get_xml_path(self.get_cap_xml(), func=machines)
+
     def get_emulator(self, arch):
         """Return emulator """
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch[@name='{}']/emulator".format(arch))
+
+    def get_machine_types(self, arch):
+        """Return canonical(if exist) name of machine types """
+        def machines(ctx):
+            result = list()
+            canonical_name = ctx.xpath("/capabilities/guest/arch[@name='{}']/machine[@canonical]".format(arch))
+            if not canonical_name:
+                canonical_name = ctx.xpath("/capabilities/guest/arch[@name='{}']/machine".format(arch))
+            for archi in canonical_name:
+                result.append(archi.text)
+            return result
+
+        return util.get_xml_path(self.get_cap_xml(), func=machines)
 
     def get_emulators(self):
         def emulators(ctx):
@@ -442,35 +540,76 @@ class wvmConnect(object):
             return result
         return util.get_xml_path(self.get_cap_xml(), func=emulators)
 
-    def get_machines(self, arch):
-        """ Return machine type of emulation"""
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch[@name='{}']/machine".format(arch))
+    def get_os_loaders(self, arch='x86_64', machine='pc'):
+        """Get available os loaders list"""
+        def get_os_loaders(ctx):
+            return [v.text for v in ctx.xpath("/domainCapabilities/os/loader[@supported='yes']/value")]
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_os_loaders)
 
-    def get_disk_bus_types(self):
+    def get_os_loader_enums(self, arch, machine):
+        """Get available os loaders list"""
+        def get_os_loader_enums(ctx):
+            result = dict()
+            enums = [v for v in ctx.xpath("/domainCapabilities/os/loader[@supported='yes']/enum/@name")]
+            for enum in enums:
+                path = "/domainCapabilities/os/loader[@supported='yes']/enum[@name='{}']/value".format(enum)
+                result[enum] = [v.text for v in ctx.xpath(path)]
+            return result
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_os_loader_enums)
+
+    def get_disk_bus_types(self, arch, machine):
         """Get available disk bus types list"""
-
         def get_bus_list(ctx):
-            result = []
-            for disk_enum in ctx.xpath('/domainCapabilities/devices/disk/enum'):
-                if disk_enum.xpath("@name")[0] == "bus":
-                    for values in disk_enum: result.append(values.text)
-            return result
-
+            return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='bus']/value")]
         # return [ 'ide', 'scsi', 'usb', 'virtio' ]
-        return util.get_xml_path(self.get_dom_cap_xml(), func=get_bus_list)
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_bus_list)
 
-    def get_disk_device_types(self):
+    def get_disk_device_types(self, arch, machine):
         """Get available disk device type list"""
-
         def get_device_list(ctx):
-            result = []
-            for disk_enum in ctx.xpath('/domainCapabilities/devices/disk/enum'):
-                if disk_enum.xpath("@name")[0] == "diskDevice":
-                    for values in disk_enum: result.append(values.text)
-            return result
-
+            return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='diskDevice']/value")]
         # return [ 'disk', 'cdrom', 'floppy', 'lun' ]
-        return util.get_xml_path(self.get_dom_cap_xml(), func=get_device_list)
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_device_list)
+
+    def get_graphics_types(self, arch, machine):
+        """Get available graphics types """
+        def get_graphics_list(ctx):
+            return [ v.text for v in ctx.xpath("/domainCapabilities/devices/graphics/enum[@name='type']/value")]
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_graphics_list)
+
+    def get_cpu_modes(self, arch, machine):
+        """Get available cpu modes """
+        def get_cpu_modes(ctx):
+            return [v for v in ctx.xpath("/domainCapabilities/cpu/mode[@supported='yes']/@name")]
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_cpu_modes)
+
+    def get_cpu_custom_types(self, arch, machine):
+        """Get available graphics types """
+        def get_custom_list(ctx):
+            usable_yes = "/domainCapabilities/cpu/mode[@name='custom'][@supported='yes']/model[@usable='yes']"
+            usable_unknown = "/domainCapabilities/cpu/mode[@name='custom'][@supported='yes']/model[@usable='unknown']"
+            result = [v.text for v in ctx.xpath(usable_yes)]
+            result += [v.text for v in ctx.xpath(usable_unknown)]
+            return result
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_custom_list)
+
+    def get_hostdev_modes(self, arch, machine):
+        """Get available nodedev modes """
+        def get_hostdev_list(ctx):
+            return [v.text for v in ctx.xpath("/domainCapabilities/devices/hostdev/enum[@name='mode']/value")]
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
+
+    def get_hostdev_startup_policies(self, arch, machine):
+        """Get available hostdev modes """
+        def get_hostdev_list(ctx):
+            return [v.text for v in ctx.xpath("/domainCapabilities/devices/hostdev/enum[@name='startupPolicy']/value")]
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
+
+    def get_hostdev_subsys_types(self, arch, machine):
+        """Get available nodedev sub system types """
+        def get_hostdev_list(ctx):
+            return [v.text for v in ctx.xpath("/domainCapabilities/devices/hostdev/enum[@name='subsysType']/value")]
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
 
     def get_image_formats(self):
         """Get available image formats"""
@@ -480,7 +619,7 @@ class wvmConnect(object):
         """Get available image filename extensions"""
         return ['img', 'qcow', 'qcow2']
 
-    def get_video_models(self):
+    def get_video_models(self, arch, machine):
         """ Get available graphics video types """
         def get_video_list(ctx):
             result = []
@@ -488,7 +627,7 @@ class wvmConnect(object):
                 if video_enum.xpath("@name")[0] == "modelType":
                     for values in video_enum: result.append(values.text)
             return result
-        return util.get_xml_path(self.get_dom_cap_xml(), func=get_video_list)
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_video_list)
 
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
@@ -624,3 +763,49 @@ class wvmConnect(object):
         # to-do: do not close connection ;)
         # self.wvm.close()
         pass
+
+    def find_uefi_path_for_arch(self, arch, machine):
+        """
+        Search the loader paths for one that matches the passed arch
+        """
+        if not self.arch_can_uefi(arch):
+            return
+
+        loaders = self.get_os_loaders(arch, machine)
+        patterns = util.uefi_arch_patterns.get(arch)
+        for pattern in patterns:
+            for path in loaders:
+                if re.match(pattern, path):
+                    return path
+
+    def label_for_firmware_path(self, arch, path):
+        """
+        Return a pretty label for passed path, based on if we know
+        about it or not
+        """
+        if not path:
+            if arch in ["i686", "x86_64"]:
+                return "BIOS"
+            return
+
+        for arch, patterns in util.uefi_arch_patterns.items():
+            for pattern in patterns:
+                if re.match(pattern, path):
+                    return ("UEFI %(arch)s: %(path)s" %
+                            {"arch": arch, "path": path})
+
+        return "Custom: %(path)s" % {"path": path}
+
+    def arch_can_uefi(self, arch):
+        """
+        Return True if we know how to setup UEFI for the passed arch
+        """
+        return arch in list(util.uefi_arch_patterns.keys())
+
+    def supports_uefi_xml(self, loader_enums):
+        """
+        Return True if libvirt advertises support for proper UEFI setup
+        """
+        return ("readonly" in loader_enums and
+                "yes" in loader_enums.get("readonly"))
+

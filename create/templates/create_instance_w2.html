@@ -9,7 +9,9 @@
     <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            <h1 class="page-header">{% trans "New instance on" %} {{ compute.name }}</h1>
+            <h1 class="page-header">
+                {% trans "New instance on" %} {{ compute.name }}
+            </h1>
         </div>
     </div>
     <!-- /.row -->
@@ -37,6 +39,11 @@
             <div role="tabpanel">
             <!-- Nav tabs -->
                 <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation">
+                        <a class="pull-right" href="#" role="tab" data-toggle="tab" onclick="goto_compute()">
+                            <span class="glyphicon glyphicon-arrow-left"></span>
+                        </a>
+                    </li>
                     <li role="presentation" class="active">
                         <a href="#flavor" aria-controls="flavor" role="tab" data-toggle="tab">
                             {% trans "Flavor" %}
@@ -50,11 +57,6 @@
                     <li role="presentation">
                         <a href="#addFromTemp" aria-controls="addFromTemp" role="tab" data-toggle="tab">
                             {% trans "Template" %}
-                        </a>
-                    </li>
-                    <li role="presentation">
-                        <a href="#addFromXML" aria-controls="addFromXML" role="tab" data-toggle="tab">
-                            {% trans "XML" %}
                         </a>
                     </li>
                 </ul>
@@ -112,9 +114,43 @@
                                                                         <input type="hidden" name="hdd_size" value="{{ flavor.disk }}">
                                                                     </div>
                                                                 </div>
+                                                                 {% if firmwares %}
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Firmware" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <select class="form-control" id="select_firmware" name="firmware">
+                                                                            {% for frm in firmwares %}
+                                                                            <option value="{{ frm }}" {% if frm == default_firmware %}selected{% endif %}>{{ frm }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                {% endif %}
+                                                                {% if dom_caps.cpu_modes %}
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "VCPU Config" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                     <select id="vcpu_mode" name="vcpu_mode" class="form-control">
+                                                                        <option value=""> {% trans 'no-mode' %}</option>
+                                                                        {% for mode in dom_caps.cpu_modes %}
+                                                                            {% if mode == 'custom' %}
+                                                                                <optgroup label="Custom CPU Models">
+                                                                                    {% for model in dom_caps.cpu_custom_models %}
+                                                                                    <option value="{{ model }}"> {% trans model %}</option>
+                                                                                    {% endfor %}
+                                                                                </optgroup>
+                                                                            {% else %}
+                                                                                <option value="{{ mode }}" {% ifequal mode default_cpu_mode %}selected {% endifequal %}>
+                                                                                    {% trans mode %}
+                                                                                </option>
+                                                                            {% endif %}
+                                                                        {% endfor %}
+                                                                     </select>
+                                                                    </div>
+                                                                </div>
+                                                                {% endif %}
                                                                 <div class="form-group">
                                                                     <label class="col-sm-3 control-label">{% trans "Storage" %}</label>
-
                                                                     <div class="col-sm-6">
                                                                         <input type="hidden" name="cache_mode" value="default">
                                                                         <select name="storage" class="form-control">
@@ -166,6 +202,18 @@
                                                                         <input type="text" class="form-control" name="mac" maxlength="17" value="{{ mac_auto }}" required pattern="[a-zA-Z0-9:]+">
                                                                     </div>
                                                                 </div>
+                                                                {% if dom_caps.graphics_support == 'yes' %}
+                                                                <div class="form-group">
+                                                                    <label class="col-sm-3 control-label">{% trans "Graphics" %}</label>
+                                                                    <div class="col-sm-6">
+                                                                        <select name="graphics" class="form-control">
+                                                                            {% for graphics in dom_caps.graphics_types %}
+                                                                            <option value="{{ graphics }}" {% if default_graphics == graphics %}selected{% endif %}>{{ graphics }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                {% endif %}
                                                                 <div class="form-group">
                                                                     <label class="col-sm-3 control-label">{% trans "Video" %}</label>
                                                                     <div class="col-sm-6">
@@ -195,13 +243,6 @@
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>
-                                                                </div>
-                                                                <div class="form-group">
-                                                                    <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
-                                                                    <div class="col-sm-6">
-                                                                        <input type="checkbox" name="host_model" value="true" checked>
-                                                                    </div>
-                                                                    <label class="col-lg-1 control-label">{% trans "CPU" %}</label>
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="col-sm-3 control-label">{% trans "Guest Agent" %}</label>
@@ -258,19 +299,47 @@
                             <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="64" required pattern="[a-zA-Z0-9\.\-_]+">
                         </div>
                     </div>
+                    {% if firmwares %}
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Firmware" %}</label>
+                            <div class="col-sm-7">
+                                <select class="form-control" id="select_firmware" name="firmware">
+                                    {% for frm in firmwares %}
+                                    <option value="{{ frm }}" {% if frm == default_firmware %}selected{% endif %}>{{ frm }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    {% endif %}
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
                         <div class="col-sm-7">
                             <input type="text" class="form-control" name="vcpu" value="1" maxlength="2" required pattern="[0-9]">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
+                    {% if dom_caps.cpu_modes %}
+                     <div class="form-group">
+                        <label class="col-sm-3 control-label">{% trans "VCPU Config" %}</label>
                         <div class="col-sm-7">
-                            <input type="checkbox" name="host_model" value="true" checked>
+                            <select id="vcpu_mode" name="vcpu_mode" class="form-control">
+                                <option value=""> {% trans 'no-mode' %}</option>
+                                {% for mode in dom_caps.cpu_modes %}
+                                    {% if mode == 'custom' %}
+                                        <optgroup label="Custom CPU Models">
+                                            {% for model in dom_caps.cpu_custom_models %}
+                                            <option value="{{ model }}"> {% trans model %}</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                    {% else %}
+                                        <option value="{{ mode }}" {% ifequal mode default_cpu_mode %}selected {% endifequal %}>
+                                            {% trans mode %}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
                         </div>
-                        <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
                     </div>
+                    {% endif %}
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
                         <div class="col-sm-7">
@@ -351,6 +420,18 @@
                             </select>
                         </div>
                     </div>
+                    {% if dom_caps.graphics_support == 'yes' %}
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Graphics" %}</label>
+                            <div class="col-sm-7">
+                                <select name="graphics" class="form-control">
+                                    {% for graphics in dom_caps.graphics_types %}
+                                    <option value="{{ graphics }}" {% if default_graphics == graphics %}selected{% endif %}>{{ graphics }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    {% endif %}
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "Video" %}</label>
                         <div class="col-sm-7">
@@ -393,15 +474,18 @@
                             <input type="checkbox" name="virtio" value="true" checked>
                         </div>
                     </div>
+                    <div class="form-group">
+                    <div class="col-sm-7 col-sm-offset-3">
                     {% if storages %}
-                        <button type="submit" class="btn btn-primary" name="create" formnovalidate onclick="showPleaseWaitDialog()" value="1">
+                        <button type="submit" class="btn btn-block btn-primary" name="create" formnovalidate onclick="showPleaseWaitDialog()" value="1">
                             {% trans "Create" %}
                         </button>
                     {% else %}
-                        <button class="btn btn-primary disabled">
+                        <button class="btn btn-block btn-primary disabled">
                             {% trans "Create" %}
                         </button>
                     {% endif %}
+                    </div></div>
                 </form>
                 </div>
                 <div class="clearfix"></div>
@@ -416,6 +500,18 @@
                                 <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" maxlength="64" required pattern="[a-zA-Z0-9\.\-_]+">
                             </div>
                         </div>
+                        {% if firmwares %}
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">{% trans "Firmware" %}</label>
+                                <div class="col-sm-7">
+                                    <select class="form-control" id="select_firmware" name="firmware">
+                                        {% for frm in firmwares %}
+                                        <option value="{{ frm }}" {% if frm == default_firmware %}selected{% endif %}>{{ frm }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
                             <div class="col-sm-7">
@@ -423,11 +519,25 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="col-sm-3 control-label">{% trans "Host-Model" %}</label>
+                            <label class="col-sm-3 control-label">{% trans "VCPU Config" %}</label>
                             <div class="col-sm-7">
-                                <input type="checkbox" name="host_model" value="true" checked>
+                                <select id="vcpu_mode" name="vcpu_mode" class="form-control">
+                                    <option value=""> {% trans 'no-mode' %}</option>
+                                    {% for mode in dom_caps.cpu_modes %}
+                                        {% if mode == 'custom' %}
+                                            <optgroup label="Custom CPU Models">
+                                                {% for model in dom_caps.cpu_custom_models %}
+                                                <option value="{{ model }}"> {% trans model %}</option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% else %}
+                                            <option value="{{ mode }}" {% ifequal mode default_cpu_mode %}selected {% endifequal %}>
+                                                {% trans mode %}
+                                            </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
                             </div>
-                            <label class="col-sm-1 control-label">{% trans "CPU" %}</label>
                         </div>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
@@ -437,7 +547,7 @@
                             <label class="col-sm-1 control-label">{% trans "MB" %}</label>
                         </div>
                         <div class="form-group">
-                            <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
+                            <label class="col-sm-3 control-label">{% trans "Template Disk" %}</label>
                             <input id="images" name="images" type="hidden" value=""/>
                             <div class="col-sm-3">
                                 <select class="form-control" onchange="get_template_vols({{ compute_id }}, value);">
@@ -510,6 +620,18 @@
                                 </select>
                             </div>
                         </div>
+                        {% if dom_caps.graphics_support == 'yes' %}
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">{% trans "Graphics" %}</label>
+                            <div class="col-sm-7">
+                                <select name="graphics" class="form-control">
+                                    {% for graphics in dom_caps.graphics_types %}
+                                    <option value="{{ graphics }}" {% if default_graphics == graphics %}selected{% endif %}>{{ graphics }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        {% endif %}
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "Video" %}</label>
                             <div class="col-sm-7">
@@ -552,31 +674,19 @@
                                 <input type="checkbox" name="virtio" value="true" checked>
                             </div>
                         </div>
-
-                        {% if storages %}
-                            <button type="submit" class="btn btn-primary" name="create" value="1" formnovalidate onclick="showPleaseWaitDialog()">
-                                {% trans "Create" %}
-                            </button>
-                        {% else %}
-                            <button class="btn btn-primary disabled">
-                                {% trans "Create" %}
-                            </button>
-                        {% endif %}
-                    </form>
-                </div>
-                <div class="clearfix"></div>
-            </div>
-
-            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromXML">
-                <div class="well">
-                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                        <div class="col-sm-12" id="xmlheight">
-                             <input type="hidden" name="dom_xml"/>
-                            <textarea id="editor"></textarea>
+                        <div class="form-group">
+                            <div class="col-sm-7 col-sm-offset-3">
+                            {% if storages %}
+                                <button type="submit" class="btn btn-block btn-primary" name="create" value="1" formnovalidate onclick="showPleaseWaitDialog()">
+                                    {% trans "Create" %}
+                                </button>
+                            {% else %}
+                                <button class="btn btn-primary disabled">
+                                    {% trans "Create" %}
+                                </button>
+                            {% endif %}
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary" name="create_xml" onclick="showPleaseWaitDialog()">
-                            {% trans "Create" %}
-                        </button>
                     </form>
                 </div>
                 <div class="clearfix"></div>
@@ -589,7 +699,7 @@
 <script src="{% static "js/bootstrap-multiselect.js" %}"></script>
 <script>
     function toggleValue(string, updated_value, checked) {
-        var result = '';
+        let result = '';
         if (checked) {
             result = string;
             if (result != '') result += ',';
@@ -620,15 +730,15 @@
                 return '';
             },
             onChange: function (element, checked) {
-                var input_value = toggleValue($('#images').val(), element.val(), checked);
+                let input_value = toggleValue($('#images').val(), element.val(), checked);
                 $('#images').val(input_value);
 
-                var selected_list_html = '';
-                var counter = 0;
+                let selected_list_html = '';
+                let counter = 0;
                 if (input_value != '') {
                        $('#disk_list_div').show();
                        $.each(input_value.split(','), function (index, value) {
-                            var li = '<li>hdd' + counter + ' - ' +
+                            let li = '<li>hdd' + counter + ' - ' +
                                 '<select name="device' + counter + '" class="image-format" onchange="get_disk_bus_choices({{ compute_id }},' + counter + ', value);">' +
                                     '{% for dev in disk_devices %}' +
                                         '<option value=' + '"{{ dev }}">' + '{% trans dev %}</option>' +
@@ -668,13 +778,13 @@
                 return '100%';
             },
             onChange: function (element, checked) {
-                var input_value = toggleValue($('#networks').val(), element.val(), checked);
+                let input_value = toggleValue($('#networks').val(), element.val(), checked);
                 $('#networks').val(input_value);
-                var selected_list_html = '';
-                var counter = 0;
+                let selected_list_html = '';
+                let counter = 0;
                 if (input_value != '') {
                     $.each(input_value.split(','), function (index, value) {
-                        var li = '<li>eth' + counter +
+                        let li = '<li>eth' + counter +
                                 ' -> ' + value + ' ' +
                                 '<a class="btn-link pull-right" onclick="javascript:$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></a></li>';
                         selected_list_html += li;
@@ -685,6 +795,8 @@
             }
         });
     });
+
+    $("id[vcpu_mode]").multiselect();
 
     function get_cust_vols(compute_id, pool) {
         get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
@@ -708,11 +820,12 @@
         $("#template").removeAttr("disabled");
         $("#storage").val(pool).change();
         $("#storage").removeAttr("disabled");
-
     }
 
     function get_disk_bus_choices(compute_id, dev_idx, disk_type){
-        get_diskBus_url = "/computes/" + compute_id + "/disk/" + disk_type + "/buses";
+        let arch = $('select[name="arch"]').val();
+        let machine = $("select[id='machine-control']").val();
+        get_diskBus_url = "/computes/" + compute_id + "/archs/" + arch + "/machines/" + machine + "/disks/" + disk_type + "/buses";
         $.getJSON(get_diskBus_url, function (data) {
             $("#bus" + dev_idx).find('option').remove();
             $.each(data['bus'], function(i, item) {
@@ -721,15 +834,12 @@
         });
     }
 </script>
-
-<script src="{% static "js/ace.js" %}"></script>
-<script>
-    var editor = ace.edit("editor");
-    editor.getSession().setMode("ace/mode/xml");
-
-    var input = $('input[name="dom_xml"]');
-    editor.getSession().on("change",function () {
-        input.val(editor.getSession().getValue());
-    })
-</script>
+{% if request.user.is_superuser %}
+    <script>
+        function goto_compute() {
+            let compute = {{ compute.id }}
+            window.location.href = "{% url 'create_instance_select_type' 1 %}".replace(1, compute);
+        }
+    </script>
+{% endif %}
 {% endblock %}

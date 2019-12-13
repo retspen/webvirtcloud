@@ -73,7 +73,7 @@
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ forloop.counter0 }}" role="menu">
                         {% for arc in hypervisor.keys|slice:"4:" %}
-                                <li><a href="#">{{ arc }}</a></li>
+                                <li><a tabindex="-1" href="#">{{ arc }}</a></li>
                         {% endfor %}
                     </ul>
                 {% endif %}

@@ -176,8 +176,9 @@
 {% if request.user.is_superuser %}
     <script>
         function goto_compute() {
-            var compute = $("#compute_select").val();
-            window.location.href = "{% url 'create_instance' 1 %}".replace(1, compute);
+            let compute = $("#compute_select").val();
+            {#window.location.href = "{% url 'create_instance' 1 %}".replace(1, compute);#}
+            window.location.href = "{% url 'create_instance_select_type' 1 %}".replace(1, compute);
         }
     </script>
 {% endif %}

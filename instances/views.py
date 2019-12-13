@@ -22,7 +22,7 @@ from vrtManager.connection import connection_manager
 from vrtManager.create import wvmCreate
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
-from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
+from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM
 from logs.views import addlogmsg
 from django.conf import settings
 from django.contrib import messages
@@ -265,6 +265,8 @@ def instance(request, compute_id, vname):
         autostart = conn.get_autostart()
         bootmenu = conn.get_bootmenu()
         boot_order = conn.get_bootorder()
+        arch = conn.get_arch()
+        machine = conn.get_machine_type()
         vcpu = conn.get_vcpu()
         cur_vcpu = conn.get_cur_vcpu()
         vcpus = conn.get_vcpus()
@@ -288,6 +290,7 @@ def instance(request, compute_id, vname):
             insort(memory_range, memory)
         if cur_memory not in memory_range:
             insort(memory_range, cur_memory)
+        nvram = conn.get_nvram()
         telnet_port = conn.get_telnet_port()
         console_type = conn.get_console_type()
         console_port = conn.get_console_port()
@@ -330,8 +333,8 @@ def instance(request, compute_id, vname):
         # Host resources
         vcpu_host = len(vcpu_range)
         memory_host = conn.get_max_memory()
-        bus_host = conn.get_disk_bus_types()
-        videos_host = conn.get_video_models()
+        bus_host = conn.get_disk_bus_types(arch, machine)
+        videos_host = conn.get_video_models(arch, machine)
         networks_host = sorted(conn.get_networks())
         interfaces_host = sorted(conn.get_ifaces())
         nwfilters_host = conn.get_nwfilters()
@@ -374,7 +377,11 @@ def instance(request, compute_id, vname):
                     for snap in snapshots:
                         conn.snapshot_delete(snap['name'])
                     conn.delete_all_disks()
-                conn.delete()
+
+                if request.POST.get('delete_nvram', ''):
+                    conn.delete(VIR_DOMAIN_UNDEFINE_NVRAM)
+                else:
+                    conn.delete(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
 
                 instance = Instance.objects.get(compute_id=compute_id, name=vname)
                 instance_name = instance.name

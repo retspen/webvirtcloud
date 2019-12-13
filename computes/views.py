@@ -155,7 +155,7 @@ def overview(request, compute_id):
                               compute.password,
                               compute.type)
         hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
-        hypervisor = conn.hypervisor_type()
+        hypervisor = conn.get_hypervisors_domain_types()
         mem_usage = conn.get_memory_usage()
         emulator = conn.get_emulator(host_arch)
         version = conn.get_version()
@@ -198,8 +198,8 @@ def compute_graph(request, compute_id):
 
 
 @login_required
-def get_compute_disk_buses(request, compute_id, disk):
-    data = {}
+def get_compute_disk_buses(request, compute_id, arch, machine, disk):
+    data = dict()
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
         conn = wvmConnect(compute.hostname,
@@ -207,7 +207,7 @@ def get_compute_disk_buses(request, compute_id, disk):
                           compute.password,
                           compute.type)
 
-        disk_device_types = conn.get_disk_device_types()
+        disk_device_types = conn.get_disk_device_types(arch, machine)
 
         if disk in disk_device_types:
             if disk == 'disk':
@@ -223,3 +223,51 @@ def get_compute_disk_buses(request, compute_id, disk):
 
     return HttpResponse(json.dumps(data))
 
+
+@login_required
+def get_compute_machine_types(request, compute_id, arch):
+    data = dict()
+    try:
+        compute = get_object_or_404(Compute, pk=compute_id)
+        conn = wvmConnect(compute.hostname,
+                          compute.login,
+                          compute.password,
+                          compute.type)
+        data['machines'] = conn.get_machine_types(arch)
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))
+
+
+@login_required
+def get_compute_video_models(request, compute_id, arch, machine):
+    data = dict()
+    try:
+        compute = get_object_or_404(Compute, pk=compute_id)
+        conn = wvmConnect(compute.hostname,
+                          compute.login,
+                          compute.password,
+                          compute.type)
+        data['videos'] = conn.get_video_models(arch, machine)
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))
+
+
+@login_required
+def get_dom_capabilities(request, compute_id, arch, machine):
+    data = dict()
+    try:
+        compute = get_object_or_404(Compute, pk=compute_id)
+        conn = wvmConnect(compute.hostname,
+                          compute.login,
+                          compute.password,
+                          compute.type)
+        data['videos'] = conn.get_disk_device_types(arch, machine)
+        data['bus'] = conn.get_disk_device_types(arch, machine)
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))
