@@ -1,6 +1,6 @@
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as OWNER
 
 
 class wvmStorages(wvmConnect):
@@ -49,6 +49,8 @@ class wvmStorages(wvmConnect):
         stg.create(0)
         stg.setAutostart(1)
 
+        return stg
+
     def create_storage_ceph(self, stg_type, name, ceph_pool, ceph_host, ceph_user, secret):
         xml = """
                 <pool type='%s'>
@@ -83,6 +85,8 @@ class wvmStorages(wvmConnect):
         stg = self.get_storage(name)
         stg.create(0)
         stg.setAutostart(1)
+
+        return stg
 
 
 class wvmStorage(wvmConnect):
@@ -206,7 +210,7 @@ class wvmStorage(wvmConnect):
             )
         return vol_list
 
-    def create_volume(self, name, size, vol_fmt='qcow2', metadata=False, owner=owner):
+    def create_volume(self, name, size, vol_fmt='qcow2', metadata=False, owner=OWNER):
         size = int(size) * 1073741824
         storage_type = self.get_type()
         alloc = size
@@ -243,17 +247,18 @@ class wvmStorage(wvmConnect):
         self._createXML(xml, metadata)
         return name
 
-    def clone_volume(self, name, target_file, vol_fmt=None, metadata=False, owner=owner):
+    def clone_volume(self, name, target_file, vol_fmt=None, metadata=False, mode='0644', file_suffix='img', owner=OWNER):
         vol = self.get_volume(name)
         if not vol_fmt:
             vol_fmt = self.get_volume_type(name)
 
         storage_type = self.get_type()
         if storage_type == 'dir':
-            if vol_fmt in ('qcow', 'qcow2'):
+            if vol_fmt in ['qcow', 'qcow2']:
                 target_file += '.' + vol_fmt
             else:
-                target_file += '.img'
+                suffix = '.' + file_suffix
+                target_file += suffix if len(suffix) > 1 else ''
 
         xml = """
             <volume>
@@ -265,9 +270,9 @@ class wvmStorage(wvmConnect):
                     <permissions>
                         <owner>%s</owner>
                         <group>%s</group>
-                        <mode>0644</mode>
+                        <mode>%s</mode>
                         <label>virt_image_t</label>
-                    </permissions>""" % (target_file, vol_fmt, owner['uid'], owner['guid'])
+                    </permissions>""" % (target_file, vol_fmt, owner['uid'], owner['guid'], mode)
         if vol_fmt == 'qcow2':
             xml += """
                     <compat>1.1</compat>
