@@ -230,7 +230,7 @@ def instance(request, compute_id, vname):
         else:
             return network_source_pack[0], 'net'
 
-    def migrate_instance(new_compute, instance, live=False, unsafe=False, xml_del=False, offline=False):
+    def migrate_instance(new_compute, instance, live=False, unsafe=False, xml_del=False, offline=False, autoconverge=False, compress=False, postcopy=False):
         status = connection_manager.host_is_up(new_compute.type, new_compute.hostname)
         if not status:
             return
@@ -238,11 +238,11 @@ def instance(request, compute_id, vname):
             return
         try:
             conn_migrate = wvmInstances(new_compute.hostname,
-                                    new_compute.login,
-                                    new_compute.password,
-                                    new_compute.type)
+                                        new_compute.login,
+                                        new_compute.password,
+                                        new_compute.type)
 
-            conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline)
+            conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline, autoconverge, compress, postcopy)
         finally:
             conn_migrate.close()
 
@@ -812,16 +812,24 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(request.get_full_path() + '#options')
 
                 if 'migrate' in request.POST:
+
                     compute_id = request.POST.get('compute_id', '')
                     live = request.POST.get('live_migrate', False)
                     unsafe = request.POST.get('unsafe_migrate', False)
                     xml_del = request.POST.get('xml_delete', False)
                     offline = request.POST.get('offline_migrate', False)
+                    autoconverge = request.POST.get('autoconverge', False)
+                    compress = request.POST.get('compress', False)
+                    postcopy = request.POST.get('postcopy', False)
 
                     new_compute = Compute.objects.get(id=compute_id)
-                    migrate_instance(new_compute, instance, live, unsafe, xml_del, offline)
-
-                    return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
+                    try:
+                        migrate_instance(new_compute, instance, live, unsafe, xml_del, offline)
+                        return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
+                    except libvirtError as err:
+                        messages.error(request, err)
+                        addlogmsg(request.user.username, instance.name, err)
+                        return HttpResponseRedirect(request.get_full_path() + '#migrate')
 
                 if 'change_network' in request.POST:
                     msg = _("Change network")
@@ -1240,7 +1248,8 @@ def inst_graph(request, compute_id, vname):
 
 
 def _get_dhcp_mac_address(vname):
-    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
+
+    dhcp_file = settings.BASE_DIR + '/dhcpd.conf'
     mac = ''
     if os.path.isfile(dhcp_file):
         with open(dhcp_file, 'r') as f:

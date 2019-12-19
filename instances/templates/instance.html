@@ -1035,7 +1035,7 @@
                                 <div class="form-group">
                                     <label class="col-sm-3 control-label">{% trans "Live migration" %}</label>
                                     <div class="col-sm-6">
-                                        <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% ifequal status 1 %}checked{% endifequal %}>
+                                        <input type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% ifnotequal status 5 %}checked{% else %}disabled{% endifnotequal %}>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -1053,7 +1053,25 @@
                                 <div class="form-group">
                                     <label class="col-sm-3 control-label">{% trans "Offline migration" %}</label>
                                     <div class="col-sm-6">
-                                        <input type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% ifequal status 5 %}checked{% endifequal %}>
+                                        <input type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% ifequal status 5 %}checked{% else %}disabled{% endifequal %}>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">{% trans "Post copy" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="checkbox" name="postcopy" value="true" id="postcopy" {% ifnotequal status 1 %}disabled{% endifnotequal %}>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label" title="{% trans 'Forces CPU convergence during live migration' %}">{% trans "Auto converge" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="checkbox" name="autoconverge" value="true" id="autoconverge" {% ifnotequal status 1 %}disabled{% endifnotequal %}>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label" title="{% trans 'Compress instance memory for fast migration' %}">{% trans "Compressed" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="checkbox" name="compress" value="true" id="compress" {% ifnotequal status 1 %}disabled{% endifnotequal %}>
                                     </div>
                                 </div>
                                 {% if computes_count != 1 %}

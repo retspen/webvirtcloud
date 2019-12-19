@@ -2,15 +2,15 @@ import time
 import os.path
 try:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_DOMAIN_RUNNING, VIR_DOMAIN_AFFECT_LIVE, \
-        VIR_DOMAIN_AFFECT_CONFIG, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,\
-        VIR_DOMAIN_START_PAUSED
+        VIR_DOMAIN_AFFECT_CONFIG, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_START_PAUSED
     from libvirt import VIR_MIGRATE_LIVE, \
         VIR_MIGRATE_UNSAFE, \
         VIR_MIGRATE_PERSIST_DEST, \
         VIR_MIGRATE_UNDEFINE_SOURCE, \
         VIR_MIGRATE_OFFLINE,\
         VIR_MIGRATE_COMPRESSED, \
-        VIR_MIGRATE_AUTO_CONVERGE
+        VIR_MIGRATE_AUTO_CONVERGE, \
+        VIR_MIGRATE_POSTCOPY
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
@@ -80,20 +80,22 @@ class wvmInstances(wvmConnect):
         dom = self.get_instance(name)
         dom.resume()
 
-    def moveto(self, conn, name, live, unsafe, undefine, offline, autoconverge=False, compress=False):
+    def moveto(self, conn, name, live, unsafe, undefine, offline, autoconverge=False, compress=False, postcopy=False):
         flags = VIR_MIGRATE_PERSIST_DEST
-        if live and conn.get_status() == 1:
+        if live and conn.get_status() != 5:
             flags |= VIR_MIGRATE_LIVE
         if unsafe and conn.get_status() == 1:
             flags |= VIR_MIGRATE_UNSAFE
-        if undefine:
-            flags |= VIR_MIGRATE_UNDEFINE_SOURCE
-        if offline:
+        if offline and conn.get_status() == 5:
             flags |= VIR_MIGRATE_OFFLINE
         if not offline and autoconverge:
             flags |= VIR_MIGRATE_AUTO_CONVERGE
-        if compress:
+        if not offline and compress and conn.get_status() == 1:
             flags |= VIR_MIGRATE_COMPRESSED
+        if not offline and postcopy and conn.get_status() == 1:
+            flags |= VIR_MIGRATE_POSTCOPY
+        if undefine:
+            flags |= VIR_MIGRATE_UNDEFINE_SOURCE
 
         dom = conn.get_instance(name)
 
