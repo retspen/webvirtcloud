@@ -273,7 +273,7 @@ class wvmConnectionManager(object):
         if connection is None:
             self._connections_lock.acquireWrite()
             try:
-                # we have to search for the connection again after aquireing the write lock
+                # we have to search for the connection again after acquiring the write lock
                 # as the thread previously holding the write lock may have already added our connection
                 connection = self._search_connection(host, login, passwd, conn)
                 if connection is None:
@@ -340,6 +340,9 @@ class wvmConnect(object):
 
         # get connection from connection manager
         self.wvm = connection_manager.get_connection(host, login, passwd, conn)
+
+    def is_qemu(self):
+        return self.wvm.getURI().startswith("qemu")
 
     def get_cap_xml(self):
         """Return xml capabilities"""
@@ -808,4 +811,18 @@ class wvmConnect(object):
         """
         return ("readonly" in loader_enums and
                 "yes" in loader_enums.get("readonly"))
+
+    def is_supports_virtio(self, arch, machine):
+        if not self.is_qemu():
+            return False
+
+        # These _only_ support virtio so don't check the OS
+        if arch in ["aarch64", "armv7l", "ppc64", "ppc64le", "s390x", "riscv64", "riscv32"] and \
+                machine in ["virt", "pseries"]:
+            return True
+
+        if arch in ["x86_64", "i686"]:
+            return True
+
+        return False
 
