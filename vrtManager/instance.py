@@ -1,8 +1,16 @@
 import time
 import os.path
 try:
-    from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE, VIR_MIGRATE_UNSAFE, VIR_DOMAIN_RUNNING, \
-        VIR_DOMAIN_AFFECT_LIVE, VIR_DOMAIN_AFFECT_CONFIG
+    from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_DOMAIN_RUNNING, VIR_DOMAIN_AFFECT_LIVE, \
+        VIR_DOMAIN_AFFECT_CONFIG, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_START_PAUSED
+    from libvirt import VIR_MIGRATE_LIVE, \
+        VIR_MIGRATE_UNSAFE, \
+        VIR_MIGRATE_PERSIST_DEST, \
+        VIR_MIGRATE_UNDEFINE_SOURCE, \
+        VIR_MIGRATE_OFFLINE,\
+        VIR_MIGRATE_COMPRESSED, \
+        VIR_MIGRATE_AUTO_CONVERGE, \
+        VIR_MIGRATE_POSTCOPY
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
@@ -12,9 +20,9 @@ from lxml import etree
 from datetime import datetime
 from collections import OrderedDict
 from vrtManager.connection import wvmConnect
-from vrtManager.storage import wvmStorage
+from vrtManager.storage import wvmStorage, wvmStorages
 from webvirtcloud.settings import QEMU_CONSOLE_TYPES
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as owner
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as OWNER
 
 
 class wvmInstances(wvmConnect):
@@ -72,19 +80,32 @@ class wvmInstances(wvmConnect):
         dom = self.get_instance(name)
         dom.resume()
 
-    def moveto(self, conn, name, live, unsafe, undefine, offline):
-        flags = 0
-        if live and conn.get_status() == 1:
+    def moveto(self, conn, name, live, unsafe, undefine, offline, autoconverge=False, compress=False, postcopy=False):
+        flags = VIR_MIGRATE_PERSIST_DEST
+        if live and conn.get_status() != 5:
             flags |= VIR_MIGRATE_LIVE
         if unsafe and conn.get_status() == 1:
             flags |= VIR_MIGRATE_UNSAFE
-        dom = conn.get_instance(name)
-        xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE)
-        if not offline:
-            dom.migrate(self.wvm, flags, None, None, 0)
+        if offline and conn.get_status() == 5:
+            flags |= VIR_MIGRATE_OFFLINE
+        if not offline and autoconverge:
+            flags |= VIR_MIGRATE_AUTO_CONVERGE
+        if not offline and compress and conn.get_status() == 1:
+            flags |= VIR_MIGRATE_COMPRESSED
+        if not offline and postcopy and conn.get_status() == 1:
+            flags |= VIR_MIGRATE_POSTCOPY
         if undefine:
-            dom.undefine()
-        self.wvm.defineXML(xml)
+            flags |= VIR_MIGRATE_UNDEFINE_SOURCE
+
+        dom = conn.get_instance(name)
+
+        dom_arch = conn.get_arch()
+        dom_emulator = conn.get_dom_emulator()
+
+        if dom_emulator != self.get_emulator(dom_arch):
+            raise libvirtError('Destination host emulator is different. Cannot be migrated')
+
+        dom.migrate(self.wvm, flags, None, None, 0)
 
     def graphics_type(self, name):
         inst = self.get_instance(name)
@@ -150,8 +171,8 @@ class wvmInstance(wvmConnect):
     def resume(self):
         self.instance.resume()
 
-    def delete(self):
-        self.instance.undefine()
+    def delete(self, flags=0):
+        self.instance.undefineFlags(flags)
 
     def _XMLDesc(self, flag):
         return self.instance.XMLDesc(flag)
@@ -185,6 +206,25 @@ class wvmInstance(wvmConnect):
         cur_vcpu = util.get_xml_path(self._XMLDesc(0), "/domain/vcpu/@current")
         if cur_vcpu:
             return int(cur_vcpu)
+
+    def get_arch(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@arch")
+
+    def get_machine_type(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@machine")
+
+    def get_dom_emulator(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/devices/emulator")
+
+    def get_nvram(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/os/nvram")
+
+    def get_loader(self):
+        xml = self._XMLDesc(0)
+        loader = util.get_xml_path(xml, "/domain/os/loader")
+        type = util.get_xml_path(xml, "/domain/os/loader/@type")
+        readonly = util.get_xml_path(xml, "/domain/os/loader/@readonly")
+        return {"loader": loader, "type": type, "readonly": readonly}
 
     def get_vcpus(self):
         vcpus = OrderedDict()
@@ -942,12 +982,10 @@ class wvmInstance(wvmConnect):
         return self.instance.hasManagedSaveImage(0)
 
     def get_wvmStorage(self, pool):
-        storage = wvmStorage(self.host,
-                             self.login,
-                             self.passwd,
-                             self.conn,
-                             pool)
-        return storage
+        return wvmStorage(self.host, self.login, self.passwd, self.conn, pool)
+
+    def get_wvmStorages(self):
+        return wvmStorages(self.host, self.login, self.passwd, self.conn)
 
     def fix_mac(self, mac):
         if ":" in mac:
@@ -961,11 +999,31 @@ class wvmInstance(wvmConnect):
         clone_dev_path = []
 
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
+        tree = etree.fromstring(xml)
         name = tree.find('name')
         name.text = clone_data['name']
         uuid = tree.find('uuid')
         tree.remove(uuid)
+
+        src_nvram_path = self.get_nvram()
+        if src_nvram_path:
+            # Change XML for nvram
+            nvram = tree.find('os/nvram')
+            nvram.getparent().remove(nvram)
+
+            # NVRAM CLONE: create pool if nvram is not in a pool. then clone it
+            src_nvram_name = os.path.basename(src_nvram_path)
+            nvram_dir = os.path.dirname(src_nvram_path)
+            nvram_pool_name = os.path.basename(nvram_dir)
+            try:
+                self.get_volume_by_path(src_nvram_path)
+            except libvirtError:
+                stg_conn = self.get_wvmStorages()
+                stg_conn.create_storage('dir', nvram_pool_name, None, nvram_dir)
+
+            new_nvram_name = "%s_VARS" % clone_data['name']
+            nvram_stg = self.get_wvmStorage(nvram_pool_name)
+            nvram_stg.clone_volume(src_nvram_name, new_nvram_name, file_suffix='fd')
 
         for num, net in enumerate(tree.findall('devices/interface')):
             elm = net.find('mac')
@@ -1015,7 +1073,7 @@ class wvmInstance(wvmConnect):
                                                 <lazy_refcounts/>
                                             </features>
                                         </target>
-                                    </volume>""" % (target_file, vol_format, owner['uid'], owner['guid'])
+                                    </volume>""" % (target_file, vol_format, OWNER['uid'], OWNER['guid'])
 
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)

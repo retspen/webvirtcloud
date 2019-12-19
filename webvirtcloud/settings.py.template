@@ -149,11 +149,31 @@ SHOW_PROFILE_EDIT_PASSWORD = False
 # available: default (grid), list
 VIEW_ACCOUNTS_STYLE = 'grid'
 
-# available: default (grouped), nongrouped
+# available list style: default (grouped), nongrouped
 VIEW_INSTANCES_LIST_STYLE = 'grouped'
 
+# available volume format: raw, qcow2, qcow
 INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
+
+# available bus types: virtio, scsi, ide, usb, sata
 INSTANCE_VOLUME_DEFAULT_BUS = 'virtio'
+
+#SCSI types: 'virtio-scsi', 'lsilogic'
+INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER = 'virtio-scsi'
+
+# Volume optionals: two variable: disk driver type is file and network(rbd, iscsi),
+# optionals : discard='unmap|ignore', detect_zeroes='on|off|unmap', copy_on_read='on|off'
+# Example: {"file": "discard='unmap' copy_on_read='on'", "network": "detect_zeroes='unmap'"}
+INSTANCE_VOLUME_DEFAULT_DRIVER_OPTS = {"file": "", "network": ""}
+
+# available cache types: none, unsafe, writeback, writethrough
 INSTANCE_VOLUME_DEFAULT_CACHE = 'directsync'
+
 # up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)
 INSTANCE_VOLUME_DEFAULT_OWNER = {'uid': 0, 'guid': 0}
+
+# Cpu modes: host-model, host-passthrough, custom
+INSTANCE_CPU_DEFAULT_MODE = 'host-model'
+
+# Chipset/Machine: pc or q35 for x86_64
+INSTANCE_MACHINE_DEFAULT_TYPE = 'q35'

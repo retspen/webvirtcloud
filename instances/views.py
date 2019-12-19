@@ -22,7 +22,7 @@ from vrtManager.connection import connection_manager
 from vrtManager.create import wvmCreate
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
-from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE
+from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM
 from logs.views import addlogmsg
 from django.conf import settings
 from django.contrib import messages
@@ -230,20 +230,25 @@ def instance(request, compute_id, vname):
         else:
             return network_source_pack[0], 'net'
 
-    def migrate_instance(new_compute, instance, live=False, unsafe=False, xml_del=False, offline=False):
+    def migrate_instance(new_compute, instance, live=False, unsafe=False, xml_del=False, offline=False, autoconverge=False, compress=False, postcopy=False):
         status = connection_manager.host_is_up(new_compute.type, new_compute.hostname)
         if not status:
             return
         if new_compute == instance.compute:
             return
-        conn_migrate = wvmInstances(new_compute.hostname,
-                                    new_compute.login,
-                                    new_compute.password,
-                                    new_compute.type)
-        conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline)
+        try:
+            conn_migrate = wvmInstances(new_compute.hostname,
+                                        new_compute.login,
+                                        new_compute.password,
+                                        new_compute.type)
+
+            conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline, autoconverge, compress, postcopy)
+        finally:
+            conn_migrate.close()
+
         instance.compute = new_compute
         instance.save()
-        conn_migrate.close()
+
         conn_new = wvmInstance(new_compute.hostname,
                                new_compute.login,
                                new_compute.password,
@@ -265,6 +270,10 @@ def instance(request, compute_id, vname):
         autostart = conn.get_autostart()
         bootmenu = conn.get_bootmenu()
         boot_order = conn.get_bootorder()
+        arch = conn.get_arch()
+        machine = conn.get_machine_type()
+        firmware = conn.get_loader()
+        nvram = conn.get_nvram()
         vcpu = conn.get_vcpu()
         cur_vcpu = conn.get_cur_vcpu()
         vcpus = conn.get_vcpus()
@@ -330,8 +339,8 @@ def instance(request, compute_id, vname):
         # Host resources
         vcpu_host = len(vcpu_range)
         memory_host = conn.get_max_memory()
-        bus_host = conn.get_disk_bus_types()
-        videos_host = conn.get_video_models()
+        bus_host = conn.get_disk_bus_types(arch, machine)
+        videos_host = conn.get_video_models(arch, machine)
         networks_host = sorted(conn.get_networks())
         interfaces_host = sorted(conn.get_ifaces())
         nwfilters_host = conn.get_nwfilters()
@@ -374,7 +383,11 @@ def instance(request, compute_id, vname):
                     for snap in snapshots:
                         conn.snapshot_delete(snap['name'])
                     conn.delete_all_disks()
-                conn.delete()
+
+                if request.POST.get('delete_nvram', ''):
+                    conn.delete(VIR_DOMAIN_UNDEFINE_NVRAM)
+                else:
+                    conn.delete(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
 
                 instance = Instance.objects.get(compute_id=compute_id, name=vname)
                 instance_name = instance.name
@@ -799,16 +812,24 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(request.get_full_path() + '#options')
 
                 if 'migrate' in request.POST:
+
                     compute_id = request.POST.get('compute_id', '')
                     live = request.POST.get('live_migrate', False)
                     unsafe = request.POST.get('unsafe_migrate', False)
                     xml_del = request.POST.get('xml_delete', False)
                     offline = request.POST.get('offline_migrate', False)
+                    autoconverge = request.POST.get('autoconverge', False)
+                    compress = request.POST.get('compress', False)
+                    postcopy = request.POST.get('postcopy', False)
 
                     new_compute = Compute.objects.get(id=compute_id)
-                    migrate_instance(new_compute, instance, live, unsafe, xml_del, offline)
-
-                    return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
+                    try:
+                        migrate_instance(new_compute, instance, live, unsafe, xml_del, offline)
+                        return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
+                    except libvirtError as err:
+                        messages.error(request, err)
+                        addlogmsg(request.user.username, instance.name, err)
+                        return HttpResponseRedirect(request.get_full_path() + '#migrate')
 
                 if 'change_network' in request.POST:
                     msg = _("Change network")
@@ -942,16 +963,17 @@ def instance(request, compute_id, vname):
                         error_messages.append(msg)
                     else:
                         new_instance = Instance(compute_id=compute_id, name=clone_data['name'])
-                        new_instance.save()
+                        #new_instance.save()
                         try:
                             new_uuid = conn.clone_instance(clone_data)
                             new_instance.uuid = new_uuid
                             new_instance.save()
                         except Exception as e:
-                            new_instance.delete()
+                            #new_instance.delete()
                             raise e
-                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
-                        userinstance.save()
+
+                        user_instance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
+                        user_instance.save()
 
                         msg = _("Clone of '%s'" % instance.name)
                         addlogmsg(request.user.username, new_instance.name, msg)
@@ -1226,7 +1248,8 @@ def inst_graph(request, compute_id, vname):
 
 
 def _get_dhcp_mac_address(vname):
-    dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
+
+    dhcp_file = settings.BASE_DIR + '/dhcpd.conf'
     mac = ''
     if os.path.isfile(dhcp_file):
         with open(dhcp_file, 'r') as f:

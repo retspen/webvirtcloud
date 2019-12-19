@@ -226,7 +226,7 @@ def get_volumes(request, compute_id, pool):
                           compute.type,
                           pool)
         conn.refresh()
+        data['vols'] = sorted(conn.get_volumes())
     except libvirtError:
         pass
-    data['vols'] = sorted(conn.get_volumes())
     return HttpResponse(json.dumps(data))

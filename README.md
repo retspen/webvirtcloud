@@ -72,6 +72,10 @@ Setup libvirt and KVM on server
 ```bash
 wget -O - https://clck.ru/9V9fH | sudo sh
 ```
+Done!!
+
+Go to http://serverip and you should see the login screen.
+
 
 ### Install WebVirtCloud panel (CentOS)
 
@@ -268,7 +272,7 @@ datasource:
 
 ### How To Update
 ```bash
-sudo virtualenv venv
+cd <installation-directory>
 sudo source venv/bin/activate
 git pull
 pip install -U -r conf/requirements.txt 

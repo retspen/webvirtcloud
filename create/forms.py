@@ -33,8 +33,9 @@ class FlavorAddForm(forms.Form):
 class NewVMForm(forms.Form):
     name = forms.CharField(error_messages={'required': _('No Virtual Machine name has been entered')},
                            max_length=64)
+    firmware = forms.CharField(max_length=50, required=False)
     vcpu = forms.IntegerField(error_messages={'required': _('No VCPU has been entered')})
-    host_model = forms.BooleanField(required=False)
+    vcpu_mode = forms.CharField(max_length=20, required=False)
     disk = forms.IntegerField(required=False)
     memory = forms.IntegerField(error_messages={'required': _('No RAM size has been entered')})
     networks = forms.CharField(error_messages={'required': _('No Network pool has been choosen')})
@@ -48,8 +49,9 @@ class NewVMForm(forms.Form):
     virtio = forms.BooleanField(required=False)
     qemu_ga = forms.BooleanField(required=False)
     mac = forms.CharField(required=False)
-    console_pass = forms.CharField(required=False,empty_value="", widget=forms.PasswordInput())
-    video = forms.CharField(error_messages={'required': _('Please select a graphic display')})
+    console_pass = forms.CharField(required=False, empty_value="", widget=forms.PasswordInput())
+    graphics = forms.CharField(error_messages={'required': _('Please select a graphics type')})
+    video = forms.CharField(error_messages={'required': _('Please select a video driver')})
     listener_addr = forms.ChoiceField(required=True, widget=forms.RadioSelect, choices=QEMU_CONSOLE_LISTEN_ADDRESSES)
 
     def clean_name(self):

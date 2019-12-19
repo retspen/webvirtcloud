@@ -10,7 +10,7 @@
     <div class="row">
         <div class="col-lg-12">
             {% if request.user.is_superuser %}
-                 <a href="{% url 'create_instance' compute.id %}" type="button" class="btn btn-success btn-header pull-right" data-toggle="modal">
+                 <a href="{% url 'create_instance_select_type' compute.id %}" type="button" class="btn btn-success btn-header pull-right" data-toggle="modal">
                     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
                  </a>
             {% endif %}
@@ -161,7 +161,7 @@
 <script src="{% static "js/sortable.min.js" %}"></script>
 <script>
     function open_console(uuid) {
-        window.open("{% url 'console' %}?token=" + uuid, "", "width=850,height=485");
+        window.open("{% url 'console' %}?token=" + uuid, "", "width=850,height=685");
     }
 </script>
 <script>
@@ -189,12 +189,4 @@
         window.location = "/instances/" + compute + "/" + instance + "/#clone";
     }
 </script>
-{% if request.user.is_superuser %}
-    <script>
-        function goto_compute() {
-            var compute = $("#compute_select").val();
-            window.location.href = "{% url 'create_instance' 1 %}".replace(1, compute);
-        }
-    </script>
-{% endif %}
 {% endblock %}
