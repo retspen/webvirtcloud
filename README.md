@@ -272,7 +272,7 @@ datasource:
 
 ### How To Update
 ```bash
-sudo virtualenv venv
+cd <installation-directory>
 sudo source venv/bin/activate
 git pull
 pip install -U -r conf/requirements.txt 
