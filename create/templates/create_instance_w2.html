@@ -250,12 +250,14 @@
                                                                         <input type="checkbox" name="qemu_ga" value="true" checked>
                                                                     </div>
                                                                 </div>
+                                                                {% if virtio_support %}
                                                                 <div class="form-group">
                                                                     <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="checkbox" name="virtio" value="true" checked>
+                                                                        <input type="checkbox" name="virtio" value="{{ virtio_support }}" checked>
                                                                     </div>
                                                                 </div>
+                                                                {% endif %}
                                                         </div>
                                                         <div class="modal-footer">
                                                             <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
@@ -468,12 +470,14 @@
                             <input type="checkbox" name="qemu_ga" value="true" checked>
                         </div>
                     </div>
+                    {% if virtio_support %}
                     <div class="form-group">
                         <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
-                        <div class="col-sm-7">
-                            <input type="checkbox" name="virtio" value="true" checked>
+                        <div class="col-sm-6">
+                            <input type="checkbox" name="virtio" value="{{ virtio_support }}" checked>
                         </div>
                     </div>
+                    {% endif %}
                     <div class="form-group">
                     <div class="col-sm-7 col-sm-offset-3">
                     {% if storages %}
@@ -668,12 +672,14 @@
                                 <input type="checkbox" name="qemu_ga" value="true" checked>
                             </div>
                         </div>
+                        {% if virtio_support %}
                         <div class="form-group">
                             <label class="col-sm-3 control-label">{% trans "VirtIO" %}</label>
-                            <div class="col-sm-7">
-                                <input type="checkbox" name="virtio" value="true" checked>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="virtio" value="{{ virtio_support }}" checked>
                             </div>
                         </div>
+                        {% endif %}
                         <div class="form-group">
                             <div class="col-sm-7 col-sm-offset-3">
                             {% if storages %}

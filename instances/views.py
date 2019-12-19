@@ -236,14 +236,19 @@ def instance(request, compute_id, vname):
             return
         if new_compute == instance.compute:
             return
-        conn_migrate = wvmInstances(new_compute.hostname,
+        try:
+            conn_migrate = wvmInstances(new_compute.hostname,
                                     new_compute.login,
                                     new_compute.password,
                                     new_compute.type)
-        conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline)
+
+            conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline)
+        finally:
+            conn_migrate.close()
+
         instance.compute = new_compute
         instance.save()
-        conn_migrate.close()
+
         conn_new = wvmInstance(new_compute.hostname,
                                new_compute.login,
                                new_compute.password,
@@ -267,6 +272,8 @@ def instance(request, compute_id, vname):
         boot_order = conn.get_bootorder()
         arch = conn.get_arch()
         machine = conn.get_machine_type()
+        firmware = conn.get_loader()
+        nvram = conn.get_nvram()
         vcpu = conn.get_vcpu()
         cur_vcpu = conn.get_cur_vcpu()
         vcpus = conn.get_vcpus()
@@ -290,7 +297,6 @@ def instance(request, compute_id, vname):
             insort(memory_range, memory)
         if cur_memory not in memory_range:
             insort(memory_range, cur_memory)
-        nvram = conn.get_nvram()
         telnet_port = conn.get_telnet_port()
         console_type = conn.get_console_type()
         console_port = conn.get_console_port()
@@ -949,16 +955,17 @@ def instance(request, compute_id, vname):
                         error_messages.append(msg)
                     else:
                         new_instance = Instance(compute_id=compute_id, name=clone_data['name'])
-                        new_instance.save()
+                        #new_instance.save()
                         try:
                             new_uuid = conn.clone_instance(clone_data)
                             new_instance.uuid = new_uuid
                             new_instance.save()
                         except Exception as e:
-                            new_instance.delete()
+                            #new_instance.delete()
                             raise e
-                        userinstance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
-                        userinstance.save()
+
+                        user_instance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
+                        user_instance.save()
 
                         msg = _("Clone of '%s'" % instance.name)
                         addlogmsg(request.user.username, new_instance.name, msg)

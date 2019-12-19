@@ -111,6 +111,7 @@ def create_instance(request, compute_id, arch, machine):
         dom_caps = conn.get_dom_capabilities(arch, machine)
         caps = conn.get_capabilities(arch)
 
+        virtio_support = conn.is_supports_virtio(arch, machine)
         hv_supports_uefi = conn.supports_uefi_xml(dom_caps["loader_enums"])
         # Add BIOS
         label = conn.label_for_firmware_path(arch, None)
@@ -149,6 +150,7 @@ def create_instance(request, compute_id, arch, machine):
                 delete_flavor.delete()
                 return HttpResponseRedirect(request.get_full_path())
             if 'create' in request.POST:
+                firmware = dict()
                 volume_list = list()
                 is_disk_created = False
                 clone_path = ""
@@ -176,7 +178,8 @@ def create_instance(request, compute_id, arch, machine):
                                     volume['path'] = path
                                     volume['type'] = conn.get_volume_type(path)
                                     volume['device'] = 'disk'
-                                    volume['bus'] = INSTANCE_VOLUME_DEFAULT_BUS
+                                    if data['virtio']:
+                                        volume['bus'] = INSTANCE_VOLUME_DEFAULT_BUS
                                     volume_list.append(volume)
                                     is_disk_created = True
                                 except libvirtError as lib_err:
@@ -193,7 +196,8 @@ def create_instance(request, compute_id, arch, machine):
                                 volume['path'] = clone_path
                                 volume['type'] = conn.get_volume_type(clone_path)
                                 volume['device'] = 'disk'
-                                volume['bus'] = INSTANCE_VOLUME_DEFAULT_BUS
+                                if data['virtio']:
+                                    volume['bus'] = INSTANCE_VOLUME_DEFAULT_BUS
                                 volume_list.append(volume)
                                 is_disk_created = True
                         else:
@@ -215,12 +219,23 @@ def create_instance(request, compute_id, arch, machine):
                         if data['cache_mode'] not in conn.get_cache_modes():
                             error_msg = _("Invalid cache mode")
                             error_messages.append(error_msg)
+                        if 'UEFI' in data["firmware"]:
+                            firmware["loader"] = data["firmware"].split(":")[1].strip()
+                            firmware["secure"] = 'no'
+                            firmware["readonly"] = 'yes'
+                            firmware["type"] = 'pflash'
+                            if 'secboot' in firmware["loader"] and machine != 'q35':
+                                messages.warning(request, "Changing machine type from '%s' to 'q35' "
+                                                          "which is required for UEFI secure boot." % machine)
+                                machine = 'q35'
+                                firmware["secure"] = 'yes'
+
                         if not error_messages:
                             uuid = util.randomUUID()
                             try:
                                 conn.create_instance(name=data['name'], memory=data['memory'], vcpu=data['vcpu'],
                                                      vcpu_mode=data['vcpu_mode'], uuid=uuid, arch=arch, machine=machine,
-                                                     firmware=data["firmware"],
+                                                     firmware=firmware,
                                                      images=volume_list, cache_mode=data['cache_mode'],
                                                      networks=data['networks'], virtio=data['virtio'],
                                                      listen_addr=data["listener_addr"], nwfilter=data["nwfilter"],

@@ -189,8 +189,16 @@ class wvmCreate(wvmConnect):
             xml += """    <boot dev='hd'/>
                           <boot dev='cdrom'/>
                           <bootmenu enable='yes'/>"""
-            if 'UEFI' in firmware:
-                xml += """<loader readonly='yes' type='pflash'>%s</loader>""" % firmware.split(":")[1].strip()
+            if firmware:
+                if firmware["secure"] == 'yes':
+                    xml += """<loader readonly='%s' type='%s' secure='%s'>%s</loader>""" % (firmware["readonly"],
+                                                                                            firmware["type"],
+                                                                                            firmware["secure"],
+                                                                                            firmware["loader"])
+                if firmware["secure"] == 'no':
+                    xml += """<loader readonly='%s' type='%s'>%s</loader>""" % (firmware["readonly"],
+                                                                                firmware["type"],
+                                                                                firmware["loader"])
             xml += """</os>"""
 
         if caps["features"]:
@@ -201,6 +209,8 @@ class wvmCreate(wvmConnect):
                 xml += """<apic/>"""
             if 'pae' in caps["features"]:
                 xml += """<pae/>"""
+            if 'yes' == firmware["secure"]:
+                xml += """<smm state="on"/>"""
             xml += """</features>"""
 
         if vcpu_mode == "host-model":
@@ -211,8 +221,8 @@ class wvmCreate(wvmConnect):
             pass
         else:
             xml += """<cpu mode='custom' match='exact' check='none'>
-                        <model fallback='allow'>{}</model>
-                      </cpu>""".format(vcpu_mode)
+                        <model fallback='allow'>%s</model>""" % vcpu_mode
+            xml += """</cpu>"""
 
         xml += """
                   <clock offset="utc"/>
@@ -255,14 +265,16 @@ class wvmCreate(wvmConnect):
                 xml += """ <driver name='qemu' type='%s' cache='%s' %s/>""" % (volume['type'], cache_mode, OPTS.get("file", ''))
                 xml += """ <source file='%s'/>""" % volume['path']
 
-            if volume['bus'] == 'virtio':
-                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), volume['bus'])
-            elif volume['bus'] == 'ide':
-                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), volume['bus'])
-            elif volume['bus'] == 'fdc':
-                xml += """<target dev='fd%s' bus='%s'/>""" % (fd_disk_letters.pop(0), volume['bus'])
+            if volume.get('bus') == 'virtio':
+                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), volume.get('bus'))
+            elif volume.get('bus') == 'ide':
+                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), volume.get('bus'))
+            elif volume.get('bus') == 'fdc':
+                xml += """<target dev='fd%s' bus='%s'/>""" % (fd_disk_letters.pop(0), volume.get('bus'))
+            elif volume.get('bus') == 'sata' or volume.get('bus') == 'scsi':
+                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), volume.get('bus'))
             else:
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), volume['bus'])
+                xml += """<target dev='sd%s'/>""" % sd_disk_letters.pop(0)
             xml += """</disk>"""
         if add_cd:
             xml += """<disk type='file' device='cdrom'>
@@ -279,7 +291,7 @@ class wvmCreate(wvmConnect):
                 xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), 'virtio')
             xml += """</disk>"""
 
-        if volume['bus'] == 'scsi':
+        if volume.get('bus') == 'scsi':
             xml += """<controller type='scsi' model='%s'/>""" % INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
 
         for net in networks.split(','):
@@ -299,13 +311,15 @@ class wvmCreate(wvmConnect):
             if not console_pass == "":
                 console_pass = "passwd='" + console_pass + "'"
 
-        xml += """<input type='mouse' bus='virtio'/>"""
-        xml += """<input type='tablet' bus='virtio'/>"""
+        if 'usb' in dom_caps['disk_bus']:
+            xml += """<input type='mouse' bus='{}'/>""".format('virtio' if virtio else 'usb')
+            xml += """<input type='tablet' bus='{}'/>""".format('virtio' if virtio else 'usb')
+
         xml += """
                 <graphics type='%s' port='-1' autoport='yes' %s listen='%s'/>
                 <console type='pty'/> """ % (graphics, console_pass, listen_addr)
 
-        if qemu_ga:
+        if qemu_ga and virtio:
             xml += """ <channel type='unix'>
                             <target type='virtio' name='org.qemu.guest_agent.0'/>
                        </channel>"""
