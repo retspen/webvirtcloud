@@ -219,6 +219,7 @@ def create_instance(request, compute_id, arch, machine):
                         if data['cache_mode'] not in conn.get_cache_modes():
                             error_msg = _("Invalid cache mode")
                             error_messages.append(error_msg)
+
                         if 'UEFI' in data["firmware"]:
                             firmware["loader"] = data["firmware"].split(":")[1].strip()
                             firmware["secure"] = 'no'

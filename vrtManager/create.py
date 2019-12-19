@@ -209,7 +209,7 @@ class wvmCreate(wvmConnect):
                 xml += """<apic/>"""
             if 'pae' in caps["features"]:
                 xml += """<pae/>"""
-            if 'yes' == firmware["secure"]:
+            if 'yes' == firmware.get("secure", 'no'):
                 xml += """<smm state="on"/>"""
             xml += """</features>"""
 
