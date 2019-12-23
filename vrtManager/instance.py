@@ -11,6 +11,7 @@ try:
         VIR_MIGRATE_COMPRESSED, \
         VIR_MIGRATE_AUTO_CONVERGE, \
         VIR_MIGRATE_POSTCOPY
+    from libvirt import VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
@@ -148,6 +149,7 @@ class wvmInstances(wvmConnect):
 class wvmInstance(wvmConnect):
     def __init__(self, host, login, passwd, conn, vname):
         wvmConnect.__init__(self, host, login, passwd, conn)
+        self._ip_cache = None
         self.instance = self.get_instance(vname)
 
     def start(self):
@@ -276,17 +278,73 @@ class wvmInstance(wvmConnect):
         range_pcpus = xrange(1, int(pcpus + 1))
         return range_pcpus
 
-    def get_net_device(self):
-        def get_mac_ipaddr(net, mac_host):
-            def fixed(doc):
-                for net in doc.xpath('/network/ip/dhcp/host'):
-                    mac = net.xpath('@mac')[0]
-                    host = net.xpath('@ip')[0]
-                    if mac == mac_host:
-                        return host
-                return None
+    def get_interface_addresses(self, iface_mac):
+        if self._ip_cache is None:
+            self.refresh_interface_addresses()
 
-            return util.get_xml_path(net.XMLDesc(0), func=fixed)
+        qemuga = self._ip_cache["qemuga"]
+        arp = self._ip_cache["arp"]
+        leases = []
+
+        def extract_dom(info):
+            ipv4 = None
+            ipv6 = None
+            for addrs in info.values():
+                if addrs["hwaddr"] != iface_mac:
+                    continue
+                if not addrs["addrs"]:
+                    continue
+                for addr in addrs["addrs"]:
+                    if addr["type"] == 0:
+                        ipv4 = addr["addr"]
+                    elif (addr["type"] == 1 and
+                          not str(addr["addr"]).startswith("fe80")):
+                        ipv6 = addr["addr"] + "/" + str(addr["prefix"])
+            return ipv4, ipv6
+
+        def extract_lease(info):
+            ipv4 = None
+            ipv6 = None
+            if info["mac"] == iface_mac:
+                if info["type"] == 0:
+                    ipv4 = info["ipaddr"]
+                elif info["type"] == 1:
+                    ipv6 = info["ipaddr"]
+            return ipv4, ipv6
+
+        for ips in ([qemuga] + leases + [arp]):
+            if "expirytime" in ips:
+                ipv4, ipv6 = extract_lease(ips)
+            else:
+                ipv4, ipv6 = extract_dom(ips)
+            if ipv4 or ipv6:
+                return ipv4, ipv6
+        return None, None
+
+    def _get_interface_addresses(self, source):
+        #("Calling interfaceAddresses source=%s", source)
+        try:
+            return self.instance.interfaceAddresses(source)
+        except Exception as e:
+            #log.debug("interfaceAddresses failed: %s", str(e))
+            pass
+        return {}
+
+    def refresh_interface_addresses(self):
+
+        self._ip_cache = {"qemuga": {}, "arp": {}}
+
+        if not self.get_status() == 1:
+            return
+
+        if self.agent_ready():
+            self._ip_cache["qemuga"] = self._get_interface_addresses(
+                VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
+
+        arp_flag = 3 # libvirt."VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP"
+        self._ip_cache["arp"] = self._get_interface_addresses(arp_flag)
+
+    def get_net_devices(self):
 
         def networks(ctx):
             result = []
@@ -310,14 +368,14 @@ class wvmInstance(wvmConnect):
                     outbound = {'average': out_av, 'peak': out_peak, 'burst': out_burst}
 
                 try:
-                    net = self.get_network(nic_inst)
-                    ip = get_mac_ipaddr(net, mac_inst)
-                except libvirtError:
-                    ip = None
+                    ipv4, ipv6 = self.get_interface_addresses(mac_inst)
+                except:
+                    ipv4, ipv6 = None, None
                 result.append({'mac': mac_inst,
                                'nic': nic_inst,
                                'target': target_inst,
-                               'ip': ip,
+                               'ipv4': ipv4,
+                               'ipv6': ipv6,
                                'filterref': filterref_inst,
                                'inbound': inbound,
                                'outbound': outbound,
@@ -709,7 +767,7 @@ class wvmInstance(wvmConnect):
                 tx_diff_usage = (tx_use_now - tx_use_ago) * 8
                 dev_usage.append({'dev': i, 'rx': rx_diff_usage, 'tx': tx_diff_usage})
         else:
-            for i, dev in enumerate(self.get_net_device()):
+            for i, dev in enumerate(self.get_net_devices()):
                 dev_usage.append({'dev': i, 'rx': 0, 'tx': 0})
         return dev_usage
 
@@ -1310,5 +1368,30 @@ class wvmInstance(wvmConnect):
                 band_el.remove(direct)
 
         self.wvm.defineXML(etree.tostring(tree))
+
+    def agent_ready(self):
+        """
+        Return connected state of an agent.
+        """
+        # we need to get a fresh agent channel object on each call so it
+        # reflects the current state
+        def _get_agent(doc):
+            """
+            Return agent channel object if it is defined.
+            """
+            for channel in doc.xpath('/domain/devices/channel'):
+                type = channel.get("type")
+                target = channel.find("target")
+                target_name = target.get("name")
+                if type == "unix" and target_name == "org.qemu.guest_agent.0":
+                    return channel
+            return None
+
+        dev = util.get_xml_path(self._XMLDesc(0), func=_get_agent)
+        state = dev.xpath("target/@state")[0]
+        if dev and state == "connected":
+            return True
+        return False
+
 
 

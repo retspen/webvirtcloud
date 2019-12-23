@@ -89,6 +89,7 @@ class wvmNetworks(wvmConnect):
 class wvmNetwork(wvmConnect):
     def __init__(self, host, login, passwd, conn, net):
         wvmConnect.__init__(self, host, login, passwd, conn)
+        self.leases = None
         self.net = self.get_network(net)
         self.parent_count = len(self.get_ip_networks())
 
@@ -347,3 +348,15 @@ class wvmNetwork(wvmConnect):
 
     def edit_network(self, new_xml):
         self.wvm.networkDefineXML(new_xml)
+
+    def refresh_dhcp_leases(self):
+        try:
+            self.leases = self.net.DHCPLeases()
+        except Exception as e:
+            self.leases = []
+            raise "Error getting %s DHCP leases: %s" % self, str(e)
+
+    def get_dhcp_leases(self):
+        if self.leases is None:
+            self.refresh_dhcp_leases()
+        return self.leases

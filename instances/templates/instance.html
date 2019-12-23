@@ -876,7 +876,8 @@
                                     <tr>
                                         <th>{% trans 'Name' %}</th>
                                         <th>{% trans 'MAC' %}</th>
-                                        <th>{% trans 'NIC' %}</th>
+                                        <th>{% trans 'IP Address' %}</th>
+                                        <th>{% trans 'Source' %}</th>
                                         <th>{% trans 'Filter' %}</th>
                                         <th>{% trans 'Qos' %}</th>
                                         <th>{% trans 'Actions' %}</th>
@@ -886,9 +887,10 @@
                                         {% for network in networks %}
                                         <tr>
                                             <td class="col-sm-2"><label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label></td>
-                                            <td><input class="form-control" type="text" value="{{ network.mac }}" readonly/></td>
-                                            <td><input class="form-control" type="text" value="{{ network.nic }}" readonly/></td>
-                                            <td><input class="form-control" type="text" value="{{ network.filterref }}" readonly/></td>
+                                            <td><label>{{ network.mac }}</label></td>
+                                            <td><label>{{ network.ipv4|default:"unknown" }}</label></td>
+                                            <td><label>{{ network.nic }}</label></td>
+                                            <td><label>{{ network.filterref|default:"None" }}</label></td>
                                             <td>
                                                 <form class="form-horizontal" method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                                     <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>

@@ -266,6 +266,7 @@ def instance(request, compute_id, vname):
                            compute.password,
                            compute.type,
                            vname)
+
         status = conn.get_status()
         autostart = conn.get_autostart()
         bootmenu = conn.get_bootmenu()
@@ -282,7 +283,7 @@ def instance(request, compute_id, vname):
         cur_memory = conn.get_cur_memory()
         title = conn.get_title()
         description = conn.get_description()
-        networks = conn.get_net_device()
+        networks = conn.get_net_devices()
         qos = conn.get_all_qos()
         disks = conn.get_disk_devices()
         media = conn.get_media_devices()

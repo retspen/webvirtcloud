@@ -686,7 +686,7 @@ class wvmConnect(object):
                 instance.append(dom.name())
         return instance
 
-    def get_net_device(self):
+    def get_net_devices(self):
         netdevice = []
 
         def get_info(doc):
