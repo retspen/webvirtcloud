@@ -878,6 +878,7 @@
                                         <th>{% trans 'MAC' %}</th>
                                         <th>{% trans 'IP Address' %}</th>
                                         <th>{% trans 'Source' %}</th>
+                                        <th>{% trans 'LinkState' %}</th>
                                         <th>{% trans 'Filter' %}</th>
                                         <th>{% trans 'Qos' %}</th>
                                         <th>{% trans 'Actions' %}</th>
@@ -886,11 +887,20 @@
                                     <tbody>
                                         {% for network in networks %}
                                         <tr>
-                                            <td class="col-sm-2"><label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label></td>
-                                            <td><label>{{ network.mac }}</label></td>
-                                            <td><label>{{ network.ipv4|default:"unknown" }}</label></td>
-                                            <td><label>{{ network.nic }}</label></td>
-                                            <td><label>{{ network.filterref|default:"None" }}</label></td>
+                                            <td class="col-sm-1">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</td>
+                                            <td>{{ network.mac }}</td>
+                                            <td>{{ network.ipv4|default:"unknown" }}</td>
+                                            <td>{{ network.nic }}</td>
+                                            <td>
+                                            <form method="post">{% csrf_token %}
+                                                <input name="mac" value="{{ network.mac }}" hidden/>
+                                                <input name="set_link_state" value="{{ network.state }}" hidden/>
+                                                <input type="checkbox" {% if network.state == 'up' %} checked
+                                                {% endif %} onclick='submit();' />
+                                                {% trans 'active' %}
+                                            </form>
+                                            </td>
+                                            <td>{{ network.filterref|default:"None" }}</td>
                                             <td>
                                                 <form class="form-horizontal" method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                                     <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>

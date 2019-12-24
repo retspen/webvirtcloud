@@ -331,7 +331,6 @@ class wvmInstance(wvmConnect):
         return {}
 
     def refresh_interface_addresses(self):
-
         self._ip_cache = {"qemuga": {}, "arp": {}}
 
         if not self.get_status() == 1:
@@ -353,6 +352,7 @@ class wvmInstance(wvmConnect):
                 mac_inst = net.xpath('mac/@address')[0]
                 nic_inst = net.xpath('source/@network|source/@bridge|source/@dev')[0]
                 target_inst = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
+                link_state = 'up' if not net.xpath('link') else net.xpath('link/@state')[0]
                 filterref_inst = '' if not net.xpath('filterref/@filter') else net.xpath('filterref/@filter')[0]
                 if net.xpath('bandwidth/inbound'):
                     in_attr = net.xpath('bandwidth/inbound')[0]
@@ -374,6 +374,7 @@ class wvmInstance(wvmConnect):
                 result.append({'mac': mac_inst,
                                'nic': nic_inst,
                                'target': target_inst,
+                               'state': link_state,
                                'ipv4': ipv4,
                                'ipv6': ipv6,
                                'filterref': filterref_inst,
@@ -1275,6 +1276,24 @@ class wvmInstance(wvmConnect):
         new_xml = ElementTree.tostring(tree)
         self._defineXML(new_xml)
 
+    def set_link_state(self, mac_address, state):
+        tree = etree.fromstring(self._XMLDesc(0))
+        for interface in tree.findall('devices/interface'):
+            source = interface.find('mac')
+            if source.get('address') == mac_address:
+                link = interface.find('link')
+                if link is not None:
+                    interface.remove(link)
+                link_el = etree.Element("link")
+                link_el.attrib["state"] = state
+                interface.append(link_el)
+                new_xml = etree.tostring(interface)
+                if self.get_status() == 1:
+                    self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_LIVE)
+                    self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
+                if self.get_status() == 5:
+                    self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
+
     def _set_options(self, tree, options):
         for o in ['title', 'description']:
             option = tree.find(o)
@@ -1388,10 +1407,12 @@ class wvmInstance(wvmConnect):
             return None
 
         dev = util.get_xml_path(self._XMLDesc(0), func=_get_agent)
-        state = dev.xpath("target/@state")[0]
-        if dev and state == "connected":
-            return True
-        return False
+        if len(dev) > 0:
+            states = dev.xpath("target/@state")
+            state = states[0] if len(states) > 0 else ''
+            if state == "connected":
+                return True
+            return False
 
 
 

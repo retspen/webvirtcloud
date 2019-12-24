@@ -873,6 +873,15 @@ def instance(request, compute_id, vname):
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
+                if 'set_link_state' in request.POST:
+                    mac_address = request.POST.get('mac', '')
+                    state = request.POST.get('set_link_state')
+                    state = 'down' if state == 'up' else 'up'
+                    conn.set_link_state(mac_address, state)
+                    msg = _("Set Link State: {}".format(state))
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
                 if 'set_qos' in request.POST:
                     qos_dir = request.POST.get('qos_direction', '')
                     average = request.POST.get('qos_average') or 0
