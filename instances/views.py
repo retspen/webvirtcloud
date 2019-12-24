@@ -343,9 +343,14 @@ def instance(request, compute_id, vname):
         bus_host = conn.get_disk_bus_types(arch, machine)
         videos_host = conn.get_video_models(arch, machine)
         networks_host = sorted(conn.get_networks())
-        interfaces_host = sorted(conn.get_ifaces())
         nwfilters_host = conn.get_nwfilters()
         storages_host = sorted(conn.get_storages(True))
+
+        try:
+            interfaces_host = sorted(conn.get_ifaces())
+        except Exception as e:
+            addlogmsg(request.user.username, instance.name, e)
+            error_messages.append(e)
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
