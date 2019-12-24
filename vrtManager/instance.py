@@ -336,7 +336,7 @@ class wvmInstance(wvmConnect):
         if not self.get_status() == 1:
             return
 
-        if self.agent_ready():
+        if self.is_agent_ready():
             self._ip_cache["qemuga"] = self._get_interface_addresses(
                 VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
 
@@ -1381,19 +1381,37 @@ class wvmInstance(wvmConnect):
         tree = etree.fromstring(self._XMLDesc(0))
         for direct in tree.xpath("/domain/devices/interface/bandwidth/{}".format(direction)):
             band_el = direct.getparent()
-            interface_el = band_el.getparent() # parent bandwidth,it parent is interface
+            interface_el = band_el.getparent()  # parent bandwidth,its parent is interface
             parent_mac = interface_el.xpath('mac/@address')
             if parent_mac[0] == mac:
                 band_el.remove(direct)
 
         self.wvm.defineXML(etree.tostring(tree))
 
-    def agent_ready(self):
-        """
-        Return connected state of an agent.
-        """
-        # we need to get a fresh agent channel object on each call so it
-        # reflects the current state
+    def add_guest_agent(self):
+        channel_xml = """
+                        <channel type='unix'>
+                            <target type='virtio' name='org.qemu.guest_agent.0'/>
+                        </channel>
+                      """
+        if self.get_status() == 1:
+            self.instance.attachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_LIVE)
+            self.instance.attachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
+        if self.get_status() == 5:
+            self.instance.attachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
+
+    def remove_guest_agent(self):
+        tree = etree.fromstring(self._XMLDesc(0))
+        for target in tree.xpath("/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"):
+            parent = target.getparent()
+            channel_xml = etree.tostring(parent)
+            if self.get_status() == 1:
+                self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_LIVE)
+                self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
+            if self.get_status() == 5:
+                self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
+
+    def get_guest_agent(self):
         def _get_agent(doc):
             """
             Return agent channel object if it is defined.
@@ -1406,8 +1424,16 @@ class wvmInstance(wvmConnect):
                     return channel
             return None
 
-        dev = util.get_xml_path(self._XMLDesc(0), func=_get_agent)
-        if len(dev) > 0:
+        return util.get_xml_path(self._XMLDesc(0), func=_get_agent)
+
+    def is_agent_ready(self):
+        """
+        Return connected state of an agent.
+        """
+        # we need to get a fresh agent channel object on each call so it
+        # reflects the current state
+        dev = self.get_guest_agent()
+        if dev is not None:
             states = dev.xpath("target/@state")
             state = states[0] if len(states) > 0 else ''
             if state == "connected":

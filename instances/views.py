@@ -303,6 +303,8 @@ def instance(request, compute_id, vname):
         console_port = conn.get_console_port()
         console_keymap = conn.get_console_keymap()
         console_listen_address = conn.get_console_listen_addr()
+        guest_agent = False if conn.get_guest_agent() is None else True
+        guest_agent_ready = conn.is_agent_ready()
         video_model = conn.get_video_model()
         snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k: k['date'])
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
@@ -810,6 +812,17 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
             if request.user.is_superuser:
+                if 'set_guest_agent' in request.POST:
+                    status = request.POST.get('guest_agent')
+                    if status == 'True':
+                        conn.add_guest_agent()
+                    if status == 'False':
+                        conn.remove_guest_agent()
+
+                    msg = _("Set Quest Agent {}".format(status))
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#options')
+
                 if 'set_video_model' in request.POST:
                     video_model = request.POST.get('video_model', 'vga')
                     conn.set_video_model(video_model)
