@@ -1417,10 +1417,10 @@ class wvmInstance(wvmConnect):
             Return agent channel object if it is defined.
             """
             for channel in doc.xpath('/domain/devices/channel'):
-                type = channel.get("type")
+                ch_type = channel.get("type")
                 target = channel.find("target")
                 target_name = target.get("name")
-                if type == "unix" and target_name == "org.qemu.guest_agent.0":
+                if ch_type == "unix" and target_name == "org.qemu.guest_agent.0":
                     return channel
             return None
 

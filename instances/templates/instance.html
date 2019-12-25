@@ -13,15 +13,15 @@
         </div>
         <div>
             <div>
-                {% ifequal status 5 %}
+                {% if status == 5 %}
                    <span class="label label-danger">{% trans "Off" %}</span>
-                {% endifequal %}
-                {% ifequal status 1 %}
+                {% endif %}
+                {% if status == 1 %}
                     <span class="label label-success">{% trans "Active" %}</span>
-                {% endifequal %}
-                {% ifequal status 3 %}
+                {% endif %}
+                {% if status == 3 %}
                     <span class="label label-warning">{% trans "Suspend" %}</span>
-                {% endifequal %}
+                {% endif %}
                 |
                 {% if cur_vcpu %}
                     {{ cur_vcpu }} {% trans "Vcpu" %}
@@ -34,6 +34,22 @@
                 {% for disk in disks %}
                     {{ disk.size|filesizeformat }} {% trans "Disk" %} |
                 {% endfor %}
+                <button
+                    {% if guest_agent == True %}
+                        {% if guest_agent_ready == True %}
+                            class="btn btn-xs btn-success"
+                            title="Guest Agent Enabled & Connected"
+                        {% else %}
+                            class="btn btn-xs btn-default"
+                            title="Guest Agent Enabled but not Connected"
+                        {% endif %}
+                    {% else %}
+                        class="btn btn-xs btn-danger"
+                        title="Guest Agent Not Enabled & Not Connected"
+                    {% endif %} disabled>
+                        <span class="glyphicon glyphicon-flash"></span>
+                </button>
+                |
                 <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
                 <em>on</em>
                 <a href="{% url 'overview' compute.id %}"><span class="label label-primary">{{ compute.name }}{% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %} </span></a>
@@ -1437,11 +1453,15 @@
                         </div>
                         <div class="well">
                             <p>{% trans "To Enable/Disable Qemu Guest Agent. Status:" %}
+                            {% if status == 1 %}
                                 {% if guest_agent_ready %}
                                     <label class="label label-success">{% trans 'Connected' %}</label>
                                 {% else %}
                                     <label class="label label-danger">{% trans 'Disconnected' %}</label>
                                 {% endif %}</p>
+                            {% else %}
+                                <label class="label label-default">{% trans 'Unknown' %}</label>
+                            {% endif %}
                             <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                 <div class="form-group">
                                     <label for="guest_agent" class="col-sm-3 control-label">{% trans "Qemu Guest Agent" %}</label>
