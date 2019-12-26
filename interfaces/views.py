@@ -30,7 +30,7 @@ def interfaces(request, compute_id):
                              compute.type)
         ifaces = conn.get_ifaces()
         try:
-            netdevs = conn.get_net_device()
+            netdevs = conn.get_net_devices()
         except:
             netdevs = ['eth0', 'eth1']
 

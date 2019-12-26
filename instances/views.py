@@ -266,6 +266,7 @@ def instance(request, compute_id, vname):
                            compute.password,
                            compute.type,
                            vname)
+
         status = conn.get_status()
         autostart = conn.get_autostart()
         bootmenu = conn.get_bootmenu()
@@ -282,7 +283,7 @@ def instance(request, compute_id, vname):
         cur_memory = conn.get_cur_memory()
         title = conn.get_title()
         description = conn.get_description()
-        networks = conn.get_net_device()
+        networks = conn.get_net_devices()
         qos = conn.get_all_qos()
         disks = conn.get_disk_devices()
         media = conn.get_media_devices()
@@ -302,6 +303,8 @@ def instance(request, compute_id, vname):
         console_port = conn.get_console_port()
         console_keymap = conn.get_console_keymap()
         console_listen_address = conn.get_console_listen_addr()
+        guest_agent = False if conn.get_guest_agent() is None else True
+        guest_agent_ready = conn.is_agent_ready()
         video_model = conn.get_video_model()
         snapshots = sorted(conn.get_snapshot(), reverse=True, key=lambda k: k['date'])
         inst_xml = conn._XMLDesc(VIR_DOMAIN_XML_SECURE)
@@ -342,9 +345,14 @@ def instance(request, compute_id, vname):
         bus_host = conn.get_disk_bus_types(arch, machine)
         videos_host = conn.get_video_models(arch, machine)
         networks_host = sorted(conn.get_networks())
-        interfaces_host = sorted(conn.get_ifaces())
         nwfilters_host = conn.get_nwfilters()
         storages_host = sorted(conn.get_storages(True))
+
+        try:
+            interfaces_host = sorted(conn.get_ifaces())
+        except Exception as e:
+            addlogmsg(request.user.username, instance.name, e)
+            error_messages.append(e)
 
         if request.method == 'POST':
             if 'poweron' in request.POST:
@@ -616,7 +624,7 @@ def instance(request, compute_id, vname):
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'add_cdrom' in request.POST and allow_admin_or_not_template:
-                bus = request.POST.get('bus', 'ide')
+                bus = request.POST.get('bus', 'ide' if machine == 'pc' else 'sata')
                 target = get_new_disk_dev(media, disks, bus)
                 conn.attach_disk("", target, device='cdrom', cache='none', targetbus=bus)
                 msg = _('Add CD-ROM: ' + target)
@@ -804,6 +812,17 @@ def instance(request, compute_id, vname):
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
             if request.user.is_superuser:
+                if 'set_guest_agent' in request.POST:
+                    status = request.POST.get('guest_agent')
+                    if status == 'True':
+                        conn.add_guest_agent()
+                    if status == 'False':
+                        conn.remove_guest_agent()
+
+                    msg = _("Set Quest Agent {}".format(status))
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#options')
+
                 if 'set_video_model' in request.POST:
                     video_model = request.POST.get('video_model', 'vga')
                     conn.set_video_model(video_model)
@@ -864,6 +883,15 @@ def instance(request, compute_id, vname):
                     mac_address = request.POST.get('delete_network', '')
 
                     conn.delete_network(mac_address)
+                    addlogmsg(request.user.username, instance.name, msg)
+                    return HttpResponseRedirect(request.get_full_path() + '#network')
+
+                if 'set_link_state' in request.POST:
+                    mac_address = request.POST.get('mac', '')
+                    state = request.POST.get('set_link_state')
+                    state = 'down' if state == 'up' else 'up'
+                    conn.set_link_state(mac_address, state)
+                    msg = _("Set Link State: {}".format(state))
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 

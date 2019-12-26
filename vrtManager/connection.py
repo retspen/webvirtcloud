@@ -351,7 +351,7 @@ class wvmConnect(object):
     def get_dom_cap_xml(self, arch, machine):
         """ Return domain capabilities xml"""
         emulatorbin = self.get_emulator(arch)
-        virttype = self.get_hypervisors_domain_types()[arch][0]
+        virttype = 'kvm' if 'kvm' in self.get_hypervisors_domain_types()[arch] else 'qemu'
 
         machine_types = self.get_machine_types(arch)
         if not machine or machine not in machine_types:
@@ -686,7 +686,7 @@ class wvmConnect(object):
                 instance.append(dom.name())
         return instance
 
-    def get_net_device(self):
+    def get_net_devices(self):
         netdevice = []
 
         def get_info(doc):

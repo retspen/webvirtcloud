@@ -13,15 +13,15 @@
         </div>
         <div>
             <div>
-                {% ifequal status 5 %}
+                {% if status == 5 %}
                    <span class="label label-danger">{% trans "Off" %}</span>
-                {% endifequal %}
-                {% ifequal status 1 %}
+                {% endif %}
+                {% if status == 1 %}
                     <span class="label label-success">{% trans "Active" %}</span>
-                {% endifequal %}
-                {% ifequal status 3 %}
+                {% endif %}
+                {% if status == 3 %}
                     <span class="label label-warning">{% trans "Suspend" %}</span>
-                {% endifequal %}
+                {% endif %}
                 |
                 {% if cur_vcpu %}
                     {{ cur_vcpu }} {% trans "Vcpu" %}
@@ -34,6 +34,22 @@
                 {% for disk in disks %}
                     {{ disk.size|filesizeformat }} {% trans "Disk" %} |
                 {% endfor %}
+                <button
+                    {% if guest_agent == True %}
+                        {% if guest_agent_ready == True %}
+                            class="btn btn-xs btn-success"
+                            title="Guest Agent Enabled & Connected"
+                        {% else %}
+                            class="btn btn-xs btn-default"
+                            title="Guest Agent Enabled but not Connected"
+                        {% endif %}
+                    {% else %}
+                        class="btn btn-xs btn-danger"
+                        title="Guest Agent Not Enabled & Not Connected"
+                    {% endif %} disabled>
+                        <span class="glyphicon glyphicon-flash"></span>
+                </button>
+                |
                 <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
                 <em>on</em>
                 <a href="{% url 'overview' compute.id %}"><span class="label label-primary">{{ compute.name }}{% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %} </span></a>
@@ -876,7 +892,9 @@
                                     <tr>
                                         <th>{% trans 'Name' %}</th>
                                         <th>{% trans 'MAC' %}</th>
-                                        <th>{% trans 'NIC' %}</th>
+                                        <th>{% trans 'IP Address' %}</th>
+                                        <th>{% trans 'Source' %}</th>
+                                        <th>{% trans 'LinkState' %}</th>
                                         <th>{% trans 'Filter' %}</th>
                                         <th>{% trans 'Qos' %}</th>
                                         <th>{% trans 'Actions' %}</th>
@@ -885,10 +903,20 @@
                                     <tbody>
                                         {% for network in networks %}
                                         <tr>
-                                            <td class="col-sm-2"><label>eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</label></td>
-                                            <td><input class="form-control" type="text" value="{{ network.mac }}" readonly/></td>
-                                            <td><input class="form-control" type="text" value="{{ network.nic }}" readonly/></td>
-                                            <td><input class="form-control" type="text" value="{{ network.filterref }}" readonly/></td>
+                                            <td class="col-sm-1">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</td>
+                                            <td>{{ network.mac }}</td>
+                                            <td>{{ network.ipv4|default:"unknown" }}</td>
+                                            <td>{{ network.nic }}</td>
+                                            <td>
+                                            <form method="post">{% csrf_token %}
+                                                <input name="mac" value="{{ network.mac }}" hidden/>
+                                                <input name="set_link_state" value="{{ network.state }}" hidden/>
+                                                <input type="checkbox" {% if network.state == 'up' %} checked
+                                                {% endif %} onclick='submit();' />
+                                                {% trans 'active' %}
+                                            </form>
+                                            </td>
+                                            <td>{{ network.filterref|default:"None" }}</td>
                                             <td>
                                                 <form class="form-horizontal" method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                                     <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>
@@ -1399,11 +1427,11 @@
                             </form>
                             <div class="clearfix"></div>
                         </div>
-                         <div class="well">
+                        <div class="well">
                             <p>{% trans "To set instance vCPUs hotpluggable" %}</p>
                             <form class="form-horizontal" method="post" role="form">{% csrf_token %}
                                 <div class="form-group">
-                                    <label for="video_model_select" class="col-sm-3 control-label">{% trans "vCPU Hot Plug" %}</label>
+                                    <label for="vcpu_hotplug" class="col-sm-3 control-label">{% trans "vCPU Hot Plug" %}</label>
                                     <div class="col-sm-6">
                                       <div class="input-group">
                                         <select id="vcpu_hotplug" class="form-control" name="vcpu_hotplug">
@@ -1416,6 +1444,35 @@
                                         {% else %}
                                             <button class="btn btn-success" name="set_vcpu_hotplug" disabled>{% trans "Set" %}</button>
                                         {% endif %}
+                                        </span>
+                                      </div>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="well">
+                            <p>{% trans "To Enable/Disable Qemu Guest Agent. Status:" %}
+                            {% if status == 1 %}
+                                {% if guest_agent_ready %}
+                                    <label class="label label-success">{% trans 'Connected' %}</label>
+                                {% else %}
+                                    <label class="label label-danger">{% trans 'Disconnected' %}</label>
+                                {% endif %}</p>
+                            {% else %}
+                                <label class="label label-default">{% trans 'Unknown' %}</label>
+                            {% endif %}
+                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                                <div class="form-group">
+                                    <label for="guest_agent" class="col-sm-3 control-label">{% trans "Qemu Guest Agent" %}</label>
+                                    <div class="col-sm-6">
+                                      <div class="input-group">
+                                        <select id="guest_agent" class="form-control" name="guest_agent">
+                                            <option value="True" {% if guest_agent %} selected {% endif %}>{% trans 'Enabled' %}</option>
+                                            <option value="False" {% if not guest_agent %} selected {% endif %}>{% trans 'Disabled' %}</option>
+                                        </select>
+                                        <span class="input-group-btn">
+                                            <button type="submit" class="btn btn-success" name="set_guest_agent">{% trans "Set" %}</button>
                                         </span>
                                       </div>
                                     </div>
