@@ -10,7 +10,8 @@ try:
         VIR_MIGRATE_OFFLINE,\
         VIR_MIGRATE_COMPRESSED, \
         VIR_MIGRATE_AUTO_CONVERGE, \
-        VIR_MIGRATE_POSTCOPY
+        VIR_MIGRATE_POSTCOPY, \
+        VIR_MIGRATE_NON_SHARED_DISK
     from libvirt import VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
@@ -87,6 +88,7 @@ class wvmInstances(wvmConnect):
             flags |= VIR_MIGRATE_LIVE
         if unsafe and conn.get_status() == 1:
             flags |= VIR_MIGRATE_UNSAFE
+            flags |= VIR_MIGRATE_NON_SHARED_DISK
         if offline and conn.get_status() == 5:
             flags |= VIR_MIGRATE_OFFLINE
         if not offline and autoconverge:
