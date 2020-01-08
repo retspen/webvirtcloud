@@ -16,6 +16,9 @@ from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_BUS
 from webvirtcloud.settings import INSTANCE_CPU_DEFAULT_MODE
 from webvirtcloud.settings import INSTANCE_MACHINE_DEFAULT_TYPE
 from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_IO
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
+from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_DISCARD
 from django.contrib import messages
 from logs.views import addlogmsg
 
@@ -97,7 +100,10 @@ def create_instance(request, compute_id, arch, machine):
         instances = conn.get_instances()
         videos = conn.get_video_models(arch, machine)
         cache_modes = sorted(conn.get_cache_modes().items())
-        default_cache = INSTANCE_VOLUME_DEFAULT_CACHE
+        default_cache = INSTANCE_VOLUME_DEFAULT_CACHE.lower()
+        default_io = INSTANCE_VOLUME_DEFAULT_IO.lower()
+        default_zeroes = INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES.lower()
+        default_discard = INSTANCE_VOLUME_DEFAULT_DISCARD.lower()
         listener_addr = QEMU_CONSOLE_LISTEN_ADDRESSES
         mac_auto = util.randomMAC()
         disk_devices = conn.get_disk_device_types(arch, machine)
@@ -238,6 +244,7 @@ def create_instance(request, compute_id, arch, machine):
                                                      vcpu_mode=data['vcpu_mode'], uuid=uuid, arch=arch, machine=machine,
                                                      firmware=firmware,
                                                      images=volume_list, cache_mode=data['cache_mode'],
+                                                     io_mode=default_io, discard_mode=default_discard, detect_zeroes_mode=default_zeroes,
                                                      networks=data['networks'], virtio=data['virtio'],
                                                      listen_addr=data["listener_addr"], nwfilter=data["nwfilter"],
                                                      graphics=data["graphics"], video=data["video"],
