@@ -313,6 +313,12 @@ def instance(request, compute_id, vname):
         clone_free_names = get_clone_free_names()
         user_quota_msg = check_user_quota(0, 0, 0, 0)
         cache_modes = sorted(conn.get_cache_modes().items())
+        io_modes = sorted(conn.get_io_modes().items())
+        discard_modes = sorted(conn.get_discard_modes().items())
+        detect_zeroes_modes = sorted(conn.get_detect_zeroes_modes().items())
+        default_io = settings.INSTANCE_VOLUME_DEFAULT_IO
+        default_discard = settings.INSTANCE_VOLUME_DEFAULT_DISCARD
+        default_zeroes = settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
         default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
         default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
@@ -563,10 +569,10 @@ def instance(request, compute_id, vname):
                 meta_prealloc = True if request.POST.get('meta_prealloc', False) else False
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
-                target = get_new_disk_dev(media, disks, bus)
+                target_dev = get_new_disk_dev(media, disks, bus)
 
-                path = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_owner)
-                conn.attach_disk(path, target, subdriver=format, cache=cache, targetbus=bus)
+                source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_owner)
+                conn.attach_disk(source, target_dev, target_bus=bus, driver_type=format, cache_mode=cache)
                 msg = _('Attach new disk {} ({})'.format(name, format))
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
@@ -583,14 +589,41 @@ def instance(request, compute_id, vname):
                                          compute.type,
                                          storage)
 
-                format = conn_create.get_volume_type(name)
+                driver_type = conn_create.get_volume_type(name)
                 path = conn_create.get_target_path()
-                target = get_new_disk_dev(media, disks, bus)
+                target_dev = get_new_disk_dev(media, disks, bus)
                 source = path + "/" + name
 
-                conn.attach_disk(source, target, subdriver=format, cache=cache, targetbus=bus)
-                msg = _('Attach Existing disk: ' + target)
+                conn.attach_disk(source, target_dev, target_bus=bus, driver_type=driver_type, cache_mode=cache)
+                msg = _('Attach Existing disk: ' + target_dev)
                 addlogmsg(request.user.username, instance.name, msg)
+                return HttpResponseRedirect(request.get_full_path() + '#disks')
+
+            if 'edit_volume' in request.POST and allow_admin_or_not_template:
+                target_dev = request.POST.get('dev', '')
+
+                new_path = request.POST.get('vol_path', '')
+                shareable = bool(request.POST.get('vol_shareable', False))
+                readonly = bool(request.POST.get('vol_readonly', False))
+                bus = request.POST.get('vol_bus', '')
+                serial = request.POST.get('vol_serial', '')
+                format = request.POST.get('vol_format', '')
+                cache = request.POST.get('vol_cache', default_cache)
+                io = request.POST.get('vol_io_mode', default_io)
+                discard = request.POST.get('vol_discard_mode', default_discard)
+                zeroes = request.POST.get('vol_detect_zeroes', default_zeroes)
+
+                conn.edit_disk(target_dev, new_path, readonly, shareable, bus, serial, format,
+                               cache, io, discard, zeroes)
+
+                if not conn.get_status() == 5:
+                    messages.success(request, _("Disk changes changes are applied. " +
+                                                "But it will be activated after shutdown"))
+                else:
+                    messages.success(request, _("Disk is changed successfully."))
+                msg = _('Edit disk: ' + target_dev)
+                addlogmsg(request.user.username, instance.name, msg)
+
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'delete_vol' in request.POST and allow_admin_or_not_template:

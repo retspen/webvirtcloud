@@ -1,151 +1,126 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#addvol" type="button" class="btn btn-success pull-right" data-toggle="modal" title="Add Volume">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-    </a>
+    <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-default" data-toggle="modal" title="Edit Volume">
+        <i class="glyphicon glyphicon-edit" aria-hidden="true"></i>
+    </button>
 
     <!-- Modal pool -->
-    <div class="modal fade" id="addvol" tabindex="-1" role="dialog" aria-labelledby="addInstanceVolumeLabel" aria-hidden="true">
+    <div class="modal fade" id="editvol{{ id }}" tabindex="-1" role="dialog" aria-labelledby="editInstanceVolumeLabel{{ id }}" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Add Instance Volume" %}</h4>
+                    <h4 class="modal-title">{% trans "Edit Instance Volume" %}</h4>
                 </div>
+
                 <div class="modal-body">
-                    <div class="row">
+
                         <ul class="nav nav-tabs">
-                            <li role="presentation" class="active"><a href="#NewDisk" data-toggle="tab">{% trans 'New Disk' %}</a></li>
-                            <li role="presentation"><a href="#ExistingDisk" data-toggle="tab">{% trans 'Existing Disk' %}</a></li>
+                            <li role="presentation" class="active"><a href="#VirtualDisk{{ id }}" data-toggle="tab">{% trans 'Virtual Disk' %}</a></li>
+                            <li role="presentation"><a href="#PerformanceVolume{{ id }}" data-toggle="tab">{% trans 'Performance' %}</a></li>
+                            <li role="presentation"><a href="#AdvancedVolume{{ id }}" data-toggle="tab">{% trans 'Advanced' %}</a></li>
                         </ul>
 
                         <div class="tab-content">
-                            <div class="tab-pane active" id="NewDisk">
-                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
 
-                                <p style="font-weight:bold;">{% trans "Volume parameters" %}</p>
+                            <div class="tab-pane active" id="VirtualDisk{{ id }}">
                                 <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Storage" %}</label>
-                                    <div class="col-sm-4">
-                                        <select name="storage" class="form-control image-format">
-                                            {% for storage in storages_host %}
-                                                <option value="{{ storage }}">{{ storage }}</option>
-                                            {% endfor %}
-                                        </select>
+                                    <label class="col-sm-4 control-label">{% trans 'Volume Path' %}</label>
+                                    <div class="col-sm-8">
+                                        <input class="form-control" name="vol_path" value="{{ disk.path }}"/>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-                                    <div class="col-sm-4">
-                                        <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
+                                    <label class="col-sm-4 control-label">{% trans 'Readonly' %}</label>
+                                    <div class="col-sm-8">
+                                        <input class="form-control-static" type="checkbox" name="vol_readonly" value="True" {% if disk.readonly %}checked{% endif %}/>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Format" %}</label>
-                                    <div class="col-sm-4">
-                                        <select name="format" class="form-control image-format">
-                                            {% for format in formats %}
-                                                <option value="{{ format }}" {% if format == default_format %}selected{% endif %}>{% trans format %}</option>
-                                            {% endfor %}
-                                        </select>
+                                    <label class="col-sm-4 control-label">{% trans 'Shareable' %}</label>
+                                    <div class="col-sm-8">
+                                        <input class="form-control-static" type="checkbox" name="vol_shareable" value="True" {% if disk.shareable %}checked{% endif %}/>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Size" %}</label>
-                                    <div class="col-sm-4">
-                                        <input type="text" class="form-control" name="size" value="10" maxlength="5" required pattern="[0-9]+">
-                                    </div>
-                                    <label class="col-sm-1 control-label">{% trans "GB" %}</label>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Bus" %}</label>
-                                    <div class="col-sm-4">
-                                        <select name="bus" class="form-control image-format">
-                                            {% for bus in bus_host %}
-                                                <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Cache" %}</label>
-                                    <div class="col-sm-4">
-                                        <select name="cache" class="form-control image-format">
-                                            {% for mode, name in cache_modes %}
-                                                <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>{% trans name %}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group meta-prealloc">
-                                    <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
-                                    <div class="col-sm-4">
-                                        <input type="checkbox" name="meta_prealloc" value="true">
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="submit" class="btn btn-lg btn-success pull-right" name="add_new_vol">{% trans "Add Volume" %}</button>
-                                </div>
-                            </form>
                             </div>
-                            <div class="tab-pane" id="ExistingDisk">
-                                <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                <div class="modal-body">
-                                    <p style="font-weight:bold;">{% trans "Volume parameters" %}</p>
-                                    <div class="form-group">
-                                        <label class="col-sm-3 control-label">{% trans "Storage" %}</label>
-                                        <div class="col-sm-4">
-                                            <div class="dropdown">
-                                              <button id="select_storage" class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown">{% trans 'Select Pool...' %}
-                                              <span class="caret"></span></button>
-                                              <ul class="dropdown-menu">
-                                                  {% for storage in storages_host %}
-                                                      <li><a href="#" onclick="get_volumes({{ compute_id }}, '{{ storage }}')">{{ storage }}</a></li>
-                                                  {% endfor %}
-                                              </ul>
-                                              <input id="selected_storage" name="selected_storage" hidden/>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-sm-3 control-label" >{% trans "Volume" %}</label>
-                                        <div class="col-sm-4">
-                                            <select id="vols" name="vols" class="form-control" disabled>
-                                                <option value="" selected>{% trans 'None' %}</option>
-                                                <!-- populate with javascript -->
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-sm-3 control-label">{% trans "Bus" %}</label>
-                                        <div class="col-sm-4">
-                                            <select name="bus" class="form-control image-format">
-                                                {% for bus in bus_host %}
-                                                    <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-sm-3 control-label">{% trans "Cache" %}</label>
-                                        <div class="col-sm-4">
-                                            <select name="cache" class="form-control image-format">
-                                                {% for mode, name in cache_modes %}
-                                                    <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>{% trans name %}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
+
+                            <div class="tab-pane" id="AdvancedVolume{{ id }}">
+                                <div class="form-group">
+                                    <label class="col-sm-4 control-label">{% trans 'Bus' %}</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-control" name="vol_bus">
+                                        {% for bus in bus_host %}
+                                            <option value="{{ bus }}" {% if bus == disk.bus %}selected{% endif %}>{{ bus }}</option>
+                                        {% endfor %}
+                                        </select>
                                     </div>
                                 </div>
-                                <div class="modal-footer">
-                                     <button type="submit" class="btn btn-lg btn-success pull-right" name="add_existing_vol">{% trans "Add Volume" %}</button>
+                                <div class="form-group">
+                                    <label class="col-sm-4 control-label">{% trans 'Serial Number' %}</label>
+                                    <div class="col-sm-8">
+                                        <input class="form-control" type="text" name="vol_serial" value="{{ disk.serial }}"/>
+                                    </div>
                                 </div>
-                            </form>
+                                <div class="form-group">
+                                    <label class="col-sm-4 control-label">{% trans 'Storage Format' %}</label>
+                                    <div class="col-sm-8">
+                                        <input class="form-control" type="text" name="vol_format" value="{{ disk.format }}"/>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div> <!-- row -->
+
+                            <div class="tab-pane" id="PerformanceVolume{{ id }}">
+                                <div class="form-group">
+                                    <label class="col-sm-4 control-label">{% trans 'Cache mode' %}</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-control" name="vol_cache">
+                                        {% for key, val in cache_modes %}
+                                            <option value="{{ key }}" {% if key == disk.cache %}selected{% endif %}>{{ val }}</option>
+                                        {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-4 control-label">{% trans 'IO mode' %}</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-control" name="vol_io_mode">
+                                        {% for key, val in io_modes %}
+                                            <option value="{{ key }}" {% if key == disk.io %}selected{% endif %}>{{ val }}</option>
+                                        {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-4 control-label">{% trans 'Discard mode' %}</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-control" name="vol_discard_mode">
+                                        {% for key, val in discard_modes %}
+                                            <option value="{{ key }}" {% if key == disk.discard %}selected{% endif %}>{{ val }}</option>
+                                        {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-4 control-label">{% trans 'Detect zeroes' %}</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-control" name="vol_detect_zeroes">
+                                        {% for key, val in detect_zeroes_modes %}
+                                            <option value="{{ key }}" {% if key == disk.detect_zeroes %}selected{% endif %}>{{ val }}</option>
+                                        {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div><!-- /.tabpane-content -->
+                        </div><!-- /.tab-content -->
                 </div> <!-- /.modal-body -->
+                <div class="clearfix"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="submit" class="btn btn-success" name="edit_volume">{% trans "Save" %}</button>
+                </div><!-- /.modal-footer -->
+
             </div> <!-- /.modal-content -->
         </div> <!-- /.modal-dialog -->
+
     </div> <!-- /.modal -->
 {% endif %}

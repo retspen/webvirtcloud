@@ -823,14 +823,14 @@
                                                 <th>{% trans "Capacity" %}</th>
                                                 <th>{% trans "Storage" %}</th>
                                                 <th>{% trans "Source" %}</th>
-                                                <th style="width:100px;">{% trans "Action" %}</th>
+                                                <th>{% trans "Action" %}</th>
                                             </thead>
                                             <tbody>
                                             {% for disk in disks %}
                                                 <tr>
                                                     <td>
                                                         <button type="submit" class="btn btn-sm btn-default"
-                                                                name="details"
+                                                                name="details{{ forloop.counter0 }}"
                                                                 title="{% trans "Details" %}"
                                                                 tabindex="0"
                                                                 data-trigger="focus"
@@ -838,7 +838,13 @@
                                                                 data-html="true"
                                                                 data-content="<strong>Bus:</strong> {{ disk.bus }} <br/>
                                                                               <strong>Format:</strong> {{ disk.format }} <br/>
-                                                                              <strong>Cache:</strong> {{ disk.cache }}">
+                                                                              <strong>Cache:</strong> {{ disk.cache }} <br/>
+                                                                              <strong>Serial:</strong> {{ disk.serial }} <br/>
+                                                                              <strong>Readonly:</strong> {{ disk.readonly }} <br/>
+                                                                              <strong>Shareable:</strong> {{ disk.shareable }}</br>
+                                                                              <strong>IO Mode:</strong> {{ disk.io }} <br/>
+                                                                              <strong>Discard:</strong> {{ disk.discard }} <br/>
+                                                                              <strong>Detect Zeroes:</strong> {{ disk.detect_zeroes }}">
                                                             <i class="fa fa-info"></i>
                                                         </button>
                                                         {{ disk.dev }}
@@ -850,11 +856,12 @@
                                                     <td>{{ disk.storage }}</td>
                                                     <td>{{ disk.path }}</td>
                                                     <td>
-                                                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                        <form action="" method="post" role="form">{% csrf_token %}
                                                             <input type="hidden" name="path" value="{{ disk.path }}">
                                                             <input type="hidden" name="dev" value="{{ disk.dev }}">
                                                             <input type="hidden" name="storage" value="{{ disk.storage }}">
                                                             <input type="hidden" name="name" value="{{ disk.image }}">
+                                                            {% include 'edit_instance_volume.html' with id=forloop.counter0 %}
                                                             {% ifequal status 5 %}
                                                                 <button type="submit" class="btn btn-sm btn-default" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
                                                                     <i class="fa fa-eject"></i>
@@ -863,14 +870,15 @@
                                                                     <i class="fa fa-trash"></i>
                                                                 </button>
                                                             {% else %}
-                                                                <button class="btn btn-sm btn-default disabled" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume after shutdown?" %}')">
+                                                                <button class="btn btn-sm btn-default disabled" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
                                                                     <i class="fa fa-eject"></i>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" name="delete_vol" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete after shutdown?" %}')">
+                                                                <button class="btn btn-sm btn-default disabled" name="delete_vol" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
                                                                     <i class="fa fa-trash"></i>
                                                                 </button>
                                                             {% endifequal %}
                                                         </form>
+
                                                     </td>
                                                 </tr>
                                             {% endfor %}
