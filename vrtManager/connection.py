@@ -494,6 +494,31 @@ class wvmConnect(object):
             'unsafe': 'Unsafe',  # since libvirt 0.9.7
         }
 
+    def get_io_modes(self):
+        """Get io threads available modes"""
+        return {
+            'default': 'Default',
+            'native': 'Native',
+            'threads': 'Threads',
+        }
+
+    def get_discard_modes(self):
+        """Get discard available modes"""
+        return {
+            'default': 'Default',
+            'ignore': 'Ignore',
+            'unmap': 'Unmap',
+        }
+
+    def get_detect_zeroes_modes(self):
+        """Get detect zeroes available modes"""
+        return {
+            'default': 'Default',
+            'on': 'On',
+            'off': 'Off',
+            'unmap': 'Unmap',
+        }
+
     def get_hypervisors_domain_types(self):
         """Return hypervisor type"""
         def hypervisors(ctx):
