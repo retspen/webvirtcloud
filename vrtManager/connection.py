@@ -639,6 +639,10 @@ class wvmConnect(object):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/hostdev/enum[@name='subsysType']/value")]
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
 
+    def get_network_models(self):
+        """Get available image filename extensions"""
+        return ['default', 'e1000', 'virtio']
+
     def get_image_formats(self):
         """Get available image formats"""
         return ['raw', 'qcow', 'qcow2']

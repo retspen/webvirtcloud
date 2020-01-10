@@ -900,7 +900,7 @@
 
                             <div class="col-xs-12 col-sm-12">
                                 <p><strong>{% trans "Network Devices" %}</strong></p>
-                                <table class="table table-striped table-responsive">
+                                <table class="table table-condensed table-responsive">
                                     <thead>
                                     <tr>
                                         <th>{% trans 'Name' %}</th>
@@ -910,9 +910,17 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                        {% for network in networks %}
+                                    {% for network in networks %}
                                         <tr>
-                                            <td rowspan="2">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</td>
+                                            <td rowspan="2">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})
+                                                    <form method="post">{% csrf_token %}
+                                                    <input name="mac" value="{{ network.mac }}" hidden/>
+                                                    <input name="set_link_state" value="{{ network.state }}" hidden/>
+                                                    <input type="checkbox" {% if network.state == 'up' %} checked
+                                                    {% endif %} onclick='submit();' />
+                                                    {% trans 'active' %}
+                                                </form>
+                                            </td>
                                             <th class="hidden-xs hidden-sm">{% trans 'MAC' %}</th>
                                             <td>{{ network.mac }}</td>
                                             <th class="hidden-xs hidden-sm">{% trans 'Filter' %}</th>
@@ -964,6 +972,16 @@
                                                                         {% endfor %}
                                                                     </select>
                                                                 </div>
+                                                                <div class="form-group form-inline">
+                                                                    <label class="col-sm-3 control-label">{% trans "Model" %} </label>
+                                                                    <input class="form-control" type="text" value="{{ network.model }}" readonly/>
+                                                                    <label class="control-label"><em>to</em></label>
+                                                                    <select class="form-control" name="net-model-{{ forloop.counter0 }}">
+                                                                        {% for model in net_models_host %}
+                                                                        <option value="{{ model }}" {% ifequal model network.model  %} selected {% endifequal %}>{{ model }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <button class="btn btn-default"  data-dismiss="modal">{% trans 'Close' %}</button>
@@ -996,16 +1014,8 @@
                                                     {{ ipv6 }}
                                                 {% endfor %}
                                             </td>
-                                            <th class="hidden-xs hidden-sm">{% trans 'LinkState' %}</th>
-                                            <td>
-                                                <form method="post">{% csrf_token %}
-                                                    <input name="mac" value="{{ network.mac }}" hidden/>
-                                                    <input name="set_link_state" value="{{ network.state }}" hidden/>
-                                                    <input type="checkbox" {% if network.state == 'up' %} checked
-                                                    {% endif %} onclick='submit();' />
-                                                    {% trans 'active' %}
-                                                </form>
-                                            </td>
+                                            <th class="hidden-xs hidden-sm">{% trans 'Model' %}</th>
+                                            <td>{{ network.model }}</td>
                                             <th>{% trans 'QoS' %}</th>
                                             <td align="right">
                                                 <form class="form-horizontal" method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
@@ -1014,7 +1024,11 @@
                                                 </form>
                                             </td>
                                         </tr>
-                                        {% endfor %}
+                                        <tr>
+                                            <td style="background-color: lightgray" class="hidden-xs hidden-sm" colspan="9"></td>
+                                            <td style="background-color: lightgray" class="visible-xs visible-sm" colspan="5"></td>
+                                        </tr>
+                                    {% endfor %}
                                     </tbody>
                                 </table>
                             </div>

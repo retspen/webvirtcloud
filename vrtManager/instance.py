@@ -354,6 +354,7 @@ class wvmInstance(wvmConnect):
                 target_inst = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
                 link_state = 'up' if not net.xpath('link') else net.xpath('link/@state')[0]
                 filterref_inst = '' if not net.xpath('filterref/@filter') else net.xpath('filterref/@filter')[0]
+                model_type = net.xpath('model/@type')[0]
                 if net.xpath('bandwidth/inbound'):
                     in_attr = net.xpath('bandwidth/inbound')[0]
                     in_av = in_attr.get('average')
@@ -375,6 +376,7 @@ class wvmInstance(wvmConnect):
                                'nic': nic_inst,
                                'target': target_inst,
                                'state': link_state,
+                               'model': model_type,
                                'ipv4': ipv4,
                                'ipv6': ipv6,
                                'filterref': filterref_inst,
@@ -1312,14 +1314,21 @@ class wvmInstance(wvmConnect):
             net_source = network_data.get('net-source-' + str(num))
             net_source_type = network_data.get('net-source-' + str(num) + '-type')
             net_filter = network_data.get('net-nwfilter-' + str(num))
+            net_model = network_data.get('net-model-' + str(num))
             bridge_name = self.get_bridge_name(net_source, net_source_type)
             if interface.get('type') == 'bridge':
                 source = interface.find('mac')
                 source.set('address', net_mac)
                 source = interface.find('source')
                 source.set('bridge', bridge_name)
-                source = interface.find('filterref')
 
+                source = interface.find('model')
+                if net_model != 'default':
+                    source.attrib['type'] = net_model
+                else:
+                    interface.remove(source)
+
+                source = interface.find('filterref')
                 if net_filter:
                     if source is not None: source.set('filter', net_filter)
                     else:
@@ -1333,8 +1342,14 @@ class wvmInstance(wvmConnect):
                 source.set('address', net_mac)
                 source = interface.find('source')
                 source.set('network', net_source)
-                source = interface.find('filterref')
 
+                source = interface.find('model')
+                if net_model != 'default':
+                    source.attrib['type'] = net_model
+                else:
+                    interface.remove(source)
+
+                source = interface.find('filterref')
                 if net_filter:
                     if source is not None: source.set('filter', net_filter)
                     else:

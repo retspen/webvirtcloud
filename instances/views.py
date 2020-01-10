@@ -353,6 +353,7 @@ def instance(request, compute_id, vname):
         networks_host = sorted(conn.get_networks())
         nwfilters_host = conn.get_nwfilters()
         storages_host = sorted(conn.get_storages(True))
+        net_models_host = conn.get_network_models()
 
         try:
             interfaces_host = sorted(conn.get_ifaces())
