@@ -287,8 +287,8 @@ class wvmInstance(wvmConnect):
         leases = []
 
         def extract_dom(info):
-            ipv4 = None
-            ipv6 = None
+            ipv4 = []
+            ipv6 = []
             for addrs in info.values():
                 if addrs["hwaddr"] != iface_mac:
                     continue
@@ -296,20 +296,20 @@ class wvmInstance(wvmConnect):
                     continue
                 for addr in addrs["addrs"]:
                     if addr["type"] == 0:
-                        ipv4 = addr["addr"]
+                        ipv4.append(addr["addr"])
                     elif (addr["type"] == 1 and
                           not str(addr["addr"]).startswith("fe80")):
-                        ipv6 = addr["addr"] + "/" + str(addr["prefix"])
+                        ipv6.append(addr["addr"] + "/" + str(addr["prefix"]))
             return ipv4, ipv6
 
         def extract_lease(info):
-            ipv4 = None
-            ipv6 = None
+            ipv4 = []
+            ipv6 = []
             if info["mac"] == iface_mac:
                 if info["type"] == 0:
-                    ipv4 = info["ipaddr"]
+                    ipv4.append(info["ipaddr"])
                 elif info["type"] == 1:
-                    ipv6 = info["ipaddr"]
+                    ipv6.append(info["ipaddr"])
             return ipv4, ipv6
 
         for ips in ([qemuga] + leases + [arp]):
