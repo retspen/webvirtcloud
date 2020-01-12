@@ -17,7 +17,7 @@
         {% if computes_info %}
             {% for compute in computes_info %}
                 <div id="{{ compute.name }}" class="col-xs-12 col-sm-4">
-                    <div class="panel {% if compute.status %}panel-success{% else %}panel-danger{% endif %} panel-data">
+                    <div class="panel {% ifequal compute.status 1 %}panel-success{% else %}panel-danger{% endifequal %} panel-data">
                         <div class="panel-heading">
                             {% ifequal compute.status 1 %}
                                 <h3 class="panel-title">
@@ -40,11 +40,11 @@
                                     <p><strong>{% trans "Status" %}:</strong></p>
                                 </div>
                                 <div class="col-xs-4 col-sm-6">
-                                    {% if compute.status %}
+                                    {% ifequal compute.status 1 %}
                                         <p>{% trans "Connected" %}</p>
                                     {% else %}
                                         <p>{% trans "Not Connected" %}</p>
-                                    {% endif %}
+                                    {% endifequal %}
                                     {% if compute.details %}
                                         <p>{% trans compute.details %}</p>
                                     {% else %}
