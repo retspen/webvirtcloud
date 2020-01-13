@@ -513,6 +513,7 @@ def instance(request, compute_id, vname):
                     conn.resize_cpu(cur_vcpu, vcpu)
                     msg = _("Resize CPU")
                     addlogmsg(request.user.username, instance.name, msg)
+                    messages.success(request, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'resizevm_mem' in request.POST and (request.user.is_superuser or
@@ -536,6 +537,7 @@ def instance(request, compute_id, vname):
                     conn.resize_mem(cur_memory, memory)
                     msg = _("Resize Memory")
                     addlogmsg(request.user.username, instance.name, msg)
+                    messages.success(request, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'resizevm_disk' in request.POST and (
@@ -556,6 +558,7 @@ def instance(request, compute_id, vname):
                     conn.resize_disk(disks_new)
                     msg = _("Resize")
                     addlogmsg(request.user.username, instance.name, msg)
+                    messages.success(request, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'add_new_vol' in request.POST and allow_admin_or_not_template:
