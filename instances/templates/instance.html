@@ -913,12 +913,12 @@
                                     {% for network in networks %}
                                         <tr>
                                             <td rowspan="2">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})
-                                                    <form method="post">{% csrf_token %}
+                                                <form method="post">{% csrf_token %}
                                                     <input name="mac" value="{{ network.mac }}" hidden/>
                                                     <input name="set_link_state" value="{{ network.state }}" hidden/>
                                                     <input type="checkbox" {% if network.state == 'up' %} checked
                                                     {% endif %} onclick='submit();' />
-                                                    {% trans 'active' %}
+                                                    <strong>{% trans 'active' %}</strong>
                                                 </form>
                                             </td>
                                             <th class="hidden-xs hidden-sm">{% trans 'MAC' %}</th>
@@ -992,27 +992,23 @@
                                                 </div>
                                             </form>
                                             </td>
-                                        <td align="right">
-                                            <form method="post" name="delete_network" role="form">{% csrf_token %}
-                                                <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
-                                                    onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                    <i class="glyphicon glyphicon-trash"></i>
-                                                </button>
-                                            </form>
-                                        </td>
+                                            <td align="right">
+                                                <form method="post" name="delete_network" role="form">{% csrf_token %}
+                                                    <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
+                                                        onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <i class="glyphicon glyphicon-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th class="hidden-xs hidden-sm">{% trans 'IPv4' %}</th>
                                             <td>
-                                                {% for ipv4 in network.ipv4|default:"unknown" %}
-                                                    {{ ipv4 }}
-                                                {% endfor %}
+                                                {% for ipv4 in network.ipv4|default:"unknown" %}{{ ipv4 }}{% endfor %}
                                             </td>
                                             <th class="hidden-xs hidden-sm">{% trans 'IPv6' %}</th>
                                             <td class="hidden-xs">
-                                                {% for ipv6 in network.ipv6|default:"unknown" %}
-                                                    {{ ipv6 }}
-                                                {% endfor %}
+                                                {% for ipv6 in network.ipv6|default:"unknown" %}{{ ipv6 }}{% endfor %}
                                             </td>
                                             <th class="hidden-xs hidden-sm">{% trans 'Model' %}</th>
                                             <td>{{ network.model }}</td>
@@ -1025,8 +1021,8 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="background-color: lightgray" class="hidden-xs hidden-sm" colspan="9"></td>
-                                            <td style="background-color: lightgray" class="visible-xs visible-sm" colspan="5"></td>
+                                            <td class="bg-primary hidden-xs hidden-sm" colspan="9"></td>
+                                            <td class="bg-primary visible-xs visible-sm" colspan="5"></td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
