@@ -36,15 +36,18 @@
                         </div>
                         <div class="panel-body">
                             <div class="row">
-                                <div class="col-xs-4 col-sm-4">
+                                <div class="col-xs-3">
                                     <p><strong>{% trans "Status" %}:</strong></p>
                                 </div>
-                                <div class="col-xs-4 col-sm-6">
+                                <div class="col-xs-9">
                                     {% ifequal compute.status 1 %}
                                         <p>{% trans "Connected" %}</p>
                                     {% else %}
                                         <p>{% trans "Not Connected" %}</p>
                                     {% endifequal %}
+
+                                </div>
+                                <div class="col-xs-offset-3 col-sm-8">
                                     {% if compute.details %}
                                         <p>{% trans compute.details %}</p>
                                     {% else %}
