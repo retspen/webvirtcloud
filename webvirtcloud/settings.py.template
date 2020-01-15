@@ -158,16 +158,20 @@ INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
 # available bus types: virtio, scsi, ide, usb, sata
 INSTANCE_VOLUME_DEFAULT_BUS = 'virtio'
 
-#SCSI types: 'virtio-scsi', 'lsilogic'
+#SCSI types: virtio-scsi, lsilogic
 INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER = 'virtio-scsi'
 
-# Volume optionals: two variable: disk driver type is file and network(rbd, iscsi),
-# optionals : discard='unmap|ignore', detect_zeroes='on|off|unmap', copy_on_read='on|off'
-# Example: {"file": "discard='unmap' copy_on_read='on'", "network": "detect_zeroes='unmap'"}
-INSTANCE_VOLUME_DEFAULT_DRIVER_OPTS = {"file": "", "network": ""}
-
-# available cache types: none, unsafe, writeback, writethrough
+# Volume cache: default, directsync, none, unsafe, writeback, writethrough
 INSTANCE_VOLUME_DEFAULT_CACHE = 'directsync'
+
+# Volume io mode: default, native, threads
+INSTANCE_VOLUME_DEFAULT_IO = 'default'
+
+# Volume detect zeroes mode: default, on, off, unmap
+INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES = 'default'
+
+# Volume discard mode: default, unmap, ignore
+INSTANCE_VOLUME_DEFAULT_DISCARD = 'default'
 
 # up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)
 INSTANCE_VOLUME_DEFAULT_OWNER = {'uid': 0, 'guid': 0}

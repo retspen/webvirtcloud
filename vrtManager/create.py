@@ -4,7 +4,8 @@ from vrtManager.connection import wvmConnect
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as DEFAULT_OWNER
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_DRIVER_OPTS as OPTS
+
+
 
 
 
@@ -165,7 +166,11 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(path)
         vol.delete()
 
-    def create_instance(self, name, memory, vcpu, vcpu_mode, uuid, arch, machine, firmware, images, cache_mode, networks, nwfilter, graphics, virtio, listen_addr, video="vga", console_pass="random", mac=None, qemu_ga=False):
+    def create_instance(self, name, memory, vcpu, vcpu_mode, uuid, arch, machine, firmware, images,
+                        networks, nwfilter, graphics, virtio, listen_addr,
+                        video="vga", console_pass="random", mac=None,
+                        cache_mode=None, io_mode=None, discard_mode=None, detect_zeroes_mode=None,
+                        qemu_ga=True):
         """
         Create VM function
         """
@@ -173,7 +178,6 @@ class wvmCreate(wvmConnect):
         dom_caps = self.get_dom_capabilities(arch, machine)
 
         memory = int(memory) * 1024
-        #hypervisor_type = 'kvm' if self.is_kvm_supported() else 'qemu'
 
         xml = """
                 <domain type='%s'>
@@ -237,6 +241,17 @@ class wvmCreate(wvmConnect):
         hd_disk_letters = list(string.lowercase)
         sd_disk_letters = list(string.lowercase)
         add_cd = True
+
+        disk_opts = ''
+        if cache_mode is not None and cache_mode != 'default':
+            disk_opts += "cache='%s' " % cache_mode
+        if io_mode is not None and io_mode != 'default':
+            disk_opts += "io='%s' " % io_mode
+        if discard_mode is not None and discard_mode != 'default':
+            disk_opts += "discard='%s' " % discard_mode
+        if detect_zeroes_mode is not None and detect_zeroes_mode != 'default':
+            disk_opts += "detect_zeroes='%s' " % detect_zeroes_mode
+
         for volume in images:
             stg = self.get_storage_by_vol_path(volume['path'])
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
@@ -246,7 +261,7 @@ class wvmCreate(wvmConnect):
             if stg_type == 'rbd':
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
                 xml += """<disk type='network' device='disk'>
-                            <driver name='qemu' type='%s' cache='%s' %s />""" % (volume['type'], cache_mode, OPTS.get("network", ''))
+                            <driver name='qemu' type='%s' %s />""" % (volume['type'], disk_opts)
                 xml += """  <auth username='%s'>
                                 <secret type='ceph' uuid='%s'/>
                             </auth>
@@ -262,7 +277,7 @@ class wvmCreate(wvmConnect):
                 xml += """</source>"""
             else:
                 xml += """<disk type='file' device='%s'>""" % volume['device']
-                xml += """ <driver name='qemu' type='%s' cache='%s' %s/>""" % (volume['type'], cache_mode, OPTS.get("file", ''))
+                xml += """ <driver name='qemu' type='%s' %s/>""" % (volume['type'], disk_opts)
                 xml += """ <source file='%s'/>""" % volume['path']
 
             if volume.get('bus') == 'virtio':
@@ -313,7 +328,12 @@ class wvmCreate(wvmConnect):
 
         if 'usb' in dom_caps['disk_bus']:
             xml += """<input type='mouse' bus='{}'/>""".format('virtio' if virtio else 'usb')
+            xml += """<input type='keyboard' bus='{}'/>""".format('virtio' if virtio else 'usb')
             xml += """<input type='tablet' bus='{}'/>""".format('virtio' if virtio else 'usb')
+        else:
+            xml += """<input type='mouse'/>"""
+            xml += """<input type='keyboard'/>"""
+            xml += """<input type='tablet'/>"""
 
         xml += """
                 <graphics type='%s' port='-1' autoport='yes' %s listen='%s'/>

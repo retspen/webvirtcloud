@@ -287,8 +287,8 @@ class wvmInstance(wvmConnect):
         leases = []
 
         def extract_dom(info):
-            ipv4 = None
-            ipv6 = None
+            ipv4 = []
+            ipv6 = []
             for addrs in info.values():
                 if addrs["hwaddr"] != iface_mac:
                     continue
@@ -296,20 +296,20 @@ class wvmInstance(wvmConnect):
                     continue
                 for addr in addrs["addrs"]:
                     if addr["type"] == 0:
-                        ipv4 = addr["addr"]
+                        ipv4.append(addr["addr"])
                     elif (addr["type"] == 1 and
                           not str(addr["addr"]).startswith("fe80")):
-                        ipv6 = addr["addr"] + "/" + str(addr["prefix"])
+                        ipv6.append(addr["addr"] + "/" + str(addr["prefix"]))
             return ipv4, ipv6
 
         def extract_lease(info):
-            ipv4 = None
-            ipv6 = None
+            ipv4 = []
+            ipv6 = []
             if info["mac"] == iface_mac:
                 if info["type"] == 0:
-                    ipv4 = info["ipaddr"]
+                    ipv4.append(info["ipaddr"])
                 elif info["type"] == 1:
-                    ipv6 = info["ipaddr"]
+                    ipv6.append(info["ipaddr"])
             return ipv4, ipv6
 
         for ips in ([qemuga] + leases + [arp]):
@@ -354,6 +354,7 @@ class wvmInstance(wvmConnect):
                 target_inst = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
                 link_state = 'up' if not net.xpath('link') else net.xpath('link/@state')[0]
                 filterref_inst = '' if not net.xpath('filterref/@filter') else net.xpath('filterref/@filter')[0]
+                model_type = net.xpath('model/@type')[0]
                 if net.xpath('bandwidth/inbound'):
                     in_attr = net.xpath('bandwidth/inbound')[0]
                     in_av = in_attr.get('average')
@@ -375,6 +376,7 @@ class wvmInstance(wvmConnect):
                                'nic': nic_inst,
                                'target': target_inst,
                                'state': link_state,
+                               'model': model_type,
                                'ipv4': ipv4,
                                'ipv6': ipv6,
                                'filterref': filterref_inst,
@@ -388,10 +390,13 @@ class wvmInstance(wvmConnect):
     def get_disk_devices(self):
         def disks(doc):
             result = []
-            dev = volume = storage = src_file = bus = None
-            disk_format = used_size = disk_size = disk_cache = None
             
             for disk in doc.xpath('/domain/devices/disk'):
+                dev = volume = storage = src_file = bus = None
+                disk_format = used_size = disk_size = None
+                disk_cache = disk_io = disk_discard = disk_zeroes = 'default'
+                readonly = shareable = serial = None
+
                 device = disk.xpath('@device')[0]
                 if device == 'disk':
                     try:
@@ -407,6 +412,23 @@ class wvmInstance(wvmConnect):
                         except:
                             pass
                         try:
+                            disk_io = disk.xpath('driver/@io')[0]
+                        except:
+                            pass
+                        try:
+                            disk_discard = disk.xpath('driver/@discard')[0]
+                        except:
+                            pass
+                        try:
+                            disk_zeroes = disk.xpath('driver/@detect_zeroes')[0]
+                        except:
+                            pass
+
+                        readonly = True if disk.xpath('readonly') else False
+                        shareable = True if disk.xpath('shareable') else False
+                        serial = disk.xpath('serial')[0].text if disk.xpath('serial') else None
+
+                        try:
                             vol = self.get_volume_by_path(src_file)
                             volume = vol.name()
 
@@ -421,7 +443,9 @@ class wvmInstance(wvmConnect):
                     finally:
                         result.append(
                             {'dev': dev, 'bus': bus, 'image': volume, 'storage': storage, 'path': src_file,
-                             'format': disk_format, 'size': disk_size, 'used': used_size, 'cache': disk_cache})
+                             'format': disk_format, 'size': disk_size, 'used': used_size,
+                             'cache': disk_cache, 'io': disk_io, 'discard': disk_discard, 'detect_zeroes': disk_zeroes,
+                             'readonly': readonly, 'shareable': shareable, 'serial': serial})
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)
@@ -620,39 +644,88 @@ class wvmInstance(wvmConnect):
             xmldom = ElementTree.tostring(tree)
         self._defineXML(xmldom)
 
-    def attach_disk(self, source, target, sourcetype='file', device='disk', driver='qemu', subdriver='raw', cache='none', targetbus='ide'):
-        xml_disk = "<disk type='%s' device='%s'>" % (sourcetype, device)
-        if device == 'cdrom':
-            xml_disk += "<driver name='%s' type='%s'/>" % (driver, subdriver)
-        elif device == 'disk':
-            xml_disk += "<driver name='%s' type='%s' cache='%s'/>" % (driver, subdriver, cache)
+    def attach_disk(self, source, target_dev, target_bus='ide', disk_type='file',
+                    disk_device='disk', driver_name='qemu', driver_type='raw',
+                    readonly=False, shareable=False, serial=None,
+                    cache_mode=None, io_mode=None, discard_mode=None, detect_zeroes_mode=None):
+
+        additionals = ''
+        if cache_mode is not None and cache_mode != 'default':
+            additionals += "cache='%s' " % cache_mode
+        if io_mode is not None and io_mode != 'default':
+            additionals += "io='%s' " % io_mode
+        if discard_mode is not None and discard_mode != 'default':
+            additionals += "discard='%s' " % discard_mode
+        if detect_zeroes_mode is not None and detect_zeroes_mode != 'default':
+            additionals += "detect_zeroes='%s' " % detect_zeroes_mode
+
+        xml_disk = "<disk type='%s' device='%s'>" % (disk_type, disk_device)
+        if disk_device == 'cdrom':
+            xml_disk += "<driver name='%s' type='%s'/>" % (driver_name, driver_type)
+        elif disk_device == 'disk':
+            xml_disk += "<driver name='%s' type='%s' %s/>" % (driver_name, driver_type, additionals)
         xml_disk += """<source file='%s'/>
-          <target dev='%s' bus='%s'/>
-        </disk>
-        """ % (source, target, targetbus)
+          <target dev='%s' bus='%s'/>""" % (source, target_dev, target_bus)
+        if readonly:
+            xml_disk += """<readonly/>"""
+        if shareable:
+            xml_disk += """<shareable/>"""
+        if serial is not None and serial != 'None' and serial != '':
+            xml_disk += """<serial>%s</serial>""" % serial
+        xml_disk += """</disk>"""
         if self.get_status() == 1:
             self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_LIVE)
             self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
         if self.get_status() == 5:
             self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
 
-    def detach_disk(self, dev):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
+    def detach_disk(self, target_dev):
+        tree = etree.fromstring(self._XMLDesc(0))
 
-        for disk in tree.findall("./devices/disk"):
-            target = disk.find("target")
-            if target.get("dev") == dev:
-                devices = tree.find('devices')
-                devices.remove(disk)
+        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[0].getparent()
+        xml_disk = etree.tostring(disk_el)
+        devices = tree.find('devices')
+        devices.remove(disk_el)
 
-                if self.get_status() == 1:
-                    xml_disk = ElementTree.tostring(disk)
-                    ret = self.instance.detachDevice(xml_disk)
-                    xmldom = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-                if self.get_status() == 5:
-                    xmldom = ElementTree.tostring(tree)
-                break
-        self._defineXML(xmldom)
+        if self.get_status() == 1:
+            self.instance.detachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_LIVE)
+            self.instance.detachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
+        if self.get_status() == 5:
+            self.instance.detachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
+
+    def edit_disk(self, target_dev, source, readonly, shareable, target_bus, serial, format, cache_mode, io_mode, discard_mode, detect_zeroes_mode):
+        tree = etree.fromstring(self._XMLDesc(0))
+        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[0].getparent()
+        old_disk_type = disk_el.get('type')
+        old_disk_device = disk_el.get('device')
+        old_driver_name = disk_el.xpath('driver/@name')[0]
+
+        additionals = ''
+        if cache_mode is not None and cache_mode != 'default':
+            additionals += "cache='%s' " % cache_mode
+        if io_mode is not None and io_mode != 'default':
+            additionals += "io='%s' " % io_mode
+        if discard_mode is not None and discard_mode != 'default':
+            additionals += "discard='%s' " % discard_mode
+        if detect_zeroes_mode is not None and detect_zeroes_mode != 'default':
+            additionals += "detect_zeroes='%s' " % detect_zeroes_mode
+
+        xml_disk = "<disk type='%s' device='%s'>" % (old_disk_type, old_disk_device)
+        if old_disk_device == 'cdrom':
+            xml_disk += "<driver name='%s' type='%s'/>" % (old_driver_name, format)
+        elif old_disk_device == 'disk':
+            xml_disk += "<driver name='%s' type='%s' %s/>" % (old_driver_name, format, additionals)
+        xml_disk += """<source file='%s'/>
+          <target dev='%s' bus='%s'/>""" % (source, target_dev, target_bus)
+        if readonly:
+            xml_disk += """<readonly/>"""
+        if shareable:
+            xml_disk += """<shareable/>"""
+        if serial is not None and serial != 'None' and serial != '':
+            xml_disk += """<serial>%s</serial>""" % serial
+        xml_disk += """</disk>"""
+
+        self.instance.updateDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
 
     def cpu_usage(self):
         cpu_usage = {}
@@ -1241,14 +1314,21 @@ class wvmInstance(wvmConnect):
             net_source = network_data.get('net-source-' + str(num))
             net_source_type = network_data.get('net-source-' + str(num) + '-type')
             net_filter = network_data.get('net-nwfilter-' + str(num))
+            net_model = network_data.get('net-model-' + str(num))
             bridge_name = self.get_bridge_name(net_source, net_source_type)
             if interface.get('type') == 'bridge':
                 source = interface.find('mac')
                 source.set('address', net_mac)
                 source = interface.find('source')
                 source.set('bridge', bridge_name)
-                source = interface.find('filterref')
 
+                source = interface.find('model')
+                if net_model != 'default':
+                    source.attrib['type'] = net_model
+                else:
+                    interface.remove(source)
+
+                source = interface.find('filterref')
                 if net_filter:
                     if source is not None: source.set('filter', net_filter)
                     else:
@@ -1262,8 +1342,14 @@ class wvmInstance(wvmConnect):
                 source.set('address', net_mac)
                 source = interface.find('source')
                 source.set('network', net_source)
-                source = interface.find('filterref')
 
+                source = interface.find('model')
+                if net_model != 'default':
+                    source.attrib['type'] = net_model
+                else:
+                    interface.remove(source)
+
+                source = interface.find('filterref')
                 if net_filter:
                     if source is not None: source.set('filter', net_filter)
                     else:

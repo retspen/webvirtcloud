@@ -34,6 +34,11 @@
                 {% for disk in disks %}
                     {{ disk.size|filesizeformat }} {% trans "Disk" %} |
                 {% endfor %}
+                {% for net in networks %}
+                   {% for ipv4 in net.ipv4|default:"-" %}
+                       {{ ipv4 }} |
+                   {% endfor %}
+                {% endfor %}
                 <button
                     {% if guest_agent == True %}
                         {% if guest_agent_ready == True %}
@@ -823,14 +828,14 @@
                                                 <th>{% trans "Capacity" %}</th>
                                                 <th>{% trans "Storage" %}</th>
                                                 <th>{% trans "Source" %}</th>
-                                                <th style="width:100px;">{% trans "Action" %}</th>
+                                                <th>{% trans "Action" %}</th>
                                             </thead>
                                             <tbody>
                                             {% for disk in disks %}
                                                 <tr>
                                                     <td>
                                                         <button type="submit" class="btn btn-sm btn-default"
-                                                                name="details"
+                                                                name="details{{ forloop.counter0 }}"
                                                                 title="{% trans "Details" %}"
                                                                 tabindex="0"
                                                                 data-trigger="focus"
@@ -838,7 +843,13 @@
                                                                 data-html="true"
                                                                 data-content="<strong>Bus:</strong> {{ disk.bus }} <br/>
                                                                               <strong>Format:</strong> {{ disk.format }} <br/>
-                                                                              <strong>Cache:</strong> {{ disk.cache }}">
+                                                                              <strong>Cache:</strong> {{ disk.cache }} <br/>
+                                                                              <strong>Serial:</strong> {{ disk.serial }} <br/>
+                                                                              <strong>Readonly:</strong> {{ disk.readonly }} <br/>
+                                                                              <strong>Shareable:</strong> {{ disk.shareable }}</br>
+                                                                              <strong>IO Mode:</strong> {{ disk.io }} <br/>
+                                                                              <strong>Discard:</strong> {{ disk.discard }} <br/>
+                                                                              <strong>Detect Zeroes:</strong> {{ disk.detect_zeroes }}">
                                                             <i class="fa fa-info"></i>
                                                         </button>
                                                         {{ disk.dev }}
@@ -850,11 +861,12 @@
                                                     <td>{{ disk.storage }}</td>
                                                     <td>{{ disk.path }}</td>
                                                     <td>
-                                                        <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                        <form action="" method="post" role="form">{% csrf_token %}
                                                             <input type="hidden" name="path" value="{{ disk.path }}">
                                                             <input type="hidden" name="dev" value="{{ disk.dev }}">
                                                             <input type="hidden" name="storage" value="{{ disk.storage }}">
                                                             <input type="hidden" name="name" value="{{ disk.image }}">
+                                                            {% include 'edit_instance_volume.html' with id=forloop.counter0 %}
                                                             {% ifequal status 5 %}
                                                                 <button type="submit" class="btn btn-sm btn-default" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
                                                                     <i class="fa fa-eject"></i>
@@ -863,14 +875,15 @@
                                                                     <i class="fa fa-trash"></i>
                                                                 </button>
                                                             {% else %}
-                                                                <button class="btn btn-sm btn-default disabled" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume after shutdown?" %}')">
+                                                                <button class="btn btn-sm btn-default disabled" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
                                                                     <i class="fa fa-eject"></i>
                                                                 </button>
-                                                                <button class="btn btn-sm btn-default disabled" name="delete_vol" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete after shutdown?" %}')">
+                                                                <button class="btn btn-sm btn-default disabled" name="delete_vol" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
                                                                     <i class="fa fa-trash"></i>
                                                                 </button>
                                                             {% endifequal %}
                                                         </form>
+
                                                     </td>
                                                 </tr>
                                             {% endfor %}
@@ -887,44 +900,35 @@
 
                             <div class="col-xs-12 col-sm-12">
                                 <p><strong>{% trans "Network Devices" %}</strong></p>
-                                <table class="table table-hover">
+                                <table class="table table-condensed table-responsive">
                                     <thead>
                                     <tr>
                                         <th>{% trans 'Name' %}</th>
-                                        <th>{% trans 'MAC' %}</th>
-                                        <th>{% trans 'IP Address' %}</th>
-                                        <th>{% trans 'Source' %}</th>
-                                        <th>{% trans 'LinkState' %}</th>
-                                        <th>{% trans 'Filter' %}</th>
-                                        <th>{% trans 'Qos' %}</th>
-                                        <th>{% trans 'Actions' %}</th>
+                                        <th class="hidden-xs hidden-sm" colspan="6">{% trans 'Info' %}</th>
+                                        <th class="visible-xs visible-sm" colspan="2">{% trans 'Info' %}</th>
+                                        <th colspan="2">{% trans 'Actions' %}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                        {% for network in networks %}
+                                    {% for network in networks %}
                                         <tr>
-                                            <td class="col-sm-1">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})</td>
-                                            <td>{{ network.mac }}</td>
-                                            <td>{{ network.ipv4|default:"unknown" }}</td>
-                                            <td>{{ network.nic }}</td>
-                                            <td>
-                                            <form method="post">{% csrf_token %}
-                                                <input name="mac" value="{{ network.mac }}" hidden/>
-                                                <input name="set_link_state" value="{{ network.state }}" hidden/>
-                                                <input type="checkbox" {% if network.state == 'up' %} checked
-                                                {% endif %} onclick='submit();' />
-                                                {% trans 'active' %}
-                                            </form>
-                                            </td>
-                                            <td>{{ network.filterref|default:"None" }}</td>
-                                            <td>
-                                                <form class="form-horizontal" method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
-                                                    <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>
-                                                    {% include 'add_network_qos.html' with id=forloop.counter0 %}
+                                            <td rowspan="2">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})
+                                                <form method="post">{% csrf_token %}
+                                                    <input name="mac" value="{{ network.mac }}" hidden/>
+                                                    <input name="set_link_state" value="{{ network.state }}" hidden/>
+                                                    <input type="checkbox" {% if network.state == 'up' %} checked
+                                                    {% endif %} onclick='submit();' />
+                                                    <strong>{% trans 'active' %}</strong>
                                                 </form>
                                             </td>
-                                            <td class="col-sm-2">
-                                            <form class="form-horizontal" method="post" name="set_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
+                                            <th class="hidden-xs hidden-sm">{% trans 'MAC' %}</th>
+                                            <td>{{ network.mac }}</td>
+                                            <th class="hidden-xs hidden-sm">{% trans 'Filter' %}</th>
+                                            <td class="hidden-xs">{{ network.filterref|default:"None" }}</td>
+                                            <th class="hidden-xs hidden-sm">{% trans 'Source' %}</th>
+                                            <td>{{ network.nic }}</td>
+                                            <td>
+                                            <form class="form-horizontal" method="post" name="edit_network{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                                 <button data-target="#editInstanceNetwork{{ forloop.counter0 }}" type="button" class="btn btn-sm btn-primary"
                                                         title="Edit NIC" data-toggle="modal">
                                                     <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
@@ -939,13 +943,13 @@
                                                             </div>
                                                             <div class="modal-body">
                                                                 <div class="form-group form-inline">
-                                                                    <label class="col-sm-2 control-label">{% trans "MAC" %} </label>
+                                                                    <label class="col-sm-3 control-label">{% trans "MAC Addr" %} </label>
                                                                     <input class="form-control" type="text" value="{{ network.mac }}" readonly/>
                                                                     <label class="control-label"><em>to</em></label>
                                                                     <input class="form-control" type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
                                                                 </div>
                                                                 <div class="form-group form-inline">
-                                                                    <label class="col-sm-2 control-label">{% trans "NIC" %} </label>
+                                                                    <label class="col-sm-3 control-label">{% trans "Net Source" %} </label>
                                                                     <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
                                                                     <label class="control-label"><em>to</em></label>
                                                                     <select class="form-control" name="net-source-{{ forloop.counter0 }}">
@@ -958,7 +962,7 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="form-group form-inline">
-                                                                    <label class="col-sm-2 control-label">{% trans "Filter" %} </label>
+                                                                    <label class="col-sm-3 control-label">{% trans "NW Filter" %} </label>
                                                                     <input class="form-control" type="text" value="{{ network.filterref }}" readonly/>
                                                                     <label class="control-label"><em>to</em></label>
                                                                     <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
@@ -968,20 +972,59 @@
                                                                         {% endfor %}
                                                                     </select>
                                                                 </div>
-                                                                <button class="btn btn-sm btn-primary btn-block" name="change_network" title="{% trans "Apply Network Changes" %}">{% trans "Apply" %}</button>
+                                                                <div class="form-group form-inline">
+                                                                    <label class="col-sm-3 control-label">{% trans "Model" %} </label>
+                                                                    <input class="form-control" type="text" value="{{ network.model }}" readonly/>
+                                                                    <label class="control-label"><em>to</em></label>
+                                                                    <select class="form-control" name="net-model-{{ forloop.counter0 }}">
+                                                                        {% for model in net_models_host %}
+                                                                        <option value="{{ model }}" {% ifequal model network.model  %} selected {% endifequal %}>{{ model }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button class="btn btn-default"  data-dismiss="modal">{% trans 'Close' %}</button>
+                                                                <button class="btn btn-success" name="change_network" title="{% trans "Apply Network Changes" %}">{% trans "Apply" %}</button>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
-                                                    onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                    <i class="glyphicon glyphicon-trash"></i>
-                                                </button>
                                             </form>
                                             </td>
+                                            <td align="right">
+                                                <form method="post" name="delete_network" role="form">{% csrf_token %}
+                                                    <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
+                                                        onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <i class="glyphicon glyphicon-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
                                         </tr>
-                                        {% endfor %}
+                                        <tr>
+                                            <th class="hidden-xs hidden-sm">{% trans 'IPv4' %}</th>
+                                            <td>
+                                                {% for ipv4 in network.ipv4|default:"unknown" %}{{ ipv4 }}{% endfor %}
+                                            </td>
+                                            <th class="hidden-xs hidden-sm">{% trans 'IPv6' %}</th>
+                                            <td class="hidden-xs">
+                                                {% for ipv6 in network.ipv6|default:"unknown" %}{{ ipv6 }}{% endfor %}
+                                            </td>
+                                            <th class="hidden-xs hidden-sm">{% trans 'Model' %}</th>
+                                            <td>{{ network.model }}</td>
+                                            <th>{% trans 'QoS' %}</th>
+                                            <td align="right">
+                                                <form class="form-horizontal" method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
+                                                    <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>
+                                                    {% include 'add_network_qos.html' with id=forloop.counter0 %}
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="bg-primary hidden-xs hidden-sm" colspan="9"></td>
+                                            <td class="bg-primary visible-xs visible-sm" colspan="5"></td>
+                                        </tr>
+                                    {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
@@ -994,7 +1037,7 @@
                                 <table class="table table-hover">
                                     <thead>
                                     <tr>
-                                        <th>{% trans "Direction" %}</th>
+                                        <th>{% trans "MAC/Direction" %}</th>
                                         <th>{% trans "Average" %}</th>
                                         <th>{% trans "Peak" %}</th>
                                         <th>{% trans "Burst" %}</th>
