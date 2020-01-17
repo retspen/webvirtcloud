@@ -549,54 +549,51 @@
                                     {% endifequal %}
                                 </div>
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="managesnapshot">
-                                   {% ifequal status 5 %}
-                                        {% if snapshots %}
-                                            <p>{% trans "Choose a snapshot for restore/delete" %}</p>
-                                            <div class="table-responsive">
-                                                <table class="table">
-                                                    <thead>
-                                                        <th>{% trans "Name" %}</th>
-                                                        <th>{% trans "Date" %}</th>
-                                                        <th colspan="2">{% trans "Action" %}</th>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for snap in snapshots %}
-                                                        <tr>
-                                                            <td><strong>{{ snap.name }}</strong></td>
-                                                            <td>{{ snap.date|date:"M d H:i:s" }}</td>
-                                                            <td style="width:30px;">
-                                                                <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
-                                                                    <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                    {% ifequal status 5 %}
-                                                                        <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" title="Revert to this Snapshot" onclick="return confirm('Are you sure?')">
-                                                                            <span class="glyphicon glyphicon-save"></span>
-                                                                        </button>
-                                                                    {% else %}
-                                                                        <button type="button" class="btn btn-sm btn-default disabled">
-                                                                            <span class="glyphicon glyphicon-save"></span>
-                                                                        </button>
-                                                                    {% endifequal %}
-                                                                </form>
-                                                            </td>
-                                                            <td style="width:30px;">
-                                                                <form action="" method="post" role="form">{% csrf_token %}
-                                                                    <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                    <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" title="Delete Snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                        <span class="glyphicon glyphicon-trash"></span>
+                                    {% if snapshots %}
+                                        <p>{% trans "Choose a snapshot for restore/delete" %}</p>
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <th>{% trans "Name" %}</th>
+                                                    <th>{% trans "Date" %}</th>
+                                                    <th colspan="2">{% trans "Action" %}</th>
+                                                </thead>
+                                                <tbody>
+                                                {% for snap in snapshots %}
+                                                    <tr>
+                                                        <td><strong>{{ snap.name }}</strong></td>
+                                                        <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                                        <td style="width:30px;">
+                                                            <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                {% ifequal status 5 %}
+                                                                    <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" title="Revert to this Snapshot" onclick="return confirm('Are you sure?')">
+                                                                        <span class="glyphicon glyphicon-save"></span>
                                                                     </button>
-                                                                </form>
-                                                            </td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        {% else %}
-                                            <p>{% trans "You do not have any snapshots" %}</p>
-                                        {% endif %}
+                                                                {% else %}
+                                                                    <button type="button" class="btn btn-sm btn-default disabled"
+                                                                            title="{% trans "To restore snapshots you need Power Off the instance." %}">
+                                                                        <span class="glyphicon glyphicon-save"></span>
+                                                                    </button>
+                                                                {% endifequal %}
+                                                            </form>
+                                                        </td>
+                                                        <td style="width:30px;">
+                                                            <form action="" method="post" role="form">{% csrf_token %}
+                                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" title="Delete Snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                    <span class="glyphicon glyphicon-trash"></span>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     {% else %}
-                                        <p>{% trans "To restore snapshots you need Power Off the instance." %}</p>
-                                    {% endifequal %}
+                                        <p>{% trans "You do not have any snapshots" %}</p>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
