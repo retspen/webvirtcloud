@@ -19,12 +19,12 @@
                 <ul class="nav navbar-nav">
                     <li>
                         <a class="navbar-link" href="{% url 'overview' compute.id %}">
-                            <i class="fa fa-dashboard"></i>
+                            <i class="fa fa-server"></i>
                             {{ compute.name }} {% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %}
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                        <a href="{% url 'instances' compute.id %}"><i class="fa fa-desktop"></i> {% trans "Instances" %}</a>
                     </li>
                     <li class="active">
                         <a href="{% url 'instance' compute.id vname %}"><i class="fa fa-hdd-o"></i> {{ vname }}</a>
@@ -49,19 +49,18 @@
                 <span class="label label-warning">{% trans "Suspend" %}</span>
             {% endif %}
             |
-            <i {%if guest_agent == True %}
+            <span {%if guest_agent == True %}
                     {% if guest_agent_ready == True %}
-                        class="fa fa-plug text-success"
+                        class="label label-success"
                         title="Guest Agent Enabled & Connected"
                     {% else %}
-                        class="fa fa-plug text-warning"
+                        class="label label-warning"
                         title="Guest Agent Enabled but not Connected"
                     {% endif %}
                 {% else %}
-                    class="fa fa-plug text-danger"
+                    class="label label-danger"
                     title="Guest Agent Not Enabled & Not Connected"
-                {% endif %}>
-            </i>
+                {% endif %}><i class="fa fa-plug"></i></span>
             |
             {% if snapshots %}
                 <i class="fa fa-camera text-primary" title="There are {{ snapshots|length }} snapshot(s)"></i> |
