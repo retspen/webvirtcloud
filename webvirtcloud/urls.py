@@ -12,8 +12,6 @@ urlpatterns = [
     url(r'^computes/', include('computes.urls')),
     url(r'^logs/', include('logs.urls')),
     url(r'^datasource/', include('datasource.urls')),
-
-
     url(r'^console/$', console, name='console'),
-    # (r'^admin/', include(admin.site.urls)),
+    #url(r'^admin/', include(admin.site.urls)),
 ]
