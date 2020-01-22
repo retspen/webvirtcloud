@@ -767,15 +767,13 @@
                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                         <p style="font-weight:bold;">
                                             {% trans "Instance Media" %}
-                                            {% if status == 5 %}
-                                                <button type="submit" name="add_cdrom" type="button" class="btn btn-success pull-right" title="Add CD-ROM">
-                                                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                                                </button>
-                                        {% else %}
-                                            <button type="submit" type="button" class="btn btn-success disabled pull-right" title="Add CD-ROM" disabled>
+
+                                            <button type="submit" name="add_cdrom" type="button" class="btn btn-success pull-right"
+                                                    title="Add CD-ROM"
+                                                    {% if status != 5 %} disabled {% endif %} >
                                                 <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
                                             </button>
-                                        {% endif %}
+
                                         </p>
                                     </form>
                                         {% for cd in media %}

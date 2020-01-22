@@ -663,7 +663,7 @@ def instance(request, compute_id, vname):
             if 'add_cdrom' in request.POST and allow_admin_or_not_template:
                 bus = request.POST.get('bus', 'ide' if machine == 'pc' else 'sata')
                 target = get_new_disk_dev(media, disks, bus)
-                conn.attach_disk("", target, device='cdrom', cache='none', targetbus=bus)
+                conn.attach_disk("", target, disk_device='cdrom', cache_mode='none', target_bus=bus, readonly=True)
                 msg = _('Add CD-ROM: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')

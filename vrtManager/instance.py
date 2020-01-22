@@ -650,7 +650,7 @@ class wvmInstance(wvmConnect):
                     cache_mode=None, io_mode=None, discard_mode=None, detect_zeroes_mode=None):
 
         additionals = ''
-        if cache_mode is not None and cache_mode != 'default':
+        if cache_mode is not None and cache_mode != 'default' and disk_device != 'cdrom':
             additionals += "cache='%s' " % cache_mode
         if io_mode is not None and io_mode != 'default':
             additionals += "io='%s' " % io_mode
@@ -666,7 +666,7 @@ class wvmInstance(wvmConnect):
             xml_disk += "<driver name='%s' type='%s' %s/>" % (driver_name, driver_type, additionals)
         xml_disk += """<source file='%s'/>
           <target dev='%s' bus='%s'/>""" % (source, target_dev, target_bus)
-        if readonly:
+        if readonly or disk_device == 'cdrom':
             xml_disk += """<readonly/>"""
         if shareable:
             xml_disk += """<shareable/>"""
