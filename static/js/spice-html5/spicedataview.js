@@ -118,3 +118,7 @@ SpiceDataView.prototype = {
         this.setUint32(byteOffset + low,  (w & 0x00000000ffffffff), littleEndian);
     },
 }
+
+export {
+  SpiceDataView,
+};

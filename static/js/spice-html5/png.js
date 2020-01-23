@@ -22,6 +22,8 @@
 **  crc logic from rfc2083 ported to Javascript
 **--------------------------------------------------------------------------*/
 
+import { SpiceDataView } from './spicedataview.js';
+
 var rfc2083_crc_table = Array(256);
 var rfc2083_crc_table_computed = 0;
 /* Make the table for a fast CRC. */
@@ -254,3 +256,7 @@ function create_rgba_png(width, height, bytes)
 
     return "%89PNG%0D%0A%1A%0A" + str;
 }
+
+export {
+  create_rgba_png,
+};

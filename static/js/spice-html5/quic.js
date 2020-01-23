@@ -22,12 +22,15 @@
 
 var encoder;
 
-var QUIC_IMAGE_TYPE_INVALID = 0;
-var QUIC_IMAGE_TYPE_GRAY = 1;
-var QUIC_IMAGE_TYPE_RGB16 = 2;
-var QUIC_IMAGE_TYPE_RGB24 = 3;
-var QUIC_IMAGE_TYPE_RGB32 = 4;
-var QUIC_IMAGE_TYPE_RGBA = 5;
+var Constants = {
+  QUIC_IMAGE_TYPE_INVALID : 0,
+  QUIC_IMAGE_TYPE_GRAY : 1,
+  QUIC_IMAGE_TYPE_RGB16 : 2,
+  QUIC_IMAGE_TYPE_RGB24 : 3,
+  QUIC_IMAGE_TYPE_RGB32 : 4,
+  QUIC_IMAGE_TYPE_RGBA : 5,
+};
+
 var DEFevol = 3;
 var DEFwmimax = 6;
 var DEFwminext = 2048;
@@ -191,17 +194,17 @@ function family_init(family, bpc, limit)
 function quic_image_bpc(type)
 {
     switch (type) {
-    case QUIC_IMAGE_TYPE_GRAY:
+    case Constants.QUIC_IMAGE_TYPE_GRAY:
         return 8;
-    case QUIC_IMAGE_TYPE_RGB16:
+    case Constants.QUIC_IMAGE_TYPE_RGB16:
         return 5;
-    case QUIC_IMAGE_TYPE_RGB24:
+    case Constants.QUIC_IMAGE_TYPE_RGB24:
         return 8;
-    case QUIC_IMAGE_TYPE_RGB32:
+    case Constants.QUIC_IMAGE_TYPE_RGB32:
         return 8;
-    case QUIC_IMAGE_TYPE_RGBA:
+    case Constants.QUIC_IMAGE_TYPE_RGBA:
         return 8;
-    case QUIC_IMAGE_TYPE_INVALID:
+    case Constants.QUIC_IMAGE_TYPE_INVALID:
     default:
         console.log("quic: bad image type\n");
         return 0;
@@ -1189,8 +1192,8 @@ QuicEncoder.prototype.quic_decode = function(buf, stride)
 
     switch (this.type)
     {
-        case QUIC_IMAGE_TYPE_RGB32:
-        case QUIC_IMAGE_TYPE_RGB24:
+        case Constants.QUIC_IMAGE_TYPE_RGB32:
+        case Constants.QUIC_IMAGE_TYPE_RGB24:
             this.channels[0].correlate_row.zero = 0;
             this.channels[1].correlate_row.zero = 0;
             this.channels[2].correlate_row.zero = 0;
@@ -1208,11 +1211,11 @@ QuicEncoder.prototype.quic_decode = function(buf, stride)
                 this.rows_completed++;
             };
             break;
-        case QUIC_IMAGE_TYPE_RGB16:
+        case Constants.QUIC_IMAGE_TYPE_RGB16:
             console.log("quic: unsupported output format\n");
             return false;
             break;
-        case QUIC_IMAGE_TYPE_RGBA:
+        case Constants.QUIC_IMAGE_TYPE_RGBA:
             this.channels[0].correlate_row.zero = 0;
             this.channels[1].correlate_row.zero = 0;
             this.channels[2].correlate_row.zero = 0;
@@ -1237,12 +1240,12 @@ QuicEncoder.prototype.quic_decode = function(buf, stride)
             }
             break;
 
-        case QUIC_IMAGE_TYPE_GRAY:
+        case Constants.QUIC_IMAGE_TYPE_GRAY:
             console.log("quic: unsupported output format\n");
             return false;
             break;
 
-        case QUIC_IMAGE_TYPE_INVALID:
+        case Constants.QUIC_IMAGE_TYPE_INVALID:
         default:
             console.log("quic: bad image type\n");
             return false;
@@ -1255,8 +1258,8 @@ QuicEncoder.prototype.simple_quic_decode = function(buf)
     var stride = 4; /* FIXME - proper stride calc please */
     if (!this.quic_decode_begin(buf))
         return undefined;
-    if (this.type != QUIC_IMAGE_TYPE_RGB32 && this.type != QUIC_IMAGE_TYPE_RGB24
-        && this.type != QUIC_IMAGE_TYPE_RGBA)
+    if (this.type != Constants.QUIC_IMAGE_TYPE_RGB32 && this.type != Constants.QUIC_IMAGE_TYPE_RGB24
+        && this.type != Constants.QUIC_IMAGE_TYPE_RGBA)
         return undefined;
     var out = new Uint8Array(this.width*this.height*4);
     out[0] = 69;
@@ -1299,7 +1302,7 @@ function convert_spice_quic_to_web(context, spice_quic)
         ret.data[i + 0] = spice_quic.outptr[i + 2];
         ret.data[i + 1] = spice_quic.outptr[i + 1];
         ret.data[i + 2] = spice_quic.outptr[i + 0];
-        if (spice_quic.type !== QUIC_IMAGE_TYPE_RGBA)
+        if (spice_quic.type !== Constants.QUIC_IMAGE_TYPE_RGBA)
             ret.data[i + 3] = 255;
         else
             ret.data[i + 3] = 255 - spice_quic.outptr[i + 3];
@@ -1334,3 +1337,9 @@ if (need_init)
     if (!encoder)
         throw("quic: failed to create encoder");
 }
+
+export {
+  Constants,
+  SpiceQuic,
+  convert_spice_quic_to_web,
+};

@@ -25,6 +25,9 @@
 **  to and from the server.
 **--------------------------------------------------------------------------*/
 
+import { Constants } from './enums.js';
+import { SpiceQuic } from './quic.js';
+
 function SpiceChannelId()
 {
 }
@@ -92,7 +95,7 @@ SpiceClip.prototype =
     from_dv: function(dv, at, mb)
     {
         this.type = dv.getUint8(at, true); at ++;
-        if (this.type == SPICE_CLIP_TYPE_RECTS)
+        if (this.type == Constants.SPICE_CLIP_TYPE_RECTS)
         {
             this.rects = new SpiceClipRects();
             at = this.rects.from_dv(dv, at, mb);
@@ -151,7 +154,7 @@ SpiceBitmap.prototype =
         this.x = dv.getUint32(at, true); at += 4;
         this.y = dv.getUint32(at, true); at += 4;
         this.stride = dv.getUint32(at, true); at += 4;
-        if (this.flags & SPICE_BITMAP_FLAGS_PAL_FROM_CACHE)
+        if (this.flags & Constants.SPICE_BITMAP_FLAGS_PAL_FROM_CACHE)
         {
             this.palette_id = dv.getUint64(at, true); at += 8;
         }
@@ -185,7 +188,7 @@ SpiceImage.prototype =
         this.descriptor = new SpiceImageDescriptor;
         at = this.descriptor.from_dv(dv, at, mb);
 
-        if (this.descriptor.type == SPICE_IMAGE_TYPE_LZ_RGB)
+        if (this.descriptor.type == Constants.SPICE_IMAGE_TYPE_LZ_RGB)
         {
             this.lz_rgb = new Object();
             this.lz_rgb.length = dv.getUint32(at, true); at += 4;
@@ -210,18 +213,18 @@ SpiceImage.prototype =
 
         }
 
-        if (this.descriptor.type == SPICE_IMAGE_TYPE_BITMAP)
+        if (this.descriptor.type == Constants.SPICE_IMAGE_TYPE_BITMAP)
         {
             this.bitmap = new SpiceBitmap;
             at = this.bitmap.from_dv(dv, at, mb);
         }
 
-        if (this.descriptor.type == SPICE_IMAGE_TYPE_SURFACE)
+        if (this.descriptor.type == Constants.SPICE_IMAGE_TYPE_SURFACE)
         {
             this.surface_id = dv.getUint32(at, true); at += 4;
         }
 
-        if (this.descriptor.type == SPICE_IMAGE_TYPE_JPEG)
+        if (this.descriptor.type == Constants.SPICE_IMAGE_TYPE_JPEG)
         {
             this.jpeg = new Object;
             this.jpeg.data_size = dv.getUint32(at, true); at += 4;
@@ -229,7 +232,7 @@ SpiceImage.prototype =
             at += this.jpeg.data.byteLength;
         }
 
-        if (this.descriptor.type == SPICE_IMAGE_TYPE_JPEG_ALPHA)
+        if (this.descriptor.type == Constants.SPICE_IMAGE_TYPE_JPEG_ALPHA)
         {
             this.jpeg_alpha = new Object;
             this.jpeg_alpha.flags = dv.getUint8(at, true); at += 1;
@@ -260,7 +263,7 @@ SpiceImage.prototype =
             at += this.jpeg_alpha.alpha.data.byteLength;
         }
 
-        if (this.descriptor.type == SPICE_IMAGE_TYPE_QUIC)
+        if (this.descriptor.type == Constants.SPICE_IMAGE_TYPE_QUIC)
         {
             this.quic = new SpiceQuic;
             at = this.quic.from_dv(dv, at, mb);
@@ -327,11 +330,11 @@ SpiceBrush.prototype =
     from_dv: function(dv, at, mb)
     {
         this.type = dv.getUint8(at, true); at ++;
-        if (this.type == SPICE_BRUSH_TYPE_SOLID)
+        if (this.type == Constants.SPICE_BRUSH_TYPE_SOLID)
         {
             this.color = dv.getUint32(at, true); at += 4;
         }
-        else if (this.type == SPICE_BRUSH_TYPE_PATTERN)
+        else if (this.type == Constants.SPICE_BRUSH_TYPE_PATTERN)
         {
             this.pattern = new SpicePattern;
             at = this.pattern.from_dv(dv, at, mb);
@@ -439,7 +442,7 @@ SpiceCursor.prototype =
     from_dv: function(dv, at, mb)
     {
         this.flags = dv.getUint16(at, true); at += 2;
-        if (this.flags & SPICE_CURSOR_FLAGS_NONE)
+        if (this.flags & Constants.SPICE_CURSOR_FLAGS_NONE)
             this.header = null;
         else
         {
@@ -471,3 +474,24 @@ SpiceSurface.prototype =
 
 /* FIXME - SpiceImage  types lz_plt, jpeg, zlib_glz, and jpeg_alpha are
            completely unimplemented */
+
+export {
+  SpiceChannelId,
+  SpiceRect,
+  SpiceClipRects,
+  SpiceClip,
+  SpiceImageDescriptor,
+  SpicePalette,
+  SpiceBitmap,
+  SpiceImage,
+  SpiceQMask,
+  SpicePattern,
+  SpiceBrush,
+  SpiceFill,
+  SpiceCopy,
+  SpicePoint16,
+  SpicePoint,
+  SpiceCursorHeader,
+  SpiceCursor,
+  SpiceSurface,
+};

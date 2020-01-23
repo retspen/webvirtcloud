@@ -344,3 +344,8 @@ function bit_rol(num, cnt)
 {
   return (num << cnt) | (num >>> (32 - cnt));
 }
+
+export {
+  hex_sha1,
+  rstr_sha1,
+};

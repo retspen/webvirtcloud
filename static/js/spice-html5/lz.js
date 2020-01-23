@@ -18,6 +18,7 @@
    along with spice-html5.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { Constants } from './enums.js';
 
 /*----------------------------------------------------------------------------
 **  lz.js
@@ -30,6 +31,7 @@ function lz_rgb32_decompress(in_buf, at, out_buf, type, default_alpha)
     var op = 0;
     var ctrl;
     var ctr = 0;
+    var i = 0;
 
     for (ctrl = in_buf[encoder++]; (op * 4) < out_buf.length; ctrl = in_buf[encoder++])
     {
@@ -62,7 +64,7 @@ function lz_rgb32_decompress(in_buf, at, out_buf, type, default_alpha)
                 }
             }
             len += 1;
-            if (type == LZ_IMAGE_TYPE_RGBA)
+            if (type == Constants.LZ_IMAGE_TYPE_RGBA)
                 len += 2;
 
             ofs += 1;
@@ -72,7 +74,7 @@ function lz_rgb32_decompress(in_buf, at, out_buf, type, default_alpha)
                 var b = ref;
 //if (type == LZ_IMAGE_TYPE_RGBA) console.log("alpha " + out_buf[(b*4)+3] + " dupped into pixel " + op + " through pixel " + (op + len));
                 for (; len; --len) {
-                    if (type == LZ_IMAGE_TYPE_RGBA)
+                    if (type == Constants.LZ_IMAGE_TYPE_RGBA)
                     {
                         out_buf[(op*4) + 3] = out_buf[(b*4)+3];
                     }
@@ -86,7 +88,7 @@ function lz_rgb32_decompress(in_buf, at, out_buf, type, default_alpha)
             } else {
 //if (type == LZ_IMAGE_TYPE_RGBA) console.log("alpha copied to pixel " + op + " through " + (op + len) + " from " + ref);
                 for (; len; --len) {
-                    if (type == LZ_IMAGE_TYPE_RGBA)
+                    if (type == Constants.LZ_IMAGE_TYPE_RGBA)
                     {
                         out_buf[(op*4) + 3] = out_buf[(ref*4)+3];
                     }
@@ -101,7 +103,7 @@ function lz_rgb32_decompress(in_buf, at, out_buf, type, default_alpha)
         } else {
             ctrl++;
 
-            if (type == LZ_IMAGE_TYPE_RGBA)
+            if (type == Constants.LZ_IMAGE_TYPE_RGBA)
             {
 //console.log("alpha " + in_buf[encoder] + " set into pixel " + op);
                 out_buf[(op*4) + 3] = in_buf[encoder++];
@@ -119,7 +121,7 @@ function lz_rgb32_decompress(in_buf, at, out_buf, type, default_alpha)
 
 
             for (--ctrl; ctrl; ctrl--) {
-                if (type == LZ_IMAGE_TYPE_RGBA)
+                if (type == Constants.LZ_IMAGE_TYPE_RGBA)
                 {
 //console.log("alpha " + in_buf[encoder] + " set into pixel " + op);
                     out_buf[(op*4) + 3] = in_buf[encoder++];
@@ -157,26 +159,30 @@ function flip_image_data(img)
 function convert_spice_lz_to_web(context, lz_image)
 {
     var at;
-    if (lz_image.type === LZ_IMAGE_TYPE_RGB32 || lz_image.type === LZ_IMAGE_TYPE_RGBA)
+    if (lz_image.type === Constants.LZ_IMAGE_TYPE_RGB32 || lz_image.type === Constants.LZ_IMAGE_TYPE_RGBA)
     {
         var u8 = new Uint8Array(lz_image.data);
         var ret = context.createImageData(lz_image.width, lz_image.height);
 
-        at = lz_rgb32_decompress(u8, 0, ret.data, LZ_IMAGE_TYPE_RGB32, lz_image.type != LZ_IMAGE_TYPE_RGBA);
+        at = lz_rgb32_decompress(u8, 0, ret.data, Constants.LZ_IMAGE_TYPE_RGB32, lz_image.type != Constants.LZ_IMAGE_TYPE_RGBA);
         if (!lz_image.top_down)
             flip_image_data(ret);
 
-        if (lz_image.type == LZ_IMAGE_TYPE_RGBA)
-            lz_rgb32_decompress(u8, at, ret.data, LZ_IMAGE_TYPE_RGBA, false);
+        if (lz_image.type == Constants.LZ_IMAGE_TYPE_RGBA)
+            lz_rgb32_decompress(u8, at, ret.data, Constants.LZ_IMAGE_TYPE_RGBA, false);
     }
-    else if (lz_image.type === LZ_IMAGE_TYPE_XXXA)
+    else if (lz_image.type === Constants.LZ_IMAGE_TYPE_XXXA)
     {
         var u8 = new Uint8Array(lz_image.data);
         var ret = context.createImageData(lz_image.width, lz_image.height);
-        lz_rgb32_decompress(u8, 0, ret.data, LZ_IMAGE_TYPE_RGBA, false);
+        lz_rgb32_decompress(u8, 0, ret.data, Constants.LZ_IMAGE_TYPE_RGBA, false);
     }
     else
         return undefined;
 
     return ret;
 }
+
+export {
+  convert_spice_lz_to_web,
+};

@@ -22,6 +22,13 @@
 **  SpicePlaybackConn
 **      Drive the Spice Playback channel (sound out)
 **--------------------------------------------------------------------------*/
+
+import * as Utils from './utils.js';
+import * as Webm from './webm.js';
+import * as Messages from './spicemsg.js';
+import { Constants } from './enums.js';
+import { SpiceConn } from './spiceconn.js';
+
 function SpicePlaybackConn()
 {
     SpiceConn.apply(this, arguments);
@@ -40,25 +47,25 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
         return false;
     }
 
-    if (msg.type == SPICE_MSG_PLAYBACK_START)
+    if (msg.type == Constants.SPICE_MSG_PLAYBACK_START)
     {
-        var start = new SpiceMsgPlaybackStart(msg.data);
+        var start = new Messages.SpiceMsgPlaybackStart(msg.data);
 
-        PLAYBACK_DEBUG > 0 && console.log("PlaybackStart; frequency " + start.frequency);
+        Utils.PLAYBACK_DEBUG > 0 && console.log("PlaybackStart; frequency " + start.frequency);
 
-        if (start.frequency != OPUS_FREQUENCY)
+        if (start.frequency != Webm.Constants.OPUS_FREQUENCY)
         {
             this.log_err('This player cannot handle frequency ' + start.frequency);
             return false;
         }
 
-        if (start.channels != OPUS_CHANNELS)
+        if (start.channels != Webm.Constants.OPUS_CHANNELS)
         {
             this.log_err('This player cannot handle ' + start.channels + ' channels');
             return false;
         }
 
-        if (start.format != SPICE_AUDIO_FMT_S16)
+        if (start.format != Constants.SPICE_AUDIO_FMT_S16)
         {
             this.log_err('This player cannot format ' + start.format);
             return false;
@@ -85,9 +92,9 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
         }
     }
 
-    if (msg.type == SPICE_MSG_PLAYBACK_DATA)
+    if (msg.type == Constants.SPICE_MSG_PLAYBACK_DATA)
     {
-        var data = new SpiceMsgPlaybackData(msg.data);
+        var data = new Messages.SpiceMsgPlaybackData(msg.data);
 
         if (! this.source_buffer)
             return true;
@@ -115,28 +122,28 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
            will resync.
         */
 
-        if (this.start_time != 0 && data.time != (this.last_data_time + EXPECTED_PACKET_DURATION))
+        if (this.start_time != 0 && data.time != (this.last_data_time + Webm.Constants.EXPECTED_PACKET_DURATION))
         {
-            if (Math.abs(data.time - (EXPECTED_PACKET_DURATION + this.last_data_time)) < MAX_CLUSTER_TIME)
+            if (Math.abs(data.time - (Webm.Constants.EXPECTED_PACKET_DURATION + this.last_data_time)) < Webm.Constants.MAX_CLUSTER_TIME)
             {
-                PLAYBACK_DEBUG > 1 && console.log("Hacking time of " + data.time + " to " +
-                                      (this.last_data_time + EXPECTED_PACKET_DURATION));
-                data.time = this.last_data_time + EXPECTED_PACKET_DURATION;
+                Utils.PLAYBACK_DEBUG > 1 && console.log("Hacking time of " + data.time + " to " +
+                                      (this.last_data_time + Webm.Constants.EXPECTED_PACKET_DURATION));
+                data.time = this.last_data_time + Webm.Constants.EXPECTED_PACKET_DURATION;
             }
             else
             {
-                PLAYBACK_DEBUG > 1 && console.log("Apparent gap in audio time; now is " + data.time + " last was " + this.last_data_time);
+                Utils.PLAYBACK_DEBUG > 1 && console.log("Apparent gap in audio time; now is " + data.time + " last was " + this.last_data_time);
             }
         }
 
         this.last_data_time = data.time;
 
-        PLAYBACK_DEBUG > 1 && console.log("PlaybackData; time " + data.time + "; length " + data.data.byteLength);
+        Utils.PLAYBACK_DEBUG > 1 && console.log("PlaybackData; time " + data.time + "; length " + data.data.byteLength);
 
         if (this.start_time == 0)
             this.start_playback(data);
 
-        else if (data.time - this.cluster_time >= MAX_CLUSTER_TIME)
+        else if (data.time - this.cluster_time >= Webm.Constants.MAX_CLUSTER_TIME)
             this.new_cluster(data);
 
         else
@@ -145,10 +152,10 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
         return true;
     }
 
-    if (msg.type == SPICE_MSG_PLAYBACK_MODE)
+    if (msg.type == Constants.SPICE_MSG_PLAYBACK_MODE)
     {
-        var mode = new SpiceMsgPlaybackMode(msg.data);
-        if (mode.mode != SPICE_AUDIO_DATA_MODE_OPUS)
+        var mode = new Messages.SpiceMsgPlaybackMode(msg.data);
+        if (mode.mode != Constants.SPICE_AUDIO_DATA_MODE_OPUS)
         {
             this.log_err('This player cannot handle mode ' + mode.mode);
             delete this.source_buffer;
@@ -156,9 +163,9 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
         return true;
     }
 
-    if (msg.type == SPICE_MSG_PLAYBACK_STOP)
+    if (msg.type == Constants.SPICE_MSG_PLAYBACK_STOP)
     {
-        PLAYBACK_DEBUG > 0 && console.log("PlaybackStop");
+        Utils.PLAYBACK_DEBUG > 0 && console.log("PlaybackStop");
         if (this.source_buffer)
         {
             document.getElementById(this.parent.screen_id).removeChild(this.audio);
@@ -176,19 +183,19 @@ SpicePlaybackConn.prototype.process_channel_message = function(msg)
         }
     }
 
-    if (msg.type == SPICE_MSG_PLAYBACK_VOLUME)
+    if (msg.type == Constants.SPICE_MSG_PLAYBACK_VOLUME)
     {
         this.known_unimplemented(msg.type, "Playback Volume");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_PLAYBACK_MUTE)
+    if (msg.type == Constants.SPICE_MSG_PLAYBACK_MUTE)
     {
         this.known_unimplemented(msg.type, "Playback Mute");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_PLAYBACK_LATENCY)
+    if (msg.type == Constants.SPICE_MSG_PLAYBACK_LATENCY)
     {
         this.known_unimplemented(msg.type, "Playback Latency");
         return true;
@@ -201,9 +208,9 @@ SpicePlaybackConn.prototype.start_playback = function(data)
 {
     this.start_time = data.time;
 
-    var h = new webm_Header();
-    var te = new webm_AudioTrackEntry;
-    var t = new webm_Tracks(te);
+    var h = new Webm.Header();
+    var te = new Webm.AudioTrackEntry;
+    var t = new Webm.Tracks(te);
 
     var mb = new ArrayBuffer(h.buffer_size() + t.buffer_size())
 
@@ -221,7 +228,7 @@ SpicePlaybackConn.prototype.new_cluster = function(data)
 {
     this.cluster_time = data.time;
 
-    var c = new webm_Cluster(data.time - this.start_time);
+    var c = new Webm.Cluster(data.time - this.start_time);
 
     var mb = new ArrayBuffer(c.buffer_size());
     this.bytes_written += c.to_buffer(mb);
@@ -236,7 +243,7 @@ SpicePlaybackConn.prototype.new_cluster = function(data)
 
 SpicePlaybackConn.prototype.simple_block = function(data, keyframe)
 {
-    var sb = new webm_SimpleBlock(data.time - this.cluster_time, data.data, keyframe);
+    var sb = new Webm.SimpleBlock(data.time - this.cluster_time, data.data, keyframe);
     var mb = new ArrayBuffer(sb.buffer_size());
 
     this.bytes_written += sb.to_buffer(mb);
@@ -254,14 +261,14 @@ function handle_source_open(e)
     if (p.source_buffer)
         return;
 
-    p.source_buffer = this.addSourceBuffer(SPICE_PLAYBACK_CODEC);
+    p.source_buffer = this.addSourceBuffer(Webm.Constants.SPICE_PLAYBACK_CODEC);
     if (! p.source_buffer)
     {
-        p.log_err('Codec ' + SPICE_PLAYBACK_CODEC + ' not available.');
+        p.log_err('Codec ' + Webm.Constants.SPICE_PLAYBACK_CODEC + ' not available.');
         return;
     }
 
-    if (PLAYBACK_DEBUG > 0)
+    if (Utils.PLAYBACK_DEBUG > 0)
         playback_handle_event_debug.call(this, e);
 
     listen_for_audio_events(p);
@@ -315,7 +322,7 @@ function handle_append_buffer_done(e)
 {
     var p = this.spiceconn;
 
-    if (PLAYBACK_DEBUG > 1)
+    if (Utils.PLAYBACK_DEBUG > 1)
         playback_handle_event_debug.call(this, e);
 
     if (p.queue.length > 0)
@@ -352,18 +359,18 @@ function playback_handle_event_debug(e)
     var p = this.spiceconn;
     if (p.audio)
     {
-        if (PLAYBACK_DEBUG > 0 || p.audio.buffered.len > 1)
+        if (Utils.PLAYBACK_DEBUG > 0 || p.audio.buffered.len > 1)
             console.log(p.audio.currentTime + ": event " + e.type +
-                dump_media_element(p.audio));
+                Utils.dump_media_element(p.audio));
     }
 
-    if (PLAYBACK_DEBUG > 1 && p.media_source)
-        console.log("  media_source " + dump_media_source(p.media_source));
+    if (Utils.PLAYBACK_DEBUG > 1 && p.media_source)
+        console.log("  media_source " + Utils.dump_media_source(p.media_source));
 
-    if (PLAYBACK_DEBUG > 1 && p.source_buffer)
-        console.log("  source_buffer " + dump_source_buffer(p.source_buffer));
+    if (Utils.PLAYBACK_DEBUG > 1 && p.source_buffer)
+        console.log("  source_buffer " + Utils.dump_source_buffer(p.source_buffer));
 
-    if (PLAYBACK_DEBUG > 0 || p.queue.length > 1)
+    if (Utils.PLAYBACK_DEBUG > 0 || p.queue.length > 1)
         console.log('  queue len ' + p.queue.length + '; append_okay: ' + p.append_okay);
 }
 
@@ -391,8 +398,12 @@ function listen_for_audio_events(spiceconn)
     ];
 
     audio_0_events.forEach(playback_debug_listen_for_one_event, spiceconn.audio);
-    if (PLAYBACK_DEBUG > 0)
+    if (Utils.PLAYBACK_DEBUG > 0)
         audio_1_events.forEach(playback_debug_listen_for_one_event, spiceconn.audio);
-    if (PLAYBACK_DEBUG > 1)
+    if (Utils.PLAYBACK_DEBUG > 1)
         audio_2_events.forEach(playback_debug_listen_for_one_event, spiceconn.audio);
 }
+
+export {
+  SpicePlaybackConn,
+};

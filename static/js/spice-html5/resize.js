@@ -42,26 +42,29 @@ function resize_helper(sc)
     var h = window.innerHeight - 20;
 
     /* Screen height based on debug console visibility  */
-    if (window.getComputedStyle(m).getPropertyValue("display") == 'none')
+    if (m != null)
     {
-        /* Get console height from spice.css .spice-message */
-        var mh = parseInt(window.getComputedStyle(m).getPropertyValue("height"), 10);
-        h = h - mh;
-    }
-    else
-    {
-        /* Show both div elements - spice-area and message-div */
-        h = h - m.offsetHeight - m.clientHeight;
+        if (window.getComputedStyle(m).getPropertyValue("display") == 'none')
+        {
+            /* Get console height from spice.css .spice-message */
+            var mh = parseInt(window.getComputedStyle(m).getPropertyValue("height"), 10);
+            h = h - mh;
+        }
+        else
+        {
+            /* Show both div elements - spice-area and message-div */
+            h = h - m.offsetHeight - m.clientHeight;
+        }
     }
 
 
-    /* Xorg requires height be a multiple of 8; round up */
+    /* Xorg requires height be a multiple of 8; round down */
     if (h % 8 > 0)
-        h += (8 - (h % 8));
+        h -= (h % 8);
 
-    /* Xorg requires width be a multiple of 8; round up */
+    /* Xorg requires width be a multiple of 8; round down */
     if (w % 8 > 0)
-        w += (8 - (w % 8));
+        w -= (w % 8);
 
 
     sc.resize_window(0, w, h, 32, 0, 0);
@@ -80,3 +83,8 @@ function handle_resize(e)
 
     sc.spice_resize_timer = window.setTimeout(resize_helper, 200, sc);
 }
+
+export {
+  resize_helper,
+  handle_resize,
+};
