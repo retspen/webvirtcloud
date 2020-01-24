@@ -25,8 +25,8 @@ import socket
 from webvirtcloud.settings import WS_PORT, WS_HOST, WS_CERT
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
 from tunnel import Tunnel
-
 from optparse import OptionParser
+
 parser = OptionParser()
 
 parser.add_option("-v",
@@ -66,7 +66,6 @@ parser.add_option("-c",
 
 (options, args) = parser.parse_args()
 
-
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
 if options.debug:
     logging.basicConfig(level=logging.DEBUG, format=FORMAT)
@@ -88,8 +87,7 @@ except ImportError:
     try:
         from novnc.wsproxy import WebSocketProxy
     except ImportError:
-        print('Unable to import a websockify implementation, ' +
-              'please install one')
+        print('Unable to import a websockify implementation,\n please install one')
         sys.exit(1)
     else:
         USE_HANDLER = False
@@ -220,7 +218,6 @@ if USE_HANDLER:
             socket_factory = self.server.socket
 
             self._new_client(daemon, socket_factory)
-
 else:
     class NovaWebSocketProxy(WebSocketProxy, CompatibilityMixIn):
 

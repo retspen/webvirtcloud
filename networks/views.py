@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from networks.forms import AddNetPool
@@ -44,7 +44,7 @@ def networks(request, compute_id):
                         msg = _("Network pool name already in use")
                         error_messages.append(msg)
                     if data['forward'] == 'bridge' and data['bridge_name'] == '':
-                        error_messages.append('Please enter bridge name')
+                        error_messages.append(_('Please enter bridge name'))
                     if data['subnet']:
                         ipv4 = True
                         gateway4, netmask4, dhcp4 = network_size(data['subnet'], data['dhcp4'])
@@ -52,7 +52,7 @@ def networks(request, compute_id):
                         ipv6 = True
                         gateway6, prefix6, dhcp6 = network_size(data['subnet6'], data['dhcp6'])
                         if prefix6 != '64':
-                            error_messages.append('For libvirt, the IPv6 network prefix must be /64')
+                            error_messages.append(_('For libvirt, the IPv6 network prefix must be /64'))
                     if not error_messages:
                         conn.create_network(data['name'],
                                             data['forward'],
@@ -113,7 +113,7 @@ def network(request, compute_id, pool):
                 ipv6_network = ip_network
                 ipv6_fixed_address = conn.get_dhcp_host_addr(family)
             else:
-                raise Exception("Unknown Network Family")
+                raise Exception(_("Unknown Network Family"))
 
         xml = conn._XMLDesc(0)
     except libvirtError as lib_err:
@@ -163,7 +163,7 @@ def network(request, compute_id, pool):
 
             try:
                 ret_val = conn.modify_fixed_address(name, address, mac_duid, family)
-                messages.success(request, "{} Fixed Address Operation Completed.".format(family.upper()))
+                messages.success(request, _("{} Fixed Address Operation Completed.").format(family.upper()))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
@@ -173,7 +173,7 @@ def network(request, compute_id, pool):
             ip = request.POST.get('address', '')
             family = request.POST.get('family', 'ipv4')
             conn.delete_fixed_address(ip, family)
-            messages.success(request, "{} Fixed Address is Deleted.".format(family.upper()))
+            messages.success(request, _("{} Fixed Address is Deleted.").format(family.upper()))
             return HttpResponseRedirect(request.get_full_path())
         if 'modify_dhcp_range' in request.POST:
             range_start = request.POST.get('range_start', '')
@@ -181,7 +181,7 @@ def network(request, compute_id, pool):
             family = request.POST.get('family', 'ipv4')
             try:
                 conn.modify_dhcp_range(range_start, range_end, family)
-                messages.success(request, "{} DHCP Range is Changed.".format(family.upper()))
+                messages.success(request, _("{} DHCP Range is Changed.").format(family.upper()))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err.message)
@@ -204,10 +204,10 @@ def network(request, compute_id, pool):
             try:
                 conn.set_qos(qos_dir, average, peak, burst)
                 if conn.is_active():
-                    messages.success(request, "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
-                                     "Stop and start network to activate new config")
+                    messages.success(request, _("{} Qos is set. Network XML is changed.").format(qos_dir.capitalize()) +
+                                     _("Stop and start network to activate new config"))
                 else:
-                    messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+                    messages.success(request, _("{} Qos is set").format(qos_dir.capitalize()))
             except libvirtError as le:
                 messages.error(request, le.message)
             return HttpResponseRedirect(request.get_full_path())
@@ -216,10 +216,10 @@ def network(request, compute_id, pool):
             conn.unset_qos(qos_dir)
 
             if conn.is_active():
-                messages.success(request, "{} Qos is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
-                                 "Stop and start network to activate new config.")
+                messages.success(request, _("{} Qos is deleted. Network XML is changed. ").format(qos_dir.capitalize()) +
+                                 _("Stop and start network to activate new config."))
             else:
-                messages.success(request, "{} Qos is deleted".format(qos_dir.capitalize()))
+                messages.success(request, _("{} Qos is deleted").format(qos_dir.capitalize()))
             return HttpResponseRedirect(request.get_full_path())
     conn.close()
 
