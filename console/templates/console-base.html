@@ -53,6 +53,7 @@
 </head>
 
 <body>
+<div id='main_container' class="container">
 <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="container">
         <div class="navbar-header">
@@ -90,7 +91,7 @@
        </div>
    </div>
 </nav>
-<div id='main_container' class="container">
+
 {% block content %}{% endblock %}
 </div>
 <script src="{% static "js/jquery.js" %}"></script>

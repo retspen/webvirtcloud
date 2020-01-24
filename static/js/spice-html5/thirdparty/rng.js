@@ -33,6 +33,7 @@
 
 
 // Random number generator - requires a PRNG backend, e.g. prng4.js
+import { prng_newstate, rng_psize } from './prng4.js';
 
 // For best results, put code like
 // <body onClick='rng_seed_time();' onKeyPress='rng_seed_time();'>
@@ -100,3 +101,7 @@ function rng_get_bytes(ba) {
 function SecureRandom() {}
 
 SecureRandom.prototype.nextBytes = rng_get_bytes;
+
+export {
+  SecureRandom,
+};

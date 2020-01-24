@@ -4,61 +4,84 @@
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
+    <nav class="navbar navbar-default navba navbar-fixed-bottom">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar_bottom" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">{% trans 'Toggle navigation' %}</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">{% trans 'HOST' %}</a>
+            </div>
+            <div id="navbar_bottom" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a class="navbar-link" href="{% url 'overview' compute.id %}">
+                            <i class="fa fa-server"></i>
+                            {{ compute.name }} {% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %}
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'instances' compute.id %}"><i class="fa fa-desktop"></i> {% trans "Instances" %}</a>
+                    </li>
+                    <li class="active">
+                        <a href="{% url 'instance' compute.id vname %}"><i class="fa fa-hdd-o"></i> {{ vname }}</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
     <!-- Page Heading -->
-     <div class="row">
+     <div>
         <div>
-            <h3>
-                {{ vname }}{% if title %}&nbsp;({{ title }}){% endif %}
-            </h3>
+            <h3>{{ vname }}{% if title %}&nbsp;({{ title }}){% endif %}</h3>
         </div>
         <div>
-            <div>
-                {% if status == 5 %}
-                   <span class="label label-danger">{% trans "Off" %}</span>
-                {% endif %}
-                {% if status == 1 %}
-                    <span class="label label-success">{% trans "Active" %}</span>
-                {% endif %}
-                {% if status == 3 %}
-                    <span class="label label-warning">{% trans "Suspend" %}</span>
-                {% endif %}
-                |
-                {% if cur_vcpu %}
-                    {{ cur_vcpu }} {% trans "Vcpu" %}
-                {% else %}
-                    {{ vcpu }} {% trans "Vcpu" %}
-                {% endif %}
-                |
-                {{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}
-                |
-                {% for disk in disks %}
-                    {{ disk.size|filesizeformat }} {% trans "Disk" %} |
-                {% endfor %}
-                {% for net in networks %}
-                   {% for ipv4 in net.ipv4|default:"-" %}
-                       {{ ipv4 }} |
-                   {% endfor %}
-                {% endfor %}
-                <button
-                    {% if guest_agent == True %}
-                        {% if guest_agent_ready == True %}
-                            class="btn btn-xs btn-success"
-                            title="Guest Agent Enabled & Connected"
-                        {% else %}
-                            class="btn btn-xs btn-default"
-                            title="Guest Agent Enabled but not Connected"
-                        {% endif %}
+            {% if status == 5 %}
+               <span class="label label-danger">{% trans "Off" %}</span>
+            {% endif %}
+            {% if status == 1 %}
+                <span class="label label-success">{% trans "Active" %}</span>
+            {% endif %}
+            {% if status == 3 %}
+                <span class="label label-warning">{% trans "Suspend" %}</span>
+            {% endif %}
+            |
+            <span {%if guest_agent == True %}
+                    {% if guest_agent_ready == True %}
+                        class="label label-success"
+                        title="Guest Agent Enabled & Connected"
                     {% else %}
-                        class="btn btn-xs btn-danger"
-                        title="Guest Agent Not Enabled & Not Connected"
-                    {% endif %} disabled>
-                        <span class="glyphicon glyphicon-flash"></span>
-                </button>
-                |
-                <a href="{% url 'instance' compute.id vname %}" type="button" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
-                <em>on</em>
-                <a href="{% url 'overview' compute.id %}"><span class="label label-primary">{{ compute.name }}{% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %} </span></a>
-            </div>
+                        class="label label-warning"
+                        title="Guest Agent Enabled but not Connected"
+                    {% endif %}
+                {% else %}
+                    class="label label-danger"
+                    title="Guest Agent Not Enabled & Not Connected"
+                {% endif %}><i class="fa fa-plug"></i></span>
+            |
+            {% if snapshots %}
+                <i class="fa fa-camera text-primary" title="There are {{ snapshots|length }} snapshot(s)"></i> |
+            {% endif %}
+            {% if cur_vcpu %}
+                {{ cur_vcpu }} {% trans "Vcpu" %}
+            {% else %}
+                {{ vcpu }} {% trans "Vcpu" %}
+            {% endif %}
+            |
+            {{ cur_memory }} {% trans "MB" %} {% trans "Ram" %}
+            |
+            {% for disk in disks %}
+                {{ disk.size|filesizeformat }} {% trans "Disk" %} |
+            {% endfor %}
+            {% for net in networks %}
+               {% for ipv4 in net.ipv4 %}
+                   {{ ipv4 }} |
+               {% endfor %}
+            {% endfor %}
+            <a href="{% url 'instance' compute.id vname %}" title="{% trans 'refresh instance info' %}"><span class="fa fa-refresh"></span></a>
         </div>
         {% if user_quota_msg %}
             <span class="label label-warning">{{ user_quota_msg|capfirst }} {% trans "quota reached" %}.</span>
@@ -549,54 +572,51 @@
                                     {% endifequal %}
                                 </div>
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="managesnapshot">
-                                   {% ifequal status 5 %}
-                                        {% if snapshots %}
-                                            <p>{% trans "Choose a snapshot for restore/delete" %}</p>
-                                            <div class="table-responsive">
-                                                <table class="table">
-                                                    <thead>
-                                                        <th>{% trans "Name" %}</th>
-                                                        <th>{% trans "Date" %}</th>
-                                                        <th colspan="2">{% trans "Action" %}</th>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for snap in snapshots %}
-                                                        <tr>
-                                                            <td><strong>{{ snap.name }}</strong></td>
-                                                            <td>{{ snap.date|date:"M d H:i:s" }}</td>
-                                                            <td style="width:30px;">
-                                                                <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
-                                                                    <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                    {% ifequal status 5 %}
-                                                                        <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" title="Revert to this Snapshot" onclick="return confirm('Are you sure?')">
-                                                                            <span class="glyphicon glyphicon-save"></span>
-                                                                        </button>
-                                                                    {% else %}
-                                                                        <button type="button" class="btn btn-sm btn-default disabled">
-                                                                            <span class="glyphicon glyphicon-save"></span>
-                                                                        </button>
-                                                                    {% endifequal %}
-                                                                </form>
-                                                            </td>
-                                                            <td style="width:30px;">
-                                                                <form action="" method="post" role="form">{% csrf_token %}
-                                                                    <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                    <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" title="Delete Snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                                        <span class="glyphicon glyphicon-trash"></span>
+                                    {% if snapshots %}
+                                        <p>{% trans "Choose a snapshot for restore/delete" %}</p>
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <th>{% trans "Name" %}</th>
+                                                    <th>{% trans "Date" %}</th>
+                                                    <th colspan="2">{% trans "Action" %}</th>
+                                                </thead>
+                                                <tbody>
+                                                {% for snap in snapshots %}
+                                                    <tr>
+                                                        <td><strong>{{ snap.name }}</strong></td>
+                                                        <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                                        <td style="width:30px;">
+                                                            <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                {% ifequal status 5 %}
+                                                                    <button type="submit" class="btn btn-sm btn-default" name="revert_snapshot" title="Revert to this Snapshot" onclick="return confirm('Are you sure?')">
+                                                                        <span class="glyphicon glyphicon-save"></span>
                                                                     </button>
-                                                                </form>
-                                                            </td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        {% else %}
-                                            <p>{% trans "You do not have any snapshots" %}</p>
-                                        {% endif %}
+                                                                {% else %}
+                                                                    <button type="button" class="btn btn-sm btn-default disabled"
+                                                                            title="{% trans "To restore snapshots you need Power Off the instance." %}">
+                                                                        <span class="glyphicon glyphicon-save"></span>
+                                                                    </button>
+                                                                {% endifequal %}
+                                                            </form>
+                                                        </td>
+                                                        <td style="width:30px;">
+                                                            <form action="" method="post" role="form">{% csrf_token %}
+                                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                                <button type="submit" class="btn btn-sm btn-default" name="delete_snapshot" title="Delete Snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                    <span class="glyphicon glyphicon-trash"></span>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     {% else %}
-                                        <p>{% trans "To restore snapshots you need Power Off the instance." %}</p>
-                                    {% endifequal %}
+                                        <p>{% trans "You do not have any snapshots" %}</p>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -747,15 +767,13 @@
                                     <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
                                         <p style="font-weight:bold;">
                                             {% trans "Instance Media" %}
-                                            {% if status == 5 %}
-                                                <button type="submit" name="add_cdrom" type="button" class="btn btn-success pull-right" title="Add CD-ROM">
-                                                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                                                </button>
-                                        {% else %}
-                                            <button type="submit" type="button" class="btn btn-success disabled pull-right" title="Add CD-ROM" disabled>
+
+                                            <button type="submit" name="add_cdrom" type="button" class="btn btn-success pull-right"
+                                                    title="Add CD-ROM"
+                                                    {% if status != 5 %} disabled {% endif %} >
                                                 <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
                                             </button>
-                                        {% endif %}
+
                                         </p>
                                     </form>
                                         {% for cd in media %}

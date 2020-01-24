@@ -86,3 +86,9 @@ function handle_file_drop(e)
     }
 
 }
+
+export {
+  SpiceFileXferTask,
+  handle_file_dragover,
+  handle_file_drop,
+};

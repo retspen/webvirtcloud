@@ -76,18 +76,20 @@ var WEBM_SIMPLE_BLOCK =                     [ 0xA3 ] ;
 /*----------------------------------------------------------------------------
 **  Various OPUS / Webm constants
 **--------------------------------------------------------------------------*/
-var CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME       = 1 << 7;
+var Constants = {
+  CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME       : 1 << 7,
 
-var OPUS_FREQUENCY                          = 48000;
-var OPUS_CHANNELS                           = 2;
+  OPUS_FREQUENCY                          : 48000,
+  OPUS_CHANNELS                           : 2,
 
-var SPICE_PLAYBACK_CODEC                    = 'audio/webm; codecs="opus"';
-var MAX_CLUSTER_TIME                        = 1000;
+  SPICE_PLAYBACK_CODEC                    : 'audio/webm; codecs="opus"',
+  MAX_CLUSTER_TIME                        : 1000,
 
-var EXPECTED_PACKET_DURATION                = 10;
-var GAP_DETECTION_THRESHOLD                 = 50;
+  EXPECTED_PACKET_DURATION                : 10,
+  GAP_DETECTION_THRESHOLD                 : 50,
 
-var SPICE_VP8_CODEC                         = 'video/webm; codecs="vp8"';
+  SPICE_VP8_CODEC                         : 'video/webm; codecs="vp8"',
+};
 
 /*----------------------------------------------------------------------------
 **  EBML utility functions
@@ -275,7 +277,7 @@ function webm_Audio(frequency)
 {
     this.id = WEBM_AUDIO;
     this.sampling_frequency = frequency;
-    this.channels = OPUS_CHANNELS;
+    this.channels = Constants.OPUS_CHANNELS;
 }
 
 webm_Audio.prototype =
@@ -407,12 +409,12 @@ function webm_AudioTrackEntry()
     this.seek_pre_roll = 0; // 80000000; // fixme - check
     this.codec_delay =   80000000; // Must match codec_private.preskip
     this.codec_id = "A_OPUS";
-    this.audio = new webm_Audio(OPUS_FREQUENCY);
+    this.audio = new webm_Audio(Constants.OPUS_FREQUENCY);
 
     // See:  http://tools.ietf.org/html/draft-terriberry-oggopus-01
     this.codec_private = [ 0x4f, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64,  // OpusHead
                            0x01, // Version
-                           OPUS_CHANNELS,
+                           Constants.OPUS_CHANNELS,
                            0x00, 0x0F, // Preskip - 3840 samples - should be 8ms at 48kHz
                            0x80, 0xbb, 0x00, 0x00,  // 48000
                            0x00, 0x00, // Output gain
@@ -597,7 +599,7 @@ webm_SimpleBlock.prototype =
         at = EBML_write_u64_data_len(this.data.byteLength + 4, dv, at);
         at = EBML_write_u1_data_len(1, dv, at); // Track #
         dv.setUint16(at, this.timecode); at += 2; // timecode - relative to cluster
-        dv.setUint8(at, this.keyframe ? CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME : 0); at += 1;  // flags
+        dv.setUint8(at, this.keyframe ? Constants.CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME : 0); at += 1;  // flags
 
         // FIXME - There should be a better way to copy
         var u8 = new Uint8Array(this.data);
@@ -645,3 +647,15 @@ webm_Header.prototype =
                this.info.buffer_size();
     },
 }
+
+export {
+  Constants,
+  webm_Audio as Audio,
+  webm_Video as Video,
+  webm_AudioTrackEntry as AudioTrackEntry,
+  webm_VideoTrackEntry as VideoTrackEntry,
+  webm_Tracks as Tracks,
+  webm_Cluster as Cluster,
+  webm_SimpleBlock as SimpleBlock,
+  webm_Header as Header,
+};

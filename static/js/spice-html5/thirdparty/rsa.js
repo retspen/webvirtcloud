@@ -1,4 +1,5 @@
 // Downloaded from http://www-cs-students.stanford.edu/~tjw/jsbn/ by Jeremy White on 6/1/2012
+// Converted into an ES6 module
 
 /*
  * Copyright (c) 2003-2005  Tom Wu
@@ -33,6 +34,8 @@
 
 
 // Depends on jsbn.js and rng.js
+import { BigInteger } from './jsbn.js';
+import { SecureRandom } from './rng.js';
 
 // Version 1.1: support utf-8 encoding in pkcs1pad2
 
@@ -144,3 +147,7 @@ RSAKey.prototype.doPublic = RSADoPublic;
 RSAKey.prototype.setPublic = RSASetPublic;
 RSAKey.prototype.encrypt = RSAEncrypt;
 //RSAKey.prototype.encrypt_b64 = RSAEncryptB64;
+
+export {
+  RSAKey,
+};

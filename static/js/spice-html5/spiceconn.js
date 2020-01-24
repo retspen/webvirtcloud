@@ -26,6 +26,25 @@
 **  display, inputs, and cursor channels.  See main.js for
 **  usage.
 **--------------------------------------------------------------------------*/
+
+import { Constants } from './enums.js';
+import { SpiceWireReader } from './wire.js';
+import {
+  SpiceLinkHeader,
+  SpiceLinkMess,
+  SpiceLinkReply,
+  SpiceLinkAuthTicket,
+  SpiceLinkAuthReply,
+  SpiceMiniData,
+  SpiceMsgcDisplayInit,
+  SpiceMsgSetAck,
+  SpiceMsgcAckSync,
+  SpiceMsgNotify,
+} from './spicemsg.js';
+import { DEBUG } from './utils.js';
+import * as Webm from './webm.js';
+import { rsa_encrypt } from './ticket.js';
+
 function SpiceConn(o)
 {
     if (o === undefined || o.uri === undefined || ! o.uri)
@@ -37,7 +56,7 @@ function SpiceConn(o)
         throw new Error("WebSocket doesn't support binaryType.  Try a different browser.");
 
     this.connection_id = o.connection_id !== undefined ? o.connection_id : 0;
-    this.type = o.type !== undefined ? o.type : SPICE_CHANNEL_MAIN;
+    this.type = o.type !== undefined ? o.type : Constants.SPICE_CHANNEL_MAIN;
     this.chan_id = o.chan_id !== undefined ? o.chan_id : 0;
     if (o.parent !== undefined)
     {
@@ -107,7 +126,7 @@ function SpiceConn(o)
     if (this.ws.readyState == 2 || this.ws.readyState == 3)
         throw new Error("Unable to connect to " + o.uri);
 
-    this.timeout = window.setTimeout(spiceconn_timeout, SPICE_CONNECT_TIMEOUT, this);
+    this.timeout = window.setTimeout(spiceconn_timeout, Constants.SPICE_CONNECT_TIMEOUT, this);
 }
 
 SpiceConn.prototype =
@@ -122,31 +141,31 @@ SpiceConn.prototype =
         msg.channel_id = this.chan_id;
 
         msg.common_caps.push(
-            (1 << SPICE_COMMON_CAP_PROTOCOL_AUTH_SELECTION) |
-            (1 << SPICE_COMMON_CAP_MINI_HEADER)
+            (1 << Constants.SPICE_COMMON_CAP_PROTOCOL_AUTH_SELECTION) |
+            (1 << Constants.SPICE_COMMON_CAP_MINI_HEADER)
             );
 
-        if (msg.channel_type == SPICE_CHANNEL_PLAYBACK)
+        if (msg.channel_type == Constants.SPICE_CHANNEL_PLAYBACK)
         {
             var caps = 0;
-            if ('MediaSource' in window && MediaSource.isTypeSupported(SPICE_PLAYBACK_CODEC))
-                caps |= (1 << SPICE_PLAYBACK_CAP_OPUS);
+            if ('MediaSource' in window && MediaSource.isTypeSupported(Webm.Constants.SPICE_PLAYBACK_CODEC))
+                caps |= (1 << Constants.SPICE_PLAYBACK_CAP_OPUS);
             msg.channel_caps.push(caps);
         }
-        else if (msg.channel_type == SPICE_CHANNEL_MAIN)
+        else if (msg.channel_type == Constants.SPICE_CHANNEL_MAIN)
         {
             msg.channel_caps.push(
-                (1 << SPICE_MAIN_CAP_AGENT_CONNECTED_TOKENS)
+                (1 << Constants.SPICE_MAIN_CAP_AGENT_CONNECTED_TOKENS)
             );
         }
-        else if (msg.channel_type == SPICE_CHANNEL_DISPLAY)
+        else if (msg.channel_type == Constants.SPICE_CHANNEL_DISPLAY)
         {
-            var caps =  (1 << SPICE_DISPLAY_CAP_SIZED_STREAM) |
-                        (1 << SPICE_DISPLAY_CAP_STREAM_REPORT) |
-                        (1 << SPICE_DISPLAY_CAP_MULTI_CODEC) |
-                        (1 << SPICE_DISPLAY_CAP_CODEC_MJPEG);
-            if ('MediaSource' in window && MediaSource.isTypeSupported(SPICE_VP8_CODEC))
-                caps |= (1 << SPICE_DISPLAY_CAP_CODEC_VP8);
+            var caps =  (1 << Constants.SPICE_DISPLAY_CAP_SIZED_STREAM) |
+                        (1 << Constants.SPICE_DISPLAY_CAP_STREAM_REPORT) |
+                        (1 << Constants.SPICE_DISPLAY_CAP_MULTI_CODEC) |
+                        (1 << Constants.SPICE_DISPLAY_CAP_CODEC_MJPEG);
+            if ('MediaSource' in window && MediaSource.isTypeSupported(Webm.Constants.SPICE_VP8_CODEC))
+                caps |= (1 << Constants.SPICE_DISPLAY_CAP_CODEC_VP8);
             msg.channel_caps.push(caps);
         }
 
@@ -164,7 +183,7 @@ SpiceConn.prototype =
     send_ticket: function(ticket)
     {
         var hdr = new SpiceLinkAuthTicket();
-        hdr.auth_mechanism = SPICE_COMMON_CAP_AUTH_SPICE;
+        hdr.auth_mechanism = Constants.SPICE_COMMON_CAP_AUTH_SPICE;
         // FIXME - we need to implement RSA to make this work right
         hdr.encrypted_data = ticket;
         var mb = new ArrayBuffer(hdr.buffer_size());
@@ -226,7 +245,7 @@ SpiceConn.prototype =
         else if (this.state == "start")
         {
             this.reply_hdr = new SpiceLinkHeader(mb);
-            if (this.reply_hdr.magic != SPICE_MAGIC)
+            if (this.reply_hdr.magic != Constants.SPICE_MAGIC)
             {
                 this.state = "error";
                 var e = new Error('Error: magic mismatch: ' + this.reply_hdr.magic);
@@ -261,16 +280,16 @@ SpiceConn.prototype =
         else if (this.state == "ticket")
         {
             this.auth_reply = new SpiceLinkAuthReply(mb);
-            if (this.auth_reply.auth_code == SPICE_LINK_ERR_OK)
+            if (this.auth_reply.auth_code == Constants.SPICE_LINK_ERR_OK)
             {
                 DEBUG > 0 && console.log(this.type + ': Connected');
 
-                if (this.type == SPICE_CHANNEL_DISPLAY)
+                if (this.type == Constants.SPICE_CHANNEL_DISPLAY)
                 {
                     // FIXME - pixmap and glz dictionary config info?
                     var dinit = new SpiceMsgcDisplayInit();
                     var reply = new SpiceMiniData();
-                    reply.build_msg(SPICE_MSGC_DISPLAY_INIT, dinit);
+                    reply.build_msg(Constants.SPICE_MSGC_DISPLAY_INIT, dinit);
                     DEBUG > 0 && console.log("Request display init");
                     this.send_msg(reply);
                 }
@@ -285,7 +304,7 @@ SpiceConn.prototype =
             else
             {
                 this.state = "error";
-                if (this.auth_reply.auth_code == SPICE_LINK_ERR_PERMISSION_DENIED)
+                if (this.auth_reply.auth_code == Constants.SPICE_LINK_ERR_PERMISSION_DENIED)
                 {
                     var e = new Error("Permission denied.");
                 }
@@ -300,7 +319,7 @@ SpiceConn.prototype =
 
     process_common_messages : function(msg)
     {
-        if (msg.type == SPICE_MSG_SET_ACK)
+        if (msg.type == Constants.SPICE_MSG_SET_ACK)
         {
             var ack = new SpiceMsgSetAck(msg.data);
             // FIXME - what to do with generation?
@@ -309,16 +328,16 @@ SpiceConn.prototype =
             this.msgs_until_ack = this.ack_window;
             var ackack = new SpiceMsgcAckSync(ack);
             var reply = new SpiceMiniData();
-            reply.build_msg(SPICE_MSGC_ACK_SYNC, ackack);
+            reply.build_msg(Constants.SPICE_MSGC_ACK_SYNC, ackack);
             this.send_msg(reply);
             return true;
         }
 
-        if (msg.type == SPICE_MSG_PING)
+        if (msg.type == Constants.SPICE_MSG_PING)
         {
             DEBUG > 1 && console.log("ping!");
             var pong = new SpiceMiniData;
-            pong.type = SPICE_MSGC_PONG;
+            pong.type = Constants.SPICE_MSGC_PONG;
             if (msg.data)
             {
                 pong.data = msg.data.slice(0, 12);
@@ -328,13 +347,13 @@ SpiceConn.prototype =
             return true;
         }
 
-        if (msg.type == SPICE_MSG_NOTIFY)
+        if (msg.type == Constants.SPICE_MSG_NOTIFY)
         {
             // FIXME - Visibility + what
             var notify = new SpiceMsgNotify(msg.data);
-            if (notify.severity == SPICE_NOTIFY_SEVERITY_ERROR)
+            if (notify.severity == Constants.SPICE_NOTIFY_SEVERITY_ERROR)
                 this.log_err(notify.message);
-            else if (notify.severity == SPICE_NOTIFY_SEVERITY_WARN )
+            else if (notify.severity == Constants.SPICE_NOTIFY_SEVERITY_WARN )
                 this.log_warn(notify.message);
             else
                 this.log_info(notify.message);
@@ -370,41 +389,41 @@ SpiceConn.prototype =
             {
                 this.msgs_until_ack = this.ack_window;
                 var ack = new SpiceMiniData();
-                ack.type = SPICE_MSGC_ACK;
+                ack.type = Constants.SPICE_MSGC_ACK;
                 this.send_msg(ack);
                 DEBUG > 1 && console.log(this.type + ": sent ack");
             }
         }
 
         var delta = Date.now() - start;
-        if (DEBUG > 0 || delta > GAP_DETECTION_THRESHOLD)
+        if (DEBUG > 0 || delta > Webm.Constants.GAP_DETECTION_THRESHOLD)
             console.log("delta " + this.channel_type() + ":" + msg.type + " " + delta);
         return rc;
     },
 
     channel_type: function()
     {
-        if (this.type == SPICE_CHANNEL_MAIN)
+        if (this.type == Constants.SPICE_CHANNEL_MAIN)
             return "main";
-        else if (this.type == SPICE_CHANNEL_DISPLAY)
+        else if (this.type == Constants.SPICE_CHANNEL_DISPLAY)
             return "display";
-        else if (this.type == SPICE_CHANNEL_INPUTS)
+        else if (this.type == Constants.SPICE_CHANNEL_INPUTS)
             return "inputs";
-        else if (this.type == SPICE_CHANNEL_CURSOR)
+        else if (this.type == Constants.SPICE_CHANNEL_CURSOR)
             return "cursor";
-        else if (this.type == SPICE_CHANNEL_PLAYBACK)
+        else if (this.type == Constants.SPICE_CHANNEL_PLAYBACK)
             return "playback";
-        else if (this.type == SPICE_CHANNEL_RECORD)
+        else if (this.type == Constants.SPICE_CHANNEL_RECORD)
             return "record";
-        else if (this.type == SPICE_CHANNEL_TUNNEL)
+        else if (this.type == Constants.SPICE_CHANNEL_TUNNEL)
             return "tunnel";
-        else if (this.type == SPICE_CHANNEL_SMARTCARD)
+        else if (this.type == Constants.SPICE_CHANNEL_SMARTCARD)
             return "smartcard";
-        else if (this.type == SPICE_CHANNEL_USBREDIR)
+        else if (this.type == Constants.SPICE_CHANNEL_USBREDIR)
             return "usbredir";
-        else if (this.type == SPICE_CHANNEL_PORT)
+        else if (this.type == Constants.SPICE_CHANNEL_PORT)
             return "port";
-        else if (this.type == SPICE_CHANNEL_WEBDAV)
+        else if (this.type == Constants.SPICE_CHANNEL_WEBDAV)
             return "webdav";
         return "unknown-" + this.type;
 
@@ -501,3 +520,7 @@ function spiceconn_timeout(sc)
 {
     SpiceConn.prototype.handle_timeout.call(sc);
 }
+
+export {
+  SpiceConn,
+};

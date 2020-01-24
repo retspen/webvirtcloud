@@ -18,6 +18,19 @@
    along with spice-html5.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import * as Messages from './spicemsg.js';
+import { Constants } from './enums.js';
+import { SpiceCursorConn } from './cursor.js';
+import { SpiceConn } from './spiceconn.js';
+import { DEBUG } from './utils.js';
+import { SpiceFileXferTask } from './filexfer.js';
+import { SpiceInputsConn, sendCtrlAltDel } from './inputs.js';
+import { SpiceDisplayConn } from './display.js';
+import { SpicePlaybackConn } from './playback.js';
+import { SpicePortConn } from './port.js';
+import { handle_file_dragover, handle_file_drop } from './filexfer.js';
+import { resize_helper, handle_resize } from './resize.js';
+
 /*----------------------------------------------------------------------------
 **  SpiceMainConn
 **      This is the master Javascript class for establishing and
@@ -43,6 +56,8 @@
 **          onagent     (optional)  If given, a function to be called when
 **                                  a VD agent is connected; a good opportunity
 **                                  to request a resize
+**          onsuccess   (optional)  If given, a function to be called when the
+**                                  session is successfully connected
 **
 **  Throws error if there are troubles.  Requires a modern (by 2012 standards)
 **      browser, including WebSocket and WebSocket.binaryType == arraybuffer
@@ -65,23 +80,23 @@ function SpiceMainConn()
 SpiceMainConn.prototype = Object.create(SpiceConn.prototype);
 SpiceMainConn.prototype.process_channel_message = function(msg)
 {
-    if (msg.type == SPICE_MSG_MAIN_MIGRATE_BEGIN)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MIGRATE_BEGIN)
     {
         this.known_unimplemented(msg.type, "Main Migrate Begin");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MIGRATE_CANCEL)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MIGRATE_CANCEL)
     {
         this.known_unimplemented(msg.type, "Main Migrate Cancel");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_INIT)
+    if (msg.type == Constants.SPICE_MSG_MAIN_INIT)
     {
         this.log_info("Connected to " + this.ws.url);
         this.report_success("Connected")
-        this.main_init = new SpiceMsgMainInit(msg.data);
+        this.main_init = new Messages.SpiceMsgMainInit(msg.data);
         this.connection_id = this.main_init.session_id;
         this.agent_tokens = this.main_init.agent_tokens;
 
@@ -108,33 +123,33 @@ SpiceMainConn.prototype.process_channel_message = function(msg)
         if (this.main_init.agent_connected)
             this.connect_agent();
 
-        var attach = new SpiceMiniData;
-        attach.type = SPICE_MSGC_MAIN_ATTACH_CHANNELS;
+        var attach = new Messages.SpiceMiniData;
+        attach.type = Constants.SPICE_MSGC_MAIN_ATTACH_CHANNELS;
         attach.size = attach.buffer_size();
         this.send_msg(attach);
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MOUSE_MODE)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MOUSE_MODE)
     {
-        var mode = new SpiceMsgMainMouseMode(msg.data);
+        var mode = new Messages.SpiceMsgMainMouseMode(msg.data);
         DEBUG > 0 && this.log_info("Mouse supported modes " + mode.supported_modes + "; current " + mode.current_mode);
         this.handle_mouse_mode(mode.current_mode, mode.supported_modes);
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MULTI_MEDIA_TIME)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MULTI_MEDIA_TIME)
     {
         this.known_unimplemented(msg.type, "Main Multi Media Time");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_CHANNELS_LIST)
+    if (msg.type == Constants.SPICE_MSG_MAIN_CHANNELS_LIST)
     {
         var i;
         var chans;
         DEBUG > 0 && console.log("channels");
-        chans = new SpiceMsgChannels(msg.data);
+        chans = new Messages.SpiceMsgChannels(msg.data);
         for (i = 0; i < chans.channels.length; i++)
         {
             var conn = {
@@ -144,23 +159,24 @@ SpiceMainConn.prototype.process_channel_message = function(msg)
                         type : chans.channels[i].type,
                         chan_id : chans.channels[i].id
                     };
-            if (chans.channels[i].type == SPICE_CHANNEL_DISPLAY)
+            if (chans.channels[i].type == Constants.SPICE_CHANNEL_DISPLAY)
             {
-                if (this.display !== undefined)
-                    this.log_warn("The spice-html5 client does not handle multiple heads.");
-                else
+                if (chans.channels[i].id == 0) {
                     this.display = new SpiceDisplayConn(conn);
+                } else {
+                    this.log_warn("The spice-html5 client does not handle multiple heads.");
+                }
             }
-            else if (chans.channels[i].type == SPICE_CHANNEL_INPUTS)
+            else if (chans.channels[i].type == Constants.SPICE_CHANNEL_INPUTS)
             {
                 this.inputs = new SpiceInputsConn(conn);
                 this.inputs.mouse_mode = this.mouse_mode;
             }
-            else if (chans.channels[i].type == SPICE_CHANNEL_CURSOR)
+            else if (chans.channels[i].type == Constants.SPICE_CHANNEL_CURSOR)
                 this.cursor = new SpiceCursorConn(conn);
-            else if (chans.channels[i].type == SPICE_CHANNEL_PLAYBACK)
+            else if (chans.channels[i].type == Constants.SPICE_CHANNEL_PLAYBACK)
                 this.cursor = new SpicePlaybackConn(conn);
-            else if (chans.channels[i].type == SPICE_CHANNEL_PORT)
+            else if (chans.channels[i].type == Constants.SPICE_CHANNEL_PORT)
                 this.ports.push(new SpicePortConn(conn));
             else
             {
@@ -175,23 +191,23 @@ SpiceMainConn.prototype.process_channel_message = function(msg)
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_AGENT_CONNECTED)
+    if (msg.type == Constants.SPICE_MSG_MAIN_AGENT_CONNECTED)
     {
         this.connect_agent();
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_AGENT_CONNECTED_TOKENS)
+    if (msg.type == Constants.SPICE_MSG_MAIN_AGENT_CONNECTED_TOKENS)
     {
-        var connected_tokens = new SpiceMsgMainAgentTokens(msg.data);
+        var connected_tokens = new Messages.SpiceMsgMainAgentTokens(msg.data);
         this.agent_tokens = connected_tokens.num_tokens;
         this.connect_agent();
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_AGENT_TOKEN)
+    if (msg.type == Constants.SPICE_MSG_MAIN_AGENT_TOKEN)
     {
-        var remaining_tokens, tokens = new SpiceMsgMainAgentTokens(msg.data);
+        var remaining_tokens, tokens = new Messages.SpiceMsgMainAgentTokens(msg.data);
         this.agent_tokens += tokens.num_tokens;
         this.send_agent_message_queue();
 
@@ -205,68 +221,68 @@ SpiceMainConn.prototype.process_channel_message = function(msg)
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_AGENT_DISCONNECTED)
+    if (msg.type == Constants.SPICE_MSG_MAIN_AGENT_DISCONNECTED)
     {
         this.agent_connected = false;
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_AGENT_DATA)
+    if (msg.type == Constants.SPICE_MSG_MAIN_AGENT_DATA)
     {
-        var agent_data = new SpiceMsgMainAgentData(msg.data);
-        if (agent_data.type == VD_AGENT_ANNOUNCE_CAPABILITIES)
+        var agent_data = new Messages.SpiceMsgMainAgentData(msg.data);
+        if (agent_data.type == Constants.VD_AGENT_ANNOUNCE_CAPABILITIES)
         {
-            var agent_caps = new VDAgentAnnounceCapabilities(agent_data.data);
+            var agent_caps = new Messages.VDAgentAnnounceCapabilities(agent_data.data);
             if (agent_caps.request)
                 this.announce_agent_capabilities(0);
             return true;
         }
-        else if (agent_data.type == VD_AGENT_FILE_XFER_STATUS)
+        else if (agent_data.type == Constants.VD_AGENT_FILE_XFER_STATUS)
         {
-            this.handle_file_xfer_status(new VDAgentFileXferStatusMessage(agent_data.data));
+            this.handle_file_xfer_status(new Messages.VDAgentFileXferStatusMessage(agent_data.data));
             return true;
         }
 
         return false;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MIGRATE_SWITCH_HOST)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MIGRATE_SWITCH_HOST)
     {
         this.known_unimplemented(msg.type, "Main Migrate Switch Host");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MIGRATE_END)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MIGRATE_END)
     {
         this.known_unimplemented(msg.type, "Main Migrate End");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_NAME)
+    if (msg.type == Constants.SPICE_MSG_MAIN_NAME)
     {
         this.known_unimplemented(msg.type, "Main Name");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_UUID)
+    if (msg.type == Constants.SPICE_MSG_MAIN_UUID)
     {
         this.known_unimplemented(msg.type, "Main UUID");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MIGRATE_BEGIN_SEAMLESS)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MIGRATE_BEGIN_SEAMLESS)
     {
         this.known_unimplemented(msg.type, "Main Migrate Begin Seamless");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MIGRATE_DST_SEAMLESS_ACK)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MIGRATE_DST_SEAMLESS_ACK)
     {
         this.known_unimplemented(msg.type, "Main Migrate Dst Seamless ACK");
         return true;
     }
 
-    if (msg.type == SPICE_MSG_MAIN_MIGRATE_DST_SEAMLESS_NACK)
+    if (msg.type == Constants.SPICE_MSG_MAIN_MIGRATE_DST_SEAMLESS_NACK)
     {
         this.known_unimplemented(msg.type, "Main Migrate Dst Seamless NACK");
         return true;
@@ -324,15 +340,15 @@ SpiceMainConn.prototype.send_agent_message_queue = function(message)
 
 SpiceMainConn.prototype.send_agent_message = function(type, message)
 {
-    var agent_data = new SpiceMsgcMainAgentData(type, message);
-    var sb = 0, maxsize = VD_AGENT_MAX_DATA_SIZE - SpiceMiniData.prototype.buffer_size();
+    var agent_data = new Messages.SpiceMsgcMainAgentData(type, message);
+    var sb = 0, maxsize = Constants.VD_AGENT_MAX_DATA_SIZE - Messages.SpiceMiniData.prototype.buffer_size();
     var data = new ArrayBuffer(agent_data.buffer_size());
     agent_data.to_buffer(data);
     while (sb < agent_data.buffer_size())
     {
         var eb = Math.min(sb + maxsize, agent_data.buffer_size());
-        var mr = new SpiceMiniData();
-        mr.type = SPICE_MSGC_MAIN_AGENT_DATA;
+        var mr = new Messages.SpiceMiniData();
+        mr.type = Constants.SPICE_MSGC_MAIN_AGENT_DATA;
         mr.size = eb - sb;
         mr.data = data.slice(sb, eb);
         this.send_agent_message_queue(mr);
@@ -342,16 +358,16 @@ SpiceMainConn.prototype.send_agent_message = function(type, message)
 
 SpiceMainConn.prototype.announce_agent_capabilities = function(request)
 {
-    var caps = new VDAgentAnnounceCapabilities(request, (1 << VD_AGENT_CAP_MOUSE_STATE) |
-                                                        (1 << VD_AGENT_CAP_MONITORS_CONFIG) |
-                                                        (1 << VD_AGENT_CAP_REPLY));
-    this.send_agent_message(VD_AGENT_ANNOUNCE_CAPABILITIES, caps);
+    var caps = new Messages.VDAgentAnnounceCapabilities(request, (1 << Constants.VD_AGENT_CAP_MOUSE_STATE) |
+                                                        (1 << Constants.VD_AGENT_CAP_MONITORS_CONFIG) |
+                                                        (1 << Constants.VD_AGENT_CAP_REPLY));
+    this.send_agent_message(Constants.VD_AGENT_ANNOUNCE_CAPABILITIES, caps);
 }
 
 SpiceMainConn.prototype.resize_window = function(flags, width, height, depth, x, y)
 {
-    var monitors_config = new VDAgentMonitorsConfig(flags, width, height, depth, x, y);
-    this.send_agent_message(VD_AGENT_MONITORS_CONFIG, monitors_config);
+    var monitors_config = new Messages.VDAgentMonitorsConfig(flags, width, height, depth, x, y);
+    this.send_agent_message(Constants.VD_AGENT_MONITORS_CONFIG, monitors_config);
 }
 
 SpiceMainConn.prototype.file_xfer_start = function(file)
@@ -362,8 +378,8 @@ SpiceMainConn.prototype.file_xfer_start = function(file)
     task = new SpiceFileXferTask(task_id, file);
     task.create_progressbar();
     this.file_xfer_tasks[task_id] = task;
-    xfer_start = new VDAgentFileXferStartMessage(task_id, file.name, file.size);
-    this.send_agent_message(VD_AGENT_FILE_XFER_START, xfer_start);
+    xfer_start = new Messages.VDAgentFileXferStartMessage(task_id, file.name, file.size);
+    this.send_agent_message(Constants.VD_AGENT_FILE_XFER_START, xfer_start);
 }
 
 SpiceMainConn.prototype.handle_file_xfer_status = function(file_xfer_status)
@@ -376,16 +392,16 @@ SpiceMainConn.prototype.handle_file_xfer_status = function(file_xfer_status)
     xfer_task = this.file_xfer_tasks[file_xfer_status.id];
     switch (file_xfer_status.result)
     {
-        case VD_AGENT_FILE_XFER_STATUS_CAN_SEND_DATA:
+        case Constants.VD_AGENT_FILE_XFER_STATUS_CAN_SEND_DATA:
             this.file_xfer_read(xfer_task);
             return;
-        case VD_AGENT_FILE_XFER_STATUS_CANCELLED:
+        case Constants.VD_AGENT_FILE_XFER_STATUS_CANCELLED:
             xfer_error = "transfer is cancelled by spice agent";
             break;
-        case VD_AGENT_FILE_XFER_STATUS_ERROR:
+        case Constants.VD_AGENT_FILE_XFER_STATUS_ERROR:
             xfer_error = "some errors occurred in the spice agent";
             break;
-        case VD_AGENT_FILE_XFER_STATUS_SUCCESS:
+        case Constants.VD_AGENT_FILE_XFER_STATUS_SUCCESS:
             break;
         default:
             xfer_error = "unhandled status type: " + file_xfer_status.result;
@@ -397,7 +413,7 @@ SpiceMainConn.prototype.handle_file_xfer_status = function(file_xfer_status)
 
 SpiceMainConn.prototype.file_xfer_read = function(file_xfer_task, start_byte)
 {
-    var FILE_XFER_CHUNK_SIZE = 32 * VD_AGENT_MAX_DATA_SIZE;
+    var FILE_XFER_CHUNK_SIZE = 32 * Constants.VD_AGENT_MAX_DATA_SIZE;
     var _this = this;
     var sb, eb;
     var slice, reader;
@@ -411,9 +427,9 @@ SpiceMainConn.prototype.file_xfer_read = function(file_xfer_task, start_byte)
 
     if (file_xfer_task.cancelled)
     {
-        var xfer_status = new VDAgentFileXferStatusMessage(file_xfer_task.id,
-                                                           VD_AGENT_FILE_XFER_STATUS_CANCELLED);
-        this.send_agent_message(VD_AGENT_FILE_XFER_STATUS, xfer_status);
+        var xfer_status = new Messages.VDAgentFileXferStatusMessage(file_xfer_task.id,
+                                                           Constants.VD_AGENT_FILE_XFER_STATUS_CANCELLED);
+        this.send_agent_message(Constants.VD_AGENT_FILE_XFER_STATUS, xfer_status);
         delete this.file_xfer_tasks[file_xfer_task.id];
         return;
     }
@@ -431,10 +447,10 @@ SpiceMainConn.prototype.file_xfer_read = function(file_xfer_task, start_byte)
     reader = new FileReader();
     reader.onload = function(e)
     {
-        var xfer_data = new VDAgentFileXferDataMessage(file_xfer_task.id,
+        var xfer_data = new Messages.VDAgentFileXferDataMessage(file_xfer_task.id,
                                                        e.target.result.byteLength,
                                                        e.target.result);
-        _this.send_agent_message(VD_AGENT_FILE_XFER_DATA, xfer_data);
+        _this.send_agent_message(Constants.VD_AGENT_FILE_XFER_DATA, xfer_data);
         _this.file_xfer_read(file_xfer_task, eb);
         file_xfer_task.update_progressbar(eb);
     };
@@ -459,9 +475,9 @@ SpiceMainConn.prototype.connect_agent = function()
 {
     this.agent_connected = true;
 
-    var agent_start = new SpiceMsgcMainAgentStart(~0);
-    var mr = new SpiceMiniData();
-    mr.build_msg(SPICE_MSGC_MAIN_AGENT_START, agent_start);
+    var agent_start = new Messages.SpiceMsgcMainAgentStart(~0);
+    var mr = new Messages.SpiceMiniData();
+    mr.build_msg(Constants.SPICE_MSGC_MAIN_AGENT_START, agent_start);
     this.send_msg(mr);
 
     this.announce_agent_capabilities(1);
@@ -474,11 +490,11 @@ SpiceMainConn.prototype.connect_agent = function()
 SpiceMainConn.prototype.handle_mouse_mode = function(current, supported)
 {
     this.mouse_mode = current;
-    if (current != SPICE_MOUSE_MODE_CLIENT && (supported & SPICE_MOUSE_MODE_CLIENT))
+    if (current != Constants.SPICE_MOUSE_MODE_CLIENT && (supported & Constants.SPICE_MOUSE_MODE_CLIENT))
     {
-        var mode_request = new SpiceMsgcMainMouseModeRequest(SPICE_MOUSE_MODE_CLIENT);
-        var mr = new SpiceMiniData();
-        mr.build_msg(SPICE_MSGC_MAIN_MOUSE_MODE_REQUEST, mode_request);
+        var mode_request = new Messages.SpiceMsgcMainMouseModeRequest(Constants.SPICE_MOUSE_MODE_CLIENT);
+        var mr = new Messages.SpiceMiniData();
+        mr.build_msg(Constants.SPICE_MSGC_MAIN_MOUSE_MODE_REQUEST, mode_request);
         this.send_msg(mr);
     }
 
@@ -492,3 +508,12 @@ SpiceMainConn.prototype.relative_now = function()
     var ret = (Date.now() - this.our_mm_time) + this.mm_time;
     return ret;
 }
+
+export {
+  SpiceMainConn,
+  handle_file_dragover,
+  handle_file_drop,
+  resize_helper,
+  handle_resize,
+  sendCtrlAltDel,
+};

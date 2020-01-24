@@ -24,6 +24,10 @@
 **  callback.  It will optionally save and pass along a header, useful in processing
 **  the mini message format.
 **--------------------------------------------------------------------------------------*/
+
+import { DEBUG } from './utils.js';
+import { combine_array_buffers } from './utils.js';
+
 function SpiceWireReader(sc, callback)
 {
     this.sc = sc;
@@ -121,3 +125,7 @@ function wire_blob_catcher(e)
     DEBUG > 1 && console.log("id " + this.wire_reader.sc.connection_id +"; type " + this.wire_reader.sc.type);
     SpiceWireReader.prototype.inbound.call(this.wire_reader, e.data);
 }
+
+export {
+  SpiceWireReader,
+};

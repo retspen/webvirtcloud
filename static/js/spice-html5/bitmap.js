@@ -23,16 +23,19 @@
 **  bitmap.js
 **      Handle SPICE_IMAGE_TYPE_BITMAP
 **--------------------------------------------------------------------------*/
+
+import { Constants } from './enums.js';
+
 function convert_spice_bitmap_to_web(context, spice_bitmap)
 {
     var ret;
     var offset, x, src_offset = 0, src_dec = 0;
     var u8 = new Uint8Array(spice_bitmap.data);
-    if (spice_bitmap.format != SPICE_BITMAP_FMT_32BIT &&
-        spice_bitmap.format != SPICE_BITMAP_FMT_RGBA)
+    if (spice_bitmap.format != Constants.SPICE_BITMAP_FMT_32BIT &&
+        spice_bitmap.format != Constants.SPICE_BITMAP_FMT_RGBA)
         return undefined;
 
-    if (!(spice_bitmap.flags & SPICE_BITMAP_FLAGS_TOP_DOWN))
+    if (!(spice_bitmap.flags & Constants.SPICE_BITMAP_FLAGS_TOP_DOWN))
     {
         src_offset = (spice_bitmap.y - 1 ) * spice_bitmap.stride;
         src_dec = 2 * spice_bitmap.stride;
@@ -47,7 +50,7 @@ function convert_spice_bitmap_to_web(context, spice_bitmap)
             ret.data[offset + 2 ] = u8[src_offset + 0];
 
             // FIXME - We effectively treat all images as having SPICE_IMAGE_FLAGS_HIGH_BITS_SET
-            if (spice_bitmap.format == SPICE_BITMAP_FMT_32BIT)
+            if (spice_bitmap.format == Constants.SPICE_BITMAP_FMT_32BIT)
                 ret.data[offset + 3] = 255;
             else
                 ret.data[offset + 3] = u8[src_offset];
@@ -55,3 +58,7 @@ function convert_spice_bitmap_to_web(context, spice_bitmap)
 
     return ret;
 }
+
+export {
+  convert_spice_bitmap_to_web,
+};
