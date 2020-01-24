@@ -51,8 +51,9 @@ class MyTCPServerHandler(SocketServer.BaseRequestHandler):
                     pass
             gfs.shutdown()
             gfs.close()
-        except RuntimeError, err:
+        except RuntimeError as err:
             self.request.sendall(json.dumps({'return': 'error', 'message': err.message}))
+
 
 server = MyTCPServer((ADDRESS, PORT), MyTCPServerHandler)
 server.serve_forever()
