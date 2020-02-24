@@ -9,7 +9,7 @@ from instances.views import instances
 from nwfilters.views import nwfilter, nwfilters
 
 urlpatterns = [
-    url(r'^/', computes, name='computes'),
+    url(r'^$', computes, name='computes'),
     url(r'^(?P<compute_id>[0-9]+)/$', overview, name='overview'),
     url(r'^(?P<compute_id>[0-9]+)/statistics$', compute_graph, name='compute_graph'),
     url(r'^(?P<compute_id>[0-9]+)/instances/$', instances, name='instances'),
