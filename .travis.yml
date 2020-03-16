@@ -1,8 +1,8 @@
 language: python
 python:
-  - "2.7"
+  - "3.6"
 env:
-  - DJANGO=1.11.26
+  - DJANGO=2.2.10
 install:
   - pip install -r dev/requirements.txt
 script:

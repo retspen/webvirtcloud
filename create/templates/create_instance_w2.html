@@ -120,7 +120,7 @@
                                                                     <div class="col-sm-6">
                                                                         <select class="form-control" id="select_firmware" name="firmware">
                                                                             {% for frm in firmwares %}
-                                                                            <option value="{{ frm }}" {% if frm == default_firmware %}selected{% endif %}>{{ frm }}</option>
+                                                                            <option value="{{ frm }}" {% if frm in default_firmware %}selected{% endif %}>{{ frm }}</option>
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>
@@ -792,7 +792,7 @@
                     $.each(input_value.split(','), function (index, value) {
                         let li = '<li>eth' + counter +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link pull-right" onclick="javascript:$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></a></li>';
+                                '<a class="btn-link pull-right" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></a></li>';
                         selected_list_html += li;
                         counter++;
                     });

@@ -35,7 +35,7 @@ if (typeof document != 'undefined' && document.getElementsByTagName) {
 
     // throw so it still shows up in the console
     throw err;
-  }
+  };
 
   var ready = function() {
     document.removeEventListener('DOMContentLoaded', ready, false );
@@ -63,7 +63,7 @@ if (typeof document != 'undefined' && document.getElementsByTagName) {
         }
       }
     }
-  }
+  };
 
   // simple DOM ready
   if (document.readyState !== 'loading')
@@ -105,10 +105,10 @@ function xhrFetch(url, resolve, reject) {
   var xhr = new XMLHttpRequest();
   var load = function(source) {
     resolve(xhr.responseText);
-  }
+  };
   var error = function() {
     reject(new Error('XHR error' + (xhr.status ? ' (' + xhr.status + (xhr.statusText ? ' ' + xhr.statusText  : '') + ')' : '') + ' loading ' + url));
-  }
+  };
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4) {
@@ -235,7 +235,7 @@ BrowserESModuleLoader.prototype[RegisterLoader.instantiate] = function(key, proc
   return new Promise(function(resolve, reject) {
     // anonymous module
     if (anonSources[key]) {
-      resolve(anonSources[key])
+      resolve(anonSources[key]);
       anonSources[key] = undefined;
     }
     // otherwise we fetch

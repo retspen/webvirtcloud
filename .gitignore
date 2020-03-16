@@ -1,5 +1,6 @@
 .vagrant
 venv
+venv2
 .vscode
 .idea
 .DS_*

@@ -4,7 +4,7 @@ export function shrinkBuf (buf, size) {
   if (buf.subarray) { return buf.subarray(0, size); }
   buf.length = size;
   return buf;
-};
+}
 
 
 export function arraySet (dest, src, src_offs, len, dest_offs) {

@@ -22,13 +22,13 @@ def secrets(request, compute_id):
     secrets_all = []
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
-
     try:
         conn = wvmSecrets(compute.hostname,
                           compute.login,
                           compute.password,
                           compute.type)
         secrets = conn.get_secrets()
+
         for uuid in secrets:
             secrt = conn.get_secret(uuid)
             try:

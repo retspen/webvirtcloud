@@ -510,7 +510,7 @@
                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_disk">
                                 {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
                                     <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                        <p style="font-weight:bold;">{% trans "Disk allocation (B):" %}</p>
+                                        <p style="font-weight:bold;">{% trans "Disk allocation (GB):" %}</p>
                                         {% for disk in disks %}
                                         <div class="form-group">
                                             <label class="col-sm-4 control-label" style="font-weight:normal;">{% trans "Current allocation" %} ({{ disk.dev }})</label>
@@ -704,25 +704,25 @@
                                             </div>
                                         </form>
                                         <p style="font-weight:bold;">{% trans 'Boot Order' %}</p>
-                                            <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
-                                                <div class="form-group">
-                                                    <div class="col-sm-12 col-sm-offset-2">
-                                                    {% ifequal status 5 %}
-                                                        <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
-                                                        {% ifequal bootmenu 0 %}
-                                                            <input type="submit" class="btn btn-success" name="set_bootmenu" title="Show boot menu" value="{% trans "Enable" %}">
-                                                        {% else %}
-                                                            <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="Hide boot menu" value="{% trans "Disable" %}">
-                                                        {% endifequal %}
+                                        <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                            <div class="form-group">
+                                                <div class="col-sm-12 col-sm-offset-2">
+                                                {% ifequal status 5 %}
+                                                    <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
+                                                    {% ifequal bootmenu 0 %}
+                                                        <input type="submit" class="btn btn-success" name="set_bootmenu" title="Show boot menu" value="{% trans "Enable" %}">
                                                     {% else %}
-                                                        {% ifequal bootmenu 0  %}
-                                                            <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}</p>
-                                                        {% endifequal %}
+                                                        <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="Hide boot menu" value="{% trans "Disable" %}">
                                                     {% endifequal %}
-                                                    </div>
+                                                {% else %}
+                                                    {% ifequal bootmenu 0  %}
+                                                        <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}</p>
+                                                    {% endifequal %}
+                                                {% endifequal %}
                                                 </div>
-                                            </form>
-                                        </p>
+                                            </div>
+                                        </form>
+
                                         {% ifequal bootmenu 1  %}
                                             <div class="col-sm-6 col-sm-offset-2">
                                             <div class="well">
@@ -841,12 +841,14 @@
                                         <div class="col-xs-12 col-sm-12">
                                         <table class="table table-hover">
                                             <thead>
-                                                <th>{% trans "Device" %}</th>
-                                                <th>{% trans "Used" %}</th>
-                                                <th>{% trans "Capacity" %}</th>
-                                                <th>{% trans "Storage" %}</th>
-                                                <th>{% trans "Source" %}</th>
-                                                <th>{% trans "Action" %}</th>
+                                                <tr>
+                                                    <th>{% trans "Device" %}</th>
+                                                    <th>{% trans "Used" %}</th>
+                                                    <th>{% trans "Capacity" %}</th>
+                                                    <th>{% trans "Storage" %}</th>
+                                                    <th>{% trans "Source" %}</th>
+                                                    <th>{% trans "Action" %}</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
                                             {% for disk in disks %}
@@ -1169,7 +1171,7 @@
                                     <button class="btn btn-lg btn-success pull-right disabled">{% trans "Migrate" %}</button>
                                 {% endif %}
                             </form>
-                            <div class="clearfix"></div></p>
+                            <div class="clearfix"></div>
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
                             <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
@@ -1354,7 +1356,7 @@
                                         </div>
                                     {% else %}
                                         <div class="col-sm-4">
-                                            <select id="select_clone_name" class="form-control" name="name" size="1"/>
+                                            <select id="select_clone_name" class="form-control" name="name" size="1">
                                             {% for name in clone_free_names %}
                                                 <option value="{{ name }}">{{ name }}</option>
                                             {% endfor %}
@@ -1730,7 +1732,7 @@
         $.getJSON('{% url 'random_mac_address' %}', function (data) {
             $('input[name="' + net + '"]').val(data['mac']);
         });
-    };
+    }
 </script>
 <script>
     function show_console() {
@@ -1765,13 +1767,13 @@
         vname = '{{ vname }}';
         {% for disk in disks %}
             disk_name = '{{ disk.image }}';
-            disk_dot = disk_name.split('.')
+            disk_dot = disk_name.split('.');
             disk_dot_suffix = disk_dot[disk_dot.length-1];
             if (disk_name.startsWith(vname)) {
                 image = disk_name.replace(vname, new_vname);
             } else if (disk_name.lastIndexOf('.') > -1 && disk_dot_suffix.length <= 7) {
                 disk_dot.pop();
-                disk_name_only = disk_dot.join('-')
+                disk_name_only = disk_dot.join('-');
                 image = new_vname + "-" + disk_name_only + "." + disk_dot_suffix
             } else if (new_vname != disk_name) {
                 image = new_vname
@@ -1811,28 +1813,28 @@
     });
     $(document).ready(function () {
         // set current console keymap or fall back to default
-        var keymap = "{{ console_keymap }}"
+        var keymap = "{{ console_keymap }}";
         if (keymap != '') {
             $("#console_select_keymap option[value='" + keymap + "']").prop('selected', true);
         }
     });
     $(document).ready(function () {
         // set current console type or fall back to default
-        var console_type = "{{ console_type }}"
+        var console_type = "{{ console_type }}";
         if (console_type != '') {
             $("#console_select_type option[value='" + console_type + "']").prop('selected', true);
         }
     });
     $(document).ready(function () {
         // set current console listen address or fall back to default
-        var console_listen_address = "{{ console_listen_address }}"
+        var console_listen_address = "{{ console_listen_address }}";
         if (console_listen_address != '') {
             $("#console_select_listen_address option[value='" + console_listen_address + "']").prop('selected', true);
         }
     });
     $(document).ready(function () {
         // get video model or fall back to default
-        let video_model = "{{ video_model }}"
+        let video_model = "{{ video_model }}";
         if (video_model != '') {
             $("#video_model_select option[value='" + video_model + "']").prop('selected', true);
         }
@@ -2103,7 +2105,7 @@
         var netChart = {};
         {% for net in networks %}
             var net_ctx_{{ forloop.counter0 }} = $("#netEth{{ forloop.counter0 }}Chart").get(0).getContext("2d");
-            netChart['{{ forloop.counter0 }}'] = new Chart(net_ctx_{{ forloop.counter0 }}, {
+            netChart[{{ forloop.counter0 }}] = new Chart(net_ctx_{{ forloop.counter0 }}, {
                 type: 'line',
                 data: {
                    datasets : [
@@ -2182,8 +2184,8 @@
                 for (let j = 0; j < data.blkdata.length; j++) {
                     diskChart[data.blkdata[j].dev].data.labels.push(data.timeline);
 
-                    diskChart[data.blkdata[j].dev].data.datasets[0].data.push(data.blkdata[0].data[0]);
-                    diskChart[data.blkdata[j].dev].data.datasets[1].data.push(data.blkdata[0].data[1]);
+                    diskChart[data.blkdata[j].dev].data.datasets[0].data.push(data.blkdata[j].data[0]);
+                    diskChart[data.blkdata[j].dev].data.datasets[1].data.push(data.blkdata[j].data[1]);
                     if (diskChart[data.blkdata[j].dev].data.datasets[0].data.length > 10){
                         diskChart[data.blkdata[j].dev].data.labels.shift();
                         diskChart[data.blkdata[j].dev].data.datasets[0].data.shift();
@@ -2195,8 +2197,8 @@
                 for (let j = 0; j < data.netdata.length; j++) {
                     netChart[data.netdata[j].dev].data.labels.push(data.timeline);
 
-                    netChart[data.netdata[j].dev].data.datasets[0].data.push(data.netdata[0].data[0]);
-                    netChart[data.netdata[j].dev].data.datasets[1].data.push(data.netdata[0].data[1]);
+                    netChart[data.netdata[j].dev].data.datasets[0].data.push(data.netdata[j].data[0]);
+                    netChart[data.netdata[j].dev].data.datasets[1].data.push(data.netdata[j].data[1]);
                     if (netChart[data.netdata[j].dev].data.datasets[0].data.length > 10){
                         netChart[data.netdata[j].dev].data.labels.shift();
                         netChart[data.netdata[j].dev].data.datasets[0].data.shift();
@@ -2211,7 +2213,7 @@
 <script>
      backgroundJobRunning = false;
      window.setInterval(function get_status() {
-         var status = {{ status }};
+         var status = {{ status|lower }};
          $.getJSON('{% url 'inst_status' compute_id vname %}', function (data) {
              if (data['status'] != status && !backgroundJobRunning) {
                  window.location.reload()

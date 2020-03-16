@@ -191,6 +191,7 @@
                                     <tbody style="text-align: center">
                                     {% for fix4 in ipv4_fixed_address %}
                                         <tr>
+                                            <td>
                                             <form method="post" role="form">{% csrf_token %}
                                                 <td><input class="form-control" value="{{ fix4.mac }}" name="mac" readonly/></td>
                                                 <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
@@ -209,6 +210,7 @@
                                                     </button>
                                                 </td>
                                             </form>
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>

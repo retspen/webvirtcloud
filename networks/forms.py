@@ -9,7 +9,7 @@ class AddNetPool(forms.Form):
     subnet = forms.CharField(error_messages={'required': _('No IPv4 subnet has been entered')},
                              max_length=20, required=False)
     subnet6 = forms.CharField(error_messages={'required': _('No IPv6 subnet has been entered')},
-                             max_length=42, required=False)
+                              max_length=42, required=False)
     forward = forms.CharField(max_length=100)
     dhcp4 = forms.BooleanField(required=False)
     dhcp6 = forms.BooleanField(required=False)

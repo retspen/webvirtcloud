@@ -62,4 +62,3 @@ class NewVMForm(forms.Form):
         elif len(name) > 64:
             raise forms.ValidationError(_('The name of the virtual machine must not exceed 20 characters'))
         return name
-

@@ -27,6 +27,7 @@ import os
 import socket
 import signal
 import logging
+from functools import reduce
 
 
 class Tunnel(object):
@@ -103,7 +104,7 @@ class Tunnel(object):
 
         logging.debug("Tunnel PID=%d OUTFD=%d ERRFD=%d",
                       pid, fds[0].fileno(), errorfds[0].fileno())
-        errorfds[0].setblocking(0)
+        errorfds[0].setblocking(False)
 
         self.outfd = fds[0]
         self.errfd = errorfds[0]

@@ -25,56 +25,27 @@
 {% extends "console-base.html" %}
 {% load i18n %}
 {% load staticfiles %}
+
 {% block head %}
-
     <title>WebVirtCloud - Spice - Lite</title>
-    <script src="{% static "js/spice-html5/spicearraybuffer.js" %}"></script>
-    <script src="{% static "js/spice-html5/enums.js" %}"></script>
-    <script src="{% static "js/spice-html5/atKeynames.js" %}"></script>
-    <script src="{% static "js/spice-html5/utils.js" %}"></script>
-    <script src="{% static "js/spice-html5/png.js" %}"></script>
-    <script src="{% static "js/spice-html5/lz.js" %}"></script>
-    <script src="{% static "js/spice-html5/quic.js" %}"></script>
-    <script src="{% static "js/spice-html5/bitmap.js" %}"></script>
-    <script src="{% static "js/spice-html5/spicedataview.js" %}"></script>
-    <script src="{% static "js/spice-html5/spicetype.js" %}"></script>
-    <script src="{% static "js/spice-html5/spicemsg.js" %}"></script>
-    <script src="{% static "js/spice-html5/wire.js" %}"></script>
-    <script src="{% static "js/spice-html5/spiceconn.js" %}"></script>
-    <script src="{% static "js/spice-html5/display.js" %}"></script>
-    <script src="{% static "js/spice-html5/main.js" %}"></script>
-    <script src="{% static "js/spice-html5/inputs.js" %}"></script>
-    <script src="{% static "js/spice-html5/webm.js" %}"></script>
-    <script src="{% static "js/spice-html5/playback.js" %}"></script>
-    <script src="{% static "js/spice-html5/simulatecursor.js" %}"></script>
-    <script src="{% static "js/spice-html5/cursor.js" %}"></script>
-    <script src="{% static "js/spice-html5/thirdparty/jsbn.js" %}"></script>
-    <script src="{% static "js/spice-html5/thirdparty/rsa.js" %}"></script>
-    <script src="{% static "js/spice-html5/thirdparty/prng4.js" %}"></script>
-    <script src="{% static "js/spice-html5/thirdparty/rng.js" %}"></script>
-    <script src="{% static "js/spice-html5/thirdparty/sha1.js" %}"></script>
-    <script src="{% static "js/spice-html5/ticket.js" %}"></script>
-    <script src="{% static "js/spice-html5/resize.js" %}"></script>
-    <script src="{% static "js/spice-html5/filexfer.js" %}"></script>
-    <script src="{% static "js/spice-html5/port.js" %}"></script>
-
     <link rel="stylesheet" type="text/css" href="{% static "js/spice-html5/spice.css" %}" />
 
-{% endblock %}
-
-{% block content %}
-    <div id="spice-area">
-        <div id="spice-screen" class="spice-screen"></div>
-        <div id="message-div" class="spice-message"></div>
-    </div>
-
-    <div id="debug-div">
-    <!-- If DUMPXXX is turned on, dumped images will go here -->
-    </div>
-{% endblock %}
-
-{% block foot %}
+    <!-- ES2015/ES6 modules polyfill -->
+    <script type="module">
+        window._spice_has_module_support = true;
+    </script>
     <script>
+        window.addEventListener("load", function() {
+            if (window._spice_has_module_support) return;
+            var loader = document.createElement("script");
+            loader.src = '{% static "thirdparty/browser-es-module-loader/dist/browser-es-module-loader.js" %}';
+            document.head.appendChild(loader);
+        });
+    </script>
+
+    <script type="module" crossorigin="anonymous">
+        import * as SpiceHtml5 from '{% static "js/spice-html5/main.js" %}';
+
         var host = null, port = null;
         var sc;
 
@@ -92,21 +63,18 @@
         }
 
         function spice_error(e) {
-            console.log(e);
             disconnect();
-            if (e.message !== undefined) {
-                log_error(e.message);
-            }
-            else {
-                log_error('Unknown error');
+            if (e !== undefined && e.message === "Permission denied.") {
+              var pass = prompt("Password");
+              connect(pass);
             }
         }
 
-        function connect() {
-            var host, port, password, scheme = "ws://", uri;
-            console.log('>> connect');
+        function connect(password) {
+            var host, port, scheme = "ws://", uri;
+
             // By default, use the host and port of server that served this file
-            //host = spice_query_var('host', window.location.hostname);
+            // host = spice_query_var('host', window.location.hostname);
             host = '{{ ws_host| safe }}';
 
             // Note that using the web server port only makes sense
@@ -129,16 +97,18 @@
 
             // If a token variable is passed in, set the parameter in a cookie.
             // This is used by nova-spiceproxy.
-            token = spice_query_var('token', null);
+            var token = spice_query_var('token', null);
             if (token) {
                 spice_set_cookie('token', token, 1)
             }
 
-            //password = spice_query_var('password', '');
-            password = '{{ console_passwd | safe }}';
+            if (password === undefined) {
+                password = spice_query_var('password', '');
+                password = '{{ console_passwd | safe }}';
+            }
             if (password === 'None') password = '';
 
-            path = spice_query_var('path', 'websockify');
+            var path = spice_query_var('path', 'websockify');
 
             if ((!host) || (!port)) {
                 console.log("must specify host and port in URL");
@@ -156,43 +126,44 @@
             }
 
             try {
-                sc = new SpiceMainConn({uri: uri, screen_id: "spice-screen", dump_id: "debug-div",
+                sc = new SpiceHtml5.SpiceMainConn({uri: uri, screen_id: "spice-screen", dump_id: "debug-div",
                             message_id: "message-div", password: password, onerror: spice_error, onagent: agent_connected });
             }
             catch (e) {
                 alert(e.toString());
                 disconnect();
             }
-            console.log('<< connect')
+
         }
 
-        function disconnect()
-        {
+        function disconnect() {
             console.log(">> disconnect");
             if (sc) {
                 sc.stop();
             }
             if (window.File && window.FileReader && window.FileList && window.Blob) {
                 var spice_xfer_area = document.getElementById('spice-xfer-area');
-                document.getElementById('spice-area').removeChild(spice_xfer_area);
-                document.getElementById('spice-area').removeEventListener('dragover', handle_file_dragover, false);
-                document.getElementById('spice-area').removeEventListener('drop', handle_file_drop, false);
+                if (spice_xfer_area != null) {
+                  document.getElementById('spice-area').removeChild(spice_xfer_area);
+                }
+                document.getElementById('spice-area').removeEventListener('dragover', SpiceHtml5.handle_file_dragover, false);
+                document.getElementById('spice-area').removeEventListener('drop', SpiceHtml5.handle_file_drop, false);
             }
             console.log("<< disconnect");
         }
 
         function agent_connected(sc) {
-            window.addEventListener('resize', handle_resize);
+            window.addEventListener('resize', SpiceHtml5.handle_resize);
             window.spice_connection = this;
 
-            resize_helper(this);
+            SpiceHtml5.resize_helper(this);
 
             if (window.File && window.FileReader && window.FileList && window.Blob) {
                 var spice_xfer_area = document.createElement("div");
                 spice_xfer_area.setAttribute('id', 'spice-xfer-area');
                 document.getElementById('spice-area').appendChild(spice_xfer_area);
-                document.getElementById('spice-area').addEventListener('dragover', handle_file_dragover, false);
-                document.getElementById('spice-area').addEventListener('drop', handle_file_drop, false);
+                document.getElementById('spice-area').addEventListener('dragover', SpiceHtml5.handle_file_dragover, false);
+                document.getElementById('spice-area').addEventListener('drop', SpiceHtml5.handle_file_drop, false);
             }
             else {
                 console.log("File API is not supported");
@@ -224,7 +195,7 @@
         });
         */
         document.getElementById("fullscreen_button").addEventListener('click', fullscreen);
-        document.getElementById('ctrlaltdel').addEventListener('click', sendCtrlAltDel);
+        document.getElementById('ctrlaltdel').addEventListener('click', function(){sendCtrlAltDel(sc);});
         document.getElementById('ctrlaltf1').addEventListener('click', function(){sendCtrlAltFN(0);});
         document.getElementById('ctrlaltf2').addEventListener('click', function(){sendCtrlAltFN(1);});
         document.getElementById('ctrlaltf3').addEventListener('click', function(){sendCtrlAltFN(2);});
@@ -237,6 +208,22 @@
         document.getElementById('ctrlaltf10').addEventListener('click', function(){sendCtrlAltFN(9);});
         document.getElementById('ctrlaltf11').addEventListener('click', function(){sendCtrlAltFN(10);});
         document.getElementById('ctrlaltf12').addEventListener('click', function(){sendCtrlAltFN(11);});
-        connect();
+        connect(undefined);
     </script>
 {% endblock %}
+{% block content %}
+        <div id="login">
+            <span class="logo">SPICE</span>
+        </div>
+
+        <div id="spice-area">
+            <div id="spice-screen" class="spice-screen"></div>
+        </div>
+
+        <div id="message-div" class="spice-message"></div>
+
+        <div id="debug-div">
+        <!-- If DUMPXXX is turned on, dumped images will go here -->
+        </div>
+{% endblock %}
+

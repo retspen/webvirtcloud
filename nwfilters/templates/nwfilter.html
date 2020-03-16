@@ -95,9 +95,11 @@
     <div class="col-xs-12 col-sm-12">
         <table class="table table-hover">
             <thead>
-                <th style="width: 45px;">#</th>
-                <th>{% trans "Reference" %}</th>
-                <th>{% trans "Action" %}</th>
+                <tr>
+                    <th style="width: 45px;">#</th>
+                    <th>{% trans "Reference" %}</th>
+                    <th>{% trans "Action" %}</th>
+                </tr>
             </thead>
             <tbody>
             {% for ref in refs %}
@@ -125,6 +127,7 @@
     <div class="col-xs-12 col-sm-12">
         <table class="table table-hover">
             <thead>
+            <tr>
                 <th style="width:45px;">{% trans "Rule" %}</th>
                 <th>{% trans "ActionType" %}</th>
                 <th>{% trans "Direction" %}</th>
@@ -132,6 +135,7 @@
                 <th>{% trans "Statematch" %}</th>
                 <th>{% trans "Directives" %}</th>
                 <th style="width:100px;">{% trans "Action" %}</th>
+            </tr>
             </thead>
             <tbody>
             {% for rule in rules %}

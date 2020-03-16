@@ -63,7 +63,7 @@ def allinstances(request):
             return instances_actions(request)
         except libvirtError as lib_err:
             error_messages.append(lib_err)
-            addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err.message)
+            addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err)
 
     view_style = settings.VIEW_INSTANCES_LIST_STYLE
 
@@ -94,7 +94,7 @@ def instances(request, compute_id):
             return instances_actions(request)
         except libvirtError as lib_err:
             error_messages.append(lib_err)
-            addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err.message)
+            addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err)
 
     return render(request, 'instances.html', locals())
 
@@ -131,19 +131,19 @@ def instance(request, compute_id, vname):
     def filesizefstr(size_str):
         if size_str == '':
             return 0
-        size_str = size_str.encode('ascii', 'ignore').upper().translate(None, " B")
+        size_str = size_str.upper().replace("B", "")
         if 'K' == size_str[-1]:
-            return long(float(size_str[:-1])) << 10
+            return int(float(size_str[:-1])) << 10
         elif 'M' == size_str[-1]:
-            return long(float(size_str[:-1])) << 20
+            return int(float(size_str[:-1])) << 20
         elif 'G' == size_str[-1]:
-            return long(float(size_str[:-1])) << 30
+            return int(float(size_str[:-1])) << 30
         elif 'T' == size_str[-1]:
-            return long(float(size_str[:-1])) << 40
+            return int(float(size_str[:-1])) << 40
         elif 'P' == size_str[-1]:
-            return long(float(size_str[:-1])) << 50
+            return int(float(size_str[:-1])) << 50
         else:
-            return long(float(size_str))
+            return int(float(size_str))
 
     def get_clone_free_names(size=10):
         prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
@@ -217,8 +217,8 @@ def instance(request, compute_id, vname):
         if media:
             existing_media_devs = [m['dev'] for m in media]
 
-        for l in string.lowercase:
-            dev = dev_base + l
+        for al in string.ascii_lowercase:
+            dev = dev_base + al
             if dev not in existing_disk_devs and dev not in existing_media_devs:
                 return dev
         raise Exception(_('None available device name'))
@@ -576,7 +576,7 @@ def instance(request, compute_id, vname):
                 target_dev = get_new_disk_dev(media, disks, bus)
 
                 source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_owner)
-                conn.attach_disk(source, target_dev, target_bus=bus, driver_type=format, cache_mode=cache)
+                conn.attach_disk(target_dev, source, target_bus=bus, driver_type=format, cache_mode=cache)
                 msg = _('Attach new disk {} ({})'.format(name, format))
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
@@ -598,7 +598,7 @@ def instance(request, compute_id, vname):
                 target_dev = get_new_disk_dev(media, disks, bus)
                 source = path + "/" + name
 
-                conn.attach_disk(source, target_dev, target_bus=bus, driver_type=driver_type, cache_mode=cache)
+                conn.attach_disk(target_dev, source, target_bus=bus, driver_type=driver_type, cache_mode=cache)
                 msg = _('Attach Existing disk: ' + target_dev)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
@@ -609,16 +609,26 @@ def instance(request, compute_id, vname):
                 new_path = request.POST.get('vol_path', '')
                 shareable = bool(request.POST.get('vol_shareable', False))
                 readonly = bool(request.POST.get('vol_readonly', False))
-                bus = request.POST.get('vol_bus', '')
+                disk_type = request.POST.get('vol_type', '')
+                new_bus = request.POST.get('vol_bus', '')
+                bus = request.POST.get('vol_bus_old', '')
                 serial = request.POST.get('vol_serial', '')
                 format = request.POST.get('vol_format', '')
                 cache = request.POST.get('vol_cache', default_cache)
                 io = request.POST.get('vol_io_mode', default_io)
                 discard = request.POST.get('vol_discard_mode', default_discard)
                 zeroes = request.POST.get('vol_detect_zeroes', default_zeroes)
+                new_target_dev = get_new_disk_dev(media, disks, new_bus)
 
-                conn.edit_disk(target_dev, new_path, readonly, shareable, bus, serial, format,
-                               cache, io, discard, zeroes)
+                if new_bus != bus:
+                    conn.detach_disk(target_dev)
+                    conn.attach_disk(new_target_dev, new_path, target_bus=new_bus,
+                                 driver_type=format, cache_mode=cache,
+                                 readonly=readonly, shareable=shareable, serial=serial,
+                                 io_mode=io, discard_mode=discard, detect_zeroes_mode=zeroes)
+                else:
+                    conn.edit_disk(target_dev, new_path, readonly, shareable, new_bus, serial, format,
+                                   cache, io, discard, zeroes)
 
                 if not conn.get_status() == 5:
                     messages.success(request, _("Disk changes changes are applied. " +
@@ -646,7 +656,7 @@ def instance(request, compute_id, vname):
                 try:
                     conn_delete.del_volume(name)
                 except libvirtError as err:
-                    msg = _('The disk: ' + dev + ' is detached but not deleted. ' + err.message)
+                    msg = _('The disk: ' + dev + ' is detached but not deleted. ' + err)
                     messages.warning(request, msg)
 
                 addlogmsg(request.user.username, instance.name, msg)
@@ -663,7 +673,7 @@ def instance(request, compute_id, vname):
             if 'add_cdrom' in request.POST and allow_admin_or_not_template:
                 bus = request.POST.get('bus', 'ide' if machine == 'pc' else 'sata')
                 target = get_new_disk_dev(media, disks, bus)
-                conn.attach_disk("", target, disk_device='cdrom', cache_mode='none', target_bus=bus, readonly=True)
+                conn.attach_disk(target, "",  disk_device='cdrom', cache_mode='none', target_bus=bus, readonly=True)
                 msg = _('Add CD-ROM: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
@@ -746,7 +756,7 @@ def instance(request, compute_id, vname):
                     try:
                         conn.set_vcpu_hotplug(eval(status))
                     except libvirtError as lib_err:
-                        messages.error(request, lib_err.message)
+                        messages.error(request, lib_err)
                     messages.success(request, msg)
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
@@ -951,7 +961,7 @@ def instance(request, compute_id, vname):
                                              "Stop and start network to activate new config")
 
                     except libvirtError as le:
-                        messages.error(request, le.message)
+                        messages.error(request, le)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
                 if 'unset_qos' in request.POST:
                     qos_dir = request.POST.get('qos_direction', '')
@@ -1028,13 +1038,13 @@ def instance(request, compute_id, vname):
                         error_messages.append(msg)
                     else:
                         new_instance = Instance(compute_id=compute_id, name=clone_data['name'])
-                        #new_instance.save()
+                        # new_instance.save()
                         try:
                             new_uuid = conn.clone_instance(clone_data)
                             new_instance.uuid = new_uuid
                             new_instance.save()
                         except Exception as e:
-                            #new_instance.delete()
+                            # new_instance.delete()
                             raise e
 
                         user_instance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
@@ -1064,8 +1074,8 @@ def instance(request, compute_id, vname):
         conn.close()
 
     except libvirtError as lib_err:
-        error_messages.append(lib_err.message)
-        addlogmsg(request.user.username, vname, lib_err.message)
+        error_messages.append(lib_err)
+        addlogmsg(request.user.username, vname, lib_err)
 
     return render(request, 'instance.html', locals())
 
@@ -1152,7 +1162,7 @@ def get_host_instances(request, comp):
     status = connection_manager.host_is_up(comp.type, comp.hostname)
 
     if status is True:
-        conn = wvmHostDetails(comp, comp.login, comp.password, comp.type)
+        conn = wvmHostDetails(comp.hostname, comp.login, comp.password, comp.type)
         comp_node_info = conn.get_node_info()
         comp_mem = conn.get_memory_usage()
         comp_instances = conn.get_host_instances(True)

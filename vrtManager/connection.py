@@ -80,7 +80,7 @@ class wvmConnection(object):
                 elif self.type == CONN_SOCKET:
                     self.__connect_socket()
                 else:
-                    raise ValueError('"{type}" is not a valid connection type'.format(type=self.type))
+                    raise ValueError(f'"{self.type}" is not a valid connection type')
 
                 if self.connected:
                     # do some preprocessing of the connection:
@@ -135,14 +135,14 @@ class wvmConnection(object):
     def __connect_tcp(self):
         flags = [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]
         auth = [flags, self.__libvirt_auth_credentials_callback, None]
-        uri = 'qemu+tcp://%s/system' % self.host
+        uri = f'qemu+tcp://{self.host}/system'
 
         try:
             self.connection = libvirt.openAuth(uri, auth, 0)
             self.last_error = None
 
         except libvirtError as e:
-            self.last_error = 'Connection Failed: ' + str(e)
+            self.last_error = f'Connection Failed: {str(e)}'
             self.connection = None
 
     def __connect_ssh(self):
@@ -153,7 +153,7 @@ class wvmConnection(object):
             self.last_error = None
 
         except libvirtError as e:
-            self.last_error = 'Connection Failed: ' + str(e) + ' --- ' + repr(libvirt.virGetLastError())
+            self.last_error = f'Connection Failed: {str(e)} --- ' + repr(libvirt.virGetLastError())
             self.connection = None
 
     def __connect_tls(self):
@@ -166,7 +166,7 @@ class wvmConnection(object):
             self.last_error = None
 
         except libvirtError as e:
-            self.last_error = 'Connection Failed: ' + str(e)
+            self.last_error = f'Connection Failed: {str(e)}'
             self.connection = None
 
     def __connect_socket(self):
@@ -177,7 +177,7 @@ class wvmConnection(object):
             self.last_error = None
 
         except libvirtError as e:
-            self.last_error = 'Connection Failed: ' + str(e)
+            self.last_error = f'Connection Failed: {str(e)}'
             self.connection = None
 
     def close(self):
@@ -208,18 +208,18 @@ class wvmConnection(object):
 
     def __unicode__(self):
         if self.type == CONN_TCP:
-            type_str = u'tcp'
+            type_str = 'tcp'
         elif self.type == CONN_SSH:
-            type_str = u'ssh'
+            type_str = 'ssh'
         elif self.type == CONN_TLS:
-            type_str = u'tls'
+            type_str = 'tls'
         else:
-            type_str = u'invalid_type'
+            type_str = 'invalid_type'
 
-        return u'qemu+{type}://{user}@{host}/system'.format(type=type_str, user=self.login, host=self.host)
+        return f'qemu+{type_str}://{self.login}@{self.host}/system'
 
     def __repr__(self):
-        return '<wvmConnection {connection_str}>'.format(connection_str=unicode(self))
+        return f'<wvmConnection {str(self)}>'
 
 
 class wvmConnectionManager(object):
@@ -264,9 +264,9 @@ class wvmConnectionManager(object):
         raises libvirtError if (re)connecting fails
         """
         # force all string values to unicode
-        host = unicode(host)
-        login = unicode(login)
-        passwd = unicode(passwd) if passwd is not None else None
+        host = str(host)
+        login = str(login)
+        passwd = str(passwd) if passwd is not None else None
 
         connection = self._search_connection(host, login, passwd, conn)
 
@@ -432,21 +432,21 @@ class wvmConnect(object):
 
     def get_version(self):
         ver = self.wvm.getVersion()
-        major = ver / 1000000
+        major = ver // 1000000
         ver = ver % 1000000
-        minor = ver / 1000
+        minor = ver // 1000
         ver = ver % 1000
         release = ver
-        return "%s.%s.%s" % (major, minor, release)
+        return f"{major}.{minor}.{release}"
 
     def get_lib_version(self):
         ver = self.wvm.getLibVersion()
-        major = ver / 1000000
+        major = ver // 1000000
         ver %= 1000000
-        minor = ver / 1000
+        minor = ver // 1000
         ver %= 1000
         release = ver
-        return "%s.%s.%s" % (major,minor,release)
+        return f"{major}.{minor}.{release}"
 
     def is_kvm_supported(self):
         """Return KVM capabilities."""
