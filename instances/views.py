@@ -169,7 +169,7 @@ def instance(request, compute_id, vname):
         for usr_inst in user_instances:
             if connection_manager.host_is_up(usr_inst.instance.compute.type,
                                              usr_inst.instance.compute.hostname):
-                conn = wvmInstance(usr_inst.instance.compute,
+                conn = wvmInstance(usr_inst.instance.compute.hostname,
                                    usr_inst.instance.compute.login,
                                    usr_inst.instance.compute.password,
                                    usr_inst.instance.compute.type,
