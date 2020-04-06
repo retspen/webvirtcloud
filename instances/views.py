@@ -1193,7 +1193,7 @@ def get_user_instances(request):
     for usr_inst in user_instances:
         if connection_manager.host_is_up(usr_inst.instance.compute.type,
                                          usr_inst.instance.compute.hostname):
-            conn = wvmHostDetails(usr_inst.instance.compute,
+            conn = wvmHostDetails(usr_inst.instance.compute.hostname,
                                   usr_inst.instance.compute.login,
                                   usr_inst.instance.compute.password,
                                   usr_inst.instance.compute.type)
@@ -1429,7 +1429,7 @@ def sshkeys(request, vname):
 
     instance_keys = []
     userinstances = UserInstance.objects.filter(instance__name=vname)
-    
+
     for ui in userinstances:
         keys = UserSSHKey.objects.filter(user=ui.user)
         for k in keys:
