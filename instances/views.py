@@ -117,6 +117,7 @@ def instance(request, compute_id, vname):
     keymaps = settings.QEMU_KEYMAPS
     console_types = settings.QEMU_CONSOLE_TYPES
     console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
+    bottom_bar = settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR
     try:
         userinstance = UserInstance.objects.get(instance__compute_id=compute_id,
                                                 instance__name=vname,

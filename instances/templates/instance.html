@@ -4,35 +4,37 @@
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
-    <nav class="navbar navbar-default navba navbar-fixed-bottom">
-        <div class="container">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar_bottom" aria-expanded="false" aria-controls="navbar">
-                    <span class="sr-only">{% trans 'Toggle navigation' %}</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">{% trans 'HOST' %}</a>
+    {% if bottom_bar %}
+        <nav class="navbar navbar-default navbar navbar-fixed-bottom">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar_bottom" aria-expanded="false" aria-controls="navbar">
+                        <span class="sr-only">{% trans 'Toggle navigation' %}</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">{% trans 'HOST' %}</a>
+                </div>
+                <div id="navbar_bottom" class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li>
+                            <a class="navbar-link" href="{% url 'overview' compute.id %}">
+                                <i class="fa fa-server"></i>
+                                {{ compute.name }} {% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'instances' compute.id %}"><i class="fa fa-desktop"></i> {% trans "Instances" %}</a>
+                        </li>
+                        <li class="active">
+                            <a href="{% url 'instance' compute.id vname %}"><i class="fa fa-hdd-o"></i> {{ vname }}</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <div id="navbar_bottom" class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                    <li>
-                        <a class="navbar-link" href="{% url 'overview' compute.id %}">
-                            <i class="fa fa-server"></i>
-                            {{ compute.name }} {% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %}
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{% url 'instances' compute.id %}"><i class="fa fa-desktop"></i> {% trans "Instances" %}</a>
-                    </li>
-                    <li class="active">
-                        <a href="{% url 'instance' compute.id vname %}"><i class="fa fa-hdd-o"></i> {{ vname }}</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+        </nav>
+    {% endif %}
     <!-- Page Heading -->
      <div>
         <div>
@@ -1781,7 +1783,7 @@
                 image = new_vname + '-clone';
             }
             $('#disk_name-{{ disk.dev }}').val(image);
-        {% endfor %} 
+        {% endfor %}
     }
 </script>
 <script>

@@ -173,6 +173,9 @@ VIEW_ACCOUNTS_STYLE = 'grid'
 # available list style: default (grouped), nongrouped
 VIEW_INSTANCES_LIST_STYLE = 'grouped'
 
+# available options: True, False
+VIEW_INSTANCE_DETAIL_BOTTOM_BAR = True
+
 # available volume format: raw, qcow2, qcow
 INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
 
@@ -208,3 +211,4 @@ INSTANCE_FIRMWARE_DEFAULT_TYPE = 'BIOS'
 
 # Architecture: x86_64, i686, etc
 INSTANCE_ARCH_DEFAULT_TYPE = 'x86_64'
+
