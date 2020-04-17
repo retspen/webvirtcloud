@@ -1,5 +1,5 @@
 ## WebVirtCloud
-###### Python3 & Django 2.11
+###### Python3 & Django 2.2.12
 
 ## Features
 * QEMU/KVM Hypervisor Management
@@ -32,7 +32,7 @@ WebVirtCloud is a virtualization web interface for admins and users. It can dele
 ### Generate secret key
 You should generate SECRET_KEY after cloning repo. Then put it into webvirtcloud/settings.py.
 
-```python
+```python3
 import random, string
 haystack = string.ascii_letters + string.digits + string.punctuation
 print(''.join([random.SystemRandom().choice(haystack) for _ in range(50)]))
@@ -55,7 +55,7 @@ cd /srv/webvirtcloud
 virtualenv -p python3 venv
 source venv/bin/activate
 pip install -r conf/requirements.txt
-python manage.py migrate
+python3 manage.py migrate
 sudo chown -R www-data:www-data /srv/webvirtcloud
 sudo rm /etc/nginx/sites-enabled/default
 ```
