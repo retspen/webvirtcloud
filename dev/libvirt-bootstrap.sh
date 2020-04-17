@@ -457,7 +457,7 @@ daemons_running_centos() {
         systemctl start supervisord.service
     fi
     return 0
-} 
+}
 #
 #   Ended CentOS Install Functions
 #
@@ -468,7 +468,7 @@ daemons_running_centos() {
 #   Fedora Install Functions
 #
 install_fedora() {
-    yum -y install kvm libvirt bridge-utils python-libguestfs supervisor || return 1
+    yum -y install kvm libvirt bridge-utils python3-libguestfs supervisor || return 1
     return 0
 }
 
@@ -519,7 +519,7 @@ daemons_running_fedora() {
         systemctl start supervisord.service
     fi
     return 0
-} 
+}
 #
 #   Ended Fedora Install Functions
 #
@@ -530,7 +530,7 @@ daemons_running_fedora() {
 #   Opensuse Install Functions
 #
 install_opensuse() {
-    zypper -n install -l kvm libvirt bridge-utils python-libguestfs supervisor || return 1
+    zypper -n install -l kvm libvirt bridge-utils python3-libguestfs supervisor || return 1
     return 0
 }
 
@@ -596,7 +596,7 @@ install_ubuntu() {
     if [ $DISTRO_MAJOR_VERSION -lt 18 ]; then
        apt-get -y install kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     else
-       apt install -y qemu-kvm libvirt-bin bridge-utils virt-manager sasl2-bin python-guestfs supervisor || return 1
+       apt install -y qemu-kvm libvirt-bin bridge-utils virt-manager sasl2-bin python3-guestfs supervisor || return 1
     fi
 
 
@@ -651,7 +651,7 @@ daemons_running_ubuntu() {
         service supervisor start
     fi
     return 0
-} 
+}
 #
 #   Ended Ubuntu Install Functions
 #
@@ -737,7 +737,7 @@ daemons_running_debian() {
         service supervisor start
     fi
     return 0
-} 
+}
 #
 #   Ended Debian Install Functions
 #
