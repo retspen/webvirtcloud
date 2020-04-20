@@ -6,9 +6,6 @@ from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_FORMAT
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
 
 
-
-
-
 def get_rbd_storage_data(stg):
     xml = stg.XMLDesc(0)
     ceph_user = util.get_xml_path(xml, "/pool/source/auth/@username")
@@ -236,10 +233,10 @@ class wvmCreate(wvmConnect):
                 """
         xml += """<devices>"""
 
-        vd_disk_letters = list(string.lowercase)
-        fd_disk_letters = list(string.lowercase)
-        hd_disk_letters = list(string.lowercase)
-        sd_disk_letters = list(string.lowercase)
+        vd_disk_letters = list(string.ascii_lowercase)
+        fd_disk_letters = list(string.ascii_lowercase)
+        hd_disk_letters = list(string.ascii_lowercase)
+        sd_disk_letters = list(string.ascii_lowercase)
         add_cd = True
 
         disk_opts = ''

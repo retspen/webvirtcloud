@@ -213,7 +213,7 @@ class wvmNetwork(wvmConnect):
                     for host in hosts:
                         ip = host.get('ip')
                         mac = host.get('mac')
-                        name = host.get('name','')
+                        name = host.get('name', '')
                         result.append({'ip': ip, 'mac': mac, 'name': name})
                     return result
                 else:
@@ -223,7 +223,7 @@ class wvmNetwork(wvmConnect):
                 for host in hosts:
                     ip = host.get('ip')
                     id = host.get('id')
-                    name = host.get('name','')
+                    name = host.get('name', '')
                     result.append({'ip': ip, 'id': id, 'name': name})
                 return result
 
@@ -236,7 +236,7 @@ class wvmNetwork(wvmConnect):
                 range = tree.xpath("./ip[@family='ipv6']/dhcp/range")
             range[0].set('start', range_start)
             range[0].set('end', range_end)
-            self.wvm.networkDefineXML(etree.tostring(tree))
+            self.wvm.networkDefineXML(etree.tostring(tree).decode())
 
     def delete_fixed_address(self, ip, family='ipv4'):
         tree = etree.fromstring(self._XMLDesc(0))
@@ -335,7 +335,7 @@ class wvmNetwork(wvmConnect):
                 parent.append(etree.fromstring(xml))
             else:
                 band[0].append(etree.fromstring(xml))
-        new_xml = etree.tostring(tree)
+        new_xml = etree.tostring(tree).decode()
         self.wvm.networkDefineXML(new_xml)
 
     def unset_qos(self, direction):
@@ -344,7 +344,7 @@ class wvmNetwork(wvmConnect):
             parent = direct.getparent()
             parent.remove(direct)
 
-        self.wvm.networkDefineXML(etree.tostring(tree))
+        self.wvm.networkDefineXML(etree.tostring(tree).decode())
 
     def edit_network(self, new_xml):
         self.wvm.networkDefineXML(new_xml)
@@ -354,7 +354,7 @@ class wvmNetwork(wvmConnect):
             self.leases = self.net.DHCPLeases()
         except Exception as e:
             self.leases = []
-            raise "Error getting %s DHCP leases: %s" % self, str(e)
+            raise "Error getting %s DHCP leases: %s" % (self, e)
 
     def get_dhcp_leases(self):
         if self.leases is None:

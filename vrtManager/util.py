@@ -34,9 +34,9 @@ def randomUUID():
                      "%02x" * 6]) % tuple(u)
 
 
-def randomPasswd(length=12, alphabet=string.letters + string.digits):
+def randomPasswd(length=12, alphabet=string.ascii_letters + string.digits):
     """Generate a random password"""
-    return ''.join([random.choice(alphabet) for i in xrange(length)])
+    return ''.join([random.choice(alphabet) for i in range(length)])
 
 
 def get_max_vcpus(conn, type=None):
@@ -75,7 +75,7 @@ def compareMAC(p, q):
         else:
             return -1
 
-    for i in xrange(len(pa)):
+    for i in range(len(pa)):
         n = int(pa[i], 0x10) - int(qa[i], 0x10)
         if n > 0:
             return 1
@@ -160,12 +160,12 @@ def validate_macaddr(val):
     if val is None:
         return
 
-    if not (isinstance(val, str) or isinstance(val, basestring)):
+    if not (isinstance(val, str) or isinstance(val, str)):
         raise ValueError("MAC address must be a string.")
 
     form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)
     if form is None:
-        raise ValueError("MAC address must be of the format AA:BB:CC:DD:EE:FF, was '%s'" % val)
+        raise ValueError(f"MAC address must be of the format AA:BB:CC:DD:EE:FF, was {val}")
 
 
 # Mapping of UEFI binary names to their associated architectures. We

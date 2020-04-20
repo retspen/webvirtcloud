@@ -1,4 +1,4 @@
 -r ../conf/requirements.txt
-pep8==1.7.1
+pycodestyle
 pyflakes==2.1.1
-pylint==1.9.4
+pylint==2.4.4

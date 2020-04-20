@@ -1,11 +1,11 @@
-from django.db import models
+from django.db.models import Model, CharField, IntegerField
 
 
-class Flavor(models.Model):
-    label = models.CharField(max_length=12)
-    memory = models.IntegerField()
-    vcpu = models.IntegerField()
-    disk = models.IntegerField()
+class Flavor(Model):
+    label = CharField(max_length=12)
+    memory = IntegerField()
+    vcpu = IntegerField()
+    disk = IntegerField()
 
     def __unicode__(self):
         return self.name

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -7,7 +7,7 @@ import django
 
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, '..', ''))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
+os.environ["DJANGO_SETTINGS_MODULE"] = "webvirtcloud.settings"
 CERT = DIR_PATH + '/cert.pem'
 
 if ROOT_PATH not in sys.path:
@@ -15,16 +15,16 @@ if ROOT_PATH not in sys.path:
 
 django.setup()
 
-# VENV_PATH = ROOT_PATH + '/venv/lib/python2.7/site-packages'
+# VENV_PATH = ROOT_PATH + '/venv/lib/python3.6/site-packages'
 # if VENV_PATH not in sys.path:
 #     sys.path.append(VENV_PATH)
 
 import re
-import Cookie
 import socket
+from six.moves import http_cookies as Cookie
 from webvirtcloud.settings import WS_PORT, WS_HOST, WS_CERT
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
-from tunnel import Tunnel
+from console.tunnel import Tunnel
 from optparse import OptionParser
 
 parser = OptionParser()
@@ -127,12 +127,30 @@ def get_connection_infos(token):
 
 class CompatibilityMixIn(object):
     def _new_client(self, daemon, socket_factory):
-        cookie = Cookie.SimpleCookie()
-        cookie.load(self.headers.getheader('cookie'))
-        if 'token' not in cookie:
-            self.msg('No token cookie found !')
-            return False
-        token = cookie['token'].value
+        # NoVNC uses it's own convention that forward token
+        # from the request to a cookie header, we should check
+        # also for this behavior
+        hcookie = self.headers.get('cookie')
+        if hcookie:
+            cookie = Cookie.SimpleCookie()
+            for hcookie_part in hcookie.split(';'):
+                hcookie_part = hcookie_part.lstrip()
+                try:
+                    cookie.load(hcookie_part)
+                except Cookie.CookieError:
+                    # NOTE(stgleb): Do not print out cookie content
+                    # for security reasons.
+                    self.msg('Found malformed cookie')
+                else:
+                    if 'token' in cookie:
+                        token = cookie['token'].value
+
+        # cookie = Cookie.SimpleCookie()
+        # cookie.load(self.headers.getheader('cookie'))
+        # if 'token' not in cookie:
+        #     self.msg('No token cookie found !')
+        #     return False
+        # token = cookie['token'].value
 
         (connhost, connport, connuser, conntype, console_host, console_port,
          console_socket) = get_connection_infos(token)

@@ -87,8 +87,8 @@
                                                             <div class="form-group">
                                                                 <label class="col-sm-4 control-label">{% trans "VNC" %}</label>
                                                                 <div class="col-sm-6">
-                                                                    <select type="text" class="form-control" name="inst_vnc">
-                                                                        <option value="">False</option>
+                                                                    <select class="form-control" name="inst_vnc">
+                                                                        <option value="">{% trans 'False' %}</option>
                                                                         <option value="1" {% if inst.is_vnc %}selected{% endif %}>True</option>
                                                                     </select>
                                                                 </div>
@@ -96,8 +96,8 @@
                                                             <div class="form-group">
                                                                 <label class="col-sm-4 control-label">{% trans "Resize" %}</label>
                                                                 <div class="col-sm-6">
-                                                                    <select type="text" class="form-control" name="inst_change">
-                                                                        <option value="">False</option>
+                                                                    <select class="form-control" name="inst_change">
+                                                                        <option value="">{% trans 'False' %}</option>
                                                                         <option value="1" {% if inst.is_change %}selected{% endif %}>True</option>
                                                                     </select>
                                                                 </div>
@@ -105,8 +105,8 @@
                                                             <div class="form-group">
                                                                 <label class="col-sm-4 control-label">{% trans "Delete" %}</label>
                                                                 <div class="col-sm-6">
-                                                                    <select type="text" class="form-control" name="inst_delete">
-                                                                        <option value="">False</option>
+                                                                    <select class="form-control" name="inst_delete">
+                                                                        <option value="">{% trans 'False' %}</option>
                                                                         <option value="1" {% if inst.is_delete %}selected{% endif %}>True</option>
                                                                     </select>
                                                                 </div>
@@ -124,7 +124,7 @@
                                     <td style="width:5px;">
                                         <form action="" method="post" role="form">{% csrf_token %}
                                             <input type="hidden" name="user_inst" value="{{ inst.id }}">
-                                            <button type="submit" class="btn btn-xs btn-default" name="delete" tittle="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            <button type="submit" class="btn btn-xs btn-default" name="delete" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                 <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                                             </button>
                                         </form>

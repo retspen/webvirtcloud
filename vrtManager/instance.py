@@ -275,7 +275,7 @@ class wvmInstance(wvmConnect):
         """Get number of physical CPUs."""
         hostinfo = self.wvm.getInfo()
         pcpus = hostinfo[4] * hostinfo[5] * hostinfo[6] * hostinfo[7]
-        range_pcpus = xrange(1, int(pcpus + 1))
+        range_pcpus = range(1, int(pcpus + 1))
         return range_pcpus
 
     def get_interface_addresses(self, iface_mac):
@@ -322,11 +322,11 @@ class wvmInstance(wvmConnect):
         return None, None
 
     def _get_interface_addresses(self, source):
-        #("Calling interfaceAddresses source=%s", source)
+        # ("Calling interfaceAddresses source=%s", source)
         try:
             return self.instance.interfaceAddresses(source)
         except Exception as e:
-            #log.debug("interfaceAddresses failed: %s", str(e))
+            # log.debug("interfaceAddresses failed: %s", str(e))
             pass
         return {}
 
@@ -340,7 +340,7 @@ class wvmInstance(wvmConnect):
             self._ip_cache["qemuga"] = self._get_interface_addresses(
                 VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
 
-        arp_flag = 3 # libvirt."VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP"
+        arp_flag = 3  # libvirt."VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP"
         self._ip_cache["arp"] = self._get_interface_addresses(arp_flag)
 
     def get_net_devices(self):
@@ -501,7 +501,7 @@ class wvmInstance(wvmConnect):
         else:
             raise Exception('Unknown boot menu option, please choose one of 0:disable, 1:enable, -1:remove')
 
-        xmldom = ElementTree.tostring(tree)
+        xmldom = ElementTree.tostring(tree).decode()
         self._defineXML(xmldom)
 
     def get_bootorder(self):
@@ -592,7 +592,7 @@ class wvmInstance(wvmConnect):
                         d.append(order)
             else:
                 raise Exception('Invalid Device Type for boot order')
-        self._defineXML(ElementTree.tostring(tree))
+        self._defineXML(ElementTree.tostring(tree).decode())
 
     def mount_iso(self, dev, image):
         def attach_iso(dev, disk, vol):
@@ -618,11 +618,11 @@ class wvmInstance(wvmConnect):
             if attach_iso(dev, disk, vol):
                 break
         if self.get_status() == 1:
-            xml = ElementTree.tostring(disk)
+            xml = ElementTree.tostring(disk).decode()
             self.instance.attachDevice(xml)
             xmldom = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         if self.get_status() == 5:
-            xmldom = ElementTree.tostring(tree)
+            xmldom = ElementTree.tostring(tree).decode()
         self._defineXML(xmldom)
 
     def umount_iso(self, dev, image):
@@ -637,14 +637,14 @@ class wvmInstance(wvmConnect):
                         if elm.get('dev') == dev:
                             disk.remove(src_media)
         if self.get_status() == 1:
-            xml_disk = ElementTree.tostring(disk)
+            xml_disk = ElementTree.tostring(disk).decode()
             self.instance.attachDevice(xml_disk)
             xmldom = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         if self.get_status() == 5:
-            xmldom = ElementTree.tostring(tree)
+            xmldom = ElementTree.tostring(tree).decode()
         self._defineXML(xmldom)
 
-    def attach_disk(self, source, target_dev, target_bus='ide', disk_type='file',
+    def attach_disk(self, target_dev, source,  target_bus='ide', disk_type='file',
                     disk_device='disk', driver_name='qemu', driver_type='raw',
                     readonly=False, shareable=False, serial=None,
                     cache_mode=None, io_mode=None, discard_mode=None, detect_zeroes_mode=None):
@@ -683,7 +683,7 @@ class wvmInstance(wvmConnect):
         tree = etree.fromstring(self._XMLDesc(0))
 
         disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[0].getparent()
-        xml_disk = etree.tostring(disk_el)
+        xml_disk = etree.tostring(disk_el).decode()
         devices = tree.find('devices')
         devices.remove(disk_el)
 
@@ -699,6 +699,7 @@ class wvmInstance(wvmConnect):
         old_disk_type = disk_el.get('type')
         old_disk_device = disk_el.get('device')
         old_driver_name = disk_el.xpath('driver/@name')[0]
+        old_target_bus = disk_el.xpath('target/@bus')[0]
 
         additionals = ''
         if cache_mode is not None and cache_mode != 'default':
@@ -715,6 +716,7 @@ class wvmInstance(wvmConnect):
             xml_disk += "<driver name='%s' type='%s'/>" % (old_driver_name, format)
         elif old_disk_device == 'disk':
             xml_disk += "<driver name='%s' type='%s' %s/>" % (old_driver_name, format, additionals)
+
         xml_disk += """<source file='%s'/>
           <target dev='%s' bus='%s'/>""" % (source, target_dev, target_bus)
         if readonly:
@@ -735,7 +737,7 @@ class wvmInstance(wvmConnect):
             time.sleep(1)
             cpu_use_now = self.instance.info()[4]
             diff_usage = cpu_use_now - cpu_use_ago
-            cpu_usage['cpu'] = 100 * diff_usage / (1 * nbcore * 10 ** 9L)
+            cpu_usage['cpu'] = 100 * diff_usage / (1 * nbcore * 10 ** 9)
         else:
             cpu_usage['cpu'] = 0
         return cpu_usage
@@ -746,7 +748,7 @@ class wvmInstance(wvmConnect):
     def set_vcpu_hotplug(self, status, vcpus_hotplug=0):
         """ vcpus_hotplug = 0 make all vpus hotpluggable """
         vcpus_hotplug = int(self.get_vcpu()) if vcpus_hotplug == 0 else vcpus_hotplug
-        if self.get_status() == 5: # shutoff
+        if self.get_status() == 5:  # shutoff
             if status:
                 xml = """ <vcpus>"""
                 xml += """<vcpu id='0' enabled='yes' hotpluggable='no' order='1'/>"""
@@ -758,14 +760,14 @@ class wvmInstance(wvmConnect):
                 vcpus = tree.xpath("/domain/vcpus")
                 if not vcpus:
                     tree.append(etree.fromstring(xml))
-                    self._defineXML(etree.tostring(tree))
+                    self._defineXML(etree.tostring(tree).decode())
             else:
                 tree = etree.fromstring(self._XMLDesc(0))
                 vcpus = tree.xpath("/domain/vcpus")
                 for vcpu in vcpus:
                     parent = vcpu.getparent()
                     parent.remove(vcpu)
-                    self._defineXML(etree.tostring(tree))
+                    self._defineXML(etree.tostring(tree).decode())
         else:
             raise libvirtError("Please shutdown the instance then try to enable vCPU hotplug")
 
@@ -892,7 +894,7 @@ class wvmInstance(wvmConnect):
                 listen.attrib.pop("address")
             except:
                 pass
-        newxml = ElementTree.tostring(root)
+        newxml = ElementTree.tostring(root).decode()
         return self._defineXML(newxml)
     
     def get_console_socket(self):
@@ -917,7 +919,7 @@ class wvmInstance(wvmConnect):
             # Little fix for old version ElementTree
             graphic = root.find("devices/graphics")
         graphic.set('type', console_type)
-        newxml = ElementTree.tostring(root)
+        newxml = ElementTree.tostring(root).decode()
         self._defineXML(newxml)
 
     def get_console_port(self, console_type=None):
@@ -953,7 +955,7 @@ class wvmInstance(wvmConnect):
                 graphic.attrib.pop('passwd')
             except:
                 pass
-        newxml = ElementTree.tostring(root)
+        newxml = ElementTree.tostring(root).decode()
         return self._defineXML(newxml)
 
     def set_console_keymap(self, keymap):
@@ -972,7 +974,7 @@ class wvmInstance(wvmConnect):
                 graphic.attrib.pop('keymap')
             except:
                 pass
-        newxml = ElementTree.tostring(root)
+        newxml = ElementTree.tostring(root).decode()
         self._defineXML(newxml)
 
     def get_console_keymap(self):
@@ -998,7 +1000,7 @@ class wvmInstance(wvmConnect):
                 parent = model.getparent()
                 parent.remove(model)
                 parent.append(etree.fromstring(video_xml))
-                self._defineXML(etree.tostring(tree))
+                self._defineXML(etree.tostring(tree).decode())
 
     def resize_cpu(self, cur_vcpu, vcpu):
         """
@@ -1011,11 +1013,11 @@ class wvmInstance(wvmConnect):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = etree.fromstring(xml)
 
-        set_vcpu = tree.find('vcpu')
-        set_vcpu.text = vcpu
-        set_vcpu.set('current', cur_vcpu)
+        vcpu_elem = tree.find('vcpu')
+        vcpu_elem.text = vcpu
+        vcpu_elem.set('current', cur_vcpu)
 
-        new_xml = etree.tostring(tree)
+        new_xml = etree.tostring(tree).decode()
         self._defineXML(new_xml)
 
         if is_vcpus_enabled:
@@ -1034,14 +1036,14 @@ class wvmInstance(wvmConnect):
             return
 
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
+        tree = etree.fromstring(xml)
 
-        set_mem = tree.find('memory')
-        set_mem.text = str(memory)
-        set_cur_mem = tree.find('currentMemory')
-        set_cur_mem.text = str(cur_memory)
+        mem_elem = tree.find('memory')
+        mem_elem.text = str(memory)
+        cur_mem_elem = tree.find('currentMemory')
+        cur_mem_elem.text = str(cur_memory)
 
-        new_xml = ElementTree.tostring(tree)
+        new_xml = etree.tostring(tree).decode()
         self._defineXML(new_xml)
 
     def resize_disk(self, disks):
@@ -1049,14 +1051,14 @@ class wvmInstance(wvmConnect):
         Function change disks on vds.
         """
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
+        tree = etree.fromstring(xml)
 
         for disk in disks:
             source_dev = disk['path']
             vol = self.get_volume_by_path(source_dev)
             vol.resize(disk['size_new'])
 
-        new_xml = ElementTree.tostring(tree)
+        new_xml = etree.tostring(tree).decode()
         self._defineXML(new_xml)
 
     def get_iso_media(self):
@@ -1250,7 +1252,7 @@ class wvmInstance(wvmConnect):
             'description': clone_data.get('clone-description', ''),
         }
         self._set_options(tree, options)
-        self._defineXML(ElementTree.tostring(tree))
+        self._defineXML(ElementTree.tostring(tree).decode())
 
         return self.get_instance(clone_data['name']).UUIDString()
 
@@ -1297,7 +1299,7 @@ class wvmInstance(wvmConnect):
         for interface in tree.findall('devices/interface'):
             source = interface.find('mac')
             if source.get('address', '') == mac_address:
-                new_xml = ElementTree.tostring(interface)
+                new_xml = ElementTree.tostring(interface).decode()
 
                 if self.get_status() == 1:
                     self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_LIVE)
@@ -1359,7 +1361,7 @@ class wvmInstance(wvmConnect):
                 else:
                     if source is not None: interface.remove(source)
 
-        new_xml = ElementTree.tostring(tree)
+        new_xml = ElementTree.tostring(tree).decode()
         self._defineXML(new_xml)
 
     def set_link_state(self, mac_address, state):
@@ -1373,7 +1375,7 @@ class wvmInstance(wvmConnect):
                 link_el = etree.Element("link")
                 link_el.attrib["state"] = state
                 interface.append(link_el)
-                new_xml = etree.tostring(interface)
+                new_xml = etree.tostring(interface).decode()
                 if self.get_status() == 1:
                     self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_LIVE)
                     self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
@@ -1400,7 +1402,7 @@ class wvmInstance(wvmConnect):
         tree = ElementTree.fromstring(xml)
 
         self._set_options(tree, options)
-        new_xml = ElementTree.tostring(tree)
+        new_xml = ElementTree.tostring(tree).decode()
         self._defineXML(new_xml)
 
     def set_memory(self, size, flags=0):
@@ -1460,7 +1462,7 @@ class wvmInstance(wvmConnect):
                         parent.append(etree.fromstring(xml))
                     else:
                         band.append(etree.fromstring(xml))
-        new_xml = etree.tostring(tree)
+        new_xml = etree.tostring(tree).decode()
         self.wvm.defineXML(new_xml)
 
     def unset_qos(self, mac, direction):
@@ -1472,7 +1474,7 @@ class wvmInstance(wvmConnect):
             if parent_mac[0] == mac:
                 band_el.remove(direct)
 
-        self.wvm.defineXML(etree.tostring(tree))
+        self.wvm.defineXML(etree.tostring(tree).decode())
 
     def add_guest_agent(self):
         channel_xml = """
@@ -1490,7 +1492,7 @@ class wvmInstance(wvmConnect):
         tree = etree.fromstring(self._XMLDesc(0))
         for target in tree.xpath("/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"):
             parent = target.getparent()
-            channel_xml = etree.tostring(parent)
+            channel_xml = etree.tostring(parent).decode()
             if self.get_status() == 1:
                 self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_LIVE)
                 self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)

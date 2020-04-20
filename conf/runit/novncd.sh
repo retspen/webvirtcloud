@@ -6,7 +6,7 @@ RUNAS=`which setuser`
 USER=www-data
 
 DJANGO_PROJECT=/srv/webvirtcloud
-PYTHON=$DJANGO_PROJECT/venv/bin/python
+PYTHON=$DJANGO_PROJECT/venv/bin/python3
 NOVNCD=$DJANGO_PROJECT/console/novncd
 
 # make novncd debug, verbose

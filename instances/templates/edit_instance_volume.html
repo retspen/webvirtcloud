@@ -48,7 +48,7 @@
                                 <div class="form-group">
                                     <label class="col-sm-4 control-label">{% trans 'Bus' %}</label>
                                     <div class="col-sm-8">
-                                        <select class="form-control" name="vol_bus">
+                                        <select class="form-control" name="vol_bus" {% if status != 5 %} disabled {% endif %}>
                                         {% for bus in bus_host %}
                                             <option value="{{ bus }}" {% if bus == disk.bus %}selected{% endif %}>{{ bus }}</option>
                                         {% endfor %}
@@ -110,6 +110,7 @@
                                         </select>
                                     </div>
                                 </div>
+                                <input class="form-control" name="vol_bus_old" value="{{ disk.bus }}"/>
                             </div><!-- /.tabpane-content -->
                         </div><!-- /.tab-content -->
                 </div> <!-- /.modal-body -->

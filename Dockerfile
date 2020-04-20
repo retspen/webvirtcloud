@@ -6,21 +6,21 @@ RUN echo 'APT::Get::Clean=always;' >> /etc/apt/apt.conf.d/99AutomaticClean
 RUN apt-get update -qqy
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qyy install \
 	-o APT::Install-Suggests=false \
-	git python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev nginx libsasl2-modules
+	git python3-virtualenv python3-dev python3-lxml virtualenv libvirt-dev zlib1g-dev nginx libsasl2-modules
 
 ADD . /srv/webvirtcloud
 RUN chown -R www-data:www-data /srv/webvirtcloud
 
 # Setup webvirtcloud
 RUN cd /srv/webvirtcloud && \
-	virtualenv venv && \
+	virtualenv --python=python3 venv && \
 	. venv/bin/activate && \
-	pip install -U pip && \
-	pip install -r conf/requirements.txt && \
+	pip3 install -U pip && \
+	pip3 install -r conf/requirements.txt && \
 	chown -R www-data:www-data /srv/webvirtcloud
 
 RUN cd /srv/webvirtcloud && . venv/bin/activate && \
-	python manage.py migrate && \
+	python3 manage.py migrate && \
 	chown -R www-data:www-data /srv/webvirtcloud
 
 # Setup Nginx

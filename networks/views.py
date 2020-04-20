@@ -126,31 +126,31 @@ def network(request, compute_id, pool):
                 conn.start()
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
-                error_messages.append(lib_err.message)
+                error_messages.append(lib_err)
         if 'stop' in request.POST:
             try:
                 conn.stop()
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
-                error_messages.append(lib_err.message)
+                error_messages.append(lib_err)
         if 'delete' in request.POST:
             try:
                 conn.delete()
                 return HttpResponseRedirect(reverse('networks', args=[compute_id]))
             except libvirtError as lib_err:
-                error_messages.append(lib_err.message)
+                error_messages.append(lib_err)
         if 'set_autostart' in request.POST:
             try:
                 conn.set_autostart(1)
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
-                error_messages.append(lib_err.message)
+                error_messages.append(lib_err)
         if 'unset_autostart' in request.POST:
             try:
                 conn.set_autostart(0)
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
-                error_messages.append(lib_err.message)
+                error_messages.append(lib_err)
         if 'modify_fixed_address' in request.POST:
             name = request.POST.get('name', '')
             address = request.POST.get('address', '')
@@ -166,9 +166,9 @@ def network(request, compute_id, pool):
                 messages.success(request, _("{} Fixed Address Operation Completed.").format(family.upper()))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
-                error_messages.append(lib_err.message)
+                error_messages.append(lib_err)
             except ValueError as val_err:
-                error_messages.append(val_err.message)
+                error_messages.append(val_err)
         if 'delete_fixed_address' in request.POST:
             ip = request.POST.get('address', '')
             family = request.POST.get('family', 'ipv4')
@@ -184,7 +184,7 @@ def network(request, compute_id, pool):
                 messages.success(request, _("{} DHCP Range is Changed.").format(family.upper()))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
-                error_messages.append(lib_err.message)
+                error_messages.append(lib_err)
         if 'edit_network' in request.POST:
             edit_xml = request.POST.get('edit_xml', '')
             if edit_xml:
@@ -208,8 +208,8 @@ def network(request, compute_id, pool):
                                      _("Stop and start network to activate new config"))
                 else:
                     messages.success(request, _("{} Qos is set").format(qos_dir.capitalize()))
-            except libvirtError as le:
-                messages.error(request, le.message)
+            except libvirtError as lib_err:
+                messages.error(request, lib_err)
             return HttpResponseRedirect(request.get_full_path())
         if 'unset_qos' in request.POST:
             qos_dir = request.POST.get('qos_direction', '')

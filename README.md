@@ -1,5 +1,5 @@
 ## WebVirtCloud
-
+###### Python3 & Django 2.2.12
 
 ## Features
 * QEMU/KVM Hypervisor Management
@@ -32,16 +32,16 @@ WebVirtCloud is a virtualization web interface for admins and users. It can dele
 ### Generate secret key
 You should generate SECRET_KEY after cloning repo. Then put it into webvirtcloud/settings.py.
 
-```python
+```python3
 import random, string
 haystack = string.ascii_letters + string.digits + string.punctuation
 print(''.join([random.SystemRandom().choice(haystack) for _ in range(50)]))
 ```
 
-### Install WebVirtCloud panel (Ubuntu)
+### Install WebVirtCloud panel (Ubuntu 18.04+ LTS)
 
 ```bash
-sudo apt-get -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
+sudo apt-get -y install git virtualenv python3-virtualenv python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
@@ -52,10 +52,10 @@ cd ..
 sudo mv webvirtcloud /srv
 sudo chown -R www-data:www-data /srv/webvirtcloud
 cd /srv/webvirtcloud
-virtualenv venv
+virtualenv -p python3 venv
 source venv/bin/activate
 pip install -r conf/requirements.txt
-python manage.py migrate
+python3 manage.py migrate
 sudo chown -R www-data:www-data /srv/webvirtcloud
 sudo rm /etc/nginx/sites-enabled/default
 ```
@@ -76,11 +76,11 @@ Done!!
 
 Go to http://serverip and you should see the login screen.
 
-
-### Install WebVirtCloud panel (CentOS)
+### Install WebVirtCloud panel (CentOS8/OEL8)
 
 ```bash
-sudo yum -y install python-virtualenv python-devel libvirt-devel glibc gcc nginx supervisor python-lxml git python-libguestfs iproute-tc
+sudo yum -y install epel-release
+sudo yum -y install python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml git python3-libguestfs iproute-tc cyrus-sasl-md5 python3-libguestfs
 ```
 
 #### Creating directories and cloning repo
@@ -90,15 +90,17 @@ sudo mkdir /srv && cd /srv
 sudo git clone https://github.com/retspen/webvirtcloud && cd webvirtcloud
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
 # now put secret key to webvirtcloud/settings.py
+# create secret key manually or use that command
+sudo sed -r "s/SECRET_KEY = ''/SECRET_KEY = '"`python3 /srv/webvirtcloud/conf/runit/secret_generator.py`"'/" -i /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
 #### Start installation webvirtcloud
 ```
-sudo virtualenv venv
-sudo source venv/bin/activate
-sudo venv/bin/pip install -r conf/requirements.txt
-sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
-sudo venv/bin/python manage.py migrate
+virtualenv-3 venv
+source venv/bin/activate
+pip3 install -r conf/requirements.txt
+cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+python3 manage.py migrate
 ```
 
 #### Configure the supervisor for CentOS
@@ -115,7 +117,7 @@ autorestart=true
 redirect_stderr=true
 
 [program:novncd]
-command=/srv/webvirtcloud/venv/bin/python /srv/webvirtcloud/console/novncd
+command=/srv/webvirtcloud/venv/bin/python3 /srv/webvirtcloud/console/novncd
 directory=/srv/webvirtcloud
 user=nginx
 autostart=true
@@ -191,11 +193,20 @@ Change permission for selinux:
 
 ```bash
 sudo semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)"
+sudo setsebool -P httpd_can_network_connect on -P
 ```
 
-Add required user to the kvm group:
+Add required user to the kvm group(if you not install with root):
 ```bash
-sudo usermod -G kvm -a webvirtmgr
+sudo usermod -G kvm -a <username>
+```
+
+Allow http ports on firewall:
+```bash
+sudo firewall-cmd --add-service=http
+sudo firewall-cmd --add-service=http --permanent
+sudo firewall-cmd --add-port=6080/tcp
+sudo firewall-cmd --add-port=6080/tcp --permanent
 ```
 
 Let's restart nginx and the supervisord services:
@@ -226,7 +237,7 @@ Done!!
 
 Go to http://serverip and you should see the login screen.
 
-### Alternative running novncd via runit
+### Alternative running novncd via runit(Debian)
 Alternative to running nonvcd via supervisor is runit.
 
 On Debian systems install runit and configure novncd service
@@ -272,11 +283,12 @@ datasource:
 
 ### How To Update
 ```bash
-cd <installation-directory>
-sudo source venv/bin/activate
+# Go to Installation Directory
+cd /srv/webvirtcloud
+source venv/bin/activate
 git pull
-pip install -U -r conf/requirements.txt 
-python manage.py migrate
+pip3 install -U -r conf/requirements.txt 
+python3 manage.py migrate
 sudo service supervisor restart
 ```
 ### Screenshots

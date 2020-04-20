@@ -33,7 +33,7 @@ def console(request):
         console_type = conn.get_console_type()
         console_websocket_port = conn.get_console_websocket_port()
         console_passwd = conn.get_console_passwd()
-    except libvirtError as lib_err:
+    except libvirtError:
         console_type = None
         console_websocket_port = None
         console_passwd = None

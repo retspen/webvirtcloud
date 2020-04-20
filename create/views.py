@@ -19,8 +19,12 @@ from webvirtcloud.settings import QEMU_CONSOLE_DEFAULT_TYPE
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_IO
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_DISCARD
+from webvirtcloud.settings import INSTANCE_ARCH_DEFAULT_TYPE
+from webvirtcloud.settings import INSTANCE_FIRMWARE_DEFAULT_TYPE
+
 from django.contrib import messages
 from logs.views import addlogmsg
+
 
 @login_required
 def create_instance_select_type(request, compute_id):
@@ -45,8 +49,9 @@ def create_instance_select_type(request, compute_id):
         all_hypervisors = conn.get_hypervisors_machines()
         # Supported hypervisors by webvirtcloud: i686, x86_64(for now)
         supported_arch = ["x86_64", "i686", "aarch64", "armv7l", "ppc64", "ppc64le", "s390x"]
-        hypervisors = [hpv for hpv in all_hypervisors.keys() if hpv in supported_arch ]
+        hypervisors = [hpv for hpv in all_hypervisors.keys() if hpv in supported_arch]
         default_machine = INSTANCE_MACHINE_DEFAULT_TYPE
+        default_arch = INSTANCE_ARCH_DEFAULT_TYPE
 
         if request.method == 'POST':
             if 'create_xml' in request.POST:
@@ -63,18 +68,21 @@ def create_instance_select_type(request, compute_id):
                         conn._defineXML(xml)
                         return HttpResponseRedirect(reverse('instance', args=[compute_id, name]))
                     except libvirtError as lib_err:
-                        error_messages.append(lib_err.message)
+                        error_messages.append(lib_err)
 
     except libvirtError as lib_err:
         error_messages.append(lib_err)
 
     return render(request, 'create_instance_w1.html', locals())
 
+
 @login_required
 def create_instance(request, compute_id, arch, machine):
     """
     :param request:
     :param compute_id:
+    :param arch:
+    :param machine:
     :return:
     """
     if not request.user.is_superuser:
@@ -96,6 +104,7 @@ def create_instance(request, compute_id, arch, machine):
                          compute.password,
                          compute.type)
 
+        default_firmware = INSTANCE_FIRMWARE_DEFAULT_TYPE
         default_cpu_mode = INSTANCE_CPU_DEFAULT_MODE
         instances = conn.get_instances()
         videos = conn.get_video_models(arch, machine)
@@ -189,7 +198,7 @@ def create_instance(request, compute_id, arch, machine):
                                     volume_list.append(volume)
                                     is_disk_created = True
                                 except libvirtError as lib_err:
-                                    error_messages.append(lib_err.message)
+                                    error_messages.append(lib_err)
                         elif data['template']:
                             templ_path = conn.get_volume_path(data['template'])
                             dest_vol = conn.get_volume_path(data["name"] + ".img", data['storage'])
@@ -221,7 +230,7 @@ def create_instance(request, compute_id, arch, machine):
                                         volume['bus'] = request.POST.get('bus' + str(idx), '')
                                         volume_list.append(volume)
                                     except libvirtError as lib_err:
-                                        error_messages.append(lib_err.message)
+                                        error_messages.append(lib_err)
                         if data['cache_mode'] not in conn.get_cache_modes():
                             error_msg = _("Invalid cache mode")
                             error_messages.append(error_msg)

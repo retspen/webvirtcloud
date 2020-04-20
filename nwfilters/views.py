@@ -59,8 +59,8 @@ def nwfilters(request, compute_id):
                             conn.create_nwfilter(xml)
                             addlogmsg(request.user.username, compute.hostname, msg)
                         except libvirtError as lib_err:
-                            error_messages.append(lib_err.message)
-                            addlogmsg(request.user.username, compute.hostname, lib_err.message)
+                            error_messages.append(lib_err)
+                            addlogmsg(request.user.username, compute.hostname, lib_err)
 
             if 'del_nwfilter' in request.POST:
                 name = request.POST.get('nwfiltername', '')

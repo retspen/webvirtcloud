@@ -19,7 +19,7 @@ class wvmNWFilters(wvmConnect):
             tree.set('name', cln_name)
             uuid = tree.find('uuid')
             tree.remove(uuid)
-            self.create_nwfilter(ElementTree.tostring(tree))
+            self.create_nwfilter(ElementTree.tostring(tree).decode())
 
 
 class wvmNWFilter(wvmConnect):
@@ -43,7 +43,7 @@ class wvmNWFilter(wvmConnect):
         tree = ElementTree.fromstring(self._XMLDesc(0))
         uuid = tree.find('uuid')
         tree.remove(uuid)
-        return ElementTree.tostring(tree)
+        return ElementTree.tostring(tree).decode()
 
     def get_filter_refs(self):
         refs = []
@@ -64,7 +64,7 @@ class wvmNWFilter(wvmConnect):
 
             rule_directives = r.find("./")
             if rule_directives is not None:
-                rule_directives = ElementTree.tostring(rule_directives)
+                rule_directives = ElementTree.tostring(rule_directives).decode()
 
             rule_info = {
                 "action": rule_action,
@@ -84,7 +84,7 @@ class wvmNWFilter(wvmConnect):
             if name == ref.get('filter'):
                 tree.remove(ref)
                 break
-        return ElementTree.tostring(tree)
+        return ElementTree.tostring(tree).decode()
 
     def delete_rule(self, action, direction, priority):
         tree = ElementTree.fromstring(self._XMLDesc(0))
@@ -93,14 +93,14 @@ class wvmNWFilter(wvmConnect):
         if rule_tree:
             tree.remove(rule_tree[0])
 
-        return ElementTree.tostring(tree)
+        return ElementTree.tostring(tree).decode()
 
     def add_ref(self, name):
         tree = ElementTree.fromstring(self._XMLDesc(0))
         element = ElementTree.Element("filterref")
         element.attrib['filter'] = name
         tree.append(element)
-        return ElementTree.tostring(tree)
+        return ElementTree.tostring(tree).decode()
 
     def add_rule(self, xml):
         tree = ElementTree.fromstring(self._XMLDesc(0))
@@ -122,4 +122,4 @@ class wvmNWFilter(wvmConnect):
             element.append(rule_directives)
             tree.append(element)
 
-        return ElementTree.tostring(tree)
+        return ElementTree.tostring(tree).decode()
