@@ -1,5 +1,4 @@
 FROM phusion/baseimage:0.11
-MAINTAINER Jethro Yu <comet.jc@gmail.com>
 
 RUN echo 'APT::Get::Clean=always;' >> /etc/apt/apt.conf.d/99AutomaticClean
 
