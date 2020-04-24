@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -110,7 +107,12 @@ def nwfilters(request, compute_id):
 
 
 def nwfilter(request, compute_id, nwfltr):
-
+    """
+    :param request:
+    :param compute_id:
+    :param nwfltr:
+    :return:
+    """
     error_messages = []
     nwfilters_all = []
     compute = get_object_or_404(Compute, pk=compute_id)

@@ -1,11 +1,10 @@
-from vrtManager import util
-from vrtManager.IPy import IP
-from vrtManager.connection import wvmConnect
 from lxml import etree
 from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST
 from libvirt import VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_UPDATE_COMMAND_MODIFY
 from libvirt import VIR_NETWORK_UPDATE_AFFECT_LIVE, VIR_NETWORK_UPDATE_AFFECT_CONFIG
-
+from vrtManager import util
+from vrtManager.IPy import IP
+from vrtManager.connection import wvmConnect
 
 def network_size(subnet, dhcp=None):
     """
@@ -211,31 +210,31 @@ class wvmNetwork(wvmConnect):
                 if ipdhcp.get('family') is None:
                     hosts = ipdhcp.findall('./dhcp/host')
                     for host in hosts:
-                        ip = host.get('ip')
+                        host_ip = host.get('ip')
                         mac = host.get('mac')
                         name = host.get('name', '')
-                        result.append({'ip': ip, 'mac': mac, 'name': name})
+                        result.append({'ip': host_ip, 'mac': mac, 'name': name})
                     return result
                 else:
                     continue
             if family == 'ipv6':
                 hosts = tree.xpath("./ip[@family='ipv6']/dhcp/host")
                 for host in hosts:
-                    ip = host.get('ip')
-                    id = host.get('id')
+                    host_ip = host.get('ip')
+                    host_id = host.get('id')
                     name = host.get('name', '')
-                    result.append({'ip': ip, 'id': id, 'name': name})
+                    result.append({'ip': host_ip, 'id': host_id, 'name': name})
                 return result
 
     def modify_dhcp_range(self, range_start, range_end, family='ipv4'):
         if not self.is_active():
             tree = etree.fromstring(self._XMLDesc(0))
             if family == 'ipv4':
-                range = tree.xpath("./ip[not(@family='ipv6')]/dhcp/range")
+                dhcp_range = tree.xpath("./ip[not(@family='ipv6')]/dhcp/range")
             if family == 'ipv6':
-                range = tree.xpath("./ip[@family='ipv6']/dhcp/range")
-            range[0].set('start', range_start)
-            range[0].set('end', range_end)
+                dhcp_range = tree.xpath("./ip[@family='ipv6']/dhcp/range")
+            dhcp_range[0].set('start', range_start)
+            dhcp_range[0].set('end', range_end)
             self.wvm.networkDefineXML(etree.tostring(tree).decode())
 
     def delete_fixed_address(self, ip, family='ipv4'):

@@ -1,5 +1,5 @@
-from vrtManager.connection import wvmConnect
 from xml.etree import ElementTree
+from vrtManager.connection import wvmConnect
 
 
 class wvmNWFilters(wvmConnect):

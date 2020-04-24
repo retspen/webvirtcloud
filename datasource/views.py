@@ -1,17 +1,22 @@
+import json
+import socket
 from django.shortcuts import render
 from django.http import HttpResponse, Http404
+from libvirt import libvirtError
 from accounts.models import UserInstance, UserSSHKey
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
-from libvirt import libvirtError
-import json
-import socket
+
 
 OS_VERSIONS = ['latest', '']
 OS_UUID = "iid-dswebvirtcloud"
 
 
 def os_index(request):
+    """
+    :param request:
+    :return:
+    """
     response = '\n'.join(OS_VERSIONS)
     return HttpResponse(response)
 
@@ -59,6 +64,10 @@ def os_userdata(request, version):
 
 
 def get_client_ip(request):
+    """
+    :param request:
+    :return:
+    """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[-1].strip()
@@ -68,6 +77,10 @@ def get_client_ip(request):
 
 
 def get_hostname_by_ip(ip):
+    """
+    :param ip:
+    :return:
+    """
     try:
         addrs = socket.gethostbyaddr(ip)
     except:
@@ -76,6 +89,11 @@ def get_hostname_by_ip(ip):
 
 
 def get_vdi_url(request, vname):
+    """
+    :param request:
+    :param vname:
+    :return:
+    """
     instance = Instance.objects.get(name=vname)
     compute = instance.compute
     data = {}
@@ -90,8 +108,6 @@ def get_vdi_url(request, vname):
         url = "{}://{}:{}".format(conn.get_console_type(), fqdn, conn.get_console_port())
         response = url
         return HttpResponse(response)
-    
     except libvirtError as lib_err:
         err = "Error getting vdi url for {}".format(vname)
         raise Http404(err)
-

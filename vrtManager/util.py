@@ -1,8 +1,8 @@
 import random
-import lxml.etree as etree
-import libvirt
 import string
 import re
+import lxml.etree as etree
+import libvirt
 
 
 def is_kvm_available(xml):
@@ -108,7 +108,7 @@ def get_xpath(doc, path):
 
     ret = doc.xpath(path)
     if ret is not None:
-        if type(ret) == list:
+        if isinstance(list, ret):
             if len(ret) >= 1:
                 if hasattr(ret[0], 'text'):
                     result = ret[0].text
@@ -137,7 +137,7 @@ def pretty_bytes(val):
 
 
 def validate_uuid(val):
-    if type(val) is not str:
+    if not isinstance(str, val):
         raise ValueError("UUID must be a string.")
 
     form = re.match("[a-fA-F0-9]{8}[-]([a-fA-F0-9]{4}[-]){3}[a-fA-F0-9]{12}$",
@@ -146,9 +146,9 @@ def validate_uuid(val):
         form = re.match("[a-fA-F0-9]{32}$", val)
         if form is None:
             raise ValueError(
-                  "UUID must be a 32-digit hexadecimal number. It may take "
-                  "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
-                  "omit hyphens altogether.")
+                "UUID must be a 32-digit hexadecimal number. It may take "
+                "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
+                "omit hyphens altogether.")
 
         else:   # UUID had no dashes, so add them in
             val = (val[0:8] + "-" + val[8:12] + "-" + val[12:16] +
@@ -171,7 +171,7 @@ def validate_macaddr(val):
 # Mapping of UEFI binary names to their associated architectures. We
 # only use this info to do things automagically for the user, it shouldn't
 # validate anything the user explicitly enters.
-uefi_arch_patterns = {
+UEFI_ARCH_PATTERNS = {
     "i686": [
         r".*ovmf-ia32.*",  # fedora, gerd's firmware repo
     ],

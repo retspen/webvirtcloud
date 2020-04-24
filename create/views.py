@@ -1,14 +1,18 @@
+from django.contrib import messages
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
+from libvirt import libvirtError
+from admin.decorators import superuser_only
 from computes.models import Compute
 from create.models import Flavor
 from create.forms import FlavorAddForm, NewVMForm
 from instances.models import Instance
 from vrtManager.create import wvmCreate
 from vrtManager import util
-from libvirt import libvirtError
+from logs.views import addlogmsg
+
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_CACHE
 from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_BUS
@@ -21,14 +25,14 @@ from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_DISCARD
 from webvirtcloud.settings import INSTANCE_ARCH_DEFAULT_TYPE
 from webvirtcloud.settings import INSTANCE_FIRMWARE_DEFAULT_TYPE
 
-from django.contrib import messages
-from logs.views import addlogmsg
-from admin.decorators import superuser_only
-
 
 @superuser_only
 def create_instance_select_type(request, compute_id):
-
+    """
+    :param request:
+    :param compute_id:
+    :return:
+    """
     conn = None
     error_messages = list()
     storages = list()
