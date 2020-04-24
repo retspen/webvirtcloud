@@ -1,14 +1,14 @@
+import json
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from libvirt import libvirtError
 from computes.models import Compute
 from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
-from libvirt import libvirtError
-from django.contrib import messages
-import json
 
 
 @login_required
@@ -18,7 +18,6 @@ def storages(request, compute_id):
     :param compute_id:
     :return:
     """
-
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 
@@ -217,6 +216,12 @@ def storage(request, compute_id, pool):
 
 @login_required
 def get_volumes(request, compute_id, pool):
+    """
+    :param request:
+    :param compute_id: compute id
+    :param pool: pool name
+    :return: volumes list of pool
+    """
     data = {}
     compute = get_object_or_404(Compute, pk=compute_id)
     try:

@@ -4,13 +4,13 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from computes.models import Compute
+from libvirt import libvirtError
 from instances.models import Instance
 from accounts.models import UserInstance
+from computes.models import Compute
 from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHostForm, ComputeAddTlsForm, ComputeAddSocketForm
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager, wvmConnect
-from libvirt import libvirtError
 
 
 @login_required
@@ -199,6 +199,14 @@ def compute_graph(request, compute_id):
 
 @login_required
 def get_compute_disk_buses(request, compute_id, arch, machine, disk):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :param disk:
+    :return:
+    """
     data = dict()
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
@@ -226,6 +234,12 @@ def get_compute_disk_buses(request, compute_id, arch, machine, disk):
 
 @login_required
 def get_compute_machine_types(request, compute_id, arch):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :return:
+    """
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)
@@ -242,6 +256,13 @@ def get_compute_machine_types(request, compute_id, arch):
 
 @login_required
 def get_compute_video_models(request, compute_id, arch, machine):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :return:
+    """
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)
@@ -258,6 +279,13 @@ def get_compute_video_models(request, compute_id, arch, machine):
 
 @login_required
 def get_dom_capabilities(request, compute_id, arch, machine):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :return:
+    """
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)

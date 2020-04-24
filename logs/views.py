@@ -1,11 +1,11 @@
+import json
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from instances.models import Instance
 from logs.models import Logs
-from django.conf import settings
-import json
 
 
 def addlogmsg(user, instance, message):

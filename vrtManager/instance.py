@@ -15,11 +15,11 @@ try:
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
-from vrtManager import util
 from xml.etree import ElementTree
 from lxml import etree
 from datetime import datetime
 from collections import OrderedDict
+from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage, wvmStorages
 from webvirtcloud.settings import QEMU_CONSOLE_TYPES
@@ -224,19 +224,19 @@ class wvmInstance(wvmConnect):
     def get_loader(self):
         xml = self._XMLDesc(0)
         loader = util.get_xml_path(xml, "/domain/os/loader")
-        type = util.get_xml_path(xml, "/domain/os/loader/@type")
+        loader_type = util.get_xml_path(xml, "/domain/os/loader/@type")
         readonly = util.get_xml_path(xml, "/domain/os/loader/@readonly")
-        return {"loader": loader, "type": type, "readonly": readonly}
+        return {"loader": loader, "type": loader_type, "readonly": readonly}
 
     def get_vcpus(self):
         vcpus = OrderedDict()
         tree = etree.fromstring(self._XMLDesc(0))
         for vcpu in tree.xpath("/domain/vcpus/vcpu"):
-            id = vcpu.get("id")
+            vcpu_id = vcpu.get("id")
             enabled = vcpu.get("enabled")
             hotplug = vcpu.get("hotpluggable")
             order = vcpu.get("order")
-            vcpus[id] = {"enabled": enabled, "hotpluggable": hotplug, "order": order}
+            vcpus[vcpu_id] = {"enabled": enabled, "hotpluggable": hotplug, "order": order}
 
         return vcpus
 
@@ -325,7 +325,7 @@ class wvmInstance(wvmConnect):
         # ("Calling interfaceAddresses source=%s", source)
         try:
             return self.instance.interfaceAddresses(source)
-        except Exception as e:
+        except libvirtError as e:
             # log.debug("interfaceAddresses failed: %s", str(e))
             pass
         return {}
@@ -370,7 +370,7 @@ class wvmInstance(wvmConnect):
 
                 try:
                     ipv4, ipv6 = self.get_interface_addresses(mac_inst)
-                except:
+                except libvirtError:
                     ipv4, ipv6 = None, None
                 result.append({'mac': mac_inst,
                                'nic': nic_inst,
@@ -644,7 +644,7 @@ class wvmInstance(wvmConnect):
             xmldom = ElementTree.tostring(tree).decode()
         self._defineXML(xmldom)
 
-    def attach_disk(self, target_dev, source,  target_bus='ide', disk_type='file',
+    def attach_disk(self, target_dev, source, target_bus='ide', disk_type='file',
                     disk_device='disk', driver_name='qemu', driver_type='raw',
                     readonly=False, shareable=False, serial=None,
                     cache_mode=None, io_mode=None, discard_mode=None, detect_zeroes_mode=None):
@@ -896,7 +896,7 @@ class wvmInstance(wvmConnect):
                 pass
         newxml = ElementTree.tostring(root).decode()
         return self._defineXML(newxml)
-    
+
     def get_console_socket(self):
         socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@socket")
         return socket
@@ -1264,7 +1264,7 @@ class wvmInstance(wvmConnect):
             net = self.get_network(source)
             bridge_name = net.bridgeName()
         return bridge_name
-        
+
     def add_network(self, mac_address, source, source_type='net', model='virtio', nwfilter=None):
         bridge_name = self.get_bridge_name(source, source_type)
 
@@ -1527,6 +1527,3 @@ class wvmInstance(wvmConnect):
             if state == "connected":
                 return True
             return False
-
-
-

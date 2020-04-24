@@ -1,7 +1,8 @@
-from vrtManager.connection import wvmConnect
-from vrtManager import util
 from xml.etree import ElementTree
 from libvirt import VIR_INTERFACE_XML_INACTIVE
+from vrtManager.connection import wvmConnect
+from vrtManager import util
+
 
 
 class wvmInterfaces(wvmConnect):
@@ -138,7 +139,7 @@ class wvmInterface(wvmConnect):
             for iface in tree.findall("./bridge/"):
                 address = state = speed = None
                 name = iface.get('name')
-                type = iface.get('type')
+                if_type = iface.get('type')
                 link = iface.find('link')
                 if link is not None:
                     state = link.get('state')
@@ -146,7 +147,7 @@ class wvmInterface(wvmConnect):
                 mac = iface.find('mac')
                 if mac is not None:
                     address = mac.get('address')
-                ifaces.append({'name': name, 'type': type, 'state': state, 'speed': speed, 'mac': address})
+                ifaces.append({'name': name, 'type': if_type, 'state': state, 'speed': speed, 'mac': address})
             return ifaces
         else:
             return None

@@ -3,12 +3,12 @@ from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from libvirt import libvirtError
 from computes.models import Compute
 from networks.forms import AddNetPool
 from vrtManager.network import wvmNetwork, wvmNetworks
 from vrtManager.network import network_size
-from libvirt import libvirtError
-from django.contrib import messages
 
 
 @login_required
@@ -18,7 +18,6 @@ def networks(request, compute_id):
     :param compute_id:
     :return:
     """
-
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('index'))
 

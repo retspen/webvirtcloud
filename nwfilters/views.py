@@ -1,16 +1,13 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from libvirt import libvirtError
 from computes.models import Compute
 from vrtManager import util
 from vrtManager.nwfilters import wvmNWFilters, wvmNWFilter
 from vrtManager.instance import wvmInstances, wvmInstance
-from libvirt import libvirtError
 from logs.views import addlogmsg
 
 
@@ -114,7 +111,12 @@ def nwfilters(request, compute_id):
 
 @login_required
 def nwfilter(request, compute_id, nwfltr):
-
+    """
+    :param request:
+    :param compute_id:
+    :param nwfltr:
+    :return:
+    """
     error_messages = []
     nwfilters_all = []
     compute = get_object_or_404(Compute, pk=compute_id)
