@@ -26,7 +26,6 @@ def randomMAC():
 
 def randomUUID():
     """Generate a random UUID."""
-
     u = [random.randint(0, 255) for ignore in range(0, 16)]
     u[6] = (u[6] & 0x0F) | (4 << 4)
     u[8] = (u[8] & 0x3F) | (2 << 6)
@@ -108,7 +107,7 @@ def get_xpath(doc, path):
 
     ret = doc.xpath(path)
     if ret is not None:
-        if isinstance(list, ret):
+        if isinstance(ret, list):
             if len(ret) >= 1:
                 if hasattr(ret[0], 'text'):
                     result = ret[0].text
@@ -137,11 +136,10 @@ def pretty_bytes(val):
 
 
 def validate_uuid(val):
-    if not isinstance(str, val):
+    if not isinstance(val, str):
         raise ValueError("UUID must be a string.")
 
-    form = re.match("[a-fA-F0-9]{8}[-]([a-fA-F0-9]{4}[-]){3}[a-fA-F0-9]{12}$",
-                    val)
+    form = re.match("[a-fA-F0-9]{8}[-]([a-fA-F0-9]{4}[-]){3}[a-fA-F0-9]{12}$", val)
     if form is None:
         form = re.match("[a-fA-F0-9]{32}$", val)
         if form is None:
