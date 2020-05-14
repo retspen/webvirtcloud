@@ -1,10 +1,10 @@
 import json
 import socket
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, Http404
 from libvirt import libvirtError
 from accounts.models import UserInstance, UserSSHKey
-from instances.models import Instance
+from computes.models import Compute
 from vrtManager.instance import wvmInstance
 
 
@@ -88,26 +88,25 @@ def get_hostname_by_ip(ip):
     return addrs[0]
 
 
-def get_vdi_url(request, vname):
+def get_vdi_url(request, compute_id, vname):
     """
     :param request:
     :param vname:
     :return:
     """
-    instance = Instance.objects.get(name=vname)
-    compute = instance.compute
+    compute = get_object_or_404(Compute, pk=compute_id)
     data = {}
     try:
         conn = wvmInstance(compute.hostname,
                            compute.login,
                            compute.password,
                            compute.type,
-                           instance.name)
+                           vname)
 
         fqdn = get_hostname_by_ip(compute.hostname)
-        url = "{}://{}:{}".format(conn.get_console_type(), fqdn, conn.get_console_port())
+        url = f"{conn.get_console_type()}://{fqdn}:{conn.get_console_port()}"
         response = url
         return HttpResponse(response)
     except libvirtError as lib_err:
-        err = "Error getting vdi url for {}".format(vname)
+        err = f"Error getting vdi url for {vname}"
         raise Http404(err)
