@@ -1139,6 +1139,12 @@ class wvmInstance(wvmConnect):
         uuid = tree.find('uuid')
         tree.remove(uuid)
 
+        options = {
+            'title': clone_data.get('clone-title', ''),
+            'description': clone_data.get('clone-description', ''),
+        }
+        self._set_options(tree, options)
+
         src_nvram_path = self.get_nvram()
         if src_nvram_path:
             # Change XML for nvram
@@ -1247,11 +1253,6 @@ class wvmInstance(wvmConnect):
                     storage = self.get_wvmStorage(pool_name)
                     storage.clone_volume(vol_name, target_file)
 
-        options = {
-            'title': clone_data.get('clone-title', ''),
-            'description': clone_data.get('clone-description', ''),
-        }
-        self._set_options(tree, options)
         self._defineXML(ElementTree.tostring(tree).decode())
 
         return self.get_instance(clone_data['name']).UUIDString()
@@ -1391,7 +1392,7 @@ class wvmInstance(wvmConnect):
                     tree.remove(option)
             else:
                 if option is None:
-                    option = ElementTree.SubElement(tree, o)
+                    option = etree.SubElement(tree , o)
                 option.text = option_value
 
     def set_options(self, options):
@@ -1399,10 +1400,10 @@ class wvmInstance(wvmConnect):
         Function change description, title
         """
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
+        tree = etree.fromstring(xml)
 
         self._set_options(tree, options)
-        new_xml = ElementTree.tostring(tree).decode()
+        new_xml = etree.tostring(tree).decode()
         self._defineXML(new_xml)
 
     def set_memory(self, size, flags=0):
