@@ -1843,7 +1843,7 @@
     });
     $(document).ready(function () {
         // set vdi url
-        $.get("{% url 'vdi_url' vname %}", function(data) {
+        $.get("{% url 'vdi_url' compute_id vname %}", function(data) {
             $("#vdi_url_input").attr("value", data);
             $("#vdi_url").attr("href", data);
         });
