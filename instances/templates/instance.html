@@ -1692,7 +1692,7 @@
     </div>
 {% endblock %}
 {% block script %}
-<script src="{% static "js/ace.js" %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static "js/ace/ace.js" %}" type="text/javascript" charset="utf-8"></script>
 <script>
     function get_volumes(compute_id, pool) {
         get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
