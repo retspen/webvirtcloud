@@ -321,10 +321,13 @@ class wvmConnectionManager(object):
                 socket_host.connect((hostname, TCP_PORT))
             if conn_type == CONN_TLS:
                 socket_host.connect((hostname, TLS_PORT))
+            if conn_type == CONN_SOCKET:
+                socket_host = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                socket_host.connect('/var/run/libvirt/libvirt-sock')    
             socket_host.close()
             return True
-        except Exception as err:
-            return err
+        except Exception:
+            return False
 
 
 connection_manager = wvmConnectionManager(
