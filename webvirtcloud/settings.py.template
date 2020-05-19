@@ -21,7 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'bootstrap3',
+    'bootstrap4',
     'fa',
     'accounts',
     'admin',
@@ -131,6 +131,9 @@ LOGGING = {
 #
 # WebVirtCloud settings
 #
+
+# SCSS Directory
+SCSS_DIR = "dev/scss"
 
 # Websock port
 WS_PORT = 6080

@@ -7,10 +7,10 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <a href="{% url 'admin:user_create' %}" class="btn btn-success btn-header pull-right">
+        <a href="{% url 'admin:user_create' %}" class="btn btn-success btn-header float-right">
             {% icon 'plus' %}
         </a>
-        <div class="pull-right search">
+        <div class="float-right search">
             <input id="filter" class="form-control" type="text" placeholder="{% trans "Search" %}">
         </div>
         <h1 class="page-header">{% trans "Users" %}</h1>
@@ -30,12 +30,12 @@
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th>{% trans "Username" %}</th>
-                        <th>{% trans "Status" %}</th>
-                        <th>{% trans "Staff" %}</th>
-                        <th>{% trans "Superuser" %}</th>
-                        <th>{% trans "Can Clone" %}</th>
-                        <th>{% trans "" %}</th>
+                        <th span="col">{% trans "Username" %}</th>
+                        <th span="col">{% trans "Status" %}</th>
+                        <th span="col">{% trans "Staff" %}</th>
+                        <th span="col">{% trans "Superuser" %}</th>
+                        <th span="col">{% trans "Can Clone" %}</th>
+                        <th span="col">{% trans "" %}</th>
                     </tr>
                 </thead>
                 <tbody class="searchable">
@@ -56,7 +56,7 @@
                         <td>{% if user.is_superuser %}{% icon 'check' %}</span>{% endif %}</td>
                         <td>{% if can_clone %}{% icon 'check' %}{% endif %}</td>
                         <td>
-                            <div class="pull-right btn-group">
+                            <div class="float-right btn-group">
                                 <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'account' user.id %}">{% icon 'eye' %}</a>
                                 <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'admin:user_update' user.id %}">{% icon 'pencil' %}</a>
                                 {% if user.is_active %}

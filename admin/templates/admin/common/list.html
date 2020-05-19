@@ -6,13 +6,13 @@
 
 {% block content %}
 {% if create_url %}
-<a class="btn btn-success pull-right" href="{% url create_url %}">{% icon 'plus' %} {%trans "Create New" %}</a>
+<a class="btn btn-success float-right" href="{% url create_url %}">{% icon 'plus' %} {%trans "Create New" %}</a>
 {% endif %}
 <table class="table table-hover table-striped">
     {% for object in object_list %}
     <tr>
         <td>{{ object }}
-            <div class="btn-group pull-right">
+            <div class="btn-group float-right">
                 <a class="btn btn-success" href="{% url update_url object.id %}">{% icon 'edit' %} {%trans "Edit"%}</a>
                 {% if extra_urls %}
                 {% for url in extra_urls %}

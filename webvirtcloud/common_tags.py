@@ -22,7 +22,7 @@ def view_active(request, view_name):
 def class_active(request, pattern):
     if re.search(pattern, request.path):
         # Not sure why 'class="active"' returns class=""active""
-        return 'class=active'
+        return 'active'
     return ''
 
 

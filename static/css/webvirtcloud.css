@@ -7,8 +7,7 @@
 /* Global Styles */
 
 body {
-    padding-top: 70px;
-    background-color: #FFF;
+    padding-bottom: 40px;
 }
 
 .container {
@@ -166,3 +165,7 @@ p {
     display: block;
   }
 }
+.table > tbody > tr > td {
+    vertical-align: middle;
+}
+

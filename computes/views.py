@@ -129,6 +129,7 @@ def compute_graph(request, compute_id):
     except libvirtError:
         cpu_usage = {'usage': 0}
         mem_usage = {'usage': 0}
+        current_time = 0
 
     data = json.dumps({
         'cpudata': cpu_usage['usage'],

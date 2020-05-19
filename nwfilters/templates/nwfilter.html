@@ -6,28 +6,28 @@
    <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            <h1 class="page-header">{% trans "NWFilter:" %} {{ name }}</h1>
-            <ol class="breadcrumb">
-                <li class="active">
-                    <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
+            <h3 class="page-header">{% trans "NWFilter" %}: {{ name }}</h3>
+            <ol class="breadcrumb bg-light shadow-sm">
+                <li class="breadcrumb-item active">
+                    <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
-                <li>
-                    <i class="fa fa-server"></i> <a href="{% url 'instances' compute.id %}">{% trans "Instances" %}</a>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
                 </li>
-                <li>
-                    <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'storages' compute.id %}"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</a>
                 </li>
-                <li>
-                    <i class="fa fa-sitemap"></i> <a href="{% url 'networks' compute.id %}">{% trans "Networks" %}</a>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
                 </li>
-                <li>
-                    <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
                 </li>
-                <li>
-                    <i class="fa fa-filter"></i> <a href="{% url 'nwfilters' compute.id %}">{% trans "NWFilters" %}</a>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
                 </li>
-                <li>
-                    <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'secrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
                 </li>
             </ol>
         </div>
@@ -37,35 +37,29 @@
     {% include 'errors_block.html' %}
     {% include 'messages_block.html' %}
 
-    <div class="row">
-        <div class="col-xs-6 col-sm-4">
-            <p>{% trans "UUID:" %}</p>
-            <p>{% trans "Name:" %}</p>
-        </div>
-        <div class="col-xs-6 col-sm-8">
-            <p>{{ uuid }}</p>
-            <p>{{ name }}</p>
-        </div>
-    </div>
-    <div class="row">
-        <h3 class="page-header"></h3>
-    </div>
-    <div class="panel-group" id="accordion">
-       <div class="panel panel-default">
-            <div class="panel-heading">
-                <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-                    {% trans 'XML' %}
-                </a>
-            </div>
-            <div id="collapseOne" class="panel-collapse collapse">
-                <div class="panel-body">
+ 
+    <dl class="ml-3 row">
+        <dt class="col-4">{% trans "UUID" %}:</dt>
+        <dd class="col-8">{{ uuid }}</dd>
+        <dt class="col-4">{% trans "Name" %}:</dt>
+        <dd class="col-8">{{ name }}</dd>
+    </dl>
+      
+   <div class="row">
+        <div class="col-lg-12">
+            <a class="btn btn-block btn-light stretched-link" data-toggle="collapse" href="#collapseXML">
+                <span class="fa fa-angle-down"/>
+                {% trans 'XML' %}
+            </a>
 
-                  <form class="form-inline" method="post" role="form">{% csrf_token %}
-                     <div class="col-xs-12" id="xmlheight">
-                        <input type="hidden" name="edit_xml"/>
-                        <textarea id="edit_editor">{{ xml }}</textarea>
-                     </div>
-                        <button type="submit" class="btn btn-primary pull-right" name="edit_nwfilter">
+            <div class="collapse" id="collapseXML">
+                <div class="card card-body">
+                    <form class="form" method="post" role="form">{% csrf_token %}
+                        <div class="col-12" id="xmlheight">
+                            <input type="hidden" name="edit_xml"/>
+                            <textarea id="edit_editor">{{ xml }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary float-right" name="edit_nwfilter">
                             {% trans "Edit" %}
                         </button>
                     </form>
@@ -73,74 +67,74 @@
             </div>
         </div>
     </div>
-
-    <form class="form-inline pull-right" method="post" role="form">{% csrf_token %}
-        <div class="form-group">
-            <label>{% trans "Filter" %}:</label>
-            <select id="nwfilter_select" name="nwfilters_select" class="form-control">
-                <option value="" selected>{% trans 'None' %}</option>
-                {% for nwf in nwfilters_all %}
-                    <option value="{{ nwf.name }}">{{ nwf.name }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-success pull-right" name="add_nwfilter_ref">
-                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-            </button>
-        </div>
-    </form>
     <div class="row">
-        <h3 class="page-header">{% trans "Filter References" %}</h3>
+        <h5 class="page-header mr-auto">{% trans "Filter References" %}</h5>
+        <form class="form-inline float-right" method="post" role="form">{% csrf_token %}
+            <div class="form-group row">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">{% trans "Filter" %}</span>
+                    </div>    
+                    <select id="nwfilter_select" name="nwfilters_select" class="custom-select">
+                        <option value="" selected>{% trans 'None' %}</option>
+                        {% for nwf in nwfilters_all %}
+                            <option value="{{ nwf.name }}">{{ nwf.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success float-right" name="add_nwfilter_ref">
+                    <span class="fa fa-plus" aria-hidden="true"></span>
+                </button>
+            </div>
+        </form>
     </div>
 
-    <div class="col-xs-12 col-sm-12">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th style="width: 45px;">#</th>
+     <div class="row">
+        <div class="col-12 col-sm-12">
+            <table class="table table-hover">
+                <thead>
+                    <th scope="col">#</th>
                     <th>{% trans "Reference" %}</th>
                     <th>{% trans "Action" %}</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for ref in refs %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ ref }}</td>
-                    <td style="width:30px;">
-                        <form action="" method="post" role="form">{% csrf_token %}
-                            <input type="hidden" name="ref" value="{{ ref }}">
-                            <button type="submit" class="btn btn-sm btn-default" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                 {% for ref in refs %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ ref }}</td>
+                        <td style="width:30px;">
+                            <form action="" method="post" role="form">{% csrf_token %}
+                                <input type="hidden" name="ref" value="{{ ref }}">
+                                <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+    
+    
+    {% include 'add_nwf_rule.html' %} 
+    <h5 class="page-header">{% trans "Rules" %}</h5>
 
-    {% include 'add_nwf_rule.html' %}
-    <div class="row">
-        <h3 class="page-header">{% trans "Rules" %}</h3>
-    </div>
-    <div class="col-xs-12 col-sm-12">
         <table class="table table-hover">
             <thead>
-            <tr>
-                <th style="width:45px;">{% trans "Rule" %}</th>
-                <th>{% trans "ActionType" %}</th>
+                <th scope="col">{% trans "Rule" %}</th>
+                <th class="text-nowrap">{% trans "Action Type" %}</th>
                 <th>{% trans "Direction" %}</th>
                 <th>{% trans "Priority" %}</th>
                 <th>{% trans "Statematch" %}</th>
                 <th>{% trans "Directives" %}</th>
-                <th style="width:100px;">{% trans "Action" %}</th>
-            </tr>
+                <th style="width:30px;">{% trans "Action" %}</th>
             </thead>
             <tbody>
             {% for rule in rules %}
                 <tr>
-                    <td>{{ forloop.counter }}</td>
+                    <td scope="row">{{ forloop.counter }}</td>
                     <td>{{ rule.action }}</td>
                     <td>{{ rule.direction }}</td>
                     <td>{{ rule.priority }}</td>
@@ -151,15 +145,16 @@
                             <input type="hidden" name="action" value="{{ rule.action }}">
                             <input type="hidden" name="direction" value="{{ rule.direction }}">
                             <input type="hidden" name="priority" value="{{ rule.priority }}">
-                            <button type="submit" class="btn btn-sm btn-default" name="del_nwfilter_rule" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                            <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </form>
                     </td>
                 </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 {% endblock %}
 
