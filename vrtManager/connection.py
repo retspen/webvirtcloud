@@ -326,8 +326,8 @@ class wvmConnectionManager(object):
                 socket_host.connect('/var/run/libvirt/libvirt-sock')    
             socket_host.close()
             return True
-        except Exception:
-            return False
+        except Exception as err:
+            return err
 
 
 connection_manager = wvmConnectionManager(
