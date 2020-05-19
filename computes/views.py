@@ -148,7 +148,7 @@ def overview(request, compute_id):
 
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
-    status = 'true' if connection_manager.host_is_up(compute.type, compute.hostname) else 'false'
+    status = 'true' if connection_manager.host_is_up(compute.type, compute.hostname) is True else 'false'
     
     try:
         conn = wvmHostDetails(compute.hostname,
