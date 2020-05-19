@@ -1,4 +1,4 @@
 -r ../conf/requirements.txt
 pycodestyle
-pyflakes==2.1.1
-pylint==2.4.4
+pyflakes==2.2.0
+pylint==2.5.2

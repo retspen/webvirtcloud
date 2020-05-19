@@ -7,5 +7,5 @@ register = template.Library()
 @register.simple_tag
 def class_active(request, pattern):
     if re.search(pattern, request.path):
-        return 'class="active"'
+        return "active"
     return ''

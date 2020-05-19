@@ -48,6 +48,7 @@ def allinstances(request):
     all_host_vms = OrderedDict()
     error_messages = []
     computes = Compute.objects.all().order_by("name")
+    computes_data = get_hosts_status(computes)
 
     if not request.user.is_superuser:
         all_user_vms = get_user_instances(request)
@@ -472,7 +473,7 @@ def instance(request, compute_id, vname):
 
                 quota_msg = check_user_quota(0, int(new_vcpu) - vcpu, 0, 0)
                 if not request.user.is_superuser and quota_msg:
-                    msg = _("User %s quota reached, cannot resize CPU of '%s'!" % (quota_msg, instance.name))
+                    msg = _(f"User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!")
                     error_messages.append(msg)
                 else:
                     cur_vcpu = new_cur_vcpu
@@ -496,7 +497,7 @@ def instance(request, compute_id, vname):
                     new_cur_memory = new_cur_memory_custom
                 quota_msg = check_user_quota(0, 0, int(new_memory) - memory, 0)
                 if not request.user.is_superuser and quota_msg:
-                    msg = _("User %s quota reached, cannot resize memory of '%s'!" % (quota_msg, instance.name))
+                    msg = _(f"User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!")
                     error_messages.append(msg)
                 else:
                     cur_memory = new_cur_memory
@@ -519,7 +520,7 @@ def instance(request, compute_id, vname):
                 disk_new_sum = sum([disk['size_new'] >> 30 for disk in disks_new])
                 quota_msg = check_user_quota(0, 0, 0, disk_new_sum - disk_sum)
                 if not request.user.is_superuser and quota_msg:
-                    msg = _("User %s quota reached, cannot resize disks of '%s'!" % (quota_msg, instance.name))
+                    msg = _(f"User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!")
                     error_messages.append(msg)
                 else:
                     conn.resize_disk(disks_new)
@@ -649,7 +650,7 @@ def instance(request, compute_id, vname):
                 dev = request.POST.get('detach_cdrom', '')
                 path = request.POST.get('path', '')
                 conn.detach_disk(dev)
-                msg = _('Detach CD-Rom: ' + dev)
+                msg = _('Detach CD-ROM: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -719,7 +720,7 @@ def instance(request, compute_id, vname):
 
                 if 'set_vcpu_hotplug' in request.POST:
                     status = request.POST.get('vcpu_hotplug', '')
-                    msg = _("vCPU Hot-plug is enabled={}".format(status))
+                    msg = _("VCPU Hot-plug is enabled={}".format(status))
                     try:
                         conn.set_vcpu_hotplug(eval(status))
                     except libvirtError as lib_err:
@@ -991,17 +992,17 @@ def instance(request, compute_id, vname):
                             clone_data[disk_dev] = disk_name
 
                     if not request.user.is_superuser and quota_msg:
-                        msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
+                        msg = _(f"User '{quota_msg}' quota reached, cannot create '{clone_data['name']}'!")
                         error_messages.append(msg)
                     elif check_instance:
-                        msg = _("Instance '%s' already exists!" % clone_data['name'])
+                        msg = _(f"Instance '{clone_data['name']}' already exists!")
                         error_messages.append(msg)
                     elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
-                        msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
+                        msg = _(f"Instance name '{clone_data['name']}' contains invalid characters!")
                         error_messages.append(msg)
                     elif not re.match(r'^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'],
                                       re.IGNORECASE):
-                        msg = _("Instance mac '%s' invalid format!" % clone_data['clone-net-mac-0'])
+                        msg = _(f"Instance MAC '{clone_data['clone-net-mac-0']}' invalid format!")
                         error_messages.append(msg)
                     else:
                         new_instance = Instance(compute_id=compute_id, name=clone_data['name'])
@@ -1150,7 +1151,7 @@ def get_host_instances(request, comp):
 
         conn.close()
     else:
-        raise libvirtError("Problem occurred with {} - {}".format(comp.name, status))
+        raise libvirtError("Problem occurred with host: {} - {}".format(comp.name, status))
     return all_host_vms
 
 
@@ -1407,6 +1408,24 @@ def sshkeys(request, vname):
     else:
         response = json.dumps(instance_keys)
     return HttpResponse(response)
+
+
+def get_hosts_status(computes):
+        """
+        Function return all hosts all vds on host
+        """
+        compute_data = []
+        for compute in computes:
+            compute_data.append({'id': compute.id,
+                                 'name': compute.name,
+                                 'hostname': compute.hostname,
+                                 'status': connection_manager.host_is_up(compute.type, compute.hostname),
+                                 'type': compute.type,
+                                 'login': compute.login,
+                                 'password': compute.password,
+                                 'details': compute.details
+                                 })
+        return compute_data
 
 
 def delete_instance(instance, delete_disk=False):

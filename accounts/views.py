@@ -1,3 +1,4 @@
+
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -9,6 +10,8 @@ from instances.models import Instance
 from accounts.models import *
 from accounts.forms import UserAddForm
 
+import sass
+import os
 
 @login_required
 def profile(request):
@@ -21,6 +24,8 @@ def profile(request):
     user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     show_profile_edit_password = settings.SHOW_PROFILE_EDIT_PASSWORD
+
+    themes_list = os.listdir(settings.SCSS_DIR +"/wvc-theme")
 
     if request.method == 'POST':
         if 'username' in request.POST:
@@ -65,6 +70,20 @@ def profile(request):
             keyid = request.POST.get('keyid', '')
             delkeypublic = UserSSHKey.objects.get(id=keyid)
             delkeypublic.delete()
+            return HttpResponseRedirect(request.get_full_path())
+        if 'change_theme' in request.POST:
+            theme = request.POST.get('theme_select', '')
+            scss_var = f"@import '{settings.SCSS_DIR}/wvc-theme/{theme}/variables';"
+            scss_bootswatch = f"@import '{settings.SCSS_DIR}/wvc-theme/{theme}/bootswatch';"       
+            scss_boot = f"@import '{settings.SCSS_DIR}/bootstrap-overrides.scss';"
+                          
+            with open(settings.SCSS_DIR + "/wvc-main.scss", "w") as main:
+                main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch)
+            
+            css_compressed = sass.compile(string=scss_var + "\n"+ scss_boot + "\n" + scss_bootswatch, output_style='compressed')
+            with open("static/" + "css/wvc-main.min.css", "w") as css:
+                css.write(css_compressed)
+            
             return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
 

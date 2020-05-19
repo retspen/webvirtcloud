@@ -90,7 +90,7 @@ def nwfilters(request, compute_id):
                 cln_name = request.POST.get('cln_name', name + '-clone')
 
                 conn.clone_nwfilter(name, cln_name)
-                msg = _("Cloning NWFilter %s as %s" % (name, cln_name))
+                msg = _(f"Cloning NWFilter {name} as {cln_name}")
                 addlogmsg(request.user.username, compute.hostname, msg)
 
         for nwf in conn.get_nwfilters():

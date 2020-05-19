@@ -1,14 +1,16 @@
 {% extends "base_auth.html" %}
 {% load i18n %}
-{% block title %}{% trans "WebVirtCloud - Sign Out" %}{% endblock %}
+{% block title %}
+    {% trans "WebVirtCloud" %} - {% trans "Sign Out"%}
+{% endblock %}
 {% block content %}
-    <div class="row">
+    <div>
         <div class="page-header">
             <a href="/"><h1>WebVirtCloud</h1></a>
         </div>
-        <div class="col-xs-12" role="main">
+        <div class="col-12" role="main">
             <div class="logout">
-                <h1>{% trans "Successful log out" %}</h1>
+                <h2>{% trans "Successful log out" %}</h2>
             </div>
         </div>
     </div>

@@ -2,72 +2,76 @@
 {% load i18n %}
 {% block title %}{% trans "Storages" %} - {{ compute.name }}{% endblock %}
 {% block content %}
-           <!-- Page Heading -->
-            <div class="row">
-                <div class="col-lg-12">
-                    {% include 'create_stg_block.html' %}
-                    <h1 class="page-header">{{ compute.name }}</h1>
-                    <ol class="breadcrumb">
-                        <li class="active">
-                            <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-server"></i> <a href="{% url 'instances' compute.id %}">{% trans "Instances" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-hdd-o"></i> {% trans "Storages" %}
-                        </li>
-                        <li>
-                            <i class="fa fa-sitemap"></i> <a href="{% url 'networks' compute.id %}">{% trans "Networks" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-wifi"></i> <a href="{% url 'interfaces' compute.id %}">{% trans "Interfaces" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-filter"></i> <a href="{% url 'nwfilters' compute.id %}">{% trans "NWFilters" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
-                        </li>
-                    </ol>
+    <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            {% include 'create_stg_block.html' %}
+            <h2 class="page-header">{{ compute.name }} - {% trans "Storages" %}</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-light shadow-sm">
+                <li class="breadcrumb-item active">
+                    <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <span class="font-weight-bold"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</span>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                   <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'secrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                </li>
+            </ol>
+            </nav>
+        </div>
+    </div>
+    <!-- /.row -->
+
+    {% include 'errors_block.html' %}
+
+    <div class="row">
+        {% if not storages %}
+            <div class="col-lg-12">
+                <div class="alert alert-warning alert-dismissable">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Storages" %}
                 </div>
             </div>
-            <!-- /.row -->
-
-            {% include 'errors_block.html' %}
-
-            <div class="row">
-                {% if not storages %}
-                    <div class="col-lg-12">
-                        <div class="alert alert-warning alert-dismissable">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Storages" %}
-                        </div>
+        {% else %}
+            {% for pool in storages %}
+            <div class="col-12 col-md-4">
+                <div class="mb-3 card {% if pool.status %}border-success{% else %}border-danger{% endif %} shadow-sm">
+                    <div class="card-header {% if pool.status %}bg-success{% else %}bg-danger{% endif %}">
+                        <h6 class="my-0 card-title">
+                            <a class="card-link text-light" href="{% url 'storage' compute.id pool.name %}">{{ pool.name }}</a>
+                        </h6>
                     </div>
-                {% else %}
-                    {% for pool in storages %}
-                        <div class="col-xs-12 col-sm-4">
-                            <div class="panel {% if pool.status %}panel-success{% else %}panel-danger{% endif %} panel-data">
-                                <div class="panel-heading">
-                                    <h3 class="panel-title"><a href="{% url 'storage' compute.id pool.name %}">{{ pool.name }}</a></h3>
-                                </div>
-                                <div class="panel-body">
-                                    <div class="row">
-                                        <div class="col-xs-4 col-sm-4">
-                                            <p><strong>{% trans "Type:" %}</strong></p>
-                                            <p><strong>{% trans "Size:" %}</strong></p>
-                                            <p><strong>{% trans "Volumes:" %}</strong></p>
-                                        </div>
-                                        <div class="col-xs-6 col-sm-7">
-                                            <p>{{ pool.type|upper }}</p>
-                                            <p>{{ pool.size|filesizeformat }}</p>
-                                            <p>{{ pool.volumes }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-6">{% trans "Type" %}</dt>
+                            <dd class="col-6">{{ pool.type|upper }}</dd>
+                            <dt class="col-6">{% trans "Size" %}</dt>
+                            <dd class="col-6">{{ pool.size|filesizeformat }}</dd>
+                            <dt class="col-6">{% trans "Volumes" %}</dt>
+                            <dd class="col-6">{{ pool.volumes }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>        
+            {% endfor %}
+        {% endif %}
+    </div>
 {% endblock %}

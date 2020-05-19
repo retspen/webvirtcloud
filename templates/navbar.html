@@ -1,48 +1,44 @@
 {% load i18n %}
 {% load tags_active %}
-        <!-- Fixed navbar -->
-        <nav class="navbar navbar-default navbar-fixed-top">
-          <div class="container">
-            <div class="navbar-header">
-              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                <span class="sr-only">{% trans 'Toggle navigation' %}</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-              </button>
-              <a class="navbar-brand" href="{% url 'index' %}">WebVirtCloud</a>
+<!-- Fixed navbar -->
+<nav class="navbar navbar-expand-md navbar-dark bg-primary mb-3">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'index' %}">WebVirtCloud</a>
+    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    
+    <div id="navbar" class="collapse navbar-collapse">
+        <ul class="navbar-nav mr-auto mt-2 mt-md-0">
+          <li class="nav-item {% class_active request "^/instance" %}">
+              <a class="nav-link" href="{% url 'allinstances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
+          </li>
+          {% if request.user.is_superuser %}
+              <li class="nav-item {% class_active request "^/compute" %}
+                  {% class_active request "^/create" %}">
+                  <a class="nav-link" href="{% url 'computes' %}"><i class="fa fa-fw fa-server"></i> {% trans "Computes" %}</a>
+              </li>
+              <li class="nav-item {% class_active request "^/account" %}">
+                  <a class="nav-link" href="{% url 'accounts' %}"><i class="fa fa-fw fa-users"></i> {% trans "Users" %}</a>
+              </li>
+              <li class="nav-item {% class_active request "^/log" %}">
+                  <a class="nav-link" href="{% url 'showlogs' %}"><i class="fa fa-fw fa-list-alt"></i> {% trans "Logs" %}</a>
+              </li>
+          {% endif %}
+        </ul>
+        <ul class="navbar-nav navbar-right">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" data-toggle="dropdown" role="button" aria-expanded="false">
+              <i class="fa fa-fw fa-user"></i> {{ request.user.username }}
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarUserDropdown">
+              <a class="dropdown-item" href="{% url 'profile' %}"><i class="fa fa-fw fa-pencil-square-o"></i> {% trans "Profile" %}</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="{% url 'logout' %}"><i class="fa fa-fw fa-power-off"></i> {% trans "Log Out" %}</a>
             </div>
-            <div id="navbar" class="navbar-collapse collapse">
-              <ul class="nav navbar-nav">
-                <li {% class_active request "^/instance" %}>
-                    <a href="{% url 'allinstances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
-                </li>
-                {% if request.user.is_superuser %}
-                    <li {% class_active request "^/compute" %}{% class_active request "^/create" %}>
-                        <a href="{% url 'computes' %}"><i class="fa fa-fw fa-server"></i> {% trans "Computes" %}</a>
-                    </li>
-                    <li {% class_active request "^/account" %}>
-                        <a href="{% url 'accounts' %}"><i class="fa fa-fw fa-users"></i> {% trans "Users" %}</a>
-                    </li>
-                    <li {% class_active request "^/log" %}>
-                        <a href="{% url 'showlogs' %}"><i class="fa fa-fw fa-list-alt"></i> {% trans "Logs" %}</a>
-                    </li>
-                {% endif %}
-              </ul>
-              <ul class="nav navbar-nav navbar-right">
-                <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-fw fa-user"></i> {{ request.user.username }} <span class="caret"></span></a>
-                  <ul class="dropdown-menu" role="menu">
-                    <li>
-                        <a href="{% url 'profile' %}"><i class="fa fa-fw fa-pencil-square-o"></i> {% trans "Profile" %}</a>
-                    </li>
-                    <li class="divider"></li>
-                    <li>
-                        <a href="{% url 'logout' %}"><i class="fa fa-fw fa-power-off"></i> {% trans "Log Out" %}</a>
-                    </li>
-                  </ul>
-                </li>
-              </ul>
-            </div><!--/.nav-collapse -->
-          </div>
-        </nav>
+          </li>
+          
+        </ul>
+    </div><!--/.nav-collapse -->
+  </div>
+</nav>

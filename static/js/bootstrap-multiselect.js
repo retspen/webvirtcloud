@@ -400,7 +400,7 @@
 
             },
             enableHTML: false,
-            buttonClass: 'btn btn-default',
+            buttonClass: 'btn btn-secondary',
             inheritClass: false,
             buttonWidth: 'auto',
             buttonContainer: '<div class="btn-group" />',
@@ -441,12 +441,12 @@
             templates: {
                 button: '<button type="button" class="multiselect dropdown-toggle" data-toggle="dropdown"><span class="multiselect-selected-text"></span> <b class="caret"></b></button>',
                 ul: '<ul class="multiselect-container dropdown-menu"></ul>',
-                filter: '<li class="multiselect-item multiselect-filter"><div class="input-group"><span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span><input class="form-control multiselect-search" type="text" /></div></li>',
-                filterClearBtn: '<span class="input-group-btn"><button class="btn btn-default multiselect-clear-filter" type="button"><i class="glyphicon glyphicon-remove-circle"></i></button></span>',
+                filter: '<li class="multiselect-item multiselect-filter"><div class="input-group"><span class="input-group-addon"><i class="fa fa-search"></i></span><input class="form-control multiselect-search" type="text" /></div></li>',
+                filterClearBtn: '<span class="input-group-btn"><button class="btn btn-secondary multiselect-clear-filter" type="button"><i class="fa fa-remove-circle"></i></button></span>',
                 li: '<li><a tabindex="0"><label></label></a></li>',
                 divider: '<li class="multiselect-item divider"></li>',
                 liGroup: '<li class="multiselect-item multiselect-group"><label></label></li>',
-                resetButton: '<li class="multiselect-reset text-center"><div class="input-group"><a class="btn btn-default btn-block"></a></div></li>'
+                resetButton: '<li class="multiselect-reset text-center"><div class="input-group"><a class="btn btn-secondary btn-block"></a></div></li>'
             }
         },
 
@@ -509,7 +509,7 @@
             this.$ul = $(this.options.templates.ul);
 
             if (this.options.dropRight) {
-                this.$ul.addClass('pull-right');
+                this.$ul.addClass('float-right');
             }
 
             // Set max height of dropdown menu to activate auto scrollbar.
@@ -1491,7 +1491,7 @@
             }
 
             if (this.options.dropRight) {
-                this.$ul.addClass('pull-right');
+                this.$ul.addClass('float-right');
             }
         },
 

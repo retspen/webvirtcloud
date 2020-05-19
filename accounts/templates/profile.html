@@ -6,7 +6,7 @@
             <!-- Page Heading -->
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">{% trans "Profile" %}</h1>
+                    <h2 class="page-header">{% trans "Profile" %}</h2>
                 </div>
             </div>
             <!-- /.row -->
@@ -18,19 +18,19 @@
                     <h3 class="page-header">{% trans "Edit Profile" %}</h3>
                     <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
                         <div class="form-group">
-                            <label class="col-sm-2 control-label">{% trans "Login" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "Login" %}</label>
                             <div class="col-sm-4">
                                 <input type="text" class="form-control" value="{{ request.user.username }}" disabled>
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "Username" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "Username" %}</label>
                             <div class="col-sm-4">
                                 <input type="text" class="form-control" name="username" value="{{ request.user.first_name }}" pattern="[0-9a-zA-Z]+">
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "Email" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "Email" %}</label>
                             <div class="col-sm-4">
                                 <input type="email" class="form-control" name="email" value="{{ request.user.email }}">
                             </div>
@@ -45,19 +45,19 @@
                     <h3 class="page-header">{% trans "Edit Password" %}</h3>
                     <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
                         <div class="form-group">
-                            <label class="col-sm-2 control-label">{% trans "Old" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "Old" %}</label>
                             <div class="col-sm-4">
                                 <input type="password" class="form-control" name="oldpasswd" value="">
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "New" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "New" %}</label>
                             <div class="col-sm-4">
                                 <input type="password" class="form-control" name="passwd1" value="">
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "Retry" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "Retry" %}</label>
                             <div class="col-sm-4">
                                 <input type="password" class="form-control" name="passwd2" value="">
                             </div>
@@ -74,15 +74,15 @@
                         <div class="col-lg-12">
                             <div class="table-responsive">
                                 <table class="table table-hover">
-                                    <tbody style="text-align: center;">
+                                    <tbody class="text-center">
                                     {% for key in publickeys %}
                                         <tr>
                                             <td>{{ key.keyname }} ({% ssh_to_fingerprint key.keypublic %})</td>
                                              <td>
                                                 <form action="" method="post" role="form">{% csrf_token %}
                                                     <input type="hidden" name="keyid" value="{{ key.id }}"/>
-                                                    <button type="submit" class="btn btn-sm btn-default" name="keydelete" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                        <span class="glyphicon glyphicon-trash"></span>
+                                                    <button type="submit" class="btn btn-sm btn-secondary" name="keydelete" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        <span class="fa fa-trash"></span>
                                                     </button>
                                                 </form>
                                             </td>
@@ -95,23 +95,61 @@
                     {% endif %}
                     <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "Key name" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "Key name" %}</label>
                             <div class="col-sm-4">
                                 <input type="text" class="form-control" name="keyname" placeholder="{% trans "Enter Name" %}">
                             </div>
                         </div>
                         <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-2 control-label">{% trans "Public key" %}</label>
+                            <label class="col-sm-2 col-form-label">{% trans "Public key" %}</label>
                             <div class="col-sm-8">
                                 <textarea name="keypublic" class="form-control" rows="6" placeholder="{% trans "Enter Public Key" %}"></textarea>
                             </div>
                         </div>
                         <div class="form-group">
-                            <div class="col-sm-offset-2 col-sm-10">
+                            <div class="col-sm-10">
                                 <button type="submit" class="btn btn-primary">{% trans "Add" %}</button>
                             </div>
                         </div>
                     </form>
+                    {% if request.user.is_superuser %}
+                    <h3 class="page-header">{% trans "Themes" %}</h3>
+                    <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
+                        <div class="form-group">
+                            <label class="col-sm-2 col-form-label">{% trans "Themes" %}</label>
+                            <div class="col-sm-4">
+                                <select class="custom-select" name="theme_select" id="theme_select">
+                                {% for theme in themes_list %}
+                                    <option value="{{ theme }}">{{ theme }}</option>
+                                {% endfor %}
+                                </select>
+                                <label>{% trans "Current Theme" %}:</label>
+                                <label id="active_theme"></label>
+                            </div>
+                            <p class="text-muted">{% trans "After change please full refresh page with Ctrl + F5 "%}</p>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-10">
+                                <button type="submit" class="btn btn-primary" name="change_theme" onclick="reloadStylesheets()">{% trans "Change" %}</button>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
+{% endblock %}
+{% block script %}
+<script>
+    $(document).ready(function (){
+        $('#active_theme').text(localStorage.getItem('active_theme')); 
+    });
+    function reloadStylesheets() {
+        var selected_theme = $('#theme_select option').filter(':selected').val();
+        var queryString = '?reload=' + selected_theme;
+        $('#wvc_css').each(function () {
+            this.href = this.href.replace(/\?.*|$/, queryString);
+        });
+        localStorage.setItem('active_theme', selected_theme);
+    }
+</script>
 {% endblock %}
