@@ -378,25 +378,6 @@
                             </select>
                         </div>
                     </div>
-
-                    <div class="form-group row meta-prealloc">
-                        <label class="col-sm-3 col-form-label">{% trans "Metadata" %}</label>
-                        <div class="col-sm-7">
-                            <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
-                        </div>
-                        <label class="col-lg-1 col-form-label">{% trans "Image" %}</label>
-                    </div>
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans "HDD cache mode" %}</label>
-                        <div class="col-sm-7">
-                            <select id="cache_mode" name="cache_mode" class="form-control">
-                                {% for mode, name in cache_modes %}
-                                    <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
-                                        {% trans name %}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">{% trans "Network" %}</label>
                         <div class="col-sm-7">
@@ -411,85 +392,113 @@
                             </select>
                         </div>
                     </div>
-                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans "NWFilter" %}</label>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
                         <div class="col-sm-7">
-                            <select name="nwfilter" class="custom-select">
-                                <option value="">{% trans "None" %}</option>
-                                {% for nwfilter in nwfilters %}
-                                    <option value="{{ nwfilter }}">{{ nwfilter }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                            <button class="btn btn-block btn-outline-light" type="button" data-toggle="collapse" data-target="#customAdvCollapse" aria-expanded="false" aria-controls="collapseExample">
+                                <span class="fa fa-caret-down"></span>
+                            </button>
+                        </div>        
                     </div>
-                    {% if dom_caps.graphics_support == 'yes' %}
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "Graphics" %}</label>
+                    <div class="collapse" id="customAdvCollapse">
+                        <div class="form-group row meta-prealloc">
+                            <label class="col-sm-3 col-form-label">{% trans "Disk Metadata" %}</label>
                             <div class="col-sm-7">
-                                <select name="graphics" class="custom-select">
-                                    {% for graphics in dom_caps.graphics_types %}
-                                    <option value="{{ graphics }}" {% if default_graphics == graphics %}selected{% endif %}>{{ graphics }}</option>
+                                <input type="checkbox" name="meta_prealloc" title="Metadata Preallocation" value="true">
+                            </div>
+                            <label class="col-lg-1 col-form-label">{% trans "Image" %}</label>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "HDD Cache Mode" %}</label>
+                            <div class="col-sm-7">
+                                <select id="cache_mode" name="cache_mode" class="form-control">
+                                    {% for mode, name in cache_modes %}
+                                        <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                            {% trans name %}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
-                    {% endif %}
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans "Video" %}</label>
-                        <div class="col-sm-7">
-                            <select name="video" class="custom-select">
-                                {% if not videos %}
-                                    <option value="vga">vga</option>
-                                    <option value="cirrus">cirrus</option>
-                                {% endif %}
-                                {% for video in videos %}
-                                    <option value="{{ video }}">{{ video }}</option>
-                                {% endfor %}
-                            </select>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "NWFilter" %}</label>
+                            <div class="col-sm-7">
+                                <select name="nwfilter" class="custom-select">
+                                    <option value="">{% trans "None" %}</option>
+                                    {% for nwfilter in nwfilters %}
+                                        <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans "Console Access" %}</label>
-                        <div class="col-sm-7">
-                            <select name="listener_addr" class="custom-select">
-                                {% for addr, label in listener_addr %}
-                                    <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
+                        {% if dom_caps.graphics_support == 'yes' %}
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "Graphics" %}</label>
+                                <div class="col-sm-7">
+                                    <select name="graphics" class="custom-select">
+                                        {% for graphics in dom_caps.graphics_types %}
+                                        <option value="{{ graphics }}" {% if default_graphics == graphics %}selected{% endif %}>{{ graphics }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "Video" %}</label>
+                            <div class="col-sm-7">
+                                <select name="video" class="custom-select">
+                                    {% if not videos %}
+                                        <option value="vga">vga</option>
+                                        <option value="cirrus">cirrus</option>
+                                    {% endif %}
+                                    {% for video in videos %}
+                                        <option value="{{ video }}">{{ video }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans "Console Password" %}</label>
-                        <div class="col-sm-7">
-                            <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "Console Access" %}</label>
+                            <div class="col-sm-7">
+                                <select name="listener_addr" class="custom-select">
+                                    {% for addr, label in listener_addr %}
+                                        <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
-                        <div class="col-sm-6">
-                            <input type="checkbox" name="qemu_ga" value="true" checked>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "Console Password" %}</label>
+                            <div class="col-sm-7">
+                                <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
+                            </div>
                         </div>
-                    </div>
-                    {% if virtio_support %}
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans "VirtIO" %}</label>
-                        <div class="col-sm-6">
-                            <input type="checkbox" name="virtio" value="{{ virtio_support }}" checked>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="qemu_ga" value="true" checked>
+                            </div>
                         </div>
+                        {% if virtio_support %}
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "VirtIO" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="virtio" value="{{ virtio_support }}" checked>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                     <div class="form-group row">
-                    <div class="col-sm-7 offset-3">
-                    {% if storages %}
-                        <button type="submit" class="btn btn-block btn-primary" name="create" formnovalidate onclick="showPleaseWaitDialog()" value="1">
-                            {% trans "Create" %}
-                        </button>
-                    {% else %}
-                        <button class="btn btn-block btn-primary disabled">
-                            {% trans "Create" %}
-                        </button>
-                    {% endif %}
-                    </div>
+                        <div class="col-sm-7 offset-3">
+                        {% if storages %}
+                            <button type="submit" class="btn btn-block btn-primary" name="create" formnovalidate onclick="showPleaseWaitDialog()" value="1">
+                                {% trans "Create" %}
+                            </button>
+                        {% else %}
+                            <button class="btn btn-block btn-primary disabled">
+                                {% trans "Create" %}
+                            </button>
+                        {% endif %}
+                        </div>
                     </div>
                 </form>
                 </div>
@@ -586,24 +595,6 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row meta-prealloc">
-                            <label class="col-sm-3 col-form-label">{% trans "Metadata" %}</label>
-                            <div class="col-sm-7">
-                                <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
-                            </div>
-                            <label class="col-lg-1 col-form-label">{% trans "Image" %}</label>
-                        </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "HDD cache mode" %}</label>
-                            <div class="col-sm-7">
-                                <select id="cache_mode" name="cache_mode" class="custom-select">
-                                    {% for mode, name in cache_modes %}
-                                        <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
-                                        {% trans name %}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
                         <div class="form-group row">
                             <label class="col-sm-3 col-form-label">{% trans "Network" %}</label>
                             <div class="col-sm-7">
@@ -615,72 +606,100 @@
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "NWFilter" %}</label>
+                            <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
                             <div class="col-sm-7">
-                                <select name="nwfilter" class="custom-select">
-                                    <option value="">{% trans "None" %}</option>
-                                    {% for nwfilter in nwfilters %}
-                                        <option value="{{ nwfilter }}">{{ nwfilter }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                                <button class="btn btn-block btn-outline-light" type="button" data-toggle="collapse" data-target="#tempAdvCollapse" aria-expanded="false" aria-controls="collapseExample">
+                                    <span class="fa fa-caret-down"></span>
+                                </button>
+                            </div>        
                         </div>
-                        {% if dom_caps.graphics_support == 'yes' %}
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "Graphics" %}</label>
-                            <div class="col-sm-7">
-                                <select name="graphics" class="custom-select">
-                                    {% for graphics in dom_caps.graphics_types %}
-                                    <option value="{{ graphics }}" {% if default_graphics == graphics %}selected{% endif %}>{{ graphics }}</option>
-                                    {% endfor %}
-                                </select>
+                        <div class="collapse" id="tempAdvCollapse">
+                            <div class="form-group row meta-prealloc">
+                                <label class="col-sm-3 col-form-label">{% trans "Disk Metadata" %}</label>
+                                <div class="col-sm-7">
+                                    <input type="checkbox" name="meta_prealloc" title="Metadata preallocation" value="true">
+                                </div>
+                                <label class="col-lg-1 col-form-label">{% trans "Image" %}</label>
                             </div>
-                        </div>
-                        {% endif %}
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "Video" %}</label>
-                            <div class="col-sm-7">
-                                <select name="video" class="custom-select">
-                                    {% if not videos %}
-                                        <option value="vga">vga</option>
-                                        <option value="cirrus">cirrus</option>
-                                    {% endif %}
-                                    {% for video in videos %}
-                                        <option value="{{ video }}">{{ video }}</option>
-                                    {% endfor %}
-                                </select>
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "HDD cache mode" %}</label>
+                                <div class="col-sm-7">
+                                    <select id="cache_mode" name="cache_mode" class="custom-select">
+                                        {% for mode, name in cache_modes %}
+                                            <option value="{{ mode }}" {% ifequal mode default_cache %}selected{% endifequal %}>
+                                            {% trans name %}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "Console Access" %}</label>
-                            <div class="col-sm-7">
-                                <select name="listener_addr" class="custom-select">
-                                    {% for addr, label in listener_addr %}
-                                        <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
-                                    {% endfor %}
-                                </select>
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "NWFilter" %}</label>
+                                <div class="col-sm-7">
+                                    <select name="nwfilter" class="custom-select">
+                                        <option value="">{% trans "None" %}</option>
+                                        {% for nwfilter in nwfilters %}
+                                            <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "Console Password" %}</label>
-                            <div class="col-sm-7">
-                                <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
+                            {% if dom_caps.graphics_support == 'yes' %}
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "Graphics" %}</label>
+                                <div class="col-sm-7">
+                                    <select name="graphics" class="custom-select">
+                                        {% for graphics in dom_caps.graphics_types %}
+                                        <option value="{{ graphics }}" {% if default_graphics == graphics %}selected{% endif %}>{{ graphics }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" name="qemu_ga" value="true" checked>
+                            {% endif %}
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "Video" %}</label>
+                                <div class="col-sm-7">
+                                    <select name="video" class="custom-select">
+                                        {% if not videos %}
+                                            <option value="vga">vga</option>
+                                            <option value="cirrus">cirrus</option>
+                                        {% endif %}
+                                        {% for video in videos %}
+                                            <option value="{{ video }}">{{ video }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        {% if virtio_support %}
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans "VirtIO" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" name="virtio" value="{{ virtio_support }}" checked>
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "Console Access" %}</label>
+                                <div class="col-sm-7">
+                                    <select name="listener_addr" class="custom-select">
+                                        {% for addr, label in listener_addr %}
+                                            <option value="{{ addr }}" {% if addr == "0.0.0.0" %} selected {% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "Console Password" %}</label>
+                                <div class="col-sm-7">
+                                    <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="checkbox" name="qemu_ga" value="true" checked>
+                                </div>
+                            </div>
+                            {% if virtio_support %}
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">{% trans "VirtIO" %}</label>
+                                <div class="col-sm-6">
+                                    <input type="checkbox" name="virtio" value="{{ virtio_support }}" checked>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
                         <div class="form-group row">
                             <div class="col-sm-7 offset-3">
                             {% if storages %}
