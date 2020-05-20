@@ -49,14 +49,14 @@
             <span {%if guest_agent == True %}
                     {% if guest_agent_ready == True %}
                         class="badge badge-success"
-                        title="Guest Agent Enabled & Connected"
+                        title="{% trans "Guest Agent Enabled & Connected" %}"
                     {% else %}
                         class="badge badge-warning"
-                        title="Guest Agent Enabled but not Connected"
+                        title="{% trans "Guest Agent Enabled but not Connected" %}"
                     {% endif %}
                 {% else %}
                     class="badge badge-danger"
-                    title="Guest Agent Not Enabled & Not Connected"
+                    title="{% trans "Guest Agent Not Enabled & Not Connected" %}"
                 {% endif %}><i class="fa fa-plug"></i></span>
             |
             {% if snapshots %}
@@ -78,7 +78,7 @@
                    {{ ipv4 }} |
                {% endfor %}
             {% endfor %}
-            <a class="text-secondary" href="{% url 'instance' compute.id vname %}" title="{% trans 'refresh instance info' %}"><span class="fa fa-refresh"></span></a>
+            <a class="text-secondary" href="{% url 'instance' compute.id vname %}" title="{% trans 'Refresh instance info' %}"><span class="fa fa-refresh"></span></a>
         </div>
         {% if user_quota_msg %}
             <div class="alert alert-warning fade show">
@@ -313,8 +313,8 @@
                                                 <span class="sr-only">{%  trans 'Toggle Dropdown' %}</span>
                                             </button>
                                             <div class="dropdown-menu">
-                                                <a class="dropdown-item" href="#" title="Console port: {{ console_port }}" onclick="open_console('lite')">{% trans "Console - Lite" %}</a>
-                                                <a class="dropdown-item" href="#" title="Console port: {{ console_port }}" onclick="open_console('full')">{% trans "Console - Full" %}</a>
+                                                <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ console_port }}" onclick="open_console('lite')">{% trans "Console - Lite" %}</a>
+                                                <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ console_port }}" onclick="open_console('full')">{% trans "Console - Full" %}</a>
                                             </div>
                                         </div>
                                     {% else %}
@@ -450,11 +450,11 @@
                                                 <div class="col-sm-3">
                                                      <input name="id" value="{{ id }}" hidden/>
                                                      {% if vcpu.enabled == 'yes' and vcpu.hotpluggable == "yes" %}
-                                                            <button type="submit" class="btn btn-block btn-success" value="False" name="set_vcpu" title="Disable">{{ id }}</button>
+                                                            <button type="submit" class="btn btn-block btn-success" value="False" name="set_vcpu" title="{% trans "Disable" %}">{{ id }}</button>
                                                      {% elif vcpu.enabled == 'yes' and vcpu.hotpluggable == "no" %}
-                                                            <button type="button" class="btn btn btn-block btn-info" title="Constant">{{ id }}</button>
+                                                            <button type="button" class="btn btn btn-block btn-info" title="{% trans "Constant" %}">{{ id }}</button>
                                                      {% else %}
-                                                            <button type="submit" class="btn btn btn-block btn-secondary" value="True" name="set_vcpu" title="Enable">{{ id }}</button>
+                                                            <button type="submit" class="btn btn btn-block btn-secondary" value="True" name="set_vcpu" title="{% trans "Enable" %}">{{ id }}</button>
                                                      {% endif %}
                                                 </div>
                                                 </form>
@@ -557,7 +557,7 @@
                                         <form class="form-inline" method="post" role="form">{% csrf_token %}
                                             <div class="form-group row">
                                                 <div class="col-sm-12">
-                                                    <input type="text" class="form-control input-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
+                                                    <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
                                                 </div>
                                             </div>
                                             {% ifequal status 5 %}
@@ -587,10 +587,10 @@
                                                         <td><strong>{{ snap.name }}</strong></td>
                                                         <td>{{ snap.date|date:"M d H:i:s" }}</td>
                                                         <td style="width:30px;">
-                                                            <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                            <form action="" method="post" role="form">{% csrf_token %}
                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
                                                                 {% ifequal status 5 %}
-                                                                    <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot" title="Revert to this Snapshot" onclick="return confirm('Are you sure?')">
+                                                                    <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
                                                                          <span class="fa fa-download"></span>
                                                                     </button>
                                                                 {% else %}
@@ -604,7 +604,7 @@
                                                         <td style="width:30px;">
                                                             <form action="" method="post" role="form">{% csrf_token %}
                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                <button type="submit" class="btn btn-sm btn-secondary" name="delete_snapshot" title="Delete Snapshot" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                                <button type="submit" class="btn btn-sm btn-danger" name="delete_snapshot" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                                      <span class="fa fa-trash"></span>
                                                                 </button>
                                                             </form>
@@ -710,13 +710,13 @@
                                                 {% ifequal status 5 %}
                                                     <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
                                                     {% ifequal bootmenu 0 %}
-                                                        <input type="submit" class="btn btn-success" name="set_bootmenu" title="Show boot menu" value="{% trans "Enable" %}">
+                                                        <input type="submit" class="btn btn-success" name="set_bootmenu" title="{% trans 'Show boot menu' %}" value="{% trans "Enable" %}">
                                                     {% else %}
-                                                        <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="Hide boot menu" value="{% trans "Disable" %}">
+                                                        <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="{% trans 'Hide boot menu' %}" value="{% trans "Disable" %}">
                                                     {% endifequal %}
                                                 {% else %}
                                                     {% ifequal bootmenu 0  %}
-                                                        <p>{% trans "**** Please shutdown instance to modify boot menu ****" %}</p>
+                                                        <p>**** {% trans "Please shutdown instance to modify boot menu" %} ****</p>
                                                     {% endifequal %}
                                                 {% endifequal %}
                                                 </div>
@@ -747,10 +747,10 @@
                                                     </div>
                                                     <div>
                                                         <div class="row mt-4">
-                                                            <a href="#" id="boot_order_up" class="btn btn-light shadow-sm"><span class="fa fa-arrow-up" title="up: move selected devices"></span></a>
+                                                            <a href="#" id="boot_order_up" class="btn btn-light shadow-sm"><span class="fa fa-arrow-up" title="{% trans 'up: move selected devices' %}"></span></a>
                                                         </div>
                                                         <div class="row mt-2">
-                                                            <a href="#" id="boot_order_down" class="btn btn-light shadow-sm"><span class="fa fa-arrow-down" title="down: move selected devices"></span></a>
+                                                            <a href="#" id="boot_order_down" class="btn btn-light shadow-sm"><span class="fa fa-arrow-down" title="{% trans 'down: move selected devices' %}"></span></a>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -767,8 +767,13 @@
                                     <form action="" method="post" role="form">{% csrf_token %}
                                         <p class="font-weight-bold">
                                             {% trans "Instance Media" %}
+                                             {% if status == 5 and allow_admin_or_not_template %}
+                                                <button type="submit" class="btn btn-danger float-right" title="{% trans "Detach CD-ROM (remove device)" %}" name="detach_cdrom" value="{{ cd.dev }}">
+                                                    <span class="fa fa-remove"></span>
+                                                </button>
+                                            {% endif %}
                                             <button type="submit" name="add_cdrom" type="button" class="btn btn-success float-right"
-                                                    title="Add CD-ROM"
+                                                    title="{% trans 'Add CD-ROM' %}"
                                                     {% if status != 5 %} disabled {% endif %} >
                                                 <span class="fa fa-plus" aria-hidden="true"></span>
                                             </button>
@@ -807,24 +812,24 @@
                                                                 {% else %}
                                                                     <button class="btn btn-sm btn-success float-left disabled">{% trans "Mount" %}</button>
                                                                 {% endif %}
-                                                                {% if status == 5 and allow_admin_or_not_template %}
-                                                                    <button type="submit" class="btn btn-sm btn-danger float-left" title="Detach CD-ROM (remove device)" name="detach_cdrom" value="{{ cd.dev }}" style="margin-top: 2px;"><i class="fa fa-fa-remove"></i></button>
-                                                                {% endif %}
+                                                                
                                                             </div>
                                                         </div>
                                                     </div>    
                                                 {% else %}
-                                                    <div class="col-sm-6">
+                                                <div class="col-sm-6">
+                                                    <div class="input-group">
                                                         <input class="form-control" value="{{ cd.image }}" disabled/>
+                                                        <div class="input-group-append">
+                                                            <input type="hidden" name="path" value="{{ cd.path }}">
+                                                            {% if allow_admin_or_not_template %}
+                                                                <button type="submit" class="btn btn-sm btn-success float-left" value="{{ cd.dev }}" name="umount_iso">{% trans "Unmount" %}</button>
+                                                            {% else %}
+                                                                <button class="btn btn-sm btn-success float-left disabled" value="{{ cd.dev }}" name="umount_iso">{% trans "Unmount" %}</button>
+                                                            {% endif %}                                                       
+                                                        </div>
                                                     </div>
-                                                    <div class="col-sm-2">
-                                                        <input type="hidden" name="path" value="{{ cd.path }}">
-                                                        {% if allow_admin_or_not_template %}
-                                                            <button type="submit" class="btn btn-sm btn-success float-left" value="{{ cd.dev }}" name="umount_iso">{% trans "Umount" %}</button>
-                                                        {% else %}
-                                                            <button class="btn btn-sm btn-success float-left disabled" value="{{ cd.dev }}" name="umount_iso" style="margin-top: 2px;">{% trans "Umount" %}</button>
-                                                        {% endif %}
-                                                    </div>
+                                                </div>
                                                 {% endif %}
                                             </div>
                                         </form>
@@ -841,7 +846,7 @@
 
                                     <div class="col-12 col-sm-12">
                                         <div class="table-responsive">
-                                            <table class="table table-hover">
+                                            <table class="table table-hover mt-3">
                                                 <thead>
                                                     <tr>
                                                         <th>{% trans "Device" %}</th>
@@ -919,9 +924,10 @@
                                 {% include 'add_instance_network_block.html' %}
                             </p>
 
-                            <div>
-                                <p class="font-weight-bold">{% trans "Network Devices" %}</p>
-                                <table class="table table-responsive">
+                            <div class="row mt-3">
+                                <div class="col-lg-12 mt-3">
+                                <h5 class="font-weight-bold">{% trans "Network Devices" %}</h5>
+                                <table class="table">
                                     <thead>
                                     <tr>
                                         <th>{% trans 'Name' %}</th>
@@ -951,7 +957,7 @@
                                             <td>
                                             <form method="post" name="edit_network{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                                 <button data-target="#editInstanceNetwork{{ forloop.counter0 }}" type="button" class="btn btn-sm btn-primary"
-                                                        title="Edit NIC" data-toggle="modal">
+                                                        title="{% trans "Edit NIC" %}" data-toggle="modal">
                                                         <span class="fa fa-edit" aria-hidden="true"></span>
                                                 </button>
 
@@ -963,6 +969,7 @@
                                                                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> 
                                                             </div>
                                                             <div class="modal-body">
+                                                                <div class="container">
                                                                 <div class="form-group row">
                                                                     <label class="col-form-label">{% trans "MAC" %}</label>
                                                                     <div class="input-group">
@@ -1008,6 +1015,7 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            </div>
                                                             <div class="modal-footer">
                                                                 <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Close' %}</button>
                                                                 <button class="btn btn-success" name="change_network" title="{% trans "Apply Network Changes" %}">{% trans "Apply" %}</button>
@@ -1027,18 +1035,18 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <th class="d-none d-table-cell d-sm-table-cell">{% trans 'IPv4' %}</th>
+                                            <th>{% trans 'IPv4' %}</th>
                                             <td>
                                                 {% for ipv4 in network.ipv4|default:"unknown" %}{{ ipv4 }}{% endfor %}
                                             </td>
-                                            <th class="d-none d-table-cell d-sm-table-cell">{% trans 'IPv6' %}</th>
-                                            <td class="d-none d-table-cell">
+                                            <th>{% trans 'IPv6' %}</th>
+                                            <td>
                                                 {% for ipv6 in network.ipv6|default:"unknown" %}{{ ipv6 }}{% endfor %}
                                             </td>
-                                            <th class="d-none d-table-cell d-sm-table-cell">{% trans 'Model' %}</th>
+                                            <th>{% trans 'Model' %}</th>
                                             <td>{{ network.model }}</td>
                                             <th>{% trans 'QoS' %}</th>
-                                            <td align="right">
+                                            <td class="d-flex justify-content-end">
                                                 <form method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                                     <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>
                                                     {% include 'add_network_qos.html' with id=forloop.counter0 %}
@@ -1046,22 +1054,23 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="bg-primary d-none d-table-cell d-sm-table-cell" colspan="9"></td>
+                                            <td class="bg-primary" colspan="9"></td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
+                            </div>
 
                             {% if qos %}
                             <div class="col-10 col-sm-10">
-                                <p><strong>{% trans "Qos Configuration" %}</strong></p>
+                                <p><strong>{% trans "QoS Configuration" %}</strong></p>
                             </div>
                             <div class="col-12 col-sm-12">
                                 <table class="table table-hover">
                                     <thead>
                                     <tr>
-                                        <th>{% trans "MAC/Direction" %}</th>
+                                        <th>{% trans "MAC" %}/{% trans "Direction" %}</th>
                                         <th>{% trans "Average" %}</th>
                                         <th>{% trans "Peak" %}</th>
                                         <th>{% trans "Burst" %}</th>
@@ -1088,12 +1097,12 @@
                                                     <input name="net-mac" value="{{ q }}" hidden/>
                                                     <button type="submit" class="btn btn-sm btn-primary"
                                                             name="set_qos" data-toggle="modal"
-                                                            title="Edit Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                            title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                         <i class="fa fa-save"></i>
                                                     </button>
                                                     <button type="submit" class="btn btn-sm btn-danger"
                                                             name="unset_qos"
-                                                            title="Delete Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                            title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </td>
@@ -1221,15 +1230,15 @@
                             </p>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-striped sortable-theme-bootstrap" data-sortable>
+                                <table class="table table-striped sortable-theme-bootstrap mt-3" data-sortable>
                                     <tbody class="searchable">
                                     {% for userinstance in userinstances %}
                                         <tr>
                                             <td><a href="{% url 'account' userinstance.user.id %}">{{ userinstance.user }}</a></td>
                                             <td style="width:30px;">
-                                                <form action="" method="post" style="height:10px" role="form">{% csrf_token %}
+                                                <form action="" method="post" role="form">{% csrf_token %}
                                                     <input type="hidden" name="userinstance" value="{{ userinstance.pk }}">
-                                                    <button type="submit" class="btn btn-sm btn-secondary" name="del_owner" title="{% trans "Delete" %}">
+                                                    <button type="submit" class="btn btn-sm btn-secondary" name="del_owner" title="{% trans "Delete Ownership" %}">
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -1949,8 +1958,8 @@
     });
 
     $('#boot_order_down').bind('click', function() {
-        var countOptions = $('#b_order label').size();
-        var countSelected = $('#b_order label input:checked').size();
+        var countOptions = $('#b_order label').length;
+        var countSelected = $('#b_order label input:checked').length;
         $('#b_order label input:checked').each( function() {
             var label = $(this).parent();
             var newPos = label.index() + countSelected;

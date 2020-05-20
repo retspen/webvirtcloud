@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#addvol" type="button" class="btn btn-success float-right" data-toggle="modal" title="Add Volume">
+    <a href="#addvol" type="button" class="btn btn-success float-right" data-toggle="modal" title="{% trans "Add Volume" %}">
         <span class="fa fa-plus" aria-hidden="true"></span>
     </a>
 
