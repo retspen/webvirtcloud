@@ -135,7 +135,7 @@
                                class="btn btn-primary"
                                value="Apply"
                                name="modify_dhcp_range"
-                               title="Edit DHCP Range"
+                               title="{% trans "Edit DHCP Range" %}"
                                onclick="return confirm('{% trans "Are you sure?" %}')"/>
                     </dd>
                     <input hidden name="family" value="ipv4"/>
@@ -189,12 +189,12 @@
                                 <input hidden name="family" value="ipv4"/>
                                 <button type="submit" class="btn btn-sm btn-primary"
                                         name="modify_fixed_address"
-                                        title="Edit entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                     <i class="fa fa-save"></i>
                                 </button>
                                 <button type="submit" class="btn btn-sm btn-danger"
                                         name="delete_fixed_address"
-                                        title="Delete entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             </td>
@@ -248,7 +248,7 @@
                             class="btn btn-primary btn-block" 
                             value="Apply"
                             name="modify_dhcp_range"
-                            title="Edit DHCP Range" 
+                            title="{% trans "Edit DHCP Range" %}" 
                             onclick="return confirm('{% trans "Are you sure?" %}')"/>
                     </dd>
                     <input hidden name="family" value="ipv6"/>
@@ -298,12 +298,12 @@
                                     <input hidden name="family" value="ipv6"/>
                                     <button type="submit" class="btn btn-sm btn-primary"
                                             name="modify_fixed_address"
-                                            title="Edit entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                         <i class="fa fa-save"></i>
                                     </button>
                                     <button type="submit" class="btn btn-sm btn-danger"
                                             name="delete_fixed_address"
-                                            title="Delete entry" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </td>
@@ -322,7 +322,7 @@
                 {% include 'add_network_qos.html' %}
             </form>
         {% endif %}
-        <h5 class="page-header">{% trans "Qos Configuration" %}</h5>
+        <h5 class="page-header">{% trans "QoS Configuration" %}</h5>
 
         <div class="col-sm-12">
             <table class="table table-hover">
@@ -353,12 +353,12 @@
                             <input name="qos_direction" value="{{ q }}" hidden/>
                             <button type="submit" class="btn btn-sm btn-primary"
                                     name="set_qos" data-toggle="modal"
-                                    title="Edit Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                    title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                 <i class="fa fa-save"></i>
                             </button>
                             <button type="submit" class="btn btn-sm btn-danger"
                                     name="unset_qos"
-                                    title="Delete Qos" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                    title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </td>

@@ -917,10 +917,10 @@ def instance(request, compute_id, vname):
                     try:
                         conn.set_qos(mac, qos_dir, average, peak, burst)
                         if conn.get_status() == 5:
-                            messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+                            messages.success(request, "{} QoS is set".format(qos_dir.capitalize()))
                         else:
                             messages.success(request,
-                                             "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
+                                             "{} QoS is set. Network XML is changed.".format(qos_dir.capitalize()) +
                                              "Stop and start network to activate new config")
 
                     except libvirtError as le:
@@ -932,10 +932,10 @@ def instance(request, compute_id, vname):
                     conn.unset_qos(mac, qos_dir)
 
                     if conn.get_status() == 5:
-                        messages.success(request, "{} Qos is deleted".format(qos_dir.capitalize()))
+                        messages.success(request, "{} QoS is deleted".format(qos_dir.capitalize()))
                     else:
                         messages.success(request,
-                                         "{} Qos is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
+                                         "{} QoS is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
                                          "Stop and start network to activate new config.")
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 

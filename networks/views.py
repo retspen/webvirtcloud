@@ -216,7 +216,7 @@ def network(request, compute_id, pool):
                         _("{} Qos is set. Network XML is changed.").format(qos_dir.capitalize()) +
                         _("Stop and start network to activate new config"))
                 else:
-                    messages.success(request, _("{} Qos is set").format(qos_dir.capitalize()))
+                    messages.success(request, _("{} QoS is set").format(qos_dir.capitalize()))
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
             return HttpResponseRedirect(request.get_full_path())
@@ -230,7 +230,7 @@ def network(request, compute_id, pool):
                     _("{} Qos is deleted. Network XML is changed. ").format(qos_dir.capitalize()) +
                     _("Stop and start network to activate new config."))
             else:
-                messages.success(request, _("{} Qos is deleted").format(qos_dir.capitalize()))
+                messages.success(request, _("{} QoS is deleted").format(qos_dir.capitalize()))
             return HttpResponseRedirect(request.get_full_path())
     conn.close()
 

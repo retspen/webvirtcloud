@@ -80,19 +80,19 @@
                                 </div>
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Is staff" %}</label>
-                                    <div class="form-check form-check-inline col-sm-2">
+                                    <div class="form-check form-check-inline col-sm-2  ml-3">
                                         <input class="form-check-input position-static" type="checkbox" name="user_is_staff" {% if user.is_staff %}checked{% endif %}>
                                     </div>
                                 </div>
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Is superuser" %}</label>
-                                    <div class="form-check form-check-inline col-sm-2">
+                                    <div class="form-check form-check-inline col-sm-2 ml-3">
                                         <input class="form-check-input position-static" type="checkbox" name="user_is_superuser" {% if user.is_superuser %}checked{% endif %}>
                                     </div>
                                 </div>
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Can clone instances" %}</label>
-                                    <div class="form-check form-check-inline col-sm-2">
+                                    <div class="form-check form-check-inline col-sm-2 ml-3">
                                         <input class="form-check-input position-static" type="checkbox" name="userattributes_can_clone_instances" {% if user.userattributes.can_clone_instances %}checked{% endif %}>
                                     </div>
                                 </div>

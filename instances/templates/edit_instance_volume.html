@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-secondary" data-toggle="modal" title="Edit Volume">
+    <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-secondary" data-toggle="modal" title="{% trans "Edit Volume" %}">
         <i class="fa fa-edit" aria-hidden="true"></i>
     </button>
 
