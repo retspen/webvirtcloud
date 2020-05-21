@@ -62,7 +62,6 @@
                                         {% ifequal compute.type 1 %}
                                             <form method="post" role="form">{% csrf_token %}
                                                 <div class="modal-body">
-
                                                     <div class="form-group row">
                                                         <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
                                                         <div class="col-sm-6">
@@ -95,13 +94,13 @@
                                                         </div>
                                                     </div></div>
                                                 <div class="modal-footer">
-                                                    <button type="submit" class="btn btn-danger  mr-auto" name="host_del">
+                                                    <button type="submit" class="btn btn-danger mr-auto" name="host_del">
                                                         {% trans "Delete" %}
                                                     </button>
                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                                                         {% trans "Close" %}
                                                     </button>
-                                                    <button type="submit" class="btn btn-primary" name="host_edit">
+                                                    <button type="submit" class="btn btn-primary" name="host_edit" autofocus>
                                                         {% trans "Change" %}
                                                     </button>
                                                 </div>

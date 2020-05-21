@@ -91,8 +91,8 @@
                 </div>
              </div>
             {% if volumes  %}
-            <div class="table-responsive">
-                <table class="table table-striped sortable-theme-bootstrap" data-sortable>
+            <div>
+                <table class="table table-hover sortable-theme-bootstrap" data-sortable>
                     <thead>
                     <tr>
                         <th>#</th>
@@ -192,8 +192,8 @@
                 </div>
             </div>
             {% endif %}
-            {% endif %}
-        </div>
+        {% endif %}
+    </div>
 
     {% include 'pleasewaitdialog.html' %}
 {% endblock %}

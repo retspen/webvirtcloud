@@ -53,10 +53,11 @@
     </div>
     <!-- /.row -->
     {% include 'errors_block.html' %}
+    {% include 'messages_block.html' %}
     <div class="row">
         {% if not  all_host_vms %}
             <div class="col-lg-12">
-                <div class="alert alert-warning alert-dismissable fade">
+                <div class="alert alert-warning alert-dismissable fade show">
                     <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Instances" %}
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                 </div>
