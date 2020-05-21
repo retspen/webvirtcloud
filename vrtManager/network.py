@@ -45,37 +45,37 @@ class wvmNetworks(wvmConnect):
                        ipv4, gateway, mask, dhcp4,
                        ipv6, gateway6, prefix6, dhcp6,
                        bridge, openvswitch, fixed=False):
-        xml = """
+        xml = f"""
             <network>
-                <name>%s</name>""" % name
+                <name>{name}</name>"""
         if forward in ['nat', 'route', 'bridge']:
-            xml += """<forward mode='%s'/>""" % forward
+            xml += f"""<forward mode='{forward}'/>"""
         xml += """<bridge """
         if forward in ['nat', 'route', 'none']:
             xml += """stp='on' delay='0'"""
         if forward == 'bridge':
-            xml += """name='%s'""" % bridge
+            xml += f"""name='{bridge}'"""
         xml += """/>"""
         if openvswitch is True:
             xml += """<virtualport type='openvswitch'/>"""
         if forward != 'bridge':
             if ipv4:
-                xml += """<ip address='%s' netmask='%s'>""" % (gateway, mask)
+                xml += f"""<ip address='{gateway}' netmask='{mask}'>"""
                 if dhcp4:
-                    xml += """<dhcp>
-                                <range start='%s' end='%s' />""" % (dhcp4[0], dhcp4[1])
+                    xml += f"""<dhcp>
+                                <range start='{dhcp4[0]}' end='{dhcp4[1]}' />"""
                     if fixed:
                         fist_oct = int(dhcp4[0].strip().split('.')[3])
                         last_oct = int(dhcp4[1].strip().split('.')[3])
                         for ip in range(fist_oct, last_oct + 1):
-                            xml += """<host mac='%s' ip='%s.%s' />""" % (util.randomMAC(), gateway[:-2], ip)
+                            xml += f"""<host mac='{util.randomMAC()}' ip='{gateway[:-2]}.{ip}' />"""
                     xml += """</dhcp>"""
                 xml += """</ip>"""
             if ipv6:
-                xml += """<ip family='ipv6' address='%s' prefix='%s'>""" % (gateway6, prefix6)
+                xml += f"""<ip family='ipv6' address='{gateway6}' prefix='{prefix6}'>"""
                 if dhcp6:
-                    xml += """<dhcp>
-                                 <range start='%s' end='%s' />""" % (dhcp6[0], dhcp6[1])
+                    xml += f"""<dhcp>
+                                 <range start='{dhcp6[0]}' end='{dhcp6[1]}' />"""
                     xml += """</dhcp>"""
                 xml += """</ip>"""
         xml += """</network>"""
@@ -314,9 +314,9 @@ class wvmNetwork(wvmConnect):
 
     def set_qos(self, direction, average, peak, burst):
         if direction == "inbound":
-            xml = "<inbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+            xml = f"<inbound average='{average}' peak='{peak}' burst='{burst}'/>"
         elif direction == "outbound":
-            xml = "<outbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+            xml = f"<outbound average='{average}' peak='{peak}' burst='{burst}'/>"
         else:
             raise Exception('Direction must be inbound or outbound')
 
@@ -324,7 +324,7 @@ class wvmNetwork(wvmConnect):
 
         band = tree.xpath("/network/bandwidth")
         if len(band) == 0:
-            xml = "<bandwidth>" + xml + "</bandwidth>"
+            xml = f"<bandwidth>{xml}</bandwidth>"
             tree.append(etree.fromstring(xml))
         else:
             direct = band[0].find(direction)
@@ -339,7 +339,7 @@ class wvmNetwork(wvmConnect):
 
     def unset_qos(self, direction):
         tree = etree.fromstring(self._XMLDesc(0))
-        for direct in tree.xpath("/network/bandwidth/{}".format(direction)):
+        for direct in tree.xpath(f"/network/bandwidth/{direction}"):
             parent = direct.getparent()
             parent.remove(direct)
 
@@ -353,7 +353,7 @@ class wvmNetwork(wvmConnect):
             self.leases = self.net.DHCPLeases()
         except Exception as e:
             self.leases = []
-            raise "Error getting %s DHCP leases: %s" % (self, e)
+            raise f"Error getting {self} DHCP leases: {e}"
 
     def get_dhcp_leases(self):
         if self.leases is None:
