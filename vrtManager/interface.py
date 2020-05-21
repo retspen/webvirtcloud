@@ -19,32 +19,32 @@ class wvmInterfaces(wvmConnect):
 
     def create_iface(self, name, itype, mode, netdev, ipv4_type, ipv4_addr, ipv4_gw,
                      ipv6_type, ipv6_addr, ipv6_gw, stp, delay):
-        xml = """<interface type='%s' name='%s'>
-                    <start mode='%s'/>""" % (itype, name, mode)
+        xml = f"""<interface type='{itype}' name='{name}'>
+                    <start mode='{mode}'/>"""
         if ipv4_type == 'dhcp':
             xml += """<protocol family='ipv4'>
                         <dhcp/>
                       </protocol>"""
         if ipv4_type == 'static':
             address, prefix = ipv4_addr.split('/')
-            xml += """<protocol family='ipv4'>
-                        <ip address='%s' prefix='%s'/>
-                        <route gateway='%s'/>
-                      </protocol>""" % (address, prefix, ipv4_gw)
+            xml += f"""<protocol family='ipv4'>
+                        <ip address='{address}' prefix='{prefix}'/>
+                        <route gateway='{ipv4_gw}'/>
+                      </protocol>"""
         if ipv6_type == 'dhcp':
             xml += """<protocol family='ipv6'>
                         <dhcp/>
                       </protocol>"""
         if ipv6_type == 'static':
             address, prefix = ipv6_addr.split('/')
-            xml += """<protocol family='ipv6'>
-                        <ip address='%s' prefix='%s'/>
-                        <route gateway='%s'/>
-                      </protocol>""" % (address, prefix, ipv6_gw)
+            xml += f"""<protocol family='ipv6'>
+                        <ip address='{address}' prefix='{prefix}'/>
+                        <route gateway='{ipv6_gw}'/>
+                      </protocol>"""
         if itype == 'bridge':
-            xml += """<bridge stp='%s' delay='%s'>
-                        <interface name='%s' type='ethernet'/>
-                      </bridge>""" % (stp, delay, netdev)
+            xml += f"""<bridge stp='{stp}' delay='{delay}'>
+                        <interface name='{netdev}' type='ethernet'/>
+                      </bridge>"""
         xml += """</interface>"""
         self.define_iface(xml)
         iface = self.get_iface(name)
