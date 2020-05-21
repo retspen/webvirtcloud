@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-20 13:13+0000\n"
+"POT-Creation-Date: 2020-05-21 22:10+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -42,7 +42,7 @@ msgstr ""
 #: instances/templates/add_instance_owner_block.html:18
 #: instances/templates/allinstances_index_grouped.html:7
 #: instances/templates/allinstances_index_nongrouped.html:6
-#: instances/templates/instance.html:1669 instances/templates/instances.html:70
+#: instances/templates/instance.html:1669 instances/templates/instances.html:71
 #: logs/templates/showlogs.html:32
 msgid "User"
 msgstr ""
@@ -56,11 +56,11 @@ msgid "Public key"
 msgstr ""
 
 #: accounts/templates/account.html:47 accounts/templates/accounts-list.html:25
-#: accounts/templates/accounts.html:21 computes/templates/computes.html:242
+#: accounts/templates/accounts.html:21 computes/templates/computes.html:241
 #: create/templates/create_instance_w2.html:70
 #: instances/templates/allinstances.html:33
 #: instances/templates/allinstances.html:49
-#: instances/templates/instances.html:60
+#: instances/templates/instances.html:61
 #: interfaces/templates/interfaces.html:47 logs/templates/showlogs.html:21
 #: networks/templates/networks.html:50 nwfilters/templates/nwfilters.html:138
 #: secrets/templates/secrets.html:50 storages/templates/storage.html:191
@@ -95,8 +95,8 @@ msgstr ""
 #: accounts/templates/account.html:127
 #: accounts/templates/accounts-list.html:133
 #: accounts/templates/accounts.html:126 accounts/templates/profile.html:84
-#: computes/templates/computes.html:99 computes/templates/computes.html:143
-#: computes/templates/computes.html:191 computes/templates/computes.html:221
+#: computes/templates/computes.html:98 computes/templates/computes.html:142
+#: computes/templates/computes.html:190 computes/templates/computes.html:220
 #: instances/templates/instance.html:899 instances/templates/instance.html:906
 #: interfaces/templates/interface.html:61 networks/templates/network.html:53
 #: nwfilters/templates/nwfilter.html:114 nwfilters/templates/nwfilter.html:154
@@ -129,18 +129,18 @@ msgstr ""
 #: accounts/templates/accounts.html:138
 #: accounts/templates/create_user_block.html:31
 #: accounts/templates/create_user_inst_block.html:29
-#: computes/templates/computes.html:102 computes/templates/computes.html:146
-#: computes/templates/computes.html:194 computes/templates/computes.html:224
+#: computes/templates/computes.html:101 computes/templates/computes.html:145
+#: computes/templates/computes.html:193 computes/templates/computes.html:223
 #: computes/templates/create_comp_block.html:60
 #: computes/templates/create_comp_block.html:99
 #: computes/templates/create_comp_block.html:143
 #: computes/templates/create_comp_block.html:171
 #: create/templates/create_flav_block.html:51
-#: create/templates/create_instance_w2.html:263
+#: create/templates/create_instance_w2.html:273
 #: instances/templates/add_instance_network_block.html:49
 #: instances/templates/add_instance_owner_block.html:29
 #: instances/templates/add_instance_volume.html:89
-#: instances/templates/add_instance_volume.html:145
+#: instances/templates/add_instance_volume.html:144
 #: instances/templates/create_inst_block.html:34
 #: instances/templates/edit_instance_volume.html:123
 #: instances/templates/instance.html:1020
@@ -174,7 +174,7 @@ msgid "Edit"
 msgstr ""
 
 #: accounts/templates/account.html:127 accounts/templates/profile.html:84
-#: create/templates/create_instance_w2.html:281
+#: create/templates/create_instance_w2.html:291
 #: instances/templates/instance.html:607 instances/templates/instance.html:1031
 #: instances/templates/instance.html:1100
 #: instances/templates/instance.html:1105
@@ -204,8 +204,8 @@ msgid "You don't have any User"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:33 accounts/templates/profile.html:27
-#: computes/templates/computes.html:80 computes/templates/computes.html:128
-#: computes/templates/computes.html:171
+#: computes/templates/computes.html:79 computes/templates/computes.html:127
+#: computes/templates/computes.html:170
 #: computes/templates/create_comp_block.html:40
 #: computes/templates/create_comp_block.html:42
 #: computes/templates/create_comp_block.html:85
@@ -219,7 +219,7 @@ msgstr ""
 #: computes/templates/computes.html:40 instances/templates/allinstances.html:57
 #: instances/templates/allinstances_index_grouped.html:8
 #: instances/templates/allinstances_index_nongrouped.html:7
-#: instances/templates/instances.html:71
+#: instances/templates/instances.html:72
 msgid "Status"
 msgstr ""
 
@@ -246,7 +246,7 @@ msgstr ""
 #: instances/templates/allinstances_index_grouped.html:26
 #: instances/templates/allinstances_index_grouped.html:56
 #: instances/templates/allinstances_index_nongrouped.html:20
-#: instances/templates/instance.html:43 instances/templates/instances.html:84
+#: instances/templates/instance.html:43 instances/templates/instances.html:85
 msgid "Active"
 msgstr ""
 
@@ -260,22 +260,22 @@ msgstr ""
 
 #: accounts/templates/accounts-list.html:76 accounts/templates/accounts.html:69
 #: accounts/templates/create_user_block.html:18
-#: computes/templates/computes.html:173
+#: computes/templates/computes.html:172
 #: create/templates/create_flav_block.html:19
 #: create/templates/create_instance_w2.html:81
 #: create/templates/create_instance_w2.html:107
 #: create/templates/create_instance_w2.html:110
-#: create/templates/create_instance_w2.html:299
-#: create/templates/create_instance_w2.html:301
-#: create/templates/create_instance_w2.html:512
-#: create/templates/create_instance_w2.html:514
+#: create/templates/create_instance_w2.html:309
+#: create/templates/create_instance_w2.html:311
+#: create/templates/create_instance_w2.html:522
+#: create/templates/create_instance_w2.html:524
 #: instances/templates/add_instance_volume.html:40
 #: instances/templates/add_instance_volume.html:42
 #: instances/templates/allinstances.html:56
 #: instances/templates/allinstances_index_grouped.html:6
 #: instances/templates/allinstances_index_nongrouped.html:5
 #: instances/templates/instance.html:580 instances/templates/instance.html:933
-#: instances/templates/instances.html:69
+#: instances/templates/instances.html:70
 #: interfaces/templates/create_iface_block.html:18
 #: interfaces/templates/interface.html:76
 #: networks/templates/create_net_block.html:18
@@ -300,7 +300,7 @@ msgstr ""
 
 #: accounts/templates/accounts-list.html:83 accounts/templates/accounts.html:76
 #: accounts/templates/create_user_block.html:24
-#: computes/templates/computes.html:86 computes/templates/computes.html:177
+#: computes/templates/computes.html:85 computes/templates/computes.html:176
 #: computes/templates/create_comp_block.html:46
 #: computes/templates/create_comp_block.html:48
 #: computes/templates/create_comp_block.html:129
@@ -360,12 +360,12 @@ msgstr ""
 
 #: accounts/templates/create_user_block.html:32
 #: create/templates/create_instance_w1.html:93
-#: create/templates/create_instance_w2.html:265
-#: create/templates/create_instance_w2.html:267
-#: create/templates/create_instance_w2.html:494
-#: create/templates/create_instance_w2.html:498
-#: create/templates/create_instance_w2.html:707
-#: create/templates/create_instance_w2.html:711
+#: create/templates/create_instance_w2.html:275
+#: create/templates/create_instance_w2.html:277
+#: create/templates/create_instance_w2.html:504
+#: create/templates/create_instance_w2.html:508
+#: create/templates/create_instance_w2.html:717
+#: create/templates/create_instance_w2.html:721
 #: interfaces/templates/create_iface_block.html:138
 #: networks/templates/create_net_block.html:85
 #: networks/templates/modify_ipv4_fixed_address.html:45
@@ -444,9 +444,9 @@ msgid "Email"
 msgstr ""
 
 #: accounts/templates/profile.html:40 accounts/templates/profile.html:67
-#: accounts/templates/profile.html:133 computes/templates/computes.html:105
-#: computes/templates/computes.html:149 computes/templates/computes.html:197
-#: computes/templates/computes.html:226 instances/templates/instance.html:1215
+#: accounts/templates/profile.html:133 computes/templates/computes.html:104
+#: computes/templates/computes.html:148 computes/templates/computes.html:196
+#: computes/templates/computes.html:225 instances/templates/instance.html:1215
 #: instances/templates/instance.html:1219
 #: instances/templates/instance.html:1505
 #: instances/templates/instance.html:1507
@@ -575,9 +575,9 @@ msgstr ""
 msgid "Not Connected"
 msgstr ""
 
-#: computes/templates/computes.html:46 computes/templates/computes.html:92
-#: computes/templates/computes.html:135 computes/templates/computes.html:183
-#: computes/templates/computes.html:213
+#: computes/templates/computes.html:46 computes/templates/computes.html:91
+#: computes/templates/computes.html:134 computes/templates/computes.html:182
+#: computes/templates/computes.html:212
 #: computes/templates/create_comp_block.html:52
 #: computes/templates/create_comp_block.html:54
 #: computes/templates/create_comp_block.html:91
@@ -599,8 +599,8 @@ msgstr ""
 msgid "Edit connection"
 msgstr ""
 
-#: computes/templates/computes.html:67 computes/templates/computes.html:115
-#: computes/templates/computes.html:158 computes/templates/computes.html:206
+#: computes/templates/computes.html:66 computes/templates/computes.html:114
+#: computes/templates/computes.html:157 computes/templates/computes.html:205
 #: computes/templates/create_comp_block.html:28
 #: computes/templates/create_comp_block.html:73
 #: computes/templates/create_comp_block.html:111
@@ -608,22 +608,22 @@ msgstr ""
 msgid "Label"
 msgstr ""
 
-#: computes/templates/computes.html:74 computes/templates/computes.html:122
-#: computes/templates/computes.html:165
+#: computes/templates/computes.html:73 computes/templates/computes.html:121
+#: computes/templates/computes.html:164
 #: computes/templates/create_comp_block.html:34
 #: computes/templates/create_comp_block.html:79
 #: computes/templates/create_comp_block.html:117
 msgid "FQDN / IP"
 msgstr ""
 
-#: computes/templates/computes.html:113
+#: computes/templates/computes.html:112
 msgid ""
 "Need create ssh <a href='https://github.com/retspen/webvirtmgr/wiki/Setup-"
 "SSH-Authorization'>authorization key</a>. If you have another SSH port on "
 "your server, you can add IP:PORT like '192.168.1.1:2222'."
 msgstr ""
 
-#: computes/templates/computes.html:242
+#: computes/templates/computes.html:241
 msgid "Hypervisor doesn't have any Computes"
 msgstr ""
 
@@ -769,7 +769,7 @@ msgstr ""
 #: computes/templates/overview.html:82 instances/templates/allinstances.html:59
 #: instances/templates/allinstances_index_grouped.html:10
 #: instances/templates/allinstances_index_nongrouped.html:9
-#: instances/templates/instance.html:395 instances/templates/instances.html:73
+#: instances/templates/instance.html:395 instances/templates/instances.html:74
 msgid "Memory"
 msgstr ""
 
@@ -886,28 +886,28 @@ msgstr ""
 
 #: create/templates/create_flav_block.html:26
 #: create/templates/create_instance_w2.html:82
-#: create/templates/create_instance_w2.html:317
-#: create/templates/create_instance_w2.html:530
+#: create/templates/create_instance_w2.html:327
+#: create/templates/create_instance_w2.html:540
 #: instances/templates/allinstances.html:58
 #: instances/templates/allinstances_index_grouped.html:9
 #: instances/templates/allinstances_index_nongrouped.html:8
 #: instances/templates/instance.html:66 instances/templates/instance.html:68
-#: instances/templates/instances.html:72
+#: instances/templates/instances.html:73
 msgid "VCPU"
 msgstr ""
 
 #: create/templates/create_flav_block.html:33
 #: create/templates/create_instance_w2.html:83
-#: create/templates/create_instance_w2.html:346
-#: create/templates/create_instance_w2.html:557
+#: create/templates/create_instance_w2.html:356
+#: create/templates/create_instance_w2.html:567
 #: instances/templates/instance.html:71
 msgid "RAM"
 msgstr ""
 
 #: create/templates/create_flav_block.html:38
 #: create/templates/create_instance_w2.html:94
-#: create/templates/create_instance_w2.html:350
-#: create/templates/create_instance_w2.html:561
+#: create/templates/create_instance_w2.html:360
+#: create/templates/create_instance_w2.html:571
 #: instances/templates/allinstances.html:78
 #: instances/templates/instance.html:71 instances/templates/instance.html:476
 #: instances/templates/instance.html:489
@@ -916,7 +916,7 @@ msgstr ""
 
 #: create/templates/create_flav_block.html:41
 #: create/templates/create_instance_w2.html:84
-#: create/templates/create_instance_w2.html:361
+#: create/templates/create_instance_w2.html:371
 msgid "HDD"
 msgstr ""
 
@@ -928,7 +928,11 @@ msgid "GB"
 msgstr ""
 
 #: create/templates/create_instance_w1.html:4
-msgid "Create new instance - Select Type"
+msgid "Create new instanc"
+msgstr ""
+
+#: create/templates/create_instance_w1.html:4
+msgid "Select Type"
 msgstr ""
 
 #: create/templates/create_instance_w1.html:10
@@ -979,25 +983,25 @@ msgid "Create Virtual Machine"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:119
-#: create/templates/create_instance_w2.html:306
-#: create/templates/create_instance_w2.html:519
+#: create/templates/create_instance_w2.html:316
+#: create/templates/create_instance_w2.html:529
 msgid "Firmware"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:131
-#: create/templates/create_instance_w2.html:324
-#: create/templates/create_instance_w2.html:536
+#: create/templates/create_instance_w2.html:334
+#: create/templates/create_instance_w2.html:546
 msgid "VCPU Config"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:134
-#: create/templates/create_instance_w2.html:327
-#: create/templates/create_instance_w2.html:539
+#: create/templates/create_instance_w2.html:337
+#: create/templates/create_instance_w2.html:549
 msgid "no-mode"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:153
-#: create/templates/create_instance_w2.html:585
+#: create/templates/create_instance_w2.html:595
 #: instances/templates/add_instance_volume.html:30
 #: instances/templates/add_instance_volume.html:100
 #: instances/templates/instance.html:855 storages/templates/storage.html:4
@@ -1006,14 +1010,14 @@ msgid "Storage"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:162
-#: create/templates/create_instance_w2.html:192
-#: create/templates/create_instance_w2.html:371
-#: create/templates/create_instance_w2.html:426
-#: create/templates/create_instance_w2.html:574
-#: create/templates/create_instance_w2.html:593
-#: create/templates/create_instance_w2.html:639
+#: create/templates/create_instance_w2.html:190
+#: create/templates/create_instance_w2.html:381
+#: create/templates/create_instance_w2.html:436
+#: create/templates/create_instance_w2.html:584
+#: create/templates/create_instance_w2.html:603
+#: create/templates/create_instance_w2.html:649
 #: instances/templates/add_instance_network_block.html:40
-#: instances/templates/add_instance_volume.html:118
+#: instances/templates/add_instance_volume.html:117
 #: instances/templates/create_inst_block.html:25
 #: instances/templates/instance.html:355 instances/templates/instance.html:805
 #: instances/templates/instance.html:999 instances/templates/instance.html:1674
@@ -1026,13 +1030,8 @@ msgid "None"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:168
-#: create/templates/create_instance_w2.html:625
-msgid "HDD cache mode"
-msgstr ""
-
-#: create/templates/create_instance_w2.html:179
-#: create/templates/create_instance_w2.html:382
-#: create/templates/create_instance_w2.html:599
+#: create/templates/create_instance_w2.html:392
+#: create/templates/create_instance_w2.html:609
 #: instances/templates/add_instance_network_block.html:24
 #: instances/templates/instance.html:650 instances/templates/instance.html:986
 #: networks/templates/network.html:4 networks/templates/network.html:9
@@ -1040,15 +1039,28 @@ msgstr ""
 msgid "Network"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:189
-#: create/templates/create_instance_w2.html:423
-#: create/templates/create_instance_w2.html:636
+#: create/templates/create_instance_w2.html:178
+#: create/templates/create_instance_w2.html:406
+#: create/templates/create_instance_w2.html:619
+#: instances/templates/edit_instance_volume.html:25
+msgid "Advanced"
+msgstr ""
+
+#: create/templates/create_instance_w2.html:187
+#: create/templates/create_instance_w2.html:433
+#: create/templates/create_instance_w2.html:646
 #: instances/templates/add_instance_network_block.html:37
 #: instances/templates/instance.html:995 nwfilters/templates/nwfilter.html:9
 msgid "NWFilter"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:200
+#: create/templates/create_instance_w2.html:198
+#: create/templates/create_instance_w2.html:635
+msgid "HDD cache mode"
+msgstr ""
+
+#: create/templates/create_instance_w2.html:209
+#: instances/templates/add_instance_network_block.html:18
 #: instances/templates/instance.html:951 instances/templates/instance.html:974
 #: instances/templates/instance.html:1073
 #: interfaces/templates/interface.html:46
@@ -1059,87 +1071,78 @@ msgstr ""
 msgid "MAC"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:207
-#: create/templates/create_instance_w2.html:435
-#: create/templates/create_instance_w2.html:648
+#: create/templates/create_instance_w2.html:216
+#: create/templates/create_instance_w2.html:445
+#: create/templates/create_instance_w2.html:658
 msgid "Graphics"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:218
-#: create/templates/create_instance_w2.html:446
-#: create/templates/create_instance_w2.html:659
+#: create/templates/create_instance_w2.html:227
+#: create/templates/create_instance_w2.html:456
+#: create/templates/create_instance_w2.html:669
 msgid "Video"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:232
-#: create/templates/create_instance_w2.html:460
-#: create/templates/create_instance_w2.html:673
+#: create/templates/create_instance_w2.html:241
+#: create/templates/create_instance_w2.html:470
+#: create/templates/create_instance_w2.html:683
 msgid "Console Access"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:242
-#: create/templates/create_instance_w2.html:244
-#: create/templates/create_instance_w2.html:470
-#: create/templates/create_instance_w2.html:472
-#: create/templates/create_instance_w2.html:683
-#: create/templates/create_instance_w2.html:685
+#: create/templates/create_instance_w2.html:251
+#: create/templates/create_instance_w2.html:253
+#: create/templates/create_instance_w2.html:480
+#: create/templates/create_instance_w2.html:482
+#: create/templates/create_instance_w2.html:693
+#: create/templates/create_instance_w2.html:695
 msgid "Console Password"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:248
-#: create/templates/create_instance_w2.html:476
-#: create/templates/create_instance_w2.html:689
+#: create/templates/create_instance_w2.html:257
+#: create/templates/create_instance_w2.html:486
+#: create/templates/create_instance_w2.html:699
 msgid "Guest Agent"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:255
-#: create/templates/create_instance_w2.html:483
-#: create/templates/create_instance_w2.html:696
+#: create/templates/create_instance_w2.html:264
+#: create/templates/create_instance_w2.html:493
+#: create/templates/create_instance_w2.html:706
 msgid "VirtIO"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:353
+#: create/templates/create_instance_w2.html:363
 msgid "Added Disks"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:366
-msgid "Select pool..."
+#: create/templates/create_instance_w2.html:376
+#: create/templates/create_instance_w2.html:579
+msgid "Select pool"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:396
-#: create/templates/create_instance_w2.html:609
-#: instances/templates/edit_instance_volume.html:25
-msgid "Advanced"
-msgstr ""
-
-#: create/templates/create_instance_w2.html:405
-#: create/templates/create_instance_w2.html:618
+#: create/templates/create_instance_w2.html:415
+#: create/templates/create_instance_w2.html:628
 msgid "Disk Metadata"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:407
+#: create/templates/create_instance_w2.html:417
 msgid "Metadata Preallocation"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:409
-#: create/templates/create_instance_w2.html:622
+#: create/templates/create_instance_w2.html:419
+#: create/templates/create_instance_w2.html:632
 #: venv/lib/python3.6/site-packages/django/db/models/fields/files.py:360
 msgid "Image"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:412
+#: create/templates/create_instance_w2.html:422
 msgid "HDD Cache Mode"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:564
+#: create/templates/create_instance_w2.html:574
 msgid "Template Disk"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:569
-msgid "Select pool"
-msgstr ""
-
-#: create/templates/create_instance_w2.html:620
+#: create/templates/create_instance_w2.html:630
 msgid "Metadata preallocation"
 msgstr ""
 
@@ -1183,17 +1186,13 @@ msgstr ""
 msgid "Add Instance Network"
 msgstr ""
 
-#: instances/templates/add_instance_network_block.html:18
-msgid "Mac"
-msgstr ""
-
 #: instances/templates/add_instance_owner_block.html:12
 msgid "Add Instance Owner"
 msgstr ""
 
 #: instances/templates/add_instance_volume.html:3
 #: instances/templates/add_instance_volume.html:90
-#: instances/templates/add_instance_volume.html:146
+#: instances/templates/add_instance_volume.html:145
 msgid "Add Volume"
 msgstr ""
 
@@ -1229,14 +1228,14 @@ msgid "Size"
 msgstr ""
 
 #: instances/templates/add_instance_volume.html:63
-#: instances/templates/add_instance_volume.html:124
+#: instances/templates/add_instance_volume.html:123
 #: instances/templates/edit_instance_volume.html:53
 #: instances/templates/instance.html:792
 msgid "Bus"
 msgstr ""
 
 #: instances/templates/add_instance_volume.html:73
-#: instances/templates/add_instance_volume.html:134
+#: instances/templates/add_instance_volume.html:133
 msgid "Cache"
 msgstr ""
 
@@ -1248,10 +1247,10 @@ msgid "Metadata"
 msgstr ""
 
 #: instances/templates/add_instance_volume.html:103
-msgid "Select Pool..."
+msgid "Select Pool"
 msgstr ""
 
-#: instances/templates/add_instance_volume.html:115
+#: instances/templates/add_instance_volume.html:114
 msgid "Volume"
 msgstr ""
 
@@ -1261,9 +1260,10 @@ msgid "You don't have any Instance"
 msgstr ""
 
 #: instances/templates/allinstances.html:60
+#: instances/templates/allinstances_index_grouped.html:11
 #: instances/templates/allinstances_index_nongrouped.html:10
 #: instances/templates/instance.html:936 instances/templates/instance.html:1077
-#: instances/templates/instances.html:74 networks/templates/network.html:178
+#: instances/templates/instances.html:75 networks/templates/network.html:178
 #: networks/templates/network.html:287 networks/templates/network.html:335
 msgid "Actions"
 msgstr ""
@@ -1271,7 +1271,7 @@ msgstr ""
 #: instances/templates/allinstances.html:71
 #: instances/templates/allinstances_index_grouped.html:57
 #: instances/templates/allinstances_index_nongrouped.html:21
-#: instances/templates/instance.html:40 instances/templates/instances.html:85
+#: instances/templates/instance.html:40 instances/templates/instances.html:86
 msgid "Off"
 msgstr ""
 
@@ -1283,7 +1283,7 @@ msgstr ""
 #: instances/templates/instance_actions.html:15
 #: instances/templates/instance_actions.html:32
 #: instances/templates/instance_actions.html:49
-#: instances/templates/instances.html:86 instances/views.py:699
+#: instances/templates/instances.html:87 instances/views.py:699
 #: instances/views.py:1233
 msgid "Suspend"
 msgstr ""
@@ -1291,12 +1291,12 @@ msgstr ""
 #: instances/templates/allinstances_index_grouped.html:6
 #: instances/templates/allinstances_index_nongrouped.html:5
 #: instances/templates/instance.html:1463
-#: instances/templates/instance.html:1486 instances/templates/instances.html:69
+#: instances/templates/instance.html:1486 instances/templates/instances.html:70
 msgid "Description"
 msgstr ""
 
 #: instances/templates/allinstances_index_grouped.html:11
-msgid "Actions & Mem Usage"
+msgid "Mem Usage"
 msgstr ""
 
 #: instances/templates/allinstances_index_grouped.html:27
@@ -1505,6 +1505,7 @@ msgid "Template instance cannot be started."
 msgstr ""
 
 #: instances/templates/instance.html:279 instances/templates/instance.html:311
+#: instances/templates/instance.html:316 instances/templates/instance.html:317
 #: instances/templates/instance.html:321 instances/templates/instance.html:643
 #: instances/templates/instance_actions.html:58
 msgid "Console"
@@ -1533,11 +1534,11 @@ msgid "Console port"
 msgstr ""
 
 #: instances/templates/instance.html:316
-msgid "Console - Lite"
+msgid "Lite"
 msgstr ""
 
 #: instances/templates/instance.html:317
-msgid "Console - Full"
+msgid "Full"
 msgstr ""
 
 #: instances/templates/instance.html:327
@@ -2168,7 +2169,7 @@ msgstr ""
 msgid "VNC Console"
 msgstr ""
 
-#: instances/templates/instances.html:60
+#: instances/templates/instances.html:61
 msgid "Hypervisor doesn't have any Instances"
 msgstr ""
 
@@ -2364,7 +2365,8 @@ msgid "Set VNC listen address"
 msgstr ""
 
 #: instances/views.py:837
-msgid "Set Quest Agent {}"
+#, python-brace-format
+msgid "Set Quest Agent {status}"
 msgstr ""
 
 #: instances/views.py:844
@@ -2388,7 +2390,24 @@ msgid "Delete network"
 msgstr ""
 
 #: instances/views.py:909
-msgid "Set Link State: {}"
+#, python-brace-format
+msgid "Set Link State: {state}"
+msgstr ""
+
+#: instances/views.py:925
+msgid "{qos_dir.capitalize()} QoS is set"
+msgstr ""
+
+#: instances/views.py:928 networks/views.py:206
+msgid "{qos_dir.capitalize()} QoS is set. Network XML is changed."
+msgstr ""
+
+#: instances/views.py:929 networks/views.py:207
+msgid "Stop and start network to activate new config"
+msgstr ""
+
+#: instances/views.py:940 networks/views.py:221
+msgid "{qos_dir.capitalize()} QoS is deleted"
 msgstr ""
 
 #: instances/views.py:956
@@ -2396,13 +2415,13 @@ msgid "Owner already added"
 msgstr ""
 
 #: instances/views.py:961
-#, python-format
-msgid "Added owner %d"
+#, python-brace-format
+msgid "Added owner {user_id}"
 msgstr ""
 
 #: instances/views.py:969
-#, python-format
-msgid "Deleted owner %d"
+#, python-brace-format
+msgid "Deleted owner {userinstance_id}"
 msgstr ""
 
 #: instances/views.py:995
@@ -2819,15 +2838,15 @@ msgid "Unknown Network Family"
 msgstr ""
 
 #: networks/views.py:165
-msgid "{} Fixed Address Operation Completed."
+msgid "{family.upper()} Fixed Address Operation Completed."
 msgstr ""
 
 #: networks/views.py:175
-msgid "{} Fixed Address is Deleted."
+msgid "{family.upper()} Fixed Address is Deleted."
 msgstr ""
 
 #: networks/views.py:183
-msgid "{} DHCP Range is Changed."
+msgid "{family.upper()} DHCP Range is Changed."
 msgstr ""
 
 #: networks/views.py:192
@@ -2839,28 +2858,16 @@ msgstr ""
 msgid "Network XML is changed."
 msgstr ""
 
-#: networks/views.py:206
-msgid "{} QoS is set. Network XML is changed."
-msgstr ""
-
-#: networks/views.py:207
-msgid "Stop and start network to activate new config"
-msgstr ""
-
 #: networks/views.py:209
 msgid "{} QoS is set"
 msgstr ""
 
 #: networks/views.py:218
-msgid "{} QoS is deleted. Network XML is changed. "
+msgid "{qos_dir.capitalize()} QoS is deleted. Network XML is changed. "
 msgstr ""
 
 #: networks/views.py:219
 msgid "Stop and start network to activate new config."
-msgstr ""
-
-#: networks/views.py:221
-msgid "{} QoS is deleted"
 msgstr ""
 
 #: nwfilters/templates/add_nwf_rule.html:12
@@ -2938,13 +2945,13 @@ msgid "Creating NWFilter: %s"
 msgstr ""
 
 #: nwfilters/views.py:64
-#, python-format
-msgid "Deleting NWFilter: %s"
+#, python-brace-format
+msgid "Deleting NWFilter: {name}"
 msgstr ""
 
 #: nwfilters/views.py:76
-#, python-format
-msgid "NWFilter is in use by %s. Cannot be deleted."
+#, python-brace-format
+msgid "NWFilter is in use by {inst}. Cannot be deleted."
 msgstr ""
 
 #: nwfilters/views.py:93
@@ -3034,7 +3041,7 @@ msgstr ""
 msgid "The image name must not exceed 120 characters"
 msgstr ""
 
-#: storages/templates/create_stg_block.html:13
+#: storages/templates/create_stg_block.html:12
 msgid "Create Storage Pool"
 msgstr ""
 
@@ -3099,7 +3106,7 @@ msgstr ""
 msgid "Local Path"
 msgstr ""
 
-#: storages/templates/create_stg_vol_block.html:15
+#: storages/templates/create_stg_vol_block.html:14
 msgid "Upload ISO Image"
 msgstr ""
 
