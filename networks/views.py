@@ -162,7 +162,7 @@ def network(request, compute_id, pool):
 
             try:
                 ret_val = conn.modify_fixed_address(name, address, mac_duid, family)
-                messages.success(request, _("{} Fixed Address Operation Completed.").format(family.upper()))
+                messages.success(request, _(f"{family.upper()} Fixed Address Operation Completed."))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err)
@@ -172,7 +172,7 @@ def network(request, compute_id, pool):
             ip = request.POST.get('address', '')
             family = request.POST.get('family', 'ipv4')
             conn.delete_fixed_address(ip, family)
-            messages.success(request, _("{} Fixed Address is Deleted.").format(family.upper()))
+            messages.success(request, _(f"{family.upper()} Fixed Address is Deleted."))
             return HttpResponseRedirect(request.get_full_path())
         if 'modify_dhcp_range' in request.POST:
             range_start = request.POST.get('range_start', '')
@@ -180,7 +180,7 @@ def network(request, compute_id, pool):
             family = request.POST.get('family', 'ipv4')
             try:
                 conn.modify_dhcp_range(range_start, range_end, family)
-                messages.success(request, _("{} DHCP Range is Changed.").format(family.upper()))
+                messages.success(request, _(f"{family.upper()} DHCP Range is Changed."))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err)
@@ -203,7 +203,7 @@ def network(request, compute_id, pool):
             try:
                 conn.set_qos(qos_dir, average, peak, burst)
                 if conn.is_active():
-                    messages.success(request, _("{} QoS is set. Network XML is changed.").format(qos_dir.capitalize()) +
+                    messages.success(request, _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed.") +
                                      _("Stop and start network to activate new config"))
                 else:
                     messages.success(request, _("{} QoS is set").format(qos_dir.capitalize()))
@@ -215,10 +215,10 @@ def network(request, compute_id, pool):
             conn.unset_qos(qos_dir)
 
             if conn.is_active():
-                messages.success(request, _("{} QoS is deleted. Network XML is changed. ").format(qos_dir.capitalize()) +
+                messages.success(request, _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. ") +
                                  _("Stop and start network to activate new config."))
             else:
-                messages.success(request, _("{} QoS is deleted").format(qos_dir.capitalize()))
+                messages.success(request, _(f"{qos_dir.capitalize()} QoS is deleted"))
             return HttpResponseRedirect(request.get_full_path())
     conn.close()
 

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
-{% block title %}{% trans "Create new instance - Select Type" %}{% endblock %}
+{% block title %}{% trans "Create new instanc" %} - {% trans "Select Type" %}{% endblock %}
 
 {% block content %}
     <!-- Page Heading -->
@@ -84,7 +84,7 @@
                     </div>
                     <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromXML">
                         <div class="well">
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
                                      <input type="hidden" name="dom_xml"/>
                                     <textarea id="editor"></textarea>
