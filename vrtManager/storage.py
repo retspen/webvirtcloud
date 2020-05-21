@@ -25,23 +25,21 @@ class wvmStorages(wvmConnect):
         self.wvm.storagePoolDefineXML(xml, flag)
 
     def create_storage(self, stg_type, name, source, target):
-        xml = """
-                <pool type='%s'>
-                <name>%s</name>""" % (stg_type, name)
+        xml = f"""<pool type='{stg_type}'>
+                 <name>{name}</name>"""
         if stg_type == 'logical':
-            xml += """
-                  <source>
-                    <device path='%s'/>
-                    <name>%s</name>
-                    <format type='lvm2'/>
-                  </source>""" % (source, name)
+            xml += f"""<source>
+                            <device path='{source}'/>
+                            <name>{name}</name>
+                            <format type='lvm2'/>
+                        </source>"""
         if stg_type == 'logical':
             target = '/dev/' + name
-        xml += """
+        xml += f"""
                   <target>
-                       <path>%s</path>
+                       <path>{target}</path>
                   </target>
-                </pool>""" % target
+                </pool>"""
         self.define_storage(xml, 0)
         stg = self.get_storage(name)
         if stg_type == 'logical':
@@ -52,35 +50,37 @@ class wvmStorages(wvmConnect):
         return stg
 
     def create_storage_ceph(self, stg_type, name, ceph_pool, ceph_host, ceph_user, secret):
-        xml = """
-                <pool type='%s'>
-                <name>%s</name>
+        xml = f"""
+                <pool type='{stg_type}'>
+                <name>{name}</name>
                 <source>
-                    <name>%s</name>
-                    <host name='%s' port='6789'/>
-                    <auth username='%s' type='ceph'>
-                        <secret uuid='%s'/>
+                    <name>{ceph_pool}</name>
+                    <host name='{ceph_host}' port='6789'/>
+                    <auth username='{ceph_user}' type='ceph'>
+                        <secret uuid='{secret}'/>
                     </auth>
                 </source>
-                </pool>""" % (stg_type, name, ceph_pool, ceph_host, ceph_user, secret)
+                </pool>
+                """
         self.define_storage(xml, 0)
         stg = self.get_storage(name)
         stg.create(0)
         stg.setAutostart(1)
 
     def create_storage_netfs(self, stg_type, name, netfs_host, source, source_format, target):
-        xml = """
-                <pool type='%s'>
-                <name>%s</name>
+        xml = f"""
+                <pool type='{stg_type}'>
+                <name>{name}</name>
                 <source>
-                    <host name='%s'/>
-                    <dir path='%s'/>
-                    <format type='%s'/>
+                    <host name='{netfs_host}'/>
+                    <dir path='{source}'/>
+                    <format type='{source_format}'/>
                 </source>
                 <target>
-                    <path>%s</path>
+                    <path>{target}</path>
                 </target>
-                </pool>""" % (stg_type, name, netfs_host, source, source_format, target)
+                </pool>
+                """
         self.define_storage(xml, 0)
         stg = self.get_storage(name)
         stg.create(0)
@@ -222,27 +222,26 @@ class wvmStorage(wvmConnect):
             else:
                 name += '.img'
             alloc = 0
-        xml = """
+        xml = f"""
             <volume>
-                <name>%s</name>
-                <capacity>%s</capacity>
-                <allocation>%s</allocation>
+                <name>{name}</name>
+                <capacity>{size}</capacity>
+                <allocation>{alloc}</allocation>
                 <target>
-                    <format type='%s'/>
+                    <format type='{vol_fmt}'/>
                      <permissions>
-                        <owner>%s</owner>
-                        <group>%s</group>
+                        <owner>{owner['uid']}</owner>
+                        <group>{owner['guid']}</group>
                         <mode>0644</mode>
                         <label>virt_image_t</label>
-                    </permissions>""" % (name, size, alloc, vol_fmt, owner['uid'], owner['guid'])
+                    </permissions>"""
         if vol_fmt == 'qcow2':
             xml += """
                       <compat>1.1</compat>
                       <features>
                          <lazy_refcounts/>
                       </features>"""
-        xml += """
-                  </target>
+        xml += """</target>
                 </volume>"""
         self._createXML(xml, metadata)
         return name
@@ -260,19 +259,19 @@ class wvmStorage(wvmConnect):
                 suffix = '.' + file_suffix
                 target_file += suffix if len(suffix) > 1 else ''
 
-        xml = """
+        xml = f"""
             <volume>
-                <name>%s</name>
+                <name>{target_file}</name>
                 <capacity>0</capacity>
                 <allocation>0</allocation>
                 <target>
-                    <format type='%s'/>
+                    <format type='{vol_fmt}'/>
                     <permissions>
-                        <owner>%s</owner>
-                        <group>%s</group>
-                        <mode>%s</mode>
+                        <owner>{owner['uid']}</owner>
+                        <group>{owner['guid']}</group>
+                        <mode>{mode}</mode>
                         <label>virt_image_t</label>
-                    </permissions>""" % (target_file, vol_fmt, owner['uid'], owner['guid'], mode)
+                    </permissions>"""
         if vol_fmt == 'qcow2':
             xml += """
                     <compat>1.1</compat>
