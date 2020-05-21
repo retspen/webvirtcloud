@@ -114,7 +114,7 @@
                                                                         <input type="hidden" name="hdd_size" value="{{ flavor.disk }}">
                                                                     </div>
                                                                 </div>
-                                                                 {% if firmwares %}
+                                                                {% if firmwares %}
                                                                 <div class="form-group row">
                                                                     <label class="col-sm-3 col-form-label">{% trans "Firmware" %}</label>
                                                                     <div class="col-sm-6">
@@ -286,7 +286,7 @@
                                             </a>
                                         </td>
                                         <td style="width:5px;">
-                                            <form class="form-horizontal" action="" method="post" role="form">{% csrf_token %}
+                                            <form action="" method="post" role="form">{% csrf_token %}
                                                 <input type="hidden" name="flavor" value="{{ flavor.id }}">
                                                 <button type="submit" class="btn btn-sm btn-secondary" name="delete_flavor" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                     <span class="fa fa-trash"></span>
@@ -373,7 +373,7 @@
                         <div class="col-sm-3">
                             <select id="storage-control" name="storage-control" class="form-control" onchange="get_cust_vols({{ compute_id }}, value);">
                                 {% if storages %}
-                                    <option value disabled selected>{% trans "Select pool..." %}</option>
+                                    <option value disabled selected>{% trans "Select pool" %}...</option>
                                     {% for storage in storages %}
                                         <option value="{{ storage }}" >{{ storage }}</option>
                                     {% endfor %}

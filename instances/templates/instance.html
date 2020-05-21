@@ -287,8 +287,8 @@
                                                 <span class="sr-only">{%  trans 'Toggle Dropdown' %}</span>
                                             </button>
                                             <div class="dropdown-menu">
-                                                <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ console_port }}" onclick="open_console('lite')">{% trans "Console - Lite" %}</a>
-                                                <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ console_port }}" onclick="open_console('full')">{% trans "Console - Full" %}</a>
+                                                <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ console_port }}" onclick="open_console('lite')">{% trans "Console" %} - {% trans "Lite" %}</a>
+                                                <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ console_port }}" onclick="open_console('full')">{% trans "Console" %} - {% trans "Full" %}</a>
                                             </div>
                                         </div>
                                     {% else %}
@@ -302,7 +302,7 @@
                                     <form class="form-inline" method="post" role="form">{% csrf_token %}
                                         <div class="form-group row">
                                             <div class="col-sm-12">
-                                                <input type="text" class="form-control input-lg" name="passwd" placeholder="{% trans "Enter Password" %}" maxlength="24">
+                                                <input type="text" class="form-control-lg" name="passwd" placeholder="{% trans "Enter Password" %}" maxlength="24">
                                             </div>
                                         </div>
                                         {% ifequal status 5 %}
@@ -1179,7 +1179,7 @@
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
                             <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
                                     <textarea id="editor">{{ inst_xml }}</textarea>
                                 </div>

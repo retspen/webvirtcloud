@@ -2,18 +2,18 @@
 <table class="table table-hover sortable-theme-bootstrap" data-sortable>
     <thead>
     <tr style="border: 2px solid transparent; ">
-        <th><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
+        <th data-sortable="false"><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
         <th>{% trans "Name" %}<br>{% trans "Description" %}</th>
         <th class="d-none d-sm-table-cell">{% trans "User"%}</th>
         <th>{% trans "Status" %}</th>
         <th class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
         <th class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
-        <th style="width:200px;" data-sortable="false">{% trans "Actions & Mem Usage" %}</th>
+        <th style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
     </tr>
     </thead>
     <tbody class="searchable">
     {% for host, insts  in all_host_vms.items %}
-        <tr class="active font-weight-bold" style="border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
+        <tr class="font-weight-bold active" style="border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
             <td>
                 <span id="collapse_host_instances_{{ host.1 }}" class="fa fa-chevron-up" onclick="hide_host_instances('{{ host.1 }}');"></span>
             </td>
@@ -23,9 +23,9 @@
             </td>
             <td class="d-none d-sm-table-cell"></td>
             <td>
-                {% ifequal host.2 1 %}<span class="label label-success">{% trans "Active" %}</span>{% endifequal %}
-                {% ifequal host.2 2 %}<span class="label label-danger">{% trans "Not Active" %}</span>{% endifequal %}
-                {% ifequal host.2 3 %}<span class="label label-danger">{% trans "Connection Failed" %}</span>{% endifequal %}
+                {% ifequal host.2 1 %}<span class="text-success">{% trans "Active" %}</span>{% endifequal %}
+                {% ifequal host.2 2 %}<span class="text-warning">{% trans "Not Active" %}</span>{% endifequal %}
+                {% ifequal host.2 3 %}<span class="text-danger">{% trans "Connection Failed" %}</span>{% endifequal %}
             </td>
             <td class="d-none d-sm-table-cell text-center">{{ host.3 }}</td>
             <td class="d-none d-sm-table-cell text-right">{{ host.4|filesizeformat }}</td>
@@ -74,14 +74,14 @@ function hide_all_host_instances() {
     all_host_rows = rows.filter('[host]');
     all_host_rows.toggle();
     $('span[id^=collapse_host_instances_]').toggleClass("fa-chevron-down").toggleClass("fa-chevron-up");
-    $('span[id^=inst_count_badge_]').toggleClass("hidden");
+    $('span[id^=inst_count_badge_]').toggleClass("d-none");
 }
 function hide_host_instances(host) {
     var rows = $('table tr');
     host_rows = rows.filter("[host='"+host+"']");
     host_rows.toggle();
     $("span[id='collapse_host_instances_"+host+"']").toggleClass("fa-chevron-down").toggleClass("fa-chevron-up");
-    $("span[id='inst_count_badge_"+host+"']").toggleClass("hidden");
+    $("span[id='inst_count_badge_"+host+"']").toggleClass("d-none");
 }
 </script>
 {% endblock %}

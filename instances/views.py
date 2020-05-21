@@ -829,7 +829,7 @@ def instance(request, compute_id, vname):
                     if status == 'False':
                         conn.remove_guest_agent()
 
-                    msg = _("Set Quest Agent {}".format(status))
+                    msg = _(f"Set Quest Agent {status}")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#options')
 
@@ -901,7 +901,7 @@ def instance(request, compute_id, vname):
                     state = request.POST.get('set_link_state')
                     state = 'down' if state == 'up' else 'up'
                     conn.set_link_state(mac_address, state)
-                    msg = _("Set Link State: {}".format(state))
+                    msg = _(f"Set Link State: {state}")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
@@ -917,11 +917,11 @@ def instance(request, compute_id, vname):
                     try:
                         conn.set_qos(mac, qos_dir, average, peak, burst)
                         if conn.get_status() == 5:
-                            messages.success(request, "{} QoS is set".format(qos_dir.capitalize()))
+                            messages.success(request, _(f"{qos_dir.capitalize()} QoS is set"))
                         else:
                             messages.success(request,
-                                             "{} QoS is set. Network XML is changed.".format(qos_dir.capitalize()) +
-                                             "Stop and start network to activate new config")
+                                             _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed.") +
+                                             _("Stop and start network to activate new config"))
 
                     except libvirtError as le:
                         messages.error(request, le)
@@ -932,10 +932,10 @@ def instance(request, compute_id, vname):
                     conn.unset_qos(mac, qos_dir)
 
                     if conn.get_status() == 5:
-                        messages.success(request, "{} QoS is deleted".format(qos_dir.capitalize()))
+                        messages.success(request, _(f"{qos_dir.capitalize()} QoS is deleted"))
                     else:
                         messages.success(request,
-                                         "{} QoS is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
+                                         f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. " +
                                          "Stop and start network to activate new config.")
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
@@ -953,7 +953,7 @@ def instance(request, compute_id, vname):
                     else:
                         add_user_inst = UserInstance(instance=instance, user_id=user_id)
                         add_user_inst.save()
-                        msg = _("Added owner %d" % user_id)
+                        msg = _(f"Added owner {user_id}")
                         addlogmsg(request.user.username, instance.name, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#users')
 
@@ -961,7 +961,7 @@ def instance(request, compute_id, vname):
                     userinstance_id = int(request.POST.get('userinstance', ''))
                     userinstance = UserInstance.objects.get(pk=userinstance_id)
                     userinstance.delete()
-                    msg = _("Deleted owner %d" % userinstance_id)
+                    msg = _(f"Deleted owner {userinstance_id}")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#users')
 
