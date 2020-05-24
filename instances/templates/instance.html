@@ -4,7 +4,7 @@
 {% block title %}{% trans "Instance" %} - {{ vname }}{% endblock %}
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
-    {% if bottom_bar %}
+    {% if bottom_bar == 'True' %}
         <nav class="navbar navbar-expand-sm fixed-bottom navbar-light bg-light">
             <div class="container">
                 <a class="navbar-brand" href="#">{% trans 'HOST' %}</a>  

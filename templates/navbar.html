@@ -27,6 +27,11 @@
           {% endif %}
         </ul>
         <ul class="navbar-nav navbar-right">
+          {% if request.user.is_superuser %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'appsettings' %}"><i class="fa fa-wrench"></i></a>
+          </li>
+          {% endif %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" data-toggle="dropdown" role="button" aria-expanded="false">
               <i class="fa fa-fw fa-user"></i> {{ request.user.username }}
