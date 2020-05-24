@@ -15,6 +15,7 @@ from computes.models import Compute
 from instances.models import Instance
 from django.contrib.auth.models import User
 from accounts.models import UserInstance, UserSSHKey
+from appsettings.models import AppSettings
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
@@ -113,7 +114,7 @@ def instance(request, compute_id, vname):
     keymaps = settings.QEMU_KEYMAPS
     console_types = settings.QEMU_CONSOLE_TYPES
     console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
-    bottom_bar = settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR
+    bottom_bar = AppSettings.objects.get(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").value
     try:
         userinstance = UserInstance.objects.get(instance__compute_id=compute_id,
                                                 instance__name=vname,

@@ -112,44 +112,7 @@
                             </div>
                         </div>
                     </form>
-                    {% if request.user.is_superuser %}
-                    <h3 class="page-header">{% trans "Themes" %}</h3>
-                    <form method="post" action="" role="form">{% csrf_token %}
-                        <div class="form-group">
-                            <label class="col-sm-2 col-form-label">{% trans "Themes" %}</label>
-                            <div class="col-sm-4">
-                                <select class="custom-select" name="theme_select" id="theme_select">
-                                {% for theme in themes_list %}
-                                    <option value="{{ theme }}">{{ theme }}</option>
-                                {% endfor %}
-                                </select>
-                                <label>{% trans "Current Theme" %}:</label>
-                                <label id="active_theme"></label>
-                            </div>
-                            <p class="text-muted">{% trans "After change please full refresh page with Ctrl + F5 "%}</p>
-                        </div>
-                        <div class="form-group">
-                            <div class="col-sm-10">
-                                <button type="submit" class="btn btn-primary" name="change_theme" onclick="reloadStylesheets()">{% trans "Change" %}</button>
-                            </div>
-                        </div>
-                    </form>
-                    {% endif %}
                 </div>
             </div>
 {% endblock %}
-{% block script %}
-<script>
-    $(document).ready(function (){
-        $('#active_theme').text(localStorage.getItem('active_theme')); 
-    });
-    function reloadStylesheets() {
-        var selected_theme = $('#theme_select option').filter(':selected').val();
-        var queryString = '?reload=' + selected_theme;
-        $('#wvc_css').each(function () {
-            this.href = this.href.replace(/\?.*|$/, queryString);
-        });
-        localStorage.setItem('active_theme', selected_theme);
-    }
-</script>
-{% endblock %}
+

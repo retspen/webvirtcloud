@@ -14,22 +14,25 @@
             <a class="nav-link" href="{% url 'allinstances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
         </li>
         {% if request.user.is_superuser %}
-          <li class="nav-item {% class_active request '^/computes' %}">
-              <a class="nav-link" href="{% url 'computes' %}"><i class="fa fa-fw fa-server"></i> {% trans "Computes" %}</a>
-          </li>
-          <li class="nav-item dropdown {% app_active request 'admin' %}">
-            <a class="nav-link dropdown-toggle" id="administration" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              {% trans "Administration" %}
-            </a>
-            <ul class="dropdown-menu" aria-labelledby="administration">
-              <a class="dropdown-item {% view_active request 'admin:user_list' %}" href="{% url 'admin:user_list' %}">{% icon 'user-plus' %} {% trans "Users" %}</a>
-              <a class="dropdown-item {% view_active request 'admin:group_list' %}" href="{% url 'admin:group_list' %}">{% icon 'users' %} {% trans "Groups" %}</a>
-              <a class="dropdown-item {% view_active request 'admin:logs' %}" href="{% url 'admin:logs' %}">{% icon 'list-alt' %} {% trans "Logs" %}</a>
-            </ul>
-          </li>
+        <li class="nav-item {% class_active request '^/computes' %}">
+            <a class="nav-link" href="{% url 'computes' %}"><i class="fa fa-fw fa-server"></i> {% trans "Computes" %}</a>
+        </li>
         {% endif %}
       </ul>
-      <ul class="nav navbar-nav navbar-right">
+      <ul class="navbar-nav navbar-right mt-2 mt-md-0">
+        {% if request.user.is_superuser %}
+        <li class="nav-item dropdown {% app_active request 'admin' %}">
+          <a class="nav-link" id="administration" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {% icon 'wrench' %}
+          </a>
+          <div class="dropdown-menu" aria-labelledby="administration">
+            <a class="dropdown-item {% view_active request 'admin:user_list' %}" href="{% url 'admin:user_list' %}">{% icon 'user-plus' %} {% trans "Users" %}</a>
+            <a class="dropdown-item {% view_active request 'admin:group_list' %}" href="{% url 'admin:group_list' %}">{% icon 'users' %} {% trans "Groups" %}</a>
+            <a class="dropdown-item {% view_active request 'admin:logs' %}" href="{% url 'admin:logs' %}">{% icon 'list-alt' %} {% trans "Logs" %}</a>
+            <a class="dropdown-item {% view_active request 'appsettings' %}" href="{% url 'appsettings' %}">{% icon 'cogs' %} {% trans "Settings" %}</i></a>
+          </div>
+        </li>
+        {% endif %}
         <li class="nav-item dropdown {% class_active request '^/accounts' %}">
           <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" data-toggle="dropdown" role="button" aria-expanded="false">
             <i class="fa fa-fw fa-user"></i> {{ request.user.username }}
