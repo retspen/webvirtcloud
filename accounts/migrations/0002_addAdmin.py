@@ -6,8 +6,10 @@ from django.db import migrations
 def add_useradmin(apps, schema_editor):
     from django.utils import timezone
     from django.contrib.auth.models import User
+    from accounts.models import UserAttributes
 
-    User.objects.create_superuser('admin', None, 'admin', last_login=timezone.now())
+    admin = User.objects.create_superuser('admin', None, 'admin', last_login=timezone.now())
+    UserAttributes(user=admin, max_instances=-1, max_cpus=-1, max_memory=-1, max_disk_size=-1).save()
 
 
 class Migration(migrations.Migration):
