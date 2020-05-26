@@ -551,9 +551,9 @@
                                         <div class="table-responsive">
                                             <table class="table">
                                                 <thead>
-                                                    <th>{% trans "Name" %}</th>
-                                                    <th>{% trans "Date" %}</th>
-                                                    <th colspan="2">{% trans "Action" %}</th>
+                                                    <th scope="col">{% trans "Name" %}</th>
+                                                    <th scope="col">{% trans "Date" %}</th>
+                                                    <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
                                                 </thead>
                                                 <tbody>
                                                 {% for snap in snapshots %}
@@ -823,12 +823,12 @@
                                             <table class="table table-hover mt-3">
                                                 <thead>
                                                     <tr>
-                                                        <th>{% trans "Device" %}</th>
-                                                        <th>{% trans "Used" %}</th>
-                                                        <th>{% trans "Capacity" %}</th>
-                                                        <th>{% trans "Storage" %}</th>
-                                                        <th>{% trans "Source" %}</th>
-                                                        <th>{% trans "Action" %}</th>
+                                                        <th scope="col">{% trans "Device" %}</th>
+                                                        <th scope="col">{% trans "Used" %}</th>
+                                                        <th scope="col">{% trans "Capacity" %}</th>
+                                                        <th scope="col">{% trans "Storage" %}</th>
+                                                        <th scope="col">{% trans "Source" %}</th>
+                                                        <th scope="col">{% trans "Action" %}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -904,10 +904,10 @@
                                 <table class="table">
                                     <thead>
                                     <tr>
-                                        <th>{% trans 'Name' %}</th>
-                                        <th class="d-none d-table-cell d-sm-table-cell" colspan="6">{% trans 'Info' %}</th>
-                                        <th class="d-none" colspan="2">{% trans 'Info' %}</th>
-                                        <th colspan="2">{% trans 'Actions' %}</th>
+                                        <th scope="col">{% trans 'Name' %}</th>
+                                        <th scope="col" class="d-none d-table-cell d-sm-table-cell" colspan="6">{% trans 'Info' %}</th>
+                                        <th scope="colgroup" class="d-none" colspan="2">{% trans 'Info' %}</th>
+                                        <th scope="colgroup" colspan="2">{% trans 'Actions' %}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -924,9 +924,9 @@
                                             </td>
                                             <th class="d-none d-table-cell d-sm-table-cell">{% trans 'MAC' %}</th>
                                             <td>{{ network.mac }}</td>
-                                            <th class="d-none d-table-cell d-sm-table-cell">{% trans 'Filter' %}</th>
+                                            <th scope="row" class="d-none d-table-cell d-sm-table-cell">{% trans 'Filter' %}</th>
                                             <td class="d-none d-table-cell">{{ network.filterref|default:"None" }}</td>
-                                            <th class="d-none d-table-cell d-sm-table-cell">{% trans 'Source' %}</th>
+                                            <th scope="row" class="d-none d-table-cell d-sm-table-cell">{% trans 'Source' %}</th>
                                             <td>{{ network.nic }}</td>
                                             <td>
                                             <form method="post" name="edit_network{{ forloop.counter0 }}" role="form">{% csrf_token %}
@@ -1009,15 +1009,15 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <th>{% trans 'IPv4' %}</th>
+                                            <th scope="row">{% trans 'IPv4' %}</th>
                                             <td>
                                                 {% for ipv4 in network.ipv4|default:"unknown" %}{{ ipv4 }}{% endfor %}
                                             </td>
-                                            <th>{% trans 'IPv6' %}</th>
+                                            <th scope="row">{% trans 'IPv6' %}</th>
                                             <td>
                                                 {% for ipv6 in network.ipv6|default:"unknown" %}{{ ipv6 }}{% endfor %}
                                             </td>
-                                            <th>{% trans 'Model' %}</th>
+                                            <th scope="row">{% trans 'Model' %}</th>
                                             <td>{{ network.model }}</td>
                                             <th>{% trans 'QoS' %}</th>
                                             <td class="d-flex justify-content-end">
@@ -1044,11 +1044,11 @@
                                 <table class="table table-hover">
                                     <thead>
                                     <tr>
-                                        <th>{% trans "MAC" %}/{% trans "Direction" %}</th>
-                                        <th>{% trans "Average" %}</th>
-                                        <th>{% trans "Peak" %}</th>
-                                        <th>{% trans "Burst" %}</th>
-                                        <th>{% trans "Actions" %}</th>
+                                        <th scope="col">{% trans "MAC" %}/{% trans "Direction" %}</th>
+                                        <th scope="col">{% trans "Average" %}</th>
+                                        <th scope="col">{% trans "Peak" %}</th>
+                                        <th scope="col">{% trans "Burst" %}</th>
+                                        <th scope="col">{% trans "Actions" %}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -1639,9 +1639,9 @@
                                         <table class="table table-striped sortable-theme-bootstrap" id="logs_table" data-sortable>
                                             <thead>
                                                 <tr>
-                                                    <th>{% trans "Date" %}</th>
-                                                    <th>{% trans "User" %}</th>
-                                                    <th>{% trans "Message" %}</th>
+                                                    <th scope="col">{% trans "Date" %}</th>
+                                                    <th scope="col">{% trans "User" %}</th>
+                                                    <th scope="col">{% trans "Message" %}</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="searchable">

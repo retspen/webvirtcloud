@@ -2,13 +2,13 @@
 <table class="table table-hover sortable-theme-bootstrap" data-sortable>
     <thead>
     <tr style="border: 2px solid transparent; ">
-        <th data-sortable="false"><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
-        <th>{% trans "Name" %}<br>{% trans "Description" %}</th>
-        <th class="d-none d-sm-table-cell">{% trans "User"%}</th>
-        <th>{% trans "Status" %}</th>
-        <th class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
-        <th class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
-        <th style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
+        <th scope="col" data-sortable="false"><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
+        <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
+        <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
+        <th scope="col">{% trans "Status" %}</th>
+        <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
+        <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
+        <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
     </tr>
     </thead>
     <tbody class="searchable">
