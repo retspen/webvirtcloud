@@ -82,7 +82,7 @@
                                                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        <form method="post" action="" role="form">{% csrf_token %}
+                                                        <form method="post" action="" role="form" aria-label="Edit privileges form">{% csrf_token %}
                                                             <input type="hidden" name="user_inst" value="{{ inst.id }}">
                                                             <div class="form-group row">
                                                                 <label class="col-sm-4 col-form-label">{% trans "VNC" %}</label>
@@ -122,7 +122,7 @@
                                         </div> <!-- /.modal -->
                                     </td>
                                     <td style="width:5px;">
-                                        <form action="" method="post" role="form">{% csrf_token %}
+                                        <form action="" method="post" role="form" aria-label="Delete user form">{% csrf_token %}
                                             <input type="hidden" name="user_inst" value="{{ inst.id }}">
                                             <button type="submit" class="btn btn-sm btn-secondary" name="delete" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                 <span class="fa fa-trash" aria-hidden="true"></span>

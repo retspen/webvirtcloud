@@ -57,7 +57,7 @@
         <dd class="col-6">{{ used|filesizeformat }}</dd>
         <dt class="col-6">{% trans "State" %}</dt>
         <dd class="col-6">
-            <form action="" method="post" role="form">{% csrf_token %}
+            <form action="" method="post" role="form" aria-label="Storage start/stop form">{% csrf_token %}
                 {% ifequal state 0 %}
                     <input type="submit" class="btn btn-sm btn-secondary" name="start" value="{% trans "Start" %}">
                     <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}"
@@ -70,7 +70,7 @@
         </dd>
         <dt class="col-6">{% trans "Autostart" %}</dt>
         <dd class="col-6">
-            <form action="" method="post" role="form">{% csrf_token %}
+            <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form">{% csrf_token %}
             {% ifequal autostart 0 %}
                 <input type="submit" class="btn btn-sm btn-secondary" name="set_autostart"
                         value="{% trans "Enable" %}">
@@ -120,7 +120,7 @@
                                         <h5 class="modal-title">{% trans "Clone image" %} <span class="text-danger">{{ volume.name }}</span></h5>
                                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>  
                                     </div>
-                                    <form method="post" role="form">{% csrf_token %}
+                                    <form method="post" role="form" aria-label="Clone image file form">{% csrf_token %}
                                         <div class="modal-body">
                                             <div class="form-group row">
                                                 <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
@@ -171,7 +171,7 @@
                         {% endifnotequal %}
                     </td>  
                     <td>  
-                        <form action="" method="post" role="form">{% csrf_token %}
+                        <form action="" method="post" role="form" aria-label="Delete volume form">{% csrf_token %}
                             <input type="hidden" name="volname" value="{{ volume.name }}">
                             <button type="submit" class="btn btn-sm btn-secondary" name="del_volume" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                 <i class="fa fa-trash"></i>

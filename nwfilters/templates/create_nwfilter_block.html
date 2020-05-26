@@ -12,7 +12,7 @@
                     <h5 class="modal-title">{% trans "Create New NWFilter" %}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>                </div>
                 <div class="modal-body">
-                    <form method="post" role="form">{% csrf_token %}
+                    <form method="post" role="form" aria-label=""Create new NWFilter form"">{% csrf_token %}
                          <div class="form-group row">
                             <div class="col-12" id="xmlheight">
                                 <input type="hidden" name="nwfilter_xml"/>

@@ -69,7 +69,7 @@
         <div class="container">
             <div role="tabpanel">
                 <!-- Nav tabs -->
-                <ul class="nav nav-pills" id="navbtn">
+                <ul class="nav nav-pills" id="navbtn" aria-label="Instance actions">
                     <li class="nav-item">
                         <a href="#power" class="nav-link action-button active" aria-controls="power" role="tab" data-toggle="tab">
                             <i id="action-block" class="fa fa-power-off fa-2x" aria-hidden="true"></i>
@@ -120,7 +120,7 @@
                     <div role="tabpanel" class="tab-pane active" id="power">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
-                            <ul class="nav nav-tabs" role="tablist">
+                            <ul class="nav nav-tabs" role="tablist" aria-label="Instance power actions">
                                 {% ifequal status 1 %}
                                     <li class="nav-item">
                                         <a class="nav-link text-secondary active" href="#poweroff" aria-controls="poweroff" role="tab" data-toggle="tab">
@@ -172,21 +172,21 @@
                     {% ifequal status 1 %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="poweroff">
                             <p>{% trans "This action sends an ACPI shutdown signal to the instance." %}</p>
-                             <form action="" method="post" role="form">{% csrf_token %}
+                             <form action="" method="post" role="form" aria-label0="Power off instance form">{% csrf_token %}
                                 <input type="submit" name="poweroff" class="btn btn-lg btn-success float-right" value="{% trans "Power Off" %}">
                                 <div class="clearfix"></div>
                             </form>
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powercycle">
                             <p>{% trans "This action forcibly powers off and start the instance and may cause data corruption." %}</p>
-                            <form action="" method="post" role="form">{% csrf_token %}
+                            <form action="" method="post" role="form" aria-label="Power cycle instance form">{% csrf_token %}
                                 <input type="submit" name="powercycle" class="btn btn-lg btn-success float-right" value="{% trans "Power Cycle" %}">
                                 <div class="clearfix"></div>
                             </form>
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powerforce">
                             <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
-                            <form action="" method="post" role="form">{% csrf_token %}
+                            <form action="" method="post" role="form" aria-label="Force to shotdown instance form">{% csrf_token %}
                                 <input type="submit" name="powerforce" class="btn btn-lg btn-success float-right" value="{% trans "Force Off" %}">
                                 <div class="clearfix"></div>
                             </form>
@@ -194,7 +194,7 @@
                         {% if request.user.is_superuser %}
                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="suspend">
                                 <p>{% trans "This action suspends the instance." %}</p>
-                                 <form action="" method="post" role="form">{% csrf_token %}
+                                 <form action="" method="post" role="form" aria-label="Suspend instance form">{% csrf_token %}
                                     <input type="submit" name="suspend" class="btn btn-lg btn-success float-right" value="{% trans "Suspend" %}">
                                     <div class="clearfix"></div>
                                 </form>
@@ -205,14 +205,14 @@
                         {% if request.user.is_superuser %}
                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
                                 <p>{% trans "This action restore the instance after suspend." %}</p>
-                                 <form action="" method="post" role="form">{% csrf_token %}
+                                 <form action="" method="post" role="form" aria-label="Resume instance from suspension form">{% csrf_token %}
                                     <input type="submit" name="resume" class="btn btn-lg btn-success float-right" value="{% trans "Resume" %}">
                                     <div class="clearfix"></div>
                                 </form>
                             </div>
                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powerforce">
                                 <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
-                                <form action="" method="post" role="form">{% csrf_token %}
+                                <form action="" method="post" role="form" aria-label="Force to shutdown form">{% csrf_token %}
                                     <input type="submit" name="powerforce" class="btn btn-lg btn-success float-right" value="{% trans "Force Off" %}">
                                     <div class="clearfix"></div>
                                 </form>
@@ -220,7 +220,7 @@
                         {% else %}
                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
                                 <p>{% trans "Administrator blocked your instance." %}</p>
-                                 <form action="" method="post" role="form">{% csrf_token %}
+                                 <form action="" method="post" role="form" aria-label="Resume instance form">{% csrf_token %}
                                     <button class="btn btn-lg btn-success disabled float-right">{% trans "Resume" %}</button>
                                     <div class="clearfix"></div>
                                 </form>
@@ -230,7 +230,7 @@
                     {% ifequal status 5 %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
                             <p>{% trans "Click on Boot button to start this instance." %}</p>
-                            <form action="" method="post" role="form">{% csrf_token %}
+                            <form action="" method="post" role="form" aria-label="Start instance form">{% csrf_token %}
                                 {% if instance.is_template %}
                                     <p>{% trans "Template instance cannot be started." %}</p>
                                     <input type="submit" name="poweron" class="btn btn-lg btn-success float-right disabled" value="{% trans "Power On" %}">
@@ -244,7 +244,7 @@
                 </div>
             </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane" id="access">
+                    <div role="tabpanel" class="tab-pane" id="access" aria-label="Instance access options">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
                             <ul class="nav nav-tabs" role="tablist">
@@ -299,7 +299,7 @@
                                 {% if show_access_root_password %}
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
                                     <p>{% trans "You need shut down your instance and enter a new root password." %}</p>
-                                    <form class="form-inline" method="post" role="form">{% csrf_token %}
+                                    <form class="form-inline" method="post" role="form" aria-label="Add root password to instance form">{% csrf_token %}
                                         <div class="form-group row">
                                             <div class="col-sm-12">
                                                 <input type="text" class="form-control-lg" name="passwd" placeholder="{% trans "Enter Password" %}" maxlength="24">
@@ -317,7 +317,7 @@
                                 {% if show_access_ssh_keys %}
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">
                                     <p>{% trans "You need shut down your instance and choose your public key." %}</p>
-                                    <form class="form-inline" method="post" role="form">{% csrf_token %}
+                                    <form class="form-inline" method="post" role="form" aria-label="Add public key to instance form">{% csrf_token %}
                                         <div class="form-group row">
                                             <div class="col-sm-12">
                                                 <select name="sshkeyid" class="form-control keyselect">
@@ -358,7 +358,7 @@
                     <div role="tabpanel" class="tab-pane" id="resize">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
-                            <ul class="nav nav-tabs" role="tablist">
+                            <ul class="nav nav-tabs" role="tablist" aria-label="Instance resize options">
                                 <li class="nav-item">
                                     <a class="nav-link text-secondary active" href="#resizevm_cpu" aria-controls="resizevm_cpu" role="tab" data-toggle="tab">
                                         {% trans "CPU" %}
@@ -381,7 +381,7 @@
                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm_cpu">
                                 {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
                                     {% if status == 5 or not vcpus %}
-                                    <form method="post" role="form">{% csrf_token %}
+                                    <form method="post" role="form" aria-label="Resize instance cpu form">{% csrf_token %}
                                         <p class="font-weight-bold">{% trans "Logical host CPUs" %} : {{ vcpu_host }}</p>
                                         <div class="form-group row">
                                             <label class="col-sm-4 col-form-label"> {% trans "Current Allocation" %}</label>
@@ -420,7 +420,7 @@
                                         <div class="col-sm-3"></div>
                                         <div class="col-sm-6">
                                             {% for id, vcpu in vcpus.items %}
-                                                <form method="post" role="form">{% csrf_token %}
+                                                <form method="post" role="form" aria-label="Resize instance cpu form">{% csrf_token %}
                                                 <div class="col-sm-3">
                                                      <input name="id" value="{{ id }}" hidden/>
                                                      {% if vcpu.enabled == 'yes' and vcpu.hotpluggable == "yes" %}
@@ -444,7 +444,7 @@
                             </div>
                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_mem">
                                 {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
-                                    <form method="post" role="form">{% csrf_token %}
+                                    <form method="post" role="form" aria-label="Resize instance memory form">{% csrf_token %}
                                         <p class="font-weight-bold">{% trans "Total host memory" %}: {{ memory_host|filesizeformat }}</p>
                                         <div class="form-group row">
                                             <label class="col-sm-4 col-form-label">{% trans "Current allocation" %} ({% trans "MB" %})</label>
@@ -483,7 +483,7 @@
                             </div>
                             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_disk">
                                 {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
-                                    <form method="post" role="form">{% csrf_token %}
+                                    <form method="post" role="form" aria-label="Resize instance disk form">{% csrf_token %}
                                         <p class="font-weight-bold">{% trans "Disk allocation (GB)" %}:</p>
                                         {% for disk in disks %}
                                         <div class="form-group row">
@@ -511,7 +511,7 @@
                     <div role="tabpanel" class="tab-pane" id="snapshots">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
-                            <ul class="nav nav-tabs" role="tablist">
+                            <ul class="nav nav-tabs" role="tablist" aria-label="Instance snapshot menu">
                                 <li class="nav-item">
                                     <a class="nav-link text-secondary active" href="#takesnapshot" aria-controls="takesnapshot" role="tab" data-toggle="tab">
                                         {% trans "Take Snapshot" %}
@@ -528,7 +528,7 @@
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
                                     {% ifequal status 5 %}
                                         <p>{% trans "This may take more than an hour, depending on how much content is on your droplet and how large the disk is." %}</p>
-                                        <form class="form-inline" method="post" role="form">{% csrf_token %}
+                                        <form class="form-inline" method="post" role="form" aria-label="Create snapshot form">{% csrf_token %}
                                             <div class="form-group row">
                                                 <div class="col-sm-12">
                                                     <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
@@ -561,7 +561,7 @@
                                                         <td><strong>{{ snap.name }}</strong></td>
                                                         <td>{{ snap.date|date:"M d H:i:s" }}</td>
                                                         <td style="width:30px;">
-                                                            <form action="" method="post" role="form">{% csrf_token %}
+                                                            <form action="" method="post" role="form" aria-label="Restore snapshot form">{% csrf_token %}
                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
                                                                 {% ifequal status 5 %}
                                                                     <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
@@ -576,7 +576,7 @@
                                                             </form>
                                                         </td>
                                                         <td style="width:30px;">
-                                                            <form action="" method="post" role="form">{% csrf_token %}
+                                                            <form action="" method="post" role="form" aria-label="Delete snapshot form">{% csrf_token %}
                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
                                                                 <button type="submit" class="btn btn-sm btn-danger" name="delete_snapshot" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                                      <span class="fa fa-trash"></span>
@@ -598,7 +598,7 @@
                     <div role="tabpanel" class="tab-pane" id="settings">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
-                            <ul class="nav nav-tabs" role="tablist">
+                            <ul class="nav nav-tabs" role="tablist" aria-label="Instance settings">
                                 {% if request.user.is_superuser %}
                                     <li class="nav-item ">
                                         <a class="nav-link text-secondary active" href="#boot_opt" aria-controls="boot" role="tab" data-toggle="tab">
@@ -664,7 +664,7 @@
                                 {% if request.user.is_superuser %}
                                     <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot_opt">
                                         <p class="font-weight-bold">{% trans 'Autostart' %}</p>
-                                        <form action="" method="post" role="form">{% csrf_token %}
+                                        <form action="" method="post" role="form" aria-label="Set enable/disable autostart instance form">{% csrf_token %}
                                             <div class="form-group row">
                                                 <div class="col-sm-12 text-center">
                                                 <p>{% trans "Autostart your instance when host server is power on " %}
@@ -678,7 +678,7 @@
                                             </div>
                                         </form>
                                         <p  class="font-weight-bold">{% trans 'Boot Order' %}</p>
-                                        <form action="" method="post" role="form">{% csrf_token %}
+                                        <form action="" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
                                             <div class="form-group row">
                                                 <div class="col-sm-12 text-center">
                                                 {% ifequal status 5 %}
@@ -705,7 +705,7 @@
                                                     {% endfor %}
                                                 </div>
                                             </div>
-                                            <form action="" method="post" role="form">{% csrf_token %}
+                                            <form action="" method="post" role="form" aria-label="Boot order edit form">{% csrf_token %}
                                                 <input id="bootorder" name="bootorder" hidden>
                                                 <div class="d-flex justify-content-center">
                                                     <div id="b_order" class="multipleselect border-0">
@@ -738,7 +738,7 @@
                                         <div class="clearfix"></div>
                                     </div>
                                     <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
-                                    <form action="" method="post" role="form">{% csrf_token %}
+                                    <form action="" method="post" role="form" aria-label="Detach instance CD-ROM form">{% csrf_token %}
                                         <p class="font-weight-bold">
                                             {% trans "Instance Media" %}
                                              {% if status == 5 and allow_admin_or_not_template %}
@@ -754,7 +754,7 @@
                                         </p>
                                     </form>
                                     {% for cd in media %}
-                                        <form action="" method="post" role="form">{% csrf_token %}
+                                        <form action="" method="post" role="form" aria-label="Mount/unmount instance CD-ROM form">{% csrf_token %}
                                             <div class="form-group row">
                                                 <a class="col-sm-3 col-form-label"
                                                         name="details"
@@ -860,7 +860,7 @@
                                                         <td>{{ disk.storage }}</td>
                                                         <td>{{ disk.path }}</td>
                                                         <td class="text-nowrap">
-                                                            <form action="" method="post" role="form">{% csrf_token %}
+                                                            <form action="" method="post" role="form" aria-label="Edit instance volume form">{% csrf_token %}
                                                                 <input type="hidden" name="path" value="{{ disk.path }}">
                                                                 <input type="hidden" name="dev" value="{{ disk.dev }}">
                                                                 <input type="hidden" name="storage" value="{{ disk.storage }}">
@@ -914,7 +914,7 @@
                                     {% for network in networks %}
                                         <tr>
                                             <td rowspan="2">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})
-                                                <form method="post">{% csrf_token %}
+                                                <form method="post" aria-label="set instance link state form">{% csrf_token %}
                                                     <input name="mac" value="{{ network.mac }}" hidden/>
                                                     <input name="set_link_state" value="{{ network.state }}" hidden/>
                                                     <input type="checkbox" {% if network.state == 'up' %} checked
@@ -1021,7 +1021,7 @@
                                             <td>{{ network.model }}</td>
                                             <th>{% trans 'QoS' %}</th>
                                             <td class="d-flex justify-content-end">
-                                                <form method="post" name="add_qos{{ forloop.counter0 }}" role="form">{% csrf_token %}
+                                                <form method="post" name="add_qos{{ forloop.counter0 }}" role="form" aria-label="Add network qos form">{% csrf_token %}
                                                     <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>
                                                     {% include 'add_network_qos.html' with id=forloop.counter0 %}
                                                 </form>
@@ -1054,7 +1054,7 @@
                                     <tbody>
                                     {% for q, attrs in qos.items %}
                                         {% for att in attrs  %}
-                                            <form method="post" role="form">{% csrf_token %}
+                                            <form method="post" role="form" aria-label="Instance Qos configuration form">{% csrf_token %}
                                             <tr>
                                                 <td><label class="col-form-label">{{ q }} {{ att.direction | capfirst }}</label></td>
                                                 <td><input id="qos_average" class="form-control" name="qos_average"
@@ -1092,7 +1092,7 @@
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
                             <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
-                            <form class="ml-3 form" method="post" role="form">{% csrf_token %}
+                            <form class="ml-3 form" method="post" role="form" aria-label="Migrate instance form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-3 col-form-label">{% trans "Original host" %}</label>
                                     <div class="col-sm-6">
@@ -1179,7 +1179,7 @@
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
                             <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Edit instance XML form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
                                     <textarea id="editor">{{ inst_xml }}</textarea>
                                 </div>
@@ -1210,7 +1210,7 @@
                                         <tr>
                                             <td><a href="{% url 'account' userinstance.user.id %}">{{ userinstance.user }}</a></td>
                                             <td style="width:30px;">
-                                                <form action="" method="post" role="form">{% csrf_token %}
+                                                <form action="" method="post" role="form" aria-label="Delete Instance owner">{% csrf_token %}
                                                     <input type="hidden" name="userinstance" value="{{ userinstance.pk }}">
                                                     <button type="submit" class="btn btn-sm btn-secondary" name="del_owner" title="{% trans "Delete Ownership" %}">
                                                         <i class="fa fa-trash"></i>
@@ -1228,7 +1228,7 @@
                     {% if request.user.is_superuser or request.user.is_staff or userinstance.is_vnc %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
                             <p class="text-muted">{% trans "To set console's type, shutdown the instance." %}</p>
-                            <form class="form" method="post" role="form">{% csrf_token %}
+                            <form class="form" method="post" role="form" aria-label="set console type form">{% csrf_token %}
                                 <div class="form-group row" id="console_type_selection">
                                     <label for="console_select_type" class="col-sm-2 col-form-label">{% trans "Type" %}</label>
                                     <div class="col-sm-6">
@@ -1252,7 +1252,7 @@
                                  </div>
                             </form>
                             <p class="text-muted">{% trans "To set console listen address, shutdown the instance." %}</p>
-                            <form class="form" method="post" role="form">{% csrf_token %}
+                            <form class="form" method="post" role="form" aria-label="Set console listen address form">{% csrf_token %}
                                 <div class="form-group row" id="console_listen_address_selection">
                                     <label for="console_select_listen_address" class="col-sm-2 col-form-label">{% trans "Listen on" %}</label>
                                     <div class="col-sm-6">
@@ -1275,7 +1275,7 @@
                                 </div>
                             </form>
                             <p class="text-muted">{% trans "To create console password, shutdown the instance." %}</p>
-                            <form class="form" method="post" role="form">{% csrf_token %}
+                            <form class="form" method="post" role="form" aria-label="Create console password form">{% csrf_token %}
                                 <div class="form-group row">
                                     <div class="col-sm-10 offset-2 ">
                                         <div class="custom-control custom-switch">
@@ -1313,7 +1313,7 @@
                                 </div>
                             </form>
                             <p class="text-muted">{% trans "To set console's keymap, shutdown the instance." %}</p>
-                            <form class="form" method="post" role="form">{% csrf_token %}
+                            <form class="form" method="post" role="form" aria-label="Set console keymap form">{% csrf_token %}
                                 <div class="form-group row">
                                     <div class="col-sm-10 offset-2">
                                         <div class="custom-control custom-switch">
@@ -1350,7 +1350,7 @@
                     {% if request.user.is_superuser or request.user.userattributes.can_clone_instances %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
                             <p class="font-weight-bold">{% trans "Create a clone" %}</p>
-                            <form class="form" action="" method="post" role="form">{% csrf_token %}
+                            <form class="form" action="" method="post" role="form" aria-label="Create clone form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-3 col-form-label font-weight-normal">{% trans "Clone Name" %}</label>
                                     {% if request.user.is_superuser %}
@@ -1449,7 +1449,7 @@
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="options">
                             <p>{% trans "To set instance template name description, shutdown the instance." %}</p>
-                            <form action="" method="post" role="form">{% csrf_token %}
+                            <form action="" method="post" role="form" aria-label="Set instance template name description form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-3 col-form-label">{% trans "Title" %}</label>
                                     <div class="col-sm-6">
@@ -1485,7 +1485,7 @@
                             </form>
                         
                             <p class="font-weight-bold">{% trans "To set instance video model, shutdown the instance." %}</p>
-                            <form  method="post" role="form">{% csrf_token %}
+                            <form  method="post" role="form" aria-label="Set instance video model form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label for="video_model_select" class="col-sm-3 col-form-label">{% trans "Primary Video Model" %}</label>
                                     <div class="col-sm-6">
@@ -1509,7 +1509,7 @@
                             </form>
                        
                             <p class="font-weight-bold">{% trans "To set instance vCPUs hotpluggable" %}</p>
-                            <form  method="post" role="form">{% csrf_token %}
+                            <form  method="post" role="form" aria-label="Set instance vCPUs hotpluggable form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label for="vcpu_hotplug" class="col-sm-3 col-form-label">{% trans "vCPU Hot Plug" %}</label>
                                     <div class="col-sm-6">
@@ -1540,7 +1540,7 @@
                             {% else %}
                                 <label class="badge badge-default">{% trans 'Unknown' %}</label>
                             {% endif %}
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Enable/Disable Qemu Guest Agent form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label for="guest_agent" class="col-sm-3 col-form-label">{% trans "Qemu Guest Agent" %}</label>
                                     <div class="col-sm-6">
@@ -1565,7 +1565,7 @@
                     <div role="tabpanel" class="tab-pane" id="graphics">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
-                            <ul class="nav nav-tabs" role="tablist">
+                            <ul class="nav nav-tabs" role="tablist" aria-label="Instance graphs and logs menu">
                                 <li class="nav-item">
                                     <a class="nav-link text-secondary active"  href="#graphs" id="graphtab" aria-controls="graphs" role="tab" data-toggle="tab" aria-controls="graphs" aria-selected="true">
                                         {% trans "Real Time" %}
@@ -1657,7 +1657,7 @@
                     <div role="tabpanel" class="tab-pane" id="undefine">
                         <div role="tabpanel">
                             <!-- Nav tabs -->
-                            <ul class="nav nav-tabs" role="tablist">
+                            <ul class="nav nav-tabs" role="tablist" aria-label="Instance destroy menu">
                                  <li class="nav-item">
                                     <a class="nav-link active" href="#destroy" aria-controls="destroy" role="tab" data-toggle="tab">
                                         {% trans "Destroy Instance" %}

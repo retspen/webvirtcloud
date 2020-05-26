@@ -16,7 +16,7 @@
         <div class="">
             <div class="col-lg-12">
                 <h3 class="page-header">{% trans "App Settings" %}</h3>
-                <form action="{% url 'set_language' %}" method="post" style="display:inline">{% csrf_token %}
+                <form action="{% url 'set_language' %}" method="post" style="display:inline" aria-label="Edit language.name_local settings form">{% csrf_token %}
                     <div class="form-group row">
                         <input name="next" type="hidden" value="{{ redirect_to }}">
                         <label class="col-sm-3 col-form-label">{% trans "Language" %}</label>
@@ -35,7 +35,7 @@
                     </div>
                 </form>
                 {% if request.user.is_superuser %}
-                <form method="post" action="" role="form">{% csrf_token %}
+                <form method="post" action="" role="form" aria-label="Edit sass directory settings form">{% csrf_token %}
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">{{ sass_dir.name }}</label>
                         <div class="col-sm-6">
@@ -43,7 +43,7 @@
                         </div>
                     </div>
                 </form>
-                <form method="post" action="" role="form">{% csrf_token %}
+                <form method="post" action="" role="form" aria-label="Edit theme settings form">{% csrf_token %}
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">{% trans bootstrap_theme.name %}</label>
                         <div class="col-sm-6">
@@ -57,7 +57,7 @@
                     </div>
                 </form>
                 {% endif %}
-                <form method="post" action="" role="form">{% csrf_token %}
+                <form method="post" action="" role="form" aria-label="Edit bottom bar settings form">{% csrf_token %}
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">{{ show_inst_bottom_bar.name }}</label>
                         <div class="col-sm-6">

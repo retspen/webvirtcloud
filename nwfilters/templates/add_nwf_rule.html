@@ -13,7 +13,7 @@
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <form method="post" role="form">{% csrf_token %}
+                    <form method="post" role="form" aria-label="Add new NWFilter rule form">{% csrf_token %}
                          <div class="form-group row">
                             <div class="col-12" id="xmlheight">
                                 <input type="hidden" name="nwfilterrule_xml"/>

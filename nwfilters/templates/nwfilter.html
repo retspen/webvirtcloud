@@ -71,7 +71,7 @@
         <h5 class="page-header mr-auto">{% trans "Filter References" %}
             
         
-            <form class="form-inline float-right" method="post" role="form">{% csrf_token %}
+            <form class="form-inline float-right" method="post" role="form" aria-label="Add NWFilter form">{% csrf_token %}
                 <div class="form-group">
                     <div class="input-group">
                         <div class="input-group-prepend">
@@ -109,7 +109,7 @@
                         <th scope="row">{{ forloop.counter }}</th>
                         <td>{{ ref }}</td>
                         <td style="width:30px;">
-                            <form action="" method="post" role="form">{% csrf_token %}
+                            <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
                                 <input type="hidden" name="ref" value="{{ ref }}">
                                 <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                     <i class="fa fa-trash"></i>
@@ -147,7 +147,7 @@
                     <td>{{ rule.statematch }}</td>
                     <td>{{ rule.directives }}</td>
                     <td>
-                        <form action="" method="post" role="form">{% csrf_token %}
+                        <form action="" method="post" role="form" aria-label="Delete NWFilter rule">{% csrf_token %}
                             <input type="hidden" name="action" value="{{ rule.action }}">
                             <input type="hidden" name="direction" value="{{ rule.direction }}">
                             <input type="hidden" name="priority" value="{{ rule.priority }}">

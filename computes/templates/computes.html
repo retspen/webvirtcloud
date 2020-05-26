@@ -60,7 +60,7 @@
                                             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> 
                                         </div>
                                         {% ifequal compute.type 1 %}
-                                            <form method="post" role="form">{% csrf_token %}
+                                            <form method="post" role="form" aria-label="Edit tcp host form">{% csrf_token %}
                                                 <div class="modal-body">
                                                     <div class="form-group row">
                                                         <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
@@ -107,7 +107,7 @@
                                             </form>
                                         {% endifequal %}
                                         {% ifequal compute.type 2 %}
-                                            <form method="post" role="form">{% csrf_token %}
+                                            <form method="post" role="form" aria-label="Edit ssh host form">{% csrf_token %}
                                                 <div class="modal-body">
                                                     <p class="modal-body">{% trans "Need create ssh <a href='https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization'>authorization key</a>. If you have another SSH port on your server, you can add IP:PORT like '192.168.1.1:2222'." %}</p>
                                                     <div class="form-group row">
@@ -151,7 +151,7 @@
                                             </form>
                                         {% endifequal %}
                                         {% ifequal compute.type 3 %}
-                                            <form method="post" role="form">{% csrf_token %}
+                                            <form method="post" role="form" aria-label="Edit tls host form">{% csrf_token %}
                                                 <div class="modal-body">
                                                     <div class="form-group row">
                                                         <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
@@ -199,7 +199,7 @@
                                             </form>
                                         {% endifequal %}
                                         {% ifequal compute.type 4 %}
-                                            <form method="post" role="form">{% csrf_token %}
+                                            <form method="post" role="form" aria-label="Edit/delete host form">{% csrf_token %}
                                                 <div class="modal-body">
                                                     <div class="form-group row">
                                                         <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>

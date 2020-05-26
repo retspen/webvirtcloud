@@ -1,5 +1,5 @@
 {% load i18n %}
-<form action="" method="post" role="form">{% csrf_token %}
+<form action="" method="post" role="form" aria-label="Shortcut instance action form">{% csrf_token %}
     <input type="hidden" name="name" value="{{ inst }}"/>
     <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
     {% ifequal vm.status 5 %}

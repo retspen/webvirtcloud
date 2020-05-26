@@ -8,7 +8,7 @@
     <div class="modal fade" id="AddUser" tabindex="-1" role="dialog" aria-labelledby="AddUserLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post">{% csrf_token %}
+                <form method="post" aria-label="Add user form">{% csrf_token %}
                     <div class="modal-header">
                         <h5 class="modal-title">{% trans "Add New User" %}</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>

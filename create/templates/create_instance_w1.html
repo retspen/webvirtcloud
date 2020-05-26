@@ -34,7 +34,7 @@
         <div class="col-lg-12">
             <div role="tabpanel">
             <!-- Nav tabs -->
-                <ul class="nav nav-tabs" role="tablist">
+                <ul class="nav nav-tabs" role="tablist" aria-label="Instance create method">
                     <li class="nav-item">
                         <a class="nav-link active" href="#select_architecture" aria-controls="flavor" role="tab" data-toggle="tab">
                             {% trans "Architecture" %}
@@ -51,7 +51,7 @@
                     <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="select_architecture">
                         
                             <div class="center-block">
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Select instance architecture form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-3 col-form-label">{% trans "Architecture" %}</label>
                                     <div class="col-sm-6">
@@ -84,7 +84,7 @@
                     </div>
                     <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromXML">
                         <div class="well">
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Create instance with XML form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
                                      <input type="hidden" name="dom_xml"/>
                                     <textarea id="editor"></textarea>
