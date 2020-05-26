@@ -100,8 +100,8 @@
             <table class="table table-hover mb-3">
                 <thead>
                     <th scope="col">#</th>
-                    <th>{% trans "Reference" %}</th>
-                    <th>{% trans "Action" %}</th>
+                    <th scope="col">{% trans "Reference" %}</th>
+                    <th scope="col">{% trans "Action" %}</th>
                 </thead>
                 <tbody>
                  {% for ref in refs %}
@@ -130,17 +130,17 @@
         <table class="table table-hover">
             <thead>
                 <th scope="col">{% trans "Rule" %}</th>
-                <th class="text-nowrap">{% trans "Action Type" %}</th>
-                <th>{% trans "Direction" %}</th>
-                <th>{% trans "Priority" %}</th>
-                <th>{% trans "Statematch" %}</th>
-                <th>{% trans "Directives" %}</th>
-                <th style="width:30px;">{% trans "Action" %}</th>
+                <th scope="col" class="text-nowrap">{% trans "Action Type" %}</th>
+                <th scope="col">{% trans "Direction" %}</th>
+                <th scope="col">{% trans "Priority" %}</th>
+                <th scope="col">{% trans "Statematch" %}</th>
+                <th scope="col">{% trans "Directives" %}</th>
+                <th scope="col" style="width:30px;">{% trans "Action" %}</th>
             </thead>
             <tbody>
             {% for rule in rules %}
                 <tr>
-                    <td scope="row">{{ forloop.counter }}</td>
+                    <th scope="row">{{ forloop.counter }}</th>
                     <td>{{ rule.action }}</td>
                     <td>{{ rule.direction }}</td>
                     <td>{{ rule.priority }}</td>
