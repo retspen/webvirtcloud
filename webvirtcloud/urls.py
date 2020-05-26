@@ -16,5 +16,5 @@ urlpatterns = [
     path('console/', console, name='console'),
     path('appsettings/', appsettings, name='appsettings'),
     path('i18n/', include('django.conf.urls.i18n')),
-    # url(r'^admin/', include(admin.site.urls)),
+    # path('admin/', include(admin.site.urls)),
 ]

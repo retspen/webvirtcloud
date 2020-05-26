@@ -1,12 +1,9 @@
-from django.conf.urls import url
+from django.urls import path
 from . import views
 
 urlpatterns = [
-    url(r'^openstack/$',
-        views.os_index, name='ds_openstack_index'),
-    url(r'^openstack/(?P<version>[\w\-\.]+)/meta_data.json$',
-        views.os_metadata_json, name='ds_openstack_metadata'),
-    url(r'^openstack/(?P<version>[\w\-\.]+)/user_data$',
-        views.os_userdata, name='ds_openstack_userdata'),
-    url(r'^vdi/(?P<compute_id>[0-9]+)/(?P<vname>[\w\-\.]+)/$', views.get_vdi_url, name='vdi_url'),
+    path('openstack/', views.os_index, name='ds_openstack_index'),
+    path('openstack/<version>/meta_data.json', views.os_metadata_json, name='ds_openstack_metadata'),
+    path('openstack/<version>/user_data', views.os_userdata, name='ds_openstack_userdata'),
+    path('vdi/<int:comspute_id>/<vname>/', views.get_vdi_url, name='vdi_url'),
 ]

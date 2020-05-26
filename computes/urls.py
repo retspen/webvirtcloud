@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import path, include
 from storages.views import storages, storage, get_volumes
 from networks.views import networks, network
 from secrets.views import secrets
@@ -10,23 +10,24 @@ from nwfilters.views import nwfilter, nwfilters
 
 urlpatterns = [
     path('', computes, name='computes'),
-    re_path(r'^(?P<compute_id>[0-9]+)/$', overview, name='overview'),
-    re_path(r'^(?P<compute_id>[0-9]+)/statistics$', compute_graph, name='compute_graph'),
-    re_path(r'^(?P<compute_id>[0-9]+)/instances/$', instances, name='instances'),
-    re_path(r'^(?P<compute_id>[0-9]+)/storages/$', storages, name='storages'),
-    re_path(r'^(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.\/]+)/volumes$', get_volumes, name='volumes'),
-    re_path(r'^(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.\/]+)/$', storage, name='storage'),
-    re_path(r'^(?P<compute_id>[0-9]+)/networks/$', networks, name='networks'),
-    re_path(r'^(?P<compute_id>[0-9]+)/network/(?P<pool>[\w\-\.]+)/$', network, name='network'),
-    re_path(r'^(?P<compute_id>[0-9]+)/interfaces/$', interfaces, name='interfaces'),
-    re_path(r'^(?P<compute_id>[0-9]+)/interface/(?P<iface>[\w\-\.\:]+)/$', interface, name='interface'),
-    re_path(r'^(?P<compute_id>[0-9]+)/nwfilters/$', nwfilters, name='nwfilters'),
-    re_path(r'^(?P<compute_id>[0-9]+)/nwfilter/(?P<nwfltr>[\w\-\.\:]+)/$', nwfilter, name='nwfilter'),
-    re_path(r'^(?P<compute_id>[0-9]+)/secrets/$', secrets, name='secrets'),
-    re_path(r'^(?P<compute_id>[0-9]+)/create/$', create_instance_select_type, name='create_instance_select_type'),
-    re_path(r'^(?P<compute_id>[0-9]+)/create/archs/(?P<arch>[\w\-\.\/]+)/machines/(?P<machine>[\w\-\.\/]+)$', create_instance, name='create_instance'),
-    re_path(r'^(?P<compute_id>[0-9]+)/archs/(?P<arch>[\w\-\.\/]+)/machines$', get_compute_machine_types, name='machines'),
-    re_path(r'^(?P<compute_id>[0-9]+)/archs/(?P<arch>[\w\-\.\/]+)/machines/(?P<machine>[\w\-\.\/]+)/disks/(?P<disk>[\w\-\.\/]+)/buses$', get_compute_disk_buses, name='buses'),
-    re_path(r'^(?P<compute_id>[0-9]+)/archs/(?P<arch>[\w\-\.\/]+)/machines/(?P<machine>[\w\-\.\/]+)/capabilities$', get_dom_capabilities, name='domcaps'),
+    path('<int:compute_id>/', include([
+        path('', overview, name='overview'),
+        path('statistics', compute_graph, name='compute_graph'),
+        path('instances/', instances, name='instances'),
+        path('storages/', storages, name='storages'),
+        path('storage/<pool>/volumes', get_volumes, name='volumes'),
+        path('storage/<pool>/', storage, name='storage'),
+        path('networks/', networks, name='networks'),
+        path('network/<pool>/', network, name='network'),
+        path('interfaces/', interfaces, name='interfaces'),
+        path('interface/<iface>/', interface, name='interface'),
+        path('nwfilters/', nwfilters, name='nwfilters'),
+        path('nwfilter/<nwfltr>/', nwfilter, name='nwfilter'),
+        path('secrets/', secrets, name='secrets'),
+        path('create/', create_instance_select_type, name='create_instance_select_type'),
+        path('create/archs/<arch>/machines/<machine>', create_instance, name='create_instance'),
+        path('archs/<arch>/machines', get_compute_machine_types, name='machines'),
+        path('archs/<arch>/machines/<machine>/disks/<disk>/buses', get_compute_disk_buses, name='buses'),
+        path('archs/<arch>/machines/<machine>/capabilities', get_dom_capabilities, name='domcaps'),
+    ])),
 ]
-
