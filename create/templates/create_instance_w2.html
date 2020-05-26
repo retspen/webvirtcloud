@@ -38,7 +38,7 @@
         <div class="col-lg-12">
             <div role="tabpanel">
             <!-- Nav tabs -->
-                <ul class="nav nav-tabs" role="tablist">
+                <ul class="nav nav-tabs" role="tablist" aria-label="Instance create method">
                      <li class="nav-item">
                         <a class="nav-link  float-right" href="#" role="tab" data-toggle="tab" onclick="goto_compute()">
                             <span class="fa fa-arrow-left"></span>
@@ -102,7 +102,7 @@
                                                             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <form method="post" role="form">{% csrf_token %}
+                                                            <form method="post" role="form" aria-label="Create instance from flavor form">{% csrf_token %}
                                                                 <div class="form-group row">
                                                                     <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                                                     <div class="col-sm-6">
@@ -286,7 +286,7 @@
                                             </a>
                                         </td>
                                         <td style="width:5px;">
-                                            <form action="" method="post" role="form">{% csrf_token %}
+                                            <form action="" method="post" role="form" aria-label="Delete flavor form">{% csrf_token %}
                                                 <input type="hidden" name="flavor" value="{{ flavor.id }}">
                                                 <button type="submit" class="btn btn-sm btn-secondary" name="delete_flavor" onclick="return confirm('{% trans "Are you sure?" %}')">
                                                     <span class="fa fa-trash"></span>
@@ -304,7 +304,7 @@
 
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addCustom">
                 <div class="well">
-                    <form method="post" role="form">{% csrf_token %}
+                    <form method="post" role="form" aria-label="Create custom instance form">{% csrf_token %}
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                         <div class="col-sm-7">
@@ -517,7 +517,7 @@
 
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromTemp">
                 <div class="well">
-                    <form method="post" role="form">{% csrf_token %}
+                    <form method="post" role="form" aria-label="Create instance from template form">{% csrf_token %}
                         <div class="form-group row">
                             <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                             <div class="col-sm-7">

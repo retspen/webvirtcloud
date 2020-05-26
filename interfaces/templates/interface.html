@@ -55,7 +55,7 @@
             <dd class="col-8">{{ start_mode }}</dd>
             <dt class="col-4">{% trans "State" %}</dt>
             <dd class="col-8">
-                <form action="" method="post" role="form">{% csrf_token %}
+                <form action="" method="post" role="form" aria-label="Interface start/stop/delete form">{% csrf_token %}
                     {% ifequal state 0 %}
                         <input type="submit" class="btn btn-sm btn-primary" name="start" value="{% trans "Start" %}">
                         <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">

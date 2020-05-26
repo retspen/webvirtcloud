@@ -64,7 +64,7 @@
                             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                         </div>
                         <div class="modal-body">
-                            <form method="post">{% csrf_token %}
+                            <form method="post" aria-label="Edit user form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">

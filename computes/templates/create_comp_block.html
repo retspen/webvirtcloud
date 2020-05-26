@@ -13,7 +13,7 @@
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times</button>
                 </div>
 
-                <ul class="nav nav-pills nav-justified" role="tablist">
+                <ul class="nav nav-pills nav-justified" role="tablist" aria-label="Host connection types">
                     <li class="nav-item"><a class="nav-link active" href="#tcp_con" data-toggle="tab">{% trans "TCP Connection" %}</a></li>
                     <li class="nav-item"><a class="nav-link" href="#ssh_con" data-toggle="tab">{% trans "SSH Connection" %}</a></li>
                     <li class="nav-item"><a class="nav-link" href="#tls_con" data-toggle="tab">{% trans "TLS Connection" %}</a></li>
@@ -23,7 +23,7 @@
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="tcp_con">
                         <div class="modal-body">
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Add host with tcp connection form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
                                     <div class="col-sm-6">
@@ -67,7 +67,7 @@
                     </div>
                     <div class="tab-pane" id="ssh_con">
                         <div class="modal-body">
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Add host with ssh connection form">{% csrf_token %}
                                 <p class="modal-body">{% trans "You must create ssh <a href='https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization'>authorization key</a>. If you have another SSH port on your server, you can add IP:PORT like '192.168.1.1:2222'." %}</p>
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
@@ -106,7 +106,7 @@
                     </div>
                     <div class="tab-pane" id="tls_con">
                         <div class="modal-body">
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Add host with TLS connection form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
                                     <div class="col-sm-6">
@@ -150,7 +150,7 @@
                     </div>
                     <div class="tab-pane" id="local_con">
                         <div class="modal-body">
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="Add host with local socket form">{% csrf_token %}
                                 <div class="form-group row">
                                     <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
                                     <div class="col-sm-6">

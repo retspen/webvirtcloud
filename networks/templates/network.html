@@ -47,7 +47,7 @@
             <dd class="col-6">{{ device }}</dd>
             <dt class="col-6">{% trans "State" %}</dt>
             <dd class="col-6">
-                <form action="" method="post" role="form">{% csrf_token %}
+                <form action="" method="post" role="form" aria-label="Network start/stop/delete form">{% csrf_token %}
                     {% ifequal state 0 %}
                         <input type="submit" class="btn btn-sm btn-success" name="start" value="{% trans "Start" %}">
                         <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
@@ -58,7 +58,7 @@
             </dd>
             <dt class="col-6">{% trans "Autostart" %}</dt>
             <dd class="col-6">
-                <form action="" method="post" role="form">{% csrf_token %}
+                <form action="" method="post" role="form" aria-label="Network enable/disable autostart form">{% csrf_token %}
                     {% ifequal autostart 0 %}
                         <input type="submit" class="btn btn-sm btn-success" name="set_autostart" value="{% trans "Enable" %}">
                     {% else %}
@@ -76,7 +76,7 @@
         </button>
         <div class="collapse" id="collapseXML">
             <div class="card card-body">
-                <form method="post" role="form">{% csrf_token %}
+                <form method="post" role="form" aria-label="Network edit with XML form">{% csrf_token %}
                     <div id="xmlheight">
                         <input type="hidden" name="edit_xml"/>
                         <textarea id="edit_editor">{{ xml }}</textarea>
@@ -124,7 +124,7 @@
                 <dt class="col-6">{% trans "End" %}</dt>
                 <dd class="col-6">{{ ipv4_dhcp_range_end }}</dd>
             {%  else %}
-                <form class="form-inline col-lg-12 pl-0" method="post" role="form">{% csrf_token %}
+                <form class="form-inline col-lg-12 pl-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
                     <dt class="col-6">{% trans "Start" %}</dt>
                     <dd class="col-6"><input name="range_start" value="{{ ipv4_dhcp_range_start }}"/></dd>
                     <dt class="col-6">{% trans "End" %}</dt>
@@ -181,7 +181,7 @@
                     <tbody>
                     {% for fix4 in ipv4_fixed_address %}
                         <tr>  
-                        <form method="post" role="form">{% csrf_token %}
+                        <form method="post" role="form" aria-label="IPv4 edit/delete form">{% csrf_token %}
                             <td><input class="form-control" value="{{ fix4.mac }}" name="mac" readonly/></td>
                             <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
                             <td><input class="form-control" value="{{ fix4.name }}" name="name" /></td>
@@ -236,7 +236,7 @@
                 <dt class="col-6">{% trans "End" %}</dt>
                 <dd class="col-6">{{ ipv6_dhcp_range_end }}</dd>
             {%  else %}
-                <form class="form-inline col-lg-12 pl-0" method="post" role="form">{% csrf_token %}
+                <form class="form-inline col-lg-12 pl-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
                     <dt class="col-6">{% trans "Start" %}</dt>
                     <dd class="col-6"><input name="range_start" value="{{ ipv6_dhcp_range_start }}"/></dd>
                     <dt class="col-6">{% trans "End" %}</dt>
@@ -290,7 +290,7 @@
                     <tbody>
                     {% for fix6 in ipv6_fixed_address %}
                         <tr>
-                            <form method="post" role="form">{% csrf_token %}
+                            <form method="post" role="form" aria-label="IP v6 edit/delete form">{% csrf_token %}
                                 <td><input class="form-control" value="{{ fix6.id }}" name="id" readonly/></td>
                                 <td><input class="form-control" value="{{ fix6.ip }}" name="address" /></td>
                                 <td><input class="form-control" value="{{ fix6.name }}" name="name" /></td>
@@ -318,7 +318,7 @@
 
     {% if net_forward.0 == 'route' or net_forward.0 == 'nat' or net_forward.0 == 'isolated'  %}
         {% if state == 0 and qos.items|length != 2%}
-            <form method="post" name="set_qos" role="form">{% csrf_token %}
+            <form method="post" name="set_qos" role="form" aria-label="Create network qos form">{% csrf_token %}
                 {% include 'add_network_qos.html' %}
             </form>
         {% endif %}
@@ -337,7 +337,7 @@
                 </thead>
                 <tbody>
                 {% for q, att in qos.items %}
-                <form method="post" role="form">{% csrf_token %}
+                <form method="post" role="form" aria-label="QoS configuration form">{% csrf_token %}
                     <tr>
                         <td><label class="col-form-label">{{ q | capfirst }}</label></td>
                         <td><input id="qos_average" class="form-control" name="qos_average"
