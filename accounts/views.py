@@ -13,6 +13,7 @@ from instances.models import Instance
 import sass
 import os
 
+
 def profile(request):
     """
     :param request:
@@ -22,7 +23,6 @@ def profile(request):
     error_messages = []
     # user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-    show_profile_edit_password = AppSettings.objects.get(key="SHOW_PROFILE_EDIT_PASSWORD").value
 
     if request.method == 'POST':
         if 'username' in request.POST:
@@ -60,7 +60,8 @@ def profile(request):
                 msg = _("Invalid characters in public key")
                 error_messages.append(msg)
             if not error_messages:
-                addkeypublic = UserSSHKey(user_id=request.user.id, keyname=keyname, keypublic=keypublic)
+                addkeypublic = UserSSHKey(
+                    user_id=request.user.id, keyname=keyname, keypublic=keypublic)
                 addkeypublic.save()
                 return HttpResponseRedirect(request.get_full_path())
         if 'keydelete' in request.POST:
@@ -69,6 +70,7 @@ def profile(request):
             delkeypublic.delete()
             return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
+
 
 @superuser_only
 def account(request, user_id):
@@ -103,17 +105,20 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
-            
+
             if AppSettings.objects.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
-                check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
+                check_inst = UserInstance.objects.filter(
+                    instance_id=int(inst_id), user_id=int(user_id))
             else:
-                check_inst = UserInstance.objects.filter(instance_id=int(inst_id))
+                check_inst = UserInstance.objects.filter(
+                    instance_id=int(inst_id))
 
             if check_inst:
                 msg = _("Instance already added")
                 error_messages.append(msg)
             else:
-                add_user_inst = UserInstance(instance_id=int(inst_id), user_id=int(user_id))
+                add_user_inst = UserInstance(
+                    instance_id=int(inst_id), user_id=int(user_id))
                 add_user_inst.save()
                 return HttpResponseRedirect(request.get_full_path())
 
