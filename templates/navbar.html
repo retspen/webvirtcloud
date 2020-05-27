@@ -1,5 +1,6 @@
 {% load i18n %}
-{% load tags_active %}
+{% load font_awesome %}
+{% load common_tags %}
 <!-- Fixed navbar -->
 <nav class="navbar navbar-expand-md navbar-dark bg-primary mb-3" aria-label="Main top navbar">
   <div class="container">
@@ -10,26 +11,27 @@
     
     <div id="navbar" class="collapse navbar-collapse">
         <ul class="navbar-nav mr-auto mt-2 mt-md-0">
-          <li class="nav-item {% class_active request "^/instance" %}">
-              <a class="nav-link" href="{% url 'allinstances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
+          <li class="nav-item {% class_active request '^/instances' %}">
+            <a class="nav-link" href="{% url 'allinstances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
           </li>
           {% if request.user.is_superuser %}
-              <li class="nav-item {% class_active request "^/compute" %}
-                  {% class_active request "^/create" %}">
-                  <a class="nav-link" href="{% url 'computes' %}"><i class="fa fa-fw fa-server"></i> {% trans "Computes" %}</a>
-              </li>
-              <li class="nav-item {% class_active request "^/account" %}">
-                  <a class="nav-link" href="{% url 'accounts' %}"><i class="fa fa-fw fa-users"></i> {% trans "Users" %}</a>
-              </li>
-              <li class="nav-item {% class_active request "^/log" %}">
-                  <a class="nav-link" href="{% url 'showlogs' %}"><i class="fa fa-fw fa-list-alt"></i> {% trans "Logs" %}</a>
-              </li>
+            <li class="nav-item {% class_active request '^/computes' %}">
+              <a class="nav-link" href="{% url 'computes' %}"><i class="fa fa-fw fa-server"></i> {% trans "Computes" %}</a>
+            </li>
           {% endif %}
         </ul>
-        <ul class="navbar-nav navbar-right">
+        <ul class="navbar-nav navbar-right mt-2 mt-md-0">
           {% if request.user.is_superuser %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'appsettings' %}"><i class="fa fa-wrench"></i></a>
+          <li class="nav-item dropdown {% app_active request 'admin' %}">
+            <a class="nav-link" id="administration" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              {% icon 'wrench' %}
+            </a>
+            <div class="dropdown-menu" aria-labelledby="administration">
+                <a class="dropdown-item {% view_active request 'admin:user_list' %}" href="{% url 'admin:user_list' %}">{% icon 'user-plus' %} {% trans "Users" %}</a>
+                <a class="dropdown-item {% view_active request 'admin:group_list' %}" href="{% url 'admin:group_list' %}">{% icon 'users' %} {% trans "Groups" %}</a>
+                <a class="dropdown-item {% view_active request 'admin:logs' %}" href="{% url 'admin:logs' %}">{% icon 'list-alt' %} {% trans "Logs" %}</a>
+                <a class="dropdown-item {% view_active request 'appsettings' %}" href="{% url 'appsettings' %}">{% icon 'cogs' %} {% trans "Settings" %}</a>
+            </div>
           </li>
           {% endif %}
           <li class="nav-item dropdown">
@@ -41,9 +43,9 @@
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="{% url 'logout' %}"><i class="fa fa-fw fa-power-off"></i> {% trans "Log Out" %}</a>
             </div>
-          </li>
-          
+          </li> 
         </ul>
+
     </div><!--/.nav-collapse -->
   </div>
 </nav>

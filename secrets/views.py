@@ -1,12 +1,22 @@
-from django.shortcuts import render, get_object_or_404
+from secrets.forms import AddSecret
+
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from libvirt import libvirtError
+from libvirt import VIR_SECRET_USAGE_TYPE_NONE, \
+    VIR_SECRET_USAGE_TYPE_CEPH, \
+    VIR_SECRET_USAGE_TYPE_TLS, \
+    VIR_SECRET_USAGE_TYPE_VOLUME, \
+    VIR_SECRET_USAGE_TYPE_ISCSI
+
+from admin.decorators import superuser_only
+
 from computes.models import Compute
-from secrets.forms import AddSecret
 from vrtManager.secrets import wvmSecrets
 
 
+@superuser_only
 def secrets(request, compute_id):
     """
     :param request:
@@ -14,36 +24,44 @@ def secrets(request, compute_id):
     :return:
     """
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     secrets_all = []
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
+    secret_usage_types = {
+        VIR_SECRET_USAGE_TYPE_NONE: "none",
+        VIR_SECRET_USAGE_TYPE_VOLUME: "volume",
+        VIR_SECRET_USAGE_TYPE_CEPH: "ceph",
+        VIR_SECRET_USAGE_TYPE_ISCSI: "iscsi",
+        VIR_SECRET_USAGE_TYPE_TLS: "tls",
+    }
+
     try:
-        conn = wvmSecrets(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type)
+        conn = wvmSecrets(compute.hostname, compute.login,
+                          compute.password, compute.type)
         secrets = conn.get_secrets()
 
         for uuid in secrets:
             secrt = conn.get_secret(uuid)
             try:
-                secret_value = conn.get_secret_value(uuid)
+                secrt_value = conn.get_secret_value(uuid)
             except libvirtError as lib_err:
                 secret_value = None
-            secrets_all.append({'usage': secrt.usageID(),
-                                'uuid': secrt.UUIDString(),
-                                'usageType': secrt.usageType(),
-                                'value': secret_value
-                                })
+            secrets_all.append({
+                'usage': secrt.usageID(),
+                'uuid': secrt.UUIDString(),
+                'usageType': secret_usage_types[secrt.usageType()],
+                'value': secrt_value
+            })
         if request.method == 'POST':
             if 'create' in request.POST:
                 form = AddSecret(request.POST)
                 if form.is_valid():
                     data = form.cleaned_data
-                    conn.create_secret(data['ephemeral'], data['private'], data['usage_type'], data['data'])
+                    conn.create_secret(
+                        data['ephemeral'],
+                        data['private'],
+                        data['usage_type'],
+                        data['data'])
                     return HttpResponseRedirect(request.get_full_path())
                 else:
                     for msg_err in form.errors.values():
@@ -55,7 +73,10 @@ def secrets(request, compute_id):
             if 'set_value' in request.POST:
                 uuid = request.POST.get('uuid', '')
                 value = request.POST.get('value', '')
-                conn.set_secret_value(uuid, value)
+                try:
+                    conn.set_secret_value(uuid, value)
+                except Exception as err:
+                    error_messages.append(err)
                 return HttpResponseRedirect(request.get_full_path())
     except libvirtError as err:
         error_messages.append(err)

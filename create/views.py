@@ -12,17 +12,17 @@ from instances.models import Instance
 from vrtManager.create import wvmCreate
 from vrtManager import util
 from logs.views import addlogmsg
+from admin.decorators import superuser_only
+
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 
-
+@superuser_only
 def create_instance_select_type(request, compute_id):
     """
     :param request:
     :param compute_id:
     :return:
     """
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
 
     conn = None
     error_messages = list()
@@ -34,10 +34,7 @@ def create_instance_select_type(request, compute_id):
     appsettings = AppSettings.objects.all()
 
     try:
-        conn = wvmCreate(compute.hostname,
-                         compute.login,
-                         compute.password,
-                         compute.type)
+        conn = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
         instances = conn.get_instances()
         all_hypervisors = conn.get_hypervisors_machines()
         # Supported hypervisors by webvirtcloud: i686, x86_64(for now)
@@ -69,6 +66,7 @@ def create_instance_select_type(request, compute_id):
     return render(request, 'create_instance_w1.html', locals())
 
 
+@superuser_only
 def create_instance(request, compute_id, arch, machine):
     """
     :param request:
@@ -77,8 +75,6 @@ def create_instance(request, compute_id, arch, machine):
     :param machine:
     :return:
     """
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
 
     conn = None
     error_messages = list()
@@ -92,10 +88,7 @@ def create_instance(request, compute_id, arch, machine):
     appsettings = AppSettings.objects.all()
 
     try:
-        conn = wvmCreate(compute.hostname,
-                         compute.login,
-                         compute.password,
-                         compute.type)
+        conn = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
 
         default_firmware = appsettings.get(key="INSTANCE_FIRMWARE_DEFAULT_TYPE").value
         default_cpu_mode = appsettings.get(key="INSTANCE_CPU_DEFAULT_MODE").value
@@ -150,10 +143,7 @@ def create_instance(request, compute_id, arch, machine):
                 form = FlavorAddForm(request.POST)
                 if form.is_valid():
                     data = form.cleaned_data
-                    create_flavor = Flavor(label=data['label'],
-                                           vcpu=data['vcpu'],
-                                           memory=data['memory'],
-                                           disk=data['disk'])
+                    create_flavor = Flavor(label=data['label'], vcpu=data['vcpu'], memory=data['memory'], disk=data['disk'])
                     create_flavor.save()
                     return HttpResponseRedirect(request.get_full_path())
             if 'delete_flavor' in request.POST:
@@ -184,8 +174,14 @@ def create_instance(request, compute_id, arch, machine):
                                 error_messages.append(error_msg)
                             else:
                                 try:
-                                    path = conn.create_volume(data['storage'], data['name'], data['hdd_size'], default_disk_format,
-                                                              meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
+                                    path = conn.create_volume(
+                                        data['storage'], 
+                                        data['name'], 
+                                        data['hdd_size'], 
+                                        default_disk_format,
+                                        meta_prealloc, 
+                                        default_disk_owner_uid, 
+                                        default_disk_owner_gid)
                                     volume = dict()
                                     volume['device'] = 'disk'
                                     volume['path'] = path
@@ -210,7 +206,13 @@ def create_instance(request, compute_id, arch, machine):
                                 error_msg = _("Image has already exist. Please check volumes or change instance name")
                                 error_messages.append(error_msg)
                             else:
-                                clone_path = conn.clone_from_template(data['name'], templ_path, data['storage'], meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
+                                clone_path = conn.clone_from_template(
+                                    data['name'],
+                                    templ_path,
+                                    data['storage'],
+                                    meta_prealloc,
+                                    default_disk_owner_uid,
+                                    default_disk_owner_gid)
                                 volume = dict()
                                 volume['path'] = clone_path
                                 volume['type'] = conn.get_volume_type(clone_path)
@@ -258,22 +260,32 @@ def create_instance(request, compute_id, arch, machine):
                             firmware["readonly"] = 'yes'
                             firmware["type"] = 'pflash'
                             if 'secboot' in firmware["loader"] and machine != 'q35':
-                                messages.warning(request, "Changing machine type from '%s' to 'q35' "
-                                                          "which is required for UEFI secure boot." % machine)
+                                messages.warning(
+                                    request, "Changing machine type from '%s' to 'q35' "
+                                    "which is required for UEFI secure boot." % machine)
                                 machine = 'q35'
                                 firmware["secure"] = 'yes'
 
                         if not error_messages:
                             uuid = util.randomUUID()
                             try:
-                                conn.create_instance(name=data['name'], memory=data['memory'], vcpu=data['vcpu'],
-                                                     vcpu_mode=data['vcpu_mode'], uuid=uuid, arch=arch, machine=machine,
+                                conn.create_instance(name=data['name'],
+                                                     memory=data['memory'],
+                                                     vcpu=data['vcpu'],
+                                                     vcpu_mode=data['vcpu_mode'],
+                                                     uuid=uuid,
+                                                     arch=arch,
+                                                     machine=machine,
                                                      firmware=firmware,
                                                      volumes=volume_list,
-                                                     networks=data['networks'], virtio=data['virtio'],
-                                                     listen_addr=data["listener_addr"], nwfilter=data["nwfilter"],
-                                                     graphics=data["graphics"], video=data["video"],
-                                                     console_pass=data["console_pass"], mac=data['mac'],
+                                                     networks=data['networks'], 
+                                                     virtio=data['virtio'],
+                                                     listen_addr=data["listener_addr"], 
+                                                     nwfilter=data["nwfilter"],
+                                                     graphics=data["graphics"], 
+                                                     video=data["video"],
+                                                     console_pass=data["console_pass"], 
+                                                     mac=data['mac'],
                                                      qemu_ga=data['qemu_ga'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                                 create_instance.save()

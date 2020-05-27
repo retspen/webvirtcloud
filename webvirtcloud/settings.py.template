@@ -14,17 +14,19 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'bootstrap4',
+    'fa',
     'accounts',
+    'admin',
+    'appsettings',
     'computes',
     'console',
     'create',
@@ -35,7 +37,6 @@ INSTALLED_APPS = [
     'nwfilters',
     'storages',
     'secrets',
-    'appsettings',
     'logs',
 ]
 
@@ -57,7 +58,9 @@ ROOT_URLCONF = 'webvirtcloud.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [ os.path.join(BASE_DIR, 'templates'), ],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -66,12 +69,14 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+                'common_tags': 'webvirtcloud.common_tags',
+            },
         },
     },
 ]
 
 WSGI_APPLICATION = 'webvirtcloud.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
@@ -85,11 +90,11 @@ DATABASES = {
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    #'django.contrib.auth.backends.RemoteUserBackend',
-    #'accounts.backends.MyRemoteUserBackend',
 ]
 
 LOGIN_URL = '/accounts/login'
+
+LOGOUT_REDIRECT_URL = '/accounts/login'
 
 LANGUAGE_CODE = 'en-us'
 
@@ -153,4 +158,5 @@ LIBVIRT_KEEPALIVE_COUNT = 5
 
 ALLOW_EMPTY_PASSWORD = True
 NEW_USER_DEFAULT_INSTANCES = []
+
 
