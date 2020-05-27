@@ -20,7 +20,6 @@ def profile(request):
     error_messages = []
     # user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-    show_profile_edit_password = settings.SHOW_PROFILE_EDIT_PASSWORD
 
     if request.method == 'POST':
         if 'username' in request.POST:

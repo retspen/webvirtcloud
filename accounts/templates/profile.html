@@ -41,7 +41,7 @@
                             </div>
                         </div>
                     </form>
-                    {% if show_profile_edit_password %}
+                    {% if perms.accounts.change_password %}
                     <h3 class="page-header">{% trans "Edit Password" %}</h3>
                     <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
                         <div class="form-group">

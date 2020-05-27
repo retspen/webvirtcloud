@@ -171,7 +171,6 @@ QUOTA_DEBUG = True
 ALLOW_EMPTY_PASSWORD = True
 SHOW_ACCESS_ROOT_PASSWORD = False
 SHOW_ACCESS_SSH_KEYS = False
-SHOW_PROFILE_EDIT_PASSWORD = False
 
 # available list style: default (grouped), nongrouped
 VIEW_INSTANCES_LIST_STYLE = 'grouped'
