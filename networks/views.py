@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from networks.forms import AddNetPool
 from vrtManager.network import wvmNetwork, wvmNetworks
@@ -11,7 +10,6 @@ from libvirt import libvirtError
 from django.contrib import messages
 
 
-@login_required
 def networks(request, compute_id):
     """
     :param request:
@@ -70,7 +68,6 @@ def networks(request, compute_id):
     return render(request, 'networks.html', locals())
 
 
-@login_required
 def network(request, compute_id, pool):
     """
     :param request:

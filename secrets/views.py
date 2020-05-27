@@ -1,14 +1,12 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from secrets.forms import AddSecret
 from vrtManager.secrets import wvmSecrets
 from libvirt import libvirtError
 
 
-@login_required
 def secrets(request, compute_id):
     """
     :param request:

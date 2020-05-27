@@ -3,7 +3,6 @@ from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
 from accounts.models import UserInstance
@@ -13,7 +12,6 @@ from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, con
 from libvirt import libvirtError
 
 
-@login_required
 def computes(request):
     """
     :param request:
@@ -135,7 +133,6 @@ def computes(request):
     return render(request, 'computes.html', locals())
 
 
-@login_required
 def overview(request, compute_id):
     """
     :param request:
@@ -167,7 +164,6 @@ def overview(request, compute_id):
     return render(request, 'overview.html', locals())
 
 
-@login_required
 def compute_graph(request, compute_id):
     """
     :param request:
@@ -197,7 +193,6 @@ def compute_graph(request, compute_id):
     return response
 
 
-@login_required
 def get_compute_disk_buses(request, compute_id, arch, machine, disk):
     data = dict()
     compute = get_object_or_404(Compute, pk=compute_id)
@@ -224,7 +219,6 @@ def get_compute_disk_buses(request, compute_id, arch, machine, disk):
     return HttpResponse(json.dumps(data))
 
 
-@login_required
 def get_compute_machine_types(request, compute_id, arch):
     data = dict()
     try:
@@ -240,7 +234,6 @@ def get_compute_machine_types(request, compute_id, arch):
     return HttpResponse(json.dumps(data))
 
 
-@login_required
 def get_compute_video_models(request, compute_id, arch, machine):
     data = dict()
     try:
@@ -256,7 +249,6 @@ def get_compute_video_models(request, compute_id, arch, machine):
     return HttpResponse(json.dumps(data))
 
 
-@login_required
 def get_dom_capabilities(request, compute_id, arch, machine):
     data = dict()
     try:
