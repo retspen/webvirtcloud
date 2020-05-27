@@ -1,18 +1,16 @@
-from secrets.forms import AddSecret
-
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from libvirt import libvirtError
-from libvirt import VIR_SECRET_USAGE_TYPE_NONE, \
-    VIR_SECRET_USAGE_TYPE_CEPH, \
-    VIR_SECRET_USAGE_TYPE_TLS, \
-    VIR_SECRET_USAGE_TYPE_VOLUME, \
-    VIR_SECRET_USAGE_TYPE_ISCSI
+from libvirt import (VIR_SECRET_USAGE_TYPE_NONE, 
+    VIR_SECRET_USAGE_TYPE_CEPH, 
+    VIR_SECRET_USAGE_TYPE_TLS,
+    VIR_SECRET_USAGE_TYPE_VOLUME, 
+    VIR_SECRET_USAGE_TYPE_ISCSI)
 
 from admin.decorators import superuser_only
-
 from computes.models import Compute
+from secrets.forms import AddSecret
 from vrtManager.secrets import wvmSecrets
 
 
