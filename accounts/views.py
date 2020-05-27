@@ -1,12 +1,14 @@
-from django.shortcuts import render
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
-from accounts.models import *
-from instances.models import Instance
-from accounts.forms import UserAddForm
 from django.conf import settings
 from django.core.validators import ValidationError
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
+from django.urls import reverse
+from django.utils.translation import ugettext_lazy as _
+
+from accounts.forms import UserAddForm
+from accounts.models import *
+from admin.decorators import superuser_only
+from instances.models import Instance
 
 
 def profile(request):
@@ -16,7 +18,7 @@ def profile(request):
     """
 
     error_messages = []
-    user = User.objects.get(id=request.user.id)
+    # user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     show_profile_edit_password = settings.SHOW_PROFILE_EDIT_PASSWORD
 
@@ -26,7 +28,7 @@ def profile(request):
             email = request.POST.get('email', '')
             user.first_name = username
             user.email = email
-            user.save()
+            request.user.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'oldpasswd' in request.POST:
             oldpasswd = request.POST.get('oldpasswd', '')
@@ -36,11 +38,11 @@ def profile(request):
                 error_messages.append("Passwords didn't enter")
             if password1 and password2 and password1 != password2:
                 error_messages.append("Passwords don't match")
-            if not user.check_password(oldpasswd):
+            if not request.user.check_password(oldpasswd):
                 error_messages.append("Old password is wrong!")
             if not error_messages:
-                user.set_password(password1)
-                user.save()
+                request.user.set_password(password1)
+                request.user.save()
                 return HttpResponseRedirect(request.get_full_path())
         if 'keyname' in request.POST:
             keyname = request.POST.get('keyname', '')
@@ -67,94 +69,13 @@ def profile(request):
     return render(request, 'profile.html', locals())
 
 
-def accounts(request):
-    """
-    :param request:
-    :return:
-    """
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
-    error_messages = []
-    users = User.objects.all().order_by('username')
-    allow_empty_password = settings.ALLOW_EMPTY_PASSWORD
-
-    if request.method == 'POST':
-        if 'create' in request.POST:
-            form = UserAddForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-            if not error_messages:
-                new_user = User.objects.create_user(data['name'], None, data['password'])
-                new_user.save()
-                UserAttributes.configure_user(new_user)
-                return HttpResponseRedirect(request.get_full_path())
-        if 'edit' in request.POST:
-            CHECKBOX_MAPPING = {'on': True, 'off': False, }
-
-            user_id = request.POST.get('user_id', '')
-            user_pass = request.POST.get('user_pass', '')
-            user_edit = User.objects.get(id=user_id)
-
-            if user_pass != '': user_edit.set_password(user_pass)
-            user_edit.is_staff = CHECKBOX_MAPPING.get(request.POST.get('user_is_staff', 'off'))
-            user_edit.is_superuser = CHECKBOX_MAPPING.get(request.POST.get('user_is_superuser', 'off'))
-            user_edit.save()
-
-            UserAttributes.create_missing_userattributes(user_edit)
-            user_edit.userattributes.can_clone_instances = CHECKBOX_MAPPING.get(request.POST.get('userattributes_can_clone_instances', 'off'))
-            user_edit.userattributes.max_instances = request.POST.get('userattributes_max_instances', 0)
-            user_edit.userattributes.max_cpus = request.POST.get('userattributes_max_cpus', 0)
-            user_edit.userattributes.max_memory = request.POST.get('userattributes_max_memory', 0)
-            user_edit.userattributes.max_disk_size = request.POST.get('userattributes_max_disk_size', 0)
-
-            try:
-                user_edit.userattributes.clean_fields()
-            except ValidationError as exc:
-                error_messages.append(exc)
-            else:
-                user_edit.userattributes.save()
-                return HttpResponseRedirect(request.get_full_path())
-        if 'block' in request.POST:
-            user_id = request.POST.get('user_id', '')
-            user_block = User.objects.get(id=user_id)
-            user_block.is_active = False
-            user_block.save()
-            return HttpResponseRedirect(request.get_full_path())
-        if 'unblock' in request.POST:
-            user_id = request.POST.get('user_id', '')
-            user_unblock = User.objects.get(id=user_id)
-            user_unblock.is_active = True
-            user_unblock.save()
-            return HttpResponseRedirect(request.get_full_path())
-        if 'delete' in request.POST:
-            user_id = request.POST.get('user_id', '')
-            try:
-                del_user_inst = UserInstance.objects.filter(user_id=user_id)
-                del_user_inst.delete()
-            finally:
-                user_delete = User.objects.get(id=user_id)
-                user_delete.delete()
-            return HttpResponseRedirect(request.get_full_path())
-
-    accounts_template_file = 'accounts.html'
-    if settings.VIEW_ACCOUNTS_STYLE == "list":
-        accounts_template_file = 'accounts-list.html'
-    return render(request, accounts_template_file, locals())
-
-
+@superuser_only
 def account(request, user_id):
     """
     :param request:
     :param user_id:
     :return:
     """
-
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     user = User.objects.get(id=user_id)
@@ -181,12 +102,12 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
-            
+
             if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
             else:
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id))
-            
+
             if check_inst:
                 msg = _("Instance already added")
                 error_messages.append(msg)

@@ -1,12 +1,16 @@
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from computes.models import Compute
 from secrets.forms import AddSecret
-from vrtManager.secrets import wvmSecrets
+
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from libvirt import libvirtError
 
+from admin.decorators import superuser_only
+from computes.models import Compute
+from vrtManager.secrets import wvmSecrets
 
+
+@superuser_only
 def secrets(request, compute_id):
     """
     :param request:
@@ -14,17 +18,11 @@ def secrets(request, compute_id):
     :return:
     """
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     secrets_all = []
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
-        conn = wvmSecrets(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type)
+        conn = wvmSecrets(compute.hostname, compute.login, compute.password, compute.type)
         secrets = conn.get_secrets()
 
         for uuid in secrets:
@@ -33,11 +31,12 @@ def secrets(request, compute_id):
                 secret_value = conn.get_secret_value(uuid)
             except libvirtError as lib_err:
                 secret_value = None
-            secrets_all.append({'usage': secrt.usageID(),
-                                'uuid': secrt.UUIDString(),
-                                'usageType': secrt.usageType(),
-                                'value': secret_value
-                                })
+            secrets_all.append({
+                'usage': secrt.usageID(),
+                'uuid': secrt.UUIDString(),
+                'usageType': secrt.usageType(),
+                'value': secret_value
+            })
         if request.method == 'POST':
             if 'create' in request.POST:
                 form = AddSecret(request.POST)
