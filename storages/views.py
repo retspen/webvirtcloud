@@ -1,32 +1,30 @@
 import json
-from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
 from django.http import HttpResponseRedirect, HttpResponse
+from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
-from django.contrib import messages
 from libvirt import libvirtError
+
+from admin.decorators import superuser_only
 from computes.models import Compute
 from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
 
 
+@superuser_only
 def storages(request, compute_id):
     """
     :param request:
     :param compute_id:
     :return:
     """
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
 
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmStorages(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type)
+        conn = wvmStorages(compute.hostname, compute.login, compute.password, compute.type)
         storages = conn.get_storages_info()
         secrets = conn.get_secrets()
 
@@ -47,12 +45,10 @@ def storages(request, compute_id):
                             error_messages.append(msg)
                     if not error_messages:
                         if data['stg_type'] == 'rbd':
-                            conn.create_storage_ceph(data['stg_type'], data['name'],
-                                                     data['ceph_pool'], data['ceph_host'],
+                            conn.create_storage_ceph(data['stg_type'], data['name'], data['ceph_pool'], data['ceph_host'],
                                                      data['ceph_user'], data['secret'])
                         elif data['stg_type'] == 'netfs':
-                            conn.create_storage_netfs(data['stg_type'], data['name'],
-                                                      data['netfs_host'], data['source'],
+                            conn.create_storage_netfs(data['stg_type'], data['name'], data['netfs_host'], data['source'],
                                                       data['source_format'], data['target'])
                         else:
                             conn.create_storage(data['stg_type'], data['name'], data['source'], data['target'])
@@ -67,6 +63,7 @@ def storages(request, compute_id):
     return render(request, 'storages.html', locals())
 
 
+@superuser_only
 def storage(request, compute_id, pool):
     """
     :param request:
@@ -74,10 +71,6 @@ def storage(request, compute_id, pool):
     :param pool:
     :return:
     """
-
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     def handle_uploaded_file(path, f_name):
         target = path + '/' + str(f_name)
         destination = open(target, 'wb+')
@@ -90,11 +83,7 @@ def storage(request, compute_id, pool):
     meta_prealloc = False
 
     try:
-        conn = wvmStorage(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type,
-                          pool)
+        conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
 
         storages = conn.get_storages()
         state = conn.is_active()
@@ -221,11 +210,7 @@ def get_volumes(request, compute_id, pool):
     data = {}
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
-        conn = wvmStorage(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type,
-                          pool)
+        conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
         conn.refresh()
         data['vols'] = sorted(conn.get_volumes())
     except libvirtError:
