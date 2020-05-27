@@ -1,10 +1,11 @@
-from django.db.models import Model, BooleanField, IntegerField, CharField
-from django.db.models import ForeignKey, OneToOneField
-from django.db.models import CASCADE, DO_NOTHING
-from django.contrib.auth.models import User
 from django.conf import settings
-from instances.models import Instance
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
+from django.db.models import (CASCADE, DO_NOTHING, BooleanField, CharField,
+                              ForeignKey, IntegerField, Model, OneToOneField)
+from django.utils.translation import ugettext_lazy as _
+
+from instances.models import Instance
 
 
 class UserInstance(Model):
@@ -30,10 +31,26 @@ class UserSSHKey(Model):
 class UserAttributes(Model):
     user = OneToOneField(User, on_delete=CASCADE)
     can_clone_instances = BooleanField(default=True)
-    max_instances = IntegerField(default=1, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1), ])
-    max_cpus = IntegerField(default=1, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1)])
-    max_memory = IntegerField(default=2048, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1)])
-    max_disk_size = IntegerField(default=20, help_text="-1 for unlimited. Any integer value", validators=[MinValueValidator(-1)])
+    max_instances = IntegerField(default=1,
+                                 help_text="-1 for unlimited. Any integer value",
+                                 validators=[
+                                     MinValueValidator(-1),
+                                 ])
+    max_cpus = IntegerField(
+        default=1,
+        help_text="-1 for unlimited. Any integer value",
+        validators=[MinValueValidator(-1)],
+    )
+    max_memory = IntegerField(
+        default=2048,
+        help_text="-1 for unlimited. Any integer value",
+        validators=[MinValueValidator(-1)],
+    )
+    max_disk_size = IntegerField(
+        default=20,
+        help_text="-1 for unlimited. Any integer value",
+        validators=[MinValueValidator(-1)],
+    )
 
     @staticmethod
     def create_missing_userattributes(user):
@@ -51,7 +68,7 @@ class UserAttributes(Model):
                 instance = Instance.objects.get(name=instance_name)
                 user_instance = UserInstance(user=user, instance=instance)
                 user_instance.save()
-    
+
     @staticmethod
     def configure_user(user):
         UserAttributes.create_missing_userattributes(user)
@@ -59,3 +76,16 @@ class UserAttributes(Model):
 
     def __unicode__(self):
         return self.user.username
+
+
+class PermissionSet(Model):
+    """
+    Dummy model for holding set of permissions we need to be automatically added by Django
+    """
+    class Meta:
+        default_permissions = ()
+        permissions = (
+            ('change_password', _('Can change password')),
+        )
+
+        managed = False
