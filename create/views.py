@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from libvirt import libvirtError
 from computes.models import Compute
@@ -16,7 +15,6 @@ from logs.views import addlogmsg
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 
 
-@login_required
 def create_instance_select_type(request, compute_id):
     """
     :param request:
@@ -71,7 +69,6 @@ def create_instance_select_type(request, compute_id):
     return render(request, 'create_instance_w1.html', locals())
 
 
-@login_required
 def create_instance(request, compute_id, arch, machine):
     """
     :param request:

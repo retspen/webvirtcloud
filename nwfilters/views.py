@@ -2,7 +2,6 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
 from libvirt import libvirtError
 from computes.models import Compute
 from vrtManager import util
@@ -11,7 +10,6 @@ from vrtManager.instance import wvmInstances, wvmInstance
 from logs.views import addlogmsg
 
 
-@login_required
 def nwfilters(request, compute_id):
     """
     :param request:
@@ -109,7 +107,6 @@ def nwfilters(request, compute_id):
                                               'compute': compute})
 
 
-@login_required
 def nwfilter(request, compute_id, nwfltr):
     """
     :param request:
