@@ -6,7 +6,7 @@
 
 {% block content %}
 {% if create_url %}
-<a class="btn btn-success float-right" href="{% url create_url %}">{% icon 'plus' %} {%trans "Create New" %}</a>
+    <a class="btn btn-success float-right" href="{% url create_url %}">{% icon 'plus' %} {%trans "Create New" %}</a>
 {% endif %}
 <table class="table table-hover table-striped">
     {% for object in object_list %}
@@ -15,9 +15,9 @@
             <div class="btn-group float-right">
                 <a class="btn btn-success" href="{% url update_url object.id %}">{% icon 'edit' %} {%trans "Edit"%}</a>
                 {% if extra_urls %}
-                {% for url in extra_urls %}
-                <a class="btn btn-primary" href="{% url url.0 object.id %}">{{ url.1 }}</a>
-                {% endfor %}
+                    {% for url in extra_urls %}
+                        <a class="btn btn-primary" href="{% url url.0 object.id %}">{{ url.1 }}</a>
+                    {% endfor %}
                 {% endif %}
                 <a class="btn btn-danger" href="{% url delete_url object.id %}">{% icon 'times' %} {%trans "Delete" %}</a>
             </div>

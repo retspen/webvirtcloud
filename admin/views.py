@@ -30,7 +30,6 @@ def group_create(request):
     if form.is_valid():
         form.save()
         return redirect('admin:group_list')
-
     return render(
         request,
         'admin/common/form.html',
@@ -116,8 +115,7 @@ def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
     attributes = UserAttributes.objects.get(user=user)
     user_form = forms.UserForm(request.POST or None, instance=user)
-    attributes_form = forms.UserAttributesForm(
-        request.POST or None, instance=attributes)
+    attributes_form = forms.UserAttributesForm(request.POST or None, instance=attributes)
     if user_form.is_valid() and attributes_form.is_valid():
         user_form.save()
         attributes_form.save()
