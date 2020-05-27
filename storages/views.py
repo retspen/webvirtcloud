@@ -3,7 +3,6 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from libvirt import libvirtError
 from computes.models import Compute
@@ -11,7 +10,6 @@ from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
 
 
-@login_required
 def storages(request, compute_id):
     """
     :param request:
@@ -69,7 +67,6 @@ def storages(request, compute_id):
     return render(request, 'storages.html', locals())
 
 
-@login_required
 def storage(request, compute_id, pool):
     """
     :param request:
@@ -214,7 +211,6 @@ def storage(request, compute_id, pool):
     return render(request, 'storage.html', locals())
 
 
-@login_required
 def get_volumes(request, compute_id, pool):
     """
     :param request:

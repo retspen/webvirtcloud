@@ -2,7 +2,6 @@ import json
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from instances.models import Instance
 from logs.models import Logs
@@ -19,7 +18,6 @@ def addlogmsg(user, instance, message):
     add_log_msg.save()
 
 
-@login_required
 def showlogs(request, page=1):
     """
     :param request:
@@ -40,7 +38,6 @@ def showlogs(request, page=1):
     return render(request, 'showlogs.html', locals())
 
 
-@login_required
 def vm_logs(request, vname):
     """
     :param request:

@@ -1,6 +1,5 @@
 import re
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from libvirt import libvirtError
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
@@ -8,7 +7,6 @@ from webvirtcloud.settings import WS_PUBLIC_PORT
 from webvirtcloud.settings import WS_PUBLIC_HOST
 
 
-@login_required
 def console(request):
     """
     :param request:

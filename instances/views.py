@@ -11,7 +11,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
 from django.contrib.auth.models import User
@@ -29,7 +28,6 @@ from django.contrib import messages
 from collections import OrderedDict
 
 
-@login_required
 def index(request):
     """
     :param request:
@@ -38,7 +36,6 @@ def index(request):
     return HttpResponseRedirect(reverse('allinstances'))
 
 
-@login_required
 def allinstances(request):
     """
     INSTANCES LIST FOR ALL HOSTS
@@ -70,7 +67,6 @@ def allinstances(request):
     return render(request, 'allinstances.html', locals())
 
 
-@login_required
 def instances(request, compute_id):
     """
     :param request:
@@ -99,7 +95,6 @@ def instances(request, compute_id):
     return render(request, 'instances.html', locals())
 
 
-@login_required
 def instance(request, compute_id, vname):
     """
     :param request:
@@ -1047,7 +1042,6 @@ def instance(request, compute_id, vname):
     return render(request, 'instance.html', locals())
 
 
-@login_required
 def inst_status(request, compute_id, vname):
     """
     :param request:
@@ -1242,7 +1236,6 @@ def instances_actions(request):
     return HttpResponseRedirect(request.get_full_path())
 
 
-@login_required
 def inst_graph(request, compute_id, vname):
     """
     :param request:
@@ -1305,7 +1298,6 @@ def _get_dhcp_mac_address(vname):
     return mac
 
 
-@login_required
 def guess_mac_address(request, vname):
     data = {'vname': vname}
     mac = _get_dhcp_mac_address(vname)
@@ -1324,14 +1316,12 @@ def _get_random_mac_address():
     return mac
 
 
-@login_required
 def random_mac_address(request):
     data = dict()
     data['mac'] = _get_random_mac_address()
     return HttpResponse(json.dumps(data))
 
 
-@login_required
 def guess_clone_name(request):
     dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
     prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
@@ -1348,7 +1338,6 @@ def guess_clone_name(request):
     return HttpResponse(json.dumps({}))
 
 
-@login_required
 def check_instance(request, vname):
     instance = Instance.objects.filter(name=vname)
     data = {'vname': vname, 'exists': False}
