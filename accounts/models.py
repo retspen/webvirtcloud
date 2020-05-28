@@ -2,7 +2,6 @@ from django.db.models import Model, BooleanField, IntegerField, CharField
 from django.db.models import ForeignKey, OneToOneField
 from django.db.models import CASCADE, DO_NOTHING
 from django.contrib.auth.models import User
-from django.conf import settings
 from instances.models import Instance
 from django.core.validators import MinValueValidator
 

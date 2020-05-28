@@ -41,7 +41,7 @@
                             </div>
                         </div>
                     </form>
-                    {% if show_profile_edit_password %}
+                    {% if show_profile_edit_password == 'True' %}
                     <h3 class="page-header">{% trans "Edit Password" %}</h3>
                     <form method="post" action="" role="form" aria-label="Edit user password form">{% csrf_token %}
                         <div class="form-group">

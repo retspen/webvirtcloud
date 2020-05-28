@@ -75,7 +75,7 @@
             <dt class="col-3">{% trans "Version" %}</dt>
             <dd class="col-9">
                 <span class="badge bg-secondary text-light">{% trans 'Qemu' %} </span>
-                <span class="badge bg-primary text-light">{{ version }}</span> &nbsp;
+                 <span class="badge bg-primary text-light">{{ version }}</span> &nbsp;
                 <span class="badge bg-secondary text-light">{% trans 'Libvirt' %} </span>
                 <span class="badge bg-primary text-light">{{ lib_version }}</span> &nbsp;
             </dd>
@@ -115,6 +115,7 @@
                 </div>
             </div>
         </div>
+    </div>
 {% endblock %}
 {% block script %}
 <script src="{% static "js/Chart.bundle.min.js" %}"></script>

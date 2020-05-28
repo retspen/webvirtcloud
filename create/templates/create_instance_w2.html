@@ -199,7 +199,7 @@
                                                                         <div class="col-sm-6">
                                                                             <select id="cache_mode" name="cache_mode" class="custom-select">
                                                                                 {% for mode, name in cache_modes %}
-                                                                                    <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                                                                    <option value="{{ mode }}" {% if mode == default_cache %}selected {% endif %}>
                                                                                     {% trans name %}</option>
                                                                                 {% endfor %}
                                                                             </select>
@@ -303,7 +303,7 @@
                     </div>
 
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addCustom">
-                <div class="well">
+                <div>
                     <form method="post" role="form" aria-label="Create custom instance form">{% csrf_token %}
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
@@ -423,7 +423,7 @@
                             <div class="col-sm-7">
                                 <select id="cache_mode" name="cache_mode" class="form-control">
                                     {% for mode, name in cache_modes %}
-                                        <option value="{{ mode }}" {% ifequal mode default_cache %}selected {% endifequal %}>
+                                        <option value="{{ mode }}" {% if mode == default_cache %}selected {% endif %}>
                                             {% trans name %}</option>
                                     {% endfor %}
                                 </select>
@@ -516,7 +516,7 @@
             </div>
 
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromTemp">
-                <div class="well">
+                <div>
                     <form method="post" role="form" aria-label="Create instance from template form">{% csrf_token %}
                         <div class="form-group row">
                             <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
@@ -636,7 +636,7 @@
                                 <div class="col-sm-7">
                                     <select id="cache_mode" name="cache_mode" class="custom-select">
                                         {% for mode, name in cache_modes %}
-                                            <option value="{{ mode }}" {% ifequal mode default_cache %}selected{% endifequal %}>
+                                            <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>
                                             {% trans name %}</option>
                                         {% endfor %}
                                     </select>
@@ -788,8 +788,7 @@
                                     '{% endfor %}' +
                                 '</select>' +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link float-right" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a>' +
-                            '</li>';
+                                '<a class="btn-link float-right" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></li>';
                         selected_list_html += li;
                         counter++;
                     });
@@ -797,7 +796,6 @@
                     $('#disk_list_div').addClass('d-none');
                 }
                 $('#img-list').html(selected_list_html);
-
             }
         });
 
@@ -822,7 +820,7 @@
                     $.each(input_value.split(','), function (index, value) {
                         let li = '<li>eth' + counter +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link float-right" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></a></li>';
+                                '<a class="btn-link float-right" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></li>';
                         selected_list_html += li;
                         counter++;
                     });

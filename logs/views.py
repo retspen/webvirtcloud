@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
+from appsettings.models import AppSettings
 from instances.models import Instance
 from logs.models import Logs
 
@@ -31,10 +31,11 @@ def showlogs(request, page=1):
         return HttpResponseRedirect(reverse('index'))
 
     page = int(page)
-    limit_from = (page-1)*settings.LOGS_PER_PAGE
-    limit_to = page*settings.LOGS_PER_PAGE
+    logs_per_page = int(AppSettings.objects.get(key="LOGS_PER_PAGE").value)
+    limit_from = (page-1) * logs_per_page
+    limit_to = page * logs_per_page
     logs = Logs.objects.all().order_by('-date')[limit_from:limit_to+1]
-    has_next_page = logs.count() > settings.LOGS_PER_PAGE
+    has_next_page = logs.count() > logs_per_page
     # TODO: remove last element from queryset, but do not affect database
 
     return render(request, 'showlogs.html', locals())

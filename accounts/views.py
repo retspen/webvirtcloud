@@ -4,10 +4,10 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 from django.core.validators import ValidationError
 from instances.models import Instance
 from accounts.models import *
+from appsettings.models import AppSettings
 from accounts.forms import UserAddForm
 
 import sass
@@ -23,9 +23,7 @@ def profile(request):
     error_messages = []
     user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-    show_profile_edit_password = settings.SHOW_PROFILE_EDIT_PASSWORD
-
-    themes_list = os.listdir(settings.SCSS_DIR +"/wvc-theme")
+    show_profile_edit_password = AppSettings.objects.get(key="SHOW_PROFILE_EDIT_PASSWORD").value
 
     if request.method == 'POST':
         if 'username' in request.POST:
@@ -71,20 +69,6 @@ def profile(request):
             delkeypublic = UserSSHKey.objects.get(id=keyid)
             delkeypublic.delete()
             return HttpResponseRedirect(request.get_full_path())
-        if 'change_theme' in request.POST:
-            theme = request.POST.get('theme_select', '')
-            scss_var = f"@import '{settings.SCSS_DIR}/wvc-theme/{theme}/variables';"
-            scss_bootswatch = f"@import '{settings.SCSS_DIR}/wvc-theme/{theme}/bootswatch';"       
-            scss_boot = f"@import '{settings.SCSS_DIR}/bootstrap-overrides.scss';"
-                          
-            with open(settings.SCSS_DIR + "/wvc-main.scss", "w") as main:
-                main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch)
-            
-            css_compressed = sass.compile(string=scss_var + "\n"+ scss_boot + "\n" + scss_bootswatch, output_style='compressed')
-            with open("static/" + "css/wvc-main.min.css", "w") as css:
-                css.write(css_compressed)
-            
-            return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
 
 
@@ -99,7 +83,8 @@ def accounts(request):
 
     error_messages = []
     users = User.objects.all().order_by('username')
-    allow_empty_password = settings.ALLOW_EMPTY_PASSWORD
+    appsettings = AppSettings.objects.all()
+    allow_empty_password = appsettings.get(key="ALLOW_EMPTY_PASSWORD").value
 
     if request.method == 'POST':
         if 'create' in request.POST:
@@ -163,7 +148,7 @@ def accounts(request):
             return HttpResponseRedirect(request.get_full_path())
 
     accounts_template_file = 'accounts.html'
-    if settings.VIEW_ACCOUNTS_STYLE == "list":
+    if appsettings.get(key="VIEW_ACCOUNTS_STYLE").value == "list":
         accounts_template_file = 'accounts-list.html'
     return render(request, accounts_template_file, locals())
 
@@ -205,7 +190,7 @@ def account(request, user_id):
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
             
-            if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+            if AppSettings.objects.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
             else:
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id))

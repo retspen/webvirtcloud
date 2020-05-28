@@ -2,14 +2,14 @@ import re
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
-from django.conf import settings
+from appsettings.models import AppSettings
 
 
 class UserAddForm(forms.Form):
     name = forms.CharField(label="Name",
                            error_messages={'required': _('No User name has been entered')},
                            max_length=20)
-    password = forms.CharField(required=not settings.ALLOW_EMPTY_PASSWORD,
+    password = forms.CharField(required=False if AppSettings.objects.get(key="ALLOW_EMPTY_PASSWORD").value == 'True' else True,
                                error_messages={'required': _('No password has been entered')},)
 
     def clean_name(self):
