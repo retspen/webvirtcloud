@@ -91,4 +91,4 @@ class UserCreateForm(UserForm):
 class UserAttributesForm(forms.ModelForm):
     class Meta:
         model = UserAttributes
-        exclude = ['user']
+        exclude = ['user', 'can_clone_instances']
