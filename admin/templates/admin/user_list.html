@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+{% load common_tags %}
 {% load font_awesome %}
 {% block title %}{% trans "Users" %}{% endblock %}
 {% block content %}
@@ -33,12 +34,13 @@
                         <th>{% trans "Status" %}</th>
                         <th>{% trans "Staff" %}</th>
                         <th>{% trans "Superuser" %}</th>
-                        <th>{% trans "Clone" %}</th>
+                        <th>{% trans "Can Clone" %}</th>
                         <th>{% trans "" %}</th>
                     </tr>
                 </thead>
                 <tbody class="searchable">
                 {% for user in users %}
+                    {% has_perm user 'instances.clone_instances' as can_clone %}
                     <tr class="{% if not user.is_active %}danger{% endif %}">
                         <td>
                             {{ user.username }}
@@ -52,7 +54,7 @@
                         </td>
                         <td>{% if user.is_staff %}{% icon 'check' %}{% endif %}</td>
                         <td>{% if user.is_superuser %}{% icon 'check' %}</span>{% endif %}</td>
-                        <td>{% if user.userattributes.can_clone_instances %}{% icon 'check' %}{% endif %}</td>
+                        <td>{% if can_clone %}{% icon 'check' %}{% endif %}</td>
                         <td>
                             <div class="pull-right btn-group">
                                 <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'account' user.id %}">{% icon 'eye' %}</a>

@@ -24,3 +24,10 @@ def class_active(request, pattern):
         # Not sure why 'class="active"' returns class=""active""
         return 'class=active'
     return ''
+
+
+@register.simple_tag
+def has_perm(user, permission_codename):
+    if user.has_perm(permission_codename):
+        return True
+    return False
