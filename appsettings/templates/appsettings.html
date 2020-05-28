@@ -57,17 +57,25 @@
                     </div>
                 </form>
                 {% endif %}
-                <form method="post" action="" role="form" aria-label="Edit bottom bar settings form">{% csrf_token %}
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{{ show_inst_bottom_bar.name }}</label>
-                        <div class="col-sm-6">
-                            <select class="form-control" name="{{ show_inst_bottom_bar.key }}"  onchange="this.form.submit()">
-                                <option {% if show_inst_bottom_bar.value == 'True' %} selected {% endif %} value=True>{% trans "True" %}</option>
-                                <option {% if show_inst_bottom_bar.value == 'False' %} selected {% endif %} value=False>{% trans "False" %}</option>
-                            </select>
+                 <h3 class="page-header">{% trans "Other Settings" %}</h3>
+                {% for setting in appsettings %}
+                    <form method="post" action="" role="form" aria-label="{{setting.name}} form">{% csrf_token %}
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{{ setting.name }}</label>
+                            <div class="col-sm-6">
+                            {% if setting.choices %}
+                                <select class="form-control" name="{{ setting.key }}"  onchange="this.form.submit()" title="{{ setting.description }}">
+                                    {% for choice in setting.choices_as_list %}
+                                        <option {% if setting.value == choice %} selected {% endif %} value={{ choice }}>{% trans choice %}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <input class="form-control" name="{{ setting.key }}" value="{{ setting.value }}" title="{{ setting.description }}"  onchange="this.form.submit()"/>
+                            {% endif%}
+                            </div>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                {% endfor %}
             </div>
         </div>
 {% endblock %}

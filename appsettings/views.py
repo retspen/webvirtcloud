@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.conf import settings
 
 from appsettings.models import AppSettings
 from logs.views import addlogmsg
@@ -22,14 +21,33 @@ def appsettings(request):
     """
     error_messages = []
 
+    sass_dir = AppSettings.objects.get(key="SASS_DIR")
+    bootstrap_theme = AppSettings.objects.get(key="BOOTSTRAP_THEME")
+    try:
+        themes_list = os.listdir(sass_dir.value + "/wvc-theme")
+    except FileNotFoundError as err:
+        error_messages.append(err)
+        addlogmsg(request.user.username, "", err)   
+
+    # Bootstrap settings related with filesystems, because of that they are excluded from other settings
+    appsettings = AppSettings.objects.exclude(description__startswith="Bootstrap").order_by("name")
     
-    show_inst_bottom_bar = AppSettings.objects.get(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR")
-    bootstrap_theme = AppSettings.objects.get(key="BOOTSTRAP_THEME") 
-    sass_dir = AppSettings.objects.get(key="SASS_DIR") 
 
-    themes_list = os.listdir(sass_dir.value + "/wvc-theme")
+    if request.method == 'POST':
+        if 'SASS_DIR' in request.POST:
+            try:
+                sass_dir.value = request.POST.get("SASS_DIR", "")
+                sass_dir.save()
 
-    if request.method == 'POST':        
+                msg = _(f"SASS directory path is changed. Now: {sass_dir.value}")
+                messages.success(request, msg)
+            except Exception as err:
+                msg = err
+                error_messages.append(msg)
+            
+            addlogmsg(request.user.username, "", msg)
+            return HttpResponseRedirect(request.get_full_path())
+
         if 'BOOTSTRAP_THEME' in request.POST:
             theme = request.POST.get("BOOTSTRAP_THEME", "")
             scss_var = f"@import '{sass_dir.value}/wvc-theme/{theme}/variables';"
@@ -56,33 +74,20 @@ def appsettings(request):
             addlogmsg(request.user.username, "", msg)
             return HttpResponseRedirect(request.get_full_path())
 
-        if 'SASS_DIR' in request.POST:
-            try:
-                sass_dir.value = request.POST.get("SASS_DIR", "")
-                sass_dir.save()
+        for setting in appsettings:
+            if setting.key in request.POST:
+                try:
+                    setting.value = request.POST.get(setting.key, "")
+                    setting.save()
 
-                msg = _(f"SASS directory path is changed. Now: {sass_dir.value}")
-                messages.success(request, msg)
-            except Exception as err:
-                msg = err
-                error_messages.append(msg)
-            
-            addlogmsg(request.user.username, "", msg)
-            return HttpResponseRedirect(request.get_full_path())
-
-        if 'VIEW_INSTANCE_DETAIL_BOTTOM_BAR' in request.POST:
-            try:
-                show_inst_bottom_bar.value = request.POST.get("VIEW_INSTANCE_DETAIL_BOTTOM_BAR", "")
-                show_inst_bottom_bar.save()
-
-                msg = _(f"Show bottom bar setting is changed. Now: {show_inst_bottom_bar.value}")
-                messages.success(request, msg)
-            except Exception as err:
-                msg = err
-                error_messages.append(msg)
-            
-            addlogmsg(request.user.username, "", msg)
-            return HttpResponseRedirect(request.get_full_path())
+                    msg = _(f"{setting.name} is changed. Now: {setting.value}")
+                    messages.success(request, msg)
+                except Exception as err:
+                    msg = err
+                    error_messages.append(msg)
+                
+                addlogmsg(request.user.username, "", msg)
+                return HttpResponseRedirect(request.get_full_path())
 
     return render(request, 'appsettings.html', locals())
 

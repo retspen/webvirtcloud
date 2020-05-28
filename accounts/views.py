@@ -4,10 +4,10 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-
 from accounts.forms import UserAddForm
 from accounts.models import *
 from admin.decorators import superuser_only
+from appsettings.models import AppSettings
 from instances.models import Instance
 
 import sass
@@ -22,7 +22,6 @@ def profile(request):
     error_messages = []
     # user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-
     themes_list = os.listdir(settings.SCSS_DIR +"/wvc-theme")
 
     if request.method == 'POST':
@@ -69,20 +68,6 @@ def profile(request):
             delkeypublic = UserSSHKey.objects.get(id=keyid)
             delkeypublic.delete()
             return HttpResponseRedirect(request.get_full_path())
-        if 'change_theme' in request.POST:
-            theme = request.POST.get('theme_select', '')
-            scss_var = f"@import '{settings.SCSS_DIR}/wvc-theme/{theme}/variables';"
-            scss_bootswatch = f"@import '{settings.SCSS_DIR}/wvc-theme/{theme}/bootswatch';"       
-            scss_boot = f"@import '{settings.SCSS_DIR}/bootstrap-overrides.scss';"
-                          
-            with open(settings.SCSS_DIR + "/wvc-main.scss", "w") as main:
-                main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch)
-            
-            css_compressed = sass.compile(string=scss_var + "\n"+ scss_boot + "\n" + scss_bootswatch, output_style='compressed')
-            with open("static/" + "css/wvc-main.min.css", "w") as css:
-                css.write(css_compressed)
-            
-            return HttpResponseRedirect(request.get_full_path())
     return render(request, 'profile.html', locals())
 
 
@@ -119,8 +104,8 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
-
-            if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+            
+            if AppSettings.objects.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
             else:
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id))

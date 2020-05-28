@@ -3,8 +3,7 @@ from django.shortcuts import render
 from libvirt import libvirtError
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
-from webvirtcloud.settings import WS_PUBLIC_PORT
-from webvirtcloud.settings import WS_PUBLIC_HOST
+from webvirtcloud.settings import WS_PUBLIC_PORT, WS_PUBLIC_HOST
 
 
 def console(request):

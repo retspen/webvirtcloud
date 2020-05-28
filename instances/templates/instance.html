@@ -121,7 +121,7 @@
                         <div role="tabpanel">
                             <!-- Nav tabs -->
                             <ul class="nav nav-tabs" role="tablist" aria-label="Instance power actions">
-                                {% ifequal status 1 %}
+                                {% if status == 1 %}
                                     <li class="nav-item">
                                         <a class="nav-link text-secondary active" href="#poweroff" aria-controls="poweroff" role="tab" data-toggle="tab">
                                             {% trans "Power Off" %}
@@ -144,8 +144,8 @@
                                             </a>
                                         </li>
                                     {% endif %}
-                                {% endifequal %}
-                                {% ifequal status 3 %}
+                                {% endif %}
+                                {% if status == 3 %}
                                     {% if request.user.is_superuser %}
                                     <li class="nav-item">
                                         <a class="nav-link text-secondary" href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
@@ -158,18 +158,18 @@
                                         </a>
                                     </li>
                                     {% endif %}
-                                {% endifequal %}
-                    {% ifequal status 5 %}
+                                {% endif %}
+                    {% if status == 5 %}
                         <li class="nav-item">
                             <a class="nav-link text-secondary active" href="#boot" aria-controls="boot" role="tab" data-toggle="tab">
                                 {% trans "Power On" %}
                             </a>
                         </li>
-                    {% endifequal %}
+                    {% endif %}
                 </ul>
                 <!-- Tab panes -->
                 <div class="tab-content">
-                    {% ifequal status 1 %}
+                    {% if status == 1 %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="poweroff">
                             <p>{% trans "This action sends an ACPI shutdown signal to the instance." %}</p>
                              <form action="" method="post" role="form" aria-label0="Power off instance form">{% csrf_token %}
@@ -200,8 +200,8 @@
                                 </form>
                             </div>
                         {% endif %}
-                    {% endifequal %}
-                       {% ifequal status 3 %}
+                    {% endif %}
+                       {% if status == 3 %}
                         {% if request.user.is_superuser %}
                             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
                                 <p>{% trans "This action restore the instance after suspend." %}</p>
@@ -226,8 +226,8 @@
                                 </form>
                             </div>
                         {% endif %}
-                    {% endifequal %}
-                    {% ifequal status 5 %}
+                    {% endif %}
+                    {% if status == 5 %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
                             <p>{% trans "Click on Boot button to start this instance." %}</p>
                             <form action="" method="post" role="form" aria-label="Start instance form">{% csrf_token %}
@@ -240,7 +240,7 @@
                                 <div class="clearfix"></div>
                             </form>
                         </div>
-                    {% endifequal %}
+                    {% endif %}
                 </div>
             </div>
                     </div>
@@ -253,33 +253,33 @@
                                         {% trans "Console" %}
                                     </a>
                                 </li>
-                                {% if show_access_root_password %}
+                                {% if show_access_root_password == 'True' %}
                                 <li class="nav-item">
                                     <a class="nav-link text-secondary" href="#rootpasswd" aria-controls="rootpasswd" role="tab" data-toggle="tab">
                                         {% trans "Root Password" %}
                                     </a>
                                 </li>
                                 {% endif %}
-                                {% if show_access_ssh_keys %}
+                                {% if show_access_ssh_keys == 'True' %}
                                 <li class="nav-item">
                                     <a class="nav-link text-secondary" href="#sshkeys" aria-controls="sshkeys" role="tab" data-toggle="tab">
                                         {% trans "SSH Keys" %}
                                     </a>
                                 </li>
                                 {% endif %}
-                                {% ifequal status 1 %}
+                                {% if status == 1 %}
                                 <li class="nav-item">
                                     <a class="nav-link text-secondary" href="#vdiconsole" aria-controls="vdiconsole" role="tab" data-toggle="tab">
                                         {% trans "VDI" %}
                                     </a>
                                 </li>
-                                {% endifequal %}
+                                {% endif %}
                             </ul>
                             <!-- Tab panes -->
                             <div class="tab-content">
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="vnconsole">
                                     <p>{% trans "This action opens a new window with a VNC connection to the console of the instance." %}</p>
-                                    {% ifequal status 1 %}
+                                    {% if status == 1 %}
                                         <!-- Split button -->
                                         <div class="btn-group float-right">
                                             <button type="button" id="consoleBtnGroup" class="btn btn-lg btn-success" onclick="open_console('lite')">{% trans 'Console' %}</button>
@@ -293,10 +293,10 @@
                                         </div>
                                     {% else %}
                                         <button class="btn btn-lg btn-success float-right disabled">{% trans "Console" %}</button>
-                                    {% endifequal %}
+                                    {% endif %}
                                     <div class="clearfix"></div>
                                 </div>
-                                {% if show_access_root_password %}
+                                {% if show_access_root_password == 'True' %}
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
                                     <p>{% trans "You need shut down your instance and enter a new root password." %}</p>
                                     <form class="form-inline" method="post" role="form" aria-label="Add root password to instance form">{% csrf_token %}
@@ -305,22 +305,22 @@
                                                 <input type="text" class="form-control-lg" name="passwd" placeholder="{% trans "Enter Password" %}" maxlength="24">
                                             </div>
                                         </div>
-                                        {% ifequal status 5 %}
+                                        {% if status == 5 %}
                                             <input type="submit" class="btn btn-lg btn-success float-right" name="rootpasswd" value="{% trans "Reset Root Password" %}">
                                         {% else %}
                                             <button class="btn btn-lg btn-success float-right disabled">{% trans "Reset Root Password" %}</button>
-                                        {% endifequal %}
+                                        {% endif %}
                                     </form>
                                     <div class="clearfix"></div>
                                 </div>
                                 {% endif %}
-                                {% if show_access_ssh_keys %}
+                                {% if show_access_ssh_keys == 'True' %}
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">
                                     <p>{% trans "You need shut down your instance and choose your public key." %}</p>
                                     <form class="form-inline" method="post" role="form" aria-label="Add public key to instance form">{% csrf_token %}
                                         <div class="form-group row">
                                             <div class="col-sm-12">
-                                                <select name="sshkeyid" class="form-control keyselect">
+                                                <select name="sshkeyid" class="form-control-lg keyselect">
                                                     {% if publickeys %}
                                                         {% for key in publickeys %}
                                                             <option value="{{ key.id }}">{{ key.keyname }}</option>
@@ -331,16 +331,16 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        {% ifequal status 5 %}
+                                        {% if status == 5 %}
                                             <input type="submit" class="btn btn-lg btn-success float-right" name="addpublickey" value="{% trans "Add Public Key" %}">
                                         {% else %}
                                             <button class="btn btn-lg btn-success float-right disabled">{% trans "Add Public Key" %}</button>
-                                        {% endifequal %}
+                                        {% endif %}
                                     </form>
                                     <div class="clearfix"></div>
                                 </div>
                                 {% endif %}
-                                {% ifequal status 1 %}
+                                {% if status == 1 %}
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vdiconsole">
                                     <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
                                     <div class="input-group">
@@ -351,7 +351,7 @@
                                     </div>
                                     <div class="clearfix"></div>
                                 </div>
-                                {% endifequal %}
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -408,11 +408,11 @@
                                             </div>
                                         </div>
 
-                                        {% ifequal status 5 %}
+                                        {% if status == 5 %}
                                             <button type="submit" class="btn btn-lg btn-success float-right" name="resizevm_cpu">{% trans "Resize" %}</button>
                                         {% else %}
                                             <button class="btn btn-lg btn-success float-right disabled">{% trans "Resize" %}</button>
-                                        {% endifequal %}
+                                        {% endif %}
                                     </form>
                                     <div class="clearfix"></div>
                                     {% else %}
@@ -493,11 +493,11 @@
                                             </div>
                                         </div>
                                         {% endfor %}
-                                        {% ifequal status 5 %}
+                                        {% if status == 5 %}
                                             <button type="submit" class="btn btn-lg btn-success float-right" name="resizevm_disk">{% trans "Resize" %}</button>
                                         {% else %}
                                             <button class="btn btn-lg btn-success float-right disabled">{% trans "Resize" %}</button>
-                                        {% endifequal %}
+                                        {% endif %}
                                     </form>
                                 {% else %}
                                     {% trans "You don't have permission for resizing instance" %}
@@ -526,7 +526,7 @@
                             <!-- Tab panes -->
                             <div class="tab-content">
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
-                                    {% ifequal status 5 %}
+                                    {% if status == 5 %}
                                         <p>{% trans "This may take more than an hour, depending on how much content is on your droplet and how large the disk is." %}</p>
                                         <form class="form-inline" method="post" role="form" aria-label="Create snapshot form">{% csrf_token %}
                                             <div class="form-group row">
@@ -534,16 +534,16 @@
                                                     <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
                                                 </div>
                                             </div>
-                                            {% ifequal status 5 %}
+                                            {% if status == 5 %}
                                                 <input type="submit" class="btn btn-lg btn-success float-right" name="snapshot" value="{% trans "Take Snapshot" %}">
                                             {% else %}
                                                 <button class="btn btn-lg btn-success float-right disabled">{% trans "Take Snapshot" %}</button>
-                                            {% endifequal %}
+                                            {% endif %}
                                         </form>
                                         <div class="clearfix"></div>
                                     {% else %}
                                         <p>{% trans "To take a snapshot please Power Off the instance." %}</p>
-                                    {% endifequal %}
+                                    {% endif %}
                                 </div>
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered" id="managesnapshot">
                                     {% if snapshots %}
@@ -563,7 +563,7 @@
                                                         <td style="width:30px;">
                                                             <form action="" method="post" role="form" aria-label="Restore snapshot form">{% csrf_token %}
                                                                 <input type="hidden" name="name" value="{{ snap.name }}">
-                                                                {% ifequal status 5 %}
+                                                                {% if status == 5 %}
                                                                     <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
                                                                          <span class="fa fa-download"></span>
                                                                     </button>
@@ -572,7 +572,7 @@
                                                                             title="{% trans "To restore snapshots you need Power Off the instance." %}">
                                                                          <span class="fa fa-download"></span>
                                                                     </button>
-                                                                {% endifequal %}
+                                                                {% endif %}
                                                             </form>
                                                         </td>
                                                         <td style="width:30px;">
@@ -668,11 +668,11 @@
                                             <div class="form-group row">
                                                 <div class="col-sm-12 text-center">
                                                 <p>{% trans "Autostart your instance when host server is power on " %}
-                                                {% ifequal autostart 0 %}
+                                                {% if autostart == 0 %}
                                                     <input type="submit" class="btn btn-success" name="set_autostart" value="{% trans "Enable" %}">
                                                 {% else %}
                                                     <input type="submit" class="btn btn-danger" name="unset_autostart" value="{% trans "Disable" %}">
-                                                {% endifequal %}
+                                                {% endif %}
                                                 </p>
                                                 </div>
                                             </div>
@@ -681,23 +681,23 @@
                                         <form action="" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
                                             <div class="form-group row">
                                                 <div class="col-sm-12 text-center">
-                                                {% ifequal status 5 %}
+                                                {% if status == 5 %}
                                                     <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
-                                                    {% ifequal bootmenu 0 %}
+                                                    {% if bootmenu == 0 %}
                                                         <input type="submit" class="btn btn-success" name="set_bootmenu" title="{% trans 'Show boot menu' %}" value="{% trans "Enable" %}">
                                                     {% else %}
                                                         <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="{% trans 'Hide boot menu' %}" value="{% trans "Disable" %}">
-                                                    {% endifequal %}
+                                                    {% endif %}
                                                 {% else %}
-                                                    {% ifequal bootmenu 0  %}
+                                                    {% if bootmenu == 0  %}
                                                         <p>**** {% trans "Please shutdown instance to modify boot menu" %} ****</p>
-                                                    {% endifequal %}
-                                                {% endifequal %}
+                                                    {% endif %}
+                                                {% endif %}
                                                 </div>
                                             </div>
                                         </form>
 
-                                        {% ifequal bootmenu 1  %}
+                                        {% if bootmenu == 1  %}
                                             <div class="d-flex justify-content-center">
                                                 <div class="col-sm-6 bg-light rounded shadow-sm">
                                                     {% for idx, val in boot_order.items %}
@@ -734,7 +734,7 @@
                                                     </div>
                                                 </div>
                                             </form>
-                                        {% endifequal %}
+                                        {% endif %}
                                         <div class="clearfix"></div>
                                     </div>
                                     <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
@@ -866,7 +866,7 @@
                                                                 <input type="hidden" name="storage" value="{{ disk.storage }}">
                                                                 <input type="hidden" name="name" value="{{ disk.image }}">
                                                                 {% include 'edit_instance_volume.html' with id=forloop.counter0 %}
-                                                                {% ifequal status 5 %}
+                                                                {% if status == 5 %}
                                                                     <button type="submit" class="btn btn-sm btn-secondary" name="detach_vol" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
                                                                         <i class="fa fa-eject"></i>
                                                                     </button>
@@ -880,16 +880,15 @@
                                                                     <button class="btn btn-sm btn-secondary disabled" name="delete_vol" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
                                                                         <i class="fa fa-trash"></i>
                                                                     </button>
-                                                                {% endifequal %}
+                                                                {% endif %}
                                                             </form>
-
                                                         </td>
                                                     </tr>
                                                 {% endfor %}
-                                                    </tbody>
+                                                </tbody>
                                             </table>
                                         </div>
-                                </div>
+                                    </div>
                             <div class="clearfix"></div>
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
@@ -957,10 +956,10 @@
                                                                         <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
                                                                         <select class="form-control" name="net-source-{{ forloop.counter0 }}">
                                                                             {% for c_net in networks_host %}
-                                                                                <option value="net:{{ c_net }}" {% ifequal c_net network.nic %} selected {% endifequal %}>{% trans 'Network' %} {{ c_net }}</option>
+                                                                                <option value="net:{{ c_net }}" {% if c_net == network.nic %} selected {% endif %}>{% trans 'Network' %} {{ c_net }}</option>
                                                                             {% endfor %}
                                                                             {% for c_iface in interfaces_host %}
-                                                                                <option value="iface:{{ c_iface }}" {% ifequal c_iface network.nic %} selected {% endifequal %}>{% trans 'Interface' %} {{ c_iface }}</option>
+                                                                                <option value="iface:{{ c_iface }}" {% if c_iface == network.nic %} selected {% endif %}>{% trans 'Interface' %} {{ c_iface }}</option>
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>                                      
@@ -972,7 +971,7 @@
                                                                         <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
                                                                             <option value="">{% trans "None" %}</option>
                                                                             {% for c_filters in nwfilters_host %}
-                                                                                <option value="{{ c_filters }}" {% ifequal c_filters network.filterref  %} selected {% endifequal %}>{{ c_filters }}</option>
+                                                                                <option value="{{ c_filters }}" {% if c_filters == network.filterref  %} selected {% endif %}>{{ c_filters }}</option>
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>
@@ -983,7 +982,7 @@
                                                                         <input class="form-control" type="text" value="{{ network.model }}" readonly/>
                                                                         <select class="form-control" name="net-model-{{ forloop.counter0 }}">
                                                                             {% for model in net_models_host %}
-                                                                            <option value="{{ model }}" {% ifequal model network.model  %} selected {% endifequal %}>{{ model }}</option>
+                                                                            <option value="{{ model }}" {% if model == network.model  %} selected {% endif %}>{{ model }}</option>
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>
@@ -992,7 +991,7 @@
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Close' %}</button>
-                                                                <button class="btn btn-success" name="change_network" title="{% trans "Apply Network Changes" %}">{% trans "Apply" %}</button>
+                                                                <button class="btn btn-success" name="change_network" title="{% trans "Apply network changes" %}">{% trans "Apply" %}</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1116,7 +1115,7 @@
                                 <div class="form-group row">
                                     <div class="col-sm-6 offset-3">
                                         <div class="custom-control custom-switch">
-                                            <input class="custom-control-input" type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% ifnotequal status 5 %}checked{% else %}disabled{% endifnotequal %}>
+                                            <input class="custom-control-input" type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% if status != 5 %}checked{% else %}disabled{% endif %}>
                                             <label class="custom-control-label" for="vm_live_migrate">{% trans "Live migration" %}</label>
                                         </div>
                                     </div>
@@ -1140,7 +1139,7 @@
                                 <div class="form-group row">
                                     <div class="col-sm-6 offset-3">
                                         <div class="custom-control custom-switch">
-                                            <input class="custom-control-input" type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% ifequal status 5 %}checked{% else %}disabled{% endifequal %}>
+                                            <input class="custom-control-input" type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% if status == 5 %}checked{% else %}disabled{% endif %}>
                                             <label class="custom-control-label" for="offline_migrate">{% trans "Offline migration" %}</label>
                                         </div>
                                     </div>
@@ -1148,7 +1147,7 @@
                                 <div class="form-group row">
                                     <div class="col-sm-6 offset-3">
                                         <div class="custom-control custom-switch">
-                                            <input class="custom-control-input" type="checkbox" name="postcopy" value="true" id="postcopy" {% ifnotequal status 1 %}disabled{% endifnotequal %}>
+                                            <input class="custom-control-input" type="checkbox" name="postcopy" value="true" id="postcopy" {% if status != 1 %}disabled{% endif %}>
                                             <label class="custom-control-label" for="postcopy">{% trans "Post copy" %}</label>
                                         </div>
                                     </div>
@@ -1156,7 +1155,7 @@
                                 <div class="form-group row">
                                     <div class="col-sm-6 offset-3">
                                         <div class="custom-control custom-switch">
-                                            <input class="custom-control-input" type="checkbox" name="autoconverge" value="true" id="autoconverge" {% ifnotequal status 1 %}disabled{% endifnotequal %}>
+                                            <input class="custom-control-input" type="checkbox" name="autoconverge" value="true" id="autoconverge" {% if status != 1 %}disabled{% endif %}>
                                             <label class="custom-control-label" for="autoconverge" title="{% trans 'Forces CPU convergence during live migration' %}">{% trans "Auto converge" %}</label>
                                         </div>
                                     </div>
@@ -1164,7 +1163,7 @@
                                 <div class="form-group row">
                                     <div class="col-sm-6 offset-3">
                                         <div class="custom-control custom-switch">
-                                            <input class="custom-control-input" type="checkbox" name="compress" value="true" id="compress" {% ifnotequal status 1 %}disabled{% endifnotequal %}>
+                                            <input class="custom-control-input" type="checkbox" name="compress" value="true" id="compress" {% if status != 1 %}disabled{% endif %}>
                                             <label class="custom-control-label" for="compress" title="{% trans 'Compress instance memory for fast migration' %}">{% trans "Compressed" %}</label>
                                         </div>
                                     </div>
@@ -1183,7 +1182,7 @@
                                 <div class="col-sm-12" id="xmlheight">
                                     <textarea id="editor">{{ inst_xml }}</textarea>
                                 </div>
-                                {% ifequal status 5 %}
+                                {% if status == 5 %}
                                     <input type="hidden" name="inst_xml">
                                     <button type="submit" class="btn btn-lg btn-success float-right" name="change_xml">
                                         {% trans "Change" %}
@@ -1192,7 +1191,7 @@
                                     <button class="btn btn-lg btn-success float-right disabled">
                                         {% trans "Change" %}
                                     </button>
-                                {% endifequal %}
+                                {% endif %}
                             </form>
                             <div class="clearfix"></div>
                         </div>
@@ -1241,11 +1240,11 @@
                                             </select>
                                     
                                             <div class="input-group-append">
-                                                {% ifequal status 5 %}
+                                                {% if status == 5 %}
                                                     <button type="submit" class="btn btn-success " name="set_console_type">{% trans "Set" %}</button>
                                                 {% else %}
                                                     <button class="btn btn-success disabled" name="set_console_type">{% trans "Set" %}</button>
-                                                {% endifequal %}
+                                                {% endif %}
                                             </div>
                                         </div>    
                                     </div>
@@ -1264,11 +1263,11 @@
                                                 {% endfor %}
                                             </select>
                                             <div class="input-group-append">
-                                                {% ifequal status 5 %}
+                                                {% if status == 5 %}
                                                     <button type="submit" class="btn btn-success " name="set_console_listen_address">{% trans "Set" %}</button>
                                                     {% else %}
                                                     <button class="btn btn-success disabled" name="set_console_listen_address">{% trans "Set" %}</button>
-                                                {% endifequal %}
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -1302,11 +1301,11 @@
                                                 {% if console_passwd %}
                                                     <a href="#" name="console_show" class="btn btn-md btn-primary" onclick="show_console()">{% trans "Show" %}</a>
                                                 {% endif %}
-                                                {% ifequal status 5 %}
+                                                {% if status == 5 %}
                                                     <button type="submit" class="btn btn-success" name="set_console_passwd">{% trans "Set" %}</button>
                                                 {% else %}
                                                     <button class="btn btn-success disabled" name="set_console_passwd">{% trans "Set" %}</button>
-                                                {% endifequal %}
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -1334,11 +1333,11 @@
                                             </select>
 
                                             <div class="input-group-append">
-                                                {% ifequal status 5 %}
+                                                {% if status == 5 %}
                                                     <button type="submit" class="btn btn-success" name="set_console_keymap">{% trans "Set" %}</button>
                                                 {% else %}
                                                     <button class="btn btn-success disabled" name="set_console_keymap">{% trans "Set" %}</button>
-                                                {% endifequal %}
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -1410,14 +1409,14 @@
                                             <div class="col-sm-6">
                                                <div class="input-group">
                                                     <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
-                                                    {% ifequal disk.format 'qcow2' %}
+                                                    {% if disk.format == 'qcow2' %}
                                                         <div class="input-group-append">
                                                             <span class="input-group-text" >{% trans 'Metadata' %}</span>
                                                             <div class="input-group-text">
                                                                 <input type="checkbox" name="meta-{{ disk.dev }}" value="true">
                                                             </div>
                                                         </div>
-                                                    {% endifequal %}
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                         </div>
@@ -1439,11 +1438,11 @@
                                         <textarea name="clone-description" class="form-control"></textarea>
                                     </div>
                                 </div>
-                                {% ifequal status 5 %}
+                                {% if status == 5 %}
                                     <button type="submit" class="btn btn-lg btn-success float-right" name="clone" onclick="showPleaseWaitDialog();">{% trans "Clone" %}</button>
                                 {% else %}
                                     <button class="btn btn-lg btn-success float-right disabled" name="clone">{% trans "Clone" %}</button>
-                                {% endifequal %}
+                                {% endif %}
                             </form>
                             <div class="clearfix"></div>
                         </div>
@@ -1475,11 +1474,11 @@
                                 </div>
                                 <div class="form-group row">
                                     <div class="offset-3 col-sm-6">
-                                    {% ifequal status 5 %}
+                                    {% if status == 5 %}
                                         <button type="submit" class="btn btn-block btn-success" name="change_options">{% trans "Change" %}</button>
                                     {% else %}
                                         <button class="btn btn-block btn-success disabled" name="change_options">{% trans "Change" %}</button>
-                                    {% endifequal %}
+                                    {% endif %}
                                     </div>
                                 </div>
                             </form>
@@ -1497,11 +1496,11 @@
                                             {% endfor %}
                                         </select>
                                         <span class="input-group-btn">
-                                            {% ifequal status 5 %}
+                                            {% if status == 5 %}
                                             <button type="submit" class="btn btn-success" name="set_video_model">{% trans "Set" %}</button>
                                             {% else %}
                                             <button class="btn btn-success disabled" name="set_video_model">{% trans "Set" %}</button>
-                                            {% endifequal %}
+                                            {% endif %}
                                         </span>
                                         </div>
                                     </div>
@@ -1669,10 +1668,9 @@
                                 <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
                                     <p>{% trans "Delete storage for instance?" %}</p>
                                     {% if request.user.is_superuser or userinstance.is_delete %}
-                                        {% ifequal status 3 %}
+                                        {% if status == 3 %}
                                             <button class="btn btn-lg btn-success disabled float-right" name="delete">{% trans "Destroy" %}</button>
                                         {% else %}
-
                                             <form class="form" method="post" role="form" id="delete_form">{% csrf_token %}
                                                 <div class="ml-3 form-row">
                                                     <div class="custom-control custom-switch">
@@ -1690,7 +1688,7 @@
                                                 {% endif %}
                                                 <button type="submit" class="btn btn-lg btn-success float-right" name="delete">{% trans "Destroy" %}</button>
                                             </form>
-                                        {% endifequal %}
+                                        {% endif %}
                                     {% else %}
                                         <button class="btn btn-lg btn-success disabled float-right" name="delete">{% trans "Destroy" %}</button>
                                     {% endif %}

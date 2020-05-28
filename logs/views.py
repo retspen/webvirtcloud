@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from admin.decorators import superuser_only
+from appsettings.models import AppSettings
 from instances.models import Instance
 from logs.models import Logs
 

@@ -22,8 +22,6 @@ from collections import OrderedDict
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage, wvmStorages
-from webvirtcloud.settings import QEMU_CONSOLE_TYPES
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as OWNER
 
 
 class wvmInstances(wvmConnect):
@@ -909,7 +907,7 @@ class wvmInstance(wvmConnect):
         current_type = self.get_console_type()
         if current_type == console_type:
             return True
-        if console_type == '' or console_type not in QEMU_CONSOLE_TYPES:
+        if console_type == '':
             return False
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         root = ElementTree.fromstring(xml)
@@ -1203,8 +1201,8 @@ class wvmInstance(wvmConnect):
                                         <target>
                                             <format type='{vol_format}'/>
                                             <permissions>
-                                                <owner>{OWNER['uid']}</owner>
-                                                <group>{OWNER['guid']}</group>
+                                                <owner>{clone_data['disk_owner_uid']}</owner>
+                                                <group>{clone_data['disk_owner_gid']}</group>
                                                 <mode>0644</mode>
                                                 <label>virt_image_t</label>
                                             </permissions>

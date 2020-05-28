@@ -1,6 +1,5 @@
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as OWNER
 
 
 class wvmStorages(wvmConnect):
@@ -210,7 +209,7 @@ class wvmStorage(wvmConnect):
             )
         return vol_list
 
-    def create_volume(self, name, size, vol_fmt='qcow2', metadata=False, owner=OWNER):
+    def create_volume(self, name, size, vol_fmt='qcow2', metadata=False, disk_owner_uid=0, disk_owner_gid=0):
         size = int(size) * 1073741824
         storage_type = self.get_type()
         alloc = size
@@ -230,8 +229,8 @@ class wvmStorage(wvmConnect):
                 <target>
                     <format type='{vol_fmt}'/>
                      <permissions>
-                        <owner>{owner['uid']}</owner>
-                        <group>{owner['guid']}</group>
+                        <owner>{disk_owner_uid}</owner>
+                        <group>{disk_owner_gid}</group>
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>"""
@@ -246,7 +245,7 @@ class wvmStorage(wvmConnect):
         self._createXML(xml, metadata)
         return name
 
-    def clone_volume(self, name, target_file, vol_fmt=None, metadata=False, mode='0644', file_suffix='img', owner=OWNER):
+    def clone_volume(self, name, target_file, vol_fmt=None, metadata=False, mode='0644', file_suffix='img', disk_owner_uid=0, disk_owner_gid=0):
         vol = self.get_volume(name)
         if not vol_fmt:
             vol_fmt = self.get_volume_type(name)
@@ -267,8 +266,8 @@ class wvmStorage(wvmConnect):
                 <target>
                     <format type='{vol_fmt}'/>
                     <permissions>
-                        <owner>{owner['uid']}</owner>
-                        <group>{owner['guid']}</group>
+                        <owner>{disk_owner_uid}</owner>
+                        <group>{disk_owner_gid}</group>
                         <mode>{mode}</mode>
                         <label>virt_image_t</label>
                     </permissions>"""

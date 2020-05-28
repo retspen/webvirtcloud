@@ -13,9 +13,9 @@ from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from computes.models import Compute
 from instances.models import Instance
+from appsettings.models import AppSettings
 from django.contrib.auth.models import User
 from accounts.models import UserInstance, UserSSHKey
-from appsettings.models import AppSettings
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.connection import connection_manager
@@ -64,7 +64,7 @@ def allinstances(request):
             error_messages.append(lib_err)
             addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err)
 
-    view_style = settings.VIEW_INSTANCES_LIST_STYLE
+    view_style = AppSettings.objects.get(key="VIEW_INSTANCES_LIST_STYLE").value
 
     return render(request, 'allinstances.html', locals())
 
@@ -111,10 +111,11 @@ def instance(request, compute_id, vname):
     computes_count = computes.count()
     users = User.objects.all().order_by('username')
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    appsettings = AppSettings.objects.all()
     keymaps = settings.QEMU_KEYMAPS
-    console_types = settings.QEMU_CONSOLE_TYPES
+    console_types = appsettings.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list
     console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
-    bottom_bar = AppSettings.objects.get(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").value
+    bottom_bar = appsettings.get(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").value
     try:
         userinstance = UserInstance.objects.get(instance__compute_id=compute_id,
                                                 instance__name=vname,
@@ -144,7 +145,7 @@ def instance(request, compute_id, vname):
             return int(float(size_str))
 
     def get_clone_free_names(size=10):
-        prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+        prefix = appsettings.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value
         free_names = []
         existing_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
         index = 1
@@ -179,21 +180,22 @@ def instance(request, compute_id, vname):
                         disk_size += int(disk['size']) >> 30
 
         if ua.max_instances > 0 and instance > ua.max_instances:
+            quota_debug = appsettings.get(key="QUOTA_DEBUG").value
             msg = "instance"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (instance, ua.max_instances)
+            if quota_debug:
+                msg += f" ({instance} > {ua.max_instances})"
         if ua.max_cpus > 0 and cpu > ua.max_cpus:
             msg = "cpu"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (cpu, ua.max_cpus)
+            if quota_debug:
+                msg += f" ({cpu} > {ua.max_cpus})"
         if ua.max_memory > 0 and memory > ua.max_memory:
             msg = "memory"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (memory, ua.max_memory)
+            if quota_debug:
+                msg += f" ({memory} > {ua.max_memory})"
         if ua.max_disk_size > 0 and disk_size > ua.max_disk_size:
             msg = "disk"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
+            if quota_debug:
+                msg += f" ({disk_size} > {ua.max_disk_size})"
         return msg
 
     def get_new_disk_dev(media, disks, bus):
@@ -314,18 +316,21 @@ def instance(request, compute_id, vname):
         io_modes = sorted(conn.get_io_modes().items())
         discard_modes = sorted(conn.get_discard_modes().items())
         detect_zeroes_modes = sorted(conn.get_detect_zeroes_modes().items())
-        default_io = settings.INSTANCE_VOLUME_DEFAULT_IO
-        default_discard = settings.INSTANCE_VOLUME_DEFAULT_DISCARD
-        default_zeroes = settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
-        default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
-        default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
-        default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
+        default_bus = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_BUS").value
+        default_io = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_IO").value
+        default_discard = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_DISCARD").value
+        default_zeroes = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES").value
+        default_cache = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_CACHE").value
+        default_format = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_FORMAT").value
+        default_disk_owner_uid = int(appsettings.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_UID").value)
+        default_disk_owner_gid = int(appsettings.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_GID").value)
+        
         formats = conn.get_image_formats()
 
-        show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
-        show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
-        clone_instance_auto_name = settings.CLONE_INSTANCE_AUTO_NAME
-        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
+        show_access_root_password = appsettings.get(key="SHOW_ACCESS_ROOT_PASSWORD").value
+        show_access_ssh_keys = appsettings.get(key="SHOW_ACCESS_SSH_KEYS").value
+        clone_instance_auto_name = appsettings.get(key="CLONE_INSTANCE_AUTO_NAME").value
+        
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -520,7 +525,7 @@ def instance(request, compute_id, vname):
                     error_messages.append(msg)
                 else:
                     conn.resize_disk(disks_new)
-                    msg = _("Resize")
+                    msg = _("Disk resize")
                     addlogmsg(request.user.username, instance.name, msg)
                     messages.success(request, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
@@ -539,9 +544,9 @@ def instance(request, compute_id, vname):
                 cache = request.POST.get('cache', default_cache)
                 target_dev = get_new_disk_dev(media, disks, bus)
 
-                source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_owner)
+                source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
                 conn.attach_disk(target_dev, source, target_bus=bus, driver_type=format, cache_mode=cache)
-                msg = _('Attach new disk {} ({})'.format(name, format))
+                msg = _(f"Attach new disk {name} ({format})")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -810,8 +815,11 @@ def instance(request, compute_id, vname):
 
                 if 'set_console_type' in request.POST:
                     console_type = request.POST.get('console_type', '')
-                    conn.set_console_type(console_type)
                     msg = _("Set VNC type")
+                    if console_type in console_types:
+                        conn.set_console_type(console_type)
+                    else:
+                        msg = _("Console type not supported")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
@@ -943,13 +951,13 @@ def instance(request, compute_id, vname):
                 if 'add_owner' in request.POST:
                     user_id = int(request.POST.get('user_id', ''))
 
-                    if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+                    if appsettings.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
                         check_inst = UserInstance.objects.filter(instance=instance, user_id=user_id)
                     else:
                         check_inst = UserInstance.objects.filter(instance=instance)
 
                     if check_inst:
-                        msg = _("Owner already added")
+                        msg = _("One owner is allowed and owner already added")
                         error_messages.append(msg)
                     else:
                         add_user_inst = UserInstance(instance=instance, user_id=user_id)
@@ -975,10 +983,13 @@ def instance(request, compute_id, vname):
                     quota_msg = check_user_quota(1, vcpu, memory, disk_sum)
                     check_instance = Instance.objects.filter(name=clone_data['name'])
 
+                    clone_data['disk_owner_uid'] = default_disk_owner_uid
+                    clone_data['disk_owner_gid'] = default_disk_owner_gid
+
                     for post in request.POST:
                         clone_data[post] = request.POST.get(post, '').strip()
 
-                    if clone_instance_auto_name and not clone_data['name']:
+                    if clone_instance_auto_name == 'True' and not clone_data['name']:
                         auto_vname = clone_free_names[0]
                         clone_data['name'] = auto_vname
                         clone_data['clone-net-mac-0'] = _get_dhcp_mac_address(auto_vname)
@@ -1016,7 +1027,8 @@ def instance(request, compute_id, vname):
 
                         msg = _("Clone of '%s'" % instance.name)
                         addlogmsg(request.user.username, new_instance.name, msg)
-                        if settings.CLONE_INSTANCE_AUTO_MIGRATE:
+                        
+                        if appsettings.get(key="CLONE_INSTANCE_AUTO_MIGRATE").value == 'True':
                             new_compute = Compute.objects.order_by('?').first()
                             migrate_instance(new_compute, new_instance, xml_del=True, offline=True)
                         return HttpResponseRedirect(
@@ -1326,7 +1338,7 @@ def random_mac_address(request):
 
 def guess_clone_name(request):
     dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
-    prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+    prefix = appsettings.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value
     if os.path.isfile(dhcp_file):
         instance_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
         with open(dhcp_file, 'r') as f:
