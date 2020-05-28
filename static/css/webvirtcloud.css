@@ -151,3 +151,18 @@ p {
     color:#ffffff;
     background-color:#000099;
 }
+
+.bottom-bar-margin {
+    margin-top: 65px;
+}
+
+.thumbnail {
+    padding: 10px;
+}
+
+/* make dropdowns show on hover */
+@media only screen and (min-width: 768px) {
+  .dropdown:hover .dropdown-menu {
+    display: block;
+  }
+}

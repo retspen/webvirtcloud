@@ -2,19 +2,20 @@
 from __future__ import unicode_literals
 
 from django.http import HttpResponseRedirect
-from django.shortcuts import render, get_object_or_404
-from django.utils.translation import ugettext_lazy as _
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
-from computes.models import Compute
-from vrtManager import util
-from vrtManager.nwfilters import wvmNWFilters, wvmNWFilter
-from vrtManager.instance import wvmInstances, wvmInstance
+from django.utils.translation import ugettext_lazy as _
 from libvirt import libvirtError
+
+from admin.decorators import superuser_only
+from computes.models import Compute
 from logs.views import addlogmsg
+from vrtManager import util
+from vrtManager.instance import wvmInstance, wvmInstances
+from vrtManager.nwfilters import wvmNWFilter, wvmNWFilters
 
 
-@login_required
+@superuser_only
 def nwfilters(request, compute_id):
     """
     :param request:
@@ -22,18 +23,12 @@ def nwfilters(request, compute_id):
     :return:
     """
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     error_messages = []
     nwfilters_all = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmNWFilters(compute.hostname,
-                            compute.login,
-                            compute.password,
-                            compute.type)
+        conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)
 
         if request.method == 'POST':
             if 'create_nwfilter' in request.POST:
@@ -107,12 +102,13 @@ def nwfilters(request, compute_id):
         error_messages.append(err)
         addlogmsg(request.user.username, compute.hostname, err)
 
-    return render(request, 'nwfilters.html', {'error_messages': error_messages,
-                                              'nwfilters': nwfilters_all,
-                                              'compute': compute})
+    return render(request, 'nwfilters.html', {
+        'error_messages': error_messages,
+        'nwfilters': nwfilters_all,
+        'compute': compute
+    })
 
 
-@login_required
 def nwfilter(request, compute_id, nwfltr):
 
     error_messages = []
@@ -120,15 +116,8 @@ def nwfilter(request, compute_id, nwfltr):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        nwfilter = wvmNWFilter(compute.hostname,
-                               compute.login,
-                               compute.password,
-                               compute.type,
-                               nwfltr)
-        conn = wvmNWFilters(compute.hostname,
-                            compute.login,
-                            compute.password,
-                            compute.type)
+        nwfilter = wvmNWFilter(compute.hostname, compute.login, compute.password, compute.type, nwfltr)
+        conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)
 
         for nwf in conn.get_nwfilters():
             nwfilters_all.append(conn.get_nwfilter_info(nwf))

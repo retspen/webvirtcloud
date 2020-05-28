@@ -273,6 +273,25 @@ You need to put cloud public key into authorized keys on the compute node. Simpl
 sudo -u www-data ssh-copy-id root@compute1
 ```
 
+### Host SMBIOS information is not available
+
+If you see warning
+```
+Unsupported configuration: Host SMBIOS information is not available
+```
+Then you need to install `dmidecode` package on your host using your package manager and restart libvirt daemon.
+
+Debian/Ubuntu like:
+```
+$ sudo apt-get install dmidecode
+$ sudo service libvirt-bin restart
+```
+Arch Linux
+```
+$ sudo pacman -S dmidecode
+$ systemctl restart libvirtd
+```
+
 ### Cloud-init
 Currently supports only root ssh authorized keys and hostname. Example configuration of the cloud-init client follows.
 ```

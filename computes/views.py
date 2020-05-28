@@ -3,7 +3,6 @@ from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from computes.models import Compute
 from instances.models import Instance
 from accounts.models import UserInstance
@@ -11,39 +10,37 @@ from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHost
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager, wvmConnect
 from libvirt import libvirtError
+from admin.decorators import superuser_only
 
 
-@login_required
+@superuser_only
 def computes(request):
     """
     :param request:
     :return:
     """
-
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     def get_hosts_status(computes):
         """
         Function return all hosts all vds on host
         """
         compute_data = []
         for compute in computes:
-            compute_data.append({'id': compute.id,
-                                 'name': compute.name,
-                                 'hostname': compute.hostname,
-                                 'status': connection_manager.host_is_up(compute.type, compute.hostname),
-                                 'type': compute.type,
-                                 'login': compute.login,
-                                 'password': compute.password,
-                                 'details': compute.details
-                                 })
+            compute_data.append({
+                'id': compute.id,
+                'name': compute.name,
+                'hostname': compute.hostname,
+                'status': connection_manager.host_is_up(compute.type, compute.hostname),
+                'type': compute.type,
+                'login': compute.login,
+                'password': compute.password,
+                'details': compute.details
+            })
         return compute_data
 
     error_messages = []
     computes = Compute.objects.filter().order_by('name')
     computes_info = get_hosts_status(computes)
-    
+
     if request.method == 'POST':
         if 'host_del' in request.POST:
             compute_id = request.POST.get('host_id', '')
@@ -135,7 +132,7 @@ def computes(request):
     return render(request, 'computes.html', locals())
 
 
-@login_required
+@superuser_only
 def overview(request, compute_id):
     """
     :param request:
@@ -143,17 +140,16 @@ def overview(request, compute_id):
     :return:
     """
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmHostDetails(compute.hostname,
-                              compute.login,
-                              compute.password,
-                              compute.type)
+        conn = wvmHostDetails(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
         hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
         hypervisor = conn.get_hypervisors_domain_types()
         mem_usage = conn.get_memory_usage()
@@ -167,7 +163,6 @@ def overview(request, compute_id):
     return render(request, 'overview.html', locals())
 
 
-@login_required
 def compute_graph(request, compute_id):
     """
     :param request:
@@ -176,10 +171,12 @@ def compute_graph(request, compute_id):
     """
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
-        conn = wvmHostDetails(compute.hostname,
-                              compute.login,
-                              compute.password,
-                              compute.type)
+        conn = wvmHostDetails(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
         current_time = timezone.now().strftime("%H:%M:%S")
         cpu_usage = conn.get_cpu_usage()
         mem_usage = conn.get_memory_usage()
@@ -188,24 +185,27 @@ def compute_graph(request, compute_id):
         cpu_usage = {'usage': 0}
         mem_usage = {'usage': 0}
 
-    data = json.dumps({'cpudata': cpu_usage['usage'],
-                       'memdata': mem_usage,
-                       'timeline': current_time})
+    data = json.dumps({
+        'cpudata': cpu_usage['usage'],
+        'memdata': mem_usage,
+        'timeline': current_time,
+    })
     response = HttpResponse()
     response['Content-Type'] = "text/javascript"
     response.write(data)
     return response
 
 
-@login_required
 def get_compute_disk_buses(request, compute_id, arch, machine, disk):
     data = dict()
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
-        conn = wvmConnect(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type)
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
 
         disk_device_types = conn.get_disk_device_types(arch, machine)
 
@@ -224,15 +224,16 @@ def get_compute_disk_buses(request, compute_id, arch, machine, disk):
     return HttpResponse(json.dumps(data))
 
 
-@login_required
 def get_compute_machine_types(request, compute_id, arch):
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)
-        conn = wvmConnect(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type)
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
         data['machines'] = conn.get_machine_types(arch)
     except libvirtError:
         pass
@@ -240,15 +241,16 @@ def get_compute_machine_types(request, compute_id, arch):
     return HttpResponse(json.dumps(data))
 
 
-@login_required
 def get_compute_video_models(request, compute_id, arch, machine):
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)
-        conn = wvmConnect(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type)
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
         data['videos'] = conn.get_video_models(arch, machine)
     except libvirtError:
         pass
@@ -256,15 +258,16 @@ def get_compute_video_models(request, compute_id, arch, machine):
     return HttpResponse(json.dumps(data))
 
 
-@login_required
 def get_dom_capabilities(request, compute_id, arch, machine):
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)
-        conn = wvmConnect(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type)
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
         data['videos'] = conn.get_disk_device_types(arch, machine)
         data['bus'] = conn.get_disk_device_types(arch, machine)
     except libvirtError:

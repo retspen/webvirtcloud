@@ -1,17 +1,17 @@
-from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
 from django.http import HttpResponseRedirect
-from django.utils.translation import ugettext_lazy as _
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
+from django.utils.translation import ugettext_lazy as _
+from libvirt import libvirtError
+
+from admin.decorators import superuser_only
 from computes.models import Compute
 from networks.forms import AddNetPool
-from vrtManager.network import wvmNetwork, wvmNetworks
-from vrtManager.network import network_size
-from libvirt import libvirtError
-from django.contrib import messages
+from vrtManager.network import network_size, wvmNetwork, wvmNetworks
 
 
-@login_required
+@superuser_only
 def networks(request, compute_id):
     """
     :param request:
@@ -19,17 +19,16 @@ def networks(request, compute_id):
     :return:
     """
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmNetworks(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type)
+        conn = wvmNetworks(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
         networks = conn.get_networks_info()
         dhcp4 = netmask4 = gateway4 = ''
         dhcp6 = prefix6 = gateway6 = ''
@@ -54,11 +53,21 @@ def networks(request, compute_id):
                         if prefix6 != '64':
                             error_messages.append(_('For libvirt, the IPv6 network prefix must be /64'))
                     if not error_messages:
-                        conn.create_network(data['name'],
-                                            data['forward'],
-                                            ipv4, gateway4, netmask4, dhcp4,
-                                            ipv6, gateway6, prefix6, dhcp6,
-                                            data['bridge_name'], data['openvswitch'], data['fixed'])
+                        conn.create_network(
+                            data['name'],
+                            data['forward'],
+                            ipv4,
+                            gateway4,
+                            netmask4,
+                            dhcp4,
+                            ipv6,
+                            gateway6,
+                            prefix6,
+                            dhcp6,
+                            data['bridge_name'],
+                            data['openvswitch'],
+                            data['fixed'],
+                        )
                         return HttpResponseRedirect(reverse('network', args=[compute_id, data['name']]))
                 else:
                     for msg_err in form.errors.values():
@@ -70,7 +79,7 @@ def networks(request, compute_id):
     return render(request, 'networks.html', locals())
 
 
-@login_required
+@superuser_only
 def network(request, compute_id, pool):
     """
     :param request:
@@ -79,18 +88,17 @@ def network(request, compute_id, pool):
     :return:
     """
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
-
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmNetwork(compute.hostname,
-                          compute.login,
-                          compute.password,
-                          compute.type,
-                          pool)
+        conn = wvmNetwork(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+            pool,
+        )
         networks = conn.get_networks()
         state = conn.is_active()
         device = conn.get_bridge_device()
@@ -190,8 +198,7 @@ def network(request, compute_id, pool):
             if edit_xml:
                 conn.edit_network(edit_xml)
                 if conn.is_active():
-                    messages.success(request, _("Network XML is changed. \\"
-                                                "Stop and start network to activate new config."))
+                    messages.success(request, _("Network XML is changed. \\" "Stop and start network to activate new config."))
                 else:
                     messages.success(request, _("Network XML is changed."))
                 return HttpResponseRedirect(request.get_full_path())
@@ -204,8 +211,10 @@ def network(request, compute_id, pool):
             try:
                 conn.set_qos(qos_dir, average, peak, burst)
                 if conn.is_active():
-                    messages.success(request, _("{} Qos is set. Network XML is changed.").format(qos_dir.capitalize()) +
-                                     _("Stop and start network to activate new config"))
+                    messages.success(
+                        request,
+                        _("{} Qos is set. Network XML is changed.").format(qos_dir.capitalize()) +
+                        _("Stop and start network to activate new config"))
                 else:
                     messages.success(request, _("{} Qos is set").format(qos_dir.capitalize()))
             except libvirtError as lib_err:
@@ -216,8 +225,10 @@ def network(request, compute_id, pool):
             conn.unset_qos(qos_dir)
 
             if conn.is_active():
-                messages.success(request, _("{} Qos is deleted. Network XML is changed. ").format(qos_dir.capitalize()) +
-                                 _("Stop and start network to activate new config."))
+                messages.success(
+                    request,
+                    _("{} Qos is deleted. Network XML is changed. ").format(qos_dir.capitalize()) +
+                    _("Stop and start network to activate new config."))
             else:
                 messages.success(request, _("{} Qos is deleted").format(qos_dir.capitalize()))
             return HttpResponseRedirect(request.get_full_path())
