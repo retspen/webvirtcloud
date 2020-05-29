@@ -134,12 +134,6 @@ WS_PUBLIC_HOST = None
 # Websock SSL connection
 WS_CERT = None
 
-# List of console types
-QEMU_CONSOLE_TYPES = ['vnc', 'spice']
-
-# Default console type
-QEMU_CONSOLE_DEFAULT_TYPE = 'vnc'
-
 # List of console listen addresses
 QEMU_CONSOLE_LISTEN_ADDRESSES = (
     ('127.0.0.1', 'Localhost'),
@@ -156,10 +150,5 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
-ALLOW_INSTANCE_MULTIPLE_OWNER = True
 NEW_USER_DEFAULT_INSTANCES = []
-CLONE_INSTANCE_DEFAULT_PREFIX = 'instance'
-CLONE_INSTANCE_AUTO_NAME = False
-CLONE_INSTANCE_AUTO_MIGRATE = False
-LOGS_PER_PAGE = 100
 
