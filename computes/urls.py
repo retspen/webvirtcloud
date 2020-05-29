@@ -8,9 +8,18 @@ from networks.views import network, networks
 from nwfilters.views import nwfilter, nwfilters
 from secrets.views import secrets
 from storages.views import get_volumes, storage, storages
+from . import forms
 
 urlpatterns = [
     path('', views.computes, name='computes'),
+    path('add_tcp_host/', views.add_host,
+         {'FormClass': forms.TcpComputeForm}, name='add_tcp_host'),
+    path('add_ssh_host/', views.add_host,
+         {'FormClass': forms.SshComputeForm}, name='add_ssh_host'),
+    path('add_tls_host/', views.add_host,
+         {'FormClass': forms.TlsComputeForm}, name='add_tls_host'),
+    path('add_socket_host/', views.add_host,
+         {'FormClass': forms.SocketComputeForm}, name='add_socket_host'),
     path('<int:compute_id>/', include([
         path('', views.overview, name='overview'),
         path('statistics', views.compute_graph, name='compute_graph'),
@@ -19,7 +28,7 @@ urlpatterns = [
         path('storage/<str:pool>/volumes', get_volumes, name='volumes'),
         path('storage/<str:pool>/', storage, name='storage'),
         path('networks/', networks, name='networks'),
-        path('network/<pool>/', network, name='network'),
+        path('network/<str:pool>/', network, name='network'),
         path('interfaces/', interfaces, name='interfaces'),
         path('interface/<str:iface>/', interface, name='interface'),
         path('nwfilters/', nwfilters, name='nwfilters'),

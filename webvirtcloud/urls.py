@@ -3,13 +3,13 @@ from django.urls import include, path
 from instances.views import index
 from console.views import console
 from appsettings.views import appsettings
-# from django.contrib import admin
+
 
 urlpatterns = [
     path('', index, name='index'),
     path('admin/', include(('admin.urls', 'admin'), namespace='admin')),
     path('appsettings/', appsettings, name='appsettings'),
-    path('accounts/', include('accounts.urls')),    
+    path('accounts/', include('accounts.urls')),
     path('computes/', include('computes.urls')),
     path('console/', console, name='console'),
     path('datasource/', include('datasource.urls')),
