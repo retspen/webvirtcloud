@@ -1,4 +1,3 @@
-from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
@@ -30,6 +29,7 @@ def group_create(request):
     if form.is_valid():
         form.save()
         return redirect('admin:group_list')
+
     return render(
         request,
         'admin/common/form.html',
