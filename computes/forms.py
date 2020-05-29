@@ -16,8 +16,7 @@ class TcpComputeForm(forms.ModelForm):
 
 
 class SshComputeForm(forms.ModelForm):
-    hostname = forms.CharField(
-        validators=[validate_hostname], label=_("FQDN/IP"))
+    hostname = forms.CharField(validators=[validate_hostname], label=_("FQDN/IP"))
     type = forms.IntegerField(widget=forms.HiddenInput, initial=CONN_SSH)
 
     class Meta:
@@ -45,12 +44,9 @@ class SocketComputeForm(forms.ModelForm):
 
 class ComputeEditHostForm(forms.Form):
     host_id = forms.CharField()
-    name = forms.CharField(error_messages={'required': _(
-        'No hostname has been entered')}, max_length=64)
-    hostname = forms.CharField(error_messages={'required': _(
-        'No IP / Domain name has been entered')}, max_length=100)
-    login = forms.CharField(error_messages={'required': _(
-        'No login has been entered')}, max_length=100)
+    name = forms.CharField(error_messages={'required': _('No hostname has been entered')}, max_length=64)
+    hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')}, max_length=100)
+    login = forms.CharField(error_messages={'required': _('No login has been entered')}, max_length=100)
     password = forms.CharField(max_length=100)
     details = forms.CharField(max_length=50, required=False)
 
