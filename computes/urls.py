@@ -9,9 +9,14 @@ from interfaces.views import interface, interfaces
 from networks.views import network, networks
 from nwfilters.views import nwfilter, nwfilters
 from storages.views import get_volumes, storage, storages
+from . import forms
 
 urlpatterns = [
     path('', views.computes, name='computes'),
+    path('add_tcp_host/', views.add_host, {'FormClass': forms.TcpComputeForm}, name='add_tcp_host'),
+    path('add_ssh_host/', views.add_host, {'FormClass': forms.SshComputeForm}, name='add_ssh_host'),
+    path('add_tls_host/', views.add_host, {'FormClass': forms.TlsComputeForm}, name='add_tls_host'),
+    path('add_socket_host/', views.add_host, {'FormClass': forms.SocketComputeForm}, name='add_socket_host'),
     path('<int:compute_id>/', views.overview, name='overview'),
     path('<int:compute_id>/statistics/', views.compute_graph, name='compute_graph'),
     path('<int:compute_id>/instances/', instances, name='instances'),
