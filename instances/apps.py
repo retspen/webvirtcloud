@@ -15,7 +15,7 @@ def migrate_can_clone_instances(sender, **kwargs):
         if migration.app_label == 'instances' and migration.name == '0002_permissionset' and not rolled_back:
             users = User.objects.all()
             permission = Permission.objects.get(codename='clone_instances')
-            print('\033[92mMigrating can_clone_instaces user attribute to permission')
+            print('\033[92mMigrating can_clone_instaces user attribute to permission\033[0m')
             for user in users:
                 if user.userattributes:
                     if user.userattributes.can_clone_instances:
