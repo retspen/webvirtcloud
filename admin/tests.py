@@ -1,8 +1,8 @@
-from django.test import TestCase
 from django.contrib.auth.models import User
-from .urls import urlpatterns
 from django.shortcuts import reverse
-from django.test import Client
+from django.test import Client, TestCase
+
+from .urls import urlpatterns
 
 
 class AdminTestCase(TestCase):
