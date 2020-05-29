@@ -1,4 +1,3 @@
-
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
@@ -31,6 +30,7 @@ def group_create(request):
     if form.is_valid():
         form.save()
         return redirect('admin:group_list')
+
     return render(
         request,
         'admin/common/form.html',
@@ -116,7 +116,8 @@ def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
     attributes = UserAttributes.objects.get(user=user)
     user_form = forms.UserForm(request.POST or None, instance=user)
-    attributes_form = forms.UserAttributesForm(request.POST or None, instance=attributes)
+    attributes_form = forms.UserAttributesForm(
+        request.POST or None, instance=attributes)
     if user_form.is_valid() and attributes_form.is_valid():
         user_form.save()
         attributes_form.save()
@@ -166,7 +167,8 @@ def user_unblock(request, pk):
 @superuser_only
 def logs(request):
     l = Logs.objects.order_by('-date')
-    paginator = Paginator(l, int(AppSettings.objects.get(key="LOGS_PER_PAGE").value))
+    paginator = Paginator(
+        l, int(AppSettings.objects.get(key="LOGS_PER_PAGE").value))
     page = request.GET.get('page', 1)
     logs = paginator.page(page)
     return render(request, 'admin/logs.html', {'logs': logs})
