@@ -14,28 +14,27 @@ def add_default_settings(apps, schema_editor):
         setting(5, "Logs per Page", "LOGS_PER_PAGE", "100", "", "Pagination for logs"),
         setting(6, "Multiple Owner for VM ", "ALLOW_INSTANCE_MULTIPLE_OWNER", "True", "True,False", "Allow to have multiple owner for instance"),
         setting(7, "Quota Debug", "QUOTA_DEBUG", "True", "True,False", "Debug for user quotas"),
-        setting(8, "Empty Password", "ALLOW_EMPTY_PASSWORD", "True", "True,False", "Allow empty password"),
-        setting(9, "Disk Format", "INSTANCE_VOLUME_DEFAULT_FORMAT", "qcow2", "raw,qcow,qcow2", "Instance disk format"),
-        setting(10, "Disk Bus", "INSTANCE_VOLUME_DEFAULT_BUS", "virtio", "virtio,scsi,ide,usb,sata", "Instance disk bus type"),
-        setting(11, "Disk SCSI Controller", "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER", "virtio-scsi", "virtio-scsi, lsilogic, virtio-blk", "SCSI controller type"),
-        setting(12, "Disk Cache", "INSTANCE_VOLUME_DEFAULT_CACHE", "directsync", "default,directsync,none,unsafe,writeback,writethrough", "Disk volume cache type"),
-        setting(13, "Disk IO Type", "INSTANCE_VOLUME_DEFAULT_IO", "default", "default,native,threads", "Volume io modes"),
-        setting(14, "Disk Detect Zeroes", "INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES", "default", "default,on,off,unmap", "Volume detect zeroes mode"),
-        setting(15, "Disk Discard", "INSTANCE_VOLUME_DEFAULT_DISCARD", "default", "default,unmap,ignore", "Volume discard mode"),
-        setting(16, "Disk Owner UID", "INSTANCE_VOLUME_DEFAULT_OWNER_UID", "0", "", "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"),
-        setting(17, "Disk Owner GID", "INSTANCE_VOLUME_DEFAULT_OWNER_GID", "0", "", "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"),
-        setting(18, "VM CPU Mode", "INSTANCE_CPU_DEFAULT_MODE", "host-model", "no-model,host-model,host-passthrough,custom", "Cpu modes"),
-        setting(19, "VM Machine Type", "INSTANCE_MACHINE_DEFAULT_TYPE", "q35", "q35,x86_64", "Chipset/Machine type"),
-        setting(20, "VM Firmware Type", "INSTANCE_FIRMWARE_DEFAULT_TYPE", "BIOS", "BIOS,UEFI", "Firmware type for x86_64"),
-        setting(21, "VM Architecture Type", "INSTANCE_ARCH_DEFAULT_TYPE", "x86_64", "x86_64,i686", "Architecture type: x86_64, i686, etc"),
-        setting(22, "VM Console Type", "QEMU_CONSOLE_DEFAULT_TYPE", "vnc", "vnc,spice", "Default console type"),
-        setting(23, "VM Clone Name Prefix", "CLONE_INSTANCE_DEFAULT_PREFIX", "instance", "True,False", "Prefix for cloned instance name"),
-        setting(24, "VM Clone Auto Name", "CLONE_INSTANCE_AUTO_NAME", "False", "True,False", "Generated name for cloned instance"),
-        setting(25, "VM Clone Auto Migrate", "CLONE_INSTANCE_AUTO_MIGRATE", "False", "True,False", "Auto migrate instance after clone"),
-        setting(26, "VM Bottom Bar", "VIEW_INSTANCE_DETAIL_BOTTOM_BAR", "True", "True,False", "Bottom navbar for instance details"),
-        setting(27, "Show Access Root Pass", "SHOW_ACCESS_ROOT_PASSWORD", "False", "True,False", "Show access root password"),
-        setting(28, "Show Access SSH Keys", "SHOW_ACCESS_SSH_KEYS", "False", "True,False", "Show access ssh keys"),
-        setting(29, "Show Profile Edit Pass", "SHOW_PROFILE_EDIT_PASSWORD", "False", "True,False", "Show profile edit password"),
+        setting(8, "Disk Format", "INSTANCE_VOLUME_DEFAULT_FORMAT", "qcow2", "raw,qcow,qcow2", "Instance disk format"),
+        setting(9, "Disk Bus", "INSTANCE_VOLUME_DEFAULT_BUS", "virtio", "virtio,scsi,ide,usb,sata", "Instance disk bus type"),
+        setting(10, "Disk SCSI Controller", "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER", "virtio-scsi", "virtio-scsi, lsilogic, virtio-blk", "SCSI controller type"),
+        setting(11, "Disk Cache", "INSTANCE_VOLUME_DEFAULT_CACHE", "directsync", "default,directsync,none,unsafe,writeback,writethrough", "Disk volume cache type"),
+        setting(12, "Disk IO Type", "INSTANCE_VOLUME_DEFAULT_IO", "default", "default,native,threads", "Volume io modes"),
+        setting(13, "Disk Detect Zeroes", "INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES", "default", "default,on,off,unmap", "Volume detect zeroes mode"),
+        setting(14, "Disk Discard", "INSTANCE_VOLUME_DEFAULT_DISCARD", "default", "default,unmap,ignore", "Volume discard mode"),
+        setting(15, "Disk Owner UID", "INSTANCE_VOLUME_DEFAULT_OWNER_UID", "0", "", "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"),
+        setting(16, "Disk Owner GID", "INSTANCE_VOLUME_DEFAULT_OWNER_GID", "0", "", "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"),
+        setting(17, "VM CPU Mode", "INSTANCE_CPU_DEFAULT_MODE", "host-model", "no-model,host-model,host-passthrough,custom", "Cpu modes"),
+        setting(18, "VM Machine Type", "INSTANCE_MACHINE_DEFAULT_TYPE", "q35", "q35,x86_64", "Chipset/Machine type"),
+        setting(19, "VM Firmware Type", "INSTANCE_FIRMWARE_DEFAULT_TYPE", "BIOS", "BIOS,UEFI", "Firmware type for x86_64"),
+        setting(20, "VM Architecture Type", "INSTANCE_ARCH_DEFAULT_TYPE", "x86_64", "x86_64,i686", "Architecture type: x86_64, i686, etc"),
+        setting(21, "VM Console Type", "QEMU_CONSOLE_DEFAULT_TYPE", "vnc", "vnc,spice", "Default console type"),
+        setting(22, "VM Clone Name Prefix", "CLONE_INSTANCE_DEFAULT_PREFIX", "instance", "True,False", "Prefix for cloned instance name"),
+        setting(23, "VM Clone Auto Name", "CLONE_INSTANCE_AUTO_NAME", "False", "True,False", "Generated name for cloned instance"),
+        setting(24, "VM Clone Auto Migrate", "CLONE_INSTANCE_AUTO_MIGRATE", "False", "True,False", "Auto migrate instance after clone"),
+        setting(25, "VM Bottom Bar", "VIEW_INSTANCE_DETAIL_BOTTOM_BAR", "True", "True,False", "Bottom navbar for instance details"),
+        setting(26, "Show Access Root Pass", "SHOW_ACCESS_ROOT_PASSWORD", "False", "True,False", "Show access root password"),
+        setting(27, "Show Access SSH Keys", "SHOW_ACCESS_SSH_KEYS", "False", "True,False", "Show access ssh keys"),
+        setting(28, "Show Profile Edit Pass", "SHOW_PROFILE_EDIT_PASSWORD", "False", "True,False", "Show profile edit password"),
     ])
 
 def del_default_settings(apps, schema_editor):
@@ -48,7 +47,6 @@ def del_default_settings(apps, schema_editor):
     setting.objects.using(db_alias).filter(key="CLONE_INSTANCE_AUTO_MIGRATE").delete()
     setting.objects.using(db_alias).filter(key="LOGS_PER_PAGE").delete()
     setting.objects.using(db_alias).filter(key="QUOTA_DEBUG").delete()
-    setting.objects.using(db_alias).filter(key="ALLOW_EMPTY_PASSWORD").delete()
     setting.objects.using(db_alias).filter(key="VIEW_ACCOUNTS_STYLE").delete()
     setting.objects.using(db_alias).filter(key="VIEW_INSTANCES_LIST_STYLE").delete()
     setting.objects.using(db_alias).filter(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").delete()

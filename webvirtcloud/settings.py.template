@@ -151,5 +151,6 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
+ALLOW_EMPTY_PASSWORD = True
 NEW_USER_DEFAULT_INSTANCES = []
 
