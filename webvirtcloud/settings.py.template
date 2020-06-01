@@ -133,9 +133,6 @@ LOGGING = {
 # WebVirtCloud settings
 #
 
-# SCSS Directory
-SCSS_DIR = "dev/scss"
-
 # Websock port
 WS_PORT = 6080
 
@@ -163,7 +160,7 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
                 'ja', 'lt', 'lv', 'mk', 'nl', 'nl-be', 'no', 'pl', 'pt',
                 'pt-br', 'ru', 'sl', 'sv', 'th', 'tr']
 
-# keepalive interval and count for libvirt connections
+# Keepalive interval and count for libvirt connections
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
