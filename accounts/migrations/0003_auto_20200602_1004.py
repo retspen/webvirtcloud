@@ -7,18 +7,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0004_apply_change_password'),
+        ('accounts', '0002_permissionset'),
     ]
 
     operations = [
         migrations.AlterField(
             model_name='userattributes',
             name='max_cpus',
-            field=models.IntegerField(default=2, help_text='-1 for unlimited. Any integer value', validators=[django.core.validators.MinValueValidator(-1)]),
+            field=models.IntegerField(default=2, help_text='-1 for unlimited. Any integer value',
+                                      validators=[django.core.validators.MinValueValidator(-1)]),
         ),
         migrations.AlterField(
             model_name='userattributes',
             name='max_instances',
-            field=models.IntegerField(default=2, help_text='-1 for unlimited. Any integer value', validators=[django.core.validators.MinValueValidator(-1)]),
+            field=models.IntegerField(default=2, help_text='-1 for unlimited. Any integer value',
+                                      validators=[django.core.validators.MinValueValidator(-1)]),
         ),
     ]
