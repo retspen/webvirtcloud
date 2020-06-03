@@ -9,6 +9,7 @@ from accounts.models import UserAttributes
 class AdminTestCase(TestCase):
     def setUp(self):
         self.client.login(username='admin', password='admin')
+
     def test_group_list(self):
         response = self.client.get(reverse('admin:group_list'))
         self.assertEqual(response.status_code, 200)

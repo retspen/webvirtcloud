@@ -16,6 +16,7 @@ from admin.decorators import superuser_only
 
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 
+
 @superuser_only
 def create_instance_select_type(request, compute_id):
     """
