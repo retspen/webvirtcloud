@@ -1,4 +1,3 @@
-coverage==5.1
 Django==2.2.12
 django-bootstrap4
 django-fa==1.0.0

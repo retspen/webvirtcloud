@@ -45,7 +45,7 @@ def secrets(request, compute_id):
             try:
                 secrt_value = conn.get_secret_value(uuid)
             except libvirtError as lib_err:
-                secret_value = None
+                secrt_value = None
             secrets_all.append({
                 'usage': secrt.usageID(),
                 'uuid': secrt.UUIDString(),
