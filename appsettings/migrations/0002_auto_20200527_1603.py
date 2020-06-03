@@ -14,53 +14,51 @@ def add_default_settings(apps, schema_editor):
                 "", "Bootstrap SASS & Bootswatch SASS Directory"),
         setting(3, "All Instances View Style", "VIEW_INSTANCES_LIST_STYLE",
                 "grouped", "grouped,nongrouped", "All instances list style"),
-        setting(4, "Account View Style", "VIEW_ACCOUNTS_STYLE",
-                "grid", "grid,list", "User accounts view style"),
-        setting(5, "Logs per Page", "LOGS_PER_PAGE",
+        setting(4, "Logs per Page", "LOGS_PER_PAGE",
                 "100", "", "Pagination for logs"),
-        setting(6, "Multiple Owner for VM ", "ALLOW_INSTANCE_MULTIPLE_OWNER",
+        setting(5, "Multiple Owner for VM ", "ALLOW_INSTANCE_MULTIPLE_OWNER",
                 "True", "True,False", "Allow to have multiple owner for instance"),
-        setting(7, "Quota Debug", "QUOTA_DEBUG", "True",
+        setting(6, "Quota Debug", "QUOTA_DEBUG", "True",
                 "True,False", "Debug for user quotas"),
-        setting(8, "Disk Format", "INSTANCE_VOLUME_DEFAULT_FORMAT",
+        setting(7, "Disk Format", "INSTANCE_VOLUME_DEFAULT_FORMAT",
                 "qcow2", "raw,qcow,qcow2", "Instance disk format"),
-        setting(9, "Disk Bus", "INSTANCE_VOLUME_DEFAULT_BUS", "virtio",
+        setting(8, "Disk Bus", "INSTANCE_VOLUME_DEFAULT_BUS", "virtio",
                 "virtio,scsi,ide,usb,sata", "Instance disk bus type"),
-        setting(10, "Disk SCSI Controller", "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER",
+        setting(9, "Disk SCSI Controller", "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER",
                 "virtio-scsi", "virtio-scsi, lsilogic, virtio-blk", "SCSI controller type"),
-        setting(11, "Disk Cache", "INSTANCE_VOLUME_DEFAULT_CACHE", "directsync",
+        setting(10, "Disk Cache", "INSTANCE_VOLUME_DEFAULT_CACHE", "directsync",
                 "default,directsync,none,unsafe,writeback,writethrough", "Disk volume cache type"),
-        setting(12, "Disk IO Type", "INSTANCE_VOLUME_DEFAULT_IO",
+        setting(11, "Disk IO Type", "INSTANCE_VOLUME_DEFAULT_IO",
                 "default", "default,native,threads", "Volume io modes"),
-        setting(13, "Disk Detect Zeroes", "INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES",
+        setting(12, "Disk Detect Zeroes", "INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES",
                 "default", "default,on,off,unmap", "Volume detect zeroes mode"),
-        setting(14, "Disk Discard", "INSTANCE_VOLUME_DEFAULT_DISCARD",
+        setting(13, "Disk Discard", "INSTANCE_VOLUME_DEFAULT_DISCARD",
                 "default", "default,unmap,ignore", "Volume discard mode"),
-        setting(15, "Disk Owner UID", "INSTANCE_VOLUME_DEFAULT_OWNER_UID", "0",
+        setting(14, "Disk Owner UID", "INSTANCE_VOLUME_DEFAULT_OWNER_UID", "0",
                 "", "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"),
-        setting(16, "Disk Owner GID", "INSTANCE_VOLUME_DEFAULT_OWNER_GID", "0",
+        setting(15, "Disk Owner GID", "INSTANCE_VOLUME_DEFAULT_OWNER_GID", "0",
                 "", "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"),
-        setting(17, "VM CPU Mode", "INSTANCE_CPU_DEFAULT_MODE", "host-model",
+        setting(16, "VM CPU Mode", "INSTANCE_CPU_DEFAULT_MODE", "host-model",
                 "no-model,host-model,host-passthrough,custom", "Cpu modes"),
-        setting(18, "VM Machine Type", "INSTANCE_MACHINE_DEFAULT_TYPE",
+        setting(17, "VM Machine Type", "INSTANCE_MACHINE_DEFAULT_TYPE",
                 "q35", "q35,x86_64", "Chipset/Machine type"),
-        setting(19, "VM Firmware Type", "INSTANCE_FIRMWARE_DEFAULT_TYPE",
+        setting(18, "VM Firmware Type", "INSTANCE_FIRMWARE_DEFAULT_TYPE",
                 "BIOS", "BIOS,UEFI", "Firmware type for x86_64"),
-        setting(20, "VM Architecture Type", "INSTANCE_ARCH_DEFAULT_TYPE",
+        setting(19, "VM Architecture Type", "INSTANCE_ARCH_DEFAULT_TYPE",
                 "x86_64", "x86_64,i686", "Architecture type: x86_64, i686, etc"),
-        setting(21, "VM Console Type", "QEMU_CONSOLE_DEFAULT_TYPE",
+        setting(20, "VM Console Type", "QEMU_CONSOLE_DEFAULT_TYPE",
                 "vnc", "vnc,spice", "Default console type"),
-        setting(22, "VM Clone Name Prefix", "CLONE_INSTANCE_DEFAULT_PREFIX",
+        setting(21, "VM Clone Name Prefix", "CLONE_INSTANCE_DEFAULT_PREFIX",
                 "instance", "True,False", "Prefix for cloned instance name"),
-        setting(23, "VM Clone Auto Name", "CLONE_INSTANCE_AUTO_NAME",
+        setting(22, "VM Clone Auto Name", "CLONE_INSTANCE_AUTO_NAME",
                 "False", "True,False", "Generated name for cloned instance"),
-        setting(24, "VM Clone Auto Migrate", "CLONE_INSTANCE_AUTO_MIGRATE",
+        setting(23, "VM Clone Auto Migrate", "CLONE_INSTANCE_AUTO_MIGRATE",
                 "False", "True,False", "Auto migrate instance after clone"),
-        setting(25, "VM Bottom Bar", "VIEW_INSTANCE_DETAIL_BOTTOM_BAR",
+        setting(24, "VM Bottom Bar", "VIEW_INSTANCE_DETAIL_BOTTOM_BAR",
                 "True", "True,False", "Bottom navbar for instance details"),
-        setting(26, "Show Access Root Pass", "SHOW_ACCESS_ROOT_PASSWORD",
+        setting(25, "Show Access Root Pass", "SHOW_ACCESS_ROOT_PASSWORD",
                 "False", "True,False", "Show access root password"),
-        setting(27, "Show Access SSH Keys", "SHOW_ACCESS_SSH_KEYS",
+        setting(26, "Show Access SSH Keys", "SHOW_ACCESS_SSH_KEYS",
                 "False", "True,False", "Show access ssh keys"),
     ])
 
@@ -68,53 +66,31 @@ def add_default_settings(apps, schema_editor):
 def del_default_settings(apps, schema_editor):
     setting = apps.get_model("appsettings", "AppSettings")
     db_alias = schema_editor.connection.alias
-    setting.objects.using(db_alias).filter(
-        key="QEMU_CONSOLE_DEFAULT_TYPE").delete()
-    setting.objects.using(db_alias).filter(
-        key="ALLOW_INSTANCE_MULTIPLE_OWNER").delete()
-    setting.objects.using(db_alias).filter(
-        key="CLONE_INSTANCE_DEFAULT_PREFIX").delete()
-    setting.objects.using(db_alias).filter(
-        key="CLONE_INSTANCE_AUTO_NAME").delete()
-    setting.objects.using(db_alias).filter(
-        key="CLONE_INSTANCE_AUTO_MIGRATE").delete()
+    setting.objects.using(db_alias).filter(key="QEMU_CONSOLE_DEFAULT_TYPE").delete()
+    setting.objects.using(db_alias).filter(key="ALLOW_INSTANCE_MULTIPLE_OWNER").delete()
+    setting.objects.using(db_alias).filter(key="CLONE_INSTANCE_DEFAULT_PREFIX").delete()
+    setting.objects.using(db_alias).filter(key="CLONE_INSTANCE_AUTO_NAME").delete()
+    setting.objects.using(db_alias).filter(key="CLONE_INSTANCE_AUTO_MIGRATE").delete()
     setting.objects.using(db_alias).filter(key="LOGS_PER_PAGE").delete()
     setting.objects.using(db_alias).filter(key="QUOTA_DEBUG").delete()
-    setting.objects.using(db_alias).filter(key="VIEW_ACCOUNTS_STYLE").delete()
-    setting.objects.using(db_alias).filter(
-        key="VIEW_INSTANCES_LIST_STYLE").delete()
-    setting.objects.using(db_alias).filter(
-        key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_FORMAT").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_BUS").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_CACHE").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_IO").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_DISCARD").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_OWNER_UID").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_VOLUME_DEFAULT_OWNER_GID").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_CPU_DEFAULT_MODE").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_MACHINE_DEFAULT_TYPE").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_FIRMWARE_DEFAULT_TYPE").delete()
-    setting.objects.using(db_alias).filter(
-        key="INSTANCE_ARCH_DEFAULT_TYPE").delete()
+    setting.objects.using(db_alias).filter(key="VIEW_INSTANCES_LIST_STYLE").delete()
+    setting.objects.using(db_alias).filter(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_FORMAT").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_BUS").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_CACHE").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_IO").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_DISCARD").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_OWNER_UID").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_VOLUME_DEFAULT_OWNER_GID").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_CPU_DEFAULT_MODE").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_MACHINE_DEFAULT_TYPE").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_FIRMWARE_DEFAULT_TYPE").delete()
+    setting.objects.using(db_alias).filter(key="INSTANCE_ARCH_DEFAULT_TYPE").delete()
     setting.objects.using(db_alias).filter(key="BOOTSTRAP_THEME").delete()
     setting.objects.using(db_alias).filter(key="SASS_DIR").delete()
-    setting.objects.using(db_alias).filter(
-        key="SHOW_ACCESS_ROOT_PASSWORD").delete()
+    setting.objects.using(db_alias).filter(key="SHOW_ACCESS_ROOT_PASSWORD").delete()
     setting.objects.using(db_alias).filter(key="SHOW_ACCESS_SSH_KEYS").delete()
 
 
