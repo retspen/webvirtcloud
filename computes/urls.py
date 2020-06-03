@@ -1,32 +1,46 @@
-from django.urls import path, re_path
-from storages.views import storages, storage, get_volumes
-from networks.views import networks, network
 from secrets.views import secrets
+
+from django.urls import path
+
+from . import views
 from create.views import create_instance, create_instance_select_type
-from interfaces.views import interfaces, interface
-from computes.views import overview, compute_graph, computes, get_compute_disk_buses, get_compute_machine_types, get_dom_capabilities
 from instances.views import instances
+from interfaces.views import interface, interfaces
+from networks.views import network, networks
 from nwfilters.views import nwfilter, nwfilters
+from storages.views import get_volumes, storage, storages
+from . import forms
 
 urlpatterns = [
-    path('', computes, name='computes'),
-    re_path(r'^(?P<compute_id>[0-9]+)/$', overview, name='overview'),
-    re_path(r'^(?P<compute_id>[0-9]+)/statistics$', compute_graph, name='compute_graph'),
-    re_path(r'^(?P<compute_id>[0-9]+)/instances/$', instances, name='instances'),
-    re_path(r'^(?P<compute_id>[0-9]+)/storages/$', storages, name='storages'),
-    re_path(r'^(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.\/]+)/volumes$', get_volumes, name='volumes'),
-    re_path(r'^(?P<compute_id>[0-9]+)/storage/(?P<pool>[\w\-\.\/]+)/$', storage, name='storage'),
-    re_path(r'^(?P<compute_id>[0-9]+)/networks/$', networks, name='networks'),
-    re_path(r'^(?P<compute_id>[0-9]+)/network/(?P<pool>[\w\-\.]+)/$', network, name='network'),
-    re_path(r'^(?P<compute_id>[0-9]+)/interfaces/$', interfaces, name='interfaces'),
-    re_path(r'^(?P<compute_id>[0-9]+)/interface/(?P<iface>[\w\-\.\:]+)/$', interface, name='interface'),
-    re_path(r'^(?P<compute_id>[0-9]+)/nwfilters/$', nwfilters, name='nwfilters'),
-    re_path(r'^(?P<compute_id>[0-9]+)/nwfilter/(?P<nwfltr>[\w\-\.\:]+)/$', nwfilter, name='nwfilter'),
-    re_path(r'^(?P<compute_id>[0-9]+)/secrets/$', secrets, name='secrets'),
-    re_path(r'^(?P<compute_id>[0-9]+)/create/$', create_instance_select_type, name='create_instance_select_type'),
-    re_path(r'^(?P<compute_id>[0-9]+)/create/archs/(?P<arch>[\w\-\.\/]+)/machines/(?P<machine>[\w\-\.\/]+)$', create_instance, name='create_instance'),
-    re_path(r'^(?P<compute_id>[0-9]+)/archs/(?P<arch>[\w\-\.\/]+)/machines$', get_compute_machine_types, name='machines'),
-    re_path(r'^(?P<compute_id>[0-9]+)/archs/(?P<arch>[\w\-\.\/]+)/machines/(?P<machine>[\w\-\.\/]+)/disks/(?P<disk>[\w\-\.\/]+)/buses$', get_compute_disk_buses, name='buses'),
-    re_path(r'^(?P<compute_id>[0-9]+)/archs/(?P<arch>[\w\-\.\/]+)/machines/(?P<machine>[\w\-\.\/]+)/capabilities$', get_dom_capabilities, name='domcaps'),
+    path('', views.computes, name='computes'),
+    path('add_tcp_host/', views.add_host, {'FormClass': forms.TcpComputeForm}, name='add_tcp_host'),
+    path('add_ssh_host/', views.add_host, {'FormClass': forms.SshComputeForm}, name='add_ssh_host'),
+    path('add_tls_host/', views.add_host, {'FormClass': forms.TlsComputeForm}, name='add_tls_host'),
+    path('add_socket_host/', views.add_host, {'FormClass': forms.SocketComputeForm}, name='add_socket_host'),
+    path('<int:compute_id>/', views.overview, name='overview'),
+    path('<int:compute_id>/statistics/', views.compute_graph, name='compute_graph'),
+    path('<int:compute_id>/instances/', instances, name='instances'),
+    path('<int:compute_id>/storages/', storages, name='storages'),
+    path('<int:compute_id>/storage/<str:pool>/volumes/', get_volumes, name='volumes'),
+    path('<int:compute_id>/storage/<str:pool>/', storage, name='storage'),
+    path('<int:compute_id>/networks/', networks, name='networks'),
+    path('<int:compute_id>/network/<str:pool>/', network, name='network'),
+    path('<int:compute_id>/interfaces/', interfaces, name='interfaces'),
+    path('<int:compute_id>/interface/<str:iface>/', interface, name='interface'),
+    path('<int:compute_id>/nwfilters/', nwfilters, name='nwfilters'),
+    path('<int:compute_id>/nwfilter/<str:nwfltr>/', nwfilter, name='nwfilter'),
+    path('<int:compute_id>/secrets/', secrets, name='secrets'),
+    path('<int:compute_id>/create/', create_instance_select_type, name='create_instance_select_type'),
+    path('<int:compute_id>/create/archs/<str:arch>/machines/<str:machine>/', create_instance, name='create_instance'),
+    path('<int:compute_id>/archs/<str:arch>/machines/', views.get_compute_machine_types, name='machines'),
+    path(
+        '<int:compute_id>/archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses/',
+        views.get_compute_disk_buses,
+        name='buses',
+    ),
+    path(
+        '<int:compute_id>/archs/<str:arch>/machines/<str:machine>/capabilities/',
+        views.get_dom_capabilities,
+        name='domcaps',
+    ),
 ]
-

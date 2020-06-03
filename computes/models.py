@@ -2,7 +2,7 @@ from django.db.models import Model, CharField, IntegerField
 
 
 class Compute(Model):
-    name = CharField(max_length=64)
+    name = CharField(max_length=64, unique=True)
     hostname = CharField(max_length=64)
     login = CharField(max_length=20)
     password = CharField(max_length=14, blank=True, null=True)

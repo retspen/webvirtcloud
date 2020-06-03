@@ -1,16 +1,19 @@
 import json
-from django.utils import timezone
+
+from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.urls import reverse
-from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from libvirt import libvirtError
+
+from accounts.models import UserInstance
+from admin.decorators import superuser_only
+from computes.forms import (ComputeEditHostForm, SocketComputeForm, SshComputeForm, TcpComputeForm, TlsComputeForm)
 from computes.models import Compute
 from instances.models import Instance
-from accounts.models import UserInstance
-from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHostForm, ComputeAddTlsForm, ComputeAddSocketForm
+from vrtManager.connection import (CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS, connection_manager, wvmConnect)
 from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager, wvmConnect
-from libvirt import libvirtError
-from admin.decorators import superuser_only
 
 
 @superuser_only
@@ -55,65 +58,6 @@ def computes(request):
                     del_host = Compute.objects.get(id=compute_id)
                     del_host.delete()
             return HttpResponseRedirect(request.get_full_path())
-        if 'host_tcp_add' in request.POST:
-            form = ComputeAddTcpForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_tcp_host = Compute(name=data['name'],
-                                       hostname=data['hostname'],
-                                       type=CONN_TCP,
-                                       login=data['login'],
-                                       password=data['password'],
-                                       details=data['details'])
-                new_tcp_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-        if 'host_ssh_add' in request.POST:
-            form = ComputeAddSshForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_ssh_host = Compute(name=data['name'],
-                                       hostname=data['hostname'],
-                                       type=CONN_SSH,
-                                       login=data['login'],
-                                       details=data['details'])
-                new_ssh_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-        if 'host_tls_add' in request.POST:
-            form = ComputeAddTlsForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_tls_host = Compute(name=data['name'],
-                                       hostname=data['hostname'],
-                                       type=CONN_TLS,
-                                       login=data['login'],
-                                       password=data['password'],
-                                       details=data['details'])
-                new_tls_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-        if 'host_socket_add' in request.POST:
-            form = ComputeAddSocketForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_socket_host = Compute(name=data['name'],
-                                          details=data['details'],
-                                          hostname='localhost',
-                                          type=CONN_SOCKET,
-                                          login='',
-                                          password='')
-                new_socket_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
         if 'host_edit' in request.POST:
             form = ComputeEditHostForm(request.POST)
             if form.is_valid():
@@ -274,3 +218,13 @@ def get_dom_capabilities(request, compute_id, arch, machine):
         pass
 
     return HttpResponse(json.dumps(data))
+
+
+@superuser_only
+def add_host(request, FormClass):
+    form = FormClass(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect(reverse('computes'))
+
+    return render(request, 'computes/form.html', {'form': form})
