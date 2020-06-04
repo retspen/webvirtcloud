@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.core.validators import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -22,7 +21,6 @@ def profile(request):
     error_messages = []
     # user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-    themes_list = os.listdir(settings.SCSS_DIR +"/wvc-theme")
 
     if request.method == 'POST':
         if 'username' in request.POST:
@@ -104,7 +102,7 @@ def account(request, user_id):
             return HttpResponseRedirect(request.get_full_path())
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
-            
+
             if AppSettings.objects.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
             else:

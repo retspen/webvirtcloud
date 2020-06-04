@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import UserAttributes
-from appsettings.views import AppSettings
+from appsettings.models import AppSettings
 from logs.models import Logs
 
 from . import forms

@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'fa',
     'accounts',
     'admin',
+    'appsettings',
     'computes',
     'console',
     'create',
@@ -35,7 +36,6 @@ INSTALLED_APPS = [
     'nwfilters',
     'storages',
     'secrets',
-    'appsettings',
     'logs',
 ]
 
@@ -164,5 +164,6 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
+ALLOW_EMPTY_PASSWORD = False
 NEW_USER_DEFAULT_INSTANCES = []
 SHOW_PROFILE_EDIT_PASSWORD = True

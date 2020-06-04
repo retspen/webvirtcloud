@@ -1,6 +1,7 @@
 from django.urls import path, include
 
 from . import views
+from . import forms
 from create.views import create_instance, create_instance_select_type
 from instances.views import instances
 from interfaces.views import interface, interfaces
@@ -8,7 +9,6 @@ from networks.views import network, networks
 from nwfilters.views import nwfilter, nwfilters
 from secrets.views import secrets
 from storages.views import get_volumes, storage, storages
-from . import forms
 
 urlpatterns = [
     path('', views.computes, name='computes'),

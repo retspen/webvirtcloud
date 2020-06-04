@@ -205,11 +205,11 @@ def create_instance(request, compute_id, arch, machine):
                                 error_messages.append(error_msg)
                             else:
                                 clone_path = conn.clone_from_template(
-                                    data['name'], 
-                                    templ_path, 
-                                    data['storage'], 
-                                    meta_prealloc, 
-                                    default_disk_owner_uid, 
+                                    data['name'],
+                                    templ_path,
+                                    data['storage'],
+                                    meta_prealloc,
+                                    default_disk_owner_uid,
                                     default_disk_owner_gid)
                                 volume = dict()
                                 volume['path'] = clone_path
