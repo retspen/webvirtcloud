@@ -140,7 +140,7 @@
                                                                                         {% endfor %}
                                                                                     </optgroup>
                                                                                 {% else %}
-                                                                                    <option value="{{ mode }}" {% ifequal mode default_cpu_mode %}selected {% endifequal %}>
+                                                                                    <option value="{{ mode }}" {% if mode == default_cpu_mode %}selected {% endif %}>
                                                                                         {% trans mode %}
                                                                                     </option>
                                                                                 {% endif %}
@@ -343,7 +343,7 @@
                                             {% endfor %}
                                         </optgroup>
                                     {% else %}
-                                        <option value="{{ mode }}" {% ifequal mode default_cpu_mode %}selected {% endifequal %}>
+                                        <option value="{{ mode }}" {% if mode == default_cpu_mode %}selected {% endif %}>
                                             {% trans mode %}
                                         </option>
                                     {% endif %}
@@ -555,7 +555,7 @@
                                                 {% endfor %}
                                             </optgroup>
                                         {% else %}
-                                            <option value="{{ mode }}" {% ifequal mode default_cpu_mode %}selected {% endifequal %}>
+                                            <option value="{{ mode }}" {% if mode == default_cpu_mode %}selected{% endif %}>
                                                 {% trans mode %}
                                             </option>
                                         {% endif %}

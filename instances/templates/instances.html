@@ -82,9 +82,9 @@
                                     <td><a class="text-secondary" href="{% url 'instance' host.0 inst %}">{{ inst }}</a><br><small><em>{{ vm.title }}</em></small></td>
                                     <td class="d-none d-md-table-cell"><small><em>{% if vm.userinstances.count > 0 %}{{ vm.userinstances.first_user.user.username }}{% if vm.userinstances.count > 1 %} (+{{ vm.userinstances.count|add:"-1" }}){% endif %}{% endif %}</em></small></td>
                                     <td>
-                                        {% ifequal vm.status 1 %}<span class="text-success">{% trans "Active" %}</span>{% endifequal %}
-                                        {% ifequal vm.status 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endifequal %}
-                                        {% ifequal vm.status 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endifequal %}
+                                        {% if vm.status == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
+                                        {% if vm.status == 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endif %}
+                                        {% if vm.status == 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endif %}
                                     </td>
                                     <td>{{ vm.vcpu }}</td>
                                     <td>{{ vm.memory|filesizeformat }}</td>

@@ -2,7 +2,7 @@
 <form action="" method="post" role="form" aria-label="Shortcut instance action form">{% csrf_token %}
     <input type="hidden" name="name" value="{{ inst }}"/>
     <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
-    {% ifequal vm.status 5 %}
+    {% if vm.status == 5 %}
         {% if vm.is_template %}
             <button class="btn btn-sm btn-secondary" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ host.0 }}, '{{ inst }}');">
                 <span class="fa fa-clone"></span>
@@ -24,8 +24,8 @@
         <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
             <span class="fa fa-eye"></span>
         </button>
-    {% endifequal %}
-    {% ifequal vm.status 3 %}
+    {% endif %}
+    {% if vm.status == 3 %}
         <button class="btn btn-sm btn-secondary" type="submit" name="resume" title="{% trans "Resume" %}">
             <span class="fa fa-play"></span>
         </button>
@@ -41,8 +41,8 @@
         <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
             <span class="fa fa-eye"></span>
         </button>
-    {% endifequal %}
-    {% ifequal vm.status 1 %}
+    {% endif %}
+    {% if vm.status == 1 %}
         <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power On" %}" disabled>
             <span class="fa fa-play"></span>
         </button>
@@ -58,5 +58,5 @@
         <button class="btn btn-sm btn-secondary" type="button" onclick='open_console("{{ host.0 }}-{{ vm.uuid }}")' title="{% trans "Console" %}">
             <span class="fa fa-eye"></span>
         </button>
-    {% endifequal %}
+    {% endif %}
 </form>

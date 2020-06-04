@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    {% ifnotequal state 0 %}
-        {% ifequal pool "iso" %}
+    {% if state != 0 %}
+        {% if pool == "iso" %}
             <a href="#IsoUpload" class="btn btn-success float-right" data-toggle="modal">
                 <span class="fa fa-plus" aria-hidden="true"></span>
             </a>
@@ -85,6 +85,6 @@
                     </div> <!-- /.modal-content -->
                 </div> <!-- /.modal-dialog -->
             </div> <!-- /.modal -->
-        {% endifequal %}
-    {% endifnotequal %}
+        {% endif %}
+    {% endif %}
 {% endif %}

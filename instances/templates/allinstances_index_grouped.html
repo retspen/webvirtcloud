@@ -23,9 +23,9 @@
             </td>
             <td class="d-none d-sm-table-cell"></td>
             <td>
-                {% ifequal host.2 1 %}<span class="text-success">{% trans "Active" %}</span>{% endifequal %}
-                {% ifequal host.2 2 %}<span class="text-warning">{% trans "Not Active" %}</span>{% endifequal %}
-                {% ifequal host.2 3 %}<span class="text-danger">{% trans "Connection Failed" %}</span>{% endifequal %}
+                {% if host.2 == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
+                {% if host.2 == 2 %}<span class="text-warning">{% trans "Not Active" %}</span>{% endif %}
+                {% if host.2 == 3 %}<span class="text-danger">{% trans "Connection Failed" %}</span>{% endif %}
             </td>
             <td class="d-none d-sm-table-cell text-center">{{ host.3 }}</td>
             <td class="d-none d-sm-table-cell text-right">{{ host.4|filesizeformat }}</td>
@@ -53,9 +53,9 @@
                     </span>
                 </td>
                 <td>
-                    {% ifequal vm.status 1 %}<span class="text-success">{% trans "Active" %}</span>{% endifequal %}
-                    {% ifequal vm.status 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endifequal %}
-                    {% ifequal vm.status 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endifequal %}
+                    {% if vm.status == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
+                    {% if vm.status == 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endif %}
+                    {% if vm.status == 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endif %}
                 </td>
                 <td class="d-none d-sm-table-cell text-center">{{ vm.vcpu }}</td>
                 <td class="d-none d-sm-table-cell text-right">{{ vm.memory |filesizeformat }}</td>

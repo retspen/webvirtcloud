@@ -34,12 +34,12 @@
                     </div>
                 </div>
             {% else %}
-               {% ifequal view_style "nongrouped"  %}
+               {% if view_style == "nongrouped"  %}
                    {% include 'allinstances_index_nongrouped.html' %}
-               {% endifequal %}
-               {% ifequal view_style "grouped" %}
+               {% endif %}
+               {% if view_style == "grouped" %}
                    {% include 'allinstances_index_grouped.html' %}
-               {% endifequal %}
+               {% endif %}
             {% endif %}
         {% else %}
             {% if not all_user_vms %}
@@ -64,15 +64,15 @@
                         {% for inst, vm in all_user_vms.items %}
                             <tr>
                                 <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a><br><small><em>{{ vm.title }}</em></small></td>
-                                <td>{% ifequal vm.status 1 %}
+                                <td>{% if vm.status == 1 %}
                                         <span class="text-success">{% trans "Active" %}</span>
-                                    {% endifequal %}
-                                    {% ifequal vm.status 5 %}
+                                    {% endif %}
+                                    {% if vm.status == 5 %}
                                         <span class="text-danger">{% trans "Off" %}</span>
-                                    {% endifequal %}
-                                    {% ifequal vm.status 3 %}
+                                    {% endif %}
+                                    {% if vm.status == 3 %}
                                         <span class="text-warning">{% trans "Suspend" %}</span>
-                                    {% endifequal %}
+                                    {% endif %}
                                 </td>
                                 <td>{{ vm.vcpu }}</td>
                                 <td>{{ vm.memory }} {% trans "MB" %}</td>

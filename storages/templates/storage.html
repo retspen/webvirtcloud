@@ -58,26 +58,26 @@
         <dt class="col-6">{% trans "State" %}</dt>
         <dd class="col-6">
             <form action="" method="post" role="form" aria-label="Storage start/stop form">{% csrf_token %}
-                {% ifequal state 0 %}
+                {% if state == 0 %}
                     <input type="submit" class="btn btn-sm btn-secondary" name="start" value="{% trans "Start" %}">
                     <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}"
                             onclick="return confirm('{% trans "Are you sure?" %}')">
                 {% else %}
                     <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}"
                             onclick="return confirm('{% trans "Are you sure?" %}')">
-                {% endifequal %}
+                {% endif %}
             </form>
         </dd>
         <dt class="col-6">{% trans "Autostart" %}</dt>
         <dd class="col-6">
             <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form">{% csrf_token %}
-            {% ifequal autostart 0 %}
+            {% if autostart == 0 %}
                 <input type="submit" class="btn btn-sm btn-secondary" name="set_autostart"
                         value="{% trans "Enable" %}">
                 {% else %}
                 <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart"
                         onclick="return confirm('{% trans "Are you sure?" %}')" value="{% trans "Disable" %}">
-            {% endifequal %}
+            {% endif %}
         </form>
         </dd>
     </dl>
