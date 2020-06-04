@@ -1,6 +1,6 @@
-from django.urls import path, re_path
+from django.urls import path
 from . import views
 
 urlpatterns = [
-    re_path(r'^vm_logs/(?P<vname>[\w\-\.]+)/$', views.vm_logs, name='vm_logs'),
+    path('vm_logs/<vname>/', views.vm_logs, name='vm_logs'),
 ]
