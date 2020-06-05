@@ -649,7 +649,6 @@ def instance(request, compute_id, vname):
 
             if 'detach_cdrom' in request.POST and allow_admin_or_not_template:
                 dev = request.POST.get('detach_cdrom', '')
-                path = request.POST.get('path', '')
                 conn.detach_disk(dev)
                 msg = _('Detach CD-ROM: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)

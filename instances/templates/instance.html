@@ -738,25 +738,22 @@
                                         <div class="clearfix"></div>
                                     </div>
                                     <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
-                                    <form action="" method="post" role="form" aria-label="Detach instance CD-ROM form">{% csrf_token %}
+                                    <form action="" method="post" role="form" aria-label="Add CD-ROM form">{% csrf_token %}
                                         <p class="font-weight-bold">
                                             {% trans "Instance Media" %}
-                                             {% if status == 5 and allow_admin_or_not_template %}
-                                                <button type="submit" class="btn btn-danger float-right" title="{% trans "Detach CD-ROM (remove device)" %}" name="detach_cdrom" value="{{ cd.dev }}">
-                                                    <span class="fa fa-remove"></span>
-                                                </button>
-                                            {% endif %}
-                                            <button type="submit" name="add_cdrom" type="button" class="btn btn-success float-right"
+                                            <button class="btn btn-success float-right"
+                                                    type="submit" name="add_cdrom" type="button"
                                                     title="{% trans 'Add CD-ROM' %}"
-                                                    {% if status != 5 %} disabled {% endif %} >
-                                                <span class="fa fa-plus" aria-hidden="true"></span>
+                                                    {% if status != 5 %} disabled {% endif %}>
+                                                <span class="fa fa-plus"></span>
                                             </button>
                                         </p>
                                     </form>
+                                    <div class="clearfix"></div>
                                     {% for cd in media %}
                                         <form action="" method="post" role="form" aria-label="Mount/unmount instance CD-ROM form">{% csrf_token %}
                                             <div class="form-group row">
-                                                <a class="col-sm-3 col-form-label"
+                                                <a class="ml-4 col-sm-3 col-form-label"
                                                         name="details"
                                                         title="{% trans "Details" %}"
                                                         tabindex="0"
@@ -768,28 +765,31 @@
                                                     {% trans "CD-ROM" %} {{ forloop.counter }}
                                                 </a>
                                                 {% if not cd.image %}
-                                                    <div class="col-sm-6">
-                                                        <div class="input-group">
-                                                            <select name="media" class="custom-select">
-                                                                {% if media_iso %}
-                                                                    {% for iso in media_iso %}
-                                                                        <option value="{{ iso }}">{{ iso }}</option>
-                                                                    {% endfor %}
-                                                                {% else %}
-                                                                    <option value="none">{% trans "None" %}</option>
-                                                                {% endif %}
-                                                            </select>
-                                                    
-                                                            <div class="input-group-append">
-                                                                {% if media_iso and allow_admin_or_not_template %}
-                                                                    <button type="submit" class="btn btn-sm btn-success float-left" name="mount_iso" value="{{ cd.dev }}">{% trans "Mount" %}</button>
-                                                                {% else %}
-                                                                    <button class="btn btn-sm btn-success float-left disabled">{% trans "Mount" %}</button>
-                                                                {% endif %}
-                                                                
-                                                            </div>
+                                                <div class="col-sm-6">
+                                                    <div class="input-group">
+                                                        <select name="media" class="form-control">
+                                                        {% if media_iso %}
+                                                            {% for iso in media_iso %}
+                                                                <option value="{{ iso }}">{{ iso }}</option>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <option value="none">{% trans "None" %}</option>
+                                                        {% endif %}
+                                                        </select>
+                                                        <div class="input-group-append">
+                                                        {% if media_iso and allow_admin_or_not_template %}
+                                                            <button type="submit" class="btn btn-sm btn-success float-left" name="mount_iso" value="{{ cd.dev }}">{% trans "Mount" %}</button>
+                                                        {% else %}
+                                                            <button class="btn btn-sm btn-success float-left disabled">{% trans "Mount" %}</button>
+                                                        {% endif %}
+                                                        {% if status == 5 and allow_admin_or_not_template %}
+                                                            <button type="submit" class="btn btn-sm btn-danger float-right" title="{% trans "Detach CD-ROM (remove device)" %}" name="detach_cdrom" value="{{ cd.dev }}">
+                                                                <span class="fa fa-remove"></span>
+                                                            </button>
+                                                        {% endif %}  
                                                         </div>
-                                                    </div>    
+                                                    </div>
+                                                </div>    
                                                 {% else %}
                                                 <div class="col-sm-6">
                                                     <div class="input-group">
