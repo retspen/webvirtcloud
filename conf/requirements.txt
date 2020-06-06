@@ -1,10 +1,10 @@
-Django==2.2.12
-django-bootstrap4
+Django==2.2.13
+django-bootstrap4==2.0.1
 django-fa==1.0.0
 django-login-required-middleware==0.5.0
 gunicorn==20.0.4
 libvirt-python==6.3.0
-libsass
+libsass==0.20.0
 lxml==4.5.0
 numpy==1.18.4
 pytz==2020.1
