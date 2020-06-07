@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.translation import ugettext_lazy as _
@@ -7,7 +8,6 @@ from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
 from libvirt import libvirtError
 from django.contrib import messages
-import json
 from admin.decorators import superuser_only
 
 
@@ -200,6 +200,12 @@ def storage(request, compute_id, pool):
 
 
 def get_volumes(request, compute_id, pool):
+    """
+    :param request:
+    :param compute_id: compute id
+    :param pool: pool name
+    :return: volumes list of pool
+    """
     data = {}
     compute = get_object_or_404(Compute, pk=compute_id)
     try:

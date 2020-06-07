@@ -18,7 +18,7 @@ class wvmHostDetails(wvmConnect):
         """
         all_mem = self.wvm.getInfo()[1] * 1048576
         freemem = self.wvm.getMemoryStats(-1, 0)
-        if type(freemem) == dict:
+        if isinstance(freemem, dict):
             free = (freemem['buffers'] +
                     freemem['free'] +
                     freemem['cached']) * 1024
@@ -36,7 +36,7 @@ class wvmHostDetails(wvmConnect):
         prev_idle = 0
         prev_total = 0
         cpu = self.wvm.getCPUStats(-1, 0)
-        if type(cpu) == dict:
+        if isinstance(cpu, dict):
             for num in range(2):
                 idle = self.wvm.getCPUStats(-1, 0)['idle']
                 total = sum(self.wvm.getCPUStats(-1, 0).values())
@@ -66,7 +66,3 @@ class wvmHostDetails(wvmConnect):
         info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version))  # cpu version
         info.append(self.wvm.getURI())  # uri
         return info
-
-
-
-

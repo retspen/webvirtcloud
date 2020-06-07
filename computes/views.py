@@ -86,7 +86,8 @@ def overview(request, compute_id):
 
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
-
+    status = 'true' if connection_manager.host_is_up(compute.type, compute.hostname) is True else 'false'
+    
     try:
         conn = wvmHostDetails(
             compute.hostname,
@@ -141,6 +142,14 @@ def compute_graph(request, compute_id):
 
 
 def get_compute_disk_buses(request, compute_id, arch, machine, disk):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :param disk:
+    :return:
+    """
     data = dict()
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
@@ -169,6 +178,12 @@ def get_compute_disk_buses(request, compute_id, arch, machine, disk):
 
 
 def get_compute_machine_types(request, compute_id, arch):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :return:
+    """
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)
@@ -186,6 +201,13 @@ def get_compute_machine_types(request, compute_id, arch):
 
 
 def get_compute_video_models(request, compute_id, arch, machine):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :return:
+    """
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)
@@ -203,6 +225,13 @@ def get_compute_video_models(request, compute_id, arch, machine):
 
 
 def get_dom_capabilities(request, compute_id, arch, machine):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :return:
+    """
     data = dict()
     try:
         compute = get_object_or_404(Compute, pk=compute_id)

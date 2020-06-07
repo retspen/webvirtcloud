@@ -128,15 +128,15 @@ def instance(request, compute_id, vname):
         if size_str == '':
             return 0
         size_str = size_str.upper().replace("B", "")
-        if 'K' == size_str[-1]:
+        if size_str[-1] == 'K':
             return int(float(size_str[:-1])) << 10
-        elif 'M' == size_str[-1]:
+        elif size_str[-1] == 'M':
             return int(float(size_str[:-1])) << 20
-        elif 'G' == size_str[-1]:
+        elif size_str[-1] == 'G':
             return int(float(size_str[:-1])) << 30
-        elif 'T' == size_str[-1]:
+        elif size_str[-1] == 'T':
             return int(float(size_str[:-1])) << 40
-        elif 'P' == size_str[-1]:
+        elif size_str[-1] == 'P':
             return int(float(size_str[:-1])) << 50
         else:
             return int(float(size_str))
@@ -460,40 +460,6 @@ def instance(request, compute_id, vname):
                     msg = _("Please shutdown down your instance and then try again")
                     error_messages.append(msg)
 
-            if 'resize' in request.POST and (
-                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
-                new_vcpu = request.POST.get('vcpu', '')
-                new_cur_vcpu = request.POST.get('cur_vcpu', '')
-                new_memory = request.POST.get('memory', '')
-                new_memory_custom = request.POST.get('memory_custom', '')
-                if new_memory_custom:
-                    new_memory = new_memory_custom
-                new_cur_memory = request.POST.get('cur_memory', '')
-                new_cur_memory_custom = request.POST.get('cur_memory_custom', '')
-                if new_cur_memory_custom:
-                    new_cur_memory = new_cur_memory_custom
-                disks_new = []
-                for disk in disks:
-                    input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
-                    if input_disk_size > disk['size'] + (64 << 20):
-                        disk['size_new'] = input_disk_size
-                        disks_new.append(disk)
-                disk_sum = sum([disk['size'] >> 30 for disk in disks_new])
-                disk_new_sum = sum([disk['size_new'] >> 30 for disk in disks_new])
-                quota_msg = check_user_quota(0, int(new_vcpu) - vcpu, int(new_memory) - memory, disk_new_sum - disk_sum)
-                if not request.user.is_superuser and quota_msg:
-                    msg = _("User %s quota reached, cannot resize '%s'!" % (quota_msg, instance.name))
-                    error_messages.append(msg)
-                else:
-                    cur_memory = new_cur_memory
-                    memory = new_memory
-                    cur_vcpu = new_cur_vcpu
-                    vcpu = new_vcpu
-                    conn.resize(cur_memory, memory, cur_vcpu, vcpu, disks_new)
-                    msg = _("Resize")
-                    addlogmsg(request.user.username, instance.name, msg)
-                    return HttpResponseRedirect(request.get_full_path() + '#resize')
-
             if 'resizevm_cpu' in request.POST and (
                     request.user.is_superuser or request.user.is_staff or userinstance.is_change):
                 new_vcpu = request.POST.get('vcpu', '')
@@ -619,9 +585,9 @@ def instance(request, compute_id, vname):
                 if new_bus != bus:
                     conn.detach_disk(target_dev)
                     conn.attach_disk(new_target_dev, new_path, target_bus=new_bus,
-                                 driver_type=format, cache_mode=cache,
-                                 readonly=readonly, shareable=shareable, serial=serial,
-                                 io_mode=io, discard_mode=discard, detect_zeroes_mode=zeroes)
+                                    driver_type=format, cache_mode=cache,
+                                    readonly=readonly, shareable=shareable, serial=serial,
+                                    io_mode=io, discard_mode=discard, detect_zeroes_mode=zeroes)
                 else:
                     conn.edit_disk(target_dev, new_path, readonly, shareable, new_bus, serial, format,
                                    cache, io, discard, zeroes)
@@ -669,7 +635,7 @@ def instance(request, compute_id, vname):
             if 'add_cdrom' in request.POST and allow_admin_or_not_template:
                 bus = request.POST.get('bus', 'ide' if machine == 'pc' else 'sata')
                 target = get_new_disk_dev(media, disks, bus)
-                conn.attach_disk(target, "",  disk_device='cdrom', cache_mode='none', target_bus=bus, readonly=True)
+                conn.attach_disk(target, "", disk_device='cdrom', cache_mode='none', target_bus=bus, readonly=True)
                 msg = _('Add CD-ROM: ' + target)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
@@ -1467,4 +1433,3 @@ def delete_instance(instance, delete_disk=False):
     except libvirtError as lib_err:
         print("Error removing instance {} on compute {}".format(instance_name, compute.hostname))
         raise lib_err
-
