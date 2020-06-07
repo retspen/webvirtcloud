@@ -1,5 +1,5 @@
 coverage==5.1
-Django==2.2.12
+Django==2.2.13
 django-bootstrap3==12.1.0
 django-fa==1.0.0
 django-login-required-middleware==0.5.0
