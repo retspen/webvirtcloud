@@ -56,7 +56,7 @@ def appsettings(request):
 
             try:              
                 with open(sass_dir.value + "/wvc-main.scss", "w") as main:
-                    main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch)
+                    main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch + "\n")
                 
                 css_compressed = sass.compile(string=scss_var + "\n"+ scss_boot + "\n" + scss_bootswatch, output_style='compressed')
                 with open("static/" + "css/wvc-main.min.css", "w") as css:
