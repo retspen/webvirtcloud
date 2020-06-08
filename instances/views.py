@@ -13,6 +13,7 @@ from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from computes.models import Compute
 from instances.models import Instance
+from appsettings.models import AppSettings
 from django.contrib.auth.models import User
 from accounts.models import UserInstance, UserSSHKey
 from vrtManager.hostdetails import wvmHostDetails
@@ -45,6 +46,7 @@ def allinstances(request):
     all_host_vms = OrderedDict()
     error_messages = []
     computes = Compute.objects.all().order_by("name")
+    computes_data = get_hosts_status(computes)
 
     if not request.user.is_superuser:
         all_user_vms = get_user_instances(request)
@@ -62,7 +64,7 @@ def allinstances(request):
             error_messages.append(lib_err)
             addlogmsg(request.user.username, request.POST.get("name", "instance"), lib_err)
 
-    view_style = settings.VIEW_INSTANCES_LIST_STYLE
+    view_style = AppSettings.objects.get(key="VIEW_INSTANCES_LIST_STYLE").value
 
     return render(request, 'allinstances.html', locals())
 
@@ -109,10 +111,11 @@ def instance(request, compute_id, vname):
     computes_count = computes.count()
     users = User.objects.all().order_by('username')
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    appsettings = AppSettings.objects.all()
     keymaps = settings.QEMU_KEYMAPS
-    console_types = settings.QEMU_CONSOLE_TYPES
+    console_types = appsettings.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list
     console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
-    bottom_bar = settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR
+    bottom_bar = appsettings.get(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").value
     try:
         userinstance = UserInstance.objects.get(instance__compute_id=compute_id,
                                                 instance__name=vname,
@@ -142,7 +145,7 @@ def instance(request, compute_id, vname):
             return int(float(size_str))
 
     def get_clone_free_names(size=10):
-        prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+        prefix = appsettings.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value
         free_names = []
         existing_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
         index = 1
@@ -177,21 +180,22 @@ def instance(request, compute_id, vname):
                         disk_size += int(disk['size']) >> 30
 
         if ua.max_instances > 0 and instance > ua.max_instances:
+            quota_debug = appsettings.get(key="QUOTA_DEBUG").value
             msg = "instance"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (instance, ua.max_instances)
+            if quota_debug:
+                msg += f" ({instance} > {ua.max_instances})"
         if ua.max_cpus > 0 and cpu > ua.max_cpus:
             msg = "cpu"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (cpu, ua.max_cpus)
+            if quota_debug:
+                msg += f" ({cpu} > {ua.max_cpus})"
         if ua.max_memory > 0 and memory > ua.max_memory:
             msg = "memory"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (memory, ua.max_memory)
+            if quota_debug:
+                msg += f" ({memory} > {ua.max_memory})"
         if ua.max_disk_size > 0 and disk_size > ua.max_disk_size:
             msg = "disk"
-            if settings.QUOTA_DEBUG:
-                msg += " (%s > %s)" % (disk_size, ua.max_disk_size)
+            if quota_debug:
+                msg += f" ({disk_size} > {ua.max_disk_size})"
         return msg
 
     def get_new_disk_dev(media, disks, bus):
@@ -312,18 +316,21 @@ def instance(request, compute_id, vname):
         io_modes = sorted(conn.get_io_modes().items())
         discard_modes = sorted(conn.get_discard_modes().items())
         detect_zeroes_modes = sorted(conn.get_detect_zeroes_modes().items())
-        default_io = settings.INSTANCE_VOLUME_DEFAULT_IO
-        default_discard = settings.INSTANCE_VOLUME_DEFAULT_DISCARD
-        default_zeroes = settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
-        default_cache = settings.INSTANCE_VOLUME_DEFAULT_CACHE
-        default_format = settings.INSTANCE_VOLUME_DEFAULT_FORMAT
-        default_owner = settings.INSTANCE_VOLUME_DEFAULT_OWNER
+        default_bus = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_BUS").value
+        default_io = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_IO").value
+        default_discard = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_DISCARD").value
+        default_zeroes = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES").value
+        default_cache = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_CACHE").value
+        default_format = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_FORMAT").value
+        default_disk_owner_uid = int(appsettings.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_UID").value)
+        default_disk_owner_gid = int(appsettings.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_GID").value)
+        
         formats = conn.get_image_formats()
 
-        show_access_root_password = settings.SHOW_ACCESS_ROOT_PASSWORD
-        show_access_ssh_keys = settings.SHOW_ACCESS_SSH_KEYS
-        clone_instance_auto_name = settings.CLONE_INSTANCE_AUTO_NAME
-        default_bus = settings.INSTANCE_VOLUME_DEFAULT_BUS
+        show_access_root_password = appsettings.get(key="SHOW_ACCESS_ROOT_PASSWORD").value
+        show_access_ssh_keys = appsettings.get(key="SHOW_ACCESS_SSH_KEYS").value
+        clone_instance_auto_name = appsettings.get(key="CLONE_INSTANCE_AUTO_NAME").value
+        
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -467,7 +474,7 @@ def instance(request, compute_id, vname):
 
                 quota_msg = check_user_quota(0, int(new_vcpu) - vcpu, 0, 0)
                 if not request.user.is_superuser and quota_msg:
-                    msg = _("User %s quota reached, cannot resize CPU of '%s'!" % (quota_msg, instance.name))
+                    msg = _(f"User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!")
                     error_messages.append(msg)
                 else:
                     cur_vcpu = new_cur_vcpu
@@ -491,7 +498,7 @@ def instance(request, compute_id, vname):
                     new_cur_memory = new_cur_memory_custom
                 quota_msg = check_user_quota(0, 0, int(new_memory) - memory, 0)
                 if not request.user.is_superuser and quota_msg:
-                    msg = _("User %s quota reached, cannot resize memory of '%s'!" % (quota_msg, instance.name))
+                    msg = _(f"User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!")
                     error_messages.append(msg)
                 else:
                     cur_memory = new_cur_memory
@@ -514,11 +521,11 @@ def instance(request, compute_id, vname):
                 disk_new_sum = sum([disk['size_new'] >> 30 for disk in disks_new])
                 quota_msg = check_user_quota(0, 0, 0, disk_new_sum - disk_sum)
                 if not request.user.is_superuser and quota_msg:
-                    msg = _("User %s quota reached, cannot resize disks of '%s'!" % (quota_msg, instance.name))
+                    msg = _(f"User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!")
                     error_messages.append(msg)
                 else:
                     conn.resize_disk(disks_new)
-                    msg = _("Resize")
+                    msg = _("Disk resize")
                     addlogmsg(request.user.username, instance.name, msg)
                     messages.success(request, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
@@ -537,9 +544,9 @@ def instance(request, compute_id, vname):
                 cache = request.POST.get('cache', default_cache)
                 target_dev = get_new_disk_dev(media, disks, bus)
 
-                source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_owner)
+                source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
                 conn.attach_disk(target_dev, source, target_bus=bus, driver_type=format, cache_mode=cache)
-                msg = _('Attach new disk {} ({})'.format(name, format))
+                msg = _(f"Attach new disk {name} ({format})")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -642,9 +649,8 @@ def instance(request, compute_id, vname):
 
             if 'detach_cdrom' in request.POST and allow_admin_or_not_template:
                 dev = request.POST.get('detach_cdrom', '')
-                path = request.POST.get('path', '')
                 conn.detach_disk(dev)
-                msg = _('Detach CD-Rom: ' + dev)
+                msg = _('Detach CD-ROM: ' + dev)
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -714,7 +720,7 @@ def instance(request, compute_id, vname):
 
                 if 'set_vcpu_hotplug' in request.POST:
                     status = request.POST.get('vcpu_hotplug', '')
-                    msg = _("vCPU Hot-plug is enabled={}".format(status))
+                    msg = _("VCPU Hot-plug is enabled={}".format(status))
                     try:
                         conn.set_vcpu_hotplug(eval(status))
                     except libvirtError as lib_err:
@@ -808,8 +814,11 @@ def instance(request, compute_id, vname):
 
                 if 'set_console_type' in request.POST:
                     console_type = request.POST.get('console_type', '')
-                    conn.set_console_type(console_type)
                     msg = _("Set VNC type")
+                    if console_type in console_types:
+                        conn.set_console_type(console_type)
+                    else:
+                        msg = _("Console type not supported")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#vncsettings')
 
@@ -828,7 +837,7 @@ def instance(request, compute_id, vname):
                     if status == 'False':
                         conn.remove_guest_agent()
 
-                    msg = _("Set Quest Agent {}".format(status))
+                    msg = _(f"Set Quest Agent {status}")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#options')
 
@@ -900,7 +909,7 @@ def instance(request, compute_id, vname):
                     state = request.POST.get('set_link_state')
                     state = 'down' if state == 'up' else 'up'
                     conn.set_link_state(mac_address, state)
-                    msg = _("Set Link State: {}".format(state))
+                    msg = _(f"Set Link State: {state}")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
@@ -916,11 +925,11 @@ def instance(request, compute_id, vname):
                     try:
                         conn.set_qos(mac, qos_dir, average, peak, burst)
                         if conn.get_status() == 5:
-                            messages.success(request, "{} Qos is set".format(qos_dir.capitalize()))
+                            messages.success(request, _(f"{qos_dir.capitalize()} QoS is set"))
                         else:
                             messages.success(request,
-                                             "{} Qos is set. Network XML is changed.".format(qos_dir.capitalize()) +
-                                             "Stop and start network to activate new config")
+                                             _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed.") +
+                                             _("Stop and start network to activate new config"))
 
                     except libvirtError as le:
                         messages.error(request, le)
@@ -931,28 +940,28 @@ def instance(request, compute_id, vname):
                     conn.unset_qos(mac, qos_dir)
 
                     if conn.get_status() == 5:
-                        messages.success(request, "{} Qos is deleted".format(qos_dir.capitalize()))
+                        messages.success(request, _(f"{qos_dir.capitalize()} QoS is deleted"))
                     else:
                         messages.success(request,
-                                         "{} Qos is deleted. Network XML is changed. ".format(qos_dir.capitalize()) +
+                                         f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. " +
                                          "Stop and start network to activate new config.")
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_owner' in request.POST:
                     user_id = int(request.POST.get('user_id', ''))
 
-                    if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+                    if appsettings.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
                         check_inst = UserInstance.objects.filter(instance=instance, user_id=user_id)
                     else:
                         check_inst = UserInstance.objects.filter(instance=instance)
 
                     if check_inst:
-                        msg = _("Owner already added")
+                        msg = _("One owner is allowed and owner already added")
                         error_messages.append(msg)
                     else:
                         add_user_inst = UserInstance(instance=instance, user_id=user_id)
                         add_user_inst.save()
-                        msg = _("Added owner %d" % user_id)
+                        msg = _(f"Added owner {user_id}")
                         addlogmsg(request.user.username, instance.name, msg)
                         return HttpResponseRedirect(request.get_full_path() + '#users')
 
@@ -960,7 +969,7 @@ def instance(request, compute_id, vname):
                     userinstance_id = int(request.POST.get('userinstance', ''))
                     userinstance = UserInstance.objects.get(pk=userinstance_id)
                     userinstance.delete()
-                    msg = _("Deleted owner %d" % userinstance_id)
+                    msg = _(f"Deleted owner {userinstance_id}")
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#users')
 
@@ -973,10 +982,13 @@ def instance(request, compute_id, vname):
                     quota_msg = check_user_quota(1, vcpu, memory, disk_sum)
                     check_instance = Instance.objects.filter(name=clone_data['name'])
 
+                    clone_data['disk_owner_uid'] = default_disk_owner_uid
+                    clone_data['disk_owner_gid'] = default_disk_owner_gid
+
                     for post in request.POST:
                         clone_data[post] = request.POST.get(post, '').strip()
 
-                    if clone_instance_auto_name and not clone_data['name']:
+                    if clone_instance_auto_name == 'True' and not clone_data['name']:
                         auto_vname = clone_free_names[0]
                         clone_data['name'] = auto_vname
                         clone_data['clone-net-mac-0'] = _get_dhcp_mac_address(auto_vname)
@@ -986,17 +998,17 @@ def instance(request, compute_id, vname):
                             clone_data[disk_dev] = disk_name
 
                     if not request.user.is_superuser and quota_msg:
-                        msg = _("User %s quota reached, cannot create '%s'!" % (quota_msg, clone_data['name']))
+                        msg = _(f"User '{quota_msg}' quota reached, cannot create '{clone_data['name']}'!")
                         error_messages.append(msg)
                     elif check_instance:
-                        msg = _("Instance '%s' already exists!" % clone_data['name'])
+                        msg = _(f"Instance '{clone_data['name']}' already exists!")
                         error_messages.append(msg)
                     elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
-                        msg = _("Instance name '%s' contains invalid characters!" % clone_data['name'])
+                        msg = _(f"Instance name '{clone_data['name']}' contains invalid characters!")
                         error_messages.append(msg)
                     elif not re.match(r'^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'],
                                       re.IGNORECASE):
-                        msg = _("Instance mac '%s' invalid format!" % clone_data['clone-net-mac-0'])
+                        msg = _(f"Instance MAC '{clone_data['clone-net-mac-0']}' invalid format!")
                         error_messages.append(msg)
                     else:
                         new_instance = Instance(compute_id=compute_id, name=clone_data['name'])
@@ -1014,7 +1026,8 @@ def instance(request, compute_id, vname):
 
                         msg = _("Clone of '%s'" % instance.name)
                         addlogmsg(request.user.username, new_instance.name, msg)
-                        if settings.CLONE_INSTANCE_AUTO_MIGRATE:
+                        
+                        if appsettings.get(key="CLONE_INSTANCE_AUTO_MIGRATE").value == 'True':
                             new_compute = Compute.objects.order_by('?').first()
                             migrate_instance(new_compute, new_instance, xml_del=True, offline=True)
                         return HttpResponseRedirect(
@@ -1144,7 +1157,7 @@ def get_host_instances(request, comp):
 
         conn.close()
     else:
-        raise libvirtError("Problem occurred with {} - {}".format(comp.name, status))
+        raise libvirtError("Problem occurred with host: {} - {}".format(comp.name, status))
     return all_host_vms
 
 
@@ -1324,7 +1337,7 @@ def random_mac_address(request):
 
 def guess_clone_name(request):
     dhcp_file = '/srv/webvirtcloud/dhcpd.conf'
-    prefix = settings.CLONE_INSTANCE_DEFAULT_PREFIX
+    prefix = appsettings.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value
     if os.path.isfile(dhcp_file):
         instance_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
         with open(dhcp_file, 'r') as f:
@@ -1396,6 +1409,24 @@ def sshkeys(request, vname):
     else:
         response = json.dumps(instance_keys)
     return HttpResponse(response)
+
+
+def get_hosts_status(computes):
+        """
+        Function return all hosts all vds on host
+        """
+        compute_data = []
+        for compute in computes:
+            compute_data.append({'id': compute.id,
+                                 'name': compute.name,
+                                 'hostname': compute.hostname,
+                                 'status': connection_manager.host_is_up(compute.type, compute.hostname),
+                                 'type': compute.type,
+                                 'login': compute.login,
+                                 'password': compute.password,
+                                 'details': compute.details
+                                 })
+        return compute_data
 
 
 def delete_instance(instance, delete_disk=False):

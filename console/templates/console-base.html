@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{% static "favicon.ico" %}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}">
+    <link rel="stylesheet" href="{% static "css/wvc-main.min.css" %}" id="wvc_css">
     <link href="{% static "css/webvirtcloud.css" %}" rel="stylesheet">
 
     <style>
@@ -13,10 +13,6 @@
             margin: 0;
             padding: 0;
             background-color: #313131;
-        }
-
-        .navbar {
-            margin-bottom: 2px;
         }
 
         #main_container {
@@ -53,48 +49,54 @@
 
 <body>
 <div id='main_container' class="container">
-<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-    <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand">{{ instance.name }}</a>
-        </div>
-        <div class="collapse navbar-collapse">
-            <ul class="nav navbar-nav">
-                <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{% trans "Send key(s)" %} <span class="caret"></span></a>
-                  <ul class="dropdown-menu" role="menu">
-                      <li id="ctrlaltdel"><a href='#'>Ctrl+Alt+Del</a></li>
-                      <li class="divider"></li>
-                      <li id="ctrlaltf1"><a href='#'>Ctrl+Alt+F1</a></li>
-                      <li id="ctrlaltf2"><a href='#'>Ctrl+Alt+F2</a></li>
-                      <li id="ctrlaltf3"><a href='#'>Ctrl+Alt+F3</a></li>
-                      <li id="ctrlaltf4"><a href='#'>Ctrl+Alt+F4</a></li>
-                      <li id="ctrlaltf5"><a href='#'>Ctrl+Alt+F5</a></li>
-                      <li id="ctrlaltf6"><a href='#'>Ctrl+Alt+F6</a></li>
-                      <li id="ctrlaltf7"><a href='#'>Ctrl+Alt+F7</a></li>
-                      <li id="ctrlaltf8"><a href='#'>Ctrl+Alt+F8</a></li>
-                      <li id="ctrlaltf9"><a href='#'>Ctrl+Alt+F9</a></li>
-                      <li id="ctrlaltf10"><a href='#'>Ctrl+Alt+F10</a></li>
-                      <li id="ctrlaltf11"><a href='#'>Ctrl+Alt+F11</a></li>
-                      <li id="ctrlaltf12"><a href='#'>Ctrl+Alt+F12</a></li>
-                  </ul>
-               </li>
-               <li id="fullscreen_button"><a href='#'>{% trans "Fullscreen" %}</a></li>
+<nav class="navbar navbar-expand-md navbar-dark bg-primary" arial-label="console navbar">
+  <div class="container">
+    <a class="navbar-brand">{{ instance.name }}</a>
+    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target=".navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav mr-auto mt-2 mt-md-0">
+            <li class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" 
+                    data-toggle="dropdown" 
+                    role="button" 
+                    id="dropdownMenuLink" 
+                    data-toggle="dropdown" 
+                    aria-haspopup="true" 
+                    aria-expanded="false">
+                    {% trans "Send key(s)" %}
+                </a>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                    <a class="dropdown-item" id="ctrlaltdel" href='#'>Ctrl+Alt+Del</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" id="ctrlaltf1" href='#'>Ctrl+Alt+F1</a>
+                    <a class="dropdown-item" id="ctrlaltf2" href='#'>Ctrl+Alt+F2</a>
+                    <a class="dropdown-item" id="ctrlaltf3" href='#'>Ctrl+Alt+F3</a>
+                    <a class="dropdown-item" id="ctrlaltf4" href='#'>Ctrl+Alt+F4</a>
+                    <a class="dropdown-item" id="ctrlaltf5" href='#'>Ctrl+Alt+F5</a>
+                    <a class="dropdown-item" id="ctrlaltf6" href='#'>Ctrl+Alt+F6</a>
+                    <a class="dropdown-item" id="ctrlaltf7" href='#'>Ctrl+Alt+F7</a>
+                    <a class="dropdown-item" id="ctrlaltf8" href='#'>Ctrl+Alt+F8</a>
+                    <a class="dropdown-item" id="ctrlaltf9" href='#'>Ctrl+Alt+F9</a>
+                    <a class="dropdown-item" id="ctrlaltf10" href='#'>Ctrl+Alt+F10</a>
+                    <a class="dropdown-item" id="ctrlaltf11" href='#'>Ctrl+Alt+F11</a>
+                    <a class="dropdown-item" id="ctrlaltf12" href='#'>Ctrl+Alt+F12</a>
+                </div>
+            </li>
+            <li class="nav-item" id="fullscreen_button">
+                <a class="nav-link" href='#'>{% trans "Fullscreen" %}</a>
+            </li>
 {% block navbarmenu %}{% endblock %}
-           </ul>
-       </div>
+        </ul>
    </div>
 </nav>
 
 {% block content %}{% endblock %}
 </div>
 <script src="{% static "js/jquery.js" %}"></script>
-<script src="{% static "js/bootstrap.min.js" %}"></script>
+<script src="{% static "js/bootstrap.bundle.min.js" %}"></script>
 
 <script>
     function log_message(msg,type) {

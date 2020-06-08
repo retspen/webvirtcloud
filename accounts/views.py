@@ -1,15 +1,16 @@
-from django.conf import settings
 from django.core.validators import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-
 from accounts.forms import UserAddForm
 from accounts.models import *
 from admin.decorators import superuser_only
+from appsettings.models import AppSettings
 from instances.models import Instance
 
+import sass
+import os
 
 def profile(request):
     """
@@ -102,7 +103,7 @@ def account(request, user_id):
         if 'add' in request.POST:
             inst_id = request.POST.get('inst_id', '')
 
-            if settings.ALLOW_INSTANCE_MULTIPLE_OWNER:
+            if AppSettings.objects.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
             else:
                 check_inst = UserInstance.objects.filter(instance_id=int(inst_id))

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
-{% block title %}{% trans "Create new instance - Select Type" %}{% endblock %}
+{% block title %}{% trans "Create new instanc" %} - {% trans "Select Type" %}{% endblock %}
 
 {% block content %}
     <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            <h1 class="page-header">{% trans "New instance on" %} {{ compute.name }}</h1>
+            <h3 class="page-header">{% trans "New instance on" %} {{ compute.name }}</h3>
         </div>
     </div>
     <!-- /.row -->
@@ -34,14 +34,14 @@
         <div class="col-lg-12">
             <div role="tabpanel">
             <!-- Nav tabs -->
-                <ul class="nav nav-tabs" role="tablist">
-                    <li role="presentation" class="active">
-                        <a href="#select_architecture" aria-controls="flavor" role="tab" data-toggle="tab">
+                <ul class="nav nav-tabs" role="tablist" aria-label="Instance create method">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#select_architecture" aria-controls="flavor" role="tab" data-toggle="tab">
                             {% trans "Architecture" %}
                         </a>
                     </li>
-                    <li role="presentation">
-                        <a href="#addFromXML" aria-controls="addFromXML" role="tab" data-toggle="tab">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#addFromXML" aria-controls="addFromXML" role="tab" data-toggle="tab">
                             {% trans "XML" %}
                         </a>
                     </li>
@@ -49,47 +49,47 @@
                 <!-- Tab panes -->
                 <div class="tab-content">
                     <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="select_architecture">
-                        <div class="well">
+                        
                             <div class="center-block">
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Architecture" %}</label>
+                            <form method="post" role="form" aria-label="Select instance architecture form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Architecture" %}</label>
                                     <div class="col-sm-6">
-                                         <select class="form-control" id="select_archs" name="archs" onchange="get_machine_types({{ compute_id }}, value);">
+                                         <select class="custom-select" id="select_archs" name="archs" onchange="get_machine_types({{ compute_id }}, value);">
                                             {% for hpv in hypervisors %}
                                             <option value="{{ hpv }}" {% if hpv == default_arch %}selected{% endif %}>{{ hpv }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Chipset" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Chipset" %}</label>
                                     <div class="col-sm-6">
-                                        <select class="form-control" id="select_chipset" name="chipset">
+                                        <select class="custom-select" id="select_chipset" name="chipset">
                                         <!-- fill with script -->
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <div class="col-sm-6 col-sm-offset-3">
+                                <div class="form-group row">
+                                    <div class="col-sm-6 offset-3">
                                     <button class="btn btn-block btn-primary"  type="button" name="create_instance" onclick="goto_create()">
-                                         {% trans "Next >" %}
+                                         {% trans "Next" %}
                                     </button>
                                     </div>
                                 </div>
                             </form>
                             </div>
-                        </div>
+                        
                         <div class="clearfix"></div>
                     </div>
                     <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromXML">
-                        <div class="well">
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
+                        <div>
+                            <form method="post" role="form" aria-label="Create instance with XML form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
                                      <input type="hidden" name="dom_xml"/>
                                     <textarea id="editor"></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary" name="create_xml" onclick="showPleaseWaitDialog()">
+                                <button type="submit" class="btn btn-primary float-right" name="create_xml" onclick="showPleaseWaitDialog()">
                                     {% trans "Create" %}
                                 </button>
                             </form>

@@ -1,124 +1,66 @@
 {% load i18n %}
-<table class="table table-hover table-striped sortable-theme-bootstrap">
+<table class="table table-hover sortable-theme-bootstrap" data-sortable>
     <thead>
-    <tr>
-        <th><a href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a> </th>
-        <th>{% trans "Name" %}<br>{% trans "Description" %}</th>
-        <th>{% trans "User"%}</th>
-        <th>{% trans "Status" %}</th>
-        <th>{% trans "VCPU" %}</th>
-        <th>{% trans "Memory" %}</th>
-        <th style="width:205px;">{% trans "Actions & Mem Usage" %}</th>
+    <tr style="border: 2px solid transparent; ">
+        <th scope="col" data-sortable="false"><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
+        <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
+        <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
+        <th scope="col">{% trans "Status" %}</th>
+        <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
+        <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
+        <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
     </tr>
     </thead>
     <tbody class="searchable">
-    {% for host, inst  in all_host_vms.items %}
-        <tr class="active" style="font-weight: bold;border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
+    {% for host, insts  in all_host_vms.items %}
+        <tr class="font-weight-bold active" style="border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
             <td>
-                <span id="collapse_host_instances_{{ host.1 }}" class="glyphicon glyphicon-chevron-up" onclick="hide_host_instances('{{ host.1 }}');"></span>
+                <span id="collapse_host_instances_{{ host.1 }}" class="fa fa-chevron-up" onclick="hide_host_instances('{{ host.1 }}');"></span>
             </td>
             <td>
-                <a href="{% url 'overview' host.0 %}">{{ host.1 }}</a>
-                <span id="inst_count_badge_{{ host.1 }}" class="badge hidden">{{ inst.items|length }}</span>
+                <a class="text-secondary" href="{% url 'overview' host.0 %}">{{ host.1 }}</a>
+                <span id="inst_count_badge_{{ host.1 }}" class="badge badge-secondary d-none">{{ insts.items|length }}</span>
             </td>
-            <td></td>
+            <td class="d-none d-sm-table-cell"></td>
             <td>
-                {% ifequal host.2 1 %}<span class="label label-success">{% trans "Active" %}</span>{% endifequal %}
-                {% ifequal host.2 2 %}<span class="label label-danger">{% trans "Not Active" %}</span>{% endifequal %}
-                {% ifequal host.2 3 %}<span class="label label-danger">{% trans "Connection Failed" %}</span>{% endifequal %}
+                {% if host.2 == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
+                {% if host.2 == 2 %}<span class="text-warning">{% trans "Not Active" %}</span>{% endif %}
+                {% if host.2 == 3 %}<span class="text-danger">{% trans "Connection Failed" %}</span>{% endif %}
             </td>
-            <td style="text-align:center;">{{ host.3 }}</td>
-            <td style="text-align:right;">{{ host.4|filesizeformat }}</td>
-            <td style="text-align:left;">
-                <div class="progress-bar progress-bar-success" role="progressbar" style="width: {{ host.5 }}%"
-                     aria-valuenow="{{ host.5 }}" aria-valuemin="0" aria-valuemax="100">{{ host.5 }}%
+            <td class="d-none d-sm-table-cell text-center">{{ host.3 }}</td>
+            <td class="d-none d-sm-table-cell text-right">{{ host.4|filesizeformat }}</td>
+            <td>
+                <div class="progress">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ host.5 }}%"
+                        aria-valuenow="{{ host.5 }}" aria-valuemin="0" aria-valuemax="100">{{ host.5 }}%
+                    </div>
                 </div>
             </td>
         </tr>
 
-        {% for vm, info in inst.items %}
+        {% for inst, vm in insts.items %}
             <tr host="{{ host.1 }}">
-                <td style="text-align: right">{{ forloop.counter }} </td>
-                <td>&emsp; <a href="{% url 'instance' host.0 vm %}">{{ vm }}</a><br>
-                    <small><em>{{ info.title }}</em></small>
+                <td class="text-right">{{ forloop.counter }} </td>
+                <td>&emsp; 
+                    <a class="text-secondary" href="{% url 'instance' host.0 inst %}">{{ inst }}</a><br>
+                    <small><em>{{ vm.title }}</em></small>
+                </td>
+                 <td class="d-none d-sm-table-cell">
+                    <span class="font-small font-italic">
+                        {% if vm.userinstances.count > 0 %} {{ vm.userinstances.first_user.user.username }}
+                            {% if vm.userinstances.count > 1 %} (+{{ vm.userinstances.count|add:"-1" }}){% endif %}
+                        {% endif %}
+                    </span>
                 </td>
                 <td>
-                    <small><em>
-                            {% if info.userinstances.count > 0 %} {{ info.userinstances.first_user.user.username }}
-                                {% if info.userinstances.count > 1 %} (+{{ info.userinstances.count|add:"-1" }}){% endif %}
-                            {% endif %}
-                        </em>
-                    </small>
+                    {% if vm.status == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
+                    {% if vm.status == 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endif %}
+                    {% if vm.status == 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endif %}
                 </td>
-                <td>
-                    {% ifequal info.status 1 %}<span class="text-success">{% trans "Active" %}</span>{% endifequal %}
-                    {% ifequal info.status 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endifequal %}
-                    {% ifequal info.status 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endifequal %}
-                </td>
-                <td style="text-align:center;">{{ info.vcpu }}</td>
-                <td style="text-align:right;">{{ info.memory |filesizeformat }}</td>
-                <td>
-                    <form action="" method="post" role="form">{% csrf_token %}
-                        <input type="hidden" name="name" value="{{ vm }}"/>
-                        <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
-                        {% ifequal info.status 5 %}
-                            {% if info.is_template %}
-                                <button class="btn btn-sm btn-default" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ host.0 }}, '{{ vm }}');">
-                                    <span class="glyphicon glyphicon-duplicate"></span>
-                                </button>
-                            {% else %}
-                                <button class="btn btn-sm btn-default" type="submit" name="poweron" title="{% trans "Power On" %}">
-                                    <span class="glyphicon glyphicon-play"></span>
-                                </button>
-                            {% endif %}
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}" disabled>
-                                <span class="glyphicon glyphicon-pause"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "Power Off" %}" disabled>
-                                <span class="glyphicon glyphicon-off"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}" disabled>
-                                <span class="glyphicon glyphicon-refresh"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}" disabled>
-                                <span class="glyphicon glyphicon-eye-open"></span>
-                            </button>
-                        {% endifequal %}
-                        {% ifequal info.status 3 %}
-                            <button class="btn btn-sm btn-default" type="submit" name="resume" title="{% trans "Resume" %}">
-                                <span class="glyphicon glyphicon-play"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "Suspend" %}" disabled>
-                                <span class="glyphicon glyphicon-pause"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default" type="submit" name="powerforce" title="{% trans "Force Off" %}" onclick="return confirm('Are you sure to force it down?')">
-                                <span class="glyphicon glyphicon-off"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "Power Cycle" %}" disabled>
-                                <span class="glyphicon glyphicon-refresh"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "VNC Console" %}" disabled>
-                                <span class="glyphicon glyphicon-eye-open"></span>
-                            </button>
-                        {% endifequal %}
-                        {% ifequal info.status 1 %}
-                            <button class="btn btn-sm btn-default disabled" title="{% trans "Power On" %}" disabled>
-                                <span class="glyphicon glyphicon-play"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default" type="submit" name="suspend" title="{% trans "Suspend" %}">
-                                <span class="glyphicon glyphicon-pause"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default" type="submit" name="poweroff" title="{% trans "Power Off" %}" onclick="return confirm('Are you sure?')">
-                                <span class="glyphicon glyphicon-off"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default" type="submit" name="powercycle" title="{% trans "Power Cycle" %}" onclick="return confirm('Are you sure?')">
-                                <span class="glyphicon glyphicon-refresh"></span>
-                            </button>
-                            <button class="btn btn-sm btn-default" type="button" onclick='open_console("{{ host.0 }}-{{ info.uuid }}")' title="{% trans "Console" %}">
-                                <span class="glyphicon glyphicon-eye-open"></span>
-                            </button>
-                        {% endifequal %}
-                    </form>
+                <td class="d-none d-sm-table-cell text-center">{{ vm.vcpu }}</td>
+                <td class="d-none d-sm-table-cell text-right">{{ vm.memory |filesizeformat }}</td>
+                <td  class="text-nowrap">
+                    {% include 'instance_actions.html' %}
                 </td>
             </tr>
         {% endfor %}
@@ -131,15 +73,15 @@ function hide_all_host_instances() {
     var rows = $('table tr');
     all_host_rows = rows.filter('[host]');
     all_host_rows.toggle();
-    $('span[id^=collapse_host_instances_]').toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
-    $('span[id^=inst_count_badge_]').toggleClass("hidden");
+    $('span[id^=collapse_host_instances_]').toggleClass("fa-chevron-down").toggleClass("fa-chevron-up");
+    $('span[id^=inst_count_badge_]').toggleClass("d-none");
 }
 function hide_host_instances(host) {
     var rows = $('table tr');
     host_rows = rows.filter("[host='"+host+"']");
     host_rows.toggle();
-    $("span[id='collapse_host_instances_"+host+"']").toggleClass("glyphicon-chevron-down").toggleClass("glyphicon-chevron-up");
-    $("span[id='inst_count_badge_"+host+"']").toggleClass("hidden");
+    $("span[id='collapse_host_instances_"+host+"']").toggleClass("fa-chevron-down").toggleClass("fa-chevron-up");
+    $("span[id='inst_count_badge_"+host+"']").toggleClass("d-none");
 }
 </script>
 {% endblock %}

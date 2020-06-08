@@ -1,6 +1,5 @@
 import json
 
-from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse

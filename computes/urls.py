@@ -1,15 +1,14 @@
-from secrets.views import secrets
-
-from django.urls import path
+from django.urls import path, include
 
 from . import views
+from . import forms
 from create.views import create_instance, create_instance_select_type
 from instances.views import instances
 from interfaces.views import interface, interfaces
 from networks.views import network, networks
 from nwfilters.views import nwfilter, nwfilters
+from secrets.views import secrets
 from storages.views import get_volumes, storage, storages
-from . import forms
 
 urlpatterns = [
     path('', views.computes, name='computes'),
@@ -17,30 +16,24 @@ urlpatterns = [
     path('add_ssh_host/', views.add_host, {'FormClass': forms.SshComputeForm}, name='add_ssh_host'),
     path('add_tls_host/', views.add_host, {'FormClass': forms.TlsComputeForm}, name='add_tls_host'),
     path('add_socket_host/', views.add_host, {'FormClass': forms.SocketComputeForm}, name='add_socket_host'),
-    path('<int:compute_id>/', views.overview, name='overview'),
-    path('<int:compute_id>/statistics/', views.compute_graph, name='compute_graph'),
-    path('<int:compute_id>/instances/', instances, name='instances'),
-    path('<int:compute_id>/storages/', storages, name='storages'),
-    path('<int:compute_id>/storage/<str:pool>/volumes/', get_volumes, name='volumes'),
-    path('<int:compute_id>/storage/<str:pool>/', storage, name='storage'),
-    path('<int:compute_id>/networks/', networks, name='networks'),
-    path('<int:compute_id>/network/<str:pool>/', network, name='network'),
-    path('<int:compute_id>/interfaces/', interfaces, name='interfaces'),
-    path('<int:compute_id>/interface/<str:iface>/', interface, name='interface'),
-    path('<int:compute_id>/nwfilters/', nwfilters, name='nwfilters'),
-    path('<int:compute_id>/nwfilter/<str:nwfltr>/', nwfilter, name='nwfilter'),
-    path('<int:compute_id>/secrets/', secrets, name='secrets'),
-    path('<int:compute_id>/create/', create_instance_select_type, name='create_instance_select_type'),
-    path('<int:compute_id>/create/archs/<str:arch>/machines/<str:machine>/', create_instance, name='create_instance'),
-    path('<int:compute_id>/archs/<str:arch>/machines/', views.get_compute_machine_types, name='machines'),
-    path(
-        '<int:compute_id>/archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses/',
-        views.get_compute_disk_buses,
-        name='buses',
-    ),
-    path(
-        '<int:compute_id>/archs/<str:arch>/machines/<str:machine>/capabilities/',
-        views.get_dom_capabilities,
-        name='domcaps',
-    ),
+    path('<int:compute_id>/', include([
+        path('', views.overview, name='overview'),
+        path('statistics', views.compute_graph, name='compute_graph'),
+        path('instances/', instances, name='instances'),
+        path('storages/', storages, name='storages'),
+        path('storage/<str:pool>/volumes', get_volumes, name='volumes'),
+        path('storage/<str:pool>/', storage, name='storage'),
+        path('networks/', networks, name='networks'),
+        path('network/<str:pool>/', network, name='network'),
+        path('interfaces/', interfaces, name='interfaces'),
+        path('interface/<str:iface>/', interface, name='interface'),
+        path('nwfilters/', nwfilters, name='nwfilters'),
+        path('nwfilter/<str:nwfltr>/', nwfilter, name='nwfilter'),
+        path('secrets/', secrets, name='secrets'),
+        path('create/', create_instance_select_type, name='create_instance_select_type'),
+        path('create/archs/<str:arch>/machines/<str:machine>/', create_instance, name='create_instance'),
+        path('archs/<str:arch>/machines', views.get_compute_machine_types, name='machines'),
+        path('archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses', views.get_compute_disk_buses, name='buses'),
+        path('archs/<str:arch>/machines/<str:machine>/capabilities', views.get_dom_capabilities, name='domcaps'),
+    ])),
 ]

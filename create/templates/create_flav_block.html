@@ -1,8 +1,8 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#addFlavor" type="button" class="btn btn-success pull-right" data-toggle="modal">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-    </a>
+    <button href="#addFlavor" type="button" class="btn btn-success btn-header float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
+    </button>
 
     <!-- Modal Flavor -->
     <div class="modal fade" id="addFlavor" tabindex="-1" role="dialog" aria-labelledby="addFlavorLabel"
@@ -10,44 +10,44 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     <h4 class="modal-title">{% trans "Add New Flavor" %}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                    <form method="post" role="form" aria-label="Flavor selection form">{% csrf_token %}
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" name="label" class="form-control" placeholder="Micro" maxlength="20"
                                        required pattern="[a-zA-Z0-9]+">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">{% trans "VCPU" %}</label>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "VCPU" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" class="form-control" name="vcpu" value="1" maxlength="1" required
                                        pattern="[0-9]">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">{% trans "RAM" %}</label>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "RAM" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" class="form-control" name="memory" value="512" maxlength="5" required
                                        pattern="[0-9]+">
                             </div>
-                            <label class="col-sm-1 control-label">{% trans "MB" %}</label>
+                            <label class="col-sm-1 col-form-label">{% trans "MB" %}</label>
                         </div>
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">{% trans "HDD" %}</label>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">{% trans "HDD" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" class="form-control" name="disk" value="10" maxlength="3" required
                                        pattern="[0-9]+">
                             </div>
-                            <label class="col-sm-1 control-label">{% trans "GB" %}</label>
+                            <label class="col-sm-1 col-form-label">{% trans "GB" %}</label>
                         </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         {% trans "Close" %}
                     </button>
                     <button type="submit" class="btn btn-primary" name="create_flavor">

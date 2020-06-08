@@ -1,0 +1,62 @@
+{% load i18n %}
+<form action="" method="post" role="form" aria-label="Shortcut instance action form">{% csrf_token %}
+    <input type="hidden" name="name" value="{{ inst }}"/>
+    <input type="hidden" name="compute_id" value="{{ host.0 }}"/>
+    {% if vm.status == 5 %}
+        {% if vm.is_template %}
+            <button class="btn btn-sm btn-secondary" type="button" name="clone" title="{% trans "Clone" %}" onclick="goto_instance_clone({{ host.0 }}, '{{ inst }}');">
+                <span class="fa fa-clone"></span>
+            </button>
+        {% else %}
+            <button class="btn btn-sm btn-secondary" type="submit" name="poweron" title="{% trans "Power On" %}">
+                <span class="fa fa-play"></span>
+            </button>
+        {% endif %}
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}" disabled>
+            <span class="fa fa-pause"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power Off" %}" disabled>
+            <span class="fa fa-power-off"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}" disabled>
+            <span class="fa fa-refresh"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
+            <span class="fa fa-eye"></span>
+        </button>
+    {% endif %}
+    {% if vm.status == 3 %}
+        <button class="btn btn-sm btn-secondary" type="submit" name="resume" title="{% trans "Resume" %}">
+            <span class="fa fa-play"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}" disabled>
+            <span class="fa fa-pause"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary" type="submit" name="powerforce" title="{% trans "Force Off" %}" onclick="return confirm('Are you sure to force it down?')">
+            <span class="fa fa-power-off"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}" disabled>
+            <span class="fa fa-refresh"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
+            <span class="fa fa-eye"></span>
+        </button>
+    {% endif %}
+    {% if vm.status == 1 %}
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power On" %}" disabled>
+            <span class="fa fa-play"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary" type="submit" name="suspend" title="{% trans "Suspend" %}">
+            <span class="fa fa-pause"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary" type="submit" name="poweroff" title="{% trans "Power Off" %}" onclick="return confirm('Are you sure?')">
+            <span class="fa fa-power-off"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary" type="submit" name="powercycle" title="{% trans "Power Cycle" %}" onclick="return confirm('Are you sure?')">
+            <span class="fa fa-refresh"></span>
+        </button>
+        <button class="btn btn-sm btn-secondary" type="button" onclick='open_console("{{ host.0 }}-{{ vm.uuid }}")' title="{% trans "Console" %}">
+            <span class="fa fa-eye"></span>
+        </button>
+    {% endif %}
+</form>

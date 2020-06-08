@@ -56,7 +56,7 @@ def nwfilters(request, compute_id):
 
             if 'del_nwfilter' in request.POST:
                 name = request.POST.get('nwfiltername', '')
-                msg = _("Deleting NWFilter: %s" % name)
+                msg = _(f"Deleting NWFilter: {name}")
                 in_use = False
                 nwfilter = conn.get_nwfilter(name)
 
@@ -68,7 +68,7 @@ def nwfilters(request, compute_id):
 
                     if name in dom_filterrefs:
                         in_use = True
-                        msg = _("NWFilter is in use by %s. Cannot be deleted." % inst)
+                        msg = _(f"NWFilter is in use by {inst}. Cannot be deleted.")
                         error_messages.append(msg)
                         addlogmsg(request.user.username, compute.hostname, msg)
                         i_conn.close()
@@ -85,7 +85,7 @@ def nwfilters(request, compute_id):
                 cln_name = request.POST.get('cln_name', name + '-clone')
 
                 conn.clone_nwfilter(name, cln_name)
-                msg = _("Cloning NWFilter %s as %s" % (name, cln_name))
+                msg = _(f"Cloning NWFilter {name} as {cln_name}")
                 addlogmsg(request.user.username, compute.hostname, msg)
 
         for nwf in conn.get_nwfilters():

@@ -1,28 +1,28 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddNWFilterRule" type="button" class="btn btn-success pull-right" data-toggle="modal">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-    </a>
+    <button data-target="#AddNWFilterRule" type="button" class="btn btn-success float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
+    </button>
 
     <!-- Modal Secret -->
     <div class="modal fade" id="AddNWFilterRule" tabindex="-1" role="dialog" aria-labelledby="AddNWFilterRule" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
+                    <h5 class="modal-title">{% trans "Add New NWFilter Rule" %}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Add New NWFilter Rule" %}</h4>
                 </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                         <div class="form-group">
-                            <div class="col-xs-12" id="xmlheight">
+                    <form method="post" role="form" aria-label="Add new NWFilter rule form">{% csrf_token %}
+                         <div class="form-group row">
+                            <div class="col-12" id="xmlheight">
                                 <input type="hidden" name="nwfilterrule_xml"/>
                                 <textarea id="rule_editor"></textarea>
                             </div>
-                            <p><small><em>{% trans 'If there is a rule which has same attributes it replaces that rule' %}...</em></small></p>
+                            <p class="text-muted">{% trans 'If there is a rule which has same attributes it replaces that rule' %}...</p>
                          </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
                             <button type="submit" class="btn btn-primary" name="add_nwfilter_rule">{% trans "Add" %}</button>
                         </div>
                     </form>

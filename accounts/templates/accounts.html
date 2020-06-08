@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Users" %}{% endblock %}
+{% block content %}
+<!-- Page Heading -->
+<div class="row">
+    <div class="col-lg-12">
+        {% include 'create_user_block.html' %}
+        <h2 class="page-header">{% trans "Users" %}</h2>
+    </div>
+</div>
+<!-- /.row -->
+
+{% include 'errors_block.html' %}
+
+<div class="row">
+    {% if not users %}
+        <div class="col-lg-12">
+            <div class="alert alert-warning alert-dismissable">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any User" %}
+            </div>
+        </div>
+    {% else %}
+        {% for user in users %}
+            <div id="{{ user.username }}" class="col-sm-12 col-md-4">
+                {% if user.is_active %}
+                    <div class="card border-success shadow">
+                        <div class="card-header bg-success">
+                {% else %}
+                    <div class="card border-secondary shadow">
+                        <div class="card-header bg-secondary">
+                {% endif %}    
+                        <h5 class="my-0 card-title">
+                            <a class="card-link text-light" href="{% url 'account' user.id %}"><strong>{{ user.username }}</strong></a>
+                            <a class="card-link text-light float-right" data-toggle="modal" href="#editUser{{ user.id }}" title="{% trans "Edit" %}">
+                                <span class="fa fa-cog"></span>
+                            </a>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row row-cols-2">
+                            <div class="col">
+                                <p class="card-text font-weight-bold">{% trans "Status" %}:</p>
+                            </div>
+                            <div class="col">
+                                {% if user.is_active %}
+                                    <p>{% trans "Active" %}</p>
+                                {% else %}
+                                    <p>{% trans "Blocked" %}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Edit -->
+            <div class="modal fade" id="editUser{{ user.id }}" tabindex="-1" role="dialog" aria-labelledby="editUserLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{% trans "Edit user info" %}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="post" aria-label="Edit user form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Name" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                                        <input type="text" name="name" class="form-control" value="{{ user.username }}" disabled>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Password" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="password" name="user_pass" class="form-control" value="">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Is staff" %}</label>
+                                    <div class="form-check form-check-inline col-sm-2  ml-3">
+                                        <input class="form-check-input position-static" type="checkbox" name="user_is_staff" {% if user.is_staff %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Is superuser" %}</label>
+                                    <div class="form-check form-check-inline col-sm-2 ml-3">
+                                        <input class="form-check-input position-static" type="checkbox" name="user_is_superuser" {% if user.is_superuser %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Can clone instances" %}</label>
+                                    <div class="form-check form-check-inline col-sm-2 ml-3">
+                                        <input class="form-check-input position-static" type="checkbox" name="userattributes_can_clone_instances" {% if user.userattributes.can_clone_instances %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Max instances" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" name="userattributes_max_instances" class="form-control" value="{{ user.userattributes.max_instances}}" required="True" >
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Max cpus" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" name="userattributes_max_cpus" class="form-control" value="{{ user.userattributes.max_cpus }}" required="True">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Max memory (MB)" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" name="userattributes_max_memory" class="form-control" value="{{ user.userattributes.max_memory}}" required="True">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">{% trans "Max disk size (GB)" %}</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" name="userattributes_max_disk_size" class="form-control" value="{{ user.userattributes.max_disk_size }}" required="True">
+                                    </div>
+                                </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-danger" name="delete">
+                                {% trans "Delete" %}
+                            </button>
+                            {% if user.is_active %}
+                                <button type="submit" class="btn btn-warning mr-auto" name="block">
+                                    {% trans "Block" %}
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-success mr-auto" name="unblock">
+                                    {% trans "Unblock" %}
+                                </button>
+                            {% endif %}
+                            <button type="submit" class="btn btn-secondary" data-dismiss="modal">
+                                {% trans "Close" %}
+                            </button>
+                            <button type="submit" class="btn btn-primary" name="edit">
+                                {% trans "Edit" %}
+                            </button>                                
+                            </form>
+                        </div>
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal-dialog -->
+            </div><!-- /.modal -->
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

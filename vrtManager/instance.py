@@ -22,8 +22,6 @@ from collections import OrderedDict
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage, wvmStorages
-from webvirtcloud.settings import QEMU_CONSOLE_TYPES
-from webvirtcloud.settings import INSTANCE_VOLUME_DEFAULT_OWNER as OWNER
 
 
 class wvmInstances(wvmConnect):
@@ -651,27 +649,27 @@ class wvmInstance(wvmConnect):
 
         additionals = ''
         if cache_mode is not None and cache_mode != 'default' and disk_device != 'cdrom':
-            additionals += "cache='%s' " % cache_mode
+            additionals += f"cache='{cache_mode}' " 
         if io_mode is not None and io_mode != 'default':
-            additionals += "io='%s' " % io_mode
+            additionals += f"io='{io_mode}' "
         if discard_mode is not None and discard_mode != 'default':
-            additionals += "discard='%s' " % discard_mode
+            additionals += f"discard='{discard_mode}' "
         if detect_zeroes_mode is not None and detect_zeroes_mode != 'default':
-            additionals += "detect_zeroes='%s' " % detect_zeroes_mode
+            additionals += f"detect_zeroes='{detect_zeroes_mode}' "
 
-        xml_disk = "<disk type='%s' device='%s'>" % (disk_type, disk_device)
+        xml_disk = f"<disk type='{disk_type}' device='{disk_device}'>"
         if disk_device == 'cdrom':
-            xml_disk += "<driver name='%s' type='%s'/>" % (driver_name, driver_type)
+            xml_disk += f"<driver name='{driver_name}' type='{driver_type}'/>"
         elif disk_device == 'disk':
-            xml_disk += "<driver name='%s' type='%s' %s/>" % (driver_name, driver_type, additionals)
-        xml_disk += """<source file='%s'/>
-          <target dev='%s' bus='%s'/>""" % (source, target_dev, target_bus)
+            xml_disk += f"<driver name='{driver_name}' type='{driver_type}' {additionals}/>"
+        xml_disk += f"""<source file='{source}'/>
+          <target dev='{target_dev}' bus='{target_bus}'/>"""
         if readonly or disk_device == 'cdrom':
             xml_disk += """<readonly/>"""
         if shareable:
             xml_disk += """<shareable/>"""
         if serial is not None and serial != 'None' and serial != '':
-            xml_disk += """<serial>%s</serial>""" % serial
+            xml_disk += f"""<serial>{serial}</serial>"""
         xml_disk += """</disk>"""
         if self.get_status() == 1:
             self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_LIVE)
@@ -703,28 +701,28 @@ class wvmInstance(wvmConnect):
 
         additionals = ''
         if cache_mode is not None and cache_mode != 'default':
-            additionals += "cache='%s' " % cache_mode
+            additionals += f"cache='{cache_mode}' "
         if io_mode is not None and io_mode != 'default':
-            additionals += "io='%s' " % io_mode
+            additionals += f"io='{io_mode}' "
         if discard_mode is not None and discard_mode != 'default':
-            additionals += "discard='%s' " % discard_mode
+            additionals += f"discard='{discard_mode}' "
         if detect_zeroes_mode is not None and detect_zeroes_mode != 'default':
-            additionals += "detect_zeroes='%s' " % detect_zeroes_mode
+            additionals += f"detect_zeroes='{detect_zeroes_mode}' "
 
-        xml_disk = "<disk type='%s' device='%s'>" % (old_disk_type, old_disk_device)
+        xml_disk = f"<disk type='{old_disk_type}' device='{old_disk_device}'>"
         if old_disk_device == 'cdrom':
-            xml_disk += "<driver name='%s' type='%s'/>" % (old_driver_name, format)
+            xml_disk += f"<driver name='{old_driver_name}' type='{format}'/>"
         elif old_disk_device == 'disk':
-            xml_disk += "<driver name='%s' type='%s' %s/>" % (old_driver_name, format, additionals)
+            xml_disk += f"<driver name='{old_driver_name}' type='{format}' {additionals}/>"
 
-        xml_disk += """<source file='%s'/>
-          <target dev='%s' bus='%s'/>""" % (source, target_dev, target_bus)
+        xml_disk += f"""<source file='{source}'/>
+          <target dev='{target_dev}' bus='{target_bus}'/>"""
         if readonly:
             xml_disk += """<readonly/>"""
         if shareable:
             xml_disk += """<shareable/>"""
         if serial is not None and serial != 'None' and serial != '':
-            xml_disk += """<serial>%s</serial>""" % serial
+            xml_disk += f"""<serial>{serial}</serial>"""
         xml_disk += """</disk>"""
 
         self.instance.updateDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
@@ -753,7 +751,7 @@ class wvmInstance(wvmConnect):
                 xml = """ <vcpus>"""
                 xml += """<vcpu id='0' enabled='yes' hotpluggable='no' order='1'/>"""
                 for i in range(1, vcpus_hotplug):
-                    xml += """<vcpu id='{}' enabled='yes' hotpluggable='yes' order='{}'/>""".format(i, i+1)
+                    xml += f"""<vcpu id='{i}' enabled='yes' hotpluggable='yes' order='{i+1}'/>"""
                 xml += """</vcpus>"""
 
                 tree = etree.fromstring(self._XMLDesc(0))
@@ -909,12 +907,12 @@ class wvmInstance(wvmConnect):
         current_type = self.get_console_type()
         if current_type == console_type:
             return True
-        if console_type == '' or console_type not in QEMU_CONSOLE_TYPES:
+        if console_type == '':
             return False
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         root = ElementTree.fromstring(xml)
         try:
-            graphic = root.find("devices/graphics[@type='%s']" % current_type)
+            graphic = root.find(f"devices/graphics[@type='{current_type}']")
         except SyntaxError:
             # Little fix for old version ElementTree
             graphic = root.find("devices/graphics")
@@ -942,7 +940,7 @@ class wvmInstance(wvmConnect):
         root = ElementTree.fromstring(xml)
         console_type = self.get_console_type()
         try:
-            graphic = root.find("devices/graphics[@type='%s']" % console_type)
+            graphic = root.find(f"devices/graphics[@type='{console_type}']")
         except SyntaxError:
             # Little fix for old version ElementTree
             graphic = root.find("devices/graphics")
@@ -1161,7 +1159,7 @@ class wvmInstance(wvmConnect):
                 stg_conn = self.get_wvmStorages()
                 stg_conn.create_storage('dir', nvram_pool_name, None, nvram_dir)
 
-            new_nvram_name = "%s_VARS" % clone_data['name']
+            new_nvram_name = f"{clone_data['name']}_VARS"
             nvram_stg = self.get_wvmStorage(nvram_pool_name)
             nvram_stg.clone_volume(src_nvram_name, new_nvram_name, file_suffix='fd')
 
@@ -1195,16 +1193,16 @@ class wvmInstance(wvmConnect):
                     if vol_format == 'qcow2' and meta_prealloc:
                         meta_prealloc = True
 
-                    vol_clone_xml = """
+                    vol_clone_xml = f"""
                                     <volume>
-                                        <name>%s</name>
+                                        <name>{target_file}</name>
                                         <capacity>0</capacity>
                                         <allocation>0</allocation>
                                         <target>
-                                            <format type='%s'/>
+                                            <format type='{vol_format}'/>
                                             <permissions>
-                                                <owner>%s</owner>
-                                                <group>%s</group>
+                                                <owner>{clone_data['disk_owner_uid']}</owner>
+                                                <group>{clone_data['disk_owner_gid']}</group>
                                                 <mode>0644</mode>
                                                 <label>virt_image_t</label>
                                             </permissions>
@@ -1213,7 +1211,7 @@ class wvmInstance(wvmConnect):
                                                 <lazy_refcounts/>
                                             </features>
                                         </target>
-                                    </volume>""" % (target_file, vol_format, OWNER['uid'], OWNER['guid'])
+                                    </volume>"""
 
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
@@ -1227,15 +1225,15 @@ class wvmInstance(wvmConnect):
                     vol = self.get_volume_by_path(source_name)
                     vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
 
-                    vol_clone_xml = """
+                    vol_clone_xml = f"""
                                     <volume type='network'>
-                                        <name>%s</name>
+                                        <name>{target_file}</name>
                                         <capacity>0</capacity>
                                         <allocation>0</allocation>
                                         <target>
-                                            <format type='%s'/>
+                                            <format type='{vol_format}'/>
                                         </target>
-                                    </volume>""" % (target_file, vol_format)
+                                    </volume>"""
                     stg = vol.storagePoolLookupByVolume()
                     stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
 
@@ -1275,18 +1273,16 @@ class wvmInstance(wvmConnect):
         else:
             interface_type = 'bridge'
 
-        xml_iface = """
-          <interface type='%s'>
-          <mac address='%s'/>""" % (interface_type, mac_address)
+        xml_iface = f"""
+          <interface type='{interface_type}'>
+          <mac address='{mac_address}'/>"""
         if interface_type == 'network':
-            xml_iface += """<source network='%s'/>""" % source
+            xml_iface += f"""<source network='{source}'/>"""
         else:
-            xml_iface += """<source bridge='%s'/>""" % bridge_name
-        xml_iface += """<model type='%s'/>""" % model
+            xml_iface += f"""<source bridge='{bridge_name}'/>"""
+        xml_iface += f"""<model type='{model}'/>"""
         if nwfilter:
-            xml_iface += """
-            <filterref filter='%s'/>
-            """ % nwfilter
+            xml_iface += f"""<filterref filter='{nwfilter}'/>"""
         xml_iface += """</interface>"""
 
         if self.get_status() == 1:
@@ -1438,9 +1434,9 @@ class wvmInstance(wvmConnect):
 
     def set_qos(self, mac, direction, average, peak, burst):
         if direction == "inbound":
-            xml = "<inbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+            xml = f"<inbound average='{average}' peak='{peak}' burst='{burst}'/>"
         elif direction == "outbound":
-            xml = "<outbound average='{}' peak='{}' burst='{}'/>".format(average, peak, burst)
+            xml = f"<outbound average='{average}' peak='{peak}' burst='{burst}'/>"
         else:
             raise Exception('Direction must be inbound or outbound')
 

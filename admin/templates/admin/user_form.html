@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load bootstrap3 %}
+{% load bootstrap4 %}
 {% load font_awesome %}
 {% load i18n %}
 
@@ -12,13 +12,13 @@
     </div>
 </div>
 <div class="row">
-    <div class="thumbnail col-sm-10 col-sm-offset-1">
-        <form id="create-update" action="" method="post" class="form-horizontal">
+    <div class="thumbnail col-sm-10 offset-1">
+        <form id="create-update" action="" method="post">
             {% csrf_token %}
             {% bootstrap_form user_form layout='horizontal' %}
             {% bootstrap_form attributes_form layout='horizontal' %}
         </form>
-        <div class="form-group pull-right">
+        <div class="form-group float-right">
             <a class="btn btn-primary" href="javascript:history.back()">{% icon 'times' %} {% trans "Cancel" %}</a>
             <button type="submit" form="create-update" class="btn btn-success">
                 {% icon 'check' %} {% trans "Save" %}

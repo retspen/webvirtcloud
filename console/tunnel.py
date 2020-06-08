@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # This class provide from VirtManager project, from console.py
 # file.

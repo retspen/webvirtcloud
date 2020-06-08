@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddNWFilter" type="button" class="btn btn-success pull-right" data-toggle="modal">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+    <a href="#AddNWFilter" type="button" class="btn btn-success btn-header float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
     </a>
 
     <!-- Modal Secret -->
@@ -9,19 +9,18 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Create New NWFilter" %}</h4>
-                </div>
+                    <h5 class="modal-title">{% trans "Create New NWFilter" %}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>                </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                         <div class="form-group">
-                            <div class="col-xs-12" id="xmlheight">
+                    <form method="post" role="form" aria-label=""Create new NWFilter form"">{% csrf_token %}
+                         <div class="form-group row">
+                            <div class="col-12" id="xmlheight">
                                 <input type="hidden" name="nwfilter_xml"/>
                                 <textarea id="editor" name="from_xml"></textarea>
                             </div>
                          </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
                             <button type="submit" class="btn btn-primary" name="create_nwfilter">{% trans "Create" %}</button>
                         </div>
                     </form>

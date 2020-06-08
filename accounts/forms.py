@@ -11,7 +11,7 @@ class UserAddForm(forms.Form):
                            max_length=20)
     password = forms.CharField(required=not settings.ALLOW_EMPTY_PASSWORD,
                                error_messages={'required': _('No password has been entered')},)
-
+   
     def clean_name(self):
         name = self.cleaned_data['name']
         have_symbol = re.match('^[a-z0-9]+$', name)

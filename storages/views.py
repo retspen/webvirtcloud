@@ -1,14 +1,16 @@
 import json
-from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
 from django.http import HttpResponseRedirect, HttpResponse
+from django.shortcuts import render, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
+from libvirt import libvirtError
+
+from admin.decorators import superuser_only
 from computes.models import Compute
+from appsettings.models import AppSettings
 from storages.forms import AddStgPool, AddImage, CloneImage
 from vrtManager.storage import wvmStorage, wvmStorages
-from libvirt import libvirtError
-from django.contrib import messages
-from admin.decorators import superuser_only
 
 
 @superuser_only
@@ -143,8 +145,12 @@ def storage(request, compute_id, pool):
                 if data['meta_prealloc'] and data['format'] == 'qcow2':
                     meta_prealloc = True
                 try:
-                    name = conn.create_volume(data['name'], data['size'], data['format'], meta_prealloc)
-                    messages.success(request, _("Image file {} is created successfully".format(name)))
+                    disk_owner = AppSettings.objects.filter(key__startswith="INSTANCE_VOLUME_DEFAULT_OWNER")
+                    disk_owner_uid = int(disk_owner.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_UID").value)
+                    disk_owner_gid = int(disk_owner.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_GID").value)
+
+                    name = conn.create_volume(data['name'], data['size'], data['format'], meta_prealloc, disk_owner_uid, disk_owner_gid)
+                    messages.success(request, _(f"Image file {name} is created successfully"))
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:
                     error_messages.append(lib_err)

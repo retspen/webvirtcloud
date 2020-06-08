@@ -21,10 +21,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'bootstrap3',
+    'bootstrap4',
     'fa',
     'accounts',
     'admin',
+    'appsettings',
     'computes',
     'console',
     'create',
@@ -147,12 +148,6 @@ WS_PUBLIC_HOST = None
 # Websock SSL connection
 WS_CERT = None
 
-# List of console types
-QEMU_CONSOLE_TYPES = ['vnc', 'spice']
-
-# Default console type
-QEMU_CONSOLE_DEFAULT_TYPE = 'vnc'
-
 # List of console listen addresses
 QEMU_CONSOLE_LISTEN_ADDRESSES = (
     ('127.0.0.1', 'Localhost'),
@@ -165,60 +160,10 @@ QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
                 'ja', 'lt', 'lv', 'mk', 'nl', 'nl-be', 'no', 'pl', 'pt',
                 'pt-br', 'ru', 'sl', 'sv', 'th', 'tr']
 
-# keepalive interval and count for libvirt connections
+# Keepalive interval and count for libvirt connections
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
-ALLOW_INSTANCE_MULTIPLE_OWNER = True
+ALLOW_EMPTY_PASSWORD = False
 NEW_USER_DEFAULT_INSTANCES = []
-CLONE_INSTANCE_DEFAULT_PREFIX = 'instance'
-CLONE_INSTANCE_AUTO_NAME = False
-CLONE_INSTANCE_AUTO_MIGRATE = False
-LOGS_PER_PAGE = 100
-QUOTA_DEBUG = True
-ALLOW_EMPTY_PASSWORD = True
-SHOW_ACCESS_ROOT_PASSWORD = False
-SHOW_ACCESS_SSH_KEYS = False
-
-# available list style: default (grouped), nongrouped
-VIEW_INSTANCES_LIST_STYLE = 'grouped'
-
-# available options: True, False
-VIEW_INSTANCE_DETAIL_BOTTOM_BAR = True
-
-# available volume format: raw, qcow2, qcow
-INSTANCE_VOLUME_DEFAULT_FORMAT = 'qcow2'
-
-# available bus types: virtio, scsi, ide, usb, sata
-INSTANCE_VOLUME_DEFAULT_BUS = 'virtio'
-
-#SCSI types: virtio-scsi, lsilogic
-INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER = 'virtio-scsi'
-
-# Volume cache: default, directsync, none, unsafe, writeback, writethrough
-INSTANCE_VOLUME_DEFAULT_CACHE = 'directsync'
-
-# Volume io mode: default, native, threads
-INSTANCE_VOLUME_DEFAULT_IO = 'default'
-
-# Volume detect zeroes mode: default, on, off, unmap
-INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES = 'default'
-
-# Volume discard mode: default, unmap, ignore
-INSTANCE_VOLUME_DEFAULT_DISCARD = 'default'
-
-# up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)
-INSTANCE_VOLUME_DEFAULT_OWNER = {'uid': 0, 'guid': 0}
-
-# Cpu modes: host-model, host-passthrough, custom
-INSTANCE_CPU_DEFAULT_MODE = 'host-model'
-
-# Chipset/Machine: pc or q35 for x86_64
-INSTANCE_MACHINE_DEFAULT_TYPE = 'q35'
-
-# Firmware: BIOS or UEFI for x86_64
-INSTANCE_FIRMWARE_DEFAULT_TYPE = 'BIOS'
-
-# Architecture: x86_64, i686, etc
-INSTANCE_ARCH_DEFAULT_TYPE = 'x86_64'
-
+SHOW_PROFILE_EDIT_PASSWORD = True

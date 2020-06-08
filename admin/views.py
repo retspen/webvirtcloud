@@ -1,10 +1,10 @@
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import UserAttributes
+from appsettings.models import AppSettings
 from logs.models import Logs
 
 from . import forms
@@ -165,7 +165,7 @@ def user_unblock(request, pk):
 @superuser_only
 def logs(request):
     l = Logs.objects.order_by('-date')
-    paginator = Paginator(l, settings.LOGS_PER_PAGE)
+    paginator = Paginator(l, int(AppSettings.objects.get(key="LOGS_PER_PAGE").value))
     page = request.GET.get('page', 1)
     logs = paginator.page(page)
     return render(request, 'admin/logs.html', {'logs': logs})
