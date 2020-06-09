@@ -16,7 +16,7 @@
     <div class="row">
         {% if computes_info %}
             {% for compute in computes_info %}
-                <div id="{{ compute.name }}" class="col-12 col-sm-4">
+                <div id="{{ compute.name }}" class="mb-3 col-12 col-sm-4">
                     {% if compute.status is True %}
                     <div class="card border-success shadow h-100">
                         <div class="card-header bg-success">
