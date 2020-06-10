@@ -1036,55 +1036,57 @@
                             </div>
 
                             {% if qos %}
-                            <div class="col-10 col-sm-10">
-                                <p><strong>{% trans "QoS Configuration" %}</strong></p>
-                            </div>
-                            <div class="col-12 col-sm-12">
-                                <table class="table table-hover">
-                                    <thead>
-                                    <tr>
-                                        <th scope="col">{% trans "MAC" %}/{% trans "Direction" %}</th>
-                                        <th scope="col">{% trans "Average" %}</th>
-                                        <th scope="col">{% trans "Peak" %}</th>
-                                        <th scope="col">{% trans "Burst" %}</th>
-                                        <th scope="col">{% trans "Actions" %}</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for q, attrs in qos.items %}
-                                        {% for att in attrs  %}
-                                            <form method="post" role="form" aria-label="Instance QoS configuration form">{% csrf_token %}
-                                            <tr>
-                                                <td><label class="col-form-label">{{ q }} {{ att.direction | capfirst }}</label></td>
-                                                <td><input id="qos_average" class="form-control" name="qos_average"
-                                                           value="{{ att.average|default:'' }}"/>
-                                                </td>
-                                                <td><input id="qos_peak" class="form-control" name="qos_peak"
-                                                           value="{{ att.peak|default:'' }}"/>
-                                                </td>
-                                                <td><input id="qos_burst" class="form-control" name="qos_burst"
-                                                           value="{{ att.burst|default:'' }}"/>
-                                                </td>
-                                                <td class="col-sm-2">
-                                                    <input name="qos_direction" value="{{ att.direction }}" hidden/>
-                                                    <input name="net-mac" value="{{ q }}" hidden/>
-                                                    <button type="submit" class="btn btn-sm btn-primary"
-                                                            name="set_qos" data-toggle="modal"
-                                                            title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                        <i class="fa fa-save"></i>
-                                                    </button>
-                                                    <button type="submit" class="btn btn-sm btn-danger"
-                                                            name="unset_qos"
-                                                            title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            </form>
-                                            {% endfor %}
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
+                            <div class="row mt-3">
+                                <div class="col-sm-10">
+                                    <p><strong>{% trans "QoS Configuration" %}</strong></p>
+                                </div>
+                                <div class="col-12 col-sm-12">
+                                    <table class="table table-hover">
+                                        <thead>
+                                        <tr class="d-flex">
+                                            <th scope="col" class="col-2">{% trans "MAC" %}/{% trans "Direction" %}</th>
+                                            <th scope="col" class="col-2">{% trans "Average" %}</th>
+                                            <th scope="col" class="col-3">{% trans "Peak" %}</th>
+                                            <th scope="col" class="col-3">{% trans "Burst" %}</th>
+                                            <th scope="col" class="col-2">{% trans "Actions" %}</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for q, attrs in qos.items %}
+                                            {% for att in attrs  %}
+                                                <form method="post" role="form" aria-label="Instance QoS configuration form">{% csrf_token %}
+                                                <tr class="d-flex">
+                                                    <td class="col-2"><label class="col-form-label">{{ q }} {{ att.direction | capfirst }}</label></td>
+                                                    <td class="col-2"><input id="qos_average" class="form-control" name="qos_average"
+                                                            value="{{ att.average|default:'' }}"/>
+                                                    </td>
+                                                    <td class="col-3"><input id="qos_peak" class="form-control" name="qos_peak"
+                                                            value="{{ att.peak|default:'' }}"/>
+                                                    </td>
+                                                    <td class="col-3"><input id="qos_burst" class="form-control" name="qos_burst"
+                                                            value="{{ att.burst|default:'' }}"/>
+                                                    </td>
+                                                    <td class="col-sm-2">
+                                                        <input name="qos_direction" value="{{ att.direction }}" hidden/>
+                                                        <input name="net-mac" value="{{ q }}" hidden/>
+                                                        <button type="submit" class="btn btn-sm btn-primary"
+                                                                name="set_qos" data-toggle="modal"
+                                                                title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                            <i class="fa fa-save"></i>
+                                                        </button>
+                                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                                name="unset_qos"
+                                                                title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                            <i class="fa fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                </form>
+                                                {% endfor %}
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                             {% endif %}
                             <div class="clearfix"></div>
