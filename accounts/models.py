@@ -30,7 +30,7 @@ class UserAttributes(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     can_clone_instances = models.BooleanField(default=True)
     max_instances = models.IntegerField(default=2,
-                                        help_text="-1 for unlimited. Any integer value",
+                                        help_text=_("-1 for unlimited. Any integer value"),
                                         validators=[
                                             MinValueValidator(-1),
                                         ])

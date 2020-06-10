@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-06-10 08:01+0000\n"
+"POT-Creation-Date: 2020-06-10 12:05+0000\n"
 "PO-Revision-Date: 2020-06-09 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -40,6 +40,10 @@ msgstr ""
 #: accounts/forms.py:26 create/forms.py:30
 msgid "Flavor name is already use"
 msgstr ""
+
+#: accounts/models.py:33
+msgid "-1 for unlimited. Any integer value"
+msgstr "Herhangi bir değer. Sınırsız için -1."
 
 #: accounts/models.py:85
 msgid "Can change password"
@@ -137,7 +141,7 @@ msgstr "İmtiyazları düzenle"
 #: accounts/templates/account.html:91 accounts/templates/account.html:100
 #: accounts/templates/account.html:109
 msgid "False"
-msgstr ""
+msgstr "Yanlış"
 
 #: accounts/templates/account.html:116
 #: accounts/templates/accounts-list.html:145
@@ -218,10 +222,19 @@ msgstr "Emin misiniz?"
 msgid "Users"
 msgstr "Kullanıcılar"
 
+#: accounts/templates/accounts-list.html:11
+#: admin/templates/admin/group_list.html:13
+#: admin/templates/admin/user_list.html:14
+#: instances/templates/allinstances.html:17
+#: instances/templates/instances.html:19 nwfilters/templates/nwfilters.html:11
+#: storages/templates/storage.html:89
+msgid "Search"
+msgstr "Ara"
+
 #: accounts/templates/accounts-list.html:25
 #: accounts/templates/accounts.html:21 admin/templates/admin/user_list.html:25
 msgid "You don't have any user"
-msgstr "Hiç kullanınız yok"
+msgstr "Hiç kullanıcınız yok"
 
 #: accounts/templates/accounts-list.html:33 accounts/templates/profile.html:27
 #: admin/templates/admin/user_list.html:33 computes/templates/computes.html:79
@@ -350,7 +363,7 @@ msgstr "Sanal makineleri klonlayabilir"
 #: accounts/templates/accounts-list.html:107
 #: accounts/templates/accounts.html:100
 msgid "Max instances"
-msgstr "Maksimum sanal makine sayısı"
+msgstr "Maksimum sanal makine"
 
 #: accounts/templates/accounts-list.html:113
 #: accounts/templates/accounts.html:106
@@ -382,6 +395,10 @@ msgstr "Engeli Kaldır"
 #: accounts/templates/create_user_block.html:13
 msgid "Add New User"
 msgstr "Yeni Kullanıc Ekle"
+
+#: accounts/templates/create_user_block.html:20
+msgid "john"
+msgstr "ali"
 
 #: accounts/templates/create_user_block.html:32
 #: create/templates/create_instance_w1.html:93
@@ -551,11 +568,6 @@ msgstr "Kaydet"
 msgid "Create New"
 msgstr "Yeni Oluştur"
 
-#: admin/templates/admin/group_list.html:13
-#: admin/templates/admin/user_list.html:14
-msgid "Search"
-msgstr "Ara"
-
 #: admin/templates/admin/group_list.html:24
 msgid "You don't have any groups"
 msgstr "Hiç grubunuz yok"
@@ -565,6 +577,7 @@ msgid "Group Name"
 msgstr "Grup Adı"
 
 #: admin/templates/admin/group_list.html:33
+#: admin/templates/admin/user_list.html:38
 #: instances/templates/allinstances.html:60
 #: instances/templates/allinstances_index_grouped.html:11
 #: instances/templates/allinstances_index_nongrouped.html:10
@@ -582,7 +595,7 @@ msgstr "Loglar"
 
 #: admin/templates/admin/logs.html:21
 msgid "You don't have any Logs"
-msgstr "Hiç Logunuz yok"
+msgstr "Hiç Log kaydınız yok"
 
 #: admin/templates/admin/logs.html:31 instances/templates/instance.html:555
 #: instances/templates/instance.html:1641
@@ -616,6 +629,214 @@ msgstr "Kullanıcı Oluştur"
 #: admin/views.py:130
 msgid "Update User"
 msgstr "Kullanıcıyı Güncelle"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:10
+msgid "Theme"
+msgstr "Tema"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:10
+msgid "Bootstrap CSS & Bootswatch Theme"
+msgstr "Bootstrap CSS & Bootswatch Teması"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:11
+msgid "Theme SASS Path"
+msgstr "Tema SASS Yolu"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:11
+msgid "Bootstrap SASS & Bootswatch SASS Directory"
+msgstr "Bootstrap SASS & Bootswatch Directory"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:12
+msgid "All Instances View Style"
+msgstr "Tüm Sanal Makine Listesi Görünümü"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:12
+msgid "All instances list style"
+msgstr "Tüm Sanal Makineler Listesi Görünüm Stili"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:13
+msgid "Logs per Page"
+msgstr "Herbir sayfa için Log sayısı"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:13
+msgid "Pagination for logs"
+msgstr "Loglar için sayfalama"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:14
+msgid "Multiple Owner for VM"
+msgstr "VM için çoklu sahiplik"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:14
+msgid "Allow to have multiple owner for instance"
+msgstr "Bir sanal makine için çoklu sahip atanmasına izin verir"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:15
+msgid "Quota Debug"
+msgstr "Kota Hata Ayıklama"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:15
+msgid "Debug for user quotas"
+msgstr "Kullanıcı kotaları için hata ayıklama"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:16
+msgid "Disk Format"
+msgstr "Disk Biçemi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:16
+msgid "Instance disk format"
+msgstr "Sanal Makine Disk Biçemi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:17
+msgid "Disk Bus"
+msgstr "Disk Veriyolu"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:17
+msgid "Instance disk bus type"
+msgstr "Sanal makine diski veriyolu tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:18
+msgid "Disk SCSI Controller"
+msgstr "Disk SCSI Denetleyicisi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:18
+msgid "SCSI controller type"
+msgstr "SCSI denetleyicisi tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:19
+msgid "Disk Cache"
+msgstr "Disk Ön Belleği"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:19
+msgid "Disk volume cache type"
+msgstr "Disk birimi ön bellek tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:20
+msgid "Disk IO Type"
+msgstr "Disk IO Tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:20
+msgid "Volume io modes"
+msgstr "Birim IO modları"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:21
+msgid "Disk Detect Zeroes"
+msgstr "Disk Sıfır Yakalama"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:21
+msgid "Volume detect zeroes mode"
+msgstr "Disk birimi sıfır yakalama modu"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:22
+msgid "Disk Discard"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:22
+msgid "Volume discard mode"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:23
+msgid "Disk Owner UID"
+msgstr "Disk sahip UIDsi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:23
+msgid "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:24
+msgid "Disk Owner GID"
+msgstr "Disk sahibi GID"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:24
+msgid "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:25
+msgid "VM CPU Mode"
+msgstr "VM CPU Modu"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:25
+msgid "Cpu modes"
+msgstr "CPU Modları"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:26
+msgid "VM Machine Type"
+msgstr "VM Makine Tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:26
+msgid "Chipset/Machine type"
+msgstr "Yonga/Makine Tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:27
+msgid "VM Firmware Type"
+msgstr "VM Yonga Tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:27
+msgid "Firmware type for x86_64"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:28
+msgid "VM Architecture Type"
+msgstr "VM Mimari Tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:28
+msgid "Architecture type: x86_64, i686, etc"
+msgstr "Mimari Tipler: x86_64, i688, vs"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:29
+msgid "VM Console Type"
+msgstr "VM Konsol Tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:29
+msgid "Default console type"
+msgstr "Varsayılan konsol tipi"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:30
+msgid "VM Clone Name Prefix"
+msgstr "VM Klon Adı Ön Eki"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:30
+msgid "Prefix for cloned instance name"
+msgstr "Klonlanmış sanal makineler için ön ek"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:31
+msgid "VM Clone Auto Name"
+msgstr "VM Klon Otomatik Ad"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:31
+msgid "Generated name for cloned instance"
+msgstr "Klonamış Sanal Makine için Oluşturala isim"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:32
+msgid "VM Clone Auto Migrate"
+msgstr "VM Klonu Otomatik Taşı"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:32
+msgid "Auto migrate instance after clone"
+msgstr "Klondan sonra sanal makineyi otomatik taşı"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:33
+msgid "VM Bottom Bar"
+msgstr "VM Alt Kısayol Çubuğu"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:33
+msgid "Bottom navbar for instance details"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:34
+msgid "Show Access Root Pass"
+msgstr "Root Erişim Parolasını Göster"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:34
+msgid "Show access root password"
+msgstr "Kök erişim parolasını göster"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:35
+msgid "Show Access SSH Keys"
+msgstr "SSH Erişim Anahtarlarını Göster"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:35
+msgid "Show access ssh keys"
+msgstr "SSH Erişim Anahtarlarını Göster"
 
 #: appsettings/templates/appsettings.html:3
 #: appsettings/templates/appsettings.html:8
@@ -699,8 +920,10 @@ msgid "Not Connected"
 msgstr "Bağlı değil"
 
 #: computes/templates/computes.html:46 computes/templates/computes.html:91
-#: computes/templates/computes.html:134 computes/templates/computes.html:182
-#: computes/templates/computes.html:212 computes/templates/overview.html:92
+#: computes/templates/computes.html:93 computes/templates/computes.html:134
+#: computes/templates/computes.html:136 computes/templates/computes.html:182
+#: computes/templates/computes.html:184 computes/templates/computes.html:212
+#: computes/templates/computes.html:214 computes/templates/overview.html:92
 #: instances/templates/instance.html:758 instances/templates/instance.html:840
 msgid "Details"
 msgstr "Detaylar"
@@ -732,7 +955,7 @@ msgstr ""
 
 #: computes/templates/computes.html:241
 msgid "Hypervisor doesn't have any Computes"
-msgstr "Hipervizör hiç bir Hesaplayıcıya sahip değil"
+msgstr "Hipervizör hiçbir Hesaplayıcıya sahip değil"
 
 #: computes/templates/computes/form.html:6
 msgid "Add Compute"
@@ -813,7 +1036,7 @@ msgstr "Ağlar"
 #: nwfilters/templates/nwfilters.html:33 secrets/templates/secrets.html:29
 #: storages/templates/storage.html:29 storages/templates/storages.html:29
 msgid "Interfaces"
-msgstr "Arayüzler"
+msgstr "Arabirimler"
 
 #: computes/templates/overview.html:28 instances/templates/instances.html:45
 #: interfaces/templates/interface.html:26
@@ -886,7 +1109,7 @@ msgstr "Mimari"
 
 #: computes/templates/overview.html:86
 msgid "Logical CPUs"
-msgstr "Mantıksal MİBs"
+msgstr "Mantıksal CPUlar"
 
 #: computes/templates/overview.html:88
 msgid "Processor"
@@ -993,6 +1216,10 @@ msgstr "Sanal makine adı 20 karakterden fazla olamaz"
 #: create/templates/create_flav_block.html:13
 msgid "Add New Flavor"
 msgstr ""
+
+#: create/templates/create_flav_block.html:21
+msgid "Micro"
+msgstr "Mikro"
 
 #: create/templates/create_flav_block.html:26
 #: create/templates/create_instance_w2.html:82
@@ -1384,7 +1611,7 @@ msgstr "Kapalı"
 #: instances/templates/instances.html:87 instances/views.py:699
 #: instances/views.py:1239
 msgid "Suspend"
-msgstr "Duraklatılmış"
+msgstr "Duraklat"
 
 #: instances/templates/allinstances_index_grouped.html:6
 #: instances/templates/allinstances_index_nongrouped.html:5
@@ -1425,7 +1652,7 @@ msgstr "Lütfen seçin"
 #: instances/templates/create_inst_block.html:38
 #: instances/templates/create_inst_block.html:42
 msgid "Choose"
-msgstr "Seçin"
+msgstr "Seç"
 
 #: instances/templates/edit_instance_volume.html:3
 msgid "Edit Volume"
@@ -1473,7 +1700,7 @@ msgstr ""
 
 #: instances/templates/edit_instance_volume.html:108
 msgid "Detect zeroes"
-msgstr ""
+msgstr "Sıfırları yakala"
 
 #: instances/templates/instance.html:26
 msgid "Guest Agent Enabled & Connected"
@@ -1525,7 +1752,7 @@ msgstr "İstatistikler"
 #: instances/templates/instance.html:1689
 #: instances/templates/instance.html:1693 instances/views.py:421
 msgid "Destroy"
-msgstr "Yoket"
+msgstr "Sil"
 
 #: instances/templates/instance.html:127 instances/templates/instance.html:176
 #: instances/templates/instance_actions.html:18
@@ -1781,7 +2008,7 @@ msgstr "Seçenekler"
 #: instances/templates/instance.html:666 networks/templates/network.html:59
 #: storages/templates/storage.html:71
 msgid "Autostart"
-msgstr "Oto başlat"
+msgstr "Otomatik başlat"
 
 #: instances/templates/instance.html:670
 msgid "Autostart your instance when host server is power on "
@@ -1852,7 +2079,7 @@ msgstr "Ayır"
 
 #: instances/templates/instance.html:812
 msgid "There is not any CD-ROM device."
-msgstr "Hiç bir CD-ROM aygıtı mevcut değil."
+msgstr "Hiçbir CD-ROM aygıtı mevcut değil."
 
 #: instances/templates/instance.html:817
 msgid "Instance Volume"
@@ -1922,7 +2149,7 @@ msgstr "Ağ Kaynağı"
 #: interfaces/templates/interface.html:8
 #: interfaces/templates/interface.html:40
 msgid "Interface"
-msgstr "Arayüz"
+msgstr "Arabirim"
 
 #: instances/templates/instance.html:980
 #: instances/templates/instance.html:1019
@@ -1992,6 +2219,7 @@ msgstr "QoS Sil"
 #: instances/templates/instance.html:1093
 msgid "For migration both host servers must have equal settings and OS type"
 msgstr ""
+"Taşıma için iki sunucu da eşlenik ayarlara ve OS tipine sahip olmalıdır"
 
 #: instances/templates/instance.html:1096
 msgid "Original host"
@@ -2040,6 +2268,8 @@ msgstr "Sıkıştırılmış"
 #: instances/templates/instance.html:1180
 msgid "If you need to edit XML please Power Off the instance"
 msgstr ""
+"XML üzerinden ayarları değiştirmek istiyorsanız sanal makineyi "
+"kapatmalısınız"
 
 #: instances/templates/instance.html:1201
 msgid "Instance owners"
@@ -2070,7 +2300,7 @@ msgstr "Tip"
 #: instances/templates/instance.html:1329
 #: instances/templates/instance.html:1493
 msgid "please choose"
-msgstr "lütfen seçin"
+msgstr "lütfen seçiniz"
 
 #: instances/templates/instance.html:1244
 #: instances/templates/instance.html:1246
@@ -2228,7 +2458,7 @@ msgstr "Disk I/O aygıtı"
 
 #: instances/templates/instance.html:1662
 msgid "Destroy Instance"
-msgstr "Sanal makineyi yok et"
+msgstr "Sanal makineyi sil"
 
 #: instances/templates/instance.html:1669
 msgid "Delete storage for instance?"
@@ -2296,7 +2526,7 @@ msgstr ""
 
 #: instances/views.py:483
 msgid "Resize CPU"
-msgstr ""
+msgstr "CPU Boyutlandır"
 
 #: instances/views.py:501
 #, python-brace-format
@@ -2306,7 +2536,7 @@ msgstr ""
 
 #: instances/views.py:507
 msgid "Resize Memory"
-msgstr ""
+msgstr "Bellek Boyutlandır"
 
 #: instances/views.py:524
 #, python-brace-format
@@ -2316,7 +2546,7 @@ msgstr ""
 
 #: instances/views.py:528
 msgid "Disk resize"
-msgstr "Diski yeniden boyutlandır"
+msgstr "Diski Boyutlandır"
 
 #: instances/views.py:549
 #, python-brace-format
@@ -2382,7 +2612,7 @@ msgstr "Anlık görüntü geri dönüş başarılı:"
 
 #: instances/views.py:693
 msgid "Revert snapshot"
-msgstr ""
+msgstr "Snapshota dön"
 
 #: instances/views.py:716
 msgid "vCPU {} is enabled={}"
@@ -2604,7 +2834,7 @@ msgstr "Arabirim 10 karakterden fazla olamaz"
 
 #: interfaces/templates/create_iface_block.html:12
 msgid "Create New Interface"
-msgstr "Yeni arayüz oluştur"
+msgstr "Yeni Arabirim Oluştur"
 
 #: interfaces/templates/create_iface_block.html:24
 msgid "Start mode"
@@ -2636,11 +2866,11 @@ msgstr "STP"
 
 #: interfaces/templates/create_iface_block.html:57
 msgid "on"
-msgstr ""
+msgstr "açık"
 
 #: interfaces/templates/create_iface_block.html:58
 msgid "off"
-msgstr ""
+msgstr "kapalı"
 
 #: interfaces/templates/create_iface_block.html:63
 msgid "Delay"
@@ -2688,7 +2918,7 @@ msgstr "IPv6 Ağ Geçidi"
 
 #: interfaces/templates/interface.html:48
 msgid "Interface Type"
-msgstr "Arayüz Tipi"
+msgstr "Arabirim Tipi"
 
 #: interfaces/templates/interface.html:51
 msgid "Bridge Device"
@@ -2719,7 +2949,7 @@ msgstr "Hız"
 
 #: interfaces/templates/interfaces.html:47
 msgid "Hypervisor doesn't have any Interfaces"
-msgstr "Hipervizör hiç bir arabirime sahip değil"
+msgstr "Hipervizör hiçbir arabirime sahip değil"
 
 #: networks/forms.py:7 storages/forms.py:7
 msgid "No pool name has been entered"
@@ -2777,13 +3007,25 @@ msgstr "Gelen"
 msgid "Outbound"
 msgstr "Giden"
 
+#: networks/templates/add_network_qos.html:29
+#: networks/templates/add_network_qos.html:36
+#: networks/templates/add_network_qos.html:43
+msgid "kilobytes"
+msgstr "kilobayt"
+
 #: networks/templates/create_net_block.html:12
 msgid "Add New Network"
 msgstr "Yeni Ağ Ekle"
 
+#: networks/templates/create_net_block.html:20
+#: storages/templates/create_stg_block.html:44
+#: storages/templates/create_stg_block.html:73
+msgid "default"
+msgstr "varsayılan"
+
 #: networks/templates/create_net_block.html:24
 msgid "Type forwarding"
-msgstr "Tip yönlendirme"
+msgstr "Yönlendirme Tipi"
 
 #: networks/templates/create_net_block.html:27
 #: networks/templates/network.html:98
@@ -2884,7 +3126,7 @@ msgstr "KAPALI"
 #: networks/templates/network.html:124 networks/templates/network.html:130
 #: networks/templates/network.html:236 networks/templates/network.html:242
 msgid "End"
-msgstr ""
+msgstr "Son"
 
 #: networks/templates/network.html:138 networks/templates/network.html:251
 msgid "Edit DHCP Range"
@@ -2916,7 +3158,7 @@ msgstr "IPv6 Sabit Adresleri"
 
 #: networks/templates/networks.html:50
 msgid "Hypervisor doesn't have any Network"
-msgstr "Hipervizör hiç bir Ağa sahip değil"
+msgstr "Hipervizör hiçbir Ağa sahip değil"
 
 #: networks/templates/networks.html:65
 msgid "Forward"
@@ -3119,7 +3361,7 @@ msgstr "Hedef herhangi bir özel karakter içeremez"
 
 #: storages/forms.py:48
 msgid "No device or path has been entered"
-msgstr ""
+msgstr "Aygıt ya da yol girilmedi"
 
 #: storages/forms.py:50
 msgid "The disk source must not contain any special characters"
@@ -3259,7 +3501,7 @@ msgstr "Dönüştür"
 
 #: storages/templates/storage.html:189
 msgid "Hypervisor doesn't have any Volumes"
-msgstr "Hipervizör hiç bir birime sahip değil"
+msgstr "Hipervizör hiçbir birime sahip değil"
 
 #: storages/templates/storages.html:50
 msgid "Hypervisor doesn't have any Storages"
@@ -3671,7 +3913,7 @@ msgstr "Dosya yolu"
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1735
 #, python-format
 msgid "'%(value)s' value must be a float."
-msgstr ""
+msgstr "'%(value)s' değeri kayan noktalı bir sayı olmalıdır."
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1737
 msgid "Floating point number"
@@ -3771,16 +4013,16 @@ msgstr "Bire-bir ilişki"
 #: venv/lib/python3.6/site-packages/django/db/models/fields/related.py:1057
 #, python-format
 msgid "%(from)s-%(to)s relationship"
-msgstr ""
+msgstr "%(from)s'den %(to)s ye ilişki"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/related.py:1058
 #, python-format
 msgid "%(from)s-%(to)s relationships"
-msgstr ""
+msgstr "%(from)s'den %(to)s ye ilişkiler"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/related.py:1100
 msgid "Many-to-many relationship"
-msgstr ""
+msgstr "Çoktan-çoğa ilişki"
 
 #. Translators: If found as last label character, these punctuation
 #. characters will prevent the default label_suffix to be appended to the
@@ -3850,6 +4092,8 @@ msgid ""
 "Upload a valid image. The file you uploaded was either not an image or a "
 "corrupted image."
 msgstr ""
+"Geçerli bir imaj yükleyin. Yüklediğiniz imaj ya geçersiz ya da bir bozulmuş "
+"imaj"
 
 #: venv/lib/python3.6/site-packages/django/forms/fields.py:762
 #: venv/lib/python3.6/site-packages/django/forms/fields.py:852
@@ -3881,7 +4125,7 @@ msgstr ":"
 #: venv/lib/python3.6/site-packages/django/forms/forms.py:212
 #, python-format
 msgid "(Hidden field %(name)s) %(error)s"
-msgstr ""
+msgstr "(Gizli alan %(name)s) %(error)s"
 
 #: venv/lib/python3.6/site-packages/django/forms/formsets.py:91
 msgid "ManagementForm data is missing or has been tampered with"
@@ -4460,7 +4704,7 @@ msgstr ""
 #: venv/lib/python3.6/site-packages/django/views/generic/list.py:72
 #, python-format
 msgid "Invalid page (%(page_number)s): %(message)s"
-msgstr ""
+msgstr "Geçersiz sayfa (%(page_number)s): %(message)s"
 
 #: venv/lib/python3.6/site-packages/django/views/generic/list.py:154
 #, python-format
@@ -4504,6 +4748,10 @@ msgid ""
 "target=\"_blank\" rel=\"noopener\">DEBUG=True</a> is in your settings file "
 "and you have not configured any URLs."
 msgstr ""
+"Ayarlarınızı içeren dosyada <a "
+"href=\"https://docs.djangoproject.com/en/%(version)s/ref/settings/#debug\" "
+"target=\"_blank\" rel=\"noopener\">DEBUG=True</a> olduğu için bu sayfayı "
+"görüyorsunuz ve hiçbir URL ayarlamamışsınız."
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:383
 msgid "Django Documentation"
@@ -4515,11 +4763,11 @@ msgstr "Başlıklar, referanslar, &amp; Nasıl yapılırlar"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:395
 msgid "Tutorial: A Polling App"
-msgstr ""
+msgstr "Eğitsel: Bir Yoklama Uygulaması"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:396
 msgid "Get started with Django"
-msgstr ""
+msgstr "Django ile Tanışın"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:407
 msgid "Django Community"

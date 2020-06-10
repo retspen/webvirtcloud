@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-06-10 08:00+0000\n"
+"POT-Creation-Date: 2020-06-10 12:05+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,6 +36,10 @@ msgstr ""
 
 #: accounts/forms.py:26 create/forms.py:30
 msgid "Flavor name is already use"
+msgstr ""
+
+#: accounts/models.py:33
+msgid "-1 for unlimited. Any integer value"
 msgstr ""
 
 #: accounts/models.py:85
@@ -210,6 +214,15 @@ msgstr ""
 msgid "Users"
 msgstr ""
 
+#: accounts/templates/accounts-list.html:11
+#: admin/templates/admin/group_list.html:13
+#: admin/templates/admin/user_list.html:14
+#: instances/templates/allinstances.html:17
+#: instances/templates/instances.html:19 nwfilters/templates/nwfilters.html:11
+#: storages/templates/storage.html:89
+msgid "Search"
+msgstr ""
+
 #: accounts/templates/accounts-list.html:25 accounts/templates/accounts.html:21
 #: admin/templates/admin/user_list.html:25
 msgid "You don't have any user"
@@ -364,6 +377,10 @@ msgstr ""
 
 #: accounts/templates/create_user_block.html:13
 msgid "Add New User"
+msgstr ""
+
+#: accounts/templates/create_user_block.html:20
+msgid "john"
 msgstr ""
 
 #: accounts/templates/create_user_block.html:32
@@ -534,11 +551,6 @@ msgstr ""
 msgid "Create New"
 msgstr ""
 
-#: admin/templates/admin/group_list.html:13
-#: admin/templates/admin/user_list.html:14
-msgid "Search"
-msgstr ""
-
 #: admin/templates/admin/group_list.html:24
 msgid "You don't have any groups"
 msgstr ""
@@ -548,6 +560,7 @@ msgid "Group Name"
 msgstr ""
 
 #: admin/templates/admin/group_list.html:33
+#: admin/templates/admin/user_list.html:38
 #: instances/templates/allinstances.html:60
 #: instances/templates/allinstances_index_grouped.html:11
 #: instances/templates/allinstances_index_nongrouped.html:10
@@ -597,6 +610,214 @@ msgstr ""
 
 #: admin/views.py:130
 msgid "Update User"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:10
+msgid "Theme"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:10
+msgid "Bootstrap CSS & Bootswatch Theme"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:11
+msgid "Theme SASS Path"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:11
+msgid "Bootstrap SASS & Bootswatch SASS Directory"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:12
+msgid "All Instances View Style"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:12
+msgid "All instances list style"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:13
+msgid "Logs per Page"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:13
+msgid "Pagination for logs"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:14
+msgid "Multiple Owner for VM"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:14
+msgid "Allow to have multiple owner for instance"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:15
+msgid "Quota Debug"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:15
+msgid "Debug for user quotas"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:16
+msgid "Disk Format"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:16
+msgid "Instance disk format"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:17
+msgid "Disk Bus"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:17
+msgid "Instance disk bus type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:18
+msgid "Disk SCSI Controller"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:18
+msgid "SCSI controller type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:19
+msgid "Disk Cache"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:19
+msgid "Disk volume cache type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:20
+msgid "Disk IO Type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:20
+msgid "Volume io modes"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:21
+msgid "Disk Detect Zeroes"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:21
+msgid "Volume detect zeroes mode"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:22
+msgid "Disk Discard"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:22
+msgid "Volume discard mode"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:23
+msgid "Disk Owner UID"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:23
+msgid "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:24
+msgid "Disk Owner GID"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:24
+msgid "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:25
+msgid "VM CPU Mode"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:25
+msgid "Cpu modes"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:26
+msgid "VM Machine Type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:26
+msgid "Chipset/Machine type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:27
+msgid "VM Firmware Type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:27
+msgid "Firmware type for x86_64"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:28
+msgid "VM Architecture Type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:28
+msgid "Architecture type: x86_64, i686, etc"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:29
+msgid "VM Console Type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:29
+msgid "Default console type"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:30
+msgid "VM Clone Name Prefix"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:30
+msgid "Prefix for cloned instance name"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:31
+msgid "VM Clone Auto Name"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:31
+msgid "Generated name for cloned instance"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:32
+msgid "VM Clone Auto Migrate"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:32
+msgid "Auto migrate instance after clone"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:33
+msgid "VM Bottom Bar"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:33
+msgid "Bottom navbar for instance details"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:34
+msgid "Show Access Root Pass"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:34
+msgid "Show access root password"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:35
+msgid "Show Access SSH Keys"
+msgstr ""
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:35
+msgid "Show access ssh keys"
 msgstr ""
 
 #: appsettings/templates/appsettings.html:3
@@ -682,8 +903,10 @@ msgid "Not Connected"
 msgstr ""
 
 #: computes/templates/computes.html:46 computes/templates/computes.html:91
-#: computes/templates/computes.html:134 computes/templates/computes.html:182
-#: computes/templates/computes.html:212 computes/templates/overview.html:92
+#: computes/templates/computes.html:93 computes/templates/computes.html:134
+#: computes/templates/computes.html:136 computes/templates/computes.html:182
+#: computes/templates/computes.html:184 computes/templates/computes.html:212
+#: computes/templates/computes.html:214 computes/templates/overview.html:92
 #: instances/templates/instance.html:758 instances/templates/instance.html:840
 msgid "Details"
 msgstr ""
@@ -971,6 +1194,10 @@ msgstr ""
 
 #: create/templates/create_flav_block.html:13
 msgid "Add New Flavor"
+msgstr ""
+
+#: create/templates/create_flav_block.html:21
+msgid "Micro"
 msgstr ""
 
 #: create/templates/create_flav_block.html:26
@@ -2727,8 +2954,20 @@ msgstr ""
 msgid "Outbound"
 msgstr ""
 
+#: networks/templates/add_network_qos.html:29
+#: networks/templates/add_network_qos.html:36
+#: networks/templates/add_network_qos.html:43
+msgid "kilobytes"
+msgstr ""
+
 #: networks/templates/create_net_block.html:12
 msgid "Add New Network"
+msgstr ""
+
+#: networks/templates/create_net_block.html:20
+#: storages/templates/create_stg_block.html:44
+#: storages/templates/create_stg_block.html:73
+msgid "default"
 msgstr ""
 
 #: networks/templates/create_net_block.html:24
