@@ -337,12 +337,12 @@ def instance(request, compute_id, vname):
             if instance.uuid != uuid:
                 instance.uuid = uuid
                 instance.save()
-                msg = _("Fixing uuid %s" % uuid)
+                msg = _("Fixing UUID %s" % uuid)
                 addlogmsg(request.user.username, instance.name, msg)
         except Instance.DoesNotExist:
             instance = Instance(compute_id=compute_id, name=vname, uuid=uuid)
             instance.save()
-            msg = _("Instance.DoesNotExist: Creating new instance")
+            msg = _("Instance does not exist: Creating new instance")
             addlogmsg(request.user.username, instance.name, msg)
 
         userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
@@ -600,10 +600,10 @@ def instance(request, compute_id, vname):
                                    cache, io, discard, zeroes)
 
                 if not conn.get_status() == 5:
-                    messages.success(request, _("Disk changes changes are applied. " +
+                    messages.success(request, _("Volume changes are applied. " +
                                                 "But it will be activated after shutdown"))
                 else:
-                    messages.success(request, _("Disk is changed successfully."))
+                    messages.success(request, _("Volume is changed successfully."))
                 msg = _('Edit disk: ' + target_dev)
                 addlogmsg(request.user.username, instance.name, msg)
 

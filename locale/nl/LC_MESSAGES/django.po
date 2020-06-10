@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-21 22:09+0000\n"
+"POT-Creation-Date: 2020-06-10 08:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,10 +19,10 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: accounts/forms.py:10
-msgid "No User name has been entered"
+msgid "No username has been entered"
 msgstr ""
 
-#: accounts/forms.py:13 computes/forms.py:14 computes/forms.py:90
+#: accounts/forms.py:13
 msgid "No password has been entered"
 msgstr ""
 
@@ -38,12 +38,16 @@ msgstr ""
 msgid "Flavor name is already use"
 msgstr ""
 
-#: accounts/templates/account.html:3
+#: accounts/models.py:85
+msgid "Can change password"
+msgstr ""
+
+#: accounts/templates/account.html:3 admin/templates/admin/common/form.html:6
+#: admin/templates/admin/logs.html:32 admin/templates/admin/user_form.html:6
 #: instances/templates/add_instance_owner_block.html:18
 #: instances/templates/allinstances_index_grouped.html:7
 #: instances/templates/allinstances_index_nongrouped.html:6
-#: instances/templates/instance.html:1669 instances/templates/instances.html:71
-#: logs/templates/showlogs.html:32
+#: instances/templates/instance.html:1642 instances/templates/instances.html:71
 msgid "User"
 msgstr ""
 
@@ -56,15 +60,16 @@ msgid "Public key"
 msgstr ""
 
 #: accounts/templates/account.html:47 accounts/templates/accounts-list.html:25
-#: accounts/templates/accounts.html:21 computes/templates/computes.html:241
+#: accounts/templates/accounts.html:21 admin/templates/admin/group_list.html:24
+#: admin/templates/admin/logs.html:21 admin/templates/admin/user_list.html:25
+#: computes/templates/computes.html:241
 #: create/templates/create_instance_w2.html:70
 #: instances/templates/allinstances.html:33
 #: instances/templates/allinstances.html:49
 #: instances/templates/instances.html:61
-#: interfaces/templates/interfaces.html:47 logs/templates/showlogs.html:21
-#: networks/templates/networks.html:50 nwfilters/templates/nwfilters.html:138
-#: secrets/templates/secrets.html:50 storages/templates/storage.html:191
-#: storages/templates/storages.html:50
+#: interfaces/templates/interfaces.html:47 networks/templates/networks.html:50
+#: nwfilters/templates/nwfilters.html:138 secrets/templates/secrets.html:50
+#: storages/templates/storage.html:189 storages/templates/storages.html:50
 msgid "Warning"
 msgstr ""
 
@@ -74,7 +79,7 @@ msgstr ""
 
 #: accounts/templates/account.html:56
 #: accounts/templates/create_user_inst_block.html:18
-#: instances/templates/instance.html:4 logs/templates/showlogs.html:33
+#: admin/templates/admin/logs.html:33 instances/templates/instance.html:4
 msgid "Instance"
 msgstr ""
 
@@ -83,11 +88,11 @@ msgid "VNC"
 msgstr ""
 
 #: accounts/templates/account.html:58 accounts/templates/account.html:97
-#: instances/templates/instance.html:114 instances/templates/instance.html:438
-#: instances/templates/instance.html:440 instances/templates/instance.html:467
-#: instances/templates/instance.html:502 instances/templates/instance.html:506
-#: instances/templates/instance.html:523 instances/templates/instance.html:525
-#: instances/templates/instance.html:530 instances/views.py:527
+#: instances/templates/instance.html:88 instances/templates/instance.html:412
+#: instances/templates/instance.html:414 instances/templates/instance.html:441
+#: instances/templates/instance.html:476 instances/templates/instance.html:480
+#: instances/templates/instance.html:497 instances/templates/instance.html:499
+#: instances/templates/instance.html:504
 msgid "Resize"
 msgstr ""
 
@@ -95,23 +100,28 @@ msgstr ""
 #: accounts/templates/account.html:127
 #: accounts/templates/accounts-list.html:133
 #: accounts/templates/accounts.html:126 accounts/templates/profile.html:84
-#: computes/templates/computes.html:98 computes/templates/computes.html:142
-#: computes/templates/computes.html:190 computes/templates/computes.html:220
-#: instances/templates/instance.html:899 instances/templates/instance.html:906
-#: interfaces/templates/interface.html:61 networks/templates/network.html:53
-#: nwfilters/templates/nwfilter.html:114 nwfilters/templates/nwfilter.html:154
-#: nwfilters/templates/nwfilters.html:123 secrets/templates/secrets.html:86
-#: storages/templates/storage.html:63 storages/templates/storage.html:177
+#: admin/templates/admin/common/confirm_delete.html:6
+#: admin/templates/admin/common/confirm_delete.html:16
+#: admin/templates/admin/common/list.html:22
+#: admin/templates/admin/group_list.html:47
+#: admin/templates/admin/user_list.html:67 computes/templates/computes.html:98
+#: computes/templates/computes.html:142 computes/templates/computes.html:190
+#: computes/templates/computes.html:220 instances/templates/instance.html:873
+#: instances/templates/instance.html:880 interfaces/templates/interface.html:61
+#: networks/templates/network.html:53 nwfilters/templates/nwfilter.html:114
+#: nwfilters/templates/nwfilter.html:154 nwfilters/templates/nwfilters.html:123
+#: secrets/templates/secrets.html:77 storages/templates/storage.html:63
+#: storages/templates/storage.html:176
 #: venv/lib/python3.6/site-packages/django/forms/formsets.py:375
 msgid "Delete"
 msgstr ""
 
 #: accounts/templates/account.html:60
 #: create/templates/create_instance_w2.html:85
-#: instances/templates/instance.html:582 instances/templates/instance.html:857
+#: instances/templates/instance.html:556 instances/templates/instance.html:831
 #: nwfilters/templates/nwfilter.html:104 nwfilters/templates/nwfilter.html:138
 #: nwfilters/templates/nwfilters.html:60 secrets/templates/secrets.html:62
-#: storages/templates/storage.html:103
+#: storages/templates/storage.html:102
 msgid "Action"
 msgstr ""
 
@@ -131,10 +141,6 @@ msgstr ""
 #: accounts/templates/create_user_inst_block.html:29
 #: computes/templates/computes.html:101 computes/templates/computes.html:145
 #: computes/templates/computes.html:193 computes/templates/computes.html:223
-#: computes/templates/create_comp_block.html:60
-#: computes/templates/create_comp_block.html:99
-#: computes/templates/create_comp_block.html:143
-#: computes/templates/create_comp_block.html:171
 #: create/templates/create_flav_block.html:51
 #: create/templates/create_instance_w2.html:273
 #: instances/templates/add_instance_network_block.html:49
@@ -143,7 +149,7 @@ msgstr ""
 #: instances/templates/add_instance_volume.html:144
 #: instances/templates/create_inst_block.html:34
 #: instances/templates/edit_instance_volume.html:123
-#: instances/templates/instance.html:1020
+#: instances/templates/instance.html:993
 #: interfaces/templates/create_iface_block.html:135
 #: networks/templates/add_network_qos.html:50
 #: networks/templates/create_net_block.html:84
@@ -152,8 +158,8 @@ msgstr ""
 #: nwfilters/templates/add_nwf_rule.html:25
 #: nwfilters/templates/create_nwfilter_block.html:23
 #: nwfilters/templates/nwfilters.html:83 nwfilters/templates/nwfilters.html:111
-#: secrets/templates/create_secret_block.html:53
-#: secrets/templates/secrets.html:111
+#: secrets/templates/create_secret_block.html:54
+#: secrets/templates/secrets.html:102
 #: storages/templates/create_stg_block.html:55
 #: storages/templates/create_stg_block.html:84
 #: storages/templates/create_stg_block.html:140
@@ -161,23 +167,26 @@ msgstr ""
 #: storages/templates/create_stg_block.html:230
 #: storages/templates/create_stg_vol_block.html:27
 #: storages/templates/create_stg_vol_block.html:81
-#: storages/templates/storage.html:157
+#: storages/templates/storage.html:156
 msgid "Close"
 msgstr ""
 
 #: accounts/templates/account.html:117 accounts/templates/accounts-list.html:45
 #: accounts/templates/accounts-list.html:148
 #: accounts/templates/accounts.html:36 accounts/templates/accounts.html:141
-#: computes/templates/computes.html:33 networks/templates/network.html:85
-#: nwfilters/templates/nwfilter.html:62 secrets/templates/secrets.html:83
+#: admin/templates/admin/common/list.html:16
+#: admin/templates/admin/group_list.html:44
+#: admin/templates/admin/user_list.html:61 computes/templates/computes.html:33
+#: networks/templates/network.html:85 nwfilters/templates/nwfilter.html:62
+#: secrets/templates/secrets.html:74
 msgid "Edit"
 msgstr ""
 
 #: accounts/templates/account.html:127 accounts/templates/profile.html:84
 #: create/templates/create_instance_w2.html:291
-#: instances/templates/instance.html:607 instances/templates/instance.html:1031
-#: instances/templates/instance.html:1100
-#: instances/templates/instance.html:1105
+#: instances/templates/instance.html:581 instances/templates/instance.html:1004
+#: instances/templates/instance.html:1073
+#: instances/templates/instance.html:1078
 #: interfaces/templates/interface.html:61
 #: interfaces/templates/interface.html:63 networks/templates/network.html:53
 #: networks/templates/network.html:55 networks/templates/network.html:65
@@ -186,37 +195,35 @@ msgstr ""
 #: networks/templates/network.html:301 networks/templates/network.html:306
 #: networks/templates/network.html:356 networks/templates/network.html:361
 #: nwfilters/templates/nwfilter.html:114 nwfilters/templates/nwfilter.html:154
-#: nwfilters/templates/nwfilters.html:123 secrets/templates/secrets.html:86
+#: nwfilters/templates/nwfilters.html:123 secrets/templates/secrets.html:77
 #: storages/templates/storage.html:64 storages/templates/storage.html:67
-#: storages/templates/storage.html:79 storages/templates/storage.html:177
+#: storages/templates/storage.html:79 storages/templates/storage.html:176
 msgid "Are you sure?"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:4
 #: accounts/templates/accounts-list.html:13 accounts/templates/accounts.html:3
-#: accounts/templates/accounts.html:9 instances/templates/instance.html:683
-#: templates/navbar.html:22
+#: accounts/templates/accounts.html:9 admin/templates/admin/group_list.html:5
+#: admin/templates/admin/user_list.html:6
+#: admin/templates/admin/user_list.html:16 admin/views.py:83
+#: instances/templates/instance.html:657 templates/navbar.html:29
 msgid "Users"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:25 accounts/templates/accounts.html:21
-msgid "You don't have any User"
+#: admin/templates/admin/user_list.html:25
+msgid "You don't have any user"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:33 accounts/templates/profile.html:27
-#: computes/templates/computes.html:79 computes/templates/computes.html:127
-#: computes/templates/computes.html:170
-#: computes/templates/create_comp_block.html:40
-#: computes/templates/create_comp_block.html:42
-#: computes/templates/create_comp_block.html:85
-#: computes/templates/create_comp_block.html:87
-#: computes/templates/create_comp_block.html:123
-#: computes/templates/create_comp_block.html:125
+#: admin/templates/admin/user_list.html:33 computes/templates/computes.html:79
+#: computes/templates/computes.html:127 computes/templates/computes.html:170
 msgid "Username"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:34 accounts/templates/accounts.html:44
-#: computes/templates/computes.html:40 instances/templates/allinstances.html:57
+#: admin/templates/admin/user_list.html:34 computes/templates/computes.html:40
+#: instances/templates/allinstances.html:57
 #: instances/templates/allinstances_index_grouped.html:8
 #: instances/templates/allinstances_index_nongrouped.html:7
 #: instances/templates/instances.html:72
@@ -224,37 +231,41 @@ msgid "Status"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:35
+#: admin/templates/admin/user_list.html:35
 msgid "Staff"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:36
+#: admin/templates/admin/user_list.html:36
 msgid "Superuser"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:37
-#: instances/templates/instance.html:657 instances/templates/instance.html:1469
-#: instances/templates/instance.html:1471
+#: instances/templates/instance.html:631 instances/templates/instance.html:1442
+#: instances/templates/instance.html:1444
 #: instances/templates/instance_actions.html:7
 #: nwfilters/templates/nwfilters.html:112
-#: nwfilters/templates/nwfilters.html:118 storages/templates/storage.html:158
-#: storages/templates/storage.html:165
+#: nwfilters/templates/nwfilters.html:118 storages/templates/storage.html:157
+#: storages/templates/storage.html:164
 msgid "Clone"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:51 accounts/templates/accounts.html:48
+#: admin/templates/admin/user_list.html:50
 #: instances/templates/allinstances.html:68
 #: instances/templates/allinstances_index_grouped.html:26
 #: instances/templates/allinstances_index_grouped.html:56
 #: instances/templates/allinstances_index_nongrouped.html:20
-#: instances/templates/instance.html:43 instances/templates/instances.html:85
+#: instances/templates/instance.html:17 instances/templates/instances.html:85
 msgid "Active"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:53 accounts/templates/accounts.html:50
+#: admin/templates/admin/user_list.html:52
 msgid "Blocked"
 msgstr ""
 
-#: accounts/templates/accounts-list.html:72 accounts/templates/accounts.html:63
+#: accounts/templates/accounts-list.html:71 accounts/templates/accounts.html:63
 msgid "Edit user info"
 msgstr ""
 
@@ -274,7 +285,7 @@ msgstr ""
 #: instances/templates/allinstances.html:56
 #: instances/templates/allinstances_index_grouped.html:6
 #: instances/templates/allinstances_index_nongrouped.html:5
-#: instances/templates/instance.html:580 instances/templates/instance.html:933
+#: instances/templates/instance.html:554 instances/templates/instance.html:906
 #: instances/templates/instances.html:70
 #: interfaces/templates/create_iface_block.html:18
 #: interfaces/templates/interface.html:76
@@ -293,21 +304,18 @@ msgstr ""
 #: storages/templates/create_stg_vol_block.html:20
 #: storages/templates/create_stg_vol_block.html:51
 #: storages/templates/create_stg_vol_block.html:53
-#: storages/templates/storage.html:99 storages/templates/storage.html:127
-#: storages/templates/storage.html:129
+#: storages/templates/storage.html:98 storages/templates/storage.html:126
+#: storages/templates/storage.html:128
 msgid "Name"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:83 accounts/templates/accounts.html:76
 #: accounts/templates/create_user_block.html:24
-#: computes/templates/computes.html:85 computes/templates/computes.html:176
-#: computes/templates/create_comp_block.html:46
-#: computes/templates/create_comp_block.html:48
-#: computes/templates/create_comp_block.html:129
-#: computes/templates/create_comp_block.html:131
+#: accounts/templates/login.html:19 computes/templates/computes.html:85
+#: computes/templates/computes.html:176
 #: console/templates/console-spice-full.html:200
-#: instances/templates/instance.html:1318
-#: instances/templates/instance.html:1325
+#: instances/templates/instance.html:1291
+#: instances/templates/instance.html:1298
 msgid "Password"
 msgstr ""
 
@@ -320,7 +328,7 @@ msgid "Is superuser"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:101
-#: accounts/templates/accounts.html:94
+#: accounts/templates/accounts.html:94 instances/models.py:25
 msgid "Can clone instances"
 msgstr ""
 
@@ -345,12 +353,12 @@ msgid "Max disk size (GB)"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:137
-#: accounts/templates/accounts.html:130
+#: accounts/templates/accounts.html:130 admin/templates/admin/user_list.html:63
 msgid "Block"
 msgstr ""
 
 #: accounts/templates/accounts-list.html:141
-#: accounts/templates/accounts.html:134
+#: accounts/templates/accounts.html:134 admin/templates/admin/user_list.html:65
 msgid "Unblock"
 msgstr ""
 
@@ -371,7 +379,7 @@ msgstr ""
 #: networks/templates/modify_ipv4_fixed_address.html:45
 #: networks/templates/modify_ipv6_fixed_address.html:45
 #: nwfilters/templates/create_nwfilter_block.html:24
-#: secrets/templates/create_secret_block.html:54
+#: secrets/templates/create_secret_block.html:55
 #: storages/templates/create_stg_block.html:56
 #: storages/templates/create_stg_block.html:85
 #: storages/templates/create_stg_block.html:144
@@ -394,10 +402,6 @@ msgstr ""
 
 #: accounts/templates/create_user_inst_block.html:30
 #: accounts/templates/profile.html:111
-#: computes/templates/create_comp_block.html:63
-#: computes/templates/create_comp_block.html:102
-#: computes/templates/create_comp_block.html:146
-#: computes/templates/create_comp_block.html:174
 #: create/templates/create_flav_block.html:54
 #: instances/templates/add_instance_network_block.html:50
 #: instances/templates/add_instance_owner_block.html:30
@@ -418,6 +422,10 @@ msgstr ""
 msgid "Incorrect username or password."
 msgstr ""
 
+#: accounts/templates/login.html:18 accounts/templates/profile.html:21
+msgid "Login"
+msgstr ""
+
 #: accounts/templates/logout.html:4
 msgid "Sign Out"
 msgstr ""
@@ -427,7 +435,7 @@ msgid "Successful log out"
 msgstr ""
 
 #: accounts/templates/profile.html:4 accounts/templates/profile.html:9
-#: templates/navbar.html:35
+#: templates/navbar.html:45
 msgid "Profile"
 msgstr ""
 
@@ -435,21 +443,17 @@ msgstr ""
 msgid "Edit Profile"
 msgstr ""
 
-#: accounts/templates/profile.html:21
-msgid "Login"
-msgstr ""
-
 #: accounts/templates/profile.html:33
 msgid "Email"
 msgstr ""
 
 #: accounts/templates/profile.html:40 accounts/templates/profile.html:67
-#: accounts/templates/profile.html:133 computes/templates/computes.html:104
-#: computes/templates/computes.html:148 computes/templates/computes.html:196
-#: computes/templates/computes.html:225 instances/templates/instance.html:1215
-#: instances/templates/instance.html:1219
-#: instances/templates/instance.html:1505
-#: instances/templates/instance.html:1507
+#: computes/templates/computes.html:104 computes/templates/computes.html:148
+#: computes/templates/computes.html:196 computes/templates/computes.html:225
+#: instances/templates/instance.html:1188
+#: instances/templates/instance.html:1192
+#: instances/templates/instance.html:1478
+#: instances/templates/instance.html:1480
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:397
 msgid "Change"
 msgstr ""
@@ -470,7 +474,7 @@ msgstr ""
 msgid "Retry"
 msgstr ""
 
-#: accounts/templates/profile.html:72 instances/templates/instance.html:292
+#: accounts/templates/profile.html:72 instances/templates/instance.html:266
 msgid "SSH Keys"
 msgstr ""
 
@@ -482,92 +486,194 @@ msgstr ""
 msgid "Enter Public Key"
 msgstr ""
 
-#: accounts/templates/profile.html:116 accounts/templates/profile.html:119
-msgid "Themes"
-msgstr ""
-
-#: accounts/templates/profile.html:126
-msgid "Current Theme"
-msgstr ""
-
-#: accounts/templates/profile.html:129
-msgid "After change please full refresh page with Ctrl + F5 "
-msgstr ""
-
-#: accounts/views.py:57
+#: accounts/views.py:52
 msgid "Key name already exist"
 msgstr ""
 
-#: accounts/views.py:60
+#: accounts/views.py:55
 msgid "Public key already exist"
 msgstr ""
 
-#: accounts/views.py:63
+#: accounts/views.py:58
 msgid "Invalid characters in public key"
 msgstr ""
 
-#: accounts/views.py:214
+#: accounts/views.py:112
 msgid "Instance already added"
 msgstr ""
 
-#: computes/forms.py:8 computes/forms.py:47 computes/forms.py:84
-#: computes/forms.py:124 computes/forms.py:154
+#: admin/forms.py:46
+msgid "Permissions"
+msgstr ""
+
+#: admin/forms.py:53 admin/templates/admin/group_list.html:15
+#: templates/navbar.html:30
+msgid "Groups"
+msgstr ""
+
+#: admin/templates/admin/common/confirm_delete.html:12
+msgid "Are you sure you want to delete"
+msgstr ""
+
+#: admin/templates/admin/common/confirm_delete.html:14
+#: admin/templates/admin/common/form.html:22
+#: admin/templates/admin/user_form.html:22
+#: computes/templates/computes/form.html:22
+msgid "Cancel"
+msgstr ""
+
+#: admin/templates/admin/common/form.html:24
+#: admin/templates/admin/user_form.html:24
+#: computes/templates/computes/form.html:24
+#: instances/templates/edit_instance_volume.html:124
+#: networks/templates/add_network_qos.html:51
+msgid "Save"
+msgstr ""
+
+#: admin/templates/admin/common/list.html:9
+msgid "Create New"
+msgstr ""
+
+#: admin/templates/admin/group_list.html:13
+#: admin/templates/admin/user_list.html:14
+msgid "Search"
+msgstr ""
+
+#: admin/templates/admin/group_list.html:24
+msgid "You don't have any groups"
+msgstr ""
+
+#: admin/templates/admin/group_list.html:32
+msgid "Group Name"
+msgstr ""
+
+#: admin/templates/admin/group_list.html:33
+#: instances/templates/allinstances.html:60
+#: instances/templates/allinstances_index_grouped.html:11
+#: instances/templates/allinstances_index_nongrouped.html:10
+#: instances/templates/instance.html:909 instances/templates/instance.html:1050
+#: instances/templates/instances.html:75 networks/templates/network.html:178
+#: networks/templates/network.html:287 networks/templates/network.html:335
+msgid "Actions"
+msgstr ""
+
+#: admin/templates/admin/logs.html:3 admin/templates/admin/logs.html:8
+#: instances/templates/instance.html:1575 templates/navbar.html:31
+msgid "Logs"
+msgstr ""
+
+#: admin/templates/admin/logs.html:21
+msgid "You don't have any Logs"
+msgstr ""
+
+#: admin/templates/admin/logs.html:31 instances/templates/instance.html:555
+#: instances/templates/instance.html:1641
+msgid "Date"
+msgstr ""
+
+#: admin/templates/admin/logs.html:34 instances/templates/instance.html:1643
+msgid "Message"
+msgstr ""
+
+#: admin/templates/admin/user_list.html:37
+msgid "Can Clone"
+msgstr ""
+
+#: admin/templates/admin/user_list.html:60
+msgid "View Profile"
+msgstr ""
+
+#: admin/views.py:38
+msgid "Create Group"
+msgstr ""
+
+#: admin/views.py:56
+msgid "Update Group"
+msgstr ""
+
+#: admin/views.py:108
+msgid "Create User"
+msgstr ""
+
+#: admin/views.py:130
+msgid "Update User"
+msgstr ""
+
+#: appsettings/templates/appsettings.html:3
+#: appsettings/templates/appsettings.html:8
+msgid "Edit Settings"
+msgstr ""
+
+#: appsettings/templates/appsettings.html:18
+msgid "App Settings"
+msgstr ""
+
+#: appsettings/templates/appsettings.html:22 templates/navbar.html:43
+msgid "Language"
+msgstr ""
+
+#: appsettings/templates/appsettings.html:55
+msgid "After change please full refresh page with 'Ctrl + F5' "
+msgstr ""
+
+#: appsettings/templates/appsettings.html:60
+msgid "Other Settings"
+msgstr ""
+
+#: appsettings/views.py:42
+#, python-brace-format
+msgid "SASS directory path is changed. Now: {sass_dir.value}"
+msgstr ""
+
+#: appsettings/views.py:68
+#, python-brace-format
+msgid "Theme changed. Now: {theme}"
+msgstr ""
+
+#: appsettings/views.py:83
+#, python-brace-format
+msgid "{setting.name} is changed. Now: {setting.value}"
+msgstr ""
+
+#: computes/forms.py:19
+msgid "FQDN/IP"
+msgstr ""
+
+#: computes/forms.py:47
 msgid "No hostname has been entered"
 msgstr ""
 
-#: computes/forms.py:10 computes/forms.py:49 computes/forms.py:86
-#: computes/forms.py:126
+#: computes/forms.py:48
 msgid "No IP / Domain name has been entered"
 msgstr ""
 
-#: computes/forms.py:12 computes/forms.py:51 computes/forms.py:88
-#: computes/forms.py:128
+#: computes/forms.py:49
 msgid "No login has been entered"
 msgstr ""
 
-#: computes/forms.py:22 computes/forms.py:98 computes/forms.py:161
-msgid "The host name must not contain any special characters"
+#: computes/forms.py:57
+msgid "The name of the host must not contain any special characters"
 msgstr ""
 
-#: computes/forms.py:24 computes/forms.py:100 computes/forms.py:163
-msgid "The host name must not exceed 20 characters"
+#: computes/forms.py:59
+msgid "The name of the host must not exceed 20 characters"
 msgstr ""
 
-#: computes/forms.py:29 computes/forms.py:43 computes/forms.py:66
-#: computes/forms.py:80 computes/forms.py:105 computes/forms.py:119
-#: computes/forms.py:168
-msgid "This host is already connected"
-msgstr ""
-
-#: computes/forms.py:36 computes/forms.py:73 computes/forms.py:112
-#: computes/forms.py:147
+#: computes/forms.py:67 computes/validators.py:16
 msgid ""
 "Hostname must contain only numbers, or the domain name separated by \".\""
 msgstr ""
 
-#: computes/forms.py:38 computes/forms.py:75 computes/forms.py:114
-#: computes/forms.py:149
+#: computes/forms.py:69 computes/validators.py:18
 msgid "Wrong IP address"
 msgstr ""
 
-#: computes/forms.py:59 computes/forms.py:137
-msgid "The name of the host must not contain any special characters"
-msgstr ""
-
-#: computes/forms.py:61 computes/forms.py:139
-msgid "The name of the host must not exceed 20 characters"
-msgstr ""
-
-#: computes/forms.py:155
-msgid "No details has been entered"
-msgstr ""
-
 #: computes/templates/computes.html:3 computes/templates/computes.html:9
-#: templates/navbar.html:19
+#: templates/navbar.html:18
 msgid "Computes"
 msgstr ""
 
-#: computes/templates/computes.html:42 instances/templates/instance.html:1562
+#: computes/templates/computes.html:42 instances/templates/instance.html:1535
 msgid "Connected"
 msgstr ""
 
@@ -577,17 +683,8 @@ msgstr ""
 
 #: computes/templates/computes.html:46 computes/templates/computes.html:91
 #: computes/templates/computes.html:134 computes/templates/computes.html:182
-#: computes/templates/computes.html:212
-#: computes/templates/create_comp_block.html:52
-#: computes/templates/create_comp_block.html:54
-#: computes/templates/create_comp_block.html:91
-#: computes/templates/create_comp_block.html:93
-#: computes/templates/create_comp_block.html:135
-#: computes/templates/create_comp_block.html:137
-#: computes/templates/create_comp_block.html:162
-#: computes/templates/create_comp_block.html:164
-#: computes/templates/overview.html:92 instances/templates/instance.html:787
-#: instances/templates/instance.html:866
+#: computes/templates/computes.html:212 computes/templates/overview.html:92
+#: instances/templates/instance.html:758 instances/templates/instance.html:840
 msgid "Details"
 msgstr ""
 
@@ -601,18 +698,11 @@ msgstr ""
 
 #: computes/templates/computes.html:66 computes/templates/computes.html:114
 #: computes/templates/computes.html:157 computes/templates/computes.html:205
-#: computes/templates/create_comp_block.html:28
-#: computes/templates/create_comp_block.html:73
-#: computes/templates/create_comp_block.html:111
-#: computes/templates/create_comp_block.html:155
 msgid "Label"
 msgstr ""
 
 #: computes/templates/computes.html:73 computes/templates/computes.html:121
 #: computes/templates/computes.html:164
-#: computes/templates/create_comp_block.html:34
-#: computes/templates/create_comp_block.html:79
-#: computes/templates/create_comp_block.html:117
 msgid "FQDN / IP"
 msgstr ""
 
@@ -627,37 +717,32 @@ msgstr ""
 msgid "Hypervisor doesn't have any Computes"
 msgstr ""
 
-#: computes/templates/create_comp_block.html:12
-msgid "Add Connection"
+#: computes/templates/computes/form.html:6
+msgid "Add Compute"
 msgstr ""
 
-#: computes/templates/create_comp_block.html:17
-msgid "TCP Connection"
+#: computes/templates/computes/form.html:11
+msgid "Create Compute"
 msgstr ""
 
-#: computes/templates/create_comp_block.html:18
-msgid "SSH Connection"
+#: computes/templates/create_comp_block.html:5
+msgid "TCP"
 msgstr ""
 
-#: computes/templates/create_comp_block.html:19
-msgid "TLS Connection"
+#: computes/templates/create_comp_block.html:6
+msgid "SSH"
 msgstr ""
 
-#: computes/templates/create_comp_block.html:20
-msgid "Local Socket Connection"
+#: computes/templates/create_comp_block.html:7
+msgid "TLS"
 msgstr ""
 
-#: computes/templates/create_comp_block.html:36
-#: computes/templates/create_comp_block.html:81
-#: computes/templates/create_comp_block.html:119
-msgid "FQDN or IP Address"
+#: computes/templates/create_comp_block.html:8
+msgid "Local"
 msgstr ""
 
-#: computes/templates/create_comp_block.html:71
-msgid ""
-"You must create ssh <a href='https://github.com/retspen/webvirtmgr/wiki/"
-"Setup-SSH-Authorization'>authorization key</a>. If you have another SSH port "
-"on your server, you can add IP:PORT like '192.168.1.1:2222'."
+#: computes/templates/create_comp_block.html:9
+msgid "Add new host"
 msgstr ""
 
 #: computes/templates/overview.html:4 computes/templates/overview.html:13
@@ -671,7 +756,7 @@ msgstr ""
 
 #: computes/templates/overview.html:16 instances/templates/allinstances.html:4
 #: instances/templates/allinstances.html:20
-#: instances/templates/instance.html:23 instances/templates/instances.html:4
+#: instances/templates/bottom_bar.html:17 instances/templates/instances.html:4
 #: instances/templates/instances.html:33 interfaces/templates/interface.html:14
 #: interfaces/templates/interfaces.html:17 networks/templates/network.html:16
 #: networks/templates/networks.html:20 nwfilters/templates/nwfilter.html:15
@@ -769,7 +854,7 @@ msgstr ""
 #: computes/templates/overview.html:82 instances/templates/allinstances.html:59
 #: instances/templates/allinstances_index_grouped.html:10
 #: instances/templates/allinstances_index_nongrouped.html:9
-#: instances/templates/instance.html:395 instances/templates/instances.html:74
+#: instances/templates/instance.html:369 instances/templates/instances.html:74
 msgid "Memory"
 msgstr ""
 
@@ -802,6 +887,10 @@ msgstr ""
 
 #: computes/templates/overview.html:111
 msgid "RAM Utilization"
+msgstr ""
+
+#: computes/validators.py:24
+msgid "The host name must not contain any special characters"
 msgstr ""
 
 #: console/templates/console-base.html:69
@@ -891,7 +980,7 @@ msgstr ""
 #: instances/templates/allinstances.html:58
 #: instances/templates/allinstances_index_grouped.html:9
 #: instances/templates/allinstances_index_nongrouped.html:8
-#: instances/templates/instance.html:66 instances/templates/instance.html:68
+#: instances/templates/instance.html:40 instances/templates/instance.html:42
 #: instances/templates/instances.html:73
 msgid "VCPU"
 msgstr ""
@@ -900,7 +989,7 @@ msgstr ""
 #: create/templates/create_instance_w2.html:83
 #: create/templates/create_instance_w2.html:356
 #: create/templates/create_instance_w2.html:567
-#: instances/templates/instance.html:71
+#: instances/templates/instance.html:45
 msgid "RAM"
 msgstr ""
 
@@ -909,8 +998,8 @@ msgstr ""
 #: create/templates/create_instance_w2.html:360
 #: create/templates/create_instance_w2.html:571
 #: instances/templates/allinstances.html:78
-#: instances/templates/instance.html:71 instances/templates/instance.html:476
-#: instances/templates/instance.html:489
+#: instances/templates/instance.html:45 instances/templates/instance.html:450
+#: instances/templates/instance.html:463
 msgid "MB"
 msgstr ""
 
@@ -928,7 +1017,8 @@ msgid "GB"
 msgstr ""
 
 #: create/templates/create_instance_w1.html:4
-msgid "Create new instanc"
+#: create/templates/create_instance_w2.html:4
+msgid "Create new instance"
 msgstr ""
 
 #: create/templates/create_instance_w1.html:4
@@ -941,7 +1031,7 @@ msgid "New instance on"
 msgstr ""
 
 #: create/templates/create_instance_w1.html:45
-#: instances/templates/instance.html:669 networks/templates/network.html:75
+#: instances/templates/instance.html:643 networks/templates/network.html:75
 #: nwfilters/templates/nwfilter.html:52
 msgid "XML"
 msgstr ""
@@ -952,10 +1042,6 @@ msgstr ""
 
 #: create/templates/create_instance_w1.html:76
 msgid "Next"
-msgstr ""
-
-#: create/templates/create_instance_w2.html:4
-msgid "Create new instance"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:49
@@ -1004,7 +1090,7 @@ msgstr ""
 #: create/templates/create_instance_w2.html:595
 #: instances/templates/add_instance_volume.html:30
 #: instances/templates/add_instance_volume.html:100
-#: instances/templates/instance.html:855 storages/templates/storage.html:4
+#: instances/templates/instance.html:829 storages/templates/storage.html:4
 #: storages/templates/storage.html:14
 msgid "Storage"
 msgstr ""
@@ -1019,8 +1105,8 @@ msgstr ""
 #: instances/templates/add_instance_network_block.html:40
 #: instances/templates/add_instance_volume.html:117
 #: instances/templates/create_inst_block.html:25
-#: instances/templates/instance.html:355 instances/templates/instance.html:805
-#: instances/templates/instance.html:999 instances/templates/instance.html:1674
+#: instances/templates/instance.html:329 instances/templates/instance.html:776
+#: instances/templates/instance.html:972 instances/templates/instance.html:1647
 #: interfaces/templates/interface.html:42
 #: interfaces/templates/interface.html:44 nwfilters/templates/nwfilter.html:81
 #: storages/templates/create_stg_block.html:132
@@ -1033,7 +1119,7 @@ msgstr ""
 #: create/templates/create_instance_w2.html:392
 #: create/templates/create_instance_w2.html:609
 #: instances/templates/add_instance_network_block.html:24
-#: instances/templates/instance.html:650 instances/templates/instance.html:986
+#: instances/templates/instance.html:624 instances/templates/instance.html:959
 #: networks/templates/network.html:4 networks/templates/network.html:9
 #: networks/templates/network.html:110 networks/templates/network.html:221
 msgid "Network"
@@ -1050,7 +1136,7 @@ msgstr ""
 #: create/templates/create_instance_w2.html:433
 #: create/templates/create_instance_w2.html:646
 #: instances/templates/add_instance_network_block.html:37
-#: instances/templates/instance.html:995 nwfilters/templates/nwfilter.html:9
+#: instances/templates/instance.html:968 nwfilters/templates/nwfilter.html:9
 msgid "NWFilter"
 msgstr ""
 
@@ -1061,8 +1147,8 @@ msgstr ""
 
 #: create/templates/create_instance_w2.html:209
 #: instances/templates/add_instance_network_block.html:18
-#: instances/templates/instance.html:951 instances/templates/instance.html:974
-#: instances/templates/instance.html:1073
+#: instances/templates/instance.html:924 instances/templates/instance.html:947
+#: instances/templates/instance.html:1046
 #: interfaces/templates/interface.html:46
 #: interfaces/templates/interface.html:75
 #: interfaces/templates/interfaces.html:63
@@ -1125,7 +1211,8 @@ msgid "Disk Metadata"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:417
-msgid "Metadata Preallocation"
+#: create/templates/create_instance_w2.html:630
+msgid "Metadata preallocation"
 msgstr ""
 
 #: create/templates/create_instance_w2.html:419
@@ -1142,44 +1229,40 @@ msgstr ""
 msgid "Template Disk"
 msgstr ""
 
-#: create/templates/create_instance_w2.html:630
-msgid "Metadata preallocation"
-msgstr ""
-
-#: create/views.py:69 create/views.py:184
+#: create/views.py:52 create/views.py:164
 msgid "A virtual machine with this name already exists"
 msgstr ""
 
-#: create/views.py:150
+#: create/views.py:133
 msgid "You haven't defined any storage pools"
 msgstr ""
 
-#: create/views.py:153
+#: create/views.py:136
 msgid "You haven't defined any network pools"
 msgstr ""
 
-#: create/views.py:187
+#: create/views.py:167
 msgid "There is an instance with same name. Are you sure?"
 msgstr ""
 
-#: create/views.py:191
+#: create/views.py:171
 msgid "No Virtual Machine MAC has been entered"
 msgstr ""
 
-#: create/views.py:211
+#: create/views.py:204
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 
-#: create/views.py:225
+#: create/views.py:230
 msgid "First you need to create or select an image"
 msgstr ""
 
-#: create/views.py:240
+#: create/views.py:252
 msgid "Invalid cache mode"
 msgstr ""
 
-#: create/views.py:269
-msgid "Instance is created."
+#: create/views.py:290
+msgid "Instance is created"
 msgstr ""
 
 #: instances/templates/add_instance_network_block.html:12
@@ -1216,13 +1299,13 @@ msgstr ""
 #: instances/templates/add_instance_volume.html:46
 #: storages/templates/create_stg_block.html:183
 #: storages/templates/create_stg_vol_block.html:57
-#: storages/templates/storage.html:102 storages/templates/storage.html:140
+#: storages/templates/storage.html:101 storages/templates/storage.html:139
 msgid "Format"
 msgstr ""
 
 #: instances/templates/add_instance_volume.html:56
 #: storages/templates/create_stg_vol_block.html:67
-#: storages/templates/storage.html:54 storages/templates/storage.html:101
+#: storages/templates/storage.html:54 storages/templates/storage.html:100
 #: storages/templates/storages.html:66
 msgid "Size"
 msgstr ""
@@ -1230,7 +1313,7 @@ msgstr ""
 #: instances/templates/add_instance_volume.html:63
 #: instances/templates/add_instance_volume.html:123
 #: instances/templates/edit_instance_volume.html:53
-#: instances/templates/instance.html:792
+#: instances/templates/instance.html:763
 msgid "Bus"
 msgstr ""
 
@@ -1240,9 +1323,9 @@ msgid "Cache"
 msgstr ""
 
 #: instances/templates/add_instance_volume.html:83
-#: instances/templates/instance.html:1441
+#: instances/templates/instance.html:1414
 #: storages/templates/create_stg_vol_block.html:74
-#: storages/templates/storage.html:150
+#: storages/templates/storage.html:149
 msgid "Metadata"
 msgstr ""
 
@@ -1259,39 +1342,30 @@ msgstr ""
 msgid "You don't have any Instance"
 msgstr ""
 
-#: instances/templates/allinstances.html:60
-#: instances/templates/allinstances_index_grouped.html:11
-#: instances/templates/allinstances_index_nongrouped.html:10
-#: instances/templates/instance.html:936 instances/templates/instance.html:1077
-#: instances/templates/instances.html:75 networks/templates/network.html:178
-#: networks/templates/network.html:287 networks/templates/network.html:335
-msgid "Actions"
-msgstr ""
-
 #: instances/templates/allinstances.html:71
 #: instances/templates/allinstances_index_grouped.html:57
 #: instances/templates/allinstances_index_nongrouped.html:21
-#: instances/templates/instance.html:40 instances/templates/instances.html:86
+#: instances/templates/instance.html:14 instances/templates/instances.html:86
 msgid "Off"
 msgstr ""
 
 #: instances/templates/allinstances.html:74
 #: instances/templates/allinstances_index_grouped.html:58
 #: instances/templates/allinstances_index_nongrouped.html:22
-#: instances/templates/instance.html:46 instances/templates/instance.html:169
-#: instances/templates/instance.html:224
+#: instances/templates/instance.html:20 instances/templates/instance.html:143
+#: instances/templates/instance.html:198
 #: instances/templates/instance_actions.html:15
 #: instances/templates/instance_actions.html:32
 #: instances/templates/instance_actions.html:49
 #: instances/templates/instances.html:87 instances/views.py:699
-#: instances/views.py:1233
+#: instances/views.py:1239
 msgid "Suspend"
 msgstr ""
 
 #: instances/templates/allinstances_index_grouped.html:6
 #: instances/templates/allinstances_index_nongrouped.html:5
-#: instances/templates/instance.html:1463
-#: instances/templates/instance.html:1486 instances/templates/instances.html:70
+#: instances/templates/instance.html:1436
+#: instances/templates/instance.html:1459 instances/templates/instances.html:70
 msgid "Description"
 msgstr ""
 
@@ -1305,6 +1379,10 @@ msgstr ""
 
 #: instances/templates/allinstances_index_grouped.html:28
 msgid "Connection Failed"
+msgstr ""
+
+#: instances/templates/bottom_bar.html:4
+msgid "HOST"
 msgstr ""
 
 #: instances/templates/create_inst_block.html:12
@@ -1372,605 +1450,579 @@ msgstr ""
 msgid "Detect zeroes"
 msgstr ""
 
-#: instances/templates/edit_instance_volume.html:124
-#: networks/templates/add_network_qos.html:51
-msgid "Save"
-msgstr ""
-
-#: instances/templates/instance.html:10
-msgid "HOST"
-msgstr ""
-
-#: instances/templates/instance.html:52
+#: instances/templates/instance.html:26
 msgid "Guest Agent Enabled & Connected"
 msgstr ""
 
-#: instances/templates/instance.html:55
+#: instances/templates/instance.html:29
 msgid "Guest Agent Enabled but not Connected"
 msgstr ""
 
-#: instances/templates/instance.html:59
+#: instances/templates/instance.html:33
 msgid "Guest Agent Not Enabled & Not Connected"
 msgstr ""
 
-#: instances/templates/instance.html:74 instances/templates/instance.html:400
-#: instances/templates/instance.html:636
+#: instances/templates/instance.html:48 instances/templates/instance.html:374
+#: instances/templates/instance.html:610
 msgid "Disk"
 msgstr ""
 
-#: instances/templates/instance.html:81
+#: instances/templates/instance.html:55
 msgid "Refresh instance info"
 msgstr ""
 
-#: instances/templates/instance.html:85
+#: instances/templates/instance.html:59
 msgid "quota reached"
 msgstr ""
 
-#: instances/templates/instance.html:102
+#: instances/templates/instance.html:76
 msgid "Power"
 msgstr ""
 
-#: instances/templates/instance.html:108
+#: instances/templates/instance.html:82
 msgid "Access"
 msgstr ""
 
-#: instances/templates/instance.html:121
+#: instances/templates/instance.html:95
 msgid "Snapshot"
 msgstr ""
 
-#: instances/templates/instance.html:128
+#: instances/templates/instance.html:102 templates/navbar.html:32
 msgid "Settings"
 msgstr ""
 
-#: instances/templates/instance.html:134
+#: instances/templates/instance.html:108
 msgid "Stats"
 msgstr ""
 
-#: instances/templates/instance.html:140 instances/templates/instance.html:1699
-#: instances/templates/instance.html:1717
-#: instances/templates/instance.html:1721 instances/views.py:420
+#: instances/templates/instance.html:114 instances/templates/instance.html:1672
+#: instances/templates/instance.html:1689
+#: instances/templates/instance.html:1693 instances/views.py:421
 msgid "Destroy"
 msgstr ""
 
-#: instances/templates/instance.html:153 instances/templates/instance.html:202
+#: instances/templates/instance.html:127 instances/templates/instance.html:176
 #: instances/templates/instance_actions.html:18
-#: instances/templates/instance_actions.html:52 instances/views.py:386
-#: instances/views.py:1193
+#: instances/templates/instance_actions.html:52 instances/views.py:387
+#: instances/views.py:1199
 msgid "Power Off"
 msgstr ""
 
-#: instances/templates/instance.html:158 instances/templates/instance.html:209
+#: instances/templates/instance.html:132 instances/templates/instance.html:183
 #: instances/templates/instance_actions.html:21
 #: instances/templates/instance_actions.html:38
-#: instances/templates/instance_actions.html:55 instances/views.py:380
-#: instances/views.py:1205
+#: instances/templates/instance_actions.html:55 instances/views.py:381
+#: instances/views.py:1211
 msgid "Power Cycle"
 msgstr ""
 
-#: instances/templates/instance.html:163 instances/templates/instance.html:183
-#: instances/templates/instance.html:216 instances/templates/instance.html:242
-#: instances/templates/instance_actions.html:35 instances/views.py:392
-#: instances/views.py:1200
+#: instances/templates/instance.html:137 instances/templates/instance.html:157
+#: instances/templates/instance.html:190 instances/templates/instance.html:216
+#: instances/templates/instance_actions.html:35 instances/views.py:393
+#: instances/views.py:1206
 msgid "Force Off"
 msgstr ""
 
-#: instances/templates/instance.html:178 instances/templates/instance.html:235
-#: instances/templates/instance.html:250
+#: instances/templates/instance.html:152 instances/templates/instance.html:209
+#: instances/templates/instance.html:224
 #: instances/templates/instance_actions.html:29 instances/views.py:705
-#: instances/views.py:1239
+#: instances/views.py:1245
 msgid "Resume"
 msgstr ""
 
-#: instances/templates/instance.html:191 instances/templates/instance.html:262
-#: instances/templates/instance.html:264
+#: instances/templates/instance.html:165 instances/templates/instance.html:236
+#: instances/templates/instance.html:238
 #: instances/templates/instance_actions.html:11
-#: instances/templates/instance_actions.html:46 instances/views.py:373
-#: instances/views.py:1187
+#: instances/templates/instance_actions.html:46 instances/views.py:374
+#: instances/views.py:1193
 msgid "Power On"
 msgstr ""
 
-#: instances/templates/instance.html:200
+#: instances/templates/instance.html:174
 msgid "This action sends an ACPI shutdown signal to the instance."
 msgstr ""
 
-#: instances/templates/instance.html:207
+#: instances/templates/instance.html:181
 msgid ""
 "This action forcibly powers off and start the instance and may cause data "
 "corruption."
 msgstr ""
 
-#: instances/templates/instance.html:214 instances/templates/instance.html:240
+#: instances/templates/instance.html:188 instances/templates/instance.html:214
 msgid ""
 "This action forcibly powers off the instance and may cause data corruption."
 msgstr ""
 
-#: instances/templates/instance.html:222
+#: instances/templates/instance.html:196
 msgid "This action suspends the instance."
 msgstr ""
 
-#: instances/templates/instance.html:233
+#: instances/templates/instance.html:207
 msgid "This action restore the instance after suspend."
 msgstr ""
 
-#: instances/templates/instance.html:248
+#: instances/templates/instance.html:222
 msgid "Administrator blocked your instance."
 msgstr ""
 
-#: instances/templates/instance.html:258
-msgid "Click on Boot button to start this instance."
+#: instances/templates/instance.html:232
+msgid "Click on Power On button to start this instance."
 msgstr ""
 
-#: instances/templates/instance.html:261
+#: instances/templates/instance.html:235
 msgid "Template instance cannot be started."
 msgstr ""
 
-#: instances/templates/instance.html:279 instances/templates/instance.html:311
-#: instances/templates/instance.html:316 instances/templates/instance.html:317
-#: instances/templates/instance.html:321 instances/templates/instance.html:643
+#: instances/templates/instance.html:253 instances/templates/instance.html:285
+#: instances/templates/instance.html:290 instances/templates/instance.html:291
+#: instances/templates/instance.html:295 instances/templates/instance.html:617
 #: instances/templates/instance_actions.html:58
 msgid "Console"
 msgstr ""
 
-#: instances/templates/instance.html:285
+#: instances/templates/instance.html:259
 msgid "Root Password"
 msgstr ""
 
-#: instances/templates/instance.html:299 instances/templates/instance.html:375
+#: instances/templates/instance.html:273 instances/templates/instance.html:349
 msgid "VDI"
 msgstr ""
 
-#: instances/templates/instance.html:307
+#: instances/templates/instance.html:281
 msgid ""
 "This action opens a new window with a VNC connection to the console of the "
 "instance."
 msgstr ""
 
-#: instances/templates/instance.html:313
+#: instances/templates/instance.html:287
 msgid "Toggle Dropdown"
 msgstr ""
 
-#: instances/templates/instance.html:316 instances/templates/instance.html:317
+#: instances/templates/instance.html:290 instances/templates/instance.html:291
 msgid "Console port"
 msgstr ""
 
-#: instances/templates/instance.html:316
+#: instances/templates/instance.html:290
 msgid "Lite"
 msgstr ""
 
-#: instances/templates/instance.html:317
+#: instances/templates/instance.html:291
 msgid "Full"
 msgstr ""
 
-#: instances/templates/instance.html:327
+#: instances/templates/instance.html:301
 msgid "You need shut down your instance and enter a new root password."
 msgstr ""
 
-#: instances/templates/instance.html:331
+#: instances/templates/instance.html:305
 msgid "Enter Password"
 msgstr ""
 
-#: instances/templates/instance.html:335 instances/templates/instance.html:337
+#: instances/templates/instance.html:309 instances/templates/instance.html:311
 msgid "Reset Root Password"
 msgstr ""
 
-#: instances/templates/instance.html:345
+#: instances/templates/instance.html:319
 msgid "You need shut down your instance and choose your public key."
 msgstr ""
 
-#: instances/templates/instance.html:361 instances/templates/instance.html:363
+#: instances/templates/instance.html:335 instances/templates/instance.html:337
 msgid "Add Public Key"
 msgstr ""
 
-#: instances/templates/instance.html:371
+#: instances/templates/instance.html:345
 msgid ""
 "This action opens a remote viewer with a connection to the console of the "
 "instance."
 msgstr ""
 
-#: instances/templates/instance.html:390
+#: instances/templates/instance.html:364
 msgid "CPU"
 msgstr ""
 
-#: instances/templates/instance.html:411
+#: instances/templates/instance.html:385
 msgid "Logical host CPUs"
 msgstr ""
 
-#: instances/templates/instance.html:413
+#: instances/templates/instance.html:387 instances/templates/instance.html:450
+#: instances/templates/instance.html:490
 msgid "Current Allocation"
 msgstr ""
 
-#: instances/templates/instance.html:427
+#: instances/templates/instance.html:401 instances/templates/instance.html:463
 msgid "Maximum Allocation"
 msgstr ""
 
-#: instances/templates/instance.html:445
+#: instances/templates/instance.html:419
 msgid "Logical Instance Active/Maximum CPUs"
 msgstr ""
 
-#: instances/templates/instance.html:453 instances/templates/instance.html:700
-#: instances/templates/instance.html:715 networks/templates/network.html:65
+#: instances/templates/instance.html:427 instances/templates/instance.html:674
+#: instances/templates/instance.html:689 networks/templates/network.html:65
 #: storages/templates/storage.html:79
 msgid "Disable"
 msgstr ""
 
-#: instances/templates/instance.html:455
+#: instances/templates/instance.html:429
 msgid "Constant"
 msgstr ""
 
-#: instances/templates/instance.html:457 instances/templates/instance.html:698
-#: instances/templates/instance.html:713 networks/templates/network.html:63
+#: instances/templates/instance.html:431 instances/templates/instance.html:672
+#: instances/templates/instance.html:687 networks/templates/network.html:63
 #: storages/templates/storage.html:76
 msgid "Enable"
 msgstr ""
 
-#: instances/templates/instance.html:466 instances/templates/instance.html:505
-#: instances/templates/instance.html:529
+#: instances/templates/instance.html:440 instances/templates/instance.html:479
+#: instances/templates/instance.html:503
 msgid "You don't have permission for resizing instance"
 msgstr ""
 
-#: instances/templates/instance.html:474
+#: instances/templates/instance.html:448
 msgid "Total host memory"
 msgstr ""
 
-#: instances/templates/instance.html:476 instances/templates/instance.html:516
-msgid "Current allocation"
-msgstr ""
-
-#: instances/templates/instance.html:484 instances/templates/instance.html:499
+#: instances/templates/instance.html:458 instances/templates/instance.html:473
 msgid "Custom value"
 msgstr ""
 
-#: instances/templates/instance.html:489
-msgid "Maximum allocation"
-msgstr ""
-
-#: instances/templates/instance.html:513
+#: instances/templates/instance.html:487
 msgid "Disk allocation (GB)"
 msgstr ""
 
-#: instances/templates/instance.html:543 instances/templates/instance.html:564
-#: instances/templates/instance.html:566
+#: instances/templates/instance.html:517 instances/templates/instance.html:538
+#: instances/templates/instance.html:540
 msgid "Take Snapshot"
 msgstr ""
 
-#: instances/templates/instance.html:548
+#: instances/templates/instance.html:522
 msgid "Manage Snapshots"
 msgstr ""
 
-#: instances/templates/instance.html:556
+#: instances/templates/instance.html:530
 msgid ""
 "This may take more than an hour, depending on how much content is on your "
 "droplet and how large the disk is."
 msgstr ""
 
-#: instances/templates/instance.html:560
+#: instances/templates/instance.html:534
 msgid "Enter Snapshot Name"
 msgstr ""
 
-#: instances/templates/instance.html:571
+#: instances/templates/instance.html:545
 msgid "To take a snapshot please Power Off the instance."
 msgstr ""
 
-#: instances/templates/instance.html:576
+#: instances/templates/instance.html:550
 msgid "Choose a snapshot for restore/delete"
 msgstr ""
 
-#: instances/templates/instance.html:581 instances/templates/instance.html:1668
-#: logs/templates/showlogs.html:31
-msgid "Date"
-msgstr ""
-
-#: instances/templates/instance.html:593
+#: instances/templates/instance.html:567
 msgid "Revert to this Snapshot"
 msgstr ""
 
-#: instances/templates/instance.html:598
+#: instances/templates/instance.html:572
 msgid "To restore snapshots you need Power Off the instance."
 msgstr ""
 
-#: instances/templates/instance.html:607
+#: instances/templates/instance.html:581
 msgid "Delete Snapshot"
 msgstr ""
 
-#: instances/templates/instance.html:618
+#: instances/templates/instance.html:592
 msgid "You do not have any snapshots"
 msgstr ""
 
-#: instances/templates/instance.html:631
+#: instances/templates/instance.html:605
 msgid "Boot"
 msgstr ""
 
-#: instances/templates/instance.html:664 instances/templates/instance.html:1199
-#: instances/templates/instance.html:1201
+#: instances/templates/instance.html:638 instances/templates/instance.html:1172
+#: instances/templates/instance.html:1174
 msgid "Migrate"
 msgstr ""
 
-#: instances/templates/instance.html:676
+#: instances/templates/instance.html:650
 msgid "Options"
 msgstr ""
 
-#: instances/templates/instance.html:692 networks/templates/network.html:59
+#: instances/templates/instance.html:666 networks/templates/network.html:59
 #: storages/templates/storage.html:71
 msgid "Autostart"
 msgstr ""
 
-#: instances/templates/instance.html:696
+#: instances/templates/instance.html:670
 msgid "Autostart your instance when host server is power on "
 msgstr ""
 
-#: instances/templates/instance.html:706
+#: instances/templates/instance.html:680
 msgid "Boot Order"
 msgstr ""
 
-#: instances/templates/instance.html:711
+#: instances/templates/instance.html:685
 msgid "Enable Boot Menu for your instance when it starts up "
 msgstr ""
 
-#: instances/templates/instance.html:713
+#: instances/templates/instance.html:687
 msgid "Show boot menu"
 msgstr ""
 
-#: instances/templates/instance.html:715
+#: instances/templates/instance.html:689
 msgid "Hide boot menu"
 msgstr ""
 
-#: instances/templates/instance.html:719
+#: instances/templates/instance.html:693
 msgid "Please shutdown instance to modify boot menu"
 msgstr ""
 
-#: instances/templates/instance.html:750
+#: instances/templates/instance.html:724
 msgid "up: move selected devices"
 msgstr ""
 
-#: instances/templates/instance.html:753
+#: instances/templates/instance.html:727
 msgid "down: move selected devices"
 msgstr ""
 
-#: instances/templates/instance.html:759 instances/templates/instance.html:1021
+#: instances/templates/instance.html:733 instances/templates/instance.html:994
 msgid "Apply"
 msgstr ""
 
-#: instances/templates/instance.html:769
+#: instances/templates/instance.html:743
 msgid "Instance Media"
 msgstr ""
 
-#: instances/templates/instance.html:771
-msgid "Detach CD-ROM (remove device)"
-msgstr ""
-
-#: instances/templates/instance.html:776
+#: instances/templates/instance.html:746
 msgid "Add CD-ROM"
 msgstr ""
 
-#: instances/templates/instance.html:793
-msgid "Dev"
-msgstr ""
-
-#: instances/templates/instance.html:794
-msgid "CD-ROM"
-msgstr ""
-
-#: instances/templates/instance.html:811 instances/templates/instance.html:813
-msgid "Mount"
-msgstr ""
-
-#: instances/templates/instance.html:826 instances/templates/instance.html:828
-msgid "Unmount"
-msgstr ""
-
-#: instances/templates/instance.html:838
-msgid "There is not any CD-ROM device."
-msgstr ""
-
-#: instances/templates/instance.html:843
-msgid "Instance Volume"
-msgstr ""
-
-#: instances/templates/instance.html:852
+#: instances/templates/instance.html:764 instances/templates/instance.html:826
 #: interfaces/templates/create_iface_block.html:34
 #: networks/templates/network.html:46 networks/templates/networks.html:63
 #: storages/templates/create_stg_block.html:77
 msgid "Device"
 msgstr ""
 
-#: instances/templates/instance.html:853
+#: instances/templates/instance.html:765
+msgid "CD-ROM"
+msgstr ""
+
+#: instances/templates/instance.html:781 instances/templates/instance.html:783
+msgid "Mount"
+msgstr ""
+
+#: instances/templates/instance.html:786
+msgid "Detach CD-ROM (remove device)"
+msgstr ""
+
+#: instances/templates/instance.html:800 instances/templates/instance.html:802
+msgid "Unmount"
+msgstr ""
+
+#: instances/templates/instance.html:812
+msgid "There is not any CD-ROM device."
+msgstr ""
+
+#: instances/templates/instance.html:817
+msgid "Instance Volume"
+msgstr ""
+
+#: instances/templates/instance.html:827
 msgid "Used"
 msgstr ""
 
-#: instances/templates/instance.html:854
+#: instances/templates/instance.html:828
 msgid "Capacity"
 msgstr ""
 
-#: instances/templates/instance.html:856 instances/templates/instance.html:955
+#: instances/templates/instance.html:830 instances/templates/instance.html:928
 msgid "Source"
 msgstr ""
 
-#: instances/templates/instance.html:896 instances/templates/instance.html:903
+#: instances/templates/instance.html:870 instances/templates/instance.html:877
 msgid "Detach"
 msgstr ""
 
-#: instances/templates/instance.html:896
+#: instances/templates/instance.html:870
 msgid "Are you sure to detach volume?"
 msgstr ""
 
-#: instances/templates/instance.html:899
+#: instances/templates/instance.html:873
 msgid "Are you sure to delete volume?"
 msgstr ""
 
-#: instances/templates/instance.html:903 instances/templates/instance.html:906
+#: instances/templates/instance.html:877 instances/templates/instance.html:880
 msgid "Are you sure? This may lead data corruption!"
 msgstr ""
 
-#: instances/templates/instance.html:923
+#: instances/templates/instance.html:896
 msgid "Add a network device"
 msgstr ""
 
-#: instances/templates/instance.html:929
+#: instances/templates/instance.html:902
 msgid "Network Devices"
 msgstr ""
 
-#: instances/templates/instance.html:934 instances/templates/instance.html:935
+#: instances/templates/instance.html:907 instances/templates/instance.html:908
 msgid "Info"
 msgstr ""
 
-#: instances/templates/instance.html:948
+#: instances/templates/instance.html:921
 msgid "active"
 msgstr ""
 
-#: instances/templates/instance.html:953 nwfilters/templates/nwfilter.html:78
+#: instances/templates/instance.html:926 nwfilters/templates/nwfilter.html:78
 msgid "Filter"
 msgstr ""
 
-#: instances/templates/instance.html:960
+#: instances/templates/instance.html:933
 msgid "Edit NIC"
 msgstr ""
 
-#: instances/templates/instance.html:968
+#: instances/templates/instance.html:941
 msgid "Edit Instance Network"
 msgstr ""
 
-#: instances/templates/instance.html:981
+#: instances/templates/instance.html:954
 msgid "Net Source"
 msgstr ""
 
-#: instances/templates/instance.html:989 interfaces/templates/interface.html:3
+#: instances/templates/instance.html:962 interfaces/templates/interface.html:3
 #: interfaces/templates/interface.html:8 interfaces/templates/interface.html:40
 msgid "Interface"
 msgstr ""
 
-#: instances/templates/instance.html:1007
-#: instances/templates/instance.html:1046
+#: instances/templates/instance.html:980 instances/templates/instance.html:1019
 msgid "Model"
 msgstr ""
 
-#: instances/templates/instance.html:1021
-msgid "Apply Network Changes"
+#: instances/templates/instance.html:994
+msgid "Apply network changes"
 msgstr ""
 
-#: instances/templates/instance.html:1030
+#: instances/templates/instance.html:1003
 msgid "Delete Device"
 msgstr ""
 
-#: instances/templates/instance.html:1038
+#: instances/templates/instance.html:1011
 #: interfaces/templates/create_iface_block.html:71
 #: interfaces/templates/interface.html:42
 msgid "IPv4"
 msgstr ""
 
-#: instances/templates/instance.html:1042
+#: instances/templates/instance.html:1015
 #: interfaces/templates/create_iface_block.html:74
 #: interfaces/templates/interface.html:44
 msgid "IPv6"
 msgstr ""
 
-#: instances/templates/instance.html:1048
+#: instances/templates/instance.html:1021
 msgid "QoS"
 msgstr ""
 
-#: instances/templates/instance.html:1067 networks/templates/network.html:325
+#: instances/templates/instance.html:1040 networks/templates/network.html:325
 msgid "QoS Configuration"
 msgstr ""
 
-#: instances/templates/instance.html:1073
+#: instances/templates/instance.html:1046
 #: networks/templates/add_network_qos.html:18
 #: networks/templates/network.html:331 nwfilters/templates/nwfilter.html:134
 msgid "Direction"
 msgstr ""
 
-#: instances/templates/instance.html:1074
+#: instances/templates/instance.html:1047
 #: networks/templates/add_network_qos.html:27
 #: networks/templates/network.html:332
 msgid "Average"
 msgstr ""
 
-#: instances/templates/instance.html:1075
+#: instances/templates/instance.html:1048
 #: networks/templates/add_network_qos.html:34
 #: networks/templates/network.html:333
 msgid "Peak"
 msgstr ""
 
-#: instances/templates/instance.html:1076
+#: instances/templates/instance.html:1049
 #: networks/templates/add_network_qos.html:41
 #: networks/templates/network.html:334
 msgid "Burst"
 msgstr ""
 
-#: instances/templates/instance.html:1100 networks/templates/network.html:356
+#: instances/templates/instance.html:1073 networks/templates/network.html:356
 msgid "Edit QoS"
 msgstr ""
 
-#: instances/templates/instance.html:1105 networks/templates/network.html:361
+#: instances/templates/instance.html:1078 networks/templates/network.html:361
 msgid "Delete QoS"
 msgstr ""
 
-#: instances/templates/instance.html:1120
+#: instances/templates/instance.html:1093
 msgid "For migration both host servers must have equal settings and OS type"
 msgstr ""
 
-#: instances/templates/instance.html:1123
+#: instances/templates/instance.html:1096
 msgid "Original host"
 msgstr ""
 
-#: instances/templates/instance.html:1129
+#: instances/templates/instance.html:1102
 msgid "Host migration"
 msgstr ""
 
-#: instances/templates/instance.html:1146
+#: instances/templates/instance.html:1119
 msgid "Live migration"
 msgstr ""
 
-#: instances/templates/instance.html:1154
+#: instances/templates/instance.html:1127
 msgid "Unsafe migration"
 msgstr ""
 
-#: instances/templates/instance.html:1162
+#: instances/templates/instance.html:1135
 msgid "Delete original"
 msgstr ""
 
-#: instances/templates/instance.html:1170
+#: instances/templates/instance.html:1143
 msgid "Offline migration"
 msgstr ""
 
-#: instances/templates/instance.html:1178
+#: instances/templates/instance.html:1151
 msgid "Post copy"
 msgstr ""
 
-#: instances/templates/instance.html:1186
+#: instances/templates/instance.html:1159
 msgid "Forces CPU convergence during live migration"
 msgstr ""
 
-#: instances/templates/instance.html:1186
+#: instances/templates/instance.html:1159
 msgid "Auto converge"
 msgstr ""
 
-#: instances/templates/instance.html:1194
+#: instances/templates/instance.html:1167
 msgid "Compress instance memory for fast migration"
 msgstr ""
 
-#: instances/templates/instance.html:1194
+#: instances/templates/instance.html:1167
 msgid "Compressed"
 msgstr ""
 
-#: instances/templates/instance.html:1207
-msgid "If you need to edit xml please Power Off the instance"
+#: instances/templates/instance.html:1180
+msgid "If you need to edit XML please Power Off the instance"
 msgstr ""
 
-#: instances/templates/instance.html:1228
+#: instances/templates/instance.html:1201
 msgid "Instance owners"
 msgstr ""
 
-#: instances/templates/instance.html:1241
+#: instances/templates/instance.html:1214
 msgid "Delete Ownership"
 msgstr ""
 
-#: instances/templates/instance.html:1256
+#: instances/templates/instance.html:1229
 msgid "To set console's type, shutdown the instance."
 msgstr ""
 
-#: instances/templates/instance.html:1259
+#: instances/templates/instance.html:1232
 #: interfaces/templates/create_iface_block.html:44
 #: interfaces/templates/interface.html:77
-#: interfaces/templates/interfaces.html:62 secrets/templates/secrets.html:60
+#: interfaces/templates/interfaces.html:62
 #: storages/templates/create_stg_block.html:35
 #: storages/templates/create_stg_block.html:64
 #: storages/templates/create_stg_block.html:93
@@ -1979,188 +2031,179 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#: instances/templates/instance.html:1263
-#: instances/templates/instance.html:1287
-#: instances/templates/instance.html:1356
-#: instances/templates/instance.html:1520
+#: instances/templates/instance.html:1236
+#: instances/templates/instance.html:1260
+#: instances/templates/instance.html:1329
+#: instances/templates/instance.html:1493
 msgid "please choose"
 msgstr ""
 
-#: instances/templates/instance.html:1271
-#: instances/templates/instance.html:1273
-#: instances/templates/instance.html:1294
-#: instances/templates/instance.html:1296
-#: instances/templates/instance.html:1332
-#: instances/templates/instance.html:1334
-#: instances/templates/instance.html:1364
-#: instances/templates/instance.html:1366
-#: instances/templates/instance.html:1527
-#: instances/templates/instance.html:1529
-#: instances/templates/instance.html:1549
-#: instances/templates/instance.html:1551
-#: instances/templates/instance.html:1579 secrets/templates/secrets.html:112
+#: instances/templates/instance.html:1244
+#: instances/templates/instance.html:1246
+#: instances/templates/instance.html:1267
+#: instances/templates/instance.html:1269
+#: instances/templates/instance.html:1305
+#: instances/templates/instance.html:1307
+#: instances/templates/instance.html:1337
+#: instances/templates/instance.html:1339
+#: instances/templates/instance.html:1500
+#: instances/templates/instance.html:1502
+#: instances/templates/instance.html:1522
+#: instances/templates/instance.html:1524
+#: instances/templates/instance.html:1552 secrets/templates/secrets.html:103
 msgid "Set"
 msgstr ""
 
-#: instances/templates/instance.html:1280
+#: instances/templates/instance.html:1253
 msgid "To set console listen address, shutdown the instance."
 msgstr ""
 
-#: instances/templates/instance.html:1283
+#: instances/templates/instance.html:1256
 msgid "Listen on"
 msgstr ""
 
-#: instances/templates/instance.html:1303
+#: instances/templates/instance.html:1276
 msgid "To create console password, shutdown the instance."
 msgstr ""
 
-#: instances/templates/instance.html:1309
+#: instances/templates/instance.html:1282
 msgid "Generate"
 msgstr ""
 
-#: instances/templates/instance.html:1313
-#: instances/templates/instance.html:1347 networks/templates/network.html:169
+#: instances/templates/instance.html:1286
+#: instances/templates/instance.html:1320 networks/templates/network.html:169
 #: networks/templates/network.html:279
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:395
 msgid "Clear"
 msgstr ""
 
-#: instances/templates/instance.html:1329 networks/templates/network.html:161
+#: instances/templates/instance.html:1302 networks/templates/network.html:161
 #: networks/templates/network.html:271 nwfilters/templates/nwfilters.html:88
 msgid "Show"
 msgstr ""
 
-#: instances/templates/instance.html:1341
+#: instances/templates/instance.html:1314
 msgid "To set console's keymap, shutdown the instance."
 msgstr ""
 
-#: instances/templates/instance.html:1352
+#: instances/templates/instance.html:1325
 msgid "Keymap"
 msgstr ""
 
-#: instances/templates/instance.html:1378
+#: instances/templates/instance.html:1351
 msgid "Create a clone"
 msgstr ""
 
-#: instances/templates/instance.html:1381
+#: instances/templates/instance.html:1354
 msgid "Clone Name"
 msgstr ""
 
-#: instances/templates/instance.html:1388
-#: instances/templates/instance.html:1419
+#: instances/templates/instance.html:1361
+#: instances/templates/instance.html:1392
 msgid "Guess"
 msgstr ""
 
-#: instances/templates/instance.html:1407
+#: instances/templates/instance.html:1380
 msgid "Network devices"
 msgstr ""
 
-#: instances/templates/instance.html:1417
+#: instances/templates/instance.html:1390
 msgid "Random"
 msgstr ""
 
-#: instances/templates/instance.html:1432
+#: instances/templates/instance.html:1405
 msgid "Storage devices"
 msgstr ""
 
-#: instances/templates/instance.html:1457
-#: instances/templates/instance.html:1480
+#: instances/templates/instance.html:1430
+#: instances/templates/instance.html:1453
 msgid "Title"
 msgstr ""
 
-#: instances/templates/instance.html:1477
+#: instances/templates/instance.html:1450
 msgid "To set instance template name description, shutdown the instance."
 msgstr ""
 
-#: instances/templates/instance.html:1492
+#: instances/templates/instance.html:1465
 msgid "Is template"
 msgstr ""
 
-#: instances/templates/instance.html:1513
+#: instances/templates/instance.html:1486
 msgid "To set instance video model, shutdown the instance."
 msgstr ""
 
-#: instances/templates/instance.html:1516
+#: instances/templates/instance.html:1489
 msgid "Primary Video Model"
 msgstr ""
 
-#: instances/templates/instance.html:1537
+#: instances/templates/instance.html:1510
 msgid "To set instance vCPUs hotpluggable"
 msgstr ""
 
-#: instances/templates/instance.html:1540
+#: instances/templates/instance.html:1513
 msgid "vCPU Hot Plug"
 msgstr ""
 
-#: instances/templates/instance.html:1544
-#: instances/templates/instance.html:1575
+#: instances/templates/instance.html:1517
+#: instances/templates/instance.html:1548
 msgid "Enabled"
 msgstr ""
 
-#: instances/templates/instance.html:1545
-#: instances/templates/instance.html:1576
+#: instances/templates/instance.html:1518
+#: instances/templates/instance.html:1549
 msgid "Disabled"
 msgstr ""
 
-#: instances/templates/instance.html:1559
+#: instances/templates/instance.html:1532
 msgid "To Enable/Disable Qemu Guest Agent. Status"
 msgstr ""
 
-#: instances/templates/instance.html:1564
+#: instances/templates/instance.html:1537
 msgid "Disconnected"
 msgstr ""
 
-#: instances/templates/instance.html:1567
+#: instances/templates/instance.html:1540
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:709
 msgid "Unknown"
 msgstr ""
 
-#: instances/templates/instance.html:1571
+#: instances/templates/instance.html:1544
 msgid "Qemu Guest Agent"
 msgstr ""
 
-#: instances/templates/instance.html:1597
+#: instances/templates/instance.html:1570
 msgid "Real Time"
 msgstr ""
 
-#: instances/templates/instance.html:1602 logs/templates/showlogs.html:3
-#: logs/templates/showlogs.html:8 templates/navbar.html:25
-msgid "Logs"
-msgstr ""
-
-#: instances/templates/instance.html:1611
+#: instances/templates/instance.html:1584
 msgid "CPU Usage"
 msgstr ""
 
-#: instances/templates/instance.html:1623
+#: instances/templates/instance.html:1596
 msgid "Memory Usage"
 msgstr ""
 
-#: instances/templates/instance.html:1636
+#: instances/templates/instance.html:1609
 msgid "Bandwidth Device"
 msgstr ""
 
-#: instances/templates/instance.html:1650
+#: instances/templates/instance.html:1623
 msgid "Disk I/O device"
 msgstr ""
 
-#: instances/templates/instance.html:1670 logs/templates/showlogs.html:34
-msgid "Message"
-msgstr ""
-
-#: instances/templates/instance.html:1689
+#: instances/templates/instance.html:1662
 msgid "Destroy Instance"
 msgstr ""
 
-#: instances/templates/instance.html:1696
+#: instances/templates/instance.html:1669
 msgid "Delete storage for instance?"
 msgstr ""
 
-#: instances/templates/instance.html:1706
+#: instances/templates/instance.html:1678
 msgid "Remove Instance's data"
 msgstr ""
 
-#: instances/templates/instance.html:1713
+#: instances/templates/instance.html:1685
 msgid "Remove Instance's NVRAM"
 msgstr ""
 
@@ -2173,100 +2216,104 @@ msgstr ""
 msgid "Hypervisor doesn't have any Instances"
 msgstr ""
 
-#: instances/views.py:226
+#: instances/views.py:224
 msgid "None available device name"
 msgstr ""
 
-#: instances/views.py:262
+#: instances/views.py:260
 #, python-format
 msgid "Migrate to %s"
 msgstr ""
 
-#: instances/views.py:339
+#: instances/views.py:340
 #, python-format
-msgid "Fixing uuid %s"
+msgid "Fixing UUID %s"
 msgstr ""
 
-#: instances/views.py:344
-msgid "Instance.DoesNotExist: Creating new instance"
+#: instances/views.py:345
+msgid "Instance does not exist: Creating new instance"
 msgstr ""
 
-#: instances/views.py:369 instances/views.py:1184
+#: instances/views.py:370 instances/views.py:1190
 msgid "Templates cannot be started."
 msgstr ""
 
-#: instances/views.py:436
+#: instances/views.py:437
 msgid "Reset root password"
 msgstr ""
 
-#: instances/views.py:444 instances/views.py:466
+#: instances/views.py:445 instances/views.py:467
 msgid "Please shutdown down your instance and then try again"
 msgstr ""
 
-#: instances/views.py:458
+#: instances/views.py:459
 #, python-format
 msgid "Installed new ssh public key %s"
 msgstr ""
 
-#: instances/views.py:476
+#: instances/views.py:477
 #, python-brace-format
 msgid "User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!"
 msgstr ""
 
-#: instances/views.py:482
+#: instances/views.py:483
 msgid "Resize CPU"
 msgstr ""
 
-#: instances/views.py:500
+#: instances/views.py:501
 #, python-brace-format
 msgid ""
 "User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!"
 msgstr ""
 
-#: instances/views.py:506
+#: instances/views.py:507
 msgid "Resize Memory"
 msgstr ""
 
-#: instances/views.py:523
+#: instances/views.py:524
 #, python-brace-format
 msgid ""
 "User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!"
 msgstr ""
 
-#: instances/views.py:548
-msgid "Attach new disk {} ({})"
+#: instances/views.py:528
+msgid "Disk resize"
 msgstr ""
 
-#: instances/views.py:570
+#: instances/views.py:549
+#, python-brace-format
+msgid "Attach new disk {name} ({format})"
+msgstr ""
+
+#: instances/views.py:571
 msgid "Attach Existing disk: "
 msgstr ""
 
-#: instances/views.py:602
-msgid ""
-"Disk changes changes are applied. But it will be activated after shutdown"
-msgstr ""
-
-#: instances/views.py:605
-msgid "Disk is changed successfully."
+#: instances/views.py:603
+msgid "Volume changes are applied. But it will be activated after shutdown"
 msgstr ""
 
 #: instances/views.py:606
+msgid "Volume is changed successfully."
+msgstr ""
+
+#: instances/views.py:607
 msgid "Edit disk: "
 msgstr ""
 
-#: instances/views.py:622
+#: instances/views.py:623
 msgid "Delete disk: "
 msgstr ""
 
-#: instances/views.py:627
+#: instances/views.py:628
 msgid "The disk: "
 msgstr ""
 
-#: instances/views.py:637
+#: instances/views.py:638
 msgid "Detach disk: "
 msgstr ""
 
-#: instances/views.py:645
+#: instances/views.py:646
 msgid "Add CD-ROM: "
 msgstr ""
 
@@ -2356,141 +2403,145 @@ msgstr ""
 msgid "Set VNC keymap"
 msgstr ""
 
-#: instances/views.py:818
+#: instances/views.py:817
 msgid "Set VNC type"
 msgstr ""
 
-#: instances/views.py:825
+#: instances/views.py:821
+msgid "Console type not supported"
+msgstr ""
+
+#: instances/views.py:828
 msgid "Set VNC listen address"
 msgstr ""
 
-#: instances/views.py:837
+#: instances/views.py:840
 #, python-brace-format
 msgid "Set Quest Agent {status}"
 msgstr ""
 
-#: instances/views.py:844
+#: instances/views.py:847
 msgid "Set Video Model"
 msgstr ""
 
-#: instances/views.py:869
+#: instances/views.py:872
 msgid "Change network"
 msgstr ""
 
-#: instances/views.py:882
+#: instances/views.py:885
 msgid "Network Device Config is changed. Please shutdown instance to activate."
 msgstr ""
 
-#: instances/views.py:887
+#: instances/views.py:890
 msgid "Add network"
 msgstr ""
 
-#: instances/views.py:897
+#: instances/views.py:900
 msgid "Delete network"
 msgstr ""
 
-#: instances/views.py:909
+#: instances/views.py:912
 #, python-brace-format
 msgid "Set Link State: {state}"
 msgstr ""
 
-#: instances/views.py:925
+#: instances/views.py:928
 msgid "{qos_dir.capitalize()} QoS is set"
 msgstr ""
 
-#: instances/views.py:928 networks/views.py:206
+#: instances/views.py:931 networks/views.py:216
 msgid "{qos_dir.capitalize()} QoS is set. Network XML is changed."
 msgstr ""
 
-#: instances/views.py:929 networks/views.py:207
+#: instances/views.py:932 networks/views.py:217
 msgid "Stop and start network to activate new config"
 msgstr ""
 
-#: instances/views.py:940 networks/views.py:221
+#: instances/views.py:943 networks/views.py:233
 msgid "{qos_dir.capitalize()} QoS is deleted"
 msgstr ""
 
-#: instances/views.py:956
-msgid "Owner already added"
+#: instances/views.py:959
+msgid "One owner is allowed and owner already added"
 msgstr ""
 
-#: instances/views.py:961
+#: instances/views.py:964
 #, python-brace-format
 msgid "Added owner {user_id}"
 msgstr ""
 
-#: instances/views.py:969
+#: instances/views.py:972
 #, python-brace-format
 msgid "Deleted owner {userinstance_id}"
 msgstr ""
 
-#: instances/views.py:995
+#: instances/views.py:1001
 msgid "User '{quota_msg}' quota reached, cannot create '{clone_data['name']}'!"
 msgstr ""
 
-#: instances/views.py:998
+#: instances/views.py:1004
 msgid "Instance '{clone_data['name']}' already exists!"
 msgstr ""
 
-#: instances/views.py:1001
+#: instances/views.py:1007
 msgid "Instance name '{clone_data['name']}' contains invalid characters!"
 msgstr ""
 
-#: instances/views.py:1005
+#: instances/views.py:1011
 msgid "Instance MAC '{clone_data['clone-net-mac-0']}' invalid format!"
 msgstr ""
 
-#: instances/views.py:1021
+#: instances/views.py:1027
 #, python-format
 msgid "Clone of '%s'"
 msgstr ""
 
-#: instances/views.py:1039
+#: instances/views.py:1046
 msgid "Edit options"
 msgstr ""
 
-#: instances/views.py:1097
+#: instances/views.py:1103
 msgid "Deleting due to multiple(Instance Name) records."
 msgstr ""
 
-#: instances/views.py:1105
+#: instances/views.py:1111
 msgid "Deleting due to multiple(UUID) records."
 msgstr ""
 
-#: instances/views.py:1212
+#: instances/views.py:1218
 msgid "Send console.vv file"
 msgstr ""
 
 #: interfaces/forms.py:25
-msgid "The ipv4 must not contain any special characters"
+msgid "The IPv4 address must not contain any special characters"
 msgstr ""
 
 #: interfaces/forms.py:27
-msgid "The ipv4 must not exceed 20 characters"
+msgid "The IPv4 address must not exceed 20 characters"
 msgstr ""
 
 #: interfaces/forms.py:34
-msgid "The ipv4 gateway must not contain any special characters"
+msgid "The IPv4 gateway must not contain any special characters"
 msgstr ""
 
 #: interfaces/forms.py:36
-msgid "The ipv4 gateway must not exceed 20 characters"
+msgid "The IPv4 gateway must not exceed 20 characters"
 msgstr ""
 
 #: interfaces/forms.py:43
-msgid "The ipv6 must not contain any special characters"
+msgid "The IPv6 address must not contain any special characters"
 msgstr ""
 
 #: interfaces/forms.py:45
-msgid "The ipv6 must not exceed 100 characters"
+msgid "The IPv6 address must not exceed 100 characters"
 msgstr ""
 
 #: interfaces/forms.py:52
-msgid "The ipv6 gateway must not contain any special characters"
+msgid "The IPv6 gateway must not contain any special characters"
 msgstr ""
 
 #: interfaces/forms.py:54
-msgid "The ipv6 gateway must not exceed 100 characters"
+msgid "The IPv6 gateway must not exceed 100 characters"
 msgstr ""
 
 #: interfaces/forms.py:61 interfaces/forms.py:70
@@ -2620,10 +2671,6 @@ msgstr ""
 msgid "Hypervisor doesn't have any Interfaces"
 msgstr ""
 
-#: logs/templates/showlogs.html:21
-msgid "You don't have any Logs"
-msgstr ""
-
 #: networks/forms.py:7 storages/forms.py:7
 msgid "No pool name has been entered"
 msgstr ""
@@ -2644,16 +2691,20 @@ msgstr ""
 msgid "The pool name must not exceed 20 characters"
 msgstr ""
 
-#: networks/forms.py:33 networks/forms.py:42
-msgid "The pool subnet must not contain any special characters"
+#: networks/forms.py:33
+msgid "The IPv4 subnet must not contain any special characters"
 msgstr ""
 
 #: networks/forms.py:35
-msgid "The pool subnet must not exceed 20 characters"
+msgid "The IPv4 subnet must not exceed 20 characters"
+msgstr ""
+
+#: networks/forms.py:42
+msgid "The IPv6 subnet must not contain any special characters"
 msgstr ""
 
 #: networks/forms.py:44
-msgid "The pool subnet must not exceed 42 characters"
+msgid "The IPv6 subnet must not exceed 42 characters"
 msgstr ""
 
 #: networks/forms.py:52
@@ -2713,7 +2764,7 @@ msgid "DHCPv4"
 msgstr ""
 
 #: networks/templates/create_net_block.html:47
-msgid "Fixed Address"
+msgid "Fixed Addresses"
 msgstr ""
 
 #: networks/templates/create_net_block.html:53
@@ -2790,7 +2841,7 @@ msgid "Edit DHCP Range"
 msgstr ""
 
 #: networks/templates/network.html:152
-msgid "IPv4 Fixed Address"
+msgid "IPv4 Fixed Addresses"
 msgstr ""
 
 #: networks/templates/network.html:192 networks/templates/network.html:301
@@ -2810,7 +2861,7 @@ msgid "IPv6 Forwarding"
 msgstr ""
 
 #: networks/templates/network.html:264
-msgid "IPv6 Fixed Address"
+msgid "IPv6 Fixed Addresses"
 msgstr ""
 
 #: networks/templates/networks.html:50
@@ -2833,40 +2884,40 @@ msgstr ""
 msgid "For libvirt, the IPv6 network prefix must be /64"
 msgstr ""
 
-#: networks/views.py:115
+#: networks/views.py:124
 msgid "Unknown Network Family"
 msgstr ""
 
-#: networks/views.py:165
+#: networks/views.py:174
 msgid "{family.upper()} Fixed Address Operation Completed."
 msgstr ""
 
-#: networks/views.py:175
+#: networks/views.py:184
 msgid "{family.upper()} Fixed Address is Deleted."
 msgstr ""
 
-#: networks/views.py:183
+#: networks/views.py:192
 msgid "{family.upper()} DHCP Range is Changed."
 msgstr ""
 
-#: networks/views.py:192
+#: networks/views.py:201
 msgid ""
 "Network XML is changed. \\Stop and start network to activate new config."
 msgstr ""
 
-#: networks/views.py:195
+#: networks/views.py:203
 msgid "Network XML is changed."
 msgstr ""
 
-#: networks/views.py:209
+#: networks/views.py:219
 msgid "{} QoS is set"
 msgstr ""
 
-#: networks/views.py:218
+#: networks/views.py:230
 msgid "{qos_dir.capitalize()} QoS is deleted. Network XML is changed. "
 msgstr ""
 
-#: networks/views.py:219
+#: networks/views.py:231
 msgid "Stop and start network to activate new config."
 msgstr ""
 
@@ -2931,35 +2982,35 @@ msgstr ""
 msgid "Hypervisor doesn't have any NWFilters"
 msgstr ""
 
-#: nwfilters/views.py:48
+#: nwfilters/views.py:43
 msgid "A network filter with this name already exists"
 msgstr ""
 
-#: nwfilters/views.py:51
+#: nwfilters/views.py:46
 msgid "A network filter with this uuid already exists"
 msgstr ""
 
-#: nwfilters/views.py:55
+#: nwfilters/views.py:50
 #, python-format
 msgid "Creating NWFilter: %s"
 msgstr ""
 
-#: nwfilters/views.py:64
+#: nwfilters/views.py:59
 #, python-brace-format
 msgid "Deleting NWFilter: {name}"
 msgstr ""
 
-#: nwfilters/views.py:76
+#: nwfilters/views.py:71
 #, python-brace-format
 msgid "NWFilter is in use by {inst}. Cannot be deleted."
 msgstr ""
 
-#: nwfilters/views.py:93
+#: nwfilters/views.py:88
 #, python-brace-format
 msgid "Cloning NWFilter {name} as {cln_name}"
 msgstr ""
 
-#: secrets/templates/create_secret_block.html:13
+#: secrets/templates/create_secret_block.html:12
 msgid "Create New Secret"
 msgstr ""
 
@@ -2982,26 +3033,12 @@ msgid "Private"
 msgstr ""
 
 #: secrets/templates/create_secret_block.html:36
-#: secrets/templates/secrets.html:61 storages/templates/storage.html:56
+#: storages/templates/storage.html:56
 msgid "Usage"
 msgstr ""
 
-#: secrets/templates/create_secret_block.html:39
-#: secrets/templates/secrets.html:76
-msgid "ceph"
-msgstr ""
-
-#: secrets/templates/create_secret_block.html:40
-#: secrets/templates/secrets.html:70
-msgid "volume"
-msgstr ""
-
-#: secrets/templates/create_secret_block.html:41
-#: secrets/templates/secrets.html:73
-msgid "iscsi"
-msgstr ""
-
 #: secrets/templates/create_secret_block.html:46
+#: secrets/templates/secrets.html:61
 msgid "Data"
 msgstr ""
 
@@ -3009,11 +3046,15 @@ msgstr ""
 msgid "Hypervisor doesn't have any Secrets"
 msgstr ""
 
-#: secrets/templates/secrets.html:97
+#: secrets/templates/secrets.html:60
+msgid "Usage Type"
+msgstr ""
+
+#: secrets/templates/secrets.html:88
 msgid "Set secret value"
 msgstr ""
 
-#: secrets/templates/secrets.html:103
+#: secrets/templates/secrets.html:94
 msgid "Value"
 msgstr ""
 
@@ -3026,11 +3067,11 @@ msgid "The target must not contain any special characters"
 msgstr ""
 
 #: storages/forms.py:48
-msgid "No device has been entered"
+msgid "No device or path has been entered"
 msgstr ""
 
 #: storages/forms.py:50
-msgid "The source must not contain any special characters"
+msgid "The disk source must not contain any special characters"
 msgstr ""
 
 #: storages/forms.py:66 storages/forms.py:85
@@ -3119,17 +3160,17 @@ msgid "Add New Volume"
 msgstr ""
 
 #: storages/templates/create_stg_vol_block.html:60
-#: storages/templates/storage.html:145
+#: storages/templates/storage.html:144
 msgid "qcow2"
 msgstr ""
 
 #: storages/templates/create_stg_vol_block.html:61
-#: storages/templates/storage.html:144
+#: storages/templates/storage.html:143
 msgid "qcow"
 msgstr ""
 
 #: storages/templates/create_stg_vol_block.html:62
-#: storages/templates/storage.html:143
+#: storages/templates/storage.html:142
 msgid "raw"
 msgstr ""
 
@@ -3149,23 +3190,23 @@ msgstr ""
 msgid "Pool status"
 msgstr ""
 
-#: storages/templates/storage.html:88 storages/templates/storages.html:68
+#: storages/templates/storage.html:87 storages/templates/storages.html:68
 msgid "Volumes"
 msgstr ""
 
-#: storages/templates/storage.html:100
+#: storages/templates/storage.html:99
 msgid "Allocated"
 msgstr ""
 
-#: storages/templates/storage.html:121
+#: storages/templates/storage.html:120
 msgid "Clone image"
 msgstr ""
 
-#: storages/templates/storage.html:134
+#: storages/templates/storage.html:133
 msgid "Convert"
 msgstr ""
 
-#: storages/templates/storage.html:191
+#: storages/templates/storage.html:189
 msgid "Hypervisor doesn't have any Volumes"
 msgstr ""
 
@@ -3173,48 +3214,65 @@ msgstr ""
 msgid "Hypervisor doesn't have any Storages"
 msgstr ""
 
-#: storages/views.py:41
+#: storages/views.py:38
 msgid "Pool name already use"
 msgstr ""
 
-#: storages/views.py:45
+#: storages/views.py:42
 msgid "You need create secret for pool"
 msgstr ""
 
-#: storages/views.py:48
+#: storages/views.py:45
 msgid "You need input all fields for creating ceph pool"
 msgstr ""
 
-#: storages/views.py:162
-msgid "Image file {} is created successfully"
+#: storages/views.py:153
+#, python-brace-format
+msgid "Image file {name} is created successfully"
 msgstr ""
 
-#: storages/views.py:174
+#: storages/views.py:165
 msgid "Volume: {} is deleted."
 msgstr ""
 
-#: storages/views.py:180
+#: storages/views.py:171
 msgid "ISO image already exist"
 msgstr ""
 
-#: storages/views.py:184
+#: storages/views.py:175
 msgid "ISO: {} is uploaded."
 msgstr ""
 
-#: storages/views.py:193
+#: storages/views.py:184
 msgid "Name of volume already in use"
 msgstr ""
 
-#: storages/views.py:204
+#: storages/views.py:195
 msgid "{} image cloned as {} successfully"
+msgstr ""
+
+#: templates/403.html:3
+msgid "403"
+msgstr ""
+
+#: templates/403.html:7 templates/404.html:7 templates/500.html:7
+msgid "Oops!"
+msgstr ""
+
+#: templates/403.html:9
+msgid "403 Forbidden"
+msgstr ""
+
+#: templates/403.html:11
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: templates/403.html:12 templates/404.html:12 templates/500.html:12
+msgid "Back"
 msgstr ""
 
 #: templates/404.html:3
 msgid "404"
-msgstr ""
-
-#: templates/404.html:7 templates/500.html:7
-msgid "Oops!"
 msgstr ""
 
 #: templates/404.html:9
@@ -3223,10 +3281,6 @@ msgstr ""
 
 #: templates/404.html:11
 msgid "The requested page was not found on this server."
-msgstr ""
-
-#: templates/404.html:12 templates/500.html:12
-msgid "Back"
 msgstr ""
 
 #: templates/500.html:3
@@ -3251,12 +3305,18 @@ msgstr ""
 msgid "Success"
 msgstr ""
 
-#: templates/navbar.html:37
+#: templates/navbar.html:47
 msgid "Log Out"
 msgstr ""
 
 #: templates/pleasewaitdialog.html:7
 msgid "Processing"
+msgstr ""
+
+#: venv/lib/python3.6/site-packages/bootstrap4/components.py:17
+#: venv/lib/python3.6/site-packages/bootstrap4/templates/bootstrap4/form_errors.html:3
+#: venv/lib/python3.6/site-packages/bootstrap4/templates/bootstrap4/messages.html:4
+msgid "close"
 msgstr ""
 
 #: venv/lib/python3.6/site-packages/django/contrib/messages/apps.py:7
@@ -4412,10 +4472,4 @@ msgstr ""
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:408
 msgid "Connect, get help, or contribute"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/pylint_django/tests/input/func_noerror_gettext_lazy_format.py:7
-#: venv/lib/python3.6/site-packages/pylint_django/tests/input/func_noerror_ugettext_lazy_format.py:7
-#, python-brace-format
-msgid "{something}"
 msgstr ""

@@ -229,7 +229,7 @@
                     {% endif %}
                     {% if status == 5 %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
-                            <p>{% trans "Click on Boot button to start this instance." %}</p>
+                            <p>{% trans "Click on Power On button to start this instance." %}</p>
                             <form action="" method="post" role="form" aria-label="Start instance form">{% csrf_token %}
                                 {% if instance.is_template %}
                                     <p>{% trans "Template instance cannot be started." %}</p>
@@ -447,7 +447,7 @@
                                     <form method="post" role="form" aria-label="Resize instance memory form">{% csrf_token %}
                                         <p class="font-weight-bold">{% trans "Total host memory" %}: {{ memory_host|filesizeformat }}</p>
                                         <div class="form-group row">
-                                            <label class="col-sm-4 col-form-label">{% trans "Current allocation" %} ({% trans "MB" %})</label>
+                                            <label class="col-sm-4 col-form-label">{% trans "Current Allocation" %} ({% trans "MB" %})</label>
                                             <div class="col-sm-4 js-custom__container">
                                                 <select name="cur_memory" class="custom-select js-custom__toggle">
                                                     {% for mem in memory_range %}
@@ -460,7 +460,7 @@
                                         </div>
                                         <div class="form-group row">
                                             <label class="col-sm-4 col-form-label">
-                                                {% trans "Maximum allocation" %} ({% trans "MB" %})
+                                                {% trans "Maximum Allocation" %} ({% trans "MB" %})
                                             </label>
                                             <div class="col-sm-4 js-custom__container">
                                                 <select name="memory" class="form-control js-custom__toggle">
@@ -487,7 +487,7 @@
                                         <p class="font-weight-bold">{% trans "Disk allocation (GB)" %}:</p>
                                         {% for disk in disks %}
                                         <div class="form-group row">
-                                            <label class="col-sm-4 col-form-label">{% trans "Current allocation" %} ({{ disk.dev }})</label>
+                                            <label class="col-sm-4 col-form-label">{% trans "Current Allocation" %} ({{ disk.dev }})</label>
                                             <div class="col-sm-4 js-custom__container">
                                                 <input type="text" name="disk_size_{{ disk.dev }}" class="form-control" value="{{ disk.size|filesizeformat }}" />
                                             </div>
@@ -761,7 +761,7 @@
                                                         data-toggle="popover"
                                                         data-html="true"
                                                         data-content="<strong>{% trans 'Bus' %}:</strong> {{ cd.bus }} <br/>
-                                                            <strong>{% trans 'Dev' %}:</strong> {{ cd.dev }}">
+                                                            <strong>{% trans 'Device' %}:</strong> {{ cd.dev }}">
                                                     {% trans "CD-ROM" %} {{ forloop.counter }}
                                                 </a>
                                                 {% if not cd.image %}
@@ -1053,7 +1053,7 @@
                                     <tbody>
                                     {% for q, attrs in qos.items %}
                                         {% for att in attrs  %}
-                                            <form method="post" role="form" aria-label="Instance Qos configuration form">{% csrf_token %}
+                                            <form method="post" role="form" aria-label="Instance QoS configuration form">{% csrf_token %}
                                             <tr>
                                                 <td><label class="col-form-label">{{ q }} {{ att.direction | capfirst }}</label></td>
                                                 <td><input id="qos_average" class="form-control" name="qos_average"
@@ -1176,8 +1176,8 @@
                             </form>
                             <div class="clearfix"></div>
                         </div>
-                        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
-                            <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
+                        <div role="tabpanel" class="tab-pane ta"b-pane-bordered" id="xmledit">
+                            <p>{% trans "If you need to edit XML please Power Off the instance" %}</p>
                             <form method="post" role="form" aria-label="Edit instance XML form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
                                     <textarea id="editor">{{ inst_xml }}</textarea>

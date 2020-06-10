@@ -22,36 +22,36 @@ class AddInterface(forms.Form):
         ipv4_addr = self.cleaned_data['ipv4_addr']
         have_symbol = re.match('^[0-9./]+$', ipv4_addr)
         if not have_symbol:
-            raise forms.ValidationError(_('The ipv4 must not contain any special characters'))
+            raise forms.ValidationError(_('The IPv4 address must not contain any special characters'))
         elif len(ipv4_addr) > 20:
-            raise forms.ValidationError(_('The ipv4 must not exceed 20 characters'))
+            raise forms.ValidationError(_('The IPv4 address must not exceed 20 characters'))
         return ipv4_addr
 
     def clean_ipv4_gw(self):
         ipv4_gw = self.cleaned_data['ipv4_gw']
         have_symbol = re.match('^[0-9.]+$', ipv4_gw)
         if not have_symbol:
-            raise forms.ValidationError(_('The ipv4 gateway must not contain any special characters'))
+            raise forms.ValidationError(_('The IPv4 gateway must not contain any special characters'))
         elif len(ipv4_gw) > 20:
-            raise forms.ValidationError(_('The ipv4 gateway must not exceed 20 characters'))
+            raise forms.ValidationError(_('The IPv4 gateway must not exceed 20 characters'))
         return ipv4_gw
 
     def clean_ipv6_addr(self):
         ipv6_addr = self.cleaned_data['ipv6_addr']
         have_symbol = re.match('^[0-9a-f./:]+$', ipv6_addr)
         if not have_symbol:
-            raise forms.ValidationError(_('The ipv6 must not contain any special characters'))
+            raise forms.ValidationError(_('The IPv6 address must not contain any special characters'))
         elif len(ipv6_addr) > 100:
-            raise forms.ValidationError(_('The ipv6 must not exceed 100 characters'))
+            raise forms.ValidationError(_('The IPv6 address must not exceed 100 characters'))
         return ipv6_addr
 
     def clean_ipv6_gw(self):
         ipv6_gw = self.cleaned_data['ipv6_gw']
         have_symbol = re.match('^[0-9.]+$', ipv6_gw)
         if not have_symbol:
-            raise forms.ValidationError(_('The ipv6 gateway must not contain any special characters'))
+            raise forms.ValidationError(_('The IPv6 gateway must not contain any special characters'))
         elif len(ipv6_gw) > 100:
-            raise forms.ValidationError(_('The ipv6 gateway must not exceed 100 characters'))
+            raise forms.ValidationError(_('The IPv6 gateway must not exceed 100 characters'))
         return ipv6_gw
 
     def clean_name(self):
