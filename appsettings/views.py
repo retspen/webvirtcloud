@@ -20,7 +20,7 @@ def appsettings(request):
     :return:
     """
     error_messages = []
-
+    main_css = "wvc-main.min.css"
     sass_dir = AppSettings.objects.get(key="SASS_DIR")
     bootstrap_theme = AppSettings.objects.get(key="BOOTSTRAP_THEME")
     try:
@@ -59,7 +59,7 @@ def appsettings(request):
                     main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch + "\n")
                 
                 css_compressed = sass.compile(string=scss_var + "\n"+ scss_boot + "\n" + scss_bootswatch, output_style='compressed')
-                with open("static/" + "css/wvc-main.min.css", "w") as css:
+                with open("static/css/" + main_css, "w") as css:
                     css.write(css_compressed)    
 
                 bootstrap_theme.value = theme

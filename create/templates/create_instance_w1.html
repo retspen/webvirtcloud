@@ -7,7 +7,9 @@
     <!-- Page Heading -->   
     <div class="row">
         <div class="col-lg-12">
-            <h3 class="page-header">{% trans "New instance on" %} {{ compute.name }}</h3>
+            <h3 class="page-header">
+                {% blocktrans with host=compute.name %}New instance on {{ host }} {% endblocktrans %}
+            </h3>
         </div>
     </div>
     <!-- /.row -->

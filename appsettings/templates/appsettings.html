@@ -37,9 +37,9 @@
                 {% if request.user.is_superuser %}
                 <form method="post" action="" role="form" aria-label="Edit sass directory settings form">{% csrf_token %}
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{{ sass_dir.name }}</label>
+                        <label class="col-sm-3 col-form-label">{% trans sass_dir.name %}</label>
                         <div class="col-sm-6">
-                            <input class="form-control" name="{{ sass_dir.key }}" value="{{ sass_dir.value }}" onchange="this.form.submit()"/>
+                            <input class="form-control" name="{{ sass_dir.key }}" value="{{ sass_dir.value }}" onchange="this.form.submit()" title="{% trans sass_dir.description %}"/>
                         </div>
                     </div>
                 </form>
@@ -47,7 +47,7 @@
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">{% trans bootstrap_theme.name %}</label>
                         <div class="col-sm-6">
-                            <select class="form-control" name="{{ bootstrap_theme.key }}" onchange="this.form.submit()">
+                            <select class="form-control" name="{{ bootstrap_theme.key }}" onchange="this.form.submit()" title="{% trans bootstrap_theme.description %}">
                             {% for theme in themes_list %}
                                 <option {% if bootstrap_theme.value == theme %}selected{% endif %} value="{{ theme }}">{{ theme }}</option>
                             {% endfor %}
@@ -61,16 +61,16 @@
                 {% for setting in appsettings %}
                     <form method="post" action="" role="form" aria-label="{{setting.name}} form">{% csrf_token %}
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{{ setting.name }}</label>
+                            <label class="col-sm-3 col-form-label">{% trans setting.name %}</label>
                             <div class="col-sm-6">
                             {% if setting.choices %}
-                                <select class="form-control" name="{{ setting.key }}"  onchange="this.form.submit()" title="{{ setting.description }}">
+                                <select class="form-control" name="{{ setting.key }}"  onchange="this.form.submit()" title="{% trans setting.description %}">
                                     {% for choice in setting.choices_as_list %}
                                         <option {% if setting.value == choice %} selected {% endif %} value={{ choice }}>{% trans choice %}</option>
                                     {% endfor %}
                                 </select>
                             {% else %}
-                                <input class="form-control" name="{{ setting.key }}" value="{{ setting.value }}" title="{{ setting.description }}"  onchange="this.form.submit()"/>
+                                <input class="form-control" name="{{ setting.key }}" value="{{ setting.value }}" title="{% trans setting.description %}"  onchange="this.form.submit()"/>
                             {% endif%}
                             </div>
                         </div>

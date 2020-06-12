@@ -34,7 +34,7 @@ def os_metadata_json(request, version):
         response = {'uuid': OS_UUID, 'hostname': hostname}
         return HttpResponse(json.dumps(response))
     else:
-        err = 'Invalid version: {}'.format(version)
+        err = f"Invalid version: {version}"
         raise Http404(err)
 
 
@@ -59,7 +59,7 @@ def os_userdata(request, version):
 
         return render(request, 'user_data', locals())
     else:
-        err = 'Invalid version: {}'.format(version)
+        err = f"Invalid version: {version}"
         raise Http404(err)
 
 
@@ -108,5 +108,5 @@ def get_vdi_url(request, compute_id, vname):
         response = url
         return HttpResponse(response)
     except libvirtError as lib_err:
-        err = f"Error getting vdi url for {vname}"
+        err = f"Error getting VDI URL for {vname}"
         raise Http404(err)

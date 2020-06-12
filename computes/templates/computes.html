@@ -37,17 +37,17 @@
                         </div>
                         <div class="card-body">
                             <dl class="row">
-                                <dt class="col-4">{% trans "Status" %}</dt>
+                                <dt class="col-5">{% trans "Status" %}</dt>
                                 {% if compute.status %}
-                                    <dd class="col-8">{% trans "Connected" %}</dd>
+                                    <dd class="col-7">{% trans "Connected" %}</dd>
                                 {% else %}
-                                    <dd class="col-8">{% trans "Not Connected" %}</dd>
+                                    <dd class="col-7">{% trans "Not Connected" %}</dd>
                                 {% endif %}
-                                <dt class="col-4">{% trans "Details" %}</dt>
+                                <dt class="col-5">{% trans "Details" %}</dt>
                                 {% if compute.details %}
-                                    <dd class="col-8">{% trans compute.details %}</dd>
+                                    <dd class="col-7">{% trans compute.details %}</dd>
                                 {% else %}
-                                    <dd class="col-8">{% trans "No details available" %}</dd>
+                                    <dd class="col-7">{% trans "No details available" %}</dd>
                                 {% endif %}
                             </dl>
 
@@ -63,7 +63,7 @@
                                             <form method="post" role="form" aria-label="Edit tcp host form">{% csrf_token %}
                                                 <div class="modal-body">
                                                     <div class="form-group row">
-                                                        <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
+                                                        <label class="col-sm-4 col-form-label">{% trans "Name" %}</label>
                                                         <div class="col-sm-6">
                                                             <input type="hidden" name="host_id" value="{{ compute.id }}">
                                                             <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
@@ -111,7 +111,7 @@
                                                 <div class="modal-body">
                                                     <p class="modal-body">{% trans "Need create ssh <a href='https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization'>authorization key</a>. If you have another SSH port on your server, you can add IP:PORT like '192.168.1.1:2222'." %}</p>
                                                     <div class="form-group row">
-                                                        <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
+                                                        <label class="col-sm-4 col-form-label">{% trans "Name" %}</label>
                                                         <div class="col-sm-6">
                                                             <input type="hidden" name="host_id" value="{{ compute.id }}">
                                                             <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
@@ -154,7 +154,7 @@
                                             <form method="post" role="form" aria-label="Edit tls host form">{% csrf_token %}
                                                 <div class="modal-body">
                                                     <div class="form-group row">
-                                                        <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
+                                                        <label class="col-sm-4 col-form-label">{% trans "Name" %}</label>
                                                         <div class="col-sm-6">
                                                             <input type="hidden" name="host_id" value="{{ compute.id }}">
                                                             <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">
@@ -202,7 +202,7 @@
                                             <form method="post" role="form" aria-label="Edit/delete host form">{% csrf_token %}
                                                 <div class="modal-body">
                                                     <div class="form-group row">
-                                                        <label class="col-sm-4 col-form-label">{% trans "Label" %}</label>
+                                                        <label class="col-sm-4 col-form-label">{% trans "Name" %}</label>
                                                         <div class="col-sm-6">
                                                             <input type="hidden" name="host_id" value="{{ compute.id }}">
                                                             <input type="text" name="name" class="form-control" value="{{ compute.name }}" maxlength="20" required pattern="[a-z0-9\.\-_]+">

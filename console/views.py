@@ -45,7 +45,7 @@ def console(request):
     if console_type == 'vnc' or console_type == 'spice':
         response = render(request, console_page, locals())
     else:
-        console_error = "Console type: %s no support" % console_type
+        console_error = f"Console type: {console_type} no support"
         response = render(request, 'console-vnc-lite.html', locals())
 
     response.set_cookie('token', token)
