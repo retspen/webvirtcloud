@@ -162,7 +162,7 @@ def storage(request, compute_id, pool):
             try:
                 vol = conn.get_volume(volname)
                 vol.delete(0)
-                messages.success(request, _('Volume: {} is deleted.'.format(volname)))
+                messages.success(request, _(f"Volume: {volname} is deleted."))
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 error_messages.append(lib_err)
@@ -172,7 +172,7 @@ def storage(request, compute_id, pool):
                 error_messages.append(error_msg)
             else:
                 handle_uploaded_file(path, request.FILES['file'])
-                messages.success(request, _('ISO: {} is uploaded.'.format(request.FILES['file'])))
+                messages.success(request, _(f"ISO: {request.FILES['file']} is uploaded."))
                 return HttpResponseRedirect(request.get_full_path())
         if 'cln_volume' in request.POST:
             form = CloneImage(request.POST)
@@ -192,7 +192,7 @@ def storage(request, compute_id, pool):
                         format = None
                     try:
                         name = conn.clone_volume(data['image'], data['name'], format, meta_prealloc)
-                        messages.success(request, _("{} image cloned as {} successfully".format(data['image'], name)))
+                        messages.success(request, _(f"{data['image']} image cloned as {name} successfully"))
                         return HttpResponseRedirect(request.get_full_path())
                     except libvirtError as lib_err:
                         error_messages.append(lib_err)

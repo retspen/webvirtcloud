@@ -45,9 +45,9 @@ class AddStgPool(forms.Form):
         have_symbol = re.match('^[a-zA-Z0-9\/]+$', source)
         if storage_type == 'logical' or storage_type == 'netfs':
             if not source:
-                raise forms.ValidationError(_('No device has been entered'))
+                raise forms.ValidationError(_('No device or path has been entered'))
             if not have_symbol:
-                raise forms.ValidationError(_('The source must not contain any special characters'))
+                raise forms.ValidationError(_('The disk source must not contain any special characters'))
         return source
 
 

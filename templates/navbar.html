@@ -38,6 +38,10 @@
             <i class="fa fa-fw fa-user"></i> {{ request.user.username }}
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarUserDropdown">
+            {% get_current_language as LANGUAGE_CODE %}
+            <a class="dropdown-item disabled" href="#">
+              {% trans "Language" %}: <span class="badge badge-secondary">{{ LANGUAGE_CODE }}</span>
+            </a>
             <a class="dropdown-item {% view_active request 'profile' %}" href="{% url 'profile' %}"><i class="fa fa-fw fa-pencil-square-o"></i> {% trans "Profile" %}</a>
             <div class="dropdown-divider"></div>
             <a class="dropdown-item" href="{% url 'logout' %}"><i class="fa fa-fw fa-power-off"></i> {% trans "Log Out" %}</a>

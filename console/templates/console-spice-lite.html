@@ -111,7 +111,7 @@
             var path = spice_query_var('path', 'websockify');
 
             if ((!host) || (!port)) {
-                console.log("must specify host and port in URL");
+                console.log(_("must specify host and port in URL"));
                 return;
             }
 
@@ -222,4 +222,3 @@
         <!-- If DUMPXXX is turned on, dumped images will go here -->
         </div>
 {% endblock %}
-

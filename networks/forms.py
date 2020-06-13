@@ -30,18 +30,18 @@ class AddNetPool(forms.Form):
         subnet = self.cleaned_data['subnet']
         have_symbol = re.match('^[0-9./]+$', subnet if subnet else ".")
         if not have_symbol:
-            raise forms.ValidationError(_('The pool subnet must not contain any special characters'))
+            raise forms.ValidationError(_('The IPv4 subnet must not contain any special characters'))
         elif len(subnet) > 20:
-            raise forms.ValidationError(_('The pool subnet must not exceed 20 characters'))
+            raise forms.ValidationError(_('The IPv4 subnet must not exceed 20 characters'))
         return subnet
 
     def clean_subnet6(self):
         subnet = self.cleaned_data['subnet6']
         have_symbol = re.match('^[0-9a-fA-F:/]+$', subnet if subnet else ":")
         if not have_symbol:
-            raise forms.ValidationError(_('The pool subnet must not contain any special characters'))
+            raise forms.ValidationError(_('The IPv6 subnet must not contain any special characters'))
         elif len(subnet) > 42:
-            raise forms.ValidationError(_('The pool subnet must not exceed 42 characters'))
+            raise forms.ValidationError(_('The IPv6 subnet must not exceed 42 characters'))
         return subnet
 
     def clean_bridge_name(self):

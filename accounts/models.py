@@ -19,8 +19,8 @@ class UserInstance(models.Model):
 
 class UserSSHKey(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
-    keyname = models.CharField(max_length=25)
-    keypublic = models.CharField(max_length=500)
+    keyname = models.CharField(_('key name'), max_length=25)
+    keypublic = models.CharField(_('public key'), max_length=500)
 
     def __unicode__(self):
         return self.keyname
@@ -29,24 +29,28 @@ class UserSSHKey(models.Model):
 class UserAttributes(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     can_clone_instances = models.BooleanField(default=True)
-    max_instances = models.IntegerField(default=2,
-                                        help_text="-1 for unlimited. Any integer value",
+    max_instances = models.IntegerField(_('max instances'),
+                                        default=2,
+                                        help_text=_("-1 for unlimited. Any integer value"),
                                         validators=[
                                             MinValueValidator(-1),
                                         ])
     max_cpus = models.IntegerField(
+        _('max CPUs'),
         default=2,
-        help_text="-1 for unlimited. Any integer value",
+        help_text=_("-1 for unlimited. Any integer value"),
         validators=[MinValueValidator(-1)],
     )
     max_memory = models.IntegerField(
+        _('max memory'),
         default=2048,
-        help_text="-1 for unlimited. Any integer value",
+        help_text=_("-1 for unlimited. Any integer value"),
         validators=[MinValueValidator(-1)],
     )
     max_disk_size = models.IntegerField(
+        _('max disk size'),
         default=20,
-        help_text="-1 for unlimited. Any integer value",
+        help_text=_("-1 for unlimited. Any integer value"),
         validators=[MinValueValidator(-1)],
     )
 

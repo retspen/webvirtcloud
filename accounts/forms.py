@@ -7,7 +7,7 @@ from django.conf import settings
 
 class UserAddForm(forms.Form):
     name = forms.CharField(label="Name",
-                           error_messages={'required': _('No User name has been entered')},
+                           error_messages={'required': _('No username has been entered')},
                            max_length=20)
     password = forms.CharField(required=not settings.ALLOW_EMPTY_PASSWORD,
                                error_messages={'required': _('No password has been entered')},)

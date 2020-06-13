@@ -257,7 +257,7 @@ def instance(request, compute_id, vname):
         if autostart:
             conn_new.set_autostart(1)
             conn_new.close()
-        msg = _("Migrate to %s" % new_compute.hostname)
+        msg = _(f"Migrate to {new_compute.hostname}")
         addlogmsg(request.user.username, instance.name, msg)
 
     try:
@@ -337,12 +337,12 @@ def instance(request, compute_id, vname):
             if instance.uuid != uuid:
                 instance.uuid = uuid
                 instance.save()
-                msg = _("Fixing uuid %s" % uuid)
+                msg = _(f"Fixing UUID {uuid}")
                 addlogmsg(request.user.username, instance.name, msg)
         except Instance.DoesNotExist:
             instance = Instance(compute_id=compute_id, name=vname, uuid=uuid)
             instance.save()
-            msg = _("Instance.DoesNotExist: Creating new instance")
+            msg = _("Instance does not exist: Creating new instance")
             addlogmsg(request.user.username, instance.name, msg)
 
         userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
@@ -456,7 +456,7 @@ def instance(request, compute_id, vname):
                     s.send(json.dumps(data))
                     result = json.loads(s.recv(1024))
                     s.close()
-                    msg = _("Installed new ssh public key %s" % publickey.keyname)
+                    msg = _(f"Installed new SSH public key {publickey.keyname}")
                     addlogmsg(request.user.username, instance.name, msg)
 
                     if result['return'] == 'success':
@@ -565,10 +565,10 @@ def instance(request, compute_id, vname):
                 driver_type = conn_create.get_volume_type(name)
                 path = conn_create.get_target_path()
                 target_dev = get_new_disk_dev(media, disks, bus)
-                source = path + "/" + name
+                source = f"{path}/{name}"
 
                 conn.attach_disk(target_dev, source, target_bus=bus, driver_type=driver_type, cache_mode=cache)
-                msg = _('Attach Existing disk: ' + target_dev)
+                msg = _(f"Attach Existing disk: {target_dev}")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -600,11 +600,11 @@ def instance(request, compute_id, vname):
                                    cache, io, discard, zeroes)
 
                 if not conn.get_status() == 5:
-                    messages.success(request, _("Disk changes changes are applied. " +
+                    messages.success(request, _("Volume changes are applied. " +
                                                 "But it will be activated after shutdown"))
                 else:
-                    messages.success(request, _("Disk is changed successfully."))
-                msg = _('Edit disk: ' + target_dev)
+                    messages.success(request, _("Volume is changed successfully."))
+                msg = _(f"Edit disk: {target_dev}")
                 addlogmsg(request.user.username, instance.name, msg)
 
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
@@ -620,12 +620,12 @@ def instance(request, compute_id, vname):
                 path = request.POST.get('path', '')
                 name = request.POST.get('name', '')
 
-                msg = _('Delete disk: ' + dev)
+                msg = _(f"Delete disk: {dev}")
                 conn.detach_disk(dev)
                 try:
                     conn_delete.del_volume(name)
                 except libvirtError as err:
-                    msg = _('The disk: ' + dev + ' is detached but not deleted. ' + err)
+                    msg = _(f"The disk: {dev} is detached but not deleted. Error: {err}")
                     messages.warning(request, msg)
 
                 addlogmsg(request.user.username, instance.name, msg)
@@ -635,7 +635,7 @@ def instance(request, compute_id, vname):
                 dev = request.POST.get('detach_vol', '')
                 path = request.POST.get('path', '')
                 conn.detach_disk(dev)
-                msg = _('Detach disk: ' + dev)
+                msg = _(f"Detach disk: {dev}")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -643,14 +643,14 @@ def instance(request, compute_id, vname):
                 bus = request.POST.get('bus', 'ide' if machine == 'pc' else 'sata')
                 target = get_new_disk_dev(media, disks, bus)
                 conn.attach_disk(target, "", disk_device='cdrom', cache_mode='none', target_bus=bus, readonly=True)
-                msg = _('Add CD-ROM: ' + target)
+                msg = _(f"Add CD-ROM: {target}")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'detach_cdrom' in request.POST and allow_admin_or_not_template:
                 dev = request.POST.get('detach_cdrom', '')
                 conn.detach_disk(dev)
-                msg = _('Detach CD-ROM: ' + dev)
+                msg = _(f'Detach CD-ROM: {dev}')
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -658,7 +658,7 @@ def instance(request, compute_id, vname):
                 image = request.POST.get('path', '')
                 dev = request.POST.get('umount_iso', '')
                 conn.umount_iso(dev, image)
-                msg = _("Mount media: " + dev)
+                msg = _(f"Mount media: {dev}")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
@@ -666,21 +666,21 @@ def instance(request, compute_id, vname):
                 image = request.POST.get('media', '')
                 dev = request.POST.get('mount_iso', '')
                 conn.mount_iso(dev, image)
-                msg = _("Umount media: " + dev)
+                msg = _(f"Umount media: {dev}")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#disks')
 
             if 'snapshot' in request.POST and allow_admin_or_not_template:
                 name = request.POST.get('name', '')
                 conn.create_snapshot(name)
-                msg = _("New snapshot :" + name)
+                msg = _(f"New snapshot : {name}")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
             if 'delete_snapshot' in request.POST and allow_admin_or_not_template:
                 snap_name = request.POST.get('name', '')
                 conn.snapshot_delete(snap_name)
-                msg = _("Delete snapshot :" + snap_name)
+                msg = _(f"Delete snapshot : {snap_name}")
                 addlogmsg(request.user.username, instance.name, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#managesnapshot')
 
@@ -713,14 +713,14 @@ def instance(request, compute_id, vname):
                         conn.set_vcpu(id, 1)
                     else:
                         conn.set_vcpu(id, 0)
-                    msg = _("vCPU {} is enabled={}".format(id, enabled))
+                    msg = _(f"VCPU {id} is enabled={enabled}")
                     messages.success(request, msg)
                     addlogmsg(request.user.username, instance.name, msg)
                     return HttpResponseRedirect(request.get_full_path() + '#resize')
 
                 if 'set_vcpu_hotplug' in request.POST:
                     status = request.POST.get('vcpu_hotplug', '')
-                    msg = _("VCPU Hot-plug is enabled={}".format(status))
+                    msg = _(f"VCPU Hot-plug is enabled={status}")
                     try:
                         conn.set_vcpu_hotplug(eval(status))
                     except libvirtError as lib_err:
@@ -943,8 +943,8 @@ def instance(request, compute_id, vname):
                         messages.success(request, _(f"{qos_dir.capitalize()} QoS is deleted"))
                     else:
                         messages.success(request,
-                                         f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. " +
-                                         "Stop and start network to activate new config.")
+                                         _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. ") +
+                                         _("Stop and start network to activate new config."))
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_owner' in request.POST:
@@ -956,7 +956,7 @@ def instance(request, compute_id, vname):
                         check_inst = UserInstance.objects.filter(instance=instance)
 
                     if check_inst:
-                        msg = _("One owner is allowed and owner already added")
+                        msg = _("Only one owner is allowed and the one already added")
                         error_messages.append(msg)
                     else:
                         add_user_inst = UserInstance(instance=instance, user_id=user_id)
@@ -993,7 +993,7 @@ def instance(request, compute_id, vname):
                         clone_data['name'] = auto_vname
                         clone_data['clone-net-mac-0'] = _get_dhcp_mac_address(auto_vname)
                         for disk in disks:
-                            disk_dev = "disk-{}".format(disk['dev'])
+                            disk_dev = f"disk-{disk['dev']}"
                             disk_name = get_clone_disk_name(disk, vname, auto_vname)
                             clone_data[disk_dev] = disk_name
 
@@ -1024,7 +1024,7 @@ def instance(request, compute_id, vname):
                         user_instance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
                         user_instance.save()
 
-                        msg = _("Clone of '%s'" % instance.name)
+                        msg = _(f"Clone of '{instance.name}'")
                         addlogmsg(request.user.username, new_instance.name, msg)
                         
                         if appsettings.get(key="CLONE_INSTANCE_AUTO_MIGRATE").value == 'True':
@@ -1157,7 +1157,7 @@ def get_host_instances(request, comp):
 
         conn.close()
     else:
-        raise libvirtError("Problem occurred with host: {} - {}".format(comp.name, status))
+        raise libvirtError(_(f"Problem occurred with host: {comp.name} - {status}"))
     return all_host_vms
 
 
@@ -1343,7 +1343,7 @@ def guess_clone_name(request):
         with open(dhcp_file, 'r') as f:
             for line in f:
                 line = line.strip()
-                if "host %s" % prefix in line:
+                if f"host {prefix}" in line:
                     fqdn = line.split(' ')[1]
                     hostname = fqdn.split('.')[0]
                     if hostname.startswith(prefix) and hostname not in instance_names:
@@ -1364,12 +1364,12 @@ def get_clone_disk_name(disk, prefix, clone_name=''):
         return None
     if disk['image'].startswith(prefix) and clone_name:
         suffix = disk['image'][len(prefix):]
-        image = "{}{}".format(clone_name, suffix)
+        image = f"{clone_name}{suffix}"
     elif "." in disk['image'] and len(disk['image'].rsplit(".", 1)[1]) <= 7:
         name, suffix = disk['image'].rsplit(".", 1)
-        image = "{}-clone.{}".format(name, suffix)
+        image = f"{name}-clone.{suffix}"
     else:
-        image = "{}-clone".format(disk['image'])
+        image = f"{disk['image']}-clone"
     return image
 
 
@@ -1441,7 +1441,7 @@ def delete_instance(instance, delete_disk=False):
 
         del_userinstance = UserInstance.objects.filter(instance=instance)
         if del_userinstance:
-            print("Deleting UserInstances")
+            print("Deleting user instances")
             print(del_userinstance)
             del_userinstance.delete()
 
@@ -1459,8 +1459,8 @@ def delete_instance(instance, delete_disk=False):
         conn.delete()
         instance.delete()
 
-        print("Instance {} on compute {} successfully deleted".format(instance_name, compute.hostname))
+        print(f"Instance {instance_name} on compute {compute.hostname} successfully deleted")
 
     except libvirtError as lib_err:
-        print("Error removing instance {} on compute {}".format(instance_name, compute.hostname))
+        print(f"Error removing instance {instance_name} on compute {compute.hostname}")
         raise lib_err

@@ -229,7 +229,7 @@
                     {% endif %}
                     {% if status == 5 %}
                         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
-                            <p>{% trans "Click on Boot button to start this instance." %}</p>
+                            <p>{% trans "Click on Power On button to start this instance." %}</p>
                             <form action="" method="post" role="form" aria-label="Start instance form">{% csrf_token %}
                                 {% if instance.is_template %}
                                     <p>{% trans "Template instance cannot be started." %}</p>
@@ -447,7 +447,7 @@
                                     <form method="post" role="form" aria-label="Resize instance memory form">{% csrf_token %}
                                         <p class="font-weight-bold">{% trans "Total host memory" %}: {{ memory_host|filesizeformat }}</p>
                                         <div class="form-group row">
-                                            <label class="col-sm-4 col-form-label">{% trans "Current allocation" %} ({% trans "MB" %})</label>
+                                            <label class="col-sm-4 col-form-label">{% trans "Current Allocation" %} ({% trans "MB" %})</label>
                                             <div class="col-sm-4 js-custom__container">
                                                 <select name="cur_memory" class="custom-select js-custom__toggle">
                                                     {% for mem in memory_range %}
@@ -460,7 +460,7 @@
                                         </div>
                                         <div class="form-group row">
                                             <label class="col-sm-4 col-form-label">
-                                                {% trans "Maximum allocation" %} ({% trans "MB" %})
+                                                {% trans "Maximum Allocation" %} ({% trans "MB" %})
                                             </label>
                                             <div class="col-sm-4 js-custom__container">
                                                 <select name="memory" class="form-control js-custom__toggle">
@@ -487,7 +487,7 @@
                                         <p class="font-weight-bold">{% trans "Disk allocation (GB)" %}:</p>
                                         {% for disk in disks %}
                                         <div class="form-group row">
-                                            <label class="col-sm-4 col-form-label">{% trans "Current allocation" %} ({{ disk.dev }})</label>
+                                            <label class="col-sm-4 col-form-label">{% trans "Current Allocation" %} ({{ disk.dev }})</label>
                                             <div class="col-sm-4 js-custom__container">
                                                 <input type="text" name="disk_size_{{ disk.dev }}" class="form-control" value="{{ disk.size|filesizeformat }}" />
                                             </div>
@@ -761,7 +761,7 @@
                                                         data-toggle="popover"
                                                         data-html="true"
                                                         data-content="<strong>{% trans 'Bus' %}:</strong> {{ cd.bus }} <br/>
-                                                            <strong>{% trans 'Dev' %}:</strong> {{ cd.dev }}">
+                                                            <strong>{% trans 'Device' %}:</strong> {{ cd.dev }}">
                                                     {% trans "CD-ROM" %} {{ forloop.counter }}
                                                 </a>
                                                 {% if not cd.image %}
@@ -1036,55 +1036,57 @@
                             </div>
 
                             {% if qos %}
-                            <div class="col-10 col-sm-10">
-                                <p><strong>{% trans "QoS Configuration" %}</strong></p>
-                            </div>
-                            <div class="col-12 col-sm-12">
-                                <table class="table table-hover">
-                                    <thead>
-                                    <tr>
-                                        <th scope="col">{% trans "MAC" %}/{% trans "Direction" %}</th>
-                                        <th scope="col">{% trans "Average" %}</th>
-                                        <th scope="col">{% trans "Peak" %}</th>
-                                        <th scope="col">{% trans "Burst" %}</th>
-                                        <th scope="col">{% trans "Actions" %}</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for q, attrs in qos.items %}
-                                        {% for att in attrs  %}
-                                            <form method="post" role="form" aria-label="Instance Qos configuration form">{% csrf_token %}
-                                            <tr>
-                                                <td><label class="col-form-label">{{ q }} {{ att.direction | capfirst }}</label></td>
-                                                <td><input id="qos_average" class="form-control" name="qos_average"
-                                                           value="{{ att.average|default:'' }}"/>
-                                                </td>
-                                                <td><input id="qos_peak" class="form-control" name="qos_peak"
-                                                           value="{{ att.peak|default:'' }}"/>
-                                                </td>
-                                                <td><input id="qos_burst" class="form-control" name="qos_burst"
-                                                           value="{{ att.burst|default:'' }}"/>
-                                                </td>
-                                                <td class="col-sm-2">
-                                                    <input name="qos_direction" value="{{ att.direction }}" hidden/>
-                                                    <input name="net-mac" value="{{ q }}" hidden/>
-                                                    <button type="submit" class="btn btn-sm btn-primary"
-                                                            name="set_qos" data-toggle="modal"
-                                                            title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                        <i class="fa fa-save"></i>
-                                                    </button>
-                                                    <button type="submit" class="btn btn-sm btn-danger"
-                                                            name="unset_qos"
-                                                            title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            </form>
-                                            {% endfor %}
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
+                            <div class="row mt-3">
+                                <div class="col-sm-10">
+                                    <p><strong>{% trans "QoS Configuration" %}</strong></p>
+                                </div>
+                                <div class="col-12 col-sm-12">
+                                    <table class="table table-hover">
+                                        <thead>
+                                        <tr class="d-flex">
+                                            <th scope="col" class="col-2">{% trans "MAC" %}/{% trans "Direction" %}</th>
+                                            <th scope="col" class="col-2">{% trans "Average" %}</th>
+                                            <th scope="col" class="col-3">{% trans "Peak" %}</th>
+                                            <th scope="col" class="col-3">{% trans "Burst" %}</th>
+                                            <th scope="col" class="col-2">{% trans "Actions" %}</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for q, attrs in qos.items %}
+                                            {% for att in attrs  %}
+                                                <form method="post" role="form" aria-label="Instance QoS configuration form">{% csrf_token %}
+                                                <tr class="d-flex">
+                                                    <td class="col-2"><label class="col-form-label">{{ q }} {{ att.direction | capfirst }}</label></td>
+                                                    <td class="col-2"><input id="qos_average" class="form-control" name="qos_average"
+                                                            value="{{ att.average|default:'' }}"/>
+                                                    </td>
+                                                    <td class="col-3"><input id="qos_peak" class="form-control" name="qos_peak"
+                                                            value="{{ att.peak|default:'' }}"/>
+                                                    </td>
+                                                    <td class="col-3"><input id="qos_burst" class="form-control" name="qos_burst"
+                                                            value="{{ att.burst|default:'' }}"/>
+                                                    </td>
+                                                    <td class="col-sm-2">
+                                                        <input name="qos_direction" value="{{ att.direction }}" hidden/>
+                                                        <input name="net-mac" value="{{ q }}" hidden/>
+                                                        <button type="submit" class="btn btn-sm btn-primary"
+                                                                name="set_qos" data-toggle="modal"
+                                                                title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                            <i class="fa fa-save"></i>
+                                                        </button>
+                                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                                name="unset_qos"
+                                                                title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                            <i class="fa fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                </form>
+                                                {% endfor %}
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                             {% endif %}
                             <div class="clearfix"></div>
@@ -1177,7 +1179,7 @@
                             <div class="clearfix"></div>
                         </div>
                         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
-                            <p>{% trans "If you need to edit xml please Power Off the instance" %}</p>
+                            <p>{% trans "If you need to edit XML please Power Off the instance" %}</p>
                             <form method="post" role="form" aria-label="Edit instance XML form">{% csrf_token %}
                                 <div class="col-sm-12" id="xmlheight">
                                     <textarea id="editor">{{ inst_xml }}</textarea>
@@ -1620,7 +1622,7 @@
                                     {% for disk in disks %}
                                         <div class="mb-1 card border-warning">
                                             <div class="card-header">
-                                                <h3 class="card-title"><i class="fa fa-long-arrow-right"></i> {% trans "Disk I/O device" %}: {{ disk.dev }}</h3>
+                                                <h5 class="card-title"><i class="fa fa-long-arrow-right"></i> {% trans "Disk I/O device" %}: {{ disk.dev }}</h5>
                                             </div>
                                             <div class="card-body">
                                                 <div class="flot-chart">
@@ -1682,7 +1684,7 @@
                                                 <div class="ml-3 form-row">
                                                     <div class="custom-control custom-switch">
                                                         <input class="custom-control-input" type="checkbox" name="delete_nvram" value="true" id="delete_nvram" checked>
-                                                        <label class="custom-control-label font-weight-bold" for="delete_nvram" {% trans "Remove Instance's NVRAM" %}</label>    
+                                                        <label class="custom-control-label font-weight-bold" for="delete_nvram">{% trans "Remove Instance's NVRAM" %}</label>    
                                                     </div>
                                                 </div>
                                                 {% endif %}

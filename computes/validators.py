@@ -21,4 +21,4 @@ def validate_hostname(value):
 def validate_name(value):
     have_symbol = wrong_name.match('[^a-zA-Z0-9._-]+')
     if have_symbol:
-        raise ValidationError(_('The host name must not contain any special characters'))
+        raise ValidationError(_('The hostname must not contain any special characters'))

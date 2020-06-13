@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-06-11 08:32+0000\n"
+"POT-Creation-Date: 2020-06-12 09:02+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,11 +38,36 @@ msgstr ""
 msgid "Flavor name is already use"
 msgstr ""
 
-#: accounts/models.py:33
+#: accounts/models.py:22
+msgid "key name"
+msgstr ""
+
+#: accounts/models.py:23
+msgid "public key"
+msgstr ""
+
+#: accounts/models.py:32
+msgid "max instances"
+msgstr ""
+
+#: accounts/models.py:34 accounts/models.py:41 accounts/models.py:47
+#: accounts/models.py:53
 msgid "-1 for unlimited. Any integer value"
 msgstr ""
 
-#: accounts/models.py:85
+#: accounts/models.py:39
+msgid "max CPUs"
+msgstr ""
+
+#: accounts/models.py:45
+msgid "max memory"
+msgstr ""
+
+#: accounts/models.py:51
+msgid "max disk size"
+msgstr ""
+
+#: accounts/models.py:89
 msgid "Can change password"
 msgstr ""
 
@@ -284,7 +309,9 @@ msgstr ""
 
 #: accounts/templates/accounts-list.html:76 accounts/templates/accounts.html:69
 #: accounts/templates/create_user_block.html:18
-#: computes/templates/computes.html:172
+#: computes/templates/computes.html:66 computes/templates/computes.html:114
+#: computes/templates/computes.html:157 computes/templates/computes.html:172
+#: computes/templates/computes.html:205
 #: create/templates/create_flav_block.html:19
 #: create/templates/create_instance_w2.html:81
 #: create/templates/create_instance_w2.html:107
@@ -384,7 +411,7 @@ msgid "john"
 msgstr ""
 
 #: accounts/templates/create_user_block.html:32
-#: create/templates/create_instance_w1.html:93
+#: create/templates/create_instance_w1.html:95
 #: create/templates/create_instance_w2.html:275
 #: create/templates/create_instance_w2.html:277
 #: create/templates/create_instance_w2.html:504
@@ -820,6 +847,26 @@ msgstr ""
 msgid "Show access ssh keys"
 msgstr ""
 
+#: appsettings/models.py:9 computes/models.py:5 instances/models.py:10
+msgid "name"
+msgstr ""
+
+#: appsettings/models.py:10
+msgid "key"
+msgstr ""
+
+#: appsettings/models.py:11
+msgid "value"
+msgstr ""
+
+#: appsettings/models.py:12
+msgid "choices"
+msgstr ""
+
+#: appsettings/models.py:13
+msgid "description"
+msgstr ""
+
 #: appsettings/templates/appsettings.html:3
 #: appsettings/templates/appsettings.html:8
 msgid "Edit Settings"
@@ -889,6 +936,22 @@ msgstr ""
 msgid "Wrong IP address"
 msgstr ""
 
+#: computes/models.py:6
+msgid "hostname"
+msgstr ""
+
+#: computes/models.py:7
+msgid "login"
+msgstr ""
+
+#: computes/models.py:8
+msgid "password"
+msgstr ""
+
+#: computes/models.py:9
+msgid "details"
+msgstr ""
+
 #: computes/templates/computes.html:3 computes/templates/computes.html:9
 #: templates/navbar.html:18
 msgid "Computes"
@@ -917,11 +980,6 @@ msgstr ""
 
 #: computes/templates/computes.html:59
 msgid "Edit connection"
-msgstr ""
-
-#: computes/templates/computes.html:66 computes/templates/computes.html:114
-#: computes/templates/computes.html:157 computes/templates/computes.html:205
-msgid "Label"
 msgstr ""
 
 #: computes/templates/computes.html:73 computes/templates/computes.html:121
@@ -1082,8 +1140,8 @@ msgid "Memory"
 msgstr ""
 
 #: computes/templates/overview.html:84
-#: create/templates/create_instance_w1.html:40
-#: create/templates/create_instance_w1.html:56
+#: create/templates/create_instance_w1.html:42
+#: create/templates/create_instance_w1.html:58
 msgid "Architecture"
 msgstr ""
 
@@ -1192,6 +1250,22 @@ msgstr ""
 msgid "The name of the virtual machine must not exceed 20 characters"
 msgstr ""
 
+#: create/models.py:5
+msgid "label"
+msgstr ""
+
+#: create/models.py:6
+msgid "memory"
+msgstr ""
+
+#: create/models.py:7
+msgid "vcpu"
+msgstr ""
+
+#: create/models.py:8
+msgid "disk"
+msgstr ""
+
 #: create/templates/create_flav_block.html:13
 msgid "Add New Flavor"
 msgstr ""
@@ -1252,22 +1326,23 @@ msgstr ""
 msgid "Select Type"
 msgstr ""
 
-#: create/templates/create_instance_w1.html:10
+#: create/templates/create_instance_w1.html:11
 #: create/templates/create_instance_w2.html:13
-msgid "New instance on"
+#, python-format
+msgid "New instance on %(host)s "
 msgstr ""
 
-#: create/templates/create_instance_w1.html:45
+#: create/templates/create_instance_w1.html:47
 #: instances/templates/instance.html:643 networks/templates/network.html:75
 #: nwfilters/templates/nwfilter.html:52
 msgid "XML"
 msgstr ""
 
-#: create/templates/create_instance_w1.html:66
+#: create/templates/create_instance_w1.html:68
 msgid "Chipset"
 msgstr ""
 
-#: create/templates/create_instance_w1.html:76
+#: create/templates/create_instance_w1.html:78
 msgid "Next"
 msgstr ""
 
@@ -1490,6 +1565,18 @@ msgstr ""
 
 #: create/views.py:290
 msgid "Instance is created"
+msgstr ""
+
+#: instances/models.py:11
+msgid "uuid"
+msgstr ""
+
+#: instances/models.py:12
+msgid "is template"
+msgstr ""
+
+#: instances/models.py:13
+msgid "created"
 msgstr ""
 
 #: instances/templates/add_instance_network_block.html:12
@@ -2922,6 +3009,22 @@ msgstr ""
 
 #: interfaces/templates/interfaces.html:47
 msgid "Hypervisor doesn't have any Interfaces"
+msgstr ""
+
+#: logs/models.py:5
+msgid "user"
+msgstr ""
+
+#: logs/models.py:6
+msgid "instance"
+msgstr ""
+
+#: logs/models.py:7
+msgid "message"
+msgstr ""
+
+#: logs/models.py:8
+msgid "date"
 msgstr ""
 
 #: networks/forms.py:7 storages/forms.py:7

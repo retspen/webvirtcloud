@@ -43,7 +43,7 @@ def nwfilters(request, compute_id):
                             error_msg = _("A network filter with this name already exists")
                             raise Exception(error_msg)
                         if uuid == nwf.UUIDString():
-                            error_msg = _("A network filter with this uuid already exists")
+                            error_msg = _("A network filter with this UUID already exists")
                             raise Exception(error_msg)
                     else:
                         try:
