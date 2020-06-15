@@ -22,58 +22,10 @@ def computes(request):
     :param request:
     :return:
     """
-    def get_hosts_status(computes):
-        """
-        Function return all hosts all vds on host
-        """
-        compute_data = []
-        for compute in computes:
-            compute_data.append({
-                'id': compute.id,
-                'name': compute.name,
-                'hostname': compute.hostname,
-                'status': connection_manager.host_is_up(compute.type, compute.hostname),
-                'type': compute.type,
-                'login': compute.login,
-                'password': compute.password,
-                'details': compute.details
-            })
-        return compute_data
 
-    error_messages = []
     computes = Compute.objects.filter().order_by('name')
-    computes_info = get_hosts_status(computes)
 
-    if request.method == 'POST':
-        if 'host_del' in request.POST:
-            compute_id = request.POST.get('host_id', '')
-            try:
-                del_user_inst_on_host = UserInstance.objects.filter(instance__compute_id=compute_id)
-                del_user_inst_on_host.delete()
-            finally:
-                try:
-                    del_inst_on_host = Instance.objects.filter(compute_id=compute_id)
-                    del_inst_on_host.delete()
-                finally:
-                    del_host = Compute.objects.get(id=compute_id)
-                    del_host.delete()
-            return HttpResponseRedirect(request.get_full_path())
-        if 'host_edit' in request.POST:
-            form = ComputeEditHostForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                compute_edit = Compute.objects.get(id=data['host_id'])
-                compute_edit.name = data['name']
-                compute_edit.hostname = data['hostname']
-                compute_edit.login = data['login']
-                compute_edit.password = data['password']
-                compute_edit.details = data['details']
-                compute_edit.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-    return render(request, 'computes.html', locals())
+    return render(request, 'computes/list.html', {'computes': computes})
 
 
 @superuser_only
@@ -87,7 +39,7 @@ def overview(request, compute_id):
     error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     status = 'true' if connection_manager.host_is_up(compute.type, compute.hostname) is True else 'false'
-    
+
     try:
         conn = wvmHostDetails(
             compute.hostname,
@@ -106,6 +58,51 @@ def overview(request, compute_id):
         error_messages.append(lib_err)
 
     return render(request, 'overview.html', locals())
+
+
+@superuser_only
+def compute_create(request, FormClass):
+    form = FormClass(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect(reverse('computes'))
+
+    return render(request, 'computes/form.html', {'form': form})
+
+
+@superuser_only
+def compute_update(request, compute_id):
+    compute = get_object_or_404(Compute, pk=compute_id)
+
+    if compute.type == 1:
+        FormClass = TcpComputeForm
+    elif compute.type == 2:
+        FormClass = SshComputeForm
+    elif compute.type == 3:
+        FormClass = TlsComputeForm
+    elif compute.type == 4:
+        FormClass = SocketComputeForm
+
+    form = FormClass(request.POST or None, instance=compute)
+    if form.is_valid():
+        form.save()
+        return redirect(reverse('computes'))
+
+    return render(request, 'computes/form.html', {'form': form})
+
+
+@superuser_only
+def compute_delete(request, compute_id):
+    compute = get_object_or_404(Compute, pk=compute_id)
+    if request.method == 'POST':
+        compute.delete()
+        return redirect('computes')
+
+    return render(
+        request,
+        'common/confirm_delete.html',
+        {'object': compute},
+    )
 
 
 def compute_graph(request, compute_id):
@@ -248,13 +245,3 @@ def get_dom_capabilities(request, compute_id, arch, machine):
         pass
 
     return HttpResponse(json.dumps(data))
-
-
-@superuser_only
-def add_host(request, FormClass):
-    form = FormClass(request.POST or None)
-    if form.is_valid():
-        form.save()
-        return redirect(reverse('computes'))
-
-    return render(request, 'computes/form.html', {'form': form})
