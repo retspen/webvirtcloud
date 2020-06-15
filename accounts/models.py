@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -13,7 +14,7 @@ class UserInstance(models.Model):
     is_delete = models.BooleanField(default=False)
     is_vnc = models.BooleanField(default=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.instance.name
 
 
@@ -22,7 +23,7 @@ class UserSSHKey(models.Model):
     keyname = models.CharField(_('key name'), max_length=25)
     keypublic = models.CharField(_('public key'), max_length=500)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.keyname
 
 
@@ -76,7 +77,7 @@ class UserAttributes(models.Model):
         UserAttributes.create_missing_userattributes(user)
         UserAttributes.add_default_instances(user)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.user.username
 
 

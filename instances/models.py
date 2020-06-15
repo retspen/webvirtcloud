@@ -1,5 +1,4 @@
-from django.db.models import (CASCADE, BooleanField, CharField, DateField,
-                              ForeignKey, Model)
+from django.db.models import (CASCADE, BooleanField, CharField, DateField, ForeignKey, Model)
 from django.utils.translation import ugettext_lazy as _
 
 from computes.models import Compute
@@ -12,8 +11,9 @@ class Instance(Model):
     is_template = BooleanField(_('is template'), default=False)
     created = DateField(_('created'), auto_now_add=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
+
 
 class PermissionSet(Model):
     """
@@ -21,8 +21,6 @@ class PermissionSet(Model):
     """
     class Meta:
         default_permissions = ()
-        permissions = (
-            ('clone_instances', _('Can clone instances')),
-        )
+        permissions = (('clone_instances', _('Can clone instances')), )
 
         managed = False

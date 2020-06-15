@@ -1,6 +1,7 @@
 from django.db.models import Model, CharField, IntegerField
 from django.utils.translation import ugettext_lazy as _
 
+
 class Compute(Model):
     name = CharField(_('name'), max_length=64, unique=True)
     hostname = CharField(_('hostname'), max_length=64)
@@ -9,5 +10,5 @@ class Compute(Model):
     details = CharField(_('details'), max_length=64, null=True, blank=True)
     type = IntegerField()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.hostname
