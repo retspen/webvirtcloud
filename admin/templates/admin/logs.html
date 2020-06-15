@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load bootstrap4 %}
 {% block title %}{% trans "Logs" %}{% endblock %}
 {% block content %}
     <!-- Page Heading -->
@@ -47,7 +48,7 @@
                         </tbody>
                     </table>
                 </div>
-                {% include "paging.html" %}
+                {% bootstrap_pagination logs %}
             {% endif %}
         </div>
     </div>
