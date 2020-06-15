@@ -67,7 +67,7 @@ def group_delete(request, pk):
 
     return render(
         request,
-        'admin/common/confirm_delete.html',
+        'common/confirm_delete.html',
         {'object': group},
     )
 
@@ -141,7 +141,7 @@ def user_delete(request, pk):
 
     return render(
         request,
-        'admin/common/confirm_delete.html',
+        'common/confirm_delete.html',
         {'object': user},
     )
 
