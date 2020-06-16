@@ -1,16 +1,17 @@
+import os
+
+import sass
 from django.core.validators import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-from accounts.forms import UserAddForm
+
 from accounts.models import *
 from admin.decorators import superuser_only
 from appsettings.models import AppSettings
 from instances.models import Instance
 
-import sass
-import os
 
 def profile(request):
     """
