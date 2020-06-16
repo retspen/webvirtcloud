@@ -15,7 +15,10 @@ class UserInstance(models.Model):
     is_vnc = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.instance.name
+        return _('Instance "%(inst)s" of user %(user)s') % {'inst': self.instance, 'user': self.user}
+
+    class Meta:
+        unique_together = ['user', 'instance']
 
 
 class UserSSHKey(models.Model):

@@ -12,7 +12,7 @@ class Instance(Model):
     created = DateField(_('created'), auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        return f'{self.compute}/{self.name}'
 
 
 class PermissionSet(Model):

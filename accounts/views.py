@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.validators import ValidationError
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
@@ -16,15 +16,11 @@ from admin.decorators import superuser_only
 from appsettings.models import AppSettings
 from instances.models import Instance
 
+from . import forms
+
 
 def profile(request):
-    """
-    :param request:
-    :return:
-    """
-
     error_messages = []
-    # user = User.objects.get(id=request.user.id)
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
 
     if request.method == 'POST':
@@ -35,20 +31,6 @@ def profile(request):
             user.email = email
             request.user.save()
             return HttpResponseRedirect(request.get_full_path())
-        if 'oldpasswd' in request.POST:
-            oldpasswd = request.POST.get('oldpasswd', '')
-            password1 = request.POST.get('passwd1', '')
-            password2 = request.POST.get('passwd2', '')
-            if not password1 or not password2:
-                error_messages.append("Passwords didn't enter")
-            if password1 and password2 and password1 != password2:
-                error_messages.append("Passwords don't match")
-            if not request.user.check_password(oldpasswd):
-                error_messages.append("Old password is wrong!")
-            if not error_messages:
-                request.user.set_password(password1)
-                request.user.save()
-                return HttpResponseRedirect(request.get_full_path())
         if 'keyname' in request.POST:
             keyname = request.POST.get('keyname', '')
             keypublic = request.POST.get('keypublic', '')
@@ -76,50 +58,11 @@ def profile(request):
 
 @superuser_only
 def account(request, user_id):
-    """
-    :param request:
-    :param user_id:
-    :return:
-    """
-
     error_messages = []
     user = User.objects.get(id=user_id)
     user_insts = UserInstance.objects.filter(user_id=user_id)
     instances = Instance.objects.all().order_by('name')
     publickeys = UserSSHKey.objects.filter(user_id=user_id)
-
-    if request.method == 'POST':
-        if 'delete' in request.POST:
-            user_inst = request.POST.get('user_inst', '')
-            del_user_inst = UserInstance.objects.get(id=user_inst)
-            del_user_inst.delete()
-            return HttpResponseRedirect(request.get_full_path())
-        if 'permission' in request.POST:
-            user_inst = request.POST.get('user_inst', '')
-            inst_vnc = request.POST.get('inst_vnc', '')
-            inst_change = request.POST.get('inst_change', '')
-            inst_delete = request.POST.get('inst_delete', '')
-            edit_user_inst = UserInstance.objects.get(id=user_inst)
-            edit_user_inst.is_change = bool(inst_change)
-            edit_user_inst.is_delete = bool(inst_delete)
-            edit_user_inst.is_vnc = bool(inst_vnc)
-            edit_user_inst.save()
-            return HttpResponseRedirect(request.get_full_path())
-        if 'add' in request.POST:
-            inst_id = request.POST.get('inst_id', '')
-
-            if AppSettings.objects.get(key="ALLOW_INSTANCE_MULTIPLE_OWNER").value == 'True':
-                check_inst = UserInstance.objects.filter(instance_id=int(inst_id), user_id=int(user_id))
-            else:
-                check_inst = UserInstance.objects.filter(instance_id=int(inst_id))
-
-            if check_inst:
-                msg = _("Instance already added")
-                error_messages.append(msg)
-            else:
-                add_user_inst = UserInstance(instance_id=int(inst_id), user_id=int(user_id))
-                add_user_inst.save()
-                return HttpResponseRedirect(request.get_full_path())
 
     return render(request, 'account.html', locals())
 
@@ -138,3 +81,55 @@ def change_password(request):
     else:
         form = PasswordChangeForm(request.user)
     return render(request, 'accounts/change_password_form.html', {'form': form})
+
+
+@superuser_only
+def user_instance_create(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+
+    form = forms.UserInstanceForm(request.POST or None, initial={'user': user})
+    if form.is_valid():
+        form.save()
+        return redirect(reverse('account', args=[user.id]))
+
+    return render(
+        request,
+        'common/form.html',
+        {
+            'form': form,
+            'title': _('Create User Instance'),
+        },
+    )
+
+
+@superuser_only
+def user_instance_update(request, pk):
+    user_instance = get_object_or_404(UserInstance, pk=pk)
+    form = forms.UserInstanceForm(request.POST or None, instance=user_instance)
+    if form.is_valid():
+        form.save()
+        return redirect(reverse('account', args=[user_instance.user.id]))
+
+    return render(
+        request,
+        'common/form.html',
+        {
+            'form': form,
+            'title': _('Update User Instance'),
+        },
+    )
+
+
+@superuser_only
+def user_instance_delete(request, pk):
+    user_instance = get_object_or_404(UserInstance, pk=pk)
+    if request.method == 'POST':
+        user = user_instance.user
+        user_instance.delete()
+        return redirect(reverse('account', args=[user.id]))
+
+    return render(
+        request,
+        'common/confirm_delete.html',
+        {'object': user_instance},
+    )
