@@ -1,9 +1,13 @@
 import os
 
 import sass
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.core.validators import ValidationError
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
@@ -118,3 +122,19 @@ def account(request, user_id):
                 return HttpResponseRedirect(request.get_full_path())
 
     return render(request, 'account.html', locals())
+
+
+@permission_required('accounts.change_password', raise_exception=True)
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Important!
+            messages.success(request, _('Password Changed'))
+            return redirect('profile')
+        else:
+            messages.error(request, _('Wrong Data Provided'))
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'accounts/change_password_form.html', {'form': form})
