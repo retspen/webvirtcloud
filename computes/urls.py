@@ -36,8 +36,12 @@ urlpatterns = [
             path('secrets/', secrets, name='secrets'),
             path('create/', create_instance_select_type, name='create_instance_select_type'),
             path('create/archs/<str:arch>/machines/<str:machine>/', create_instance, name='create_instance'),
-            path('archs/<str:arch>/machines', views.get_compute_machine_types, name='machines'),
-            path('archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses', views.get_compute_disk_buses, name='buses'),
-            path('archs/<str:arch>/machines/<str:machine>/capabilities', views.get_dom_capabilities, name='domcaps'),
+            path('archs/<str:arch>/machines/', views.get_compute_machine_types, name='machines'),
+            path(
+                'archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses/',
+                views.get_compute_disk_buses,
+                name='buses',
+            ),
+            path('archs/<str:arch>/machines/<str:machine>/capabilities/', views.get_dom_capabilities, name='domcaps'),
         ])),
 ]

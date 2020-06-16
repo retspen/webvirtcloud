@@ -125,6 +125,16 @@ class ComputesTestCase(TestCase):
         response = self.client.get(reverse('machines', kwargs={'compute_id': 1, 'arch': 'x86_64'}))
         self.assertEqual(response.status_code, 200)
 
-    # TODO: get_compute_disk_buses
+    def test_compute_disk_buses(self):
+        response = self.client.get(
+            reverse('buses', kwargs={
+                'compute_id': 1,
+                'arch': 'x86_64',
+                'machine': 'pc',
+                'disk': 'disk',
+            }))
+        self.assertEqual(response.status_code, 200)
 
-    # TODO: domcaps
+    def test_dom_capabilities(self):
+        response = self.client.get(reverse('domcaps', kwargs={'compute_id': 1, 'arch': 'x86_64', 'machine': 'pc'}))
+        self.assertEqual(response.status_code, 200)

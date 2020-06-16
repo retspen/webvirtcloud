@@ -9,7 +9,7 @@ from libvirt import libvirtError
 
 from accounts.models import UserInstance
 from admin.decorators import superuser_only
-from computes.forms import (ComputeEditHostForm, SocketComputeForm, SshComputeForm, TcpComputeForm, TlsComputeForm)
+from computes.forms import (SocketComputeForm, SshComputeForm, TcpComputeForm, TlsComputeForm)
 from computes.models import Compute
 from instances.models import Instance
 from vrtManager.connection import (CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS, connection_manager, wvmConnect)
