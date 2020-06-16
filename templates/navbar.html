@@ -11,7 +11,7 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="navbar-nav mr-auto mt-2 mt-md-0">
         <li class="nav-item {% class_active request '^/instances' %}">
-            <a class="nav-link" href="{% url 'allinstances' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
+            <a class="nav-link" href="{% url 'instances:index' %}"><i class="fa fa-fw fa-desktop"></i> {% trans "Instances" %}</a>
         </li>
         {% if request.user.is_superuser %}
         <li class="nav-item {% class_active request '^/computes' %}">

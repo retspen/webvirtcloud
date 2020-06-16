@@ -52,7 +52,7 @@
                    {{ ipv4 }} |
                {% endfor %}
             {% endfor %}
-            <a class="text-secondary" href="{% url 'instance' compute.id vname %}" title="{% trans 'Refresh instance info' %}"><span class="fa fa-refresh"></span></a>
+            <a class="text-secondary" href="{% url 'instances:instance' compute.id vname %}" title="{% trans 'Refresh instance info' %}"><span class="fa fa-refresh"></span></a>
         </div>
         {% if user_quota_msg %}
             <div class="alert alert-warning fade show">
@@ -1749,7 +1749,7 @@
 </script>
 <script>
     function random_mac(net) {
-        $.getJSON('{% url 'random_mac_address' %}', function (data) {
+        $.getJSON('{% url 'instances:random_mac_address' %}', function (data) {
             $('input[name="' + net + '"]').val(data['mac']);
         });
     }
@@ -1766,7 +1766,7 @@
 <script>
     function guess_mac_address(src_elem, net) {
         new_vname = $(src_elem).val();
-        guess_mac_address_url = "{% url 'guess_mac_address' 1 %}".replace(1, new_vname);
+        guess_mac_address_url = "{% url 'instances:guess_mac_address' 1 %}".replace(1, new_vname);
         $.getJSON(guess_mac_address_url, function(data) {
             $('input[name="clone-net-mac-'+net+'"]').val(data['mac']);
         });
@@ -1774,7 +1774,7 @@
 </script>
 <script>
     function guess_clone_name() {
-        $.getJSON('{% url 'guess_clone_name' %}', function(data) {
+        $.getJSON('{% url 'instances:guess_clone_name' %}', function(data) {
             guessed_name = data['name'].split(".")[0];
             $('#clone_name').val(guessed_name);
             update_clone_disk_name(guessed_name);
@@ -2181,7 +2181,7 @@
         {% endfor %}
 
         var graph_interval = window.setInterval(function graph_usage() {
-            $.getJSON('{% url 'inst_graph' compute_id vname %}', function (data) {
+            $.getJSON('{% url 'instances:inst_graph' compute_id vname %}', function (data) {
 
                 cpuChart.data.labels.push(data.timeline);
                 cpuChart.data.datasets[0].data.push(data.cpudata);
@@ -2234,7 +2234,7 @@
     backgroundJobRunning = false;
     var status_interval = window.setInterval(function get_status() {
         var status = {{ status|lower }};
-        $.getJSON('{% url 'inst_status' compute_id vname %}', function (data) {
+        $.getJSON('{% url 'instances:inst_status' compute_id vname %}', function (data) {
             if (data['status'] != status && !backgroundJobRunning) {
                 window.location.reload()
             }

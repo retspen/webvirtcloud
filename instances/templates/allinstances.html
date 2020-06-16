@@ -63,7 +63,7 @@
                     <tbody class="searchable">
                         {% for inst, vm in all_user_vms.items %}
                             <tr>
-                                <td><a href="{% url 'instance' vm.compute_id vm.name %}">{{ vm.name }}</a><br><small><em>{{ vm.title }}</em></small></td>
+                                <td><a href="{% url 'instances:instance' vm.compute_id vm.name %}">{{ vm.name }}</a><br><small><em>{{ vm.title }}</em></small></td>
                                 <td>{% if vm.status == 1 %}
                                         <span class="text-success">{% trans "Active" %}</span>
                                     {% endif %}

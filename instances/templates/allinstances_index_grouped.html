@@ -42,7 +42,7 @@
             <tr host="{{ host.1 }}">
                 <td class="text-right">{{ forloop.counter }} </td>
                 <td>&emsp; 
-                    <a class="text-secondary" href="{% url 'instance' host.0 inst %}">{{ inst }}</a><br>
+                    <a class="text-secondary" href="{% url 'instances:instance' host.0 inst %}">{{ inst }}</a><br>
                     <small><em>{{ vm.title }}</em></small>
                 </td>
                  <td class="d-none d-sm-table-cell">
