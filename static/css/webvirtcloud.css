@@ -169,3 +169,7 @@ p {
     vertical-align: middle;
 }
 
+/* remove ugly dotted outline on tabs */
+a {
+    outline: 0;
+}

@@ -33,7 +33,7 @@ def group_create(request):
 
     return render(
         request,
-        'admin/common/form.html',
+        'common/form.html',
         {
             'form': form,
             'title': _('Create Group'),
@@ -51,7 +51,7 @@ def group_update(request, pk):
 
     return render(
         request,
-        'admin/common/form.html',
+        'common/form.html',
         {
             'form': form,
             'title': _('Update Group'),
