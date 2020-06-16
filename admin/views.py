@@ -1,9 +1,10 @@
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import ugettext_lazy as _
 
-from accounts.models import UserAttributes
+from accounts.models import UserAttributes, UserInstance, Instance
 from appsettings.models import AppSettings
 from logs.models import Logs
 
@@ -97,6 +98,7 @@ def user_create(request):
         attributes = attributes_form.save(commit=False)
         attributes.user = user
         attributes.save()
+        add_default_instances(user)
         return redirect('admin:user_list')
 
     return render(
@@ -169,3 +171,15 @@ def logs(request):
     page = request.GET.get('page', 1)
     logs = paginator.page(page)
     return render(request, 'admin/logs.html', {'logs': logs})
+
+
+def add_default_instances(user):
+    """
+    Adds instances listed in NEW_USER_DEFAULT_INSTANCES to user
+    """
+    existing_instances = UserInstance.objects.filter(user=user)
+    if not existing_instances:
+        for instance_name in settings.NEW_USER_DEFAULT_INSTANCES:
+            instance = Instance.objects.get(name=instance_name)
+            user_instance = UserInstance(user=user, instance=instance)
+            user_instance.save()

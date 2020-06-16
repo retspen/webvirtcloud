@@ -55,28 +55,6 @@ class UserAttributes(models.Model):
         validators=[MinValueValidator(-1)],
     )
 
-    @staticmethod
-    def create_missing_userattributes(user):
-        try:
-            userattributes = user.userattributes
-        except UserAttributes.DoesNotExist:
-            userattributes = UserAttributes(user=user)
-            userattributes.save()
-
-    @staticmethod
-    def add_default_instances(user):
-        existing_instances = UserInstance.objects.filter(user=user)
-        if not existing_instances:
-            for instance_name in settings.NEW_USER_DEFAULT_INSTANCES:
-                instance = Instance.objects.get(name=instance_name)
-                user_instance = UserInstance(user=user, instance=instance)
-                user_instance.save()
-
-    @staticmethod
-    def configure_user(user):
-        UserAttributes.create_missing_userattributes(user)
-        UserAttributes.add_default_instances(user)
-
     def __str__(self):
         return self.user.username
 
