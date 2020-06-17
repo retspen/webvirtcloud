@@ -15,4 +15,4 @@ def get_settings():
         pass
 
     for entry in entries:
-        setattr(app_settings, entry.key, entry.val)
+        setattr(app_settings, entry.key, entry.value)
