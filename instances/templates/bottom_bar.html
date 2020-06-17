@@ -17,7 +17,7 @@
                     <a class="nav-link" href="{% url 'instances' compute.id %}"><i class="fa fa-desktop"></i> {% trans "Instances" %}</a>
                 </li>
                 <li class="nav-item active">
-                    <a class="nav-link" href="{% url 'instance' compute.id vname %}"><i class="fa fa-hdd-o"></i> {{ vname }}</a>
+                    <a class="nav-link" href="{% url 'instances:instance' compute.id vname %}"><i class="fa fa-hdd-o"></i> {{ vname }}</a>
                 </li>
             </ul>
         </div>

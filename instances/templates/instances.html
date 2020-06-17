@@ -79,7 +79,7 @@
                         {% for host, insts  in all_host_vms.items %}
                             {% for inst, vm in insts.items %}
                                 <tr>
-                                    <td><a class="text-secondary" href="{% url 'instance' host.0 inst %}">{{ inst }}</a><br><small><em>{{ vm.title }}</em></small></td>
+                                    <td><a class="text-secondary" href="{% url 'instances:instance' host.0 inst %}">{{ inst }}</a><br><small><em>{{ vm.title }}</em></small></td>
                                     <td class="d-none d-md-table-cell"><small><em>{% if vm.userinstances.count > 0 %}{{ vm.userinstances.first_user.user.username }}{% if vm.userinstances.count > 1 %} (+{{ vm.userinstances.count|add:"-1" }}){% endif %}{% endif %}</em></small></td>
                                     <td>
                                         {% if vm.status == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}

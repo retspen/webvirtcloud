@@ -1,5 +1,9 @@
-from django.db.models import Model, CharField, IntegerField
+from django.db.models import CharField, IntegerField, Model
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
+
+from vrtManager.connection import connection_manager
+
 
 class Compute(Model):
     name = CharField(_('name'), max_length=64, unique=True)
@@ -9,5 +13,9 @@ class Compute(Model):
     details = CharField(_('details'), max_length=64, null=True, blank=True)
     type = IntegerField()
 
-    def __unicode__(self):
-        return self.hostname
+    @cached_property
+    def status(self):
+        return connection_manager.host_is_up(self.type, self.hostname)
+
+    def __str__(self):
+        return self.name

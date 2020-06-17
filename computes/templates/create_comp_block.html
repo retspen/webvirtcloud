@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load bootstrap4 %}
-{% load font_awesome %}
-<div class="btn-group float-right" role="group" aria-label="Add host button group">
+{% load icons %}
+<div class="btn-group float-right mt-1" role="group" aria-label="Add host button group">
     <a href="{% url 'add_tcp_host' %}" class="btn btn-success">{% trans "TCP" %}</a>
     <a href="{% url 'add_ssh_host' %}" class="btn btn-success">{% trans "SSH" %}</a>
     <a href="{% url 'add_tls_host' %}" class="btn btn-success">{% trans "TLS" %}</a>

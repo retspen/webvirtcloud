@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -13,8 +14,11 @@ class UserInstance(models.Model):
     is_delete = models.BooleanField(default=False)
     is_vnc = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return self.instance.name
+    def __str__(self):
+        return _('Instance "%(inst)s" of user %(user)s') % {'inst': self.instance, 'user': self.user}
+
+    class Meta:
+        unique_together = ['user', 'instance']
 
 
 class UserSSHKey(models.Model):
@@ -22,7 +26,7 @@ class UserSSHKey(models.Model):
     keyname = models.CharField(_('key name'), max_length=25)
     keypublic = models.CharField(_('public key'), max_length=500)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.keyname
 
 
@@ -54,29 +58,7 @@ class UserAttributes(models.Model):
         validators=[MinValueValidator(-1)],
     )
 
-    @staticmethod
-    def create_missing_userattributes(user):
-        try:
-            userattributes = user.userattributes
-        except UserAttributes.DoesNotExist:
-            userattributes = UserAttributes(user=user)
-            userattributes.save()
-
-    @staticmethod
-    def add_default_instances(user):
-        existing_instances = UserInstance.objects.filter(user=user)
-        if not existing_instances:
-            for instance_name in settings.NEW_USER_DEFAULT_INSTANCES:
-                instance = Instance.objects.get(name=instance_name)
-                user_instance = UserInstance(user=user, instance=instance)
-                user_instance.save()
-
-    @staticmethod
-    def configure_user(user):
-        UserAttributes.create_missing_userattributes(user)
-        UserAttributes.add_default_instances(user)
-
-    def __unicode__(self):
+    def __str__(self):
         return self.user.username
 
 

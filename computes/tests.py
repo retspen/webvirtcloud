@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import reverse
 from django.test import TestCase
 
@@ -19,6 +20,52 @@ class ComputesTestCase(TestCase):
     def test_index(self):
         response = self.client.get(reverse('computes'))
         self.assertEqual(response.status_code, 200)
+
+    def test_create_update_delete(self):
+        response = self.client.get(reverse('add_socket_host'))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            reverse('add_socket_host'),
+            {
+                'name': 'l1',
+                'details': 'Created',
+                'hostname': 'localhost',
+                'type': 4,
+            },
+        )
+        self.assertRedirects(response, reverse('computes'))
+
+        compute = Compute.objects.get(pk=2)
+        self.assertEqual(compute.name, 'l1')
+        self.assertEqual(compute.details, 'Created')
+
+        response = self.client.get(reverse('compute_update', args=[2]))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            reverse('compute_update', args=[2]),
+            {
+                'name': 'l2',
+                'details': 'Updated',
+                'hostname': 'localhost',
+                'type': 4,
+            },
+        )
+        self.assertRedirects(response, reverse('computes'))
+
+        compute = Compute.objects.get(pk=2)
+        self.assertEqual(compute.name, 'l2')
+        self.assertEqual(compute.details, 'Updated')
+
+        response = self.client.get(reverse('compute_delete', args=[2]))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(reverse('compute_delete', args=[2]))
+        self.assertRedirects(response, reverse('computes'))
+
+        with self.assertRaises(ObjectDoesNotExist):
+            Compute.objects.get(id=2)
 
     def test_overview(self):
         response = self.client.get(reverse('overview', args=[1]))
@@ -78,6 +125,16 @@ class ComputesTestCase(TestCase):
         response = self.client.get(reverse('machines', kwargs={'compute_id': 1, 'arch': 'x86_64'}))
         self.assertEqual(response.status_code, 200)
 
-    # TODO: get_compute_disk_buses
+    def test_compute_disk_buses(self):
+        response = self.client.get(
+            reverse('buses', kwargs={
+                'compute_id': 1,
+                'arch': 'x86_64',
+                'machine': 'pc',
+                'disk': 'disk',
+            }))
+        self.assertEqual(response.status_code, 200)
 
-    # TODO: domcaps
+    def test_dom_capabilities(self):
+        response = self.client.get(reverse('domcaps', kwargs={'compute_id': 1, 'arch': 'x86_64', 'machine': 'pc'}))
+        self.assertEqual(response.status_code, 200)
