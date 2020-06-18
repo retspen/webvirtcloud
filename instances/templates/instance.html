@@ -1704,7 +1704,7 @@
         </div>
     </div>
 
-    {% if bottom_bar %}
+    {% if app_settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR == 'True' %}
         {% include 'bottom_bar.html' %}
     {% endif %}
 
