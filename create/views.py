@@ -15,6 +15,7 @@ from vrtManager import util
 from logs.views import addlogmsg
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
 
+
 @superuser_only
 def create_instance_select_type(request, compute_id):
     """
@@ -54,7 +55,7 @@ def create_instance_select_type(request, compute_id):
                 else:
                     try:
                         conn._defineXML(xml)
-                        return HttpResponseRedirect(reverse('instance', args=[compute_id, name]))
+                        return HttpResponseRedirect(reverse('instances:instance', args=[compute_id, name]))
                     except libvirtError as lib_err:
                         error_messages.append(lib_err)
 
@@ -173,13 +174,14 @@ def create_instance(request, compute_id, arch, machine):
                             else:
                                 try:
                                     path = conn.create_volume(
-                                        data['storage'], 
-                                        data['name'], 
-                                        data['hdd_size'], 
+                                        data['storage'],
+                                        data['name'],
+                                        data['hdd_size'],
                                         default_disk_format,
-                                        meta_prealloc, 
-                                        default_disk_owner_uid, 
-                                        default_disk_owner_gid)
+                                        meta_prealloc,
+                                        default_disk_owner_uid,
+                                        default_disk_owner_gid,
+                                    )
                                     volume = dict()
                                     volume['device'] = 'disk'
                                     volume['path'] = path
@@ -194,7 +196,7 @@ def create_instance(request, compute_id, arch, machine):
 
                                     volume_list.append(volume)
                                     is_disk_created = True
-                                    
+
                                 except libvirtError as lib_err:
                                     error_messages.append(lib_err)
                         elif data['template']:
@@ -210,7 +212,8 @@ def create_instance(request, compute_id, arch, machine):
                                     data['storage'],
                                     meta_prealloc,
                                     default_disk_owner_uid,
-                                    default_disk_owner_gid)
+                                    default_disk_owner_gid,
+                                )
                                 volume = dict()
                                 volume['path'] = clone_path
                                 volume['type'] = conn.get_volume_type(clone_path)
@@ -276,13 +279,13 @@ def create_instance(request, compute_id, arch, machine):
                                                      machine=machine,
                                                      firmware=firmware,
                                                      volumes=volume_list,
-                                                     networks=data['networks'], 
+                                                     networks=data['networks'],
                                                      virtio=data['virtio'],
-                                                     listen_addr=data["listener_addr"], 
+                                                     listen_addr=data["listener_addr"],
                                                      nwfilter=data["nwfilter"],
-                                                     graphics=data["graphics"], 
+                                                     graphics=data["graphics"],
                                                      video=data["video"],
-                                                     console_pass=data["console_pass"], 
+                                                     console_pass=data["console_pass"],
                                                      mac=data['mac'],
                                                      qemu_ga=data['qemu_ga'])
                                 create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
@@ -290,7 +293,7 @@ def create_instance(request, compute_id, arch, machine):
                                 msg = _("Instance is created")
                                 messages.success(request, msg)
                                 addlogmsg(request.user.username, create_instance.name, msg)
-                                return HttpResponseRedirect(reverse('instance', args=[compute_id, data['name']]))
+                                return HttpResponseRedirect(reverse('instances:instance', args=[compute_id, data['name']]))
                             except libvirtError as lib_err:
                                 if data['hdd_size'] or len(volume_list) > 0:
                                     if is_disk_created:

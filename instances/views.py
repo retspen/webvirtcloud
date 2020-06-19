@@ -34,7 +34,7 @@ def index(request):
     :param request:
     :return:
     """
-    return HttpResponseRedirect(reverse('allinstances'))
+    return HttpResponseRedirect(reverse('instances:index'))
 
 
 def allinstances(request):
@@ -421,7 +421,7 @@ def instance(request, compute_id, vname):
                 msg = _("Destroy")
                 addlogmsg(request.user.username, instance_name, msg)
 
-                return HttpResponseRedirect(reverse('allinstances'))
+                return HttpResponseRedirect(reverse('instances:index'))
 
             if 'rootpasswd' in request.POST:
                 passwd = request.POST.get('passwd', '')
@@ -862,7 +862,7 @@ def instance(request, compute_id, vname):
                     new_compute = Compute.objects.get(id=compute_id)
                     try:
                         migrate_instance(new_compute, instance, live, unsafe, xml_del, offline)
-                        return HttpResponseRedirect(reverse('instance', args=[new_compute.id, vname]))
+                        return HttpResponseRedirect(reverse('instances:instance', args=[new_compute.id, vname]))
                     except libvirtError as err:
                         messages.error(request, err)
                         addlogmsg(request.user.username, instance.name, err)
@@ -1031,7 +1031,7 @@ def instance(request, compute_id, vname):
                             new_compute = Compute.objects.order_by('?').first()
                             migrate_instance(new_compute, new_instance, xml_del=True, offline=True)
                         return HttpResponseRedirect(
-                            reverse('instance', args=[new_instance.compute.id, new_instance.name]))
+                            reverse('instances:instance', args=[new_instance.compute.id, new_instance.name]))
 
                 if 'change_options' in request.POST and (request.user.is_superuser or request.user.is_staff or userinstance.is_change):
                     instance.is_template = request.POST.get('is_template', False)
