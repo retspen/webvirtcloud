@@ -34,7 +34,7 @@ def index(request):
     :param request:
     :return:
     """
-    return HttpResponseRedirect(reverse('allinstances'))
+    return HttpResponseRedirect(reverse('instances:index'))
 
 
 def allinstances(request):
