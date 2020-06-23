@@ -157,7 +157,7 @@ def instance(request, compute_id, vname):
         return free_names
 
     def check_user_quota(instance, cpu, memory, disk_size):
-        ua = request.user.userattributes
+        ua = request.user
         msg = ""
 
         if request.user.is_superuser:
