@@ -16,6 +16,10 @@ def console(request):
     if request.method == 'GET':
         token = request.GET.get('token', '')
         view_type = request.GET.get('view', 'lite')
+        view_only = request.GET.get('view_only', 0)
+        scale = request.GET.get('scale', 0)
+        resize_session = request.GET.get('resize_session', 0)
+        clip_viewport = request.GET.get('clip_viewport', 0)
 
     try:
         temptoken = token.split('-', 1)

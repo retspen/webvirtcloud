@@ -63,7 +63,6 @@ body
 
 #spice-area
 {
-    height: 100%;
     width: 95%;
     padding: 0;
     margin-left: auto;
@@ -74,13 +73,13 @@ body
     box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.2);
     -moz-border-radius: 10px;
     -webkit-border-radius: 10px;
-    border-radius: 10px;
+    border-radius: 1px;
 }
 .spice-screen
 {
     min-height: 600px;
     height: 100%;
-    margin: 10px;
+    margin: 5px;
     padding: 0;
     background-color: #333333;
 }
