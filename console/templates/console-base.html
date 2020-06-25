@@ -1,6 +1,7 @@
 {% load staticfiles %}
 {% load i18n %}
 <html>
+
 <head>
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{% static "favicon.ico" %}">
@@ -9,19 +10,13 @@
     <link href="{% static "css/webvirtcloud.css" %}" rel="stylesheet">
 
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #313131;
-        }
-
         #main_container {
             padding: 0;
             width: 100%;
             max-width: none;
             height: 100%;
-            background-color:#494949;
-            border-bottom-right-radius: 800px 600px;
+            background-color: #494949;
+            border-bottom-right-radius: 850px 600px;
 
         }
 
@@ -32,102 +27,90 @@
             margin-right: auto;
             display: block;
         }
-       
-        #status {
-            z-index: 10000;
-            width: 80%;
-            position: absolute;
-            top: 5px;
-            left: 10%;
-            text-align: center;
-        }
     </style>
 
-{% block head %}{% endblock %}
+    {% block head %}{% endblock %}
 
 </head>
 
 <body>
-<div id='main_container' class="container">
-<nav class="navbar navbar-expand-md navbar-dark bg-primary" arial-label="console navbar">
-  <div class="container">
-    <a class="navbar-brand">{{ instance.name }}</a>
-    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target=".navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+    <div id='main_container' class="container">
+        <nav class="navbar navbar-expand-md navbar-dark bg-primary" arial-label="console navbar">
+            <div class="container">
+                <a class="navbar-brand">{{ instance.name }}</a>
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target=".navbar-collapse"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
-    <div class="collapse navbar-collapse">
-        <ul class="navbar-nav mr-auto mt-2 mt-md-0">
-            <li class="nav-item dropdown">
-                <a href="#" class="nav-link dropdown-toggle" 
-                    data-toggle="dropdown" 
-                    role="button" 
-                    id="dropdownMenuLink" 
-                    data-toggle="dropdown" 
-                    aria-haspopup="true" 
-                    aria-expanded="false">
-                    {% trans "Send key(s)" %}
-                </a>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                    <a class="dropdown-item" id="ctrlaltdel" href='#'>Ctrl+Alt+Del</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" id="ctrlaltf1" href='#'>Ctrl+Alt+F1</a>
-                    <a class="dropdown-item" id="ctrlaltf2" href='#'>Ctrl+Alt+F2</a>
-                    <a class="dropdown-item" id="ctrlaltf3" href='#'>Ctrl+Alt+F3</a>
-                    <a class="dropdown-item" id="ctrlaltf4" href='#'>Ctrl+Alt+F4</a>
-                    <a class="dropdown-item" id="ctrlaltf5" href='#'>Ctrl+Alt+F5</a>
-                    <a class="dropdown-item" id="ctrlaltf6" href='#'>Ctrl+Alt+F6</a>
-                    <a class="dropdown-item" id="ctrlaltf7" href='#'>Ctrl+Alt+F7</a>
-                    <a class="dropdown-item" id="ctrlaltf8" href='#'>Ctrl+Alt+F8</a>
-                    <a class="dropdown-item" id="ctrlaltf9" href='#'>Ctrl+Alt+F9</a>
-                    <a class="dropdown-item" id="ctrlaltf10" href='#'>Ctrl+Alt+F10</a>
-                    <a class="dropdown-item" id="ctrlaltf11" href='#'>Ctrl+Alt+F11</a>
-                    <a class="dropdown-item" id="ctrlaltf12" href='#'>Ctrl+Alt+F12</a>
+                <div class="collapse navbar-collapse">
+                    <ul class="navbar-nav mr-auto mt-2 mt-md-0">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" role="button"
+                                id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {% trans "Send key(s)" %}
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                                <a class="dropdown-item" id="ctrlaltdel" href='#'>Ctrl+Alt+Del</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" id="ctrlaltf1" href='#'>Ctrl+Alt+F1</a>
+                                <a class="dropdown-item" id="ctrlaltf2" href='#'>Ctrl+Alt+F2</a>
+                                <a class="dropdown-item" id="ctrlaltf3" href='#'>Ctrl+Alt+F3</a>
+                                <a class="dropdown-item" id="ctrlaltf4" href='#'>Ctrl+Alt+F4</a>
+                                <a class="dropdown-item" id="ctrlaltf5" href='#'>Ctrl+Alt+F5</a>
+                                <a class="dropdown-item" id="ctrlaltf6" href='#'>Ctrl+Alt+F6</a>
+                                <a class="dropdown-item" id="ctrlaltf7" href='#'>Ctrl+Alt+F7</a>
+                                <a class="dropdown-item" id="ctrlaltf8" href='#'>Ctrl+Alt+F8</a>
+                                <a class="dropdown-item" id="ctrlaltf9" href='#'>Ctrl+Alt+F9</a>
+                                <a class="dropdown-item" id="ctrlaltf10" href='#'>Ctrl+Alt+F10</a>
+                                <a class="dropdown-item" id="ctrlaltf11" href='#'>Ctrl+Alt+F11</a>
+                                <a class="dropdown-item" id="ctrlaltf12" href='#'>Ctrl+Alt+F12</a>
+                            </div>
+                        </li>
+                        <li class="nav-item" id="fullscreen_button">
+                            <a class="nav-link" href='#'>{% trans "Fullscreen" %}</a>
+                        </li>
+                        {% block navbarmenu %}{% endblock %}
+                    </ul>
                 </div>
-            </li>
-            <li class="nav-item" id="fullscreen_button">
-                <a class="nav-link" href='#'>{% trans "Fullscreen" %}</a>
-            </li>
-{% block navbarmenu %}{% endblock %}
-        </ul>
-   </div>
-</nav>
+            </div>
+        </nav>
+        {% block content %}{% endblock %}
+    </div>
+    <script src="{% static "js/jquery.js" %}"></script>
+    <script src="{% static "js/bootstrap.bundle.min.js" %}"></script>
 
-{% block content %}{% endblock %}
-</div>
-<script src="{% static "js/jquery.js" %}"></script>
-<script src="{% static "js/bootstrap.bundle.min.js" %}"></script>
-
-<script>
-    function log_message(msg,type) {
-        var exist=$('#status').is('div');
-        status_div=$('<div id="status" class="alert alert-'+type+' role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>'+msg+'</div>');
-        if (exist) {
-          $('#status').remove();
-          $('body').prepend(status_div);
+    <script>
+        function log_message(msg, type) {
+            var exist = $('#status').is('div');
+            status_div = $('<div id="status" class="alert alert-' + type + ' role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' + msg + '</div>');
+            if (exist) {
+                $('#status').remove();
+                $('body').prepend(status_div);
+            }
+            else {
+                status_div.hide();
+                $('body').prepend(status_div);
+                status_div.fadeIn(200);
+            }
+            if (type != 'danger') {
+                status_div.delay(3000).fadeOut(200);
+            }
         }
-        else {
-          status_div.hide();
-          $('body').prepend(status_div);
-          status_div.fadeIn(200);
-        }
-        if (type!='danger') {
-          status_div.delay(3000).fadeOut(200);
-        }
-    }
 
-    function log_error(msg) {
-        log_message(msg,'danger');
-    }
+        function log_error(msg) {
+            log_message(msg, 'danger');
+        }
 
-    function log_info(msg) {
-        log_message(msg,'info');
-    }
-    {% if console_error %}
+        function log_info(msg) {
+            log_message(msg, 'info');
+        }
+        {% if console_error %}
         log_error('{{ console_error|escapejs }}');
-    {% endif %}
-</script>
+        {% endif %}
+    </script>
 
-{% block foot %}{% endblock %}
+    {% block foot %}{% endblock %}
 </body>
+
 </html>
