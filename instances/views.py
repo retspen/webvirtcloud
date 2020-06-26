@@ -113,7 +113,7 @@ def instance(request, compute_id, vname):
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     appsettings = AppSettings.objects.all()
     keymaps = settings.QEMU_KEYMAPS
-    console_types = appsettings.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list
+    console_types = appsettings.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list()
     console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
     bottom_bar = appsettings.get(key="VIEW_INSTANCE_DETAIL_BOTTOM_BAR").value
     try:
@@ -166,13 +166,9 @@ def instance(request, compute_id, vname):
         user_instances = UserInstance.objects.filter(user_id=request.user.id, instance__is_template=False)
         instance += user_instances.count()
         for usr_inst in user_instances:
-            if connection_manager.host_is_up(usr_inst.instance.compute.type,
-                                             usr_inst.instance.compute.hostname):
-                conn = wvmInstance(usr_inst.instance.compute.hostname,
-                                   usr_inst.instance.compute.login,
-                                   usr_inst.instance.compute.password,
-                                   usr_inst.instance.compute.type,
-                                   usr_inst.instance.name)
+            if connection_manager.host_is_up(usr_inst.instance.compute.type, usr_inst.instance.compute.hostname):
+                conn = wvmInstance(usr_inst.instance.compute.hostname, usr_inst.instance.compute.login,
+                                   usr_inst.instance.compute.password, usr_inst.instance.compute.type, usr_inst.instance.name)
                 cpu += int(conn.get_vcpu())
                 memory += int(conn.get_memory())
                 for disk in conn.get_disk_devices():
@@ -230,17 +226,22 @@ def instance(request, compute_id, vname):
         else:
             return network_source_pack[0], 'net'
 
-    def migrate_instance(new_compute, instance, live=False, unsafe=False, xml_del=False, offline=False, autoconverge=False, compress=False, postcopy=False):
+    def migrate_instance(new_compute,
+                         instance,
+                         live=False,
+                         unsafe=False,
+                         xml_del=False,
+                         offline=False,
+                         autoconverge=False,
+                         compress=False,
+                         postcopy=False):
         status = connection_manager.host_is_up(new_compute.type, new_compute.hostname)
         if not status:
             return
         if new_compute == instance.compute:
             return
         try:
-            conn_migrate = wvmInstances(new_compute.hostname,
-                                        new_compute.login,
-                                        new_compute.password,
-                                        new_compute.type)
+            conn_migrate = wvmInstances(new_compute.hostname, new_compute.login, new_compute.password, new_compute.type)
 
             conn_migrate.moveto(conn, instance.name, live, unsafe, xml_del, offline, autoconverge, compress, postcopy)
         finally:
@@ -249,11 +250,7 @@ def instance(request, compute_id, vname):
         instance.compute = new_compute
         instance.save()
 
-        conn_new = wvmInstance(new_compute.hostname,
-                               new_compute.login,
-                               new_compute.password,
-                               new_compute.type,
-                               instance.name)
+        conn_new = wvmInstance(new_compute.hostname, new_compute.login, new_compute.password, new_compute.type, instance.name)
         if autostart:
             conn_new.set_autostart(1)
             conn_new.close()
@@ -261,11 +258,7 @@ def instance(request, compute_id, vname):
         addlogmsg(request.user.username, instance.name, msg)
 
     try:
-        conn = wvmInstance(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type,
-                           vname)
+        conn = wvmInstance(compute.hostname, compute.login, compute.password, compute.type, vname)
 
         status = conn.get_status()
         autostart = conn.get_autostart()
@@ -324,13 +317,12 @@ def instance(request, compute_id, vname):
         default_format = appsettings.get(key="INSTANCE_VOLUME_DEFAULT_FORMAT").value
         default_disk_owner_uid = int(appsettings.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_UID").value)
         default_disk_owner_gid = int(appsettings.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_GID").value)
-        
+
         formats = conn.get_image_formats()
 
         show_access_root_password = appsettings.get(key="SHOW_ACCESS_ROOT_PASSWORD").value
         show_access_ssh_keys = appsettings.get(key="SHOW_ACCESS_SSH_KEYS").value
         clone_instance_auto_name = appsettings.get(key="CLONE_INSTANCE_AUTO_NAME").value
-        
 
         try:
             instance = Instance.objects.get(compute_id=compute_id, name=vname)
@@ -412,8 +404,7 @@ def instance(request, compute_id, vname):
                 instance.delete()
 
                 try:
-                    del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id,
-                                                                   instance__name=vname)
+                    del_userinstance = UserInstance.objects.filter(instance__compute_id=compute_id, instance__name=vname)
                     del_userinstance.delete()
                 except UserInstance.DoesNotExist:
                     pass
@@ -467,8 +458,8 @@ def instance(request, compute_id, vname):
                     msg = _("Please shutdown down your instance and then try again")
                     error_messages.append(msg)
 
-            if 'resizevm_cpu' in request.POST and (
-                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+            if 'resizevm_cpu' in request.POST and (request.user.is_superuser or request.user.is_staff
+                                                   or userinstance.is_change):
                 new_vcpu = request.POST.get('vcpu', '')
                 new_cur_vcpu = request.POST.get('cur_vcpu', '')
 
@@ -485,9 +476,8 @@ def instance(request, compute_id, vname):
                     messages.success(request, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'resizevm_mem' in request.POST and (request.user.is_superuser or
-                                                   request.user.is_staff or
-                                                   userinstance.is_change):
+            if 'resizevm_mem' in request.POST and (request.user.is_superuser or request.user.is_staff
+                                                   or userinstance.is_change):
                 new_memory = request.POST.get('memory', '')
                 new_memory_custom = request.POST.get('memory_custom', '')
                 if new_memory_custom:
@@ -509,8 +499,8 @@ def instance(request, compute_id, vname):
                     messages.success(request, msg)
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
 
-            if 'resizevm_disk' in request.POST and (
-                    request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+            if 'resizevm_disk' in request.POST and (request.user.is_superuser or request.user.is_staff
+                                                    or userinstance.is_change):
                 disks_new = list()
                 for disk in disks:
                     input_disk_size = filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
@@ -531,10 +521,7 @@ def instance(request, compute_id, vname):
                 return HttpResponseRedirect(request.get_full_path() + '#resize')
 
             if 'add_new_vol' in request.POST and allow_admin_or_not_template:
-                conn_create = wvmCreate(compute.hostname,
-                                        compute.login,
-                                        compute.password,
-                                        compute.type)
+                conn_create = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
                 storage = request.POST.get('storage', '')
                 name = request.POST.get('name', '')
                 format = request.POST.get('format', default_format)
@@ -544,7 +531,8 @@ def instance(request, compute_id, vname):
                 cache = request.POST.get('cache', default_cache)
                 target_dev = get_new_disk_dev(media, disks, bus)
 
-                source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
+                source = conn_create.create_volume(storage, name, size, format, meta_prealloc, default_disk_owner_uid,
+                                                   default_disk_owner_gid)
                 conn.attach_disk(target_dev, source, target_bus=bus, driver_type=format, cache_mode=cache)
                 msg = _(f"Attach new disk {name} ({format})")
                 addlogmsg(request.user.username, instance.name, msg)
@@ -556,11 +544,7 @@ def instance(request, compute_id, vname):
                 bus = request.POST.get('bus', default_bus)
                 cache = request.POST.get('cache', default_cache)
 
-                conn_create = wvmStorage(compute.hostname,
-                                         compute.login,
-                                         compute.password,
-                                         compute.type,
-                                         storage)
+                conn_create = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, storage)
 
                 driver_type = conn_create.get_volume_type(name)
                 path = conn_create.get_target_path()
@@ -591,17 +575,23 @@ def instance(request, compute_id, vname):
 
                 if new_bus != bus:
                     conn.detach_disk(target_dev)
-                    conn.attach_disk(new_target_dev, new_path, target_bus=new_bus,
-                                    driver_type=format, cache_mode=cache,
-                                    readonly=readonly, shareable=shareable, serial=serial,
-                                    io_mode=io, discard_mode=discard, detect_zeroes_mode=zeroes)
+                    conn.attach_disk(new_target_dev,
+                                     new_path,
+                                     target_bus=new_bus,
+                                     driver_type=format,
+                                     cache_mode=cache,
+                                     readonly=readonly,
+                                     shareable=shareable,
+                                     serial=serial,
+                                     io_mode=io,
+                                     discard_mode=discard,
+                                     detect_zeroes_mode=zeroes)
                 else:
-                    conn.edit_disk(target_dev, new_path, readonly, shareable, new_bus, serial, format,
-                                   cache, io, discard, zeroes)
+                    conn.edit_disk(target_dev, new_path, readonly, shareable, new_bus, serial, format, cache, io, discard,
+                                   zeroes)
 
                 if not conn.get_status() == 5:
-                    messages.success(request, _("Volume changes are applied. " +
-                                                "But it will be activated after shutdown"))
+                    messages.success(request, _("Volume changes are applied. " + "But it will be activated after shutdown"))
                 else:
                     messages.success(request, _("Volume is changed successfully."))
                 msg = _(f"Edit disk: {target_dev}")
@@ -611,11 +601,7 @@ def instance(request, compute_id, vname):
 
             if 'delete_vol' in request.POST and allow_admin_or_not_template:
                 storage = request.POST.get('storage', '')
-                conn_delete = wvmStorage(compute.hostname,
-                                         compute.login,
-                                         compute.password,
-                                         compute.type,
-                                         storage)
+                conn_delete = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, storage)
                 dev = request.POST.get('dev', '')
                 path = request.POST.get('path', '')
                 name = request.POST.get('name', '')
@@ -764,8 +750,8 @@ def instance(request, compute_id, vname):
                         msg = _("Set boot order")
 
                         if not conn.get_status() == 5:
-                            messages.success(request, _("Boot menu changes applied. " +
-                                                        "But it will be activated after shutdown"))
+                            messages.success(request,
+                                             _("Boot menu changes applied. " + "But it will be activated after shutdown"))
                         else:
                             messages.success(request, _("Boot order changed successfully."))
                         addlogmsg(request.user.username, instance.name, msg)
@@ -927,9 +913,10 @@ def instance(request, compute_id, vname):
                         if conn.get_status() == 5:
                             messages.success(request, _(f"{qos_dir.capitalize()} QoS is set"))
                         else:
-                            messages.success(request,
-                                             _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed.") +
-                                             _("Stop and start network to activate new config"))
+                            messages.success(
+                                request,
+                                _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed.") +
+                                _("Stop and start network to activate new config"))
 
                     except libvirtError as le:
                         messages.error(request, le)
@@ -942,9 +929,10 @@ def instance(request, compute_id, vname):
                     if conn.get_status() == 5:
                         messages.success(request, _(f"{qos_dir.capitalize()} QoS is deleted"))
                     else:
-                        messages.success(request,
-                                         _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. ") +
-                                         _("Stop and start network to activate new config."))
+                        messages.success(
+                            request,
+                            _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. ") +
+                            _("Stop and start network to activate new config."))
                     return HttpResponseRedirect(request.get_full_path() + '#network')
 
                 if 'add_owner' in request.POST:
@@ -1006,8 +994,7 @@ def instance(request, compute_id, vname):
                     elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
                         msg = _(f"Instance name '{clone_data['name']}' contains invalid characters!")
                         error_messages.append(msg)
-                    elif not re.match(r'^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'],
-                                      re.IGNORECASE):
+                    elif not re.match(r'^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'], re.IGNORECASE):
                         msg = _(f"Instance MAC '{clone_data['clone-net-mac-0']}' invalid format!")
                         error_messages.append(msg)
                     else:
@@ -1026,14 +1013,15 @@ def instance(request, compute_id, vname):
 
                         msg = _(f"Clone of '{instance.name}'")
                         addlogmsg(request.user.username, new_instance.name, msg)
-                        
+
                         if appsettings.get(key="CLONE_INSTANCE_AUTO_MIGRATE").value == 'True':
                             new_compute = Compute.objects.order_by('?').first()
                             migrate_instance(new_compute, new_instance, xml_del=True, offline=True)
                         return HttpResponseRedirect(
                             reverse('instances:instance', args=[new_instance.compute.id, new_instance.name]))
 
-                if 'change_options' in request.POST and (request.user.is_superuser or request.user.is_staff or userinstance.is_change):
+                if 'change_options' in request.POST and (request.user.is_superuser or request.user.is_staff
+                                                         or userinstance.is_change):
                     instance.is_template = request.POST.get('is_template', False)
                     instance.save()
 
@@ -1068,11 +1056,7 @@ def inst_status(request, compute_id, vname):
     response['Content-Type'] = "text/javascript"
 
     try:
-        conn = wvmInstance(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type,
-                           vname)
+        conn = wvmInstance(compute.hostname, compute.login, compute.password, compute.type, vname)
         data = json.dumps({'status': conn.get_status()})
         conn.close()
     except libvirtError:
@@ -1082,7 +1066,6 @@ def inst_status(request, compute_id, vname):
 
 
 def get_host_instances(request, comp):
-
     def refresh_instance_database(comp, inst_name, info):
         def get_userinstances_info(instance):
             info = {}
@@ -1116,17 +1099,9 @@ def get_host_instances(request, comp):
             if inst_on_db.uuid != info['uuid']:
                 inst_on_db.save()
 
-            all_host_vms[comp["id"],
-                         comp["name"],
-                         comp["status"],
-                         comp["cpu"],
-                         comp["mem_size"],
+            all_host_vms[comp["id"], comp["name"], comp["status"], comp["cpu"], comp["mem_size"],
                          comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
-            all_host_vms[comp["id"],
-                         comp["name"],
-                         comp["status"],
-                         comp["cpu"],
-                         comp["mem_size"],
+            all_host_vms[comp["id"], comp["name"], comp["status"], comp["cpu"], comp["mem_size"],
                          comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
         except Instance.DoesNotExist:
             inst_on_db = Instance(compute_id=comp["id"], name=inst_name, uuid=info['uuid'])
@@ -1150,8 +1125,8 @@ def get_host_instances(request, comp):
                 "mem_size": comp_node_info[2],
                 "mem_perc": comp_mem['percent']
             }
-            all_host_vms[comp_info["id"], comp_info["name"], comp_info["status"], comp_info["cpu"],
-                         comp_info["mem_size"], comp_info["mem_perc"]] = comp_instances
+            all_host_vms[comp_info["id"], comp_info["name"], comp_info["status"], comp_info["cpu"], comp_info["mem_size"],
+                         comp_info["mem_perc"]] = comp_instances
             for vm, info in comp_instances.items():
                 refresh_instance_database(comp_info, vm, info)
 
@@ -1165,12 +1140,9 @@ def get_user_instances(request):
     all_user_vms = {}
     user_instances = UserInstance.objects.filter(user_id=request.user.id)
     for usr_inst in user_instances:
-        if connection_manager.host_is_up(usr_inst.instance.compute.type,
-                                         usr_inst.instance.compute.hostname):
-            conn = wvmHostDetails(usr_inst.instance.compute.hostname,
-                                  usr_inst.instance.compute.login,
-                                  usr_inst.instance.compute.password,
-                                  usr_inst.instance.compute.type)
+        if connection_manager.host_is_up(usr_inst.instance.compute.type, usr_inst.instance.compute.hostname):
+            conn = wvmHostDetails(usr_inst.instance.compute.hostname, usr_inst.instance.compute.login,
+                                  usr_inst.instance.compute.password, usr_inst.instance.compute.type)
             all_user_vms[usr_inst] = conn.get_user_instances(usr_inst.instance.name)
             all_user_vms[usr_inst].update({'compute_id': usr_inst.instance.compute.id})
     return all_user_vms
@@ -1181,10 +1153,7 @@ def instances_actions(request):
     compute_id = request.POST.get('compute_id', '')
     instance = Instance.objects.get(compute_id=compute_id, name=name)
 
-    conn = wvmInstances(instance.compute.hostname,
-                        instance.compute.login,
-                        instance.compute.password,
-                        instance.compute.type)
+    conn = wvmInstances(instance.compute.hostname, instance.compute.login, instance.compute.password, instance.compute.type)
     if 'poweron' in request.POST:
         if instance.is_template:
             msg = _("Templates cannot be started.")
@@ -1217,8 +1186,7 @@ def instances_actions(request):
     if 'getvvfile' in request.POST:
         msg = _("Send console.vv file")
         addlogmsg(request.user.username, instance.name, msg)
-        response = HttpResponse(content='', content_type='application/x-virt-viewer', status=200, reason=None,
-                                charset='utf-8')
+        response = HttpResponse(content='', content_type='application/x-virt-viewer', status=200, reason=None, charset='utf-8')
         response.writelines('[virt-viewer]\n')
         response.writelines('type=' + conn.graphics_type(name) + '\n')
         response.writelines('host=' + conn.graphics_listen(name) + '\n')
@@ -1264,11 +1232,7 @@ def inst_graph(request, compute_id, vname):
     response['Content-Type'] = "text/javascript"
 
     try:
-        conn = wvmInstance(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type,
-                           vname)
+        conn = wvmInstance(compute.hostname, compute.login, compute.password, compute.type, vname)
         cpu_usage = conn.cpu_usage()
         mem_usage = conn.mem_usage()
         blk_usage = conn.disk_usage()
@@ -1282,11 +1246,13 @@ def inst_graph(request, compute_id, vname):
         for net in net_usage:
             json_net.append({'dev': net['dev'], 'data': [int(net['rx']) / 1048576, int(net['tx']) / 1048576]})
 
-        data = json.dumps({'cpudata': int(cpu_usage['cpu']),
-                           'memdata': mem_usage,
-                           'blkdata': json_blk,
-                           'netdata': json_net,
-                           'timeline': current_time})
+        data = json.dumps({
+            'cpudata': int(cpu_usage['cpu']),
+            'memdata': mem_usage,
+            'blkdata': json_blk,
+            'netdata': json_net,
+            'timeline': current_time
+        })
 
     except libvirtError:
         data = json.dumps({'error': 'Error 500'})
@@ -1321,11 +1287,7 @@ def guess_mac_address(request, vname):
 
 
 def _get_random_mac_address():
-    mac = '52:54:00:%02x:%02x:%02x' % (
-        random.randint(0x00, 0xff),
-        random.randint(0x00, 0xff),
-        random.randint(0x00, 0xff)
-    )
+    mac = '52:54:00:%02x:%02x:%02x' % (random.randint(0x00, 0xff), random.randint(0x00, 0xff), random.randint(0x00, 0xff))
     return mac
 
 
@@ -1379,12 +1341,7 @@ def _get_clone_disks(disks, vname=''):
         new_image = get_clone_disk_name(disk, vname)
         if not new_image:
             continue
-        new_disk = {
-            'dev': disk['dev'],
-            'storage': disk['storage'],
-            'image': new_image,
-            'format': disk['format']
-        }
+        new_disk = {'dev': disk['dev'], 'storage': disk['storage'], 'image': new_image, 'format': disk['format']}
         clone_disks.append(new_disk)
     return clone_disks
 
@@ -1412,32 +1369,29 @@ def sshkeys(request, vname):
 
 
 def get_hosts_status(computes):
-        """
+    """
         Function return all hosts all vds on host
         """
-        compute_data = []
-        for compute in computes:
-            compute_data.append({'id': compute.id,
-                                 'name': compute.name,
-                                 'hostname': compute.hostname,
-                                 'status': connection_manager.host_is_up(compute.type, compute.hostname),
-                                 'type': compute.type,
-                                 'login': compute.login,
-                                 'password': compute.password,
-                                 'details': compute.details
-                                 })
-        return compute_data
+    compute_data = []
+    for compute in computes:
+        compute_data.append({
+            'id': compute.id,
+            'name': compute.name,
+            'hostname': compute.hostname,
+            'status': connection_manager.host_is_up(compute.type, compute.hostname),
+            'type': compute.type,
+            'login': compute.login,
+            'password': compute.password,
+            'details': compute.details
+        })
+    return compute_data
 
 
 def delete_instance(instance, delete_disk=False):
     compute = instance.compute
     instance_name = instance.name
     try:
-        conn = wvmInstance(compute.hostname,
-                           compute.login,
-                           compute.password,
-                           compute.type,
-                           instance.name)
+        conn = wvmInstance(compute.hostname, compute.login, compute.password, compute.type, instance.name)
 
         del_userinstance = UserInstance.objects.filter(instance=instance)
         if del_userinstance:
