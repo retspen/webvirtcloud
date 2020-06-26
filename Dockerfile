@@ -1,11 +1,28 @@
-FROM phusion/baseimage:0.11
+FROM phusion/baseimage:18.04-1.0.0
+
+EXPOSE 80
+EXPOSE 6080
+
+# Use baseimage-docker's init system.
+CMD ["/sbin/my_init"]
+
 
 RUN echo 'APT::Get::Clean=always;' >> /etc/apt/apt.conf.d/99AutomaticClean
 
 RUN apt-get update -qqy
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qyy install \
 	-o APT::Install-Suggests=false \
-	git python3-virtualenv python3-dev python3-lxml virtualenv libvirt-dev zlib1g-dev nginx libsasl2-modules
+	git \
+	python3-virtualenv \
+	python3-dev \
+	python3-lxml \
+	virtualenv \
+	libvirt-dev \
+	zlib1g-dev \
+	nginx \
+	libsasl2-modules
+
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD . /srv/webvirtcloud
 RUN chown -R www-data:www-data /srv/webvirtcloud
@@ -39,11 +56,7 @@ ADD conf/runit/nginx-log-forwarder	/etc/service/nginx-log-forwarder/run
 ADD conf/runit/novncd.sh		/etc/service/novnc/run
 ADD conf/runit/webvirtcloud.sh		/etc/service/webvirtcloud/run
 
-EXPOSE 80
-EXPOSE 6080
-
 # Define mountable directories.
 #VOLUME []
 
-# Use baseimage-docker's init system.
-CMD ["/sbin/my_init"]
+WORKDIR /srv/webvirtcloud

@@ -3,7 +3,7 @@ from django.shortcuts import render
 from libvirt import libvirtError
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
-from webvirtcloud.settings import WS_PUBLIC_PORT, WS_PUBLIC_HOST
+from webvirtcloud.settings import WS_PUBLIC_PATH, WS_PUBLIC_PORT, WS_PUBLIC_HOST
 
 
 def console(request):
@@ -41,6 +41,7 @@ def console(request):
 
     ws_port = console_websocket_port if console_websocket_port else WS_PUBLIC_PORT
     ws_host = WS_PUBLIC_HOST if WS_PUBLIC_HOST else request.get_host()
+    ws_path = WS_PUBLIC_PATH if WS_PUBLIC_PATH else '/'
 
     if ':' in ws_host:
         ws_host = re.sub(':[0-9]+', '', ws_host)

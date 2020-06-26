@@ -31,17 +31,8 @@
 <link rel="stylesheet" type="text/css" href="{% static "js/spice-html5/spice.css" %}" />
 
 <!-- ES2015/ES6 modules polyfill -->
-<script type="module">
-    window._spice_has_module_support = true;
-</script>
-<script>
-    window.addEventListener("load", function () {
-        if (window._spice_has_module_support) return;
-        var loader = document.createElement("script");
-        loader.src = '{% static "thirdparty/browser-es-module-loader/dist/browser-es-module-loader.js" %}';
-        document.head.appendChild(loader);
-    });
-</script>
+<script nomodule src='{% static "thirdparty/browser-es-module-loader/dist/browser-es-module-loader.js" %}'></script>
+
 
 <script type="module" crossorigin="anonymous">
 
@@ -70,7 +61,8 @@
             sc.stop();
         }
 
-        uri = scheme + host + ":" + port;
+        // uri = scheme + host + ":" + port;
+        uri = scheme + "{{ ws_host }}:{{ ws_port }}{{ ws_path }}";
 
         document.getElementById('connectButton').innerHTML = "Stop";
         document.getElementById('connectButton').onclick = disconnect;

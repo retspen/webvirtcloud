@@ -31,17 +31,7 @@
 <link rel="stylesheet" type="text/css" href="{% static "js/spice-html5/spice.css" %}" />
 
 <!-- ES2015/ES6 modules polyfill -->
-<script type="module">
-    window._spice_has_module_support = true;
-</script>
-<script>
-    window.addEventListener("load", function () {
-        if (window._spice_has_module_support) return;
-        var loader = document.createElement("script");
-        loader.src = '{% static "thirdparty/browser-es-module-loader/dist/browser-es-module-loader.js" %}';
-        document.head.appendChild(loader);
-    });
-</script>
+<script nomodule src='{% static "thirdparty/browser-es-module-loader/dist/browser-es-module-loader.js" %}'></script>
 
 <script type="module" crossorigin="anonymous">
     import * as SpiceHtml5 from '{% static "js/spice-html5/main.js" %}';
@@ -65,7 +55,7 @@
     function spice_error(e) {
         disconnect();
         if (e !== undefined && e.message === "Permission denied.") {
-            var pass = prompt("Password");
+            var pass = prompt('{% trans "Password" %}');
             connect(pass);
         }
     }
@@ -108,7 +98,8 @@
         }
         if (password === 'None') password = '';
 
-        var path = spice_query_var('path', 'websockify');
+        //var path = spice_query_var('path', 'websockify');
+        var path = spice_query_var('path', '{{ ws_path }}');
 
         if ((!host) || (!port)) {
             console.log('{% trans "must specify host and port in URL" %}');
@@ -119,7 +110,8 @@
             sc.stop();
         }
 
-        uri = scheme + host + ":" + port;
+        // uri = scheme + host + ":" + port;
+        uri = scheme + "{{ ws_host }}:{{ ws_port }}{{ ws_path }}";
 
         if (path) {
             uri += path[0] == '/' ? path : ('/' + path);

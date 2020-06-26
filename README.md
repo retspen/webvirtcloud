@@ -300,6 +300,12 @@ datasource:
       metadata_urls: [ "http://webvirtcloud.domain.com/datasource" ]
 ```
 
+### Reverse-Proxy
+Edit WS_PUBLIC_PORT at settings.py file to expose redirect to 80. Default: 6080
+```
+WS_PUBLIC_PORT = 80
+```
+
 ### How To Update
 ```bash
 # Go to Installation Directory

@@ -151,7 +151,10 @@ WS_PUBLIC_PORT = 6080
 # Websock public host
 WS_PUBLIC_HOST = None
 
-# Websock SSL connection
+# Websock public path
+WS_PUBLIC_PATH = '/novncd/'
+
+# Websock Certificate for SSL
 WS_CERT = None
 
 # List of console listen addresses
