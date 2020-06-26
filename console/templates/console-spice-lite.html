@@ -104,14 +104,14 @@
 
         if (password === undefined) {
             password = spice_query_var('password', '');
-            password = '{{ console_passwd | safe }}';
+            //password = '{{ console_passwd | safe }}';
         }
         if (password === 'None') password = '';
 
         var path = spice_query_var('path', 'websockify');
 
         if ((!host) || (!port)) {
-            console.log(_("must specify host and port in URL"));
+            console.log('{% trans "must specify host and port in URL" %}');
             return;
         }
 
@@ -139,7 +139,7 @@
     }
 
     function disconnect() {
-        console.log(">> disconnect");
+        console.log(">>" + '{% trans "disconnect" %}');
         if (sc) {
             sc.stop();
         }
@@ -151,7 +151,7 @@
             document.getElementById('spice-area').removeEventListener('dragover', SpiceHtml5.handle_file_dragover, false);
             document.getElementById('spice-area').removeEventListener('drop', SpiceHtml5.handle_file_drop, false);
         }
-        console.log("<< disconnect");
+        console.log("<<" + '{% trans "disconnect" %}');
     }
 
     function agent_connected(sc) {
@@ -168,7 +168,7 @@
             document.getElementById('spice-area').addEventListener('drop', SpiceHtml5.handle_file_drop, false);
         }
         else {
-            console.log("File API is not supported");
+            console.log('{% trans "File API is not supported" %}');
         }
     }
 

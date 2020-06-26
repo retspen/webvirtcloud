@@ -62,7 +62,7 @@
         password = document.getElementById("password").value;
 
         if ((!host) || (!port)) {
-            console.log("must set host and port");
+            console.log('{% trans "must set host and port" %}');
             return;
         }
 
@@ -88,7 +88,7 @@
     }
 
     function disconnect() {
-        console.log(">> disconnect");
+        console.log(">>" + '{% trans "disconnect" %}');
         if (sc) {
             sc.stop();
         }
@@ -102,7 +102,7 @@
             document.getElementById('spice-area').removeEventListener('dragover', SpiceHtml5.handle_file_dragover, false);
             document.getElementById('spice-area').removeEventListener('drop', SpiceHtml5.handle_file_drop, false);
         }
-        console.log("<< disconnect");
+        console.log("<<" + '{% trans "disconnect" %}');
     }
 
     function agent_connected(sc) {
@@ -119,7 +119,7 @@
             document.getElementById('spice-area').addEventListener('drop', SpiceHtml5.handle_file_drop, false);
         }
         else {
-            console.log("File API is not supported");
+            console.log('{% trans "File API is not supported" %}');
         }
     }
 
@@ -202,12 +202,14 @@
 {% block content %}
 <div id="login">
     <span class="logo">SPICE</span>
-    <label for="host">{% trans 'Host' %}:</label> <input type='text' id='host' value='{{ ws_host }}'> <!-- localhost -->
-    <label for="port">{% trans 'Port' %}:</label> <input type='text' id='port' value='{{ ws_port }}'>
-    <label for="password">{% trans 'Password' %}:</label> <input type='password' id='password'
-        value='{{ console_passwd }}'>
-    <label for="show_console">{% trans 'Show console' %}</label><input type="checkbox" id="show_console" value="1"
-        onchange="toggle_console()" checked>
+    <label for="host">{% trans 'Host' %}:</label>
+    <input type='text' id='host' value='{{ ws_host }}'>
+    <label for="port">{% trans 'Port' %}:</label>
+    <input type='text' id='port' value='{{ ws_port }}'>
+    <label for="password">{% trans 'Password' %}:</label>
+    <input type='password' id='password'>
+    <label for="show_console">{% trans 'Show console' %}</label>
+    <input type="checkbox" id="show_console" value="1" onchange="toggle_console()" checked>
     <button id="connectButton">{% trans 'Start' %}</button>
 </div>
 
