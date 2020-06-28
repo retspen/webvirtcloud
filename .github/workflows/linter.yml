@@ -35,7 +35,16 @@ jobs:
         python3 -m pip install --upgrade pip
         if [ -f dev/requirements.txt ]; then pip3 install -r dev/requirements.txt; fi
     - name: Super-Linter
-      uses: github/super-linter@v2.1.0
+      uses: docker://github/super-linter:v2.2.0
       env:
-        VALIDATE_RUBY: false
         VALIDATE_ANSIBLE: false
+        VALIDATE_CLOJURE: false
+        VALIDATE_COFFEE: false
+        VALIDATE_GO: false
+        VALIDATE_POWERSHELL: false
+        VALIDATE_KOTLIN: false
+        VALIDATE_RUBY: false
+        VALIDATE_PERL: false
+        VALIDATE_PHP: false
+        VALIDATE_TERRAFORM: false
+

@@ -3,7 +3,6 @@
 {% load staticfiles %}
 
 {% block head %}
-
 <!--
     noVNC example: lightweight example using minimal UI and features
     This is a self-contained file which doesn't import WebUtil or external CSS.
@@ -169,8 +168,8 @@
     const host = readQueryVariable('host', '{{ ws_host }}');
     let port = readQueryVariable('port', '{{ ws_port }}');
     const password = readQueryVariable('password');
-    const path = readQueryVariable('path', 'websockify');
-
+    //const path = readQueryVariable('path', 'websockify');
+    const path = readQueryVariable('path', '{{ ws_path }}');
 
     // | | |         | | |
     // | | | Connect | | |
