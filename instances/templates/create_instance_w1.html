@@ -143,9 +143,9 @@
             let compute = '{{ compute.id }}';
             let arch = $("#select_archs").val();
             let machine = $("#select_chipset").val();
-            create_machine_url = "/computes/" + compute + "/create/archs/" + arch + "/machines/" + machine;
-            {#url = "{% url 'create_instance' compute.id 'x86_64' 'pc' %}".replace(/x86_64/, arch).replace(/pc/, machine);#}
-            window.location.href = create_machine_url;
+            //create_machine_url = "/computes/" + compute + "/create/archs/" + arch + "/machines/" + machine;
+            url = "{% url 'instances:create_instance' compute.id 'x86_64' 'pc' %}".replace(/x86_64/, arch).replace(/pc/, machine);
+            window.location.href = url;//create_machine_url;
         }
 
     </script>

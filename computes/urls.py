@@ -1,14 +1,14 @@
-from django.urls import path, include
+from secrets.views import secrets
 
-from . import views
-from . import forms
-from create.views import create_instance, create_instance_select_type
-from instances.views import instances
+from django.urls import include, path
+
+# from instances.views import create_instance, create_instance_select_type
 from interfaces.views import interface, interfaces
 from networks.views import network, networks
 from nwfilters.views import nwfilter, nwfilters
-from secrets.views import secrets
-from storages.views import get_volumes, storage, storages
+from storages.views import create_volume, get_volumes, storage, storages
+
+from . import forms, views
 
 urlpatterns = [
     path('', views.computes, name='computes'),
@@ -23,10 +23,11 @@ urlpatterns = [
             path('update/', views.compute_update, name='compute_update'),
             path('delete/', views.compute_delete, name='compute_delete'),
             path('statistics', views.compute_graph, name='compute_graph'),
-            path('instances/', instances, name='instances'),
+            path('instances/', views.instances, name='instances'),
             path('storages/', storages, name='storages'),
-            path('storage/<str:pool>/volumes', get_volumes, name='volumes'),
+            path('storage/<str:pool>/volumes/', get_volumes, name='volumes'),
             path('storage/<str:pool>/', storage, name='storage'),
+            path('storage/<str:pool>/create_volume/', create_volume, name='create_volume'),
             path('networks/', networks, name='networks'),
             path('network/<str:pool>/', network, name='network'),
             path('interfaces/', interfaces, name='interfaces'),
@@ -34,8 +35,8 @@ urlpatterns = [
             path('nwfilters/', nwfilters, name='nwfilters'),
             path('nwfilter/<str:nwfltr>/', nwfilter, name='nwfilter'),
             path('secrets/', secrets, name='secrets'),
-            path('create/', create_instance_select_type, name='create_instance_select_type'),
-            path('create/archs/<str:arch>/machines/<str:machine>/', create_instance, name='create_instance'),
+            # path('create/', create_instance_select_type, name='create_instance_select_type'),
+            # path('create/archs/<str:arch>/machines/<str:machine>/', create_instance, name='create_instance'),
             path('archs/<str:arch>/machines/', views.get_compute_machine_types, name='machines'),
             path(
                 'archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses/',

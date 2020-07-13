@@ -7,7 +7,6 @@ from vrtManager.rwlock import ReadWriteLock
 from django.conf import settings
 from libvirt import libvirtError
 
-
 CONN_SOCKET = 4
 CONN_TLS = 3
 CONN_SSH = 2
@@ -19,7 +18,6 @@ TCP_PORT = 16509
 
 class wvmEventLoop(threading.Thread):
     """ Event Loop Class"""
-
     def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
         # register the default event implementation
         # of libvirt, as we do not have an existing
@@ -48,7 +46,6 @@ class wvmConnection(object):
     class representing a single connection stored in the Connection Manager
     # to-do: may also need some locking to ensure to not connect simultaniously in 2 threads
     """
-
     def __init__(self, host, login, passwd, conn):
         """
         Sets all class attributes and tries to open the connection
@@ -208,7 +205,7 @@ class wvmConnection(object):
             except:
                 pass
 
-    def __unicode__(self):
+    def __str__(self):
         if self.type == CONN_TCP:
             type_str = 'tcp'
         elif self.type == CONN_SSH:
@@ -323,7 +320,7 @@ class wvmConnectionManager(object):
                 socket_host.connect((hostname, TLS_PORT))
             if conn_type == CONN_SOCKET:
                 socket_host = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                socket_host.connect('/var/run/libvirt/libvirt-sock')    
+                socket_host.connect('/var/run/libvirt/libvirt-sock')
             socket_host.close()
             return True
         except Exception as err:
@@ -332,7 +329,7 @@ class wvmConnectionManager(object):
 
 connection_manager = wvmConnectionManager(
     settings.LIBVIRT_KEEPALIVE_INTERVAL if hasattr(settings, 'LIBVIRT_KEEPALIVE_INTERVAL') else 5,
-    settings.LIBVIRT_KEEPALIVE_COUNT if hasattr(settings, 'LIBVIRT_KEEPALIVE_COUNT') else 5
+    settings.LIBVIRT_KEEPALIVE_COUNT if hasattr(settings, 'LIBVIRT_KEEPALIVE_COUNT') else 5,
 )
 
 
@@ -374,9 +371,11 @@ class wvmConnect(object):
 
                 result["machines"] = []
                 for m in arch_el.xpath("machine"):
-                    result["machines"].append({"machine": m.text,
-                                               "max_cpu": m.get("maxCpus"),
-                                               "canonical": m.get("canonical")})
+                    result["machines"].append({
+                        "machine": m.text,
+                        "max_cpu": m.get("maxCpus"),
+                        "canonical": m.get("canonical")
+                    })
 
                 guest_el = arch_el.getparent()
                 for f in guest_el.xpath("features"):
@@ -385,6 +384,7 @@ class wvmConnect(object):
                 result["os_type"] = guest_el.find("os_type").text
 
             return result
+
         return util.get_xml_path(self.get_cap_xml(), func=guests)
 
     def get_dom_capabilities(self, arch, machine):
@@ -560,6 +560,7 @@ class wvmConnect(object):
                 arch_name = arch.xpath('@name')[0]
                 result[arch_name] = domain_types
             return result
+
         return util.get_xml_path(self.get_cap_xml(), func=hypervisors)
 
     def get_hypervisors_machines(self):
@@ -573,6 +574,7 @@ class wvmConnect(object):
 
                 result[arch] = self.get_machine_types(arch)
             return result
+
         return util.get_xml_path(self.get_cap_xml(), func=machines)
 
     def get_emulator(self, arch):
@@ -607,6 +609,7 @@ class wvmConnect(object):
                 arch_name = arch.xpath('@name')[0]
                 result[arch_name] = emulator
             return result
+
         return util.get_xml_path(self.get_cap_xml(), func=emulators)
 
     def get_os_loaders(self, arch='x86_64', machine='pc'):
@@ -617,6 +620,7 @@ class wvmConnect(object):
         """
         def get_os_loaders(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/os/loader[@supported='yes']/value")]
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_os_loaders)
 
     def get_os_loader_enums(self, arch, machine):
@@ -632,6 +636,7 @@ class wvmConnect(object):
                 path = "/domainCapabilities/os/loader[@supported='yes']/enum[@name='{}']/value".format(enum)
                 result[enum] = [v.text for v in ctx.xpath(path)]
             return result
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_os_loader_enums)
 
     def get_disk_bus_types(self, arch, machine):
@@ -642,6 +647,7 @@ class wvmConnect(object):
         """
         def get_bus_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='bus']/value")]
+
         # return [ 'ide', 'scsi', 'usb', 'virtio' ]
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_bus_list)
 
@@ -653,6 +659,7 @@ class wvmConnect(object):
         """
         def get_device_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='diskDevice']/value")]
+
         # return [ 'disk', 'cdrom', 'floppy', 'lun' ]
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_device_list)
 
@@ -664,6 +671,7 @@ class wvmConnect(object):
         """
         def get_graphics_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/graphics/enum[@name='type']/value")]
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_graphics_list)
 
     def get_cpu_modes(self, arch, machine):
@@ -674,6 +682,7 @@ class wvmConnect(object):
         """
         def get_cpu_modes(ctx):
             return [v for v in ctx.xpath("/domainCapabilities/cpu/mode[@supported='yes']/@name")]
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_cpu_modes)
 
     def get_cpu_custom_types(self, arch, machine):
@@ -688,6 +697,7 @@ class wvmConnect(object):
             result = [v.text for v in ctx.xpath(usable_yes)]
             result += [v.text for v in ctx.xpath(usable_unknown)]
             return result
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_custom_list)
 
     def get_hostdev_modes(self, arch, machine):
@@ -698,6 +708,7 @@ class wvmConnect(object):
         """
         def get_hostdev_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/hostdev/enum[@name='mode']/value")]
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
 
     def get_hostdev_startup_policies(self, arch, machine):
@@ -708,6 +719,7 @@ class wvmConnect(object):
         """
         def get_hostdev_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/hostdev/enum[@name='startupPolicy']/value")]
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
 
     def get_hostdev_subsys_types(self, arch, machine):
@@ -718,6 +730,7 @@ class wvmConnect(object):
         """
         def get_hostdev_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/hostdev/enum[@name='subsysType']/value")]
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
 
     def get_network_models(self):
@@ -748,9 +761,10 @@ class wvmConnect(object):
             result = []
             for video_enum in ctx.xpath('/domainCapabilities/devices/video/enum'):
                 if video_enum.xpath("@name")[0] == "modelType":
-                    for values in video_enum: 
+                    for values in video_enum:
                         result.append(values.text)
             return result
+
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_video_list)
 
     def get_iface(self, name):
@@ -829,7 +843,7 @@ class wvmConnect(object):
             mem = util.get_xpath(doc, "/domain/currentMemory")
             mem = int(mem) / 1024
             if raw_mem_size:
-                mem = int(mem) * (1024*1024)
+                mem = int(mem) * (1024 * 1024)
             cur_vcpu = util.get_xpath(doc, "/domain/vcpu/@current")
             if cur_vcpu:
                 vcpu = cur_vcpu
@@ -840,6 +854,7 @@ class wvmConnect(object):
             description = util.get_xpath(doc, "/domain/description")
             description = description if description else ''
             return mem, vcpu, title, description
+
         for name in self.get_instances():
             dom = self.get_instance(name)
             xml = dom.XMLDesc(0)
@@ -871,6 +886,7 @@ class wvmConnect(object):
             description = util.get_xpath(ctx, "/domain/description")
             description = description if description else ''
             return mem, vcpu, title, description
+
         (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
         return {
             'name': dom.name(),
@@ -929,8 +945,7 @@ class wvmConnect(object):
         """
         Return True if libvirt advertises support for proper UEFI setup
         """
-        return ("readonly" in loader_enums and
-                "yes" in loader_enums.get("readonly"))
+        return ("readonly" in loader_enums and "yes" in loader_enums.get("readonly"))
 
     def is_supports_virtio(self, arch, machine):
         if not self.is_qemu():

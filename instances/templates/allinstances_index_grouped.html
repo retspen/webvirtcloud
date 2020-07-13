@@ -1,72 +1,77 @@
 {% load i18n %}
+{% load icons %}
 <table class="table table-hover sortable-theme-bootstrap" data-sortable>
     <thead>
-    <tr style="border: 2px solid transparent; ">
-        <th scope="col" data-sortable="false"><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
-        <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
-        <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
-        <th scope="col">{% trans "Status" %}</th>
-        <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
-        <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
-        <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
-    </tr>
+        <tr style="border: 2px solid transparent; ">
+            <th scope="col" data-sortable="false"><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
+            <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
+            <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
+            <th scope="col">{% trans "Status" %}</th>
+            <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
+            <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
+            <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
+        </tr>
     </thead>
     <tbody class="searchable">
-    {% for host, insts  in all_host_vms.items %}
-        <tr class="font-weight-bold active" style="border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
-            <td>
-                <span id="collapse_host_instances_{{ host.1 }}" class="fa fa-chevron-up" onclick="hide_host_instances('{{ host.1 }}');"></span>
-            </td>
-            <td>
-                <a class="text-secondary" href="{% url 'overview' host.0 %}">{{ host.1 }}</a>
-                <span id="inst_count_badge_{{ host.1 }}" class="badge badge-secondary d-none">{{ insts.items|length }}</span>
-            </td>
-            <td class="d-none d-sm-table-cell"></td>
-            <td>
-                {% if host.2 == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
-                {% if host.2 == 2 %}<span class="text-warning">{% trans "Not Active" %}</span>{% endif %}
-                {% if host.2 == 3 %}<span class="text-danger">{% trans "Connection Failed" %}</span>{% endif %}
-            </td>
-            <td class="d-none d-sm-table-cell text-center">{{ host.3 }}</td>
-            <td class="d-none d-sm-table-cell text-right">{{ host.4|filesizeformat }}</td>
-            <td>
-                <div class="progress">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ host.5 }}%"
-                        aria-valuenow="{{ host.5 }}" aria-valuemin="0" aria-valuemax="100">{{ host.5 }}%
-                    </div>
-                </div>
-            </td>
-        </tr>
-
-        {% for inst, vm in insts.items %}
-            <tr host="{{ host.1 }}">
-                <td class="text-right">{{ forloop.counter }} </td>
-                <td>&emsp; 
-                    <a class="text-secondary" href="{% url 'instances:instance' host.0 inst %}">{{ inst }}</a><br>
-                    <small><em>{{ vm.title }}</em></small>
-                </td>
-                 <td class="d-none d-sm-table-cell">
-                    <span class="font-small font-italic">
-                        {% if vm.userinstances.count > 0 %} {{ vm.userinstances.first_user.user.username }}
-                            {% if vm.userinstances.count > 1 %} (+{{ vm.userinstances.count|add:"-1" }}){% endif %}
-                        {% endif %}
-                    </span>
-                </td>
-                <td>
-                    {% if vm.status == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
-                    {% if vm.status == 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endif %}
-                    {% if vm.status == 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endif %}
-                </td>
-                <td class="d-none d-sm-table-cell text-center">{{ vm.vcpu }}</td>
-                <td class="d-none d-sm-table-cell text-right">{{ vm.memory |filesizeformat }}</td>
-                <td  class="text-nowrap">
-                    {% include 'instance_actions.html' %}
-                </td>
-            </tr>
+        {% for compute in computes %}
+            {% if compute.status is True and compute.instance_set.count > 0 %}
+                <tr class="font-weight-bold active" style="border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
+                    <td>
+                        <span id="collapse_host_instances_{{ compute.id }}" class="fa fa-chevron-up" onclick="hide_host_instances('{{ compute.id }}');"></span>
+                    </td>
+                    <td>
+                        <a class="text-secondary" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
+                        <span id="inst_count_badge_{{ compute.id }}" class="badge badge-secondary d-none">{{ compute.instance_set.count }}</span>
+                    </td>
+                    <td class="d-none d-sm-table-cell"></td>
+                    <td>
+                        <span class="text-success">{% trans "Connected" %}</span>
+                    </td>
+                    <td class="d-none d-sm-table-cell text-center">{{ compute.cpu_count }}</td>
+                    <td class="d-none d-sm-table-cell text-right">{{ compute.ram_size|filesizeformat }}</td>
+                    <td>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ compute.ram_usage }}%"
+                                aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.ram_usage }}%
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% for instance in compute.instance_set.all %}
+                    <tr host="{{ compute.id }}">
+                        <td class="text-right">{{ forloop.counter }} </td>
+                        <td>
+                            <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a><br>
+                        </td>
+                        <td>
+                            <em>
+                                {% if instance.userinstance_set.all.count > 0 %}
+                                {{ instance.userinstance_set.all.0.user }}
+                                {% if instance.userinstance_set.all.count > 1 %}
+                                (+{{ instance.userinstance_set.all.count|add:"-1" }})
+                                {% endif %}
+                                {% endif %}
+                            </em>
+                        </td>
+                        <td>
+                            {% if instance.proxy.instance.info.0 == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
+                            {% if instance.proxy.instance.info.0 == 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endif %}
+                            {% if instance.proxy.instance.info.0 == 3 %}
+                                <span class="text-warning">{% trans "Suspended" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ instance.proxy.instance.info.3 }}</td>
+                        <td>{{ instance.cur_memory }} MB</td>
+                        <td class="text-nowrap">
+                            {% include 'instance_actions.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
         {% endfor %}
-    {% endfor %}
     </tbody>
 </table>
+
 {% block script %}
 <script>
 function hide_all_host_instances() {

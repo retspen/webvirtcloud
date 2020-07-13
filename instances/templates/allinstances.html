@@ -1,131 +1,55 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load icons %}
 {% load staticfiles %}
 {% block title %}{% trans "Instances" %}{% endblock %}
 {% block style %}
     <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
 {% endblock %}
+{% block page_header %}{% trans "Instances" %}{% endblock page_header %}
+
+{% block page_header_extra %}
+{% if request.user.is_superuser %}
+    {% include 'create_inst_block.html' %}
+{% endif %}
+<div class="float-right search">
+    <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
+</div>
+{% endblock page_header_extra %}
+
 {% block content %}
-    <!-- Page Heading -->
-    <div class="row">
-        <div class="col-lg-12">
-            {% if request.user.is_superuser %}
-                {% include 'create_inst_block.html' %}
-            {% endif %}
-            {% if all_host_vms or all_user_vms %}
-                <div class="float-right search">
-                    <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
-                </div>
-            {% endif %}
-            <h2 class="page-header">{% trans "Instances" %}</h2>
-        </div>
-    </div>
-    <!-- /.row -->
-
-    {% include 'errors_block.html' %}
-
+    {% for compute in computes %}
+        {% if compute.status is not True %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% trans 'Problem occurred with host' %} {{ compute.name }}: {{ compute.status }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endif %}
+    {% endfor %}
     <div class="col-lg-12">
-        {% if request.user.is_superuser %}
-            {% if not all_host_vms %}
-                <div class="col-lg-12">
-                    <div class="alert alert-warning alert-dismissable">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times</button>
-                        <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Instance" %}
-                    </div>
-                </div>
-            {% else %}
-               {% if view_style == "nongrouped"  %}
-                   {% include 'allinstances_index_nongrouped.html' %}
-               {% endif %}
-               {% if view_style == "grouped" %}
-                   {% include 'allinstances_index_grouped.html' %}
-               {% endif %}
-            {% endif %}
+        {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
+            {% include 'allinstances_index_grouped.html' %}
         {% else %}
-            {% if not all_user_vms %}
-                <div class="col-lg-12">
-                    <div class="alert alert-warning alert-dismissable">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                        <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Instance" %}
-                    </div>
-                </div>
-            {% else  %}
-                <table class="table table-hover table-striped sortable-theme-bootstrap" data-sortable>
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans 'Name' %}</th>
-                            <th scope="col">{% trans 'Status' %}</th>
-                            <th scope="col">{% trans 'VCPU' %}</th>
-                            <th scope="col">{% trans 'Memory' %}</th>
-                            <th scope="col" data-sortable="false" style="width: 165px;">{% trans 'Actions' %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                        {% for inst, vm in all_user_vms.items %}
-                            <tr>
-                                <td><a href="{% url 'instances:instance' vm.compute_id vm.name %}">{{ vm.name }}</a><br><small><em>{{ vm.title }}</em></small></td>
-                                <td>{% if vm.status == 1 %}
-                                        <span class="text-success">{% trans "Active" %}</span>
-                                    {% endif %}
-                                    {% if vm.status == 5 %}
-                                        <span class="text-danger">{% trans "Off" %}</span>
-                                    {% endif %}
-                                    {% if vm.status == 3 %}
-                                        <span class="text-warning">{% trans "Suspend" %}</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ vm.vcpu }}</td>
-                                <td>{{ vm.memory }} {% trans "MB" %}</td>
-                                <td>
-                                    {% include "instance_actions.html" %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
+            {% include 'allinstances_index_nongrouped.html' %}
         {% endif %}
     </div>
-{% endblock %}
+{% endblock content %}
 {% block script %}
-<script src="{% static "js/sortable.min.js" %}"></script>
-<script>
-    function open_console(uuid) {
-        window.open("{% url 'console' %}?token=" + uuid, "", "width=850,height=485");
-    }
-</script>
-<script>
-    function filter_table() {
-        var rex = new RegExp($(this).val(), 'i');
-        $('.searchable tr').hide();
-        $('.searchable tr').filter(function () {
-            return rex.test($(this).text());
-        }).show();
-        Cookies.set("instances_filter", $(this).val(), { expires: 1 });
-    }
-    $(document).ready(function () {
-        instances_filter_cookie = Cookies.get("instances_filter");
-        if (instances_filter_cookie) {
-            $('#filter').val(instances_filter_cookie);
-            $('#filter').each(filter_table);
-        }
-        (function ($) {
-            $('#filter').keyup(filter_table)
-        }(jQuery));
-    });
-</script>
-<script>
-    function goto_instance_clone(compute, instance) {
-        window.location = "/instances/" + compute + "/" + instance + "/#clone";
-    }
-</script>
-{% if request.user.is_superuser %}
+    <script src="{% static "js/sortable.min.js" %}"></script>
     <script>
-        function goto_compute() {
-            let compute = $("#compute_select").val();
-            {#window.location.href = "{% url 'create_instance' 1 %}".replace(1, compute);#}
-            window.location.href = "{% url 'create_instance_select_type' 1 %}".replace(1, compute);
+        function open_console(uuid) {
+            window.open("{% url 'console' %}?token=" + uuid, "", "width=850,height=485");
         }
     </script>
-{% endif %}
-{% endblock %}
+    <script src="{% static 'js/filter-table.js' %}"></script>
+    {% if request.user.is_superuser %}
+        <script>
+            function goto_compute() {
+                let compute = $("#compute_select").val();
+                window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
+            }
+        </script>
+    {% endif %}
+{% endblock script %}

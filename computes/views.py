@@ -15,6 +15,8 @@ from instances.models import Instance
 from vrtManager.connection import (CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS, connection_manager, wvmConnect)
 from vrtManager.hostdetails import wvmHostDetails
 
+from . import utils
+
 
 @superuser_only
 def computes(request):
@@ -30,34 +32,34 @@ def computes(request):
 
 @superuser_only
 def overview(request, compute_id):
-    """
-    :param request:
-    :param compute_id:
-    :return:
-    """
-
-    error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     status = 'true' if connection_manager.host_is_up(compute.type, compute.hostname) is True else 'false'
 
-    try:
-        conn = wvmHostDetails(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-        )
-        hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
-        hypervisor = conn.get_hypervisors_domain_types()
-        mem_usage = conn.get_memory_usage()
-        emulator = conn.get_emulator(host_arch)
-        version = conn.get_version()
-        lib_version = conn.get_lib_version()
-        conn.close()
-    except libvirtError as lib_err:
-        error_messages.append(lib_err)
+    conn = wvmHostDetails(
+        compute.hostname,
+        compute.login,
+        compute.password,
+        compute.type,
+    )
+    hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
+    hypervisor = conn.get_hypervisors_domain_types()
+    mem_usage = conn.get_memory_usage()
+    emulator = conn.get_emulator(host_arch)
+    version = conn.get_version()
+    lib_version = conn.get_lib_version()
+    conn.close()
 
     return render(request, 'overview.html', locals())
+
+
+@superuser_only
+def instances(request, compute_id):
+    compute = get_object_or_404(Compute, pk=compute_id)
+
+    utils.refresh_instance_database(compute)
+    instances = Instance.objects.filter(compute=compute).prefetch_related('userinstance_set')
+
+    return render(request, 'computes/instances.html', {'compute': compute, 'instances': instances})
 
 
 @superuser_only

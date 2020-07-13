@@ -55,7 +55,7 @@
                                     </td>
                                     <td>{% if user.is_staff %}<span class="fa fa-check"></span>{% endif %}</td>
                                     <td>{% if user.is_superuser %}<span class="fa fa-check"></span>{% endif %}</td>
-                                    <td>{% if user.userattributes.can_clone_instances %}<span class="fa fa-check"></span>{% endif %}</td>
+                                    <td>{% if perms.instances.clone_instances %}<span class="fa fa-check"></span>{% endif %}</td>
                                 </tr>
                             {% endfor %}
                             </tbody>

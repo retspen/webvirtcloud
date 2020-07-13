@@ -1,49 +1,48 @@
 {% load i18n %}
-{% if request.user.is_superuser %}
-    <a href="#AddInstance" type="button" class="btn btn-success btn-header float-right" data-toggle="modal">
-        <span class="fa fa-plus" aria-hidden="true"></span>
-    </a>
+<a href="#AddInstance" type="button" class="btn btn-success btn-header float-right" data-toggle="modal">
+    <span class="fa fa-plus" aria-hidden="true"></span>
+</a>
 
-    <!-- Modal pool -->
-    <div class="modal fade" id="AddInstance" tabindex="-1" role="dialog" aria-labelledby="AddNetPoolLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Choose a compute for new instance" %}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form method="post" aria-label="Select compute for instance create form"> {% csrf_token %}
-                        <div class="form-group row">
-                            <label class="col-sm-4 col-form-label">{% trans "Compute" %}</label>
-                            <div class="col-sm-6">
-                                <select class="custom-select" id="compute_select">
-                                    <option>{% trans "Please select" %}</option>
-                                    {% for compute in computes_data %}
-                                        <option {% if compute.status is not True %} class="font-italic text-muted" {% else %} value="{{ compute.id }}" {% endif %}>{{ compute.name }}</option>
-                                    {% empty %}
-                                        <option value="None">{% trans "None" %}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+<!-- Modal pool -->
+<div class="modal fade" id="AddInstance" tabindex="-1" role="dialog" aria-labelledby="AddNetPoolLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Choose a compute for new instance" %}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form method="post" aria-label="Select compute for instance create form">
+                    {% csrf_token %}
+                    <div class="form-group row">
+                        <label class="col-sm-4 col-form-label">{% trans "Compute" %}</label>
+                        <div class="col-sm-6">
+                            <select class="custom-select" id="compute_select">
+                                <option>{% trans "Please select" %}</option>
+                                {% for compute in computes %}
+                                    <option {% if compute.status is not True %} class="font-italic text-muted" {% else %} value="{{ compute.id }}" {% endif %}>{{ compute.name }}</option>
+                                {% empty %}
+                                    <option value="None">{% trans "None" %}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        {% trans "Close" %}
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    {% trans "Close" %}
+                </button>
+                {% if computes %}
+                    <button type="submit" class="btn btn-primary" name="choose" onclick='goto_compute()'>
+                        {% trans "Choose" %}
                     </button>
-                    {% if computes %}
-                        <button type="submit" class="btn btn-primary" name="choose" onclick='goto_compute()'>
-                            {% trans "Choose" %}
-                        </button>
-                    {% else %}
-                        <button class="btn btn-primary disabled">
-                            {% trans "Choose" %}
-                        </button>
-                    {% endif %}
-                </div>
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-    </div> <!-- /.modal -->
-{% endif %}
+                {% else %}
+                    <button class="btn btn-primary disabled">
+                        {% trans "Choose" %}
+                    </button>
+                {% endif %}
+            </div>
+        </div> <!-- /.modal-content -->
+    </div> <!-- /.modal-dialog -->
+</div> <!-- /.modal -->

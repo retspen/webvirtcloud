@@ -26,11 +26,13 @@ def console(request):
         host = int(temptoken[0])
         uuid = temptoken[1]
         instance = Instance.objects.get(compute_id=host, uuid=uuid)
-        conn = wvmInstance(instance.compute.hostname,
-                           instance.compute.login,
-                           instance.compute.password,
-                           instance.compute.type,
-                           instance.name)
+        conn = wvmInstance(
+            instance.compute.hostname,
+            instance.compute.login,
+            instance.compute.password,
+            instance.compute.type,
+            instance.name,
+        )
         console_type = conn.get_console_type()
         console_websocket_port = conn.get_console_websocket_port()
         console_passwd = conn.get_console_passwd()

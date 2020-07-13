@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
+{% load icons %}
 {% block title %}{% trans "Create new instance" %}{% endblock %}
 {% block style %}
     <link href="{% static "css/bootstrap-multiselect.css" %}" rel="stylesheet">
@@ -74,7 +75,7 @@
                             {% include 'create_flav_block.html' %}
                             <h3 class="page-header">{% trans "Create from flavor" %}</h3>
                             <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
+                                <table class="table table-hover">
                                 <thead>
                                 <tr>
                                     <th scope="col">#</th>
@@ -286,10 +287,10 @@
                                             </a>
                                         </td>
                                         <td style="width:5px;">
-                                            <form action="" method="post" role="form" aria-label="Delete flavor form">{% csrf_token %}
-                                                <input type="hidden" name="flavor" value="{{ flavor.id }}">
+                                            <form action="{% url 'instances:flavor_delete' flavor.id %}" method="post" role="form" aria-label="Delete flavor form">
+                                                {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-secondary" name="delete_flavor" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                    <span class="fa fa-trash"></span>
+                                                    {% icon 'trash' %}
                                                 </button>
                                             </form>
                                         </td>
@@ -872,7 +873,7 @@
     <script>
         function goto_compute() {
             let compute = {{ compute.id }}
-            window.location.href = "{% url 'create_instance_select_type' 1 %}".replace(1, compute);
+            window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
         }
     </script>
 {% endif %}

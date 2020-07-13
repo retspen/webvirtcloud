@@ -8,7 +8,6 @@ import json
 import guestfs
 import re
 
-
 PORT = 16510
 ADDRESS = "0.0.0.0"
 
@@ -20,7 +19,8 @@ class MyTCPServer(socketserver.ThreadingTCPServer):
 class MyTCPServerHandler(socketserver.BaseRequestHandler):
     def handle(self):
         # recive data
-        data = json.loads(self.request.recv(1024).strip())
+        d = self.request.recv(1024).strip()
+        data = json.loads(d)
 
         # GuestFS
         gfs = guestfs.GuestFS(python_return_dict=True)
@@ -51,8 +51,8 @@ class MyTCPServerHandler(socketserver.BaseRequestHandler):
                     pass
             gfs.shutdown()
             gfs.close()
-        except RuntimeError as err:
-            self.request.sendall(json.dumps({'return': 'error', 'message': err}))
+        except Exception as err:
+            self.request.sendall(bytes(json.dumps({'return': 'error', 'message': str(err)}).encode()))
 
 
 server = MyTCPServer((ADDRESS, PORT), MyTCPServerHandler)

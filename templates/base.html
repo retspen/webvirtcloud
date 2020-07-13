@@ -37,11 +37,21 @@
     {% include 'navbar.html' %}
 
     <div role="main" class="container">
-    {% bootstrap_messages %}
-    {% block content %}{% endblock %}
-
-    </div> <!-- /container -->
-
+      <div class"row">
+        <div class="col-sm-12">
+          <div class="float-right">
+            {% block page_header_extra %}
+            {% endblock page_header_extra %}
+          </div>
+          <h3 class="page-header">
+            {% block page_header %}
+            {% endblock page_header %}
+          </h3>
+        </div>
+      </div>
+      {% bootstrap_messages %}
+      {% block content %}{% endblock %}
+    </div>
 
     <!-- Bootstrap core JavaScript
     ================================================== -->

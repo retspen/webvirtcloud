@@ -1,33 +1,55 @@
 {% load i18n %}
 <table class="table table-hover sortable-theme-bootstrap" data-sortable>
     <thead>
-    <tr>
-        <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
-        <th scope="col">{% trans "Host" %}<br>{% trans "User"%}</th>
-        <th scope="col">{% trans "Status" %}</th>
-        <th scope="col">{% trans "VCPU" %}</th>
-        <th scope="col">{% trans "Memory" %}</th>
-        <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %}</th>
-    </tr>
+        <tr>
+            <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
+            {% if request.user.is_superuser %}
+                <th scope="col">{% trans 'Host' %}<br>{% trans 'User' %}</th>
+            {% endif %}
+            <th scope="col">{% trans 'Status' %}</th>
+            <th scope="col">{% trans 'VCPU' %}</th>
+            <th scope="col">{% trans 'Memory' %}</th>
+            <th scope="col" data-sortable="false">{% trans 'Actions' %}</th>
+        </tr>
     </thead>
     <tbody class="searchable">
-    {% for host, inst  in all_host_vms.items %}
-        {% for inst, vm in inst.items %}
-            <tr>
-                <td><a href="{% url 'instances:instance' host.0 inst %}">{{ inst }}</a><br><small><em>{{ info.title }}</em></small></td>
-                <td><a href="{% url 'overview' host.0 %}">{{ host.1 }}</a><br><small><em>{% if info.userinstances.count > 0 %}{{ info.userinstances.first_user.user.username }}{% if info.userinstances.count > 1 %} (+{{ info.userinstances.count|add:"-1" }}){% endif %}{% endif %}</em></small></td>
-                <td>
-                    {% if vm.status == 1 %}<span class="text-success">{% trans "Active" %}</span>{% endif %}
-                    {% if vm.status == 5 %}<span class="text-danger">{% trans "Off" %}</span>{% endif %}
-                    {% if vm.status == 3 %}<span class="text-warning">{% trans "Suspend" %}</span>{% endif %}
-                </td>
-                <td>{{ vm.vcpu }}</td>
-                <td>{{ vm.memory|filesizeformat }}</td>
-                <td class="text-nowrap">
-                   {% include "instance_actions.html" %}
-                </td>
-            </tr>
+        {% for instance in instances  %}
+            {% if instance.compute.status is True %}
+                <tr>
+                    <td>
+                        <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">
+                            {{ instance.name }}
+                        </a><br>
+                        <small><em>{{ instance.title }}</em></small>
+                    </td>
+                    {% if request.user.is_superuser %}
+                        <td>
+                            <a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a><br>
+                                <small><em>
+                                    {% if instance.userinstance_set.all.count > 0 %}
+                                    {{ instance.userinstance_set.all.0.user }}
+                                    {% if instance.userinstance_set.all.count > 1 %}
+                                    (+{{ instance.userinstance_set.all.count|add:"-1" }})
+                                    {% endif %}
+                                    {% endif %}
+                                </em></small>
+                        </td>
+                    {% endif %}
+                    <td>
+                        {% if instance.proxy.instance.info.0 == 1 %}<span
+                            class="text-success">{% trans "Active" %}</span>{% endif %}
+                        {% if instance.proxy.instance.info.0 == 5 %}<span
+                            class="text-danger">{% trans "Off" %}</span>{% endif %}
+                        {% if instance.proxy.instance.info.0 == 3 %}<span
+                            class="text-warning">{% trans "Suspended" %}</span>{% endif %}
+                    </td>
+                    <td>{{ instance.proxy.instance.info.3 }}</td>
+                    <td>{{ instance.cur_memory }} MB</td>
+                    <td class="text-nowrap">
+                        {% include 'instance_actions.html' %}
+                    </td>
+                </tr>
+            {% endif %}
         {% endfor %}
-    {% endfor %}
     </tbody>
 </table>

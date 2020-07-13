@@ -1,38 +1,40 @@
 import re
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
-from create.models import Flavor
-from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES
+
+from appsettings.models import AppSettings
+from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES, QEMU_KEYMAPS
+
+from .models import Flavor
 
 
-class FlavorAddForm(forms.Form):
-    label = forms.CharField(label="Name",
-                            error_messages={'required': _('No flavor name has been entered')},
-                            max_length=64)
-    vcpu = forms.IntegerField(label="VCPU",
-                              error_messages={'required': _('No VCPU has been entered')}, )
-    disk = forms.IntegerField(label="HDD",
-                              error_messages={'required': _('No HDD image has been entered')}, )
-    memory = forms.IntegerField(label="RAM",
-                                error_messages={'required': _('No RAM size has been entered')}, )
+class FlavorForm(forms.ModelForm):
+    class Meta:
+        model = Flavor
+        fields = '__all__'
 
-    def clean_name(self):
-        label = self.cleaned_data['label']
-        have_symbol = re.match('^[a-zA-Z0-9._-]+$', label)
-        if not have_symbol:
-            raise forms.ValidationError(_('The flavor name must not contain any special characters'))
-        elif len(label) > 64:
-            raise forms.ValidationError(_('The flavor name must not exceed 20 characters'))
-        try:
-            Flavor.objects.get(label=label)
-        except Flavor.DoesNotExist:
-            return label
-        raise forms.ValidationError(_('Flavor name is already use'))
+
+class ConsoleForm(forms.Form):
+    type = forms.ChoiceField()
+    listen_on = forms.ChoiceField()
+    generate_password = forms.BooleanField(required=False)
+    clear_password = forms.BooleanField(required=False)
+    password = forms.CharField(widget=forms.PasswordInput(render_value=True), required=False)
+    clear_keymap = forms.BooleanField(required=False)
+    keymap = forms.ChoiceField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(ConsoleForm, self).__init__(*args, **kwargs)
+        type_choices = ((c, c) for c in AppSettings.objects.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list())
+        keymap_choices = [('auto', 'Auto')] + list((c, c) for c in QEMU_KEYMAPS)
+        self.fields['type'] = forms.ChoiceField(choices=type_choices)
+        self.fields['listen_on'] = forms.ChoiceField(choices=QEMU_CONSOLE_LISTEN_ADDRESSES)
+        self.fields['keymap'] = forms.ChoiceField(choices=keymap_choices)
 
 
 class NewVMForm(forms.Form):
-    name = forms.CharField(error_messages={'required': _('No Virtual Machine name has been entered')},
-                           max_length=64)
+    name = forms.CharField(error_messages={'required': _('No Virtual Machine name has been entered')}, max_length=64)
     firmware = forms.CharField(max_length=50, required=False)
     vcpu = forms.IntegerField(error_messages={'required': _('No VCPU has been entered')})
     vcpu_mode = forms.CharField(max_length=20, required=False)

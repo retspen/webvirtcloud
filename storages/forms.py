@@ -4,12 +4,9 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class AddStgPool(forms.Form):
-    name = forms.CharField(error_messages={'required': _('No pool name has been entered')},
-                           max_length=20)
+    name = forms.CharField(error_messages={'required': _('No pool name has been entered')}, max_length=20)
     stg_type = forms.CharField(max_length=10)
-    target = forms.CharField(error_messages={'required': _('No path has been entered')},
-                             max_length=100,
-                             required=False)
+    target = forms.CharField(error_messages={'required': _('No path has been entered')}, max_length=100, required=False)
     source = forms.CharField(max_length=100, required=False)
     ceph_user = forms.CharField(required=False)
     ceph_host = forms.CharField(required=False)
@@ -51,11 +48,9 @@ class AddStgPool(forms.Form):
         return source
 
 
-class AddImage(forms.Form):
+class CreateVolumeForm(forms.Form):
     name = forms.CharField(max_length=120)
-    format = forms.ChoiceField(required=True, choices=(('qcow2', 'qcow2 (recommended)'),
-                                                       ('qcow', 'qcow'),
-                                                       ('raw', 'raw')))
+    format = forms.ChoiceField(required=True, choices=(('qcow2', 'qcow2 (recommended)'), ('qcow', 'qcow'), ('raw', 'raw')))
     size = forms.IntegerField()
     meta_prealloc = forms.BooleanField(required=False)
 
@@ -64,8 +59,6 @@ class AddImage(forms.Form):
         have_symbol = re.match('^[a-zA-Z0-9._-]+$', name)
         if not have_symbol:
             raise forms.ValidationError(_('The image name must not contain any special characters'))
-        elif len(name) > 120:
-            raise forms.ValidationError(_('The image name must not exceed 120 characters'))
         return name
 
 
@@ -73,9 +66,7 @@ class CloneImage(forms.Form):
     name = forms.CharField(max_length=120)
     image = forms.CharField(max_length=120)
     convert = forms.BooleanField(required=False)
-    format = forms.ChoiceField(required=False, choices=(('qcow2', 'qcow2 (recommended)'),
-                                                        ('qcow', 'qcow'),
-                                                        ('raw', 'raw')))
+    format = forms.ChoiceField(required=False, choices=(('qcow2', 'qcow2 (recommended)'), ('qcow', 'qcow'), ('raw', 'raw')))
     meta_prealloc = forms.BooleanField(required=False)
 
     def clean_name(self):
