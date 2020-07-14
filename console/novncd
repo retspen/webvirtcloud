@@ -22,7 +22,7 @@ django.setup()
 import re
 import socket
 from six.moves import http_cookies as Cookie
-from webvirtcloud.settings import WS_PORT, WS_HOST, WS_CERT
+from webvirtcloud.settings import WS_PUBLIC_PORT, WS_HOST, WS_CERT
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
 from console.tunnel import Tunnel
 from optparse import OptionParser
@@ -55,7 +55,7 @@ parser.add_option("-p",
                   dest="port",
                   action="store",
                   help="Listen port",
-                  default=WS_PORT or 6080)
+                  default=WS_PUBLIC_PORT or 6080)
 
 parser.add_option("-c",
                   "--cert",
@@ -145,13 +145,6 @@ class CompatibilityMixIn(object):
                     if 'token' in cookie:
                         token = cookie['token'].value
 
-        # cookie = Cookie.SimpleCookie()
-        # cookie.load(self.headers.getheader('cookie'))
-        # if 'token' not in cookie:
-        #     self.msg('No token cookie found !')
-        #     return False
-        # token = cookie['token'].value
-
         (connhost, connport, connuser, conntype, console_host, console_port,
          console_socket) = get_connection_infos(token)
 
@@ -213,8 +206,7 @@ class CompatibilityMixIn(object):
                 if tsock:
                     tsock.shutdown(socket.SHUT_RDWR)
                     tsock.close()
-                if tunnel:
-                    tunnel.close()
+                tunnel.close()
             raise
 
 

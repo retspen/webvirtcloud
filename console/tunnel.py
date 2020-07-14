@@ -28,7 +28,6 @@ import signal
 import logging
 from functools import reduce
 
-
 class Tunnel(object):
     def __init__(self):
         self.outfd = None
@@ -92,9 +91,9 @@ class Tunnel(object):
             os.close(0)
             os.close(1)
             os.close(2)
-            os.dup(fds[1].fileno())
-            os.dup(fds[1].fileno())
-            os.dup(errorfds[1].fileno())
+            os.dup2(fds[1].fileno(), 0)
+            os.dup2(fds[1].fileno(), 1)
+            os.dup2(errorfds[1].fileno(), 2)
             os.execlp(*argv)
             os._exit(1)
         else:
