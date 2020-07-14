@@ -52,7 +52,7 @@
                             <div class="form-group row">
                                 <label class="col-sm-4 col-form-label">{% trans 'Bus' %}</label>
                                 <div class="col-sm-8">
-                                    <select class="custom-select" name="vol_bus" {% if status != 5 %} disabled {% endif %}>
+                                    <select class="custom-select" name="vol_bus" {% if instance.status != 5 %} disabled {% endif %}>
                                     {% for bus in bus_host %}
                                         <option value="{{ bus }}" {% if bus == disk.bus %}selected{% endif %}>{{ bus }}</option>
                                     {% endfor %}
@@ -78,7 +78,7 @@
                                     <label class="col-sm-4 col-form-label">{% trans 'Cache mode' %}</label>
                                     <div class="col-sm-8">
                                         <select class="custom-select" name="vol_cache">
-                                        {% for key, val in cache_modes %}
+                                        {% for key, val in instance.cache_modes %}
                                             <option value="{{ key }}" {% if key == disk.cache %}selected{% endif %}>{{ val }}</option>
                                         {% endfor %}
                                         </select>
@@ -88,7 +88,7 @@
                                     <label class="col-sm-4 col-form-label">{% trans 'IO mode' %}</label>
                                     <div class="col-sm-8">
                                         <select class="custom-select" name="vol_io_mode">
-                                        {% for key, val in io_modes %}
+                                        {% for key, val in instance.io_modes %}
                                             <option value="{{ key }}" {% if key == disk.io %}selected{% endif %}>{{ val }}</option>
                                         {% endfor %}
                                         </select>
@@ -98,7 +98,7 @@
                                     <label class="col-sm-4 col-form-label">{% trans 'Discard mode' %}</label>
                                     <div class="col-sm-8">
                                         <select class="custom-select" name="vol_discard_mode">
-                                        {% for key, val in discard_modes %}
+                                        {% for key, val in instance.discard_modes %}
                                             <option value="{{ key }}" {% if key == disk.discard %}selected{% endif %}>{{ val }}</option>
                                         {% endfor %}
                                         </select>
@@ -108,7 +108,7 @@
                                     <label class="col-sm-4 col-form-label">{% trans 'Detect zeroes' %}</label>
                                     <div class="col-sm-8">
                                         <select class="custom-select" name="vol_detect_zeroes">
-                                        {% for key, val in detect_zeroes_modes %}
+                                        {% for key, val in instance.detect_zeroes_modes %}
                                             <option value="{{ key }}" {% if key == disk.detect_zeroes %}selected{% endif %}>{{ val }}</option>
                                         {% endfor %}
                                         </select>

@@ -126,7 +126,11 @@ def user_instance_delete(request, pk):
     if request.method == 'POST':
         user = user_instance.user
         user_instance.delete()
-        return redirect(reverse('account', args=[user.id]))
+        next = request.GET.get('next', None)
+        if next:
+            return redirect(next)
+        else:
+            return redirect(reverse('account', args=[user.id]))
 
     return render(
         request,

@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     'appsettings',
     'computes',
     'console',
-    'create',
     'datasource',
     'networks',
     'instances',
@@ -51,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'appsettings.middleware.AppSettingsMiddleware',
+    'webvirtcloud.middleware.ExceptionMiddleware',
 ]
 
 ROOT_URLCONF = 'webvirtcloud.urls'

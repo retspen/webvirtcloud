@@ -1,0 +1,91 @@
+{% load i18n %}
+{% load icons %}
+<div role="tabpanel" class="tab-pane" id="snapshots">
+    <div role="tabpanel">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist" aria-label="Instance snapshot menu">
+            <li class="nav-item">
+                <a class="nav-link text-secondary active" href="#takesnapshot" aria-controls="takesnapshot" role="tab" data-toggle="tab">
+                    {% trans "Take Snapshot" %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-secondary" href="#managesnapshot" aria-controls="managesnapshot" role="tab" data-toggle="tab">
+                    {% trans "Manage Snapshots" %}
+                </a>
+            </li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
+                {% if instance.status == 5 %}
+                    <p>{% trans "This may take more than an hour, depending on how much content is on your droplet and how large the disk is." %}</p>
+                    <form action="{% url 'instances:snapshot' instance.id %}" class="form-inline" method="post" role="form" aria-label="Create snapshot form">
+                        {% csrf_token %}
+                        <div class="form-group row">
+                            <div class="col-sm-12">
+                                <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
+                            </div>
+                        </div>
+                        {% if instance.status == 5 %}
+                            <input type="submit" class="btn btn-lg btn-success float-right" name="snapshot" value="{% trans "Take Snapshot" %}">
+                        {% else %}
+                            <button class="btn btn-lg btn-success float-right disabled">{% trans "Take Snapshot" %}</button>
+                        {% endif %}
+                    </form>
+                    <div class="clearfix"></div>
+                {% else %}
+                    <p>{% trans "To take a snapshot please Power Off the instance." %}</p>
+                {% endif %}
+            </div>
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="managesnapshot">
+                {% if instance.snapshots %}
+                    <p>{% trans "Choose a snapshot for restore/delete" %}</p>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <th scope="col">{% trans "Name" %}</th>
+                                <th scope="col">{% trans "Date" %}</th>
+                                <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
+                            </thead>
+                            <tbody>
+                            {% for snap in instance.snapshots %}
+                                <tr>
+                                    <td><strong>{{ snap.name }}</strong></td>
+                                    <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                    <td style="width:30px;">
+                                        <form action="{% url 'instances:revert_snapshot' instance.id %}" method="post" role="form" aria-label="Restore snapshot form">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="name" value="{{ snap.name }}">
+                                            {% if instance.status == 5 %}
+                                                <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
+                                                        <span class="fa fa-download"></span>
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-sm btn-secondary disabled"
+                                                        title="{% trans "To restore snapshots you need Power Off the instance." %}">
+                                                        <span class="fa fa-download"></span>
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                    <td style="width:30px;">
+                                        <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post" role="form" aria-label="Delete snapshot form">{% csrf_token %}
+                                            <input type="hidden" name="name" value="{{ snap.name }}">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                {% icon 'trash' %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>{% trans "You do not have any snapshots" %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

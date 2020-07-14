@@ -1,15 +1,17 @@
 import json
+
 from django.contrib import messages
-from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import render, get_object_or_404
-from django.utils.translation import ugettext_lazy as _
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.translation import ugettext_lazy as _
 from libvirt import libvirtError
 
 from admin.decorators import superuser_only
-from computes.models import Compute
 from appsettings.models import AppSettings
-from storages.forms import AddStgPool, AddImage, CloneImage
+from appsettings.settings import app_settings
+from computes.models import Compute
+from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
 from vrtManager.storage import wvmStorage, wvmStorages
 
 
@@ -79,97 +81,58 @@ def storage(request, compute_id, pool):
             destination.write(chunk)
         destination.close()
 
-    error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     meta_prealloc = False
+    form = CreateVolumeForm()
 
-    try:
-        conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
+    conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
 
-        storages = conn.get_storages()
-        state = conn.is_active()
-        size, free = conn.get_size()
-        used = (size - free)
-        if state:
-            percent = (used * 100) // size
-        else:
-            percent = 0
-        status = conn.get_status()
-        path = conn.get_target_path()
-        type = conn.get_type()
-        autostart = conn.get_autostart()
+    storages = conn.get_storages()
+    state = conn.is_active()
+    size, free = conn.get_size()
+    used = (size - free)
+    if state:
+        percent = (used * 100) // size
+    else:
+        percent = 0
+    status = conn.get_status()
+    path = conn.get_target_path()
+    type = conn.get_type()
+    autostart = conn.get_autostart()
 
-        if state:
-            conn.refresh()
-            volumes = conn.update_volumes()
-        else:
-            volumes = None
-    except libvirtError as lib_err:
-        error_messages.append(lib_err)
+    if state:
+        conn.refresh()
+        volumes = conn.update_volumes()
+    else:
+        volumes = None
 
     if request.method == 'POST':
         if 'start' in request.POST:
-            try:
-                conn.start()
-                return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as lib_err:
-                error_messages.append(lib_err)
+            conn.start()
+            return HttpResponseRedirect(request.get_full_path())
         if 'stop' in request.POST:
-            try:
-                conn.stop()
-                return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as lib_err:
-                error_messages.append(lib_err)
+            conn.stop()
+            return HttpResponseRedirect(request.get_full_path())
         if 'delete' in request.POST:
-            try:
-                conn.delete()
-                return HttpResponseRedirect(reverse('storages', args=[compute_id]))
-            except libvirtError as lib_err:
-                error_messages.append(lib_err)
+            conn.delete()
+            return HttpResponseRedirect(reverse('storages', args=[compute_id]))
         if 'set_autostart' in request.POST:
-            try:
-                conn.set_autostart(1)
-                return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as lib_err:
-                error_messages.append(lib_err)
+            conn.set_autostart(1)
+            return HttpResponseRedirect(request.get_full_path())
         if 'unset_autostart' in request.POST:
-            try:
-                conn.set_autostart(0)
-                return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as lib_err:
-                error_messages.append(lib_err)
-        if 'add_volume' in request.POST:
-            form = AddImage(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                if data['meta_prealloc'] and data['format'] == 'qcow2':
-                    meta_prealloc = True
-                try:
-                    disk_owner = AppSettings.objects.filter(key__startswith="INSTANCE_VOLUME_DEFAULT_OWNER")
-                    disk_owner_uid = int(disk_owner.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_UID").value)
-                    disk_owner_gid = int(disk_owner.get(key="INSTANCE_VOLUME_DEFAULT_OWNER_GID").value)
-
-                    name = conn.create_volume(data['name'], data['size'], data['format'], meta_prealloc, disk_owner_uid, disk_owner_gid)
-                    messages.success(request, _(f"Image file {name} is created successfully"))
-                    return HttpResponseRedirect(request.get_full_path())
-                except libvirtError as lib_err:
-                    error_messages.append(lib_err)
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
+            conn.set_autostart(0)
+            return HttpResponseRedirect(request.get_full_path())
         if 'del_volume' in request.POST:
             volname = request.POST.get('volname', '')
-            try:
-                vol = conn.get_volume(volname)
-                vol.delete(0)
-                messages.success(request, _(f"Volume: {volname} is deleted."))
-                return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as lib_err:
-                error_messages.append(lib_err)
+            vol = conn.get_volume(volname)
+            vol.delete(0)
+            messages.success(request, _(f"Volume: {volname} is deleted."))
+            return redirect(reverse('storage', args=[compute.id, pool]))
+            # return HttpResponseRedirect(request.get_full_path())
         if 'iso_upload' in request.POST:
             if str(request.FILES['file']) in conn.update_volumes():
                 error_msg = _("ISO image already exist")
-                error_messages.append(error_msg)
+                messages.error(request, error_msg)
             else:
                 handle_uploaded_file(path, request.FILES['file'])
                 messages.success(request, _(f"ISO: {request.FILES['file']} is uploaded."))
@@ -182,27 +145,60 @@ def storage(request, compute_id, pool):
                 meta_prealloc = 0
                 if img_name in conn.update_volumes():
                     msg = _("Name of volume already in use")
-                    error_messages.append(msg)
-                if not error_messages:
-                    if data['convert']:
-                        format = data['format']
-                        if data['meta_prealloc'] and data['format'] == 'qcow2':
-                            meta_prealloc = True
-                    else:
-                        format = None
-                    try:
-                        name = conn.clone_volume(data['image'], data['name'], format, meta_prealloc)
-                        messages.success(request, _(f"{data['image']} image cloned as {name} successfully"))
-                        return HttpResponseRedirect(request.get_full_path())
-                    except libvirtError as lib_err:
-                        error_messages.append(lib_err)
+                    messages.error(request, msg)
+                if data['convert']:
+                    format = data['format']
+                    if data['meta_prealloc'] and data['format'] == 'qcow2':
+                        meta_prealloc = True
+                else:
+                    format = None
+                try:
+                    name = conn.clone_volume(data['image'], data['name'], format, meta_prealloc)
+                    messages.success(request, _(f"{data['image']} image cloned as {name} successfully"))
+                    return HttpResponseRedirect(request.get_full_path())
+                except libvirtError as lib_err:
+                    messages.error(request, lib_err)
             else:
                 for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
+                    messages.error(request, msg_err.as_text())
 
     conn.close()
 
     return render(request, 'storage.html', locals())
+
+
+@superuser_only
+def create_volume(request, compute_id, pool):
+    compute = get_object_or_404(Compute, pk=compute_id)
+    meta_prealloc = False
+
+    conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
+
+    storages = conn.get_storages()
+
+    form = CreateVolumeForm(request.POST or None)
+    if form.is_valid():
+        data = form.cleaned_data
+        if data['meta_prealloc'] and data['format'] == 'qcow2':
+            meta_prealloc = True
+
+        disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
+        disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
+
+        name = conn.create_volume(
+            data['name'],
+            data['size'],
+            data['format'],
+            meta_prealloc,
+            disk_owner_uid,
+            disk_owner_gid,
+        )
+        messages.success(request, _(f"Image file {name} is created successfully"))
+    else:
+        for msg_err in form.errors.values():
+            messages.error(request, msg_err.as_text())
+
+    return redirect(reverse('storage', args=[compute.id, pool]))
 
 
 def get_volumes(request, compute_id, pool):

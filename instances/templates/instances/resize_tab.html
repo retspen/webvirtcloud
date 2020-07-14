@@ -1,0 +1,164 @@
+{% load i18n %}
+<div role="tabpanel" class="tab-pane" id="resize">
+    <div role="tabpanel">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist" aria-label="Instance resize options">
+            <li class="nav-item">
+                <a class="nav-link text-secondary active" href="#resizevm_cpu" aria-controls="resizevm_cpu" role="tab" data-toggle="tab">
+                    {% trans "CPU" %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-secondary" href="#resizevm_mem" aria-controls="resizevm_mem" role="tab" data-toggle="tab">
+                    {% trans "Memory" %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-secondary" href="#resizevm_disk" aria-controls="resizevm_disk" role="tab" data-toggle="tab">
+                    {% trans "Disk" %}
+                </a>
+            </li>
+            </li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm_cpu">
+                {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
+                    {% if instance.status == 5 or not instance.vcpus %}
+                    <form action="{% url 'instances:resizevm_cpu' instance.id %}" method="post" role="form" aria-label="Resize instance cpu form">{% csrf_token %}
+                        <p class="font-weight-bold">{% trans "Logical host CPUs" %} : {{ vcpu_host }}</p>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label"> {% trans "Current Allocation" %}</label>
+                            <div class="col-sm-4">
+                                <select name="cur_vcpu" class="custom-select">
+                                    {% for cpu in instance.vcpu_range %}
+                                        {% if instance.cur_vcpu %}
+                                            <option value="{{ cpu }}" {% if cpu == instance.cur_vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                        {% else %}
+                                            <option value="{{ cpu }}" {% if cpu == instance.vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "Maximum Allocation" %}</label>
+                            <div class="col-sm-4">
+                                <select name="vcpu" class="custom-select">
+                                    {% for cpu in instance.vcpu_range %}
+                                        <option value="{{ cpu }}" {% if cpu == instance.vcpu %}selected{% endif %}>{{ cpu }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        {% if instance.status == 5 %}
+                            <button type="submit" class="btn btn-lg btn-success float-right" name="resizevm_cpu">{% trans "Resize" %}</button>
+                        {% else %}
+                            <button class="btn btn-lg btn-success float-right disabled">{% trans "Resize" %}</button>
+                        {% endif %}
+                    </form>
+                    <div class="clearfix"></div>
+                    {% else %}
+                        <p class="font-weight-bold">{% trans "Logical Instance Active/Maximum CPUs" %} : {{ instance.cur_vcpu }} / {{ instance.vcpu }} </p>
+                        <div class="col-sm-3"></div>
+                        <div class="col-sm-6">
+                            {% for id, vcpu in instance.vcpus.items %}
+                                <form action="{% url 'instances:set_vcpu' instance.id %}" method="post" role="form" aria-label="Resize instance cpu form">{% csrf_token %}
+                                <div class="col-sm-3">
+                                    <input name="id" value="{{ id }}" hidden/>
+                                    {% if vcpu.enabled == 'yes' and vcpu.hotpluggable == "yes" %}
+                                            <button type="submit" class="btn btn-block btn-success" value="False" name="set_vcpu" title="{% trans "Disable" %}">{{ id }}</button>
+                                    {% elif vcpu.enabled == 'yes' and vcpu.hotpluggable == "no" %}
+                                            <button type="button" class="btn btn btn-block btn-info" title="{% trans "Constant" %}">{{ id }}</button>
+                                    {% else %}
+                                            <button type="submit" class="btn btn btn-block btn-secondary" value="True" name="set_vcpu" title="{% trans "Enable" %}">{{ id }}</button>
+                                    {% endif %}
+                                </div>
+                                </form>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-3"></div>
+                    {% endif %}
+                {% else %}
+                    {% trans "You don't have permission for resizing instance" %}
+                    <button class="btn btn-lg btn-success float-right disabled">{% trans "Resize" %}</button>
+                {% endif %}
+                <div class="clearfix"></div>
+            </div>
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_mem">
+                {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
+                    <form action="{% url 'instances:resize_memory' instance.id %}" method="post" role="form" aria-label="Resize instance memory form">
+                        {% csrf_token %}
+                        <p class="font-weight-bold">{% trans "Total host memory" %}: {{ memory_host|filesizeformat }}</p>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "Current Allocation" %} ({% trans "MB" %})</label>
+                            <div class="col-sm-4 js-custom__container">
+                                <select name="cur_memory" class="custom-select js-custom__toggle">
+                                    {% for mem in memory_range %}
+                                        <option value="{{ mem }}" {% if mem == instance.cur_memory %}selected{% endif %}>{{ mem }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="cur_memory_custom" class="custom-select js-custom__toggle" style="display: none" />
+                                <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">
+                                {% trans "Maximum Allocation" %} ({% trans "MB" %})
+                            </label>
+                            <div class="col-sm-4 js-custom__container">
+                                <select name="memory" class="form-control js-custom__toggle">
+                                    {% for mem in memory_range %}
+                                        <option value="{{ mem }}"
+                                                {% if mem == instance.memory %}selected{% endif %}>{{ mem }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="memory_custom" class="form-control js-custom__toggle" style="display: none" />
+                                <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-lg btn-success float-right" name="resizevm_mem">{% trans "Resize" %}</button>
+                    </form>
+                {% else %}
+                    {% trans "You don't have permission for resizing instance" %}
+                    <button class="btn btn-lg btn-success float-right disabled">{% trans "Resize" %}</button>
+                {% endif %}
+                <div class="clearfix"></div>
+            </div>
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_disk">
+                {% if request.user.is_superuser or request.user.is_staff or userinstance.is_change %}
+                    <form action="{% url 'instances:resize_disk' instance.id %}" method="post" role="form" aria-label="Resize instance disk form">
+                        {% csrf_token %}
+                        <p class="font-weight-bold">{% trans "Disk allocation (GB)" %}:</p>
+                        {% for disk in instance.disks %}
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "Current Allocation" %} ({{ disk.dev }})</label>
+                            {% if disk.storage is None %}
+                            <div class="col-sm-4 js-custom__container">
+                                <div class="alert alert-danger">
+                                    {% trans "Error getting disk info" %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="col-sm-4 js-custom__container">
+                                <input type="number" name="disk_size_{{ disk.dev }}" class="form-control" value="{% widthratio disk.size 1073741824 1 %}" />
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if instance.status == 5 %}
+                            <button type="submit" class="btn btn-lg btn-success float-right" name="resizevm_disk">{% trans "Resize" %}</button>
+                        {% else %}
+                            <button class="btn btn-lg btn-success float-right disabled">{% trans "Resize" %}</button>
+                        {% endif %}
+                    </form>
+                {% else %}
+                    {% trans "You don't have permission for resizing instance" %}
+                    <button class="btn btn-lg btn-success float-right disabled">{% trans "Resize" %}</button>
+                {% endif %}
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+</div>

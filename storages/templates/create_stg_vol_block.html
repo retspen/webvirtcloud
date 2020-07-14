@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load bootstrap4 %}
 {% if request.user.is_superuser %}
     {% if state != 0 %}
         {% if pool == "iso" %}
@@ -46,42 +47,15 @@
                             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                         </div>
                         <div class="modal-body">
-                            <form method="post" role="form" aria-label="Create volume to storage form">{% csrf_token %}
-                                <div class="form-group row">
-                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
-                                    </div>
-                                </div>
-                                <div class="form-group row" id="image_format">
-                                    <label class="col-sm-3 col-form-label">{% trans "Format" %}</label>
-                                    <div class="col-sm-6">
-                                        <select name="format" class="form-control image-format">
-                                            <option value="qcow2">{% trans "qcow2" %}</option>
-                                            <option value="qcow">{% trans "qcow" %}</option>
-                                            <option value="raw">{% trans "raw" %}</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group row">
-                                    <label class="col-sm-3 col-form-label">{% trans "Size" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="size" value="10" maxlength="3" required pattern="[0-9]+">
-                                    </div>
-                                    <label class="col-sm-1 col-form-label">{% trans "GB" %}</label>
-                                </div>
-                                <div class="form-group row meta-prealloc">
-                                    <label class="col-sm-3 col-form-label">{% trans "Metadata" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="checkbox" name="meta_prealloc" value="true">
-                                    </div>
-                                </div>
+                            <form action="{% url 'create_volume' compute_id pool %}" id="create-volume" method="post" role="form" aria-label="Create volume to storage form">
+                                {% csrf_token %}
+                                {% bootstrap_form form layout='horizontal' %}
+                            </form>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
-                            <button type="submit" class="btn btn-primary" name="add_volume">{% trans "Create" %}</button>
+                            <button type="submit" form="create-volume" class="btn btn-primary">{% trans "Create" %}</button>
                         </div>
-                        </form>
                     </div> <!-- /.modal-content -->
                 </div> <!-- /.modal-dialog -->
             </div> <!-- /.modal -->

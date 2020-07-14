@@ -3,8 +3,8 @@
 from django.db import migrations
 
 
-def add_favors(apps, schema_editor):
-    Flavor = apps.get_model("create", "Flavor")
+def add_flavors(apps, schema_editor):
+    Flavor = apps.get_model("instances", "Flavor")
     add_flavor = Flavor(label="micro", vcpu="1", memory="512", disk="20")
     add_flavor.save()
     add_flavor = Flavor(label="mini", vcpu="2", memory="1024", disk="30")
@@ -19,12 +19,17 @@ def add_favors(apps, schema_editor):
     add_flavor.save()
 
 
+def del_flavors(apps, schema_editor):
+    Flavor = apps.get_model("instances", "Flavor")
+    Flavor.objects.all().delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('create', '0001_initial'),
+        ('instances', '0005_flavor'),
     ]
 
     operations = [
-        migrations.RunPython(add_favors),
+        migrations.RunPython(add_flavors, del_flavors),
     ]

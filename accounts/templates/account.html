@@ -42,7 +42,7 @@
                     {% for inst in user_insts %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
-                            <td><a href="{% url 'instances:instance' inst.instance.compute.id inst.instance.name %}">{{ inst.instance.name }}</a></td>
+                            <td><a href="{% url 'instances:instance' inst.instance.id %}">{{ inst.instance.name }}</a></td>
                             <td>{{ inst.is_vnc }}</td>
                             <td>{{ inst.is_change }}</td>
                             <td>{{ inst.is_delete }}</td>

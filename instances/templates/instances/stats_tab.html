@@ -1,0 +1,116 @@
+{% load i18n %}
+<div role="tabpanel" class="tab-pane" id="graphics">
+    <div role="tabpanel">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist" aria-label="Instance graphs and logs menu">
+            <li class="nav-item">
+                <a class="nav-link text-secondary active" href="#graphs" id="graphtab" aria-controls="graphs" role="tab" data-toggle="tab" aria-controls="graphs" aria-selected="true">
+                    {% trans "Real Time" %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-secondary" href="#logs" id="logtab" aria-controls="logs" role="tab" data-toggle="tab" aria-controls="logs" onclick='update_logs_table("{{ instance.name }}");'>
+                    {% trans "Logs" %}
+                </a>
+            </li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="graphs">
+                <div class="mb-1 card border-success">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                            {% trans "CPU Usage" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="flot-chart">
+                            <div class="flot-chart-content" id="flot-moving-line-chart">
+                                <canvas id="cpuChart" width="735" height="160"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-1 card border-danger">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                            {% trans "Memory Usage" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="flot-chart">
+                            <div class="flot-chart-content" id="flot-moving-line-chart">
+                                <canvas id="memChart" width="735" height="160"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% for net in instance.networks %}
+                <div class="mb-1 card border-info">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                            {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="flot-chart">
+                            <div class="flot-chart-content" id="flot-moving-line-chart">
+                                <canvas id="netEth{{ forloop.counter0 }}Chart" width="735" height="160"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% for disk in instance.disks %}
+                <div class="mb-1 card border-warning">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                            {% trans "Disk I/O device" %}: {{ disk.dev }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="flot-chart">
+                            <div class="flot-chart-content" id="flot-moving-line-chart">
+                                <canvas id="blk{{ disk.dev }}Chart" width="735" height="160"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="clearfix"></div>
+            </div>
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="logs">
+                <div class="table-responsive">
+                    <table class="table table-striped sortable-theme-bootstrap" id="logs_table" data-sortable>
+                        <thead>
+                            <tr>
+                                <th scope="col">{% trans "Date" %}</th>
+                                <th scope="col">{% trans "User" %}</th>
+                                <th scope="col">{% trans "Message" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="searchable">
+                            <tr>
+                                <td colspan="3"><i>{% trans 'None' %}...</i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function update_logs_table(vname) {
+        // TODO
+        logurl = "{% url 'vm_logs' 1 %}".replace(1, vname);
+        $.getJSON(logurl, function(data) {
+            var logs = "";
+            $.each(data, function(id) {
+                row = data[id];
+                // console.log(row);
+                logs += '<tr><td style="width:150px">'+row['date']+'</td>';
+                logs += '<td>'+row['user']+'</td>';
+                logs += '<td>'+row['message']+'</td></tr>';
+            });
+            $("#logs_table > tbody").html(logs);
+        });
+    }
+</script>

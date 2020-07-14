@@ -83,6 +83,9 @@ class ComputesTestCase(TestCase):
         response = self.client.get(reverse('storages', args=[1]))
         self.assertEqual(response.status_code, 200)
 
+    def test_storage(self):
+        pass
+
     def test_default_storage_volumes(self):
         response = self.client.get(reverse('volumes', kwargs={'compute_id': 1, 'pool': 'default'}))
         self.assertEqual(response.status_code, 200)
@@ -115,9 +118,9 @@ class ComputesTestCase(TestCase):
         response = self.client.get(reverse('secrets', args=[1]))
         self.assertEqual(response.status_code, 200)
 
-    def test_create_instance_select_type(self):
-        response = self.client.get(reverse('create_instance_select_type', args=[1]))
-        self.assertEqual(response.status_code, 200)
+    # def test_create_instance_select_type(self):
+    #     response = self.client.get(reverse('create_instance_select_type', args=[1]))
+    #     self.assertEqual(response.status_code, 200)
 
     # TODO: create_instance
 

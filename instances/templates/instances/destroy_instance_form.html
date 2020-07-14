@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}
+{% trans "Confirm Destroy" %}
+{% endblock title %}
+
+{% block page_header %}
+{% trans "Destroy instance" %} {{ instance }}
+{% endblock page_header %}
+
+{% block content %}
+{% if request.user.is_superuser or userinstance.is_delete %}
+    {% if instance.status == 3 %}
+        <div class="alert alert-danger">
+            {% trans "Instance is suspended, cannot destroy!" %}
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            {% trans "This action is irreversible!" %}
+        </div>
+        <form action="{% url 'instances:destroy' instance.id %}" class="form" method="post" role="form" id="delete_form">
+            {% csrf_token %}
+            <div class="ml-3 form-row">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input" type="checkbox" name="delete_disk" value="true" checked id="delete_disk">
+                    <label class="custom-control-label font-weight-bold" for="delete_disk">{% trans "Remove Instance's data" %}</label>
+                </div>
+            </div>
+            {% if instance.nvram %}
+            <div class="ml-3 form-row">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input" type="checkbox" name="delete_nvram" value="true" id="delete_nvram" checked>
+                    <label class="custom-control-label font-weight-bold" for="delete_nvram">
+                        {% trans "Remove Instance's NVRAM" %}
+                    </label>
+                </div>
+            </div>
+            {% endif %}
+            <button type="submit" class="btn btn-lg btn-success float-right" name="delete">
+                {% trans "Destroy" %}
+            </button>
+        </form>
+    {% endif %}
+{% else %}
+    <div class="alert alert-danger">
+        {% trans "You cannot destroy instance!" %}
+    </div>
+{% endif %}
+{% endblock content %}

@@ -316,6 +316,23 @@ pip3 install -U -r conf/requirements.txt
 python3 manage.py migrate
 sudo service supervisor restart
 ```
+
+### Running tests
+Server on which tests will be performed must have libvirt up and running.
+It must not contain vms.
+It must have `default` storage which not contain any disk images.
+It must have `default` network which must be on.
+Setup venv
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r conf/requirements.txt
+```
+Run tests
+```bash
+python menage.py test
+```
+
 ### Screenshots
 Instance Detail:
 <img src="doc/images/instance.PNG" width="95%" align="center"/>

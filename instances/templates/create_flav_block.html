@@ -1,0 +1,34 @@
+{% load i18n %}
+{% load bootstrap4 %}
+{% if request.user.is_superuser %}
+    <button href="#addFlavor" type="button" class="btn btn-success btn-header float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
+    </button>
+
+    <!-- Modal Flavor -->
+    <div class="modal fade" id="addFlavor" tabindex="-1" role="dialog" aria-labelledby="addFlavorLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{% trans "Add New Flavor" %}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" role="form" action="{% url 'instances:flavor_create' %}" id="flavor-create-form">
+                        {% csrf_token %}
+                        {% bootstrap_form flavor_form layout='horizontal' %}
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        {% trans "Close" %}
+                    </button>
+                    <button form="flavor-create-form" type="submit" class="btn btn-primary">
+                        {% trans "Add" %}
+                    </button>
+                </div>
+            </div> <!-- /.modal-content -->
+        </div> <!-- /.modal-dialog -->
+    </div> <!-- /.modal -->
+{% endif %}

@@ -6,6 +6,9 @@ from django.utils.translation import ugettext_lazy as _
 
 from instances.models import Instance
 
+class UserInstanceManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related('instance', 'user')
 
 class UserInstance(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -13,6 +16,8 @@ class UserInstance(models.Model):
     is_change = models.BooleanField(default=False)
     is_delete = models.BooleanField(default=False)
     is_vnc = models.BooleanField(default=False)
+
+    objects = UserInstanceManager()
 
     def __str__(self):
         return _('Instance "%(inst)s" of user %(user)s') % {'inst': self.instance, 'user': self.user}
