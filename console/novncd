@@ -15,16 +15,12 @@ if ROOT_PATH not in sys.path:
 
 django.setup()
 
-# VENV_PATH = ROOT_PATH + '/venv/lib/python3.6/site-packages'
-# if VENV_PATH not in sys.path:
-#     sys.path.append(VENV_PATH)
-
 import re
 import socket
 from six.moves import http_cookies as Cookie
 from webvirtcloud.settings import WS_PUBLIC_PORT, WS_HOST, WS_CERT
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
-from console.tunnel import Tunnel
+from console.sshtunnels import SSHTunnels
 from optparse import OptionParser
 
 parser = OptionParser()
@@ -119,7 +115,8 @@ def get_connection_infos(token):
         console_port = conn.get_console_port()
         console_socket = conn.get_console_socket()
     except Exception as e:
-        logging.error('Fail to retrieve console connection infos for token %s : %s' % (token, e))
+        logging.error(
+            'Fail to retrieve console connection infos for token %s : %s' % (token, e))
         raise
     return (connhost, connport, connuser, conntype, console_host,
             console_port, console_socket)
@@ -131,6 +128,7 @@ class CompatibilityMixIn(object):
         # from the request to a cookie header, we should check
         # also for this behavior
         hcookie = self.headers.get('cookie')
+
         if hcookie:
             cookie = Cookie.SimpleCookie()
             for hcookie_part in hcookie.split(';'):
@@ -144,6 +142,7 @@ class CompatibilityMixIn(object):
                 else:
                     if 'token' in cookie:
                         token = cookie['token'].value
+
 
         (connhost, connport, connuser, conntype, console_host, console_port,
          console_socket) = get_connection_infos(token)
@@ -176,10 +175,11 @@ class CompatibilityMixIn(object):
                 error_msg = "Try to open tunnel on %s@%s:%s on console %s:%s "
                 error_msg += "(or socket %s)"
                 self.msg(error_msg % (connuser, connhost, connport,
-                         console_host, console_port, console_socket))
-                tunnel = Tunnel()
-                fd = tunnel.open(connhost, connuser, connport,
+                                      console_host, console_port, console_socket))
+                tunnel = SSHTunnels(connhost, connuser, connport,
                                  console_host, console_port, console_socket)
+                fd = tunnel.open_new()
+                tunnel.unlock()
                 tsock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
             except Exception as e:
                 self.msg("Fail to open tunnel : %s" % e)
@@ -198,17 +198,16 @@ class CompatibilityMixIn(object):
         try:
             self.msg("Start proxying")
             self.do_proxy(tsock)
-        except:
+        except Exception:
             if tunnel:
                 self.vmsg(
-                    "%s:%s (via %s@%s:%s) : Target closed" %
+                    "%s:%s (via %s@%s:%s) : Websocket client or Target closed" %
                     (console_host, console_port, connuser, connhost, connport))
                 if tsock:
                     tsock.shutdown(socket.SHUT_RDWR)
                     tsock.close()
-                tunnel.close()
+                tunnel.close_all()
             raise
-
 
 if USE_HANDLER:
     class NovaProxyRequestHandler(ProxyRequestHandler, CompatibilityMixIn):

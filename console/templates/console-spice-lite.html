@@ -111,7 +111,7 @@
         }
 
         // uri = scheme + host + ":" + port;
-        uri = scheme + "{{ ws_host }}:{{ ws_port }}{{ ws_path }}";
+        uri = scheme + "{{ ws_host }}:{{ ws_port }}";
 
         if (path) {
             uri += path[0] == '/' ? path : ('/' + path);
