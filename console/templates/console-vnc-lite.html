@@ -202,10 +202,10 @@
     rfb.addEventListener("capabilities", function () { updatePowerButtons(); });
 
     // Set parameters that can be changed on an active connection
-    rfb.viewOnly = readQueryVariable('view_only', {{ view_only }});
-    rfb.scaleViewport = readQueryVariable('scale', {{ scale }});
-    rfb.resizeSession = readQueryVariable('resize', {{ resize_session }});
-    rfb.clipViewport = readQueryVariable('clip_viewport', {{ clip_viewport }});
+    rfb.scaleViewport = {{ scale }};
+    rfb.viewOnly = {{ view_only }};
+    rfb.resizeSession = {{ resize_session }};
+    rfb.clipViewport = {{ clip_viewport }};
 
 </script>
 {% endblock %}

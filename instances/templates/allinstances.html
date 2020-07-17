@@ -38,11 +38,6 @@
 {% endblock content %}
 {% block script %}
     <script src="{% static "js/sortable.min.js" %}"></script>
-    <script>
-        function open_console(uuid) {
-            window.open("{% url 'console' %}?token=" + uuid, "", "width=850,height=485");
-        }
-    </script>
     <script src="{% static 'js/filter-table.js' %}"></script>
     {% if request.user.is_superuser %}
         <script>
