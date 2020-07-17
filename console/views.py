@@ -48,11 +48,14 @@ def console(request):
     if ':' in ws_host:
         ws_host = re.sub(':[0-9]+', '', ws_host)
 
-    console_page = "console-" + console_type + "-" + view_type + ".html"
     if console_type == 'vnc' or console_type == 'spice':
+        console_page = "console-" + console_type + "-" + view_type + ".html"
         response = render(request, console_page, locals())
     else:
-        console_error = f"Console type: {console_type} no support"
+        if console_type is None:
+            console_error = f"Fail to get console. Please check the console configuration of your VM."
+        else:
+            console_error = f"Console type: {console_type} no support"
         response = render(request, 'console-vnc-lite.html', locals())
 
     response.set_cookie('token', token)
