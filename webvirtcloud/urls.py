@@ -1,8 +1,9 @@
+from django.conf import settings
 from django.urls import include, path
 
-from instances.views import index
-from console.views import console
 from appsettings.views import appsettings
+from console.views import console
+from instances.views import index
 
 urlpatterns = [
     path('', index, name='index'),
@@ -16,3 +17,10 @@ urlpatterns = [
     path('i18n/', include('django.conf.urls.i18n')),
     path('logs/', include('logs.urls')),
 ]
+
+if settings.DEBUG:
+    import debug_toolbar
+
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]
