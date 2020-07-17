@@ -167,7 +167,13 @@
     // By default, use the host and port of server that served this file
     const host = readQueryVariable('host', '{{ ws_host }}');
     let port = readQueryVariable('port', '{{ ws_port }}');
-    const password = readQueryVariable('password');
+
+    {% if perms.instances.passwordless_console %}
+        const password = '{{ console_passwd }}';
+    {% else %}
+        const password = readQueryVariable('password');
+    {% endif %}
+
     //const path = readQueryVariable('path', 'websockify');
     const path = readQueryVariable('path', '{{ ws_path }}');
 

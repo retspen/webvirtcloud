@@ -199,7 +199,11 @@
     <label for="port">{% trans 'Port' %}:</label>
     <input type='text' id='port' value='{{ ws_port }}'>
     <label for="password">{% trans 'Password' %}:</label>
-    <input type='password' id='password'>
+    {% if perms.instances.passwordless_console %}
+        <input type='password' id='password' value='{{ console_passwd }}'>
+    {% else %}
+        <input type='password' id='password'>
+    {% endif %}
     <label for="show_console">{% trans 'Show console' %}</label>
     <input type="checkbox" id="show_console" value="1" onchange="toggle_console()" checked>
     <button id="connectButton">{% trans 'Start' %}</button>

@@ -93,7 +93,11 @@
         }
 
         if (password === undefined) {
-            password = spice_query_var('password', '');
+            {% if perms.instances.passwordless_console %}
+                password = '{{ console_passwd }}';
+            {% else %}
+                password = prompt('{% trans "Password" %}');
+            {% endif %}
             //password = '{{ console_passwd | safe }}';
         }
         if (password === 'None') password = '';

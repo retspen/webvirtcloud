@@ -211,6 +211,8 @@ class PermissionSet(models.Model):
     """
     class Meta:
         default_permissions = ()
-        permissions = (('clone_instances', _('Can clone instances')), )
+        permissions = [('clone_instances', 'Can clone instances'),  
+                       ('passwordless_console',  _('Can access console without password')),
+                    ]
 
         managed = False

@@ -24,6 +24,19 @@ def apply_change_password(sender, **kwargs):
                 user.user_permissions.remove(permission)
         print('\033[1mDon`t forget to remove the option from settings.py\033[0m')
 
+def apply_passwordless_console(sender, **kwargs):
+    '''
+    Apply new passwordless_console permission for all users
+    '''
+    from django.conf import settings
+    from django.contrib.auth.models import User, Permission
+
+    print('\033[92mApplying permission passwordless_console for all users\033[0m')
+    users = User.objects.all()
+    permission = Permission.objects.get(codename='passwordless_console')
+    for user in users:
+            user.user_permissions.add(permission)
+
 
 def create_admin(sender, **kwargs):
     '''
@@ -49,3 +62,4 @@ class AccountsConfig(AppConfig):
     def ready(self):
         post_migrate.connect(apply_change_password, sender=self)
         post_migrate.connect(create_admin, sender=self)
+        post_migrate.connect(apply_passwordless_console, sender=self)
