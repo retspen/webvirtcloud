@@ -1,9 +1,13 @@
 import re
+
 from django.shortcuts import render
 from libvirt import libvirtError
+
+from appsettings.settings import app_settings
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
-from webvirtcloud.settings import WS_PUBLIC_PATH, WS_PUBLIC_PORT, WS_PUBLIC_HOST
+from webvirtcloud.settings import (WS_PUBLIC_HOST, WS_PUBLIC_PATH,
+                                   WS_PUBLIC_PORT)
 
 
 def console(request):
@@ -16,10 +20,10 @@ def console(request):
     if request.method == 'GET':
         token = request.GET.get('token', '')
         view_type = request.GET.get('view', 'lite')
-        view_only = request.GET.get('view_only', 0)
-        scale = request.GET.get('scale', 0)
-        resize_session = request.GET.get('resize_session', 0)
-        clip_viewport = request.GET.get('clip_viewport', 0)
+        view_only = request.GET.get('view_only', app_settings.CONSOLE_VIEW_ONLY.lower())
+        scale = request.GET.get('scale', app_settings.CONSOLE_SCALE.lower())
+        resize_session = request.GET.get('resize_session', app_settings.CONSOLE_RESIZE_SESSION.lower())
+        clip_viewport = request.GET.get('clip_viewport', app_settings.CONSOLE_CLIP_VIEWPORT.lower())
 
     try:
         temptoken = token.split('-', 1)

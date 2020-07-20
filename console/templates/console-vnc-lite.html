@@ -167,7 +167,13 @@
     // By default, use the host and port of server that served this file
     const host = readQueryVariable('host', '{{ ws_host }}');
     let port = readQueryVariable('port', '{{ ws_port }}');
-    const password = readQueryVariable('password');
+
+    {% if perms.instances.passwordless_console %}
+        const password = '{{ console_passwd }}';
+    {% else %}
+        const password = readQueryVariable('password');
+    {% endif %}
+
     //const path = readQueryVariable('path', 'websockify');
     const path = readQueryVariable('path', '{{ ws_path }}');
 
@@ -202,10 +208,10 @@
     rfb.addEventListener("capabilities", function () { updatePowerButtons(); });
 
     // Set parameters that can be changed on an active connection
-    rfb.viewOnly = readQueryVariable('view_only', {{ view_only }});
-    rfb.scaleViewport = readQueryVariable('scale', {{ scale }});
-    rfb.resizeSession = readQueryVariable('resize', {{ resize_session }});
-    rfb.clipViewport = readQueryVariable('clip_viewport', {{ clip_viewport }});
+    rfb.scaleViewport = {{ scale }};
+    rfb.viewOnly = {{ view_only }};
+    rfb.resizeSession = {{ resize_session }};
+    rfb.clipViewport = {{ clip_viewport }};
 
 </script>
 {% endblock %}

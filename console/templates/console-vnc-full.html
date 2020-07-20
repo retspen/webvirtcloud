@@ -297,7 +297,11 @@
             <ul>
                 <li>
                     <label>Password:</label>
-                    <input id="noVNC_password_input" type="password" />
+                    {% if perms.instances.passwordless_console %}
+                        <input id="noVNC_password_input" type="password" value='{{ console_passwd }}' />
+                    {% else %}
+                        <input id="noVNC_password_input" type="password" />
+                    {% endif %}
                 </li>
                 <li>
                     <input id="noVNC_password_button" type="submit" value="Send Password" class="noVNC_submit" />

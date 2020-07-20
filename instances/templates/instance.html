@@ -167,11 +167,6 @@
     });
 </script>
 <script>
-    function open_console(view_style) {
-        window.open('{% url 'console' %}?token={{ compute.id }}-{{ instance.get_uuid }}&view=' + view_style +'', '', 'width=850,height=600')
-    }
-</script>
-<script>
     function random_mac(net) {
         $.getJSON('{% url 'instances:random_mac_address' %}', function (data) {
             $('input[name="' + net + '"]').val(data['mac']);

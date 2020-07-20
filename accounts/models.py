@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from instances.models import Instance
 
+
 class UserInstanceManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().select_related('instance', 'user')

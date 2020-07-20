@@ -4,13 +4,15 @@
         <!-- Nav tabs -->
         <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item">
-                <a class="nav-link text-secondary active" href="#vnconsole" aria-controls="vnconsole" role="tab" data-toggle="tab">
+                <a class="nav-link text-secondary active" href="#vnconsole" aria-controls="vnconsole" role="tab"
+                    data-toggle="tab">
                     {% trans "Console" %}
                 </a>
             </li>
             {% if app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' %}
             <li class="nav-item">
-                <a class="nav-link text-secondary" href="#rootpasswd" aria-controls="rootpasswd" role="tab" data-toggle="tab">
+                <a class="nav-link text-secondary" href="#rootpasswd" aria-controls="rootpasswd" role="tab"
+                    data-toggle="tab">
                     {% trans "Root Password" %}
                 </a>
             </li>
@@ -24,7 +26,8 @@
             {% endif %}
             {% if instance.status == 1 %}
             <li class="nav-item">
-                <a class="nav-link text-secondary" href="#vdiconsole" aria-controls="vdiconsole" role="tab" data-toggle="tab">
+                <a class="nav-link text-secondary" href="#vdiconsole" aria-controls="vdiconsole" role="tab"
+                    data-toggle="tab">
                     {% trans "VDI" %}
                 </a>
             </li>
@@ -33,38 +36,83 @@
         <!-- Tab panes -->
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="vnconsole">
-                <p>{% trans "This action opens a new window with a VNC connection to the console of the instance." %}</p>
-                {% if instance.status == 1 %}
-                    <!-- Split button -->
-                    <div class="btn-group float-right">
-                        <button type="button" id="consoleBtnGroup" class="btn btn-lg btn-success" onclick="open_console('lite')">{% trans 'Console' %}</button>
-                        <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="sr-only">{%  trans 'Toggle Dropdown' %}</span>
-                        </button>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ instance.console_port }}" onclick="open_console('lite')">{% trans "Console" %} - {% trans "Lite" %}</a>
-                            <a class="dropdown-item" href="#" title="{% trans "Console port" %}: {{ instance.console_port }}" onclick="open_console('full')">{% trans "Console" %} - {% trans "Full" %}</a>
+                <p>{% blocktrans with type=instance.console_type|upper %} This action opens a new window with a {{ type }} connection to the console of the instance.{% endblocktrans %}
+                </p>
+                {% if instance.console_type == 'vnc' %}
+                    <div class="ml-3 form-row">
+                        <div class="custom-control custom-switch">
+                            <input class="custom-control-input" type="checkbox" name="scale"
+                                {% if app_settings.CONSOLE_SCALE == 'True' %} checked {% endif %} 
+                                id="scale">
+                            <label class="custom-control-label font-weight-bold" for="scale">{% trans "Scale" %}</label>
                         </div>
                     </div>
+                    <div class="ml-3 form-row">
+                        <div class="custom-control custom-switch">
+                            <input class="custom-control-input" type="checkbox" name="view_only"
+                                {% if app_settings.CONSOLE_VIEW_ONLY == 'True' %} checked {% endif %} 
+                                id="view_only">
+                            <label class="custom-control-label font-weight-bold" for="view_only">{% trans "View Only" %}</label>
+                        </div>
+                    </div>
+                    <div class="ml-3 form-row">
+                        <div class="custom-control custom-switch">
+                            <input class="custom-control-input" type="checkbox" name="resize_session"
+                                {% if app_settings.CONSOLE_RESIZE_SESSION == 'True' %} checked {% endif %}
+                                id="resize_session">
+                            <label class="custom-control-label font-weight-bold" for="resize_session">{% trans "Resize Session" %}</label>
+                        </div>
+                    </div>
+                    <div class="ml-3 form-row">
+                        <div class="custom-control custom-switch">
+                            <input class="custom-control-input" type="checkbox" name="clip_viewport"
+                                {% if app_settings.CONSOLE_CLIP_VIEWPORT == 'True' %} checked {% endif %}
+                                id="clip_viewport">
+                            <label class="custom-control-label font-weight-bold" for="clip_viewport">{% trans "View Clipboard" %}</label>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if instance.status == 1 %}
+                <!-- Split button -->
+                <div class="btn-group float-right">
+                    <button type="button" id="consoleBtnGroup" class="btn btn-lg btn-success"
+                        onclick="open_console('lite')">{% trans 'Console' %}</button>
+                    <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="sr-only">{%  trans 'Toggle Dropdown' %}</span>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#"
+                            title="{% trans "Console port" %}: {{ instance.console_port }}"
+                            onclick="open_console('lite')">{% trans "Console" %} - {% trans "Lite" %}</a>
+                        <a class="dropdown-item" href="#"
+                            title="{% trans "Console port" %}: {{ instance.console_port }}"
+                            onclick="open_console('full')">{% trans "Console" %} - {% trans "Full" %}</a>
+                    </div>
+                </div>
                 {% else %}
-                    <button class="btn btn-lg btn-success float-right disabled">{% trans "Console" %}</button>
+                <button class="btn btn-lg btn-success float-right disabled">{% trans "Console" %}</button>
                 {% endif %}
                 <div class="clearfix"></div>
             </div>
-            {% if app_settings.SHOW_ACCESS_SSH_KEYS == 'True' %}
+            {% if app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' %}
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
                 <p>{% trans "You need shut down your instance and enter a new root password." %}</p>
-                <form action="{% url 'instances:rootpasswd' instance.id %}" class="form-inline" method="post" role="form" aria-label="Add root password to instance form">
+                <form action="{% url 'instances:rootpasswd' instance.id %}" class="form-inline" method="post"
+                    role="form" aria-label="Add root password to instance form">
                     {% csrf_token %}
                     <div class="form-group row">
                         <div class="col-sm-12">
-                            <input type="text" class="form-control-lg" name="passwd" placeholder="{% trans "Enter Password" %}" maxlength="24">
+                            <input type="text" class="form-control-lg" name="passwd"
+                                placeholder="{% trans "Enter Password" %}" maxlength="24">
                         </div>
                     </div>
                     {% if instance.status == 5 %}
-                        <input type="submit" class="btn btn-lg btn-success float-right" name="rootpasswd" value="{% trans "Reset Root Password" %}">
+                    <input type="submit" class="btn btn-lg btn-success float-right" name="rootpasswd"
+                        value="{% trans "Reset Root Password" %}">
                     {% else %}
-                        <button class="btn btn-lg btn-success float-right disabled">{% trans "Reset Root Password" %}</button>
+                    <button
+                        class="btn btn-lg btn-success float-right disabled">{% trans "Reset Root Password" %}</button>
                     {% endif %}
                 </form>
                 <div class="clearfix"></div>
@@ -73,25 +121,27 @@
             {% if app_settings.SHOW_ACCESS_SSH_KEYS == 'True' %}
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">
                 <p>{% trans "You need shut down your instance and choose your public key." %}</p>
-                <form action="{% url 'instances:add_public_key' instance.id %}" class="form-inline" method="post" role="form" aria-label="Add public key to instance form">
+                <form action="{% url 'instances:add_public_key' instance.id %}" class="form-inline" method="post"
+                    role="form" aria-label="Add public key to instance form">
                     {% csrf_token %}
                     <div class="form-group row">
                         <div class="col-sm-12">
                             <select name="sshkeyid" class="form-control-lg keyselect">
                                 {% if publickeys %}
-                                    {% for key in publickeys %}
-                                        <option value="{{ key.id }}">{{ key.keyname }}</option>
-                                    {% endfor %}
+                                {% for key in publickeys %}
+                                <option value="{{ key.id }}">{{ key.keyname }}</option>
+                                {% endfor %}
                                 {% else %}
-                                        <option value="None">{% trans "None" %}</option>
+                                <option value="None">{% trans "None" %}</option>
                                 {% endif %}
                             </select>
                         </div>
                     </div>
                     {% if instance.status == 5 %}
-                        <input type="submit" class="btn btn-lg btn-success float-right" name="addpublickey" value="{% trans "Add Public Key" %}">
+                    <input type="submit" class="btn btn-lg btn-success float-right" name="addpublickey"
+                        value="{% trans "Add Public Key" %}">
                     {% else %}
-                        <button class="btn btn-lg btn-success float-right disabled">{% trans "Add Public Key" %}</button>
+                    <button class="btn btn-lg btn-success float-right disabled">{% trans "Add Public Key" %}</button>
                     {% endif %}
                 </form>
                 <div class="clearfix"></div>
@@ -101,9 +151,9 @@
             <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vdiconsole">
                 <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
                 <div class="input-group">
-                    <input type="text" class="input-lg disabled form-control" disabled id="vdi_url_input"/>
+                    <input type="text" class="input-lg disabled form-control" disabled id="vdi_url_input" />
                     <span class="input-group-append">
-                        <a href="#" class="btn btn-success" id="vdi_url" >{% trans "VDI" %}</a>
+                        <a href="#" class="btn btn-success" id="vdi_url">{% trans "VDI" %}</a>
                     </span>
                 </div>
                 <div class="clearfix"></div>
@@ -112,3 +162,15 @@
         </div>
     </div>
 </div>
+{% block script %}
+<script>
+    function open_console(view_style) {
+        const sc = $("#scale").is(':checked');
+        const vo = $("#view_only").is(':checked');
+        const rs = $("#resize_session").is(':checked');
+        const cv = $("#clip_viewport").is(':checked');
+        url = '{% url 'console' %}?token={{ compute.id }}-{{ instance.get_uuid }}&view=' + view_style + '' + '&view_only=' + vo + '' + '&scale=' + sc + '' + '&clip_viewport=' + cv + '' + '&resize_session=' + rs + '';
+        window.open(url, '', 'width=850,height=600')
+    }
+</script>
+{% endblock %}

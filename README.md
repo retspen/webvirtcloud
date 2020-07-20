@@ -1,5 +1,5 @@
 ## WebVirtCloud
-###### Python3 & Django 2.2.12
+###### Python3 & Django 2.2
 
 ## Features
 * QEMU/KVM Hypervisor Management
@@ -301,7 +301,7 @@ datasource:
 ```
 
 ### Reverse-Proxy
-Edit WS_PUBLIC_PORT at settings.py file to expose redirect to 80. Default: 6080
+Edit WS_PUBLIC_PORT at settings.py file to expose redirect to 80 or 443. Default: 6080
 ```
 WS_PUBLIC_PORT = 80
 ```
@@ -330,7 +330,7 @@ pip install -r conf/requirements.txt
 ```
 Run tests
 ```bash
-python menage.py test
+python manage.py test
 ```
 
 ### Screenshots

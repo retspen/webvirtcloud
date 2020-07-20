@@ -43,3 +43,11 @@
         </button>
     {% endif %}
 </form>
+{% block script %}
+<script>
+    function open_console(uuid) {
+        url = '{% url 'console' %}?token=' + uuid + '';
+        window.open(url, '', 'width=850,height=650')
+    }
+</script>
+{% endblock script %}
