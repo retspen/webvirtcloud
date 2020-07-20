@@ -12,6 +12,7 @@
         <!-- Tab panes -->
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
+                <p>{% trans 'This action starts remove instance process' %}</p>
                 {% if request.user.is_superuser or userinstance.is_delete %}
                     {% if instance.status == 3 %}
                         <a class="btn btn-lg btn-success disabled float-right">{% trans "Destroy" %}</a>
