@@ -1342,8 +1342,8 @@ class wvmInstance(wvmConnect):
             net_source_type = network_data.get('net-source-' + str(num) + '-type')
             net_filter = network_data.get('net-nwfilter-' + str(num))
             net_model = network_data.get('net-model-' + str(num))
-            bridge_name = self.get_bridge_name(net_source, net_source_type)
             if interface.get('type') == 'bridge':
+                bridge_name = self.get_bridge_name(net_source, net_source_type)
                 source = interface.find('mac')
                 source.set('address', net_mac)
                 source = interface.find('source')

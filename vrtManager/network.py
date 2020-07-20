@@ -1,4 +1,5 @@
 from lxml import etree
+from libvirt import libvirtError
 from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST
 from libvirt import VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_UPDATE_COMMAND_MODIFY
 from libvirt import VIR_NETWORK_UPDATE_AFFECT_LIVE, VIR_NETWORK_UPDATE_AFFECT_CONFIG
@@ -32,7 +33,11 @@ class wvmNetworks(wvmConnect):
         for network in get_networks:
             net = self.get_network(network)
             net_status = net.isActive()
-            net_bridge = net.bridgeName()
+            try:
+                net_bridge = net.bridgeName()
+            except libvirtError:
+                net_bridge = util.get_xml_path(net.XMLDesc(0), "/network/forward/interface/@dev")
+
             net_forward = util.get_xml_path(net.XMLDesc(0), "/network/forward/@mode")
             networks.append({'name': network, 'status': net_status,
                              'device': net_bridge, 'forward': net_forward})
@@ -114,7 +119,7 @@ class wvmNetwork(wvmConnect):
         try:
             return self.net.bridgeName()
         except:
-            return None
+            return util.get_xml_path(self._XMLDesc(0), "/network/forward/interface/@dev")
 
     def start(self):
         self.net.create()
