@@ -841,7 +841,7 @@ class wvmConnect(object):
 
         def get_info(doc):
             mem = util.get_xpath(doc, "/domain/currentMemory")
-            mem = int(mem) / 1024
+            mem = int(mem) // 1024
             if raw_mem_size:
                 mem = int(mem) * (1024 * 1024)
             cur_vcpu = util.get_xpath(doc, "/domain/vcpu/@current")
@@ -875,7 +875,7 @@ class wvmConnect(object):
 
         def get_info(ctx):
             mem = util.get_xpath(ctx, "/domain/currentMemory")
-            mem = int(mem) / 1024
+            mem = int(mem) // 1024
             cur_vcpu = util.get_xpath(ctx, "/domain/vcpu/@current")
             if cur_vcpu:
                 vcpu = cur_vcpu

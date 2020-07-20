@@ -32,7 +32,7 @@ class wvmInstances(wvmConnect):
     def get_instance_memory(self, name):
         inst = self.get_instance(name)
         mem = util.get_xml_path(inst.XMLDesc(0), "/domain/currentMemory")
-        return int(mem) / 1024
+        return int(mem) // 1024
 
     def get_instance_vcpu(self, name):
         inst = self.get_instance(name)
@@ -242,11 +242,11 @@ class wvmInstance(wvmConnect):
 
     def get_memory(self):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/memory")
-        return int(mem) / 1024
+        return int(mem) // 1024
 
     def get_cur_memory(self):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/currentMemory")
-        return int(mem) / 1024
+        return int(mem) // 1024
 
     def get_title(self):
         title = util.get_xml_path(self._XMLDesc(0), "/domain/title")
