@@ -993,7 +993,7 @@ class wvmInstance(wvmConnect):
         except SyntaxError:
             # Little fix for old version ElementTree
             graphic = root.find("devices/graphics")
-        if keymap:
+        if keymap != 'auto':
             graphic.set('keymap', keymap)
         else:
             try:
