@@ -79,6 +79,12 @@
             if ($(this).val() == 'bridge') {
                 $('.bridge_name_form_group').show();
                 $('.bridge_name_form_group_dhcp').hide();
+            } else if ($(this).val() == 'macvtap') {
+                $('#bridge_label').text("Dev Name");
+                $('#bridge_name').attr("placeholder", "eth0");
+                $('.bridge_name_form_group').show();
+                $('.bridge_name_form_group_dhcp').hide();
+                $('.openvswitch').hide();
             } else {
                 $('.bridge_name_form_group').hide();
                 $('.bridge_name_form_group_dhcp').show();

@@ -55,15 +55,20 @@ class wvmNetworks(wvmConnect):
                 <name>{name}</name>"""
         if forward in ['nat', 'route', 'bridge']:
             xml += f"""<forward mode='{forward}'/>"""
-        xml += """<bridge """
-        if forward in ['nat', 'route', 'none']:
-            xml += """stp='on' delay='0'"""
-        if forward == 'bridge':
-            xml += f"""name='{bridge}'"""
-        xml += """/>"""
-        if openvswitch is True:
-            xml += """<virtualport type='openvswitch'/>"""
-        if forward != 'bridge':
+        if forward == 'macvtap':
+            xml += f"""<forward mode='bridge'>
+                          <interface dev='{bridge}'/>
+                       </forward>"""
+        else:
+            xml += """<bridge """
+            if forward in ['nat', 'route', 'none']:
+                xml += """stp='on' delay='0'"""
+            if forward == 'bridge':
+                xml += f"""name='{bridge}'"""
+            xml += """/>"""
+            if openvswitch is True:
+                xml += """<virtualport type='openvswitch'/>"""
+        if forward not in ['bridge', 'macvtap']:
             if ipv4:
                 xml += f"""<ip address='{gateway}' netmask='{mask}'>"""
                 if dhcp4:

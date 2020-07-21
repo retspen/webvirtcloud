@@ -965,8 +965,8 @@ def set_qos(request, pk):
     else:
         messages.success(
             request,
-            _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed.") +
-            _("Stop and start network to activate new config"),
+            _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed. \
+                Stop and start network to activate new config.")
         )
 
     return redirect(request.META.get('HTTP_REFERER') + '#network')
@@ -984,8 +984,8 @@ def unset_qos(request, pk):
     else:
         messages.success(
             request,
-            _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. ") +
-            _("Stop and start network to activate new config."),
+            _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. \
+                Stop and start network to activate new config.")
         )
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
