@@ -335,13 +335,13 @@ python manage.py test
 
 ### Screenshots
 Instance Detail:
-<img src="doc/images/instance.PNG" width="95%" align="center"/>
+<img src="doc/images/instance.PNG" width="96%" align="center"/>
 Instance List:</br>
-<img src="doc/images/grouped.PNG" width="47%"/>
-<img src="doc/images/nongrouped.PNG" width="51%"/>
+<img src="doc/images/grouped.PNG" width="43%"/>
+<img src="doc/images/nongrouped.PNG" width="53%"/>
 Other: </br>
-<img src="doc/images/hosts.PNG" width="52%"/>
-<img src="doc/images/log.PNG" width="47%"/>
+<img src="doc/images/hosts.PNG" width="47%"/>
+<img src="doc/images/log.PNG" width="49%"/>
 
 ### License
 
