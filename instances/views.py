@@ -1409,7 +1409,7 @@ def create_instance(request, compute_id, arch, machine):
                                              console_pass=data["console_pass"],
                                              mac=data['mac'],
                                              qemu_ga=data['qemu_ga'])
-                        create_instance = Instance(compute_id=compute_id, name=data['name'])
+                        create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                         create_instance.save()
                         msg = _("Instance is created")
                         messages.success(request, msg)
