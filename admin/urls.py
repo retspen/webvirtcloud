@@ -1,5 +1,4 @@
 from django.urls import path
-from django.contrib.auth.views import PasswordChangeView, PasswordChangeDoneView
 
 from . import views
 
@@ -10,6 +9,7 @@ urlpatterns = [
     path('groups/<int:pk>/delete/', views.group_delete, name='group_delete'),
     path('users/', views.user_list, name='user_list'),
     path('users/create/', views.user_create, name='user_create'),
+    path('users/<int:pk>/update_password/', views.user_update_password, name='user_update_password'),
     path('users/<int:pk>/update/', views.user_update, name='user_update'),
     path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
     path('users/<int:pk>/block/', views.user_block, name='user_block'),
