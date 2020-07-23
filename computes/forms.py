@@ -12,6 +12,7 @@ class TcpComputeForm(forms.ModelForm):
 
     class Meta:
         model = Compute
+        widgets = {'password': forms.PasswordInput()}
         fields = '__all__'
 
 
@@ -30,6 +31,7 @@ class TlsComputeForm(forms.ModelForm):
 
     class Meta:
         model = Compute
+        widgets = {'password': forms.PasswordInput()}
         fields = '__all__'
 
 
