@@ -160,6 +160,11 @@
         SpiceHtml5.sendCtrlAltFN(sc, f);
         return false;
     }
+
+    function sendCtrlAltDel() {
+        SpiceHtml5.sendCtrlAltDel(sc);
+        return false;
+    }
     /* SPICE port event listeners
     window.addEventListener('spice-port-data', function(event) {
         // Here we convert data to text, but really we can obtain binary data also
