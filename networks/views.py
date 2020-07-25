@@ -42,8 +42,8 @@ def networks(request, compute_id):
                     if data['name'] in networks:
                         msg = _("Network pool name already in use")
                         error_messages.append(msg)
-                    if data['forward'] == 'bridge' and data['bridge_name'] == '':
-                        error_messages.append(_('Please enter bridge name'))
+                    if data['forward'] in ['bridge', 'macvtap'] and data['bridge_name'] == '':
+                        error_messages.append(_('Please enter bridge/dev name'))
                     if data['subnet']:
                         ipv4 = True
                         gateway4, netmask4, dhcp4 = network_size(data['subnet'], data['dhcp4'])

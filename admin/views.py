@@ -1,4 +1,7 @@
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
@@ -133,6 +136,29 @@ def user_update(request, pk):
         },
     )
 
+@superuser_only
+def user_update_password(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        form = AdminPasswordChangeForm(user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Important!
+            messages.success(request, _('User password changed: {}'.format(user.username)))
+            return redirect('admin:user_list')
+        else:
+            messages.error(request, _('Wrong Data Provided'))
+    else:
+        form = AdminPasswordChangeForm(user)
+
+    return render(
+        request,
+        'accounts/change_password_form.html',
+        {
+            'form': form,
+            'user': user.username
+        }
+    )
 
 @superuser_only
 def user_delete(request, pk):

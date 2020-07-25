@@ -186,6 +186,11 @@
         return false;
     }
 
+    function sendCtrlAltDel() {
+        SpiceHtml5.sendCtrlAltDel(sc);
+        return false;
+    }
+
     /* SPICE port event listeners
     window.addEventListener('spice-port-data', function(event) {
         // Here we convert data to text, but really we can obtain binary data also
@@ -198,7 +203,7 @@
     });
     */
     document.getElementById("fullscreen_button").addEventListener('click', fullscreen);
-    document.getElementById('ctrlaltdel').addEventListener('click', function () { sendCtrlAltDel(sc); });
+    document.getElementById('ctrlaltdel').addEventListener('click', function () { sendCtrlAltDel(); });
     document.getElementById('ctrlaltf1').addEventListener('click', function () { sendctrlaltfn(0) });
     document.getElementById('ctrlaltf2').addEventListener('click', function () { sendctrlaltfn(1) });
     document.getElementById('ctrlaltf3').addEventListener('click', function () { sendctrlaltfn(2) });

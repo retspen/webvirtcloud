@@ -32,7 +32,7 @@ class wvmInstances(wvmConnect):
     def get_instance_memory(self, name):
         inst = self.get_instance(name)
         mem = util.get_xml_path(inst.XMLDesc(0), "/domain/currentMemory")
-        return int(mem) / 1024
+        return int(mem) // 1024
 
     def get_instance_vcpu(self, name):
         inst = self.get_instance(name)
@@ -242,11 +242,11 @@ class wvmInstance(wvmConnect):
 
     def get_memory(self):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/memory")
-        return int(mem) / 1024
+        return int(mem) // 1024
 
     def get_cur_memory(self):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/currentMemory")
-        return int(mem) / 1024
+        return int(mem) // 1024
 
     def get_title(self):
         title = util.get_xml_path(self._XMLDesc(0), "/domain/title")
@@ -345,6 +345,7 @@ class wvmInstance(wvmConnect):
             result = []
             inbound = outbound = []
             for net in ctx.xpath('/domain/devices/interface'):
+                interface_type =  net.xpath('@type')[0]
                 mac_inst = net.xpath('mac/@address')[0]
                 nic_inst = net.xpath('source/@network|source/@bridge|source/@dev')[0]
                 target_inst = '' if not net.xpath('target/@dev') else net.xpath('target/@dev')[0]
@@ -369,6 +370,7 @@ class wvmInstance(wvmConnect):
                 except libvirtError:
                     ipv4, ipv6 = None, None
                 result.append({
+                    'type': interface_type,
                     'mac': mac_inst,
                     'nic': nic_inst,
                     'target': target_inst,
@@ -993,7 +995,7 @@ class wvmInstance(wvmConnect):
         except SyntaxError:
             # Little fix for old version ElementTree
             graphic = root.find("devices/graphics")
-        if keymap:
+        if keymap != 'auto':
             graphic.set('keymap', keymap)
         else:
             try:
@@ -1289,24 +1291,39 @@ class wvmInstance(wvmConnect):
             bridge_name = iface.name()
         else:
             net = self.get_network(source)
-            bridge_name = net.bridgeName()
+            try:
+                bridge_name = net.bridgeName()
+            except libvirtError:
+                bridge_name = None
         return bridge_name
 
     def add_network(self, mac_address, source, source_type='net', model='virtio', nwfilter=None):
-        bridge_name = self.get_bridge_name(source, source_type)
+        forward_mode = ''
+        if source_type != 'iface':
+            forward_mode = self.get_network_forward(source)
 
-        forward_mode = self.get_network_forward(source)
         if forward_mode in ['nat', 'isolated', 'routed']:
             interface_type = 'network'
+        elif forward_mode == '':
+            interface_type = 'direct'
         else:
-            interface_type = 'bridge'
+            if self.get_bridge_name(source, source_type) is None:
+                interface_type = 'network'
+            else:
+                interface_type = 'bridge'
 
         xml_iface = f"""
           <interface type='{interface_type}'>
           <mac address='{mac_address}'/>"""
         if interface_type == 'network':
             xml_iface += f"""<source network='{source}'/>"""
+        elif interface_type == 'direct':
+            if source_type == 'net':
+                xml_iface += f"""<source network='{source}' mode='bridge'/>"""
+            else:
+                xml_iface += f"""<source dev='{source}' mode='bridge'/>"""
         else:
+            bridge_name = self.get_bridge_name(source, source_type)
             xml_iface += f"""<source bridge='{bridge_name}'/>"""
         xml_iface += f"""<model type='{model}'/>"""
         if nwfilter:
@@ -1342,49 +1359,38 @@ class wvmInstance(wvmConnect):
             net_source_type = network_data.get('net-source-' + str(num) + '-type')
             net_filter = network_data.get('net-nwfilter-' + str(num))
             net_model = network_data.get('net-model-' + str(num))
-            bridge_name = self.get_bridge_name(net_source, net_source_type)
+
+            source = interface.find('source')
             if interface.get('type') == 'bridge':
-                source = interface.find('mac')
-                source.set('address', net_mac)
-                source = interface.find('source')
+                bridge_name = self.get_bridge_name(net_source, net_source_type)
                 source.set('bridge', bridge_name)
-
-                source = interface.find('model')
-                if net_model != 'default':
-                    source.attrib['type'] = net_model
+            elif interface.get('type') in ['network', 'direct']:
+                if net_source_type == 'net':
+                    source.set('network', net_source)
+                elif net_source_type == 'iface':
+                    source.set('dev', net_source)
                 else:
-                    interface.remove(source)
+                    raise libvirtError(f"Unknown network type: {net_source_type}")
+            else:
+                raise libvirtError(f"Unknown network type: {interface.get('type')}")
 
-                source = interface.find('filterref')
-                if net_filter:
-                    if source is not None: source.set('filter', net_filter)
-                    else:
-                        element = ElementTree.Element("filterref")
-                        element.attrib['filter'] = net_filter
-                        interface.append(element)
-                else:
-                    if source is not None: interface.remove(source)
-            elif interface.get('type') == 'network':
-                source = interface.find('mac')
-                source.set('address', net_mac)
-                source = interface.find('source')
-                source.set('network', net_source)
+            source = interface.find('model')
+            if net_model != 'default':
+                source.attrib['type'] = net_model
+            else:
+                interface.remove(source)
 
-                source = interface.find('model')
-                if net_model != 'default':
-                    source.attrib['type'] = net_model
+            source = interface.find('mac')
+            source.set('address', net_mac)
+            source = interface.find('filterref')
+            if net_filter:
+                if source is not None: source.set('filter', net_filter)
                 else:
-                    interface.remove(source)
-
-                source = interface.find('filterref')
-                if net_filter:
-                    if source is not None: source.set('filter', net_filter)
-                    else:
-                        element = ElementTree.Element("filterref")
-                        element.attrib['filter'] = net_filter
-                        interface.append(element)
-                else:
-                    if source is not None: interface.remove(source)
+                    element = ElementTree.Element("filterref")
+                    element.attrib['filter'] = net_filter
+                    interface.append(element)
+            else:
+                if source is not None: interface.remove(source)
 
         new_xml = ElementTree.tostring(tree).decode()
         self._defineXML(new_xml)

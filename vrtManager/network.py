@@ -1,4 +1,5 @@
 from lxml import etree
+from libvirt import libvirtError
 from libvirt import VIR_NETWORK_SECTION_IP_DHCP_HOST
 from libvirt import VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_UPDATE_COMMAND_MODIFY
 from libvirt import VIR_NETWORK_UPDATE_AFFECT_LIVE, VIR_NETWORK_UPDATE_AFFECT_CONFIG
@@ -32,7 +33,11 @@ class wvmNetworks(wvmConnect):
         for network in get_networks:
             net = self.get_network(network)
             net_status = net.isActive()
-            net_bridge = net.bridgeName()
+            try:
+                net_bridge = net.bridgeName()
+            except libvirtError:
+                net_bridge = util.get_xml_path(net.XMLDesc(0), "/network/forward/interface/@dev")
+
             net_forward = util.get_xml_path(net.XMLDesc(0), "/network/forward/@mode")
             networks.append({'name': network, 'status': net_status,
                              'device': net_bridge, 'forward': net_forward})
@@ -50,15 +55,20 @@ class wvmNetworks(wvmConnect):
                 <name>{name}</name>"""
         if forward in ['nat', 'route', 'bridge']:
             xml += f"""<forward mode='{forward}'/>"""
-        xml += """<bridge """
-        if forward in ['nat', 'route', 'none']:
-            xml += """stp='on' delay='0'"""
-        if forward == 'bridge':
-            xml += f"""name='{bridge}'"""
-        xml += """/>"""
-        if openvswitch is True:
-            xml += """<virtualport type='openvswitch'/>"""
-        if forward != 'bridge':
+        if forward == 'macvtap':
+            xml += f"""<forward mode='bridge'>
+                          <interface dev='{bridge}'/>
+                       </forward>"""
+        else:
+            xml += """<bridge """
+            if forward in ['nat', 'route', 'none']:
+                xml += """stp='on' delay='0'"""
+            if forward == 'bridge':
+                xml += f"""name='{bridge}'"""
+            xml += """/>"""
+            if openvswitch is True:
+                xml += """<virtualport type='openvswitch'/>"""
+        if forward not in ['bridge', 'macvtap']:
             if ipv4:
                 xml += f"""<ip address='{gateway}' netmask='{mask}'>"""
                 if dhcp4:
@@ -114,7 +124,7 @@ class wvmNetwork(wvmConnect):
         try:
             return self.net.bridgeName()
         except:
-            return None
+            return util.get_xml_path(self._XMLDesc(0), "/network/forward/interface/@dev")
 
     def start(self):
         self.net.create()

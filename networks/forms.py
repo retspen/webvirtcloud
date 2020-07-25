@@ -46,7 +46,7 @@ class AddNetPool(forms.Form):
 
     def clean_bridge_name(self):
         bridge_name = self.cleaned_data['bridge_name']
-        if self.cleaned_data['forward'] == 'bridge':
+        if self.cleaned_data['forward'] in ['bridge', 'macvtap']:
             have_symbol = re.match('^[a-zA-Z0-9\.\_\:\-]+$', bridge_name)
             if not have_symbol:
                 raise forms.ValidationError(_('The pool bridge name must not contain any special characters'))

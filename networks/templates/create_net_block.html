@@ -28,6 +28,7 @@
                                     <option value="route">{% trans "ROUTE" %}</option>
                                     <option value="none">{% trans "ISOLATE" %}</option>
                                     <option value="bridge">{% trans "BRIDGE" %}</option>
+                                    <option value="macvtap">{% trans "MACVTAP" %}</option>
                                 </select>
                             </div>
                         </div>
@@ -55,25 +56,25 @@
                                 <input type="checkbox" id="enable_ipv6" name="enable_ipv6" value="false">
                             </div>
                         </div>
-                        <div class="form-group row bridge_name_form_group_dhcp ipv6_group">
+                        <div class="form-group row ipv6_group">
                             <label class="col-sm-4 col-form-label">{% trans "IPv6 Subnet pool" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" class="form-control" name="subnet6" value="" placeholder="fd00:dead:baba:1::/64" required pattern="[0-9\/\.]+">
                             </div>
                         </div>
-                        <div class="form-group row bridge_name_form_group_dhcp ipv6_group">
+                        <div class="form-group row ipv6_group">
                             <label class="col-sm-4 col-form-label">{% trans "DHCPv6" %}</label>
                             <div class="col-sm-6">
                                 <input type="checkbox" name="dhcp6" value="true">
                             </div>
                         </div>
                         <div class="form-group row bridge_name_form_group">
-                            <label class="col-sm-4 col-form-label">{% trans "Bridge Name" %}</label>
+                            <label class="col-sm-4 col-form-label" id="bridge_label">{% trans "Bridge Name" %}</label>
                             <div class="col-sm-6">
-                                <input type="text" class="form-control" name="bridge_name" placeholder="br0" pattern="[a-z0-9\-_:]+">
+                                <input type="text" class="form-control" name="bridge_name" id="bridge_name" placeholder="br0" pattern="[a-z0-9\-_:]+">
                             </div>
                         </div>
-                        <div class="form-group row bridge_name_form_group">
+                        <div class="form-group row bridge_name_form_group openvswitch">
                             <label class="col-sm-4 col-form-label">{% trans "Open vSwitch" %}</label>
                             <div class="col-sm-6">
                                 <input type="checkbox" name="openvswitch" value="true">
@@ -89,3 +90,4 @@
         </div> <!-- /.modal-dialog -->
     </div> <!-- /.modal -->
 {% endif %}
+

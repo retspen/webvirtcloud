@@ -353,6 +353,7 @@
                                     <input name="set_link_state" value="{{ network.state }}" hidden/>
                                     <input type="checkbox" {% if network.state == 'up' %} checked{% endif %} onclick='submit();' />
                                     <strong>{% trans 'active' %}</strong>
+                                    <small>{{ network.type }}</small>
                                 </form>
                             </td>
                             <th class="d-none d-table-cell d-sm-table-cell">{% trans 'MAC' %}</th>
@@ -390,10 +391,10 @@
                                                         <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
                                                         <select class="form-control" name="net-source-{{ forloop.counter0 }}">
                                                             {% for c_net in networks_host %}
-                                                                <option value="net:{{ c_net }}" {% if c_net == network.nic %} selected {% endif %}>{% trans 'Network' %} {{ c_net }}</option>
+                                                            <option value="net:{{ c_net }}" {% if c_net == network.nic %} selected {% endif %}>{% trans 'Network' %} {{ c_net }}</option>
                                                             {% endfor %}
                                                             {% for c_iface in interfaces_host %}
-                                                                <option value="iface:{{ c_iface }}" {% if c_iface == network.nic %} selected {% endif %}>{% trans 'Interface' %} {{ c_iface }}</option>
+                                                            <option value="iface:{{ c_iface }}" {% if c_iface == network.nic %} selected {% endif %}>{% trans 'Interface' %} {{ c_iface }}</option>
                                                             {% endfor %}
                                                         </select>
                                                     </div>                                      
@@ -405,7 +406,7 @@
                                                         <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
                                                             <option value="">{% trans "None" %}</option>
                                                             {% for c_filters in nwfilters_host %}
-                                                                <option value="{{ c_filters }}" {% if c_filters == network.filterref  %} selected {% endif %}>{{ c_filters }}</option>
+                                                            <option value="{{ c_filters }}" {% if c_filters == network.filterref  %} selected {% endif %}>{{ c_filters }}</option>
                                                             {% endfor %}
                                                         </select>
                                                     </div>
@@ -462,7 +463,11 @@
                             </td>
                         </tr>
                         <tr>
-                            <td class="bg-primary" colspan="9"></td>
+                            <td class="py-1 bg-primary text-white" colspan="9">
+                                {% if network.type == 'direct' %}
+                                <small>{% trans 'In most configurations, macvtap does not work for host to guest network communication' %}</small>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>
