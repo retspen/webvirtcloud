@@ -1,9 +1,7 @@
 /*
  * noVNC: HTML5 VNC client
- * Copyright (C) 2012 Joel Martin
+ * Copyright (C) 2019 The noVNC Authors
  * (c) 2012 Michael Tinglof, Joe Balaz, Les Piech (Mercuri.ca)
- * Copyright (C) 2018 Samuel Mannehed for Cendio AB
- * Copyright (C) 2018 Pierre Ossman for Cendio AB
  * Licensed under MPL 2.0 (see LICENSE.txt)
  *
  * See README.md for usage and integration instructions.
@@ -94,7 +92,7 @@ export default class TightDecoder {
             return false;
         }
 
-        display.imageRect(x, y, "image/jpeg", data);
+        display.imageRect(x, y, width, height, "image/jpeg", data);
 
         return true;
     }
@@ -162,10 +160,9 @@ export default class TightDecoder {
                 return false;
             }
 
-            data = this._zlibs[streamId].inflate(data, true, uncompressedSize);
-            if (data.length != uncompressedSize) {
-                throw new Error("Incomplete zlib block");
-            }
+            this._zlibs[streamId].setInput(data);
+            data = this._zlibs[streamId].inflate(uncompressedSize);
+            this._zlibs[streamId].setInput(null);
         }
 
         display.blitRgbImage(x, y, width, height, data, 0, false);
@@ -210,10 +207,9 @@ export default class TightDecoder {
                 return false;
             }
 
-            data = this._zlibs[streamId].inflate(data, true, uncompressedSize);
-            if (data.length != uncompressedSize) {
-                throw new Error("Incomplete zlib block");
-            }
+            this._zlibs[streamId].setInput(data);
+            data = this._zlibs[streamId].inflate(uncompressedSize);
+            this._zlibs[streamId].setInput(null);
         }
 
         // Convert indexed (palette based) image data to RGB

@@ -60,3 +60,8 @@ html {
   display: flex;
   justify-content: flex-end;
 }
+
+#noVNC_container {
+  flex: 1; /* fill remaining space */
+  overflow: hidden;
+}

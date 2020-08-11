@@ -17,7 +17,11 @@
 
 <meta charset="utf-8" />
 
-<!-- Icons (see Makefile for what the sizes are for) -->
+<!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+                Remove this if you use the .htaccess -->
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+ <!-- Icons (see app/images/icons/Makefile for what the sizes are for) -->
 <link rel="icon" sizes="16x16" type="image/png" href="{% static "js/novnc/app/images/icons/novnc-16x16.png" %}">
 <link rel="icon" sizes="24x24" type="image/png" href="{% static "js/novnc/app/images/icons/novnc-24x24.png" %}">
 <link rel="icon" sizes="32x32" type="image/png" href="{% static "js/novnc/app/images/icons/novnc-32x32.png" %}">
@@ -54,12 +58,8 @@
 <!-- Stylesheets -->
 <link rel="stylesheet" href="{% static "js/novnc/app/styles/base.css" %}" />
 
-<!--
-    <script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
-    -->
-
 <!-- this is included as a normal file in order to catch script-loading errors as well -->
-<script type="text/javascript" src="{% static "js/novnc/app/error-handler.js" %}"></script>
+<script src="{% static "js/novnc/app/error-handler.js" %}"></script>
 
 <!-- begin scripts -->
 <!-- promise polyfills promises for IE11 -->
@@ -91,7 +91,7 @@
 
         <div class="noVNC_scroll">
 
-            <h1 class="noVNC_logo" translate="no"><span>no</span><br />VNC</h1>
+            <h1 class="noVNC_logo" translate="no"><span>no</span><br>VNC</h1>
 
             <!-- Drag/Pan the viewport -->
             <input type="image" alt="viewport drag" src="{% static "js/novnc/app/images/drag.svg" %}"
@@ -99,37 +99,27 @@
 
             <!--noVNC Touch Device only buttons-->
             <div id="noVNC_mobile_buttons">
-                <input type="image" alt="No mousebutton" src="{% static "js/novnc/app/images/mouse_none.svg" %}"
-                    id="noVNC_mouse_button0" class="noVNC_button" title="Active Mouse Button" />
-                <input type="image" alt="Left mousebutton" src="{% static "js/novnc/app/images/mouse_left.svg" %}"
-                    id="noVNC_mouse_button1" class="noVNC_button" title="Active Mouse Button" />
-                <input type="image" alt="Middle mousebutton" src="{% static "js/novnc/app/images/mouse_middle.svg" %}"
-                    id="noVNC_mouse_button2" class="noVNC_button" title="Active Mouse Button" />
-                <input type="image" alt="Right mousebutton" src="{% static "js/novnc/app/images/mouse_right.svg" %}"
-                    id="noVNC_mouse_button4" class="noVNC_button" title="Active Mouse Button" />
                 <input type="image" alt="Keyboard" src="{% static "js/novnc/app/images/keyboard.svg" %}"
-                    id="noVNC_keyboard_button" class="noVNC_button" value="Keyboard" title="Show Keyboard" />
+                    id="noVNC_keyboard_button" class="noVNC_button" title="Show Keyboard">
             </div>
 
             <!-- Extra manual keys -->
-            <div id="noVNC_extra_keys">
-                <input type="image" alt="Extra keys" src="{% static "js/novnc/app/images/toggleextrakeys.svg" %}"
-                    id="noVNC_toggle_extra_keys_button" class="noVNC_button" title="Show Extra Keys" />
-                <div class="noVNC_vcenter">
-                    <div id="noVNC_modifiers" class="noVNC_panel">
-                        <input type="image" alt="Ctrl" src="{% static "js/novnc/app/images/ctrl.svg" %}"
-                            id="noVNC_toggle_ctrl_button" class="noVNC_button" title="Toggle Ctrl" />
-                        <input type="image" alt="Alt" src="{% static "js/novnc/app/images/alt.svg" %}"
-                            id="noVNC_toggle_alt_button" class="noVNC_button" title="Toggle Alt" />
-                        <input type="image" alt="Windows" src="{% static "js/novnc/app/images/windows.svg" %}"
-                            id="noVNC_toggle_windows_button" class="noVNC_button" title="Toggle Windows">
-                        <input type="image" alt="Tab" src="{% static "js/novnc/app/images/tab.svg" %}"
-                            id="noVNC_send_tab_button" class="noVNC_button" title="Send Tab" />
-                        <input type="image" alt="Esc" src="{% static "js/novnc/app/images/esc.svg" %}"
-                            id="noVNC_send_esc_button" class="noVNC_button" title="Send Escape" />
-                        <input type="image" alt="Ctrl+Alt+Del" src="{% static "js/novnc/app/images/ctrlaltdel.svg" %}"
-                            id="noVNC_send_ctrl_alt_del_button" class="noVNC_button" title="Send Ctrl-Alt-Del" />
-                    </div>
+            <input type="image" alt="Extra keys" src="{% static "js/novnc/app/images/toggleextrakeys.svg" %}"
+                id="noVNC_toggle_extra_keys_button" class="noVNC_button" title="Show Extra Keys" />
+            <div class="noVNC_vcenter">
+                <div id="noVNC_modifiers" class="noVNC_panel">
+                    <input type="image" alt="Ctrl" src="{% static "js/novnc/app/images/ctrl.svg" %}"
+                        id="noVNC_toggle_ctrl_button" class="noVNC_button" title="Toggle Ctrl" />
+                    <input type="image" alt="Alt" src="{% static "js/novnc/app/images/alt.svg" %}"
+                        id="noVNC_toggle_alt_button" class="noVNC_button" title="Toggle Alt" />
+                    <input type="image" alt="Windows" src="{% static "js/novnc/app/images/windows.svg" %}"
+                        id="noVNC_toggle_windows_button" class="noVNC_button" title="Toggle Windows">
+                    <input type="image" alt="Tab" src="{% static "js/novnc/app/images/tab.svg" %}"
+                        id="noVNC_send_tab_button" class="noVNC_button" title="Send Tab" />
+                    <input type="image" alt="Esc" src="{% static "js/novnc/app/images/esc.svg" %}"
+                        id="noVNC_send_esc_button" class="noVNC_button" title="Send Escape" />
+                    <input type="image" alt="Ctrl+Alt+Del" src="{% static "js/novnc/app/images/ctrlaltdel.svg" %}"
+                        id="noVNC_send_ctrl_alt_del_button" class="noVNC_button" title="Send Ctrl-Alt-Del" />
                 </div>
             </div>
 
@@ -199,68 +189,66 @@
                         </li>
                         <li>
                             <div class="noVNC_expander">Advanced</div>
-                            <div>
-                                <ul>
-                                    <li>
-                                        <label for="noVNC_setting_repeaterID">Repeater ID:</label>
-                                        <input id="noVNC_setting_repeaterID" type="input" value="" />
-                                    </li>
-                                    <li>
-                                        <div class="noVNC_expander">WebSocket</div>
-                                        <div>
-                                            <ul>
-                                                <li>
-                                                    <label><input id="noVNC_setting_encrypt"
-                                                            type="checkbox" />Encrypt</label>
-                                                </li>
-                                                <li>
-                                                    <label for="noVNC_setting_host">Host:</label>
-                                                    <input id="noVNC_setting_host" value="{{ ws_host }}" />
-                                                </li>
-                                                <li>
-                                                    <label for="noVNC_setting_port">Port:</label>
-                                                    <input id="noVNC_setting_port" value="{{ ws_port }}"
-                                                        type="number" />
-                                                </li>
-                                                <li>
-                                                    <label for="noVNC_setting_path">Path:</label>
-                                                    <!-- <input id="noVNC_setting_path" type="input" value="websockify"/> -->
-                                                    <input id="noVNC_setting_path" type="input" value="{{ ws_path }}" />
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </li>
-                                    <li>
-                                        <hr>
-                                    </li>
-                                    <li>
-                                        <label><input id="noVNC_setting_reconnect" type="checkbox" />Automatic
-                                            Reconnect</label>
-                                        <input id="noVNC_setting_autoconnect" type="checkbox" value="true" hidden />
-                                    </li>
-                                    <li>
-                                        <label for="noVNC_setting_reconnect_delay">Reconnect Delay (ms):</label>
-                                        <input id="noVNC_setting_reconnect_delay" type="number" />
-                                    </li>
-                                    <li>
-                                        <hr>
-                                    </li>
-                                    <li>
-                                        <label><input id="noVNC_setting_show_dot" type="checkbox">Show Dot when No
-                                            Cursor</label>
-                                    </li>
-                                    <li>
-                                        <hr>
-                                    </li>
-                                    <!-- Logging selection dropdown -->
-                                    <li>
-                                        <label>Logging:
-                                            <select id="noVNC_setting_logging" name="vncLogging">
-                                            </select>
-                                        </label>
-                                    </li>
-                                </ul>
-                            </div>
+                            <div><ul>
+                                <li>
+                                    <label for="noVNC_setting_quality">Quality:</label>
+                                    <input id="noVNC_setting_quality" type="range" min="0" max="9" value="6">
+                                </li>
+                                <li>
+                                    <label for="noVNC_setting_compression">Compression level:</label>
+                                    <input id="noVNC_setting_compression" type="range" min="0" max="9" value="2">
+                                </li>
+                                <li><hr></li>
+                                <li>
+                                    <label for="noVNC_setting_repeaterID">Repeater ID:</label>
+                                    <input id="noVNC_setting_repeaterID" type="text" value="">
+                                </li>
+                                <li>
+                                    <div class="noVNC_expander">WebSocket</div>
+                                    <div><ul>
+                                        <li>
+                                            <label><input id="noVNC_setting_encrypt" type="checkbox"> Encrypt</label>
+                                        </li>
+                                        <li>
+                                            <label for="noVNC_setting_host">Host:</label>
+                                            <input id="noVNC_setting_host">
+                                        </li>
+                                        <li>
+                                            <label for="noVNC_setting_port">Port:</label>
+                                            <input id="noVNC_setting_port" type="number">
+                                        </li>
+                                        <li>
+                                            <label for="noVNC_setting_path">Path:</label>
+                                            <input id="noVNC_setting_path" type="text" value="websockify">
+                                        </li>
+                                    </ul></div>
+                                </li>
+                                <li><hr></li>
+                                <li>
+                                    <label><input id="noVNC_setting_reconnect" type="checkbox"> Automatic Reconnect</label>
+                                </li>
+                                <li>
+                                    <label for="noVNC_setting_reconnect_delay">Reconnect Delay (ms):</label>
+                                    <input id="noVNC_setting_reconnect_delay" type="number">
+                                </li>
+                                <li><hr></li>
+                                <li>
+                                    <label><input id="noVNC_setting_show_dot" type="checkbox"> Show Dot when No Cursor</label>
+                                </li>
+                                <li><hr></li>
+                                <!-- Logging selection dropdown -->
+                                <li>
+                                    <label>Logging:
+                                        <select id="noVNC_setting_logging" name="vncLogging">
+                                        </select>
+                                    </label>
+                                </li>
+                            </ul></div>
+                        </li>
+                        <li class="noVNC_version_separator"><hr></li>
+                        <li class="noVNC_version_wrapper">
+                            <span>Version:</span>
+                            <span class="noVNC_version"></span>
                         </li>
                     </ul>
                 </div>
@@ -292,10 +280,14 @@
 
 <!-- Password Dialog -->
 <div class="noVNC_center noVNC_connect_layer">
-    <div id="noVNC_password_dlg" class="noVNC_panel">
+    <div id="noVNC_credentials_dlg" class="noVNC_panel">
         <form aria-label="noVNC password form">
             <ul>
-                <li>
+                <li id="noVNC_username_block">
+                    <label>Username:</label>
+                    <input id="noVNC_username_input">
+                </li>
+                <li id="noVNC_password_block">
                     <label>Password:</label>
                     {% if perms.instances.passwordless_console %}
                         <input id="noVNC_password_input" type="password" value='{{ console_passwd }}' />
@@ -304,7 +296,7 @@
                     {% endif %}
                 </li>
                 <li>
-                    <input id="noVNC_password_button" type="submit" value="Send Password" class="noVNC_submit" />
+                    <input id="noVNC_credentials_button" type="submit" value="Send Credentials" class="noVNC_submit" />
                 </li>
             </ul>
         </form>
@@ -326,8 +318,8 @@
              html attributes which attempt to disable text suggestions on the
              on-screen keyboard. Let's hope Chrome implements the ime-mode
              style for example -->
-    <textarea id="noVNC_keyboardinput" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"
-        mozactionhint="Enter" tabindex="-1"></textarea>
+    <textarea id="noVNC_keyboardinput" autocapitalize="off" autocomplete="off" spellcheck="false"
+        tabindex="-1"></textarea>
 </div>
 
 <audio id="noVNC_bell">
