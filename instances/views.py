@@ -389,7 +389,7 @@ def set_root_pass(request, pk):
                     messages.error(request, result['message'])
             else:
                 msg = _("Please shutdown down your instance and then try again")
-                messages.error(msg)
+                messages.error(request, msg)
     return redirect(reverse('instances:instance', args=[instance.id]) + '#access')
 
 
@@ -412,10 +412,10 @@ def add_public_key(request, pk):
             if result['return'] == 'success':
                 messages.success(request, msg)
             else:
-                messages.error(msg)
+                messages.error(request, msg)
         else:
             msg = _("Please shutdown down your instance and then try again")
-            messages.error(msg)
+            messages.error(request, msg)
     return redirect(reverse('instances:instance', args=[instance.id]) + '#access')
 
 
@@ -434,7 +434,7 @@ def resizevm_cpu(request, pk):
             quota_msg = utils.check_user_quota(request.user, 0, int(new_vcpu) - vcpu, 0, 0)
             if not request.user.is_superuser and quota_msg:
                 msg = _(f"User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!")
-                messages.error(msg)
+                messages.error(request, msg)
             else:
                 cur_vcpu = new_cur_vcpu
                 vcpu = new_vcpu
@@ -468,7 +468,7 @@ def resize_memory(request, pk):
             quota_msg = utils.check_user_quota(request.user, 0, 0, int(new_memory) - memory, 0)
             if not request.user.is_superuser and quota_msg:
                 msg = _(f"User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!")
-                messages.error(msg)
+                messages.error(request, msg)
             else:
                 cur_memory = new_cur_memory
                 memory = new_memory
@@ -504,7 +504,7 @@ def resize_disk(request, pk):
             quota_msg = utils.check_user_quota(request.user, 0, 0, 0, disk_new_sum - disk_sum)
             if not request.user.is_superuser and quota_msg:
                 msg = _(f"User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!")
-                messages.error(msg)
+                messages.error(request, msg)
             else:
                 instance.proxy.resize_disk(disks_new)
                 msg = _("Disk resize")
@@ -1335,7 +1335,7 @@ def create_instance(request, compute_id, arch, machine):
                         dest_vol = conn.get_volume_path(data["name"] + ".img", data['storage'])
                         if dest_vol:
                             error_msg = _("Image has already exist. Please check volumes or change instance name")
-                            messages.error(error_msg)
+                            messages.error(request, error_msg)
                         else:
                             clone_path = conn.clone_from_template(data['name'], templ_path, data['storage'], meta_prealloc,
                                                                   default_disk_owner_uid, default_disk_owner_gid)
@@ -1375,7 +1375,7 @@ def create_instance(request, compute_id, arch, machine):
                                 volume_list.append(volume)
                     if data['cache_mode'] not in conn.get_cache_modes():
                         error_msg = _("Invalid cache mode")
-                        messages.error(error_msg)
+                        messages.error(request ,error_msg)
 
                     if 'UEFI' in data["firmware"]:
                         firmware["loader"] = data["firmware"].split(":")[1].strip()
