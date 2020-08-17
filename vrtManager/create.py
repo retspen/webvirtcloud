@@ -283,6 +283,10 @@ class wvmCreate(wvmConnect):
             else:
                 xml += """<target dev='sd%s'/>""" % sd_disk_letters.pop(0)
             xml += """</disk>"""
+
+            if volume.get('bus') == 'scsi':
+                xml += f"""<controller type='scsi' model='{volume.get('scsi_model')}'/>"""
+
         if add_cd:
             xml += """<disk type='file' device='cdrom'>
                           <driver name='qemu' type='raw'/>
@@ -297,9 +301,6 @@ class wvmCreate(wvmConnect):
             else:
                 xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), 'virtio')
             xml += """</disk>"""
-
-        if volume.get('bus') == 'scsi':
-            xml += f"""<controller type='scsi' model='{volume.get('scsi_model')}'/>"""
 
         for net in networks.split(','):
             xml += """<interface type='network'>"""
