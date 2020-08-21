@@ -1,4 +1,4 @@
-## WebVirtCloud
+# WebVirtCloud
 ###### Python3 & Django 2.2
 
 ## Features
@@ -25,10 +25,21 @@ wget -O - https://clck.ru/9VMRH | sudo tee -a /usr/local/bin/gstfsd
 sudo service supervisor restart
 ```
 
-### Description
+## Description
 
 WebVirtCloud is a virtualization web interface for admins and users. It can delegate Virtual Machine's to users. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported.
 
+## Quick Install with Installer (Beta)
+Install an OS and run specified commands. Installer supported OSes: Ubuntu 18.04, Debian 10, Centos/OEL/RHEL 8.
+It can be installed on a virtual machine, physical host or on a KVM host.
+```bash
+wget https://raw.githubusercontent.com/retspen/webvirtcloud/master/install.sh
+chmod 744 install.sh
+# run with sudo or root user
+./install.sh
+```
+
+## Manual Installation
 ### Generate secret key
 You should generate SECRET_KEY after cloning repo. Then put it into webvirtcloud/settings.py.
 
@@ -95,7 +106,7 @@ sudo sed -r "s/SECRET_KEY = ''/SECRET_KEY = '"`python3 /srv/webvirtcloud/conf/ru
 ```
 
 #### Start installation webvirtcloud
-```
+```bash
 virtualenv-3 venv
 source venv/bin/activate
 pip3 install -r conf/requirements.txt
@@ -306,7 +317,7 @@ Edit WS_PUBLIC_PORT at settings.py file to expose redirect to 80 or 443. Default
 WS_PUBLIC_PORT = 80
 ```
 
-### How To Update
+## How To Update
 ```bash
 # Go to Installation Directory
 cd /srv/webvirtcloud
@@ -333,7 +344,7 @@ Run tests
 python manage.py test
 ```
 
-### Screenshots
+## Screenshots
 Instance Detail:
 <img src="doc/images/instance.PNG" width="96%" align="center"/>
 Instance List:</br>
@@ -343,6 +354,6 @@ Other: </br>
 <img src="doc/images/hosts.PNG" width="47%"/>
 <img src="doc/images/log.PNG" width="49%"/>
 
-### License
+## License
 
 WebVirtCloud is licensed under the [Apache Licence, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
