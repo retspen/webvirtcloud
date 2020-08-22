@@ -205,7 +205,6 @@
     rfb.addEventListener("disconnect", disconnectedFromServer);
     rfb.addEventListener("credentialsrequired", credentialsAreRequired);
     rfb.addEventListener("desktopname", updateDesktopName);
-    rfb.addEventListener("capabilities", function () { updatePowerButtons(); });
 
     // Set parameters that can be changed on an active connection
     rfb.scaleViewport = {{ scale }};

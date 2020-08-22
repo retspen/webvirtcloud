@@ -389,7 +389,7 @@ def set_root_pass(request, pk):
                     messages.error(request, result['message'])
             else:
                 msg = _("Please shutdown down your instance and then try again")
-                messages.error(msg)
+                messages.error(request, msg)
     return redirect(reverse('instances:instance', args=[instance.id]) + '#access')
 
 
@@ -412,10 +412,10 @@ def add_public_key(request, pk):
             if result['return'] == 'success':
                 messages.success(request, msg)
             else:
-                messages.error(msg)
+                messages.error(request, msg)
         else:
             msg = _("Please shutdown down your instance and then try again")
-            messages.error(msg)
+            messages.error(request, msg)
     return redirect(reverse('instances:instance', args=[instance.id]) + '#access')
 
 
@@ -434,7 +434,7 @@ def resizevm_cpu(request, pk):
             quota_msg = utils.check_user_quota(request.user, 0, int(new_vcpu) - vcpu, 0, 0)
             if not request.user.is_superuser and quota_msg:
                 msg = _(f"User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!")
-                messages.error(msg)
+                messages.error(request, msg)
             else:
                 cur_vcpu = new_cur_vcpu
                 vcpu = new_vcpu
@@ -468,7 +468,7 @@ def resize_memory(request, pk):
             quota_msg = utils.check_user_quota(request.user, 0, 0, int(new_memory) - memory, 0)
             if not request.user.is_superuser and quota_msg:
                 msg = _(f"User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!")
-                messages.error(msg)
+                messages.error(request, msg)
             else:
                 cur_memory = new_cur_memory
                 memory = new_memory
@@ -504,7 +504,7 @@ def resize_disk(request, pk):
             quota_msg = utils.check_user_quota(request.user, 0, 0, 0, disk_new_sum - disk_sum)
             if not request.user.is_superuser and quota_msg:
                 msg = _(f"User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!")
-                messages.error(msg)
+                messages.error(request, msg)
             else:
                 instance.proxy.resize_disk(disks_new)
                 msg = _("Disk resize")
@@ -1242,186 +1242,184 @@ def create_instance(request, compute_id, arch, machine):
     flavors = Flavor.objects.filter().order_by('id')
     appsettings = AppSettings.objects.all()
 
-    conn = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
+    try:
+        conn = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
 
-    default_firmware = app_settings.INSTANCE_FIRMWARE_DEFAULT_TYPE
-    default_cpu_mode = app_settings.INSTANCE_CPU_DEFAULT_MODE
-    instances = conn.get_instances()
-    videos = conn.get_video_models(arch, machine)
-    cache_modes = sorted(conn.get_cache_modes().items())
-    default_cache = app_settings.INSTANCE_VOLUME_DEFAULT_CACHE
-    default_io = app_settings.INSTANCE_VOLUME_DEFAULT_IO
-    default_zeroes = app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
-    default_discard = app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD
-    default_disk_format = app_settings.INSTANCE_VOLUME_DEFAULT_FORMAT
-    default_disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
-    default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
-    default_scsi_disk_model = app_settings.INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
-    listener_addr = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
-    mac_auto = util.randomMAC()
-    disk_devices = conn.get_disk_device_types(arch, machine)
-    disk_buses = conn.get_disk_bus_types(arch, machine)
-    default_bus = app_settings.INSTANCE_VOLUME_DEFAULT_BUS
-    networks = sorted(conn.get_networks())
-    nwfilters = conn.get_nwfilters()
-    storages = sorted(conn.get_storages(only_actives=True))
-    default_graphics = app_settings.QEMU_CONSOLE_DEFAULT_TYPE
+        default_firmware = app_settings.INSTANCE_FIRMWARE_DEFAULT_TYPE
+        default_cpu_mode = app_settings.INSTANCE_CPU_DEFAULT_MODE
+        instances = conn.get_instances()
+        videos = conn.get_video_models(arch, machine)
+        cache_modes = sorted(conn.get_cache_modes().items())
+        default_cache = app_settings.INSTANCE_VOLUME_DEFAULT_CACHE
+        default_io = app_settings.INSTANCE_VOLUME_DEFAULT_IO
+        default_zeroes = app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
+        default_discard = app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD
+        default_disk_format = app_settings.INSTANCE_VOLUME_DEFAULT_FORMAT
+        default_disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
+        default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
+        default_scsi_disk_model = app_settings.INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
+        listener_addr = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
+        mac_auto = util.randomMAC()
+        disk_devices = conn.get_disk_device_types(arch, machine)
+        disk_buses = conn.get_disk_bus_types(arch, machine)
+        default_bus = app_settings.INSTANCE_VOLUME_DEFAULT_BUS
+        networks = sorted(conn.get_networks())
+        nwfilters = conn.get_nwfilters()
+        storages = sorted(conn.get_storages(only_actives=True))
+        default_graphics = app_settings.QEMU_CONSOLE_DEFAULT_TYPE
 
-    dom_caps = conn.get_dom_capabilities(arch, machine)
-    caps = conn.get_capabilities(arch)
+        dom_caps = conn.get_dom_capabilities(arch, machine)
+        caps = conn.get_capabilities(arch)
 
-    virtio_support = conn.is_supports_virtio(arch, machine)
-    hv_supports_uefi = conn.supports_uefi_xml(dom_caps["loader_enums"])
-    # Add BIOS
-    label = conn.label_for_firmware_path(arch, None)
-    if label: firmwares.append(label)
-    # Add UEFI
-    loader_path = conn.find_uefi_path_for_arch(arch, dom_caps["loaders"])
-    label = conn.label_for_firmware_path(arch, loader_path)
-    if label: firmwares.append(label)
-    firmwares = list(set(firmwares))
+        virtio_support = conn.is_supports_virtio(arch, machine)
+        hv_supports_uefi = conn.supports_uefi_xml(dom_caps["loader_enums"])
+        # Add BIOS
+        label = conn.label_for_firmware_path(arch, None)
+        if label: firmwares.append(label)
+        # Add UEFI
+        loader_path = conn.find_uefi_path_for_arch(arch, dom_caps["loaders"])
+        label = conn.label_for_firmware_path(arch, loader_path)
+        if label: firmwares.append(label)
+        firmwares = list(set(firmwares))
 
-    flavor_form = FlavorForm()
+        flavor_form = FlavorForm()
 
-    if conn:
-        if not storages:
-            msg = _("You haven't defined any storage pools")
-            messages.error(request, msg)
-        if not networks:
-            msg = _("You haven't defined any network pools")
-            messages.error(request, msg)
+        if conn:
+            if not storages:
+                raise libvirtError(_("You haven't defined any storage pools"))
+            if not networks:
+                raise libvirtError(_("You haven't defined any network pools"))
 
-        if request.method == 'POST':
-            if 'create' in request.POST:
-                firmware = dict()
-                volume_list = list()
-                is_disk_created = False
-                clone_path = ""
-                form = NewVMForm(request.POST)
-                if form.is_valid():
-                    data = form.cleaned_data
-                    if data['meta_prealloc']:
-                        meta_prealloc = True
-                    if instances:
-                        if data['name'] in instances:
-                            msg = _("A virtual machine with this name already exists")
-                            messages.error(request, msg)
-                        if Instance.objects.filter(name__exact=data['name']):
-                            messages.warning(request, _("There is an instance with same name. Are you sure?"))
-                    if data['hdd_size']:
-                        if not data['mac']:
-                            error_msg = _("No Virtual Machine MAC has been entered")
-                            messages.error(request, msg)
-                        else:
-                            path = conn.create_volume(data['storage'], data['name'], data['hdd_size'], default_disk_format,
-                                                      meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
-                            volume = dict()
-                            volume['device'] = 'disk'
-                            volume['path'] = path
-                            volume['type'] = conn.get_volume_type(path)
-                            volume['cache_mode'] = data['cache_mode']
-                            volume['bus'] = default_bus
-                            if volume['bus'] == 'scsi':
-                                volume['scsi_model'] = default_scsi_disk_model
-                            volume['discard_mode'] = default_discard
-                            volume['detect_zeroes_mode'] = default_zeroes
-                            volume['io_mode'] = default_io
+            if request.method == 'POST':
+                if 'create' in request.POST:
+                    firmware = dict()
+                    volume_list = list()
+                    is_disk_created = False
+                    clone_path = ""
+                    form = NewVMForm(request.POST)
+                    if form.is_valid():
+                        data = form.cleaned_data
+                        if data['meta_prealloc']:
+                            meta_prealloc = True
+                        if instances:
+                            if data['name'] in instances:
+                                raise libvirtError(_("A virtual machine with this name already exists"))
+                            if Instance.objects.filter(name__exact=data['name']):
+                                raise libvirtError(_("There is an instance with same name. Remove it and try again!"))
 
-                            volume_list.append(volume)
-                            is_disk_created = True
-
-                    elif data['template']:
-                        templ_path = conn.get_volume_path(data['template'])
-                        dest_vol = conn.get_volume_path(data["name"] + ".img", data['storage'])
-                        if dest_vol:
-                            error_msg = _("Image has already exist. Please check volumes or change instance name")
-                            messages.error(error_msg)
-                        else:
-                            clone_path = conn.clone_from_template(data['name'], templ_path, data['storage'], meta_prealloc,
-                                                                  default_disk_owner_uid, default_disk_owner_gid)
-                            volume = dict()
-                            volume['path'] = clone_path
-                            volume['type'] = conn.get_volume_type(clone_path)
-                            volume['device'] = 'disk'
-                            volume['cache_mode'] = data['cache_mode']
-                            volume['bus'] = default_bus
-                            if volume['bus'] == 'scsi':
-                                volume['scsi_model'] = default_scsi_disk_model
-                            volume['discard_mode'] = default_discard
-                            volume['detect_zeroes_mode'] = default_zeroes
-                            volume['io_mode'] = default_io
-
-                            volume_list.append(volume)
-                            is_disk_created = True
-                    else:
-                        if not data['images']:
-                            error_msg = _("First you need to create or select an image")
-                            messages.error(request, error_msg)
-                        else:
-                            for idx, vol in enumerate(data['images'].split(',')):
-                                path = conn.get_volume_path(vol)
+                        if data['hdd_size']:
+                            if not data['mac']:
+                                raise libvirtError(_("No Virtual Machine MAC has been entered"))
+                            else:
+                                path = conn.create_volume(data['storage'], data['name'], data['hdd_size'], default_disk_format,
+                                                        meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
                                 volume = dict()
+                                volume['device'] = 'disk'
                                 volume['path'] = path
                                 volume['type'] = conn.get_volume_type(path)
-                                volume['device'] = request.POST.get('device' + str(idx), '')
-                                volume['bus'] = request.POST.get('bus' + str(idx), '')
+                                volume['cache_mode'] = data['cache_mode']
+                                volume['bus'] = default_bus
                                 if volume['bus'] == 'scsi':
                                     volume['scsi_model'] = default_scsi_disk_model
-                                volume['cache_mode'] = data['cache_mode']
                                 volume['discard_mode'] = default_discard
                                 volume['detect_zeroes_mode'] = default_zeroes
                                 volume['io_mode'] = default_io
 
                                 volume_list.append(volume)
-                    if data['cache_mode'] not in conn.get_cache_modes():
-                        error_msg = _("Invalid cache mode")
-                        messages.error(error_msg)
+                                is_disk_created = True
 
-                    if 'UEFI' in data["firmware"]:
-                        firmware["loader"] = data["firmware"].split(":")[1].strip()
-                        firmware["secure"] = 'no'
-                        firmware["readonly"] = 'yes'
-                        firmware["type"] = 'pflash'
-                        if 'secboot' in firmware["loader"] and machine != 'q35':
-                            messages.warning(
-                                request, "Changing machine type from '%s' to 'q35' "
-                                "which is required for UEFI secure boot." % machine)
-                            machine = 'q35'
-                            firmware["secure"] = 'yes'
+                        elif data['template']:
+                            templ_path = conn.get_volume_path(data['template'])
+                            dest_vol = conn.get_volume_path(data["name"] + ".img", data['storage'])
+                            if dest_vol:
+                                raise libvirtError(_("Image has already exist. Please check volumes or change instance name"))
+                            else:
+                                clone_path = conn.clone_from_template(data['name'], templ_path, data['storage'], meta_prealloc,
+                                                                    default_disk_owner_uid, default_disk_owner_gid)
+                                volume = dict()
+                                volume['path'] = clone_path
+                                volume['type'] = conn.get_volume_type(clone_path)
+                                volume['device'] = 'disk'
+                                volume['cache_mode'] = data['cache_mode']
+                                volume['bus'] = default_bus
+                                if volume['bus'] == 'scsi':
+                                    volume['scsi_model'] = default_scsi_disk_model
+                                volume['discard_mode'] = default_discard
+                                volume['detect_zeroes_mode'] = default_zeroes
+                                volume['io_mode'] = default_io
 
-                    uuid = util.randomUUID()
-                    try:
-                        conn.create_instance(name=data['name'],
-                                             memory=data['memory'],
-                                             vcpu=data['vcpu'],
-                                             vcpu_mode=data['vcpu_mode'],
-                                             uuid=uuid,
-                                             arch=arch,
-                                             machine=machine,
-                                             firmware=firmware,
-                                             volumes=volume_list,
-                                             networks=data['networks'],
-                                             virtio=data['virtio'],
-                                             listen_addr=data["listener_addr"],
-                                             nwfilter=data["nwfilter"],
-                                             graphics=data["graphics"],
-                                             video=data["video"],
-                                             console_pass=data["console_pass"],
-                                             mac=data['mac'],
-                                             qemu_ga=data['qemu_ga'])
-                        create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
-                        create_instance.save()
-                        msg = _("Instance is created")
-                        messages.success(request, msg)
-                        addlogmsg(request.user.username, create_instance.name, msg)
-                        return redirect(reverse('instances:instance', args=[create_instance.id]))
-                    except libvirtError as lib_err:
-                        if data['hdd_size'] or len(volume_list) > 0:
-                            if is_disk_created:
-                                for vol in volume_list:
-                                    conn.delete_volume(vol['path'])
-                        messages.error(request, lib_err)
-        conn.close()
+                                volume_list.append(volume)
+                                is_disk_created = True
+                        else:
+                            if not data['images']:
+                                raise libvirtError(_("First you need to create or select an image"))
+                            else:
+                                for idx, vol in enumerate(data['images'].split(',')):
+                                    path = conn.get_volume_path(vol)
+                                    volume = dict()
+                                    volume['path'] = path
+                                    volume['type'] = conn.get_volume_type(path)
+                                    volume['device'] = request.POST.get('device' + str(idx), '')
+                                    volume['bus'] = request.POST.get('bus' + str(idx), '')
+                                    if volume['bus'] == 'scsi':
+                                        volume['scsi_model'] = default_scsi_disk_model
+                                    volume['cache_mode'] = data['cache_mode']
+                                    volume['discard_mode'] = default_discard
+                                    volume['detect_zeroes_mode'] = default_zeroes
+                                    volume['io_mode'] = default_io
+
+                                    volume_list.append(volume)
+                        if data['cache_mode'] not in conn.get_cache_modes():
+                            error_msg = _("Invalid cache mode")
+                            raise libvirtError
+
+                        if 'UEFI' in data["firmware"]:
+                            firmware["loader"] = data["firmware"].split(":")[1].strip()
+                            firmware["secure"] = 'no'
+                            firmware["readonly"] = 'yes'
+                            firmware["type"] = 'pflash'
+                            if 'secboot' in firmware["loader"] and machine != 'q35':
+                                messages.warning(
+                                    request, "Changing machine type from '%s' to 'q35' "
+                                    "which is required for UEFI secure boot." % machine)
+                                machine = 'q35'
+                                firmware["secure"] = 'yes'
+
+                        uuid = util.randomUUID()
+                        try:
+                            conn.create_instance(name=data['name'],
+                                                memory=data['memory'],
+                                                vcpu=data['vcpu'],
+                                                vcpu_mode=data['vcpu_mode'],
+                                                uuid=uuid,
+                                                arch=arch,
+                                                machine=machine,
+                                                firmware=firmware,
+                                                volumes=volume_list,
+                                                networks=data['networks'],
+                                                virtio=data['virtio'],
+                                                listen_addr=data["listener_addr"],
+                                                nwfilter=data["nwfilter"],
+                                                graphics=data["graphics"],
+                                                video=data["video"],
+                                                console_pass=data["console_pass"],
+                                                mac=data['mac'],
+                                                qemu_ga=data['qemu_ga'])
+                            create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
+                            create_instance.save()
+                            msg = _("Instance is created")
+                            messages.success(request, msg)
+                            addlogmsg(request.user.username, create_instance.name, msg)
+                            return redirect(reverse('instances:instance', args=[create_instance.id]))
+                        except libvirtError as lib_err:
+                            if data['hdd_size'] or len(volume_list) > 0:
+                                if is_disk_created:
+                                    for vol in volume_list:
+                                        conn.delete_volume(vol['path'])
+                            messages.error(request, lib_err)
+            conn.close()
+    except libvirtError as lib_err:
+        messages.error(request, lib_err)
     return render(request, 'create_instance_w2.html', locals())
 
 
