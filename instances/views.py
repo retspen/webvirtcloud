@@ -1164,7 +1164,10 @@ def getvvfile(request, pk):
     response = HttpResponse(content='', content_type='application/x-virt-viewer', status=200, reason=None, charset='utf-8')
     response.writelines('[virt-viewer]\n')
     response.writelines('type=' + conn.graphics_type(instance.name) + '\n')
-    response.writelines('host=' + conn.graphics_listen(instance.name) + '\n')
+    if conn.graphics_listen(instance.name) == '0.0.0.0':
+        response.writelines('host=' + conn.host + '\n')
+    else:
+        response.writelines('host=' + conn.graphics_listen(instance.name) + '\n')
     response.writelines('port=' + conn.graphics_port(instance.name) + '\n')
     response.writelines('title=' + conn.domain_name(instance.name) + '\n')
     response.writelines('password=' + conn.graphics_passwd(instance.name) + '\n')

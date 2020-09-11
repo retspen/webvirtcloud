@@ -156,6 +156,9 @@
                         <a href="#" class="btn btn-success" id="vdi_url">{% trans "VDI" %}</a>
                     </span>
                 </div>
+                <p>{% trans "To download console.vv file for virt-viewer." %}</p>
+                <a href="{% url 'instances:getvvfile' instance.id %}" class="btn btn-lg btn-success float-right">{% trans "Get console.vv" %}</a>
+
                 <div class="clearfix"></div>
             </div>
             {% endif %}
