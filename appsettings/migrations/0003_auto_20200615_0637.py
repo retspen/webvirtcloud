@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='appsettings',
             name='choices',
-            field=models.CharField(max_length=50, verbose_name='choices'),
+            field=models.CharField(max_length=70, verbose_name='choices'),
         ),
         migrations.AlterField(
             model_name='appsettings',
