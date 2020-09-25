@@ -21,7 +21,7 @@ class UserInstance(models.Model):
     objects = UserInstanceManager()
 
     def __str__(self):
-        return _('Instance "%(inst)s" of user %(user)s') % {'inst': self.instance, 'user': self.user}
+        return _('Instance "%(inst)s" of user %(user)s') % {"inst": self.instance, "user": self.user}
 
     class Meta:
         unique_together = ['user', 'instance']

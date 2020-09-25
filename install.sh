@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # ensure running as root
 if [ "$(id -u)" != "0" ]; then
     #Debian doesnt have sudo if root has a password.

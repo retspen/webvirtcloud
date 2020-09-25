@@ -10,11 +10,10 @@
 * Manage Hypervisor Networks
 * Instance Console Access with Browsers
 * Libvirt API based web management UI
-* User Based Authorization and Authentication 
+* User Based Authorization and Authentication
 * User can add SSH public key to root in Instance (Tested only Ubuntu)
 * User can change root password in Instance (Tested only Ubuntu)
 * Supports cloud-init datasource interface
- 
 
 ### Warning!!!
 
@@ -30,8 +29,10 @@ sudo service supervisor restart
 WebVirtCloud is a virtualization web interface for admins and users. It can delegate Virtual Machine's to users. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported.
 
 ## Quick Install with Installer (Beta)
+
 Install an OS and run specified commands. Installer supported OSes: Ubuntu 18.04, Debian 10, Centos/OEL/RHEL 8.
 It can be installed on a virtual machine, physical host or on a KVM host.
+
 ```bash
 wget https://raw.githubusercontent.com/retspen/webvirtcloud/master/install.sh
 chmod 744 install.sh
@@ -40,7 +41,9 @@ chmod 744 install.sh
 ```
 
 ## Manual Installation
+
 ### Generate secret key
+
 You should generate SECRET_KEY after cloning repo. Then put it into webvirtcloud/settings.py.
 
 ```python3
@@ -83,6 +86,7 @@ Setup libvirt and KVM on server
 ```bash
 wget -O - https://clck.ru/9V9fH | sudo sh
 ```
+
 Done!!
 
 Go to http://serverip and you should see the login screen.
@@ -106,6 +110,7 @@ sudo sed -r "s/SECRET_KEY = ''/SECRET_KEY = '"`python3 /srv/webvirtcloud/conf/ru
 ```
 
 #### Start installation webvirtcloud
+
 ```bash
 virtualenv-3 venv
 source venv/bin/activate
@@ -115,7 +120,8 @@ python3 manage.py migrate
 ```
 
 #### Configure the supervisor for CentOS
-Add the following after the [include] line (after **files = ... ** actually):
+
+Add the following after the [include] line (after **files = ...** actually):
 ```bash
 sudo vim /etc/supervisord.conf
 
@@ -137,9 +143,10 @@ redirect_stderr=true
 ```
 
 #### Edit the nginx.conf file
+
 You will need to edit the main nginx.conf file as the one that comes from the rpm's will not work. Comment the following lines:
 
-```
+```bash
 #    server {
 #        listen       80 default_server;
 #        listen       [::]:80 default_server;
@@ -164,7 +171,8 @@ You will need to edit the main nginx.conf file as the one that comes from the rp
 ```
 
 Also make sure file in **/etc/nginx/conf.d/webvirtcloud.conf** has the proper paths:
-```
+
+```bash
 upstream gunicorn_server {
     #server unix:/srv/webvirtcloud/venv/wvcloud.socket fail_timeout=0;
     server 127.0.0.1:8000 fail_timeout=0;
@@ -208,11 +216,13 @@ sudo setsebool -P httpd_can_network_connect on -P
 ```
 
 Add required user to the kvm group(if you not install with root):
+
 ```bash
 sudo usermod -G kvm -a <username>
 ```
 
 Allow http ports on firewall:
+
 ```bash
 sudo firewall-cmd --add-service=http
 sudo firewall-cmd --add-service=http --permanent
@@ -221,11 +231,13 @@ sudo firewall-cmd --add-port=6080/tcp --permanent
 ```
 
 Let's restart nginx and the supervisord services:
+
 ```bash
 sudo systemctl restart nginx && systemctl restart supervisord
 ```
 
 And finally, check everything is running:
+
 ```bash
 sudo supervisorctl status
 gstfsd             RUNNING   pid 24662, uptime 6:01:40
@@ -234,12 +246,14 @@ webvirtcloud       RUNNING   pid 24660, uptime 6:01:40
 ```
 
 #### Apache mod_wsgi configuration
-```
+
+```bash
 WSGIDaemonProcess webvirtcloud threads=2 maximum-requests=1000 display-name=webvirtcloud
 WSGIScriptAlias / /srv/webvirtcloud/webvirtcloud/wsgi_custom.py
 ```
 
 #### Install final required packages for libvirtd and others on Host Server
+
 ```bash
 wget -O - https://clck.ru/9V9fH | sudo sh
 ```
@@ -249,10 +263,12 @@ Done!!
 Go to http://serverip and you should see the login screen.
 
 ### Alternative running novncd via runit(Debian)
+
 Alternative to running nonvcd via supervisor is runit.
 
-On Debian systems install runit and configure novncd service
-```
+On Debian systems install runit and configure novncd service:
+
+```bash
 apt install runit runit-systemd
 mkdir /etc/service/novncd/
 ln -s /srv/webvirtcloud/conf/runit/novncd.sh /etc/service/novncd/run
@@ -260,16 +276,19 @@ systemctl start runit.service
 ```
 
 ### Default credentials
-<pre>
+
+```html
 login: admin
 password: admin
-</pre>
+```
 
 ### Configuring Compute SSH connection
+
 This is a short example of configuring cloud and compute side of the ssh connection.
 
 On the webvirtcloud machine you need to generate ssh keys and optionally disable StrictHostKeyChecking.
-```
+
+```bash
 chown www-data -R ~www-data
 sudo -u www-data ssh-keygen
 cat > ~www-data/.ssh/config << EOF
@@ -280,44 +299,55 @@ chown www-data -R ~www-data/.ssh/config
 ```
 
 You need to put cloud public key into authorized keys on the compute node. Simpliest way of doing this is to use ssh tool from the webvirtcloud server.
-```
+
+```bash
 sudo -u www-data ssh-copy-id root@compute1
 ```
 
 ### Host SMBIOS information is not available
 
 If you see warning
-```
+
+```bash
 Unsupported configuration: Host SMBIOS information is not available
 ```
+
 Then you need to install `dmidecode` package on your host using your package manager and restart libvirt daemon.
 
 Debian/Ubuntu like:
+
+```bash
+sudo apt-get install dmidecode
+sudo service libvirt-bin restart
 ```
-$ sudo apt-get install dmidecode
-$ sudo service libvirt-bin restart
-```
+
 Arch Linux
-```
-$ sudo pacman -S dmidecode
-$ systemctl restart libvirtd
+
+```bash
+sudo pacman -S dmidecode
+systemctl restart libvirtd
 ```
 
 ### Cloud-init
+
 Currently supports only root ssh authorized keys and hostname. Example configuration of the cloud-init client follows.
-```
+
+```bash
 datasource:
   OpenStack:
       metadata_urls: [ "http://webvirtcloud.domain.com/datasource" ]
 ```
 
 ### Reverse-Proxy
+
 Edit WS_PUBLIC_PORT at settings.py file to expose redirect to 80 or 443. Default: 6080
-```
+
+```bash
 WS_PUBLIC_PORT = 80
 ```
 
 ## How To Update
+
 ```bash
 # Go to Installation Directory
 cd /srv/webvirtcloud
@@ -329,22 +359,27 @@ sudo service supervisor restart
 ```
 
 ### Running tests
+
 Server on which tests will be performed must have libvirt up and running.
 It must not contain vms.
 It must have `default` storage which not contain any disk images.
 It must have `default` network which must be on.
 Setup venv
+
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install -r conf/requirements.txt
 ```
+
 Run tests
+
 ```bash
 python manage.py test
 ```
 
 ## Screenshots
+
 Instance Detail:
 <img src="doc/images/instance.PNG" width="96%" align="center"/>
 Instance List:</br>

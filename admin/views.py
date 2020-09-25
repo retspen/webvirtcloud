@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import UserAttributes, UserInstance, Instance
-from appsettings.models import AppSettings
+from appsettings.settings import app_settings
 from logs.models import Logs
 
 from . import forms
@@ -20,9 +20,9 @@ def group_list(request):
     groups = Group.objects.all()
     return render(
         request,
-        'admin/group_list.html',
+        "admin/group_list.html",
         {
-            'groups': groups,
+            "groups": groups,
         },
     )
 
@@ -32,14 +32,14 @@ def group_create(request):
     form = forms.GroupForm(request.POST or None)
     if form.is_valid():
         form.save()
-        return redirect('admin:group_list')
+        return redirect("admin:group_list")
 
     return render(
         request,
-        'common/form.html',
+        "common/form.html",
         {
-            'form': form,
-            'title': _('Create Group'),
+            "form": form,
+            "title": _("Create Group"),
         },
     )
 
@@ -54,10 +54,10 @@ def group_update(request, pk):
 
     return render(
         request,
-        'common/form.html',
+        "common/form.html",
         {
-            'form': form,
-            'title': _('Update Group'),
+            "form": form,
+            "title": _("Update Group"),
         },
     )
 
@@ -65,14 +65,14 @@ def group_update(request, pk):
 @superuser_only
 def group_delete(request, pk):
     group = get_object_or_404(Group, pk=pk)
-    if request.method == 'POST':
+    if request.method == "POST":
         group.delete()
-        return redirect('admin:group_list')
+        return redirect("admin:group_list")
 
     return render(
         request,
-        'common/confirm_delete.html',
-        {'object': group},
+        "common/confirm_delete.html",
+        {"object": group},
     )
 
 
@@ -81,10 +81,10 @@ def user_list(request):
     users = User.objects.all()
     return render(
         request,
-        'admin/user_list.html',
+        "admin/user_list.html",
         {
-            'users': users,
-            'title': _('Users'),
+            "users": users,
+            "title": _("Users"),
         },
     )
 
@@ -95,22 +95,22 @@ def user_create(request):
     attributes_form = forms.UserAttributesForm(request.POST or None)
     if user_form.is_valid() and attributes_form.is_valid():
         user = user_form.save()
-        password = user_form.cleaned_data['password']
+        password = user_form.cleaned_data["password"]
         user.set_password(password)
         user.save()
         attributes = attributes_form.save(commit=False)
         attributes.user = user
         attributes.save()
         add_default_instances(user)
-        return redirect('admin:user_list')
+        return redirect("admin:user_list")
 
     return render(
         request,
-        'admin/user_form.html',
+        "admin/user_form.html",
         {
-            'user_form': user_form,
-            'attributes_form': attributes_form,
-            'title': _('Create User')
+            "user_form": user_form,
+            "attributes_form": attributes_form,
+            "title": _("Create User")
         },
     )
 
@@ -120,21 +120,23 @@ def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
     attributes = UserAttributes.objects.get(user=user)
     user_form = forms.UserForm(request.POST or None, instance=user)
-    attributes_form = forms.UserAttributesForm(request.POST or None, instance=attributes)
+    attributes_form = forms.UserAttributesForm(
+        request.POST or None, instance=attributes)
     if user_form.is_valid() and attributes_form.is_valid():
         user_form.save()
         attributes_form.save()
-        return redirect('admin:user_list')
+        return redirect("admin:user_list")
 
     return render(
         request,
-        'admin/user_form.html',
+        "admin/user_form.html",
         {
-            'user_form': user_form,
-            'attributes_form': attributes_form,
-            'title': _('Update User')
+            "user_form": user_form,
+            "attributes_form": attributes_form,
+            "title": _("Update User")
         },
     )
+
 
 @superuser_only
 def user_update_password(request, pk):
@@ -144,33 +146,35 @@ def user_update_password(request, pk):
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
-            messages.success(request, _('User password changed: {}'.format(user.username)))
-            return redirect('admin:user_list')
+            messages.success(request, _(
+                "User password changed: {}".format(user.username)))
+            return redirect("admin:user_list")
         else:
-            messages.error(request, _('Wrong Data Provided'))
+            messages.error(request, _("Wrong Data Provided"))
     else:
         form = AdminPasswordChangeForm(user)
 
     return render(
         request,
-        'accounts/change_password_form.html',
+        "accounts/change_password_form.html",
         {
-            'form': form,
-            'user': user.username
+            "form": form,
+            "user": user.username
         }
     )
+
 
 @superuser_only
 def user_delete(request, pk):
     user = get_object_or_404(User, pk=pk)
-    if request.method == 'POST':
+    if request.method == "POST":
         user.delete()
-        return redirect('admin:user_list')
+        return redirect("admin:user_list")
 
     return render(
         request,
-        'common/confirm_delete.html',
-        {'object': user},
+        "common/confirm_delete.html",
+        {"object": user},
     )
 
 
@@ -179,7 +183,7 @@ def user_block(request, pk):
     user: User = get_object_or_404(User, pk=pk)
     user.is_active = False
     user.save()
-    return redirect('admin:user_list')
+    return redirect("admin:user_list")
 
 
 @superuser_only
@@ -187,16 +191,16 @@ def user_unblock(request, pk):
     user: User = get_object_or_404(User, pk=pk)
     user.is_active = True
     user.save()
-    return redirect('admin:user_list')
+    return redirect("admin:user_list")
 
 
 @superuser_only
 def logs(request):
-    l = Logs.objects.order_by('-date')
-    paginator = Paginator(l, int(AppSettings.objects.get(key="LOGS_PER_PAGE").value))
-    page = request.GET.get('page', 1)
+    l = Logs.objects.order_by("-date")
+    paginator = Paginator(l, int(app_settings.LOGS_PER_PAGE))
+    page = request.GET.get("page", 1)
     logs = paginator.page(page)
-    return render(request, 'admin/logs.html', {'logs': logs})
+    return render(request, "admin/logs.html", {"logs": logs})
 
 
 def add_default_instances(user):

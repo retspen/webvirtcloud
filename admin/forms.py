@@ -74,11 +74,12 @@ class UserForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
         if self.instance.id:
-            password = ReadOnlyPasswordHashField(label=_("Password"),
+            password = ReadOnlyPasswordHashField(
+                label=_("Password"),
                 help_text=format_lazy(_("""Raw passwords are not stored, so there is no way to see
-                    this user's password, but you can change the password
-                    using <a href='{}'>this form</a>."""),
-                    reverse_lazy('admin:user_update_password', args=[self.instance.id,]))
+                this user's password, but you can change the password using <a href='{}'>this form</a>."""),
+                reverse_lazy('admin:user_update_password', 
+                args=[self.instance.id,]))
             )
             self.fields['Password'] = password
 

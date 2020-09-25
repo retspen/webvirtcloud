@@ -23,7 +23,7 @@ class AccountsTestCase(TestCase):
 
         client = Client()
 
-        response = client.post(reverse('login'), {'username': 'test', 'password': 'test'})
+        response = client.post(reverse("login"), {"username": "test", "password": "test"})
         self.assertRedirects(response, reverse('profile'))
 
         response = client.get(reverse('logout'))

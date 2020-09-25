@@ -1,7 +1,4 @@
-import json
-
 from django.contrib import messages
-from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.translation import ugettext_lazy as _
 from libvirt import libvirtError
