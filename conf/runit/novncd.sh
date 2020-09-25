@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # `/sbin/setuser www-data` runs the given command as the user `www-data`.
-RUNAS=`which setuser`
-[ -z $RUNAS ] && RUNAS="`which sudo` -u"
+RUNAS=$(which setuser)
+[ -z "$RUNAS" ] && RUNAS="$(which sudo) -u"
 USER=www-data
 
 DJANGO_PROJECT=/srv/webvirtcloud
@@ -14,5 +14,5 @@ NOVNCD=$DJANGO_PROJECT/console/novncd
 
 LOG=/var/log/novncd.log
 
-cd $DJANGO_PROJECT
-exec $RUNAS $USER $PYTHON $NOVNCD $PARAMS >> $LOG 2>&1
+cd $DJANGO_PROJECT || exit
+exec "$RUNAS" "$USER" "$PYTHON" "$NOVNCD" "$PARAMS" >> $LOG 2>&1
