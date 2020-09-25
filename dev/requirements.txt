@@ -1,5 +1,5 @@
 -r ../conf/requirements.txt
-coverage==5.2
+coverage==5.3
 django-debug-toolbar==2.2
 pycodestyle==2.6.0
 pyflakes==2.2.0
