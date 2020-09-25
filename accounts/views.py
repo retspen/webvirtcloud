@@ -1,6 +1,5 @@
 import os
 
-import sass
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import permission_required
@@ -13,7 +12,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import *
 from admin.decorators import superuser_only
-from appsettings.models import AppSettings
 from instances.models import Instance
 
 from . import forms
@@ -27,8 +25,8 @@ def profile(request):
         if 'username' in request.POST:
             username = request.POST.get('username', '')
             email = request.POST.get('email', '')
-            user.first_name = username
-            user.email = email
+            request.user.first_name = username
+            request.user.email = email
             request.user.save()
             return HttpResponseRedirect(request.get_full_path())
         if 'keyname' in request.POST:
