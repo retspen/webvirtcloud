@@ -48,10 +48,10 @@ def os_userdata(request, version):
         ip = get_client_ip(request)
         hostname = get_hostname_by_ip(ip)
         vname = hostname.split('.')[0]
-        
+
         instance_keys = []
         userinstances = UserInstance.objects.filter(instance__name=vname)
-        
+
         for ui in userinstances:
             keys = UserSSHKey.objects.filter(user=ui.user)
             for k in keys:
@@ -95,7 +95,7 @@ def get_vdi_url(request, compute_id, vname):
     :return:
     """
     compute = get_object_or_404(Compute, pk=compute_id)
-    data = {}
+
     try:
         conn = wvmInstance(compute.hostname,
                            compute.login,
@@ -107,6 +107,6 @@ def get_vdi_url(request, compute_id, vname):
         url = f"{conn.get_console_type()}://{fqdn}:{conn.get_console_port()}"
         response = url
         return HttpResponse(response)
-    except libvirtError as lib_err:
+    except libvirtError:
         err = f"Error getting VDI URL for {vname}"
         raise Http404(err)

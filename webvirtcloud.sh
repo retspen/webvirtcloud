@@ -139,13 +139,13 @@ configure_nginx () {
     rm /etc/nginx/sites-enabled/default
   fi
 
-  chown -R $nginx_group:$nginx_group /var/lib/nginx
+  chown -R "$nginx_group":"$nginx_group" /var/lib/nginx
   # Copy new configuration and webvirtcloud.conf
   echo "  * Copying Nginx configuration"
-  cp $APP_PATH/conf/nginx/"$distro"_nginx.conf /etc/nginx/nginx.conf
-  cp $APP_PATH/conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+  cp "$APP_PATH"/conf/nginx/"$distro"_nginx.conf /etc/nginx/nginx.conf
+  cp "$APP_PATH"/conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 
-  if ! [ -z "$fqdn" ]; then
+  if [ -n "$fqdn" ]; then
      sed -i "s|\\(#server_name\\).*|server_name = $fqdn|" "$nginxfile"
   fi
 
@@ -156,7 +156,7 @@ configure_nginx () {
 configure_supervisor () {
   # Copy template supervisor service for gunicorn and novnc
   echo "  * Copying supervisor configuration"
-  cp $APP_PATH/conf/supervisor/webvirtcloud.conf $supervisor_conf_path/$supervisor_file_name
+  cp "$APP_PATH"/conf/supervisor/webvirtcloud.conf "$supervisor_conf_path"/"$supervisor_file_name"
   sed -i "s|^\\(user=\\).*|\\1$nginx_group|" "$supervisor_conf_path/$supervisor_file_name"
 }
 
@@ -174,20 +174,20 @@ create_user () {
 
 run_as_app_user () {
   if ! hash sudo 2>/dev/null; then
-      su -c "$@" $APP_USER
+      su -c "$@" "$APP_USER"
   else
-      sudo -i -u $APP_USER "$@"
+      sudo -i -u "$APP_USER" "$@"
   fi
 }
 
 activate_python_environment () {
-    cd $APP_PATH
-    virtualenv -p $PYTHON venv
+    cd "$APP_PATH" || exit
+    virtualenv -p "$PYTHON" venv
     source venv/bin/activate
 }
 
 generate_secret_key() {
-  $PYTHON - <<END
+  "$PYTHON" - <<END
 import random
 print(''.join(random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))
 END
@@ -418,7 +418,7 @@ case $distro in
   fi
   ;;
   ubuntu)
- if [ "$version" -ge "18.04" ]; then
+ if [ "$version" == "18.04" ] || [ "$version" == "20.04" ]; then
     # Install for Ubuntu 18 / 20
     tzone=\'$(cat /etc/timezone)\'
 

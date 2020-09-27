@@ -15,9 +15,15 @@ class wvmStorages(wvmConnect):
             else:
                 stg_vol = None
             stg_size = stg.info()[1]
-            storages.append({'name': pool, 'status': stg_status,
-                             'type': stg_type, 'volumes': stg_vol,
-                             'size': stg_size})
+            storages.append(
+                {
+                    "name": pool,
+                    "status": stg_status,
+                    "type": stg_type,
+                    "volumes": stg_vol,
+                    "size": stg_size
+                }
+            )
         return storages
 
     def define_storage(self, xml, flag):
@@ -26,14 +32,14 @@ class wvmStorages(wvmConnect):
     def create_storage(self, stg_type, name, source, target):
         xml = f"""<pool type='{stg_type}'>
                  <name>{name}</name>"""
-        if stg_type == 'logical':
+        if stg_type == "logical":
             xml += f"""<source>
                             <device path='{source}'/>
                             <name>{name}</name>
                             <format type='lvm2'/>
                         </source>"""
-        if stg_type == 'logical':
-            target = '/dev/' + name
+        if stg_type == "logical":
+            target = "/dev/" + name
         xml += f"""
                   <target>
                        <path>{target}</path>
@@ -41,7 +47,7 @@ class wvmStorages(wvmConnect):
                 </pool>"""
         self.define_storage(xml, 0)
         stg = self.get_storage(name)
-        if stg_type == 'logical':
+        if stg_type == "logical":
             stg.build(0)
         stg.create(0)
         stg.setAutostart(1)
@@ -97,11 +103,16 @@ class wvmStorage(wvmConnect):
         return self.pool.name()
 
     def get_status(self):
-        status = ['Not running', 'Initializing pool, not available', 'Running normally', 'Running degraded']
+        status = [
+            "Not running",
+            "Initializing pool, not available",
+            "Running normally",
+            "Running degraded"
+        ]
         try:
             return status[self.pool.info()[0]]
         except ValueError:
-            return 'Unknown'
+            return "Unknown"
 
     def get_size(self):
         return [self.pool.info()[1], self.pool.info()[3]]
@@ -202,10 +213,12 @@ class wvmStorage(wvmConnect):
 
         for volname in vols:
             vol_list.append(
-                {'name': volname,
-                 'size': self.get_volume_size(volname),
-                 'allocation': self.get_volume_allocation(volname),
-                 'type': self.get_volume_type(volname)}
+                {
+                    "name": volname,
+                    "size": self.get_volume_size(volname),
+                    "allocation": self.get_volume_allocation(volname),
+                    "type": self.get_volume_type(volname)
+                }
             )
         return vol_list
 
@@ -213,13 +226,13 @@ class wvmStorage(wvmConnect):
         size = int(size) * 1073741824
         storage_type = self.get_type()
         alloc = size
-        if vol_fmt == 'unknown':
-            vol_fmt = 'raw'
-        if storage_type == 'dir':
-            if vol_fmt in ('qcow', 'qcow2'):
-                name += '.' + vol_fmt
+        if vol_fmt == "unknown":
+            vol_fmt = "raw"
+        if storage_type == "dir":
+            if vol_fmt in ("qcow", "qcow2"):
+                name += "." + vol_fmt
             else:
-                name += '.img'
+                name += ".img"
             alloc = 0
         xml = f"""
             <volume>
@@ -234,7 +247,7 @@ class wvmStorage(wvmConnect):
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>"""
-        if vol_fmt == 'qcow2':
+        if vol_fmt == "qcow2":
             xml += """
                       <compat>1.1</compat>
                       <features>
@@ -251,8 +264,8 @@ class wvmStorage(wvmConnect):
             vol_fmt = self.get_volume_type(name)
 
         storage_type = self.get_type()
-        if storage_type == 'dir':
-            if vol_fmt in ['qcow', 'qcow2']:
+        if storage_type == "dir":
+            if vol_fmt in ["qcow", "qcow2"]:
                 target_file += '.' + vol_fmt
             else:
                 suffix = '.' + file_suffix
@@ -271,7 +284,7 @@ class wvmStorage(wvmConnect):
                         <mode>{mode}</mode>
                         <label>virt_image_t</label>
                     </permissions>"""
-        if vol_fmt == 'qcow2':
+        if vol_fmt == "qcow2":
             xml += """
                     <compat>1.1</compat>
                     <features>

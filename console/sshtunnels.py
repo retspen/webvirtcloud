@@ -21,6 +21,7 @@ class _TunnelScheduler(object):
     It's only instantiated once for the whole app, because we serialize
     independent of connection, vm, etc.
     """
+
     def __init__(self):
         self._thread = None
         self._queue = queue.Queue()
@@ -44,6 +45,7 @@ class _TunnelScheduler(object):
 
     def lock(self):
         self._lock.acquire()
+
     def unlock(self):
         self._lock.release()
 
@@ -63,7 +65,7 @@ class _Tunnel(object):
         self._closed = True
 
         log.debug("Close tunnel PID=%s ERRFD=%s",
-                      self._pid, self._errfd and self._errfd.fileno() or None)
+                  self._pid, self._errfd and self._errfd.fileno() or None)
 
         # Since this is a socket object, the file descriptor is closed
         # when it's garbage collected.
@@ -110,13 +112,12 @@ class _Tunnel(object):
         self._errfd = errfds[0]
         self._errfd.setblocking(0)
         log.debug("Opened tunnel PID=%d ERRFD=%d",
-                      pid, self._errfd.fileno())
+                  pid, self._errfd.fileno())
 
         self._pid = pid
 
 
 def _make_ssh_command(connhost, connuser, connport, gaddr, gport, gsocket):
-    
 
     # Build SSH cmd
     argv = ["ssh", "ssh"]
@@ -165,7 +166,8 @@ def _make_ssh_command(connhost, connuser, connport, gaddr, gport, gsocket):
 class SSHTunnels(object):
     def __init__(self, connhost, connuser, connport, gaddr, gport, gsocket):
         self._tunnels = []
-        self._sshcommand = _make_ssh_command(connhost, connuser, connport, gaddr, gport, gsocket)
+        self._sshcommand = _make_ssh_command(
+            connhost, connuser, connport, gaddr, gport, gsocket)
         self._locked = False
 
     def open_new(self):

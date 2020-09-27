@@ -32,10 +32,15 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        if [ -f dev/requirements.txt ]; then pip3 install -r dev/requirements.txt; fi
-    - name: Super-Linter
-      uses: docker://github/super-linter:v3.3.2
+        if [ -f dev/requirements.txt ]; then pip3 install -r dev/requirements.txt; else pip3 install -r conf/requirements.txt; fi
+    ################################
+    # Run Linter against code base #
+    ################################
+    - name: Lint Code Base
+      uses: docker://github/super-linter:latest
       env:
+        FILTER_REGEX_EXCLUDE: .*[static|scss]/.*
+        DEFAULT_BRANCH: master
         VALIDATE_ANSIBLE: false
         VALIDATE_CLOJURE: false
         VALIDATE_COFFEE: false
