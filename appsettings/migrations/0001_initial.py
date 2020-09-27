@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=25)),
                 ('key', models.CharField(db_index=True, max_length=50, unique=True)),
                 ('value', models.CharField(max_length=25)),
-                ('choices', models.CharField(max_length=50)),
+                ('choices', models.CharField(max_length=70)),
                 ('description', models.CharField(max_length=100, null=True)),
             ],
         ),
