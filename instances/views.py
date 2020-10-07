@@ -398,10 +398,13 @@ def add_public_key(request, pk):
         if instance.proxy.get_status() == 5:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((instance.compute.hostname, 16510))
-            s.send(json.dumps(data))
+            s.send(json.dumps(data).encode())
             result = json.loads(s.recv(1024))
             s.close()
-            msg = _("Installed new SSH public key %(keyname)s") % {'keyname': publickey.keyname}
+            if result['return'] == 'error':
+                msg = result['message']
+            else:
+                msg = _("Installed new SSH public key %(keyname)s") % {'keyname': publickey.keyname}
             addlogmsg(request.user.username, instance.name, msg)
 
             if result['return'] == 'success':
