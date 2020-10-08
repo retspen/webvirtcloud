@@ -1,20 +1,18 @@
-import os
-
+from admin.decorators import superuser_only
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import PasswordChangeForm
-from django.core.validators import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-
-from accounts.models import *
-from admin.decorators import superuser_only
 from instances.models import Instance
 
+from accounts.models import *
+
 from . import forms
+from .utils import get_user_totp_device
 
 
 def profile(request):
@@ -44,7 +42,10 @@ def profile(request):
                 error_messages.append(msg)
             if not error_messages:
                 addkeypublic = UserSSHKey(
-                    user_id=request.user.id, keyname=keyname, keypublic=keypublic)
+                    user_id=request.user.id,
+                    keyname=keyname,
+                    keypublic=keypublic,
+                )
                 addkeypublic.save()
                 return HttpResponseRedirect(request.get_full_path())
         if "keydelete" in request.POST:
@@ -62,6 +63,11 @@ def account(request, user_id):
     user_insts = UserInstance.objects.filter(user_id=user_id)
     instances = Instance.objects.all().order_by("name")
     publickeys = UserSSHKey.objects.filter(user_id=user_id)
+    if settings.OTP_ENABLED:
+        device = get_user_totp_device(user)
+        if not device:
+            device = user.totpdevice_set.create()
+        totp_url = device.config_url
 
     return render(request, "account.html", locals())
 
@@ -79,11 +85,7 @@ def change_password(request):
             messages.error(request, _("Wrong Data Provided"))
     else:
         form = PasswordChangeForm(request.user)
-    return render(
-        request,
-        "accounts/change_password_form.html",
-        {"form": form}
-    )
+    return render(request, "accounts/change_password_form.html", {"form": form})
 
 
 @superuser_only

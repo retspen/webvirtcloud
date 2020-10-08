@@ -1,6 +1,9 @@
 {% extends "base.html" %}
+
 {% load i18n %}
 {% load icons %}
+{% load qr_code %}
+
 {% block title %}{% trans "User Profile" %} - {{ user }}{% endblock %}
 {% block content %}
     <!-- Page Heading -->
@@ -23,6 +26,11 @@
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#public-keys">{% trans "Public Keys" %}</a>
         </li>
+        {% if totp_url %}
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#otp">{% trans "OTP QR Code" %}</a>
+        </li>
+        {% endif %}
     </ul>
 
     <div class="tab-content">
@@ -79,5 +87,12 @@
                 </tbody>
             </table>
         </div>
+        {% if totp_url %}
+        <div class="tab-pane fade" id="otp">
+            <div class="text-center">
+                {% qr_from_text totp_url image_format="png" %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 {% endblock content %}
