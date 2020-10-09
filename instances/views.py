@@ -1,38 +1,33 @@
 import crypt
 import json
 import os
-import random
 import re
 import socket
-import string
 import time
 from bisect import insort
-from collections import OrderedDict
-
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth.decorators import permission_required
-from django.contrib.auth.models import User
-from django.http import (Http404, HttpResponse, JsonResponse)
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
-from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_XML_SECURE, libvirtError)
 
 from accounts.models import UserInstance, UserSSHKey
 from admin.decorators import superuser_only
 from appsettings.models import AppSettings
 from appsettings.settings import app_settings
 from computes.models import Compute
-from instances.models import Instance
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.models import User
+from django.http import Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.translation import ugettext_lazy as _
+from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, libvirtError)
 from logs.views import addlogmsg
 from vrtManager import util
-from vrtManager.connection import connection_manager
 from vrtManager.create import wvmCreate
-from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.instance import wvmInstance, wvmInstances
+from vrtManager.instance import wvmInstances
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
+
+from instances.models import Instance
 
 from . import utils
 from .forms import ConsoleForm, FlavorForm, NewVMForm
@@ -359,7 +354,7 @@ def migrate(request, pk):
     except libvirtError as err:
         messages.error(request, err)
 
-    msg = _(f"Migrate to {new_compute.hostname}")
+    msg = _("Migrate to %(hostname)%") % {'hostname': new_compute.hostname}
     addlogmsg(request.user, instance.name, msg)
 
     return redirect(request.META.get('HTTP_REFERER'))
@@ -403,10 +398,13 @@ def add_public_key(request, pk):
         if instance.proxy.get_status() == 5:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((instance.compute.hostname, 16510))
-            s.send(json.dumps(data))
+            s.send(json.dumps(data).encode())
             result = json.loads(s.recv(1024))
             s.close()
-            msg = _(f"Installed new SSH public key {publickey.keyname}")
+            if result['return'] == 'error':
+                msg = result['message']
+            else:
+                msg = _("Installed new SSH public key %(keyname)s") % {'keyname': publickey.keyname}
             addlogmsg(request.user.username, instance.name, msg)
 
             if result['return'] == 'success':
@@ -433,7 +431,10 @@ def resizevm_cpu(request, pk):
 
             quota_msg = utils.check_user_quota(request.user, 0, int(new_vcpu) - vcpu, 0, 0)
             if not request.user.is_superuser and quota_msg:
-                msg = _(f"User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!")
+                msg = _("User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!") % {
+                    'quota_msg': quota_msg,
+                    'instance_name': instance.name
+                }
                 messages.error(request, msg)
             else:
                 cur_vcpu = new_cur_vcpu
@@ -467,7 +468,10 @@ def resize_memory(request, pk):
                 new_cur_memory = new_cur_memory_custom
             quota_msg = utils.check_user_quota(request.user, 0, 0, int(new_memory) - memory, 0)
             if not request.user.is_superuser and quota_msg:
-                msg = _(f"User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!")
+                msg = _("User %(quota_msg)s quota reached, cannot resize memory of '%(instance_name)s'!") % {
+                    'quota_msg': quota_msg,
+                    'instance_name': instance.name
+                }
                 messages.error(request, msg)
             else:
                 cur_memory = new_cur_memory
@@ -503,7 +507,10 @@ def resize_disk(request, pk):
             disk_new_sum = sum([disk['size_new'] >> 30 for disk in disks_new])
             quota_msg = utils.check_user_quota(request.user, 0, 0, 0, disk_new_sum - disk_sum)
             if not request.user.is_superuser and quota_msg:
-                msg = _(f"User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!")
+                msg = _("User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!") % {
+                    'quota_msg': quota_msg,
+                    'instance_name': instance.name
+                }
                 messages.error(request, msg)
             else:
                 instance.proxy.resize_disk(disks_new)
@@ -546,7 +553,7 @@ def add_new_vol(request, pk):
             int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
         )
         instance.proxy.attach_disk(target_dev, source, target_bus=bus, driver_type=format, cache_mode=cache)
-        msg = _(f"Attach new disk {name} ({format})")
+        msg = _("Attach new disk %(name)s (%(format)s)") % {'name': name, 'format': format}
         addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
 
@@ -577,7 +584,7 @@ def add_existing_vol(request, pk):
         source = f"{path}/{name}"
 
         instance.proxy.attach_disk(target_dev, source, target_bus=bus, driver_type=driver_type, cache_mode=cache)
-        msg = _(f"Attach Existing disk: {target_dev}")
+        msg = _("Attach Existing disk: %(target_dev)s") % {'target_dev': target_dev}
         addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
 
@@ -636,7 +643,7 @@ def edit_volume(request, pk):
             messages.success(request, _("Volume changes are applied. " + "But it will be activated after shutdown"))
         else:
             messages.success(request, _("Volume is changed successfully."))
-        msg = _(f"Edit disk: {target_dev}")
+        msg = _("Edit disk: %(target_dev)s") % {'target_dev': target_dev}
         addlogmsg(request.user.username, instance.name, msg)
 
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
@@ -658,7 +665,7 @@ def delete_vol(request, pk):
         path = request.POST.get('path', '')
         name = request.POST.get('name', '')
 
-        msg = _(f"Delete disk: {dev}")
+        msg = _("Delete disk: %(dev)s") % {'dev': dev}
         instance.proxy.detach_disk(dev)
         conn_delete.del_volume(name)
 
@@ -674,7 +681,7 @@ def detach_vol(request, pk):
         dev = request.POST.get('dev', '')
         path = request.POST.get('path', '')
         instance.proxy.detach_disk(dev)
-        msg = _(f"Detach disk: {dev}")
+        msg = _("Detach disk: %(dev)s") % {'dev': dev}
         addlogmsg(request.user.username, instance.name, msg)
 
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
@@ -687,7 +694,7 @@ def add_cdrom(request, pk):
         bus = request.POST.get('bus', 'ide' if instance.machine == 'pc' else 'sata')
         target = utils.get_new_disk_dev(instance.media, instance.disks, bus)
         instance.proxy.attach_disk(target, "", disk_device='cdrom', cache_mode='none', target_bus=bus, readonly=True)
-        msg = _(f"Add CD-ROM: {target}")
+        msg = _("Add CD-ROM: %(target)s") % {'target': target}
         addlogmsg(request.user.username, instance.name, msg)
 
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
@@ -700,7 +707,7 @@ def detach_cdrom(request, pk, dev):
     if allow_admin_or_not_template:
         # dev = request.POST.get('detach_cdrom', '')
         instance.proxy.detach_disk(dev)
-        msg = _(f'Detach CD-ROM: {dev}')
+        msg = _('Detach CD-ROM: %(dev)s') % {'dev': dev}
         addlogmsg(request.user.username, instance.name, msg)
 
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
@@ -713,7 +720,7 @@ def unmount_iso(request, pk):
         image = request.POST.get('path', '')
         dev = request.POST.get('umount_iso', '')
         instance.proxy.umount_iso(dev, image)
-        msg = _(f"Mount media: {dev}")
+        msg = _("Mount media: %(dev)s") % {'dev': dev}
         addlogmsg(request.user.username, instance.name, msg)
 
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
@@ -726,7 +733,7 @@ def mount_iso(request, pk):
         image = request.POST.get('media', '')
         dev = request.POST.get('mount_iso', '')
         instance.proxy.mount_iso(dev, image)
-        msg = _(f"Umount media: {dev}")
+        msg = _("Unmount media: %(dev)s") % {'dev': dev}
         addlogmsg(request.user.username, instance.name, msg)
 
     return redirect(request.META.get('HTTP_REFERER') + '#disks')
@@ -739,7 +746,7 @@ def snapshot(request, pk):
     if allow_admin_or_not_template:
         name = request.POST.get('name', '')
         instance.proxy.create_snapshot(name)
-        msg = _(f"New snapshot : {name}")
+        msg = _("New snapshot: %(name)s") % {'name': name}
         addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#managesnapshot')
 
@@ -750,7 +757,7 @@ def delete_snapshot(request, pk):
     if allow_admin_or_not_template:
         snap_name = request.POST.get('name', '')
         instance.proxy.snapshot_delete(snap_name)
-        msg = _(f"Delete snapshot : {snap_name}")
+        msg = _("Delete snapshot: %(snap_name)s") % {'snap_name': snap_name}
         addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#managesnapshot')
 
@@ -778,7 +785,7 @@ def set_vcpu(request, pk):
         instance.proxy.set_vcpu(id, 1)
     else:
         instance.proxy.set_vcpu(id, 0)
-    msg = _(f"VCPU {id} is enabled={enabled}")
+    msg = _("VCPU %(id)s is enabled=%(enabled)s") % {'id': id, 'enabled': enabled}
     messages.success(request, msg)
     addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#resize')
@@ -789,7 +796,7 @@ def set_vcpu_hotplug(request, pk):
     instance = get_instance(request.user, pk)
     status = request.POST.get('vcpu_hotplug', '')
     # TODO: f strings are not translatable https://code.djangoproject.com/ticket/29174
-    msg = _(f"VCPU Hot-plug is enabled={status}")
+    msg = _("VCPU Hot-plug is enabled=%(status)s") % {'status': status}
     instance.proxy.set_vcpu_hotplug(eval(status))
     messages.success(request, msg)
     addlogmsg(request.user.username, instance.name, msg)
@@ -872,7 +879,7 @@ def set_guest_agent(request, pk):
     if status == 'False':
         instance.proxy.remove_guest_agent()
 
-    msg = _(f"Set Quest Agent {status}")
+    msg = _("Set Guest Agent %(status)s") % {'status': status}
     addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#options')
 
@@ -942,7 +949,7 @@ def set_link_state(request, pk):
     state = request.POST.get('set_link_state')
     state = 'down' if state == 'up' else 'up'
     instance.proxy.set_link_state(mac_address, state)
-    msg = _(f"Set Link State: {state}")
+    msg = _("Set Link State: %(state)s") % {'state': state}
     addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
@@ -961,13 +968,12 @@ def set_qos(request, pk):
 
     instance.proxy.set_qos(mac, qos_dir, average, peak, burst)
     if instance.proxy.get_status() == 5:
-        messages.success(request, _(f"{qos_dir.capitalize()} QoS is set"))
+        messages.success(request, _("%(qos_dir)s QoS is set") % {'qos_dir': qos_dir.capitalize()})
     else:
         messages.success(
             request,
-            _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed. \
-                Stop and start network to activate new config.")
-        )
+            _("%(qos_dir)s QoS is set. Network XML is changed. \
+                Stop and start network to activate new config.") % {'qos_dir': qos_dir.capitalize()})
 
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
@@ -980,13 +986,12 @@ def unset_qos(request, pk):
     instance.proxy.unset_qos(mac, qos_dir)
 
     if instance.proxy.get_status() == 5:
-        messages.success(request, _(f"{qos_dir.capitalize()} QoS is deleted"))
+        messages.success(request, _("%(qos_dir)s QoS is deleted") % {'qos_dir': qos_dir.capitalize()})
     else:
         messages.success(
             request,
-            _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. \
-                Stop and start network to activate new config.")
-        )
+            _("%(qos_dir)s QoS is deleted. Network XML is changed. \
+                Stop and start network to activate new config.") % {'qos_dir': qos_dir.capitalize()})
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
 
@@ -1017,7 +1022,7 @@ def del_owner(request, pk):
     userinstance_id = int(request.POST.get('userinstance', ''))
     userinstance = UserInstance.objects.get(pk=userinstance_id)
     userinstance.delete()
-    msg = _(f"Deleted owner {userinstance_id}")
+    msg = _("Deleted owner %(userinstance_id)s") % {'userinstance_id': userinstance_id}
     addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get('HTTP_REFERER') + '#users')
 
@@ -1049,16 +1054,19 @@ def clone(request, pk):
             clone_data[disk_dev] = disk_name
 
     if not request.user.is_superuser and quota_msg:
-        msg = _(f"User '{quota_msg}' quota reached, cannot create '{clone_data['name']}'!")
+        msg = _("User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!") % {
+            'quota_msg': quota_msg,
+            'clone_name': clone_data['name'],
+        }
         messages.error(request, msg)
     elif check_instance:
-        msg = _(f"Instance '{clone_data['name']}' already exists!")
+        msg = _("Instance 'clone_name' already exists!") % {'clone_name': clone_data['name']}
         messages.error(request, msg)
     elif not re.match(r'^[a-zA-Z0-9-]+$', clone_data['name']):
-        msg = _(f"Instance name '{clone_data['name']}' contains invalid characters!")
+        msg = _("Instance name '%(clone_name)s' contains invalid characters!") % {'clone_name': clone_data['name']}
         messages.error(request, msg)
     elif not re.match(r'^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$', clone_data['clone-net-mac-0'], re.IGNORECASE):
-        msg = _(f"Instance MAC '{clone_data['clone-net-mac-0']}' invalid format!")
+        msg = _("Instance MAC '%(clone_mac)s' invalid format!") % {'clone_mac': clone_data['clone-net-mac-0']}
         messages.error(request, msg)
     else:
         new_instance = Instance(compute=instance.compute, name=clone_data['name'])
@@ -1068,7 +1076,7 @@ def clone(request, pk):
             new_instance.save()
             user_instance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
             user_instance.save()
-            msg = _(f"Clone of '{instance.name}'")
+            msg = _("Clone of '%(instance_name)s'") % {'instance_name': instance.name}
             addlogmsg(request.user.username, new_instance.name, msg)
 
             if app_settings.CLONE_INSTANCE_AUTO_MIGRATE == 'True':
@@ -1315,7 +1323,7 @@ def create_instance(request, compute_id, arch, machine):
                                 raise libvirtError(_("No Virtual Machine MAC has been entered"))
                             else:
                                 path = conn.create_volume(data['storage'], data['name'], data['hdd_size'], default_disk_format,
-                                                        meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
+                                                          meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
                                 volume = dict()
                                 volume['device'] = 'disk'
                                 volume['path'] = path
@@ -1338,7 +1346,7 @@ def create_instance(request, compute_id, arch, machine):
                                 raise libvirtError(_("Image has already exist. Please check volumes or change instance name"))
                             else:
                                 clone_path = conn.clone_from_template(data['name'], templ_path, data['storage'], meta_prealloc,
-                                                                    default_disk_owner_uid, default_disk_owner_gid)
+                                                                      default_disk_owner_uid, default_disk_owner_gid)
                                 volume = dict()
                                 volume['path'] = clone_path
                                 volume['type'] = conn.get_volume_type(clone_path)
@@ -1391,23 +1399,23 @@ def create_instance(request, compute_id, arch, machine):
                         uuid = util.randomUUID()
                         try:
                             conn.create_instance(name=data['name'],
-                                                memory=data['memory'],
-                                                vcpu=data['vcpu'],
-                                                vcpu_mode=data['vcpu_mode'],
-                                                uuid=uuid,
-                                                arch=arch,
-                                                machine=machine,
-                                                firmware=firmware,
-                                                volumes=volume_list,
-                                                networks=data['networks'],
-                                                virtio=data['virtio'],
-                                                listen_addr=data["listener_addr"],
-                                                nwfilter=data["nwfilter"],
-                                                graphics=data["graphics"],
-                                                video=data["video"],
-                                                console_pass=data["console_pass"],
-                                                mac=data['mac'],
-                                                qemu_ga=data['qemu_ga'])
+                                                 memory=data['memory'],
+                                                 vcpu=data['vcpu'],
+                                                 vcpu_mode=data['vcpu_mode'],
+                                                 uuid=uuid,
+                                                 arch=arch,
+                                                 machine=machine,
+                                                 firmware=firmware,
+                                                 volumes=volume_list,
+                                                 networks=data['networks'],
+                                                 virtio=data['virtio'],
+                                                 listen_addr=data["listener_addr"],
+                                                 nwfilter=data["nwfilter"],
+                                                 graphics=data["graphics"],
+                                                 video=data["video"],
+                                                 console_pass=data["console_pass"],
+                                                 mac=data['mac'],
+                                                 qemu_ga=data['qemu_ga'])
                             create_instance = Instance(compute_id=compute_id, name=data['name'], uuid=uuid)
                             create_instance.save()
                             msg = _("Instance is created")
