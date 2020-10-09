@@ -1,0 +1,62 @@
+{% load i18n %}
+{% load static %}
+{% load bootstrap4 %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="WebVirtMgr panel for manage virtual machine">
+    <meta name="author" content="anatoliy.guskov@gmail.com">
+
+    <title>{% trans "WebVirtCloud" %}  - {% trans "Sign In" %}</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="{% static "css/wvc-main.min.css" %}" rel="stylesheet" id="wvc_css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+    <div class="container">
+        <div>
+            <div class="page-header text-center">
+                <a class="" href="/"><h1>WebVirtCloud</h1></a>
+            </div>
+            <div class="row">
+                <div class="col-6 offset-3" role="main">
+                    <div class="card">
+                        <div class="card-body">
+                            {% if form.errors %}
+                                {% bootstrap_form_errors form %}
+                            {% endif %}
+                            <form class="form-signin" method="post" role="form" aria-label="Login form">
+                                {% csrf_token %}
+                                {% bootstrap_field form.username layout='horizontal' %}
+                                {% bootstrap_field form.password layout='horizontal' %}
+                                {% bootstrap_field form.otp_token layout='horizontal' %}
+                                <button class="btn btn-lg btn-success btn-block" type="submit">{% trans "Sign In" %}</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="{% static "js/jquery.js" %}"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="{% static "js/bootstrap.bundle.min.js" %}"></script>
+</body>
+
+</html>

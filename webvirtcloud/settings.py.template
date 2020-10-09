@@ -23,6 +23,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'bootstrap4',
     'django_icons',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
     'accounts',
     'admin',
     'appsettings',
@@ -36,6 +38,7 @@ INSTALLED_APPS = [
     'storages',
     'secrets',
     'logs',
+    'qr_code',
 ]
 
 MIDDLEWARE = [
@@ -45,6 +48,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'login_required.middleware.LoginRequiredMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -176,3 +180,6 @@ LIBVIRT_KEEPALIVE_COUNT = 5
 ALLOW_EMPTY_PASSWORD = False
 NEW_USER_DEFAULT_INSTANCES = []
 SHOW_PROFILE_EDIT_PASSWORD = True
+
+OTP_ENABLED = False
+
