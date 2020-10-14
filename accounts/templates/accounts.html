@@ -32,7 +32,7 @@
                         <div class="card-header bg-secondary">
                 {% endif %}    
                         <h5 class="my-0 card-title">
-                            <a class="card-link text-light" href="{% url 'account' user.id %}"><strong>{{ user.username }}</strong></a>
+                            <a class="card-link text-light" href="{% url 'accounts:account' user.id %}"><strong>{{ user.username }}</strong></a>
                             <a class="card-link text-light float-right" data-toggle="modal" href="#editUser{{ user.id }}" title="{% trans "Edit" %}">
                                 <span class="fa fa-cog"></span>
                             </a>

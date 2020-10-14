@@ -41,7 +41,7 @@
                             {% for user in users %}
                                 <tr class="{% if not user.is_active %}danger{% endif %}">
                                     <td>
-                                        <a href="{% url 'account' user.id %}"><strong>{{ user.username }}</strong></a>
+                                        <a href="{% url 'accounts:account' user.id %}"><strong>{{ user.username }}</strong></a>
                                         <a data-toggle="modal" href="#editUser{{ user.id }}" class="float-right" title="{% trans "Edit" %}">
                                             <span class="fa fa-cog"></span>
                                         </a>

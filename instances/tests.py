@@ -116,7 +116,7 @@ class InstancesTestCase(TestCase):
         self.assertEqual(instance.disks[0]['size'], 1024**3)
 
         response = self.client.post(reverse('instances:resize_disk', args=[instance.id]), {
-            'disk_size_vda': '2.0 GB',
+            'disk_size_vda': '2',
         })
         self.assertRedirects(response, reverse('instances:instance', args=[instance.id]) + '#resize')
 
@@ -449,9 +449,8 @@ class InstancesTestCase(TestCase):
         response = self.client.post(
             reverse('instances:destroy', args=[instance.id]),
             {'delete_disk': True},
-            HTTP_REFERER=reverse('index'),
         )
-        self.assertRedirects(response, reverse('instances', args=[compute.id]))
+        self.assertRedirects(response, reverse('instances:index'))
 
         # # create volume
         # response = self.client.post(

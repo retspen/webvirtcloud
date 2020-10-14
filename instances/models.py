@@ -204,6 +204,10 @@ class Instance(models.Model):
     def formats(self):
         return self.proxy.get_image_formats()
 
+    @cached_property
+    def interfaces(self):
+        return self.proxy.get_ifaces()
+
 
 class PermissionSet(models.Model):
     """
@@ -211,8 +215,9 @@ class PermissionSet(models.Model):
     """
     class Meta:
         default_permissions = ()
-        permissions = [('clone_instances', 'Can clone instances'),  
-                       ('passwordless_console',  _('Can access console without password')),
-                    ]
+        permissions = [
+            ('clone_instances', 'Can clone instances'),
+            ('passwordless_console', _('Can access console without password')),
+        ]
 
         managed = False
