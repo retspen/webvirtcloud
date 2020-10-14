@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group, User
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.urls import reverse_lazy
 from django.utils.text import format_lazy
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from accounts.models import UserAttributes
 
@@ -78,7 +78,7 @@ class UserForm(forms.ModelForm):
                 label=_("Password"),
                 help_text=format_lazy(_("""Raw passwords are not stored, so there is no way to see
                 this user's password, but you can change the password using <a href='{}'>this form</a>."""),
-                reverse_lazy('admin:user_update_password', 
+                reverse_lazy('admin:user_update_password',
                 args=[self.instance.id,]))
             )
             self.fields['Password'] = password

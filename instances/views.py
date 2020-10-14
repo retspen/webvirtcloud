@@ -18,7 +18,7 @@ from django.contrib.auth.models import User
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, libvirtError)
 from logs.views import addlogmsg
 from vrtManager import util
@@ -973,7 +973,7 @@ def set_qos(request, pk):
         messages.success(
             request,
             _("%(qos_dir)s QoS is set. Network XML is changed. \
-                Stop and start network to activate new config.") % {'qos_dir': qos_dir.capitalize()})
+                Stop and start network to activate new config."                                                               ) % {'qos_dir': qos_dir.capitalize()})
 
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
@@ -991,7 +991,7 @@ def unset_qos(request, pk):
         messages.success(
             request,
             _("%(qos_dir)s QoS is deleted. Network XML is changed. \
-                Stop and start network to activate new config.") % {'qos_dir': qos_dir.capitalize()})
+                Stop and start network to activate new config."                                                               ) % {'qos_dir': qos_dir.capitalize()})
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
 

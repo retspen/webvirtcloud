@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from libvirt import VIR_DOMAIN_XML_SECURE
 
 from computes.models import Compute
