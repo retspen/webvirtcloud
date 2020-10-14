@@ -1,7 +1,7 @@
 import re
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from appsettings.models import AppSettings
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES, QEMU_KEYMAPS

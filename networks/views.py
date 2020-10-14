@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 
 from admin.decorators import superuser_only
@@ -212,7 +212,7 @@ def network(request, compute_id, pool):
                 conn.set_qos(qos_dir, average, peak, burst)
                 if conn.is_active():
                     messages.success(
-                        request, 
+                        request,
                         _(f"{qos_dir.capitalize()} QoS is set. Network XML is changed.") +
                         _("Stop and start network to activate new config"))
                 else:
@@ -226,7 +226,7 @@ def network(request, compute_id, pool):
 
             if conn.is_active():
                 messages.success(
-                    request, 
+                    request,
                     _(f"{qos_dir.capitalize()} QoS is deleted. Network XML is changed. ") +
                     _("Stop and start network to activate new config."))
             else:
