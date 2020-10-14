@@ -1,7 +1,7 @@
 from .models import AppSettings
 
 
-class Settings(object):
+class Settings:
     pass
 
 

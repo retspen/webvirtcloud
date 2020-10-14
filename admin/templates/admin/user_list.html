@@ -57,7 +57,7 @@
                         <td>{% if can_clone %}{% icon 'check' %}{% endif %}</td>
                         <td>
                             <div class="float-right btn-group">
-                                <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'account' user.id %}">{% icon 'eye' %}</a>
+                                <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'accounts:account' user.id %}">{% icon 'eye' %}</a>
                                 <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'admin:user_update' user.id %}">{% icon 'pencil' %}</a>
                                 {% if user.is_active %}
                                     <a class="btn btn-warning" title="{%trans "Block" %}" href="{% url 'admin:user_block' user.id %}">{% icon 'stop' %}</a>

@@ -1,14 +1,15 @@
 from admin.decorators import superuser_only
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import PasswordChangeForm
-from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 
+from accounts.forms import ProfileForm, UserSSHKeyForm
 from accounts.models import *
 
 from . import forms
@@ -16,49 +17,50 @@ from .utils import get_user_totp_device
 
 
 def profile(request):
-    error_messages = []
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    profile_form = ProfileForm(request.POST or None, instance=request.user)
+    ssh_key_form = UserSSHKeyForm()
 
-    if request.method == "POST":
-        if "username" in request.POST:
-            username = request.POST.get("username", "")
-            email = request.POST.get("email", "")
-            request.user.first_name = username
-            request.user.email = email
-            request.user.save()
-            return HttpResponseRedirect(request.get_full_path())
-        if "keyname" in request.POST:
-            keyname = request.POST.get("keyname", "")
-            keypublic = request.POST.get("keypublic", "")
-            for key in publickeys:
-                if keyname == key.keyname:
-                    msg = _("Key name already exist")
-                    error_messages.append(msg)
-                if keypublic == key.keypublic:
-                    msg = _("Public key already exist")
-                    error_messages.append(msg)
-            if "\n" in keypublic or "\r" in keypublic:
-                msg = _("Invalid characters in public key")
-                error_messages.append(msg)
-            if not error_messages:
-                addkeypublic = UserSSHKey(
-                    user_id=request.user.id,
-                    keyname=keyname,
-                    keypublic=keypublic,
-                )
-                addkeypublic.save()
-                return HttpResponseRedirect(request.get_full_path())
-        if "keydelete" in request.POST:
-            keyid = request.POST.get("keyid", "")
-            delkeypublic = UserSSHKey.objects.get(id=keyid)
-            delkeypublic.delete()
-            return HttpResponseRedirect(request.get_full_path())
-    return render(request, "profile.html", locals())
+    if profile_form.is_valid():
+        profile_form.save()
+        messages.success(request, _('Profile updated'))
+        return redirect('accounts:profile')
+
+    return render(request, "profile.html", {
+        'publickeys': publickeys,
+        'profile_form': profile_form,
+        'ssh_key_form': ssh_key_form,
+    })
+
+
+def ssh_key_create(request):
+    key_form = UserSSHKeyForm(request.POST or None, user=request.user)
+    if key_form.is_valid():
+        key_form.save()
+        messages.success(request, _('SSH key added'))
+        return redirect('accounts:profile')
+
+    return render(request, 'common/form.html', {
+        'form': key_form,
+        'title': _('Add SSH key'),
+    })
+
+
+def ssh_key_delete(request, pk):
+    ssh_key = get_object_or_404(UserSSHKey, pk=pk, user=request.user)
+    if request.method == 'POST':
+        ssh_key.delete()
+        messages.success(request, _('SSH key deleted'))
+        return redirect('accounts:profile')
+
+    return render(request, 'common/confirm_delete.html', {
+        'object': ssh_key,
+        'title': _('Delete SSH key'),
+    })
 
 
 @superuser_only
 def account(request, user_id):
-    error_messages = []
     user = User.objects.get(id=user_id)
     user_insts = UserInstance.objects.filter(user_id=user_id)
     instances = Instance.objects.all().order_by("name")
@@ -74,17 +76,14 @@ def account(request, user_id):
 
 @permission_required("accounts.change_password", raise_exception=True)
 def change_password(request):
-    if request.method == "POST":
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)  # Important!
-            messages.success(request, _("Password Changed"))
-            return redirect("profile")
-        else:
-            messages.error(request, _("Wrong Data Provided"))
-    else:
-        form = PasswordChangeForm(request.user)
+    form = PasswordChangeForm(request.user, request.POST or None)
+
+    if form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)  # Important!
+        messages.success(request, _("Password Changed"))
+        return redirect("accounts:profile")
+
     return render(request, "accounts/change_password_form.html", {"form": form})
 
 
@@ -95,7 +94,7 @@ def user_instance_create(request, user_id):
     form = forms.UserInstanceForm(request.POST or None, initial={"user": user})
     if form.is_valid():
         form.save()
-        return redirect(reverse("account", args=[user.id]))
+        return redirect(reverse("accounts:account", args=[user.id]))
 
     return render(
         request,
@@ -113,7 +112,7 @@ def user_instance_update(request, pk):
     form = forms.UserInstanceForm(request.POST or None, instance=user_instance)
     if form.is_valid():
         form.save()
-        return redirect(reverse("account", args=[user_instance.user.id]))
+        return redirect(reverse("accounts:account", args=[user_instance.user.id]))
 
     return render(
         request,
@@ -135,7 +134,7 @@ def user_instance_delete(request, pk):
         if next:
             return redirect(next)
         else:
-            return redirect(reverse("account", args=[user.id]))
+            return redirect(reverse("accounts:account", args=[user.id]))
 
     return render(
         request,
