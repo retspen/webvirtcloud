@@ -65,5 +65,5 @@ urlpatterns = [
     path('guess_clone_name/', views.guess_clone_name, name='guess_clone_name'),
     path('random_mac_address/', views.random_mac_address, name='random_mac_address'),
     path('check_instance/<vname>/', views.check_instance, name='check_instance'),
-    path('sshkeys/<vname>/', views.sshkeys, name='sshkeys'),
+    path('<int:pk>/sshkeys/', views.sshkeys, name='sshkeys'),
 ]

@@ -51,7 +51,7 @@ def index(request):
 
 
 def instance(request, pk):
-    instance: Instance = get_object_or_404(Instance, pk=pk)
+    instance: Instance = get_instance(request.user, pk)
     compute: Compute = instance.compute
     computes = Compute.objects.all().order_by('name')
     computes_count = computes.count()
@@ -59,7 +59,6 @@ def instance(request, pk):
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     keymaps = settings.QEMU_KEYMAPS
     console_types = AppSettings.objects.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list()
-    #
     console_form = ConsoleForm(
         initial={
             'type': instance.console_type,
@@ -67,7 +66,6 @@ def instance(request, pk):
             'password': instance.console_passwd,
             'keymap': instance.console_keymap,
         })
-    #
     console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
     bottom_bar = app_settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR
     allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
@@ -77,15 +75,6 @@ def instance(request, pk):
                                                 user__id=request.user.id)
     except UserInstance.DoesNotExist:
         userinstance = None
-
-    if not request.user.is_superuser:
-        if not userinstance:
-            return redirect(reverse('index'))
-
-    if len(instance.media) != 0:
-        media_iso = sorted(instance.proxy.get_iso_media())
-    else:
-        media_iso = []
 
     memory_range = [256, 512, 768, 1024, 2048, 3072, 4096, 6144, 8192, 16384]
     if instance.memory not in memory_range:
@@ -127,17 +116,10 @@ def instance(request, pk):
     vcpu_host = len(instance.vcpu_range)
     memory_host = instance.proxy.get_max_memory()
     bus_host = instance.proxy.get_disk_bus_types(instance.arch, instance.machine)
-    # videos_host = instance.proxy.get_video_models(instance.arch, instance.machine)
     networks_host = sorted(instance.proxy.get_networks())
     nwfilters_host = instance.proxy.get_nwfilters()
     storages_host = sorted(instance.proxy.get_storages(True))
     net_models_host = instance.proxy.get_network_models()
-
-    try:
-        interfaces_host = sorted(instance.proxy.get_ifaces())
-    except Exception as e:
-        addlogmsg(request.user.username, instance.name, e)
-        messages.error(request, e)
 
     return render(request, 'instance.html', locals())
 
@@ -210,18 +192,18 @@ def check_instance(request, vname):
     data = {'vname': vname, 'exists': False}
     if instance:
         data['exists'] = True
-    return HttpResponse(json.dumps(data))
+    return JsonResponse(data)
 
 
-def sshkeys(request, vname):
+def sshkeys(request, pk):
     """
     :param request:
     :param vname:
     :return:
     """
-
+    instance = get_instance(request.user, pk)
     instance_keys = []
-    userinstances = UserInstance.objects.filter(instance__name=vname)
+    userinstances = UserInstance.objects.filter(instance=instance)
 
     for ui in userinstances:
         keys = UserSSHKey.objects.filter(user=ui.user)
@@ -239,7 +221,7 @@ def get_instance(user, pk):
     '''
     Check that instance is available for user, if not raise 404
     '''
-    instance = Instance.objects.get(pk=pk)
+    instance = get_object_or_404(Instance, pk=pk)
     user_instances = user.userinstance_set.all().values_list('instance', flat=True)
 
     if user.is_superuser or instance.id in user_instances:
@@ -498,7 +480,6 @@ def resize_disk(request, pk):
         if request.user.is_superuser or request.user.is_staff or userinstance.is_change:
             disks_new = list()
             for disk in disks:
-                # input_disk_size = utils.filesizefstr(request.POST.get('disk_size_' + disk['dev'], ''))
                 input_disk_size = int(request.POST.get('disk_size_' + disk['dev'], '0')) * 1073741824
                 if input_disk_size > disk['size'] + (64 << 20):
                     disk['size_new'] = input_disk_size
@@ -973,7 +954,7 @@ def set_qos(request, pk):
         messages.success(
             request,
             _("%(qos_dir)s QoS is set. Network XML is changed. \
-                Stop and start network to activate new config."                                                               ) % {'qos_dir': qos_dir.capitalize()})
+                Stop and start network to activate new config.") % {'qos_dir': qos_dir.capitalize()})
 
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
@@ -991,7 +972,7 @@ def unset_qos(request, pk):
         messages.success(
             request,
             _("%(qos_dir)s QoS is deleted. Network XML is changed. \
-                Stop and start network to activate new config."                                                               ) % {'qos_dir': qos_dir.capitalize()})
+                Stop and start network to activate new config.") % {'qos_dir': qos_dir.capitalize()})
     return redirect(request.META.get('HTTP_REFERER') + '#network')
 
 
@@ -1005,7 +986,7 @@ def add_owner(request, pk):
     if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == 'False':
         check_inst = UserInstance.objects.filter(instance=instance).count()
 
-    if check_inst > 1:
+    if check_inst > 0:
         messages.error(request, _("Only one owner is allowed and the one already added"))
     else:
         add_user_inst = UserInstance(instance=instance, user_id=user_id)
@@ -1027,7 +1008,7 @@ def del_owner(request, pk):
     return redirect(request.META.get('HTTP_REFERER') + '#users')
 
 
-@permission_required('instances.clone_instances')
+@permission_required('instances.clone_instances', raise_exception=True)
 def clone(request, pk):
     instance = get_instance(request.user, pk)
 
