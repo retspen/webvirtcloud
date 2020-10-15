@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
-{% block title %}{% trans "NWFilters" %} - {{ compute.name }}{% endblock %}
+
+{% block title %}{{ compute.name }} - {% trans "NWFilters" %}{% endblock %}
+
+{% block page_heading %}{{ compute.name }} - {% trans "NWFilters" %}{% endblock page_heading %}
+
+{% block page_heading_extra %}
+{% include 'create_nwfilter_block.html' %}
+<div class="float-right search">
+    <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
+</div>
+{% endblock page_heading_extra %}
+
 {% block content %}
-    <!-- Page Heading -->
-    <div class="row">
-        <div class="col-lg-12">
-            {% include 'create_nwfilter_block.html' %}
-            <div class="float-right search">
-                <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
-            </div>
-            <h2 class="page-header">{{ compute.name }} - {% trans "NWFilters" %}</h2>
-        </div>
-    </div>
     <div class="row">
         <div class="col-lg-12">
             <nav aria-label="breadcrumb">
@@ -42,10 +43,6 @@
             </nav>
         </div>
     </div>
-    <!-- /.row -->
-
-    {% include 'errors_block.html' %}
-    {% include 'messages_block.html' %}
 
    <div class="row">
         <div class="col-lg-12">

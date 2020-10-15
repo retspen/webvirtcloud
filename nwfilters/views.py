@@ -1,11 +1,10 @@
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
-from libvirt import libvirtError
-
 from admin.decorators import superuser_only
 from computes.models import Compute
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.utils.translation import gettext_lazy as _
+from libvirt import libvirtError
 from logs.views import addlogmsg
 from vrtManager import util
 from vrtManager.instance import wvmInstance, wvmInstances
@@ -20,7 +19,6 @@ def nwfilters(request, compute_id):
     :return:
     """
 
-    error_messages = []
     nwfilters_all = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
@@ -51,7 +49,7 @@ def nwfilters(request, compute_id):
                             conn.create_nwfilter(xml)
                             addlogmsg(request.user.username, compute.hostname, msg)
                         except libvirtError as lib_err:
-                            error_messages.append(lib_err)
+                            messages.error(request, lib_err)
                             addlogmsg(request.user.username, compute.hostname, lib_err)
 
             if 'del_nwfilter' in request.POST:
@@ -69,7 +67,7 @@ def nwfilters(request, compute_id):
                     if name in dom_filterrefs:
                         in_use = True
                         msg = _(f"NWFilter is in use by {inst}. Cannot be deleted.")
-                        error_messages.append(msg)
+                        messages.error(request, msg)
                         addlogmsg(request.user.username, compute.hostname, msg)
                         i_conn.close()
                         break
@@ -93,16 +91,15 @@ def nwfilters(request, compute_id):
 
         conn.close()
     except libvirtError as lib_err:
-        error_messages.append(lib_err)
+        messages.error(request, lib_err)
         addlogmsg(request.user.username, compute.hostname, lib_err)
     except Exception as err:
-        error_messages.append(err)
+        messages.error(request, err)
         addlogmsg(request.user.username, compute.hostname, err)
 
     return render(request, 'nwfilters.html', {
-        'error_messages': error_messages,
         'nwfilters': nwfilters_all,
-        'compute': compute
+        'compute': compute,
     })
 
 
@@ -113,7 +110,6 @@ def nwfilter(request, compute_id, nwfltr):
     :param nwfltr:
     :return:
     """
-    error_messages = []
     nwfilters_all = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
@@ -194,8 +190,8 @@ def nwfilter(request, compute_id, nwfltr):
         conn.close()
         nwfilter.close()
     except libvirtError as lib_err:
-        error_messages.append(lib_err)
+        messages.error(request, lib_err)
     except Exception as error_msg:
-        error_messages.append(error_msg)
+        messages.error(request, error_msg)
 
     return render(request, 'nwfilter.html', locals())

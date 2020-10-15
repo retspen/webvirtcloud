@@ -1,8 +1,9 @@
-import re
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
+
 from computes.models import Compute
-from vrtManager.connection import CONN_TCP, CONN_SSH, CONN_TLS, CONN_SOCKET
+
 from .validators import validate_hostname
 
 

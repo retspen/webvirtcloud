@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
-{% block title %}{% trans "NWFilters" %} - {{ compute.name }}{% endblock %}
+
+{% block title %}{% trans "NWFilter" %}: {{ name }}{% endblock %}
+
+{% block page_heading %}{% trans "NWFilter" %}: {{ name }}{% endblock page_heading %}
+
 {% block content %}
-   <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            <h3 class="page-header">{% trans "NWFilter" %}: {{ name }}</h3>
             <ol class="breadcrumb bg-light shadow-sm">
                 <li class="breadcrumb-item active">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
@@ -32,12 +34,7 @@
             </ol>
         </div>
     </div>
-    <!-- /.row -->
 
-    {% include 'errors_block.html' %}
-    {% include 'messages_block.html' %}
-
- 
     <dl class="ml-3 row">
         <dt class="col-4">{% trans "UUID" %}:</dt>
         <dd class="col-8">{{ uuid }}</dd>

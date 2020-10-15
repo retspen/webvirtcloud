@@ -1,42 +1,42 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
+{% load icons %}
+
 {% block title %}{% trans "Overview" %} - {{ compute.name }}{% endblock %}
+
+{% block page_heading %}{{ compute.name }}{% endblock page_heading %}
+
 {% block content %}
-    <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            <h2 class="page-header">{{ compute.name }}</h2>
             <nav aria-label="breadcrumb">
             <ol class="breadcrumb bg-light shadow-sm">
-                <li class="breadcrumb-item active">
-                    <span class="font-weight-bold"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</span>
+                <li class="breadcrumb-item">
+                    <span class="font-weight-bold">{% icon 'dashboard' %} {% trans "Overview" %}</span>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                    <a href="{% url 'instances' compute.id %}">{% icon 'server' %} {% trans "Instances" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'storages' compute.id %}"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</a>
+                    <a href="{% url 'storages' compute.id %}">{% icon 'hdd-o' %} {% trans "Storages" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
+                    <a href="{% url 'networks' compute.id %}">{% icon 'sitemap' %} {% trans "Networks" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
+                    <a href="{% url 'interfaces' compute.id %}">{% icon 'wifi' %} {% trans "Interfaces" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
+                    <a href="{% url 'nwfilters' compute.id %}">{% icon 'filter' %} {% trans "NWFilters" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'secrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                    <a href="{% url 'secrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
                 </li>
             </ol>
             </nav>
         </div>
     </div>
-    <!-- /.row -->
-
-    {% include 'errors_block.html' %}
 
     <div class="shadow-sm">
         <h3 class="page-header">{% trans "Basic details" %}</h3>

@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
+
 {% block title %}{% trans "Network" %} - {{ pool }}{% endblock %}
+
+{% block page_heading %}{% trans "Network" %}: {{ pool }}{% endblock page_heading %}
+
 {% block content %}
-   <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            <h2 class="page-header">{% trans "Network" %}: {{ pool }}</h2>
-            
             <ol class="breadcrumb bg-light shadow-sm">
                 <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
@@ -34,9 +35,6 @@
 
         </div>
     </div>
-    <!-- /.row -->
-
-    {% include 'errors_block.html' %}
 
     <div class="row">
         <dl class="ml-3 row">

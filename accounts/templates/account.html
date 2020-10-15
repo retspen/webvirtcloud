@@ -5,13 +5,13 @@
 {% load qr_code %}
 
 {% block title %}{% trans "User Profile" %} - {{ user }}{% endblock %}
-{% block page_header %}{% trans "User Profile" %}: {{ user }}{% endblock page_header %}
+{% block page_heading %}{% trans "User Profile" %}: {{ user }}{% endblock page_heading %}
 
-{% block page_header_extra %}
+{% block page_heading_extra %}
 <a href="{% url 'accounts:user_instance_create' user.id %}" class="btn btn-success">
     {% icon 'plus' %}
 </a>
-{% endblock page_header_extra %}
+{% endblock page_heading_extra %}
 
 {% block content %}
     <ul class="nav nav-tabs">

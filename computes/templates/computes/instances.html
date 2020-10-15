@@ -6,9 +6,9 @@
 {% block style %}
 <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
 {% endblock %}
-{% block page_header %}{{ compute.name }}{% endblock page_header %}
+{% block page_heading %}{{ compute.name }}{% endblock page_heading %}
 
-{% block page_header_extra %}
+{% block page_heading_extra %}
 <a href="{% url 'instances:create_instance_select_type' compute.id %}"
     class="btn btn-success btn-header float-right">
     {% icon 'plus' %}
@@ -18,7 +18,7 @@
     <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
 </div>
 {% endif %}
-{% endblock page_header_extra %}
+{% endblock page_heading_extra %}
 
 {% block content %}
 <div class="row">
