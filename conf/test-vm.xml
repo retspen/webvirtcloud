@@ -1,7 +1,6 @@
 <domain type="kvm">
     <name>test-vm</name>
     <uuid>1bd3c1f2-dd12-4b8d-a298-dff387cb9f93</uuid>
-    <description>None</description>
     <memory unit="KiB">131072</memory>
     <currentMemory unit="KiB">131072</currentMemory>
     <vcpu placement="static">1</vcpu>
