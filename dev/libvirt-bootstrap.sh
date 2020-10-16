@@ -5,14 +5,14 @@
 #
 #          FILE: libvirt-bootstrap.sh
 #
-#   DESCRIPTION: Bootstrap webvirtmgr installation for various distributions
+#   DESCRIPTION: Bootstrap webvirtcloud installation for various distributions
 #
-#          BUGS: https://github.com/retspen/webvirtmgr/issues
+#          BUGS: https://github.com/retspen/webvirtcloud/issues
 #
-#     COPYRIGHT: (c) 2015 by the WebVirtMgr Team
+#     COPYRIGHT: (c) 2015 by the WebVirtCloud Team
 #
 #       LICENSE: Apache 2.0
-#  ORGANIZATION: WebVirtMgr (webvirtmgr.net)
+#  ORGANIZATION: WebVirtCloud (webvirtcloud.net)
 #       CREATED: 11/11/2013 11:00:00 EET
 #===============================================================================
 
@@ -21,7 +21,7 @@
 #   DESCRIPTION:  Echo errors to stderr.
 #-------------------------------------------------------------------------------
 echoerror() {
-    printf "${RC} * ERROR${EC}: $@\n" 1>&2;
+    printf "${RC} * ERROR${EC}: %s\n" "$@" 1>&2;
 }
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -45,7 +45,7 @@ echowarn() {
 #   DESCRIPTION:  Echo debug information to stdout.
 #-------------------------------------------------------------------------------
 echodebug() {
-    if [ $_ECHO_DEBUG -eq $BS_TRUE ]; then
+    if [ "$_ECHO_DEBUG" -eq "$BS_TRUE" ]; then
         printf "${BC} * DEBUG${EC}: %s\n" "$@";
     fi
 }
@@ -68,7 +68,7 @@ __test_distro_arch
 #   DESCRIPTION:  Strip duplicate strings
 #-------------------------------------------------------------------------------
 __strip_duplicates() {
-    echo $@ | tr -s '[:space:]' '\n' | awk '!x[$0]++'
+    echo $@ | tr -s '[:space:]' '\n' | awk "!x[$0]++"
 }
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -95,14 +95,14 @@ __function_defined() {
 __parse_version_string() {
     VERSION_STRING="$1"
     PARSED_VERSION=$(
-        echo $VERSION_STRING |
+        echo "$VERSION_STRING" |
         sed -e 's/^/#/' \
             -e 's/^#[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\)\(\.[0-9][0-9]*\).*$/\1/' \
             -e 's/^#[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\).*$/\1/' \
             -e 's/^#[^0-9]*\([0-9][0-9]*\).*$/\1/' \
             -e 's/^#.*$//'
     )
-    echo $PARSED_VERSION
+    echo "$PARSED_VERSION"
 }
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -118,7 +118,7 @@ __sort_release_files() {
     secondary_release_files=""
     # Sort know VS un-known files first
     for release_file in $(echo $@ | sed -r 's:[[:space:]]:\n:g' | sort --unique --ignore-case); do
-        match=$(echo $release_file | egrep -i ${KNOWN_RELEASE_FILES})
+        match=$(echo "$release_file" | grep -E -i "${KNOWN_RELEASE_FILES}")
         if [ "x${match}" != "x" ]; then
             primary_release_files="${primary_release_files} ${release_file}"
         else
@@ -130,14 +130,14 @@ __sort_release_files() {
     max_prio="redhat-release centos-release"
     for entry in $max_prio; do
         if [ "x$(echo ${primary_release_files} | grep $entry)" != "x" ]; then
-            primary_release_files=$(echo ${primary_release_files} | sed -e "s:\(.*\)\($entry\)\(.*\):\2 \1 \3:g")
+            primary_release_files=$(echo "${primary_release_files}" | sed -e "s:\(.*\)\($entry\)\(.*\):\2 \1 \3:g")
         fi
     done
     # Now, least important goes last in the min_prio list
     min_prio="lsb-release"
     for entry in $max_prio; do
         if [ "x$(echo ${primary_release_files} | grep $entry)" != "x" ]; then
-            primary_release_files=$(echo ${primary_release_files} | sed -e "s:\(.*\)\($entry\)\(.*\):\1 \3 \2:g")
+            primary_release_files=$(echo "${primary_release_files}" | sed -e "s:\(.*\)\($entry\)\(.*\):\1 \3 \2:g")
         fi
     done
 
@@ -192,15 +192,15 @@ __gather_linux_system_info() {
         [ -L "/etc/${rsource}" ] && continue        # Don't follow symlinks
         [ ! -f "/etc/${rsource}" ] && continue      # Does not exist
 
-        n=$(echo ${rsource} | sed -e 's/[_-]release$//' -e 's/[_-]version$//')
-        rv=$( (grep VERSION /etc/${rsource}; cat /etc/${rsource}) | grep '[0-9]' | sed -e 'q' )
+        n=$(echo "${rsource}" | sed -e 's/[_-]release$//' -e 's/[_-]version$//')
+        rv=$( (grep VERSION /etc/"${rsource}"; cat /etc/"${rsource}") | grep '[0-9]' | sed -e 'q' )
         [ "${rv}x" = "x" ] && continue  # There's no version information. Continue to next rsource
         v=$(__parse_version_string "$rv")
-        case $(echo ${n} | tr '[:upper:]' '[:lower:]') in
+        case $(echo "${n}" | tr '[:upper:]' '[:lower:]') in
             redhat             )
-                if [ ".$(egrep 'CentOS' /etc/${rsource})" != . ]; then
+                if [ ".$(grep -E 'CentOS' /etc/${rsource})" != . ]; then
                     n="CentOS"
-                elif [ ".$(egrep 'Red Hat Enterprise Linux' /etc/${rsource})" != . ]; then
+                elif [ ".$(grep -E 'Red Hat Enterprise Linux' /etc/${rsource})" != . ]; then
                     n="<R>ed <H>at <E>nterprise <L>inux"
                 else
                     n="<R>ed <H>at <L>inux"
@@ -220,13 +220,13 @@ __gather_linux_system_info() {
                             n="Amazon Linux AMI"
                             break
                     esac
-                done < /etc/${rsource}
+                done < /etc/"${rsource}"
                 ;;
             os                 )
                 nn=$(grep '^ID=' /etc/os-release | sed -e 's/^ID=\(.*\)$/\1/g')
                 rv=$(grep '^VERSION_ID=' /etc/os-release | sed -e 's/^VERSION_ID=\(.*\)$/\1/g')
                 [ "${rv}x" != "x" ] && v=$(__parse_version_string "$rv") || v=""
-                case $(echo ${nn} | tr '[:upper:]' '[:lower:]') in
+                case $(echo "${nn}" | tr '[:upper:]' '[:lower:]') in
                     arch        )
                         n="Arch Linux"
                         v=""  # Arch Linux does not provide a version.
@@ -278,7 +278,7 @@ __check_end_of_life_versions() {
     case "${DISTRO_NAME_L}" in
         debian)
             # Debian versions bellow 6 are not supported
-            if [ $DISTRO_MAJOR_VERSION -lt 6 ]; then
+            if [ "$DISTRO_MAJOR_VERSION" -lt 6 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    https://wiki.debian.org/DebianReleases"
@@ -293,10 +293,10 @@ __check_end_of_life_versions() {
             #  = 10.10
             #  = 11.04
             #  = 11.10
-            if ([ $DISTRO_MAJOR_VERSION -eq 10 ] && [ $DISTRO_MINOR_VERSION -eq 10 ]) || \
-               ([ $DISTRO_MAJOR_VERSION -eq 11 ] && [ $DISTRO_MINOR_VERSION -eq 04 ]) || \
-               ([ $DISTRO_MAJOR_VERSION -eq 11 ] && [ $DISTRO_MINOR_VERSION -eq 10 ]) || \
-               [ $DISTRO_MAJOR_VERSION -lt 10 ]; then
+            if ([ "$DISTRO_MAJOR_VERSION" -eq 10 ] && [ "$DISTRO_MINOR_VERSION" -eq 10 ]) || \
+               ([ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$DISTRO_MINOR_VERSION" -eq 04 ]) || \
+               ([ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$DISTRO_MINOR_VERSION" -eq 10 ]) || \
+               [ "$DISTRO_MAJOR_VERSION" -lt 10 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    https://wiki.ubuntu.com/Releases"
@@ -308,7 +308,7 @@ __check_end_of_life_versions() {
             # openSUSE versions not supported
             #
             #  <= 12.1
-            if ([ $DISTRO_MAJOR_VERSION -eq 12 ] && [ $DISTRO_MINOR_VERSION -eq 1 ]) || [ $DISTRO_MAJOR_VERSION -lt 12 ]; then
+            if ([ "$DISTRO_MAJOR_VERSION" -eq 12 ] && [ "$DISTRO_MINOR_VERSION" -eq 1 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 12 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    http://en.opensuse.org/Lifetime"
@@ -324,7 +324,7 @@ __check_end_of_life_versions() {
             if [ "x${SUSE_PATCHLEVEL}" = "x" ]; then
                 SUSE_PATCHLEVEL="00"
             fi
-            if ([ $DISTRO_MAJOR_VERSION -eq 11 ] && [ $SUSE_PATCHLEVEL -lt 02 ]) || [ $DISTRO_MAJOR_VERSION -lt 11 ]; then
+            if ([ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$SUSE_PATCHLEVEL" -lt 02 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 11 ]; then
                 echoerror "Versions lower than SuSE 11 SP2 are not supported."
                 echoerror "Please consider upgrading to the next stable"
                 exit 1
@@ -333,7 +333,7 @@ __check_end_of_life_versions() {
 
         fedora)
             # Fedora lower than 18 are no longer supported
-            if [ $DISTRO_MAJOR_VERSION -lt 18 ]; then
+            if [ "$DISTRO_MAJOR_VERSION" -lt 18 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    https://fedoraproject.org/wiki/Releases"
@@ -343,7 +343,7 @@ __check_end_of_life_versions() {
 
         centos)
             # CentOS versions lower than 5 are no longer supported
-            if ([ $DISTRO_MAJOR_VERSION -eq 6 ] && [ $DISTRO_MINOR_VERSION -lt 3 ]) || [ $DISTRO_MAJOR_VERSION -lt 5 ]; then
+            if ([ "$DISTRO_MAJOR_VERSION" -eq 6 ] && [ "$DISTRO_MINOR_VERSION" -lt 3 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 5 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    http://wiki.centos.org/Download"
@@ -353,7 +353,7 @@ __check_end_of_life_versions() {
 
         red_hat*linux)
             # Red Hat (Enterprise) Linux versions lower than 5 are no longer supported
-            if ([ $DISTRO_MAJOR_VERSION -eq 6 ] && [ $DISTRO_MINOR_VERSION -lt 3 ]) || [ $DISTRO_MAJOR_VERSION -lt 5 ]; then
+            if ([ "$DISTRO_MAJOR_VERSION" -eq 6 ] && [ "$DISTRO_MINOR_VERSION" -lt 3 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 5 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    https://access.redhat.com/support/policy/updates/errata/"
@@ -374,7 +374,7 @@ __check_end_of_life_versions
 #   CentOS Install Functions
 #
 install_centos() {
-    if [ $DISTRO_MAJOR_VERSION -ge 6 ]; then
+    if [ "$DISTRO_MAJOR_VERSION" -ge 6 ]; then
         yum -y install qemu-kvm libvirt bridge-utils python-libguestfs libguestfs-tools supervisor cyrus-sasl-md5 epel-release || return 1
     fi
     return 0
@@ -409,7 +409,7 @@ install_centos_post() {
         echoerror "/etc/sasl2/libvirt.conf not found. Exiting..."
         exit 1
     fi
-    if [ $DISTRO_MAJOR_VERSION -lt 7 ]; then
+    if [ "$DISTRO_MAJOR_VERSION" -lt 7 ]; then
         if [ -f /etc/supervisord.conf ]; then
             curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd > /usr/local/bin/gstfsd
             chmod +x /usr/local/bin/gstfsd
@@ -593,7 +593,7 @@ daemons_running_opensuse() {
 #
 install_ubuntu() {
     apt-get update || return 1
-    if [ $DISTRO_MAJOR_VERSION -lt 18 ]; then
+    if [ "$DISTRO_MAJOR_VERSION" -lt 18 ]; then
        apt-get -y install kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     else
        apt install -y qemu-kvm libvirt-bin bridge-utils virt-manager sasl2-bin python3-guestfs supervisor || return 1
@@ -663,7 +663,7 @@ daemons_running_ubuntu() {
 #
 install_debian() {
     apt-get update || return 1
-    if [ $DISTRO_MAJOR_VERSION -lt 10 ]; then
+    if [ "$DISTRO_MAJOR_VERSION" -lt 10 ]; then
 	    apt-get -y install qemu-kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     else
 	    apt-get -y install qemu qemu-kvm qemu-system qemu-utils libvirt-clients libvirt-daemon-system sasl2-bin virtinst supervisor || return 1
@@ -672,7 +672,7 @@ install_debian() {
 }
 
 install_debian_post() {
-    if [ $DISTRO_MAJOR_VERSION -ge 8 ]; then
+    if [ "$DISTRO_MAJOR_VERSION" -ge 8 ]; then
         LIBVIRTSVC=libvirtd
     else
         LIBVIRTSVC=libvirt-bin
@@ -723,7 +723,7 @@ install_debian_post() {
 }
 
 daemons_running_debian() {
-    if [ $DISTRO_MAJOR_VERSION -ge 8 ]; then
+    if [ "$DISTRO_MAJOR_VERSION" -ge 8 ]; then
         LIBVIRTSVC=libvirtd
     else
         LIBVIRTSVC=libvirt-bin
@@ -750,15 +750,15 @@ daemons_running_debian() {
 INSTALL_FUNC_NAMES="install_${DISTRO_NAME_L}"
 
 INSTALL_FUNC="null"
-for FUNC_NAME in $(__strip_duplicates $INSTALL_FUNC_NAMES); do
-    if __function_defined $FUNC_NAME; then
+for FUNC_NAME in $(__strip_duplicates "$INSTALL_FUNC_NAMES"); do
+    if __function_defined "$FUNC_NAME"; then
         INSTALL_FUNC=$FUNC_NAME
         break
     fi
 done
 echodebug "INSTALL_FUNC=${INSTALL_FUNC}"
 
-if [ $INSTALL_FUNC = "null" ]; then
+if [ "$INSTALL_FUNC" = "null" ]; then
     echoerror "No installation function found. Exiting..."
     exit 1
 else
@@ -774,15 +774,15 @@ fi
 POST_FUNC_NAMES="install_${DISTRO_NAME_L}_post"
 
 POST_INSTALL_FUNC="null"
-for FUNC_NAME in $(__strip_duplicates $POST_FUNC_NAMES); do
-    if __function_defined $FUNC_NAME; then
+for FUNC_NAME in $(__strip_duplicates "$POST_FUNC_NAMES"); do
+    if __function_defined "$FUNC_NAME"; then
         POST_INSTALL_FUNC=$FUNC_NAME
         break
     fi
 done
 echodebug "POST_INSTALL_FUNC=${POST_INSTALL_FUNC}"
 
-if [ $POST_INSTALL_FUNC = "null" ]; then
+if [ "$POST_INSTALL_FUNC" = "null" ]; then
     echoerror "No installation function found. Exiting..."
     exit 1
 else
@@ -798,15 +798,15 @@ fi
 DAEMONS_RUNNING_FUNC_NAMES="daemons_running_${DISTRO_NAME_L}"
 
 DAEMONS_RUNNING_FUNC="null"
-for FUNC_NAME in $(__strip_duplicates $DAEMONS_RUNNING_FUNC_NAMES); do
-    if __function_defined $FUNC_NAME; then
+for FUNC_NAME in $(__strip_duplicates "$DAEMONS_RUNNING_FUNC_NAMES"); do
+    if __function_defined "$FUNC_NAME"; then
         DAEMONS_RUNNING_FUNC=$FUNC_NAME
         break
     fi
 done
 echodebug "DAEMONS_RUNNING_FUNC=${DAEMONS_RUNNING_FUNC}"
 
-if [ $DAEMONS_RUNNING_FUNC = "null" ]; then
+if [ "$DAEMONS_RUNNING_FUNC" = "null" ]; then
     echoerror "No installation function found. Exiting..."
     exit 1
 else
