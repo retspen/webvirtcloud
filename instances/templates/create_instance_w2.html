@@ -3,22 +3,17 @@
 {% load staticfiles %}
 {% load icons %}
 {% block title %}{% trans "Create new instance" %}{% endblock %}
+
 {% block style %}
     <link href="{% static "css/bootstrap-multiselect.css" %}" rel="stylesheet">
 {% endblock %}
-{% block content %}
-    <!-- Page Heading -->
-    <div class="row">
-        <div class="col-lg-12">
-            <h3 class="page-header">
-                {% blocktrans with host=compute.name %}New instance on {{ host }} {% endblocktrans %}</h3>
-            </h3>
-        </div>
-    </div>
-    <!-- /.row -->
-    {% include 'errors_block.html' %}
-    {% include 'pleasewaitdialog.html' %}
 
+{% block page_heading %}
+{% blocktrans with host=compute.name %}New instance on {{ host }} {% endblocktrans %}
+{% endblock page_heading %}
+
+{% block content %}
+    {% include 'pleasewaitdialog.html' %}
 
     {% if form.errors %}
     {% for field in form %}

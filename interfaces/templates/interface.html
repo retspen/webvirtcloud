@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
+
 {% block title %}{% trans "Interface" %} - {{ iface }}{% endblock %}
+
+{% block page_heading %}{% trans "Interface" %}: {{ iface }}{% endblock page_heading %}
+
 {% block content %}
-   <!-- Page Heading -->
     <div class="row">
         <div class="col-lg-12">
-            <h2 class="page-header">{% trans "Interface" %}: {{ iface }}</h2>
             <ol class="breadcrumb bg-light shadow-sm">
                 <li class="breadcrumb-item active">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
@@ -31,9 +33,6 @@
             </ol>
         </div>
     </div>
-    <!-- /.row -->
-
-    {% include 'errors_block.html' %}
 
     <div class="row">
         <dl class="ml-3 row">

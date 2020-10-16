@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -17,7 +18,6 @@ def interfaces(request, compute_id):
     """
 
     ifaces_all = []
-    error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
@@ -42,10 +42,10 @@ def interfaces(request, compute_id):
                     return HttpResponseRedirect(request.get_full_path())
                 else:
                     for msg_err in form.errors.values():
-                        error_messages.append(msg_err.as_text())
+                        messages.error(request, msg_err.as_text())
         conn.close()
     except libvirtError as lib_err:
-        error_messages.append(lib_err)
+        messages.error(request, lib_err)
 
     return render(request, 'interfaces.html', locals())
 
@@ -60,7 +60,6 @@ def interface(request, compute_id, iface):
     """
 
     ifaces_all = []
-    error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
@@ -88,6 +87,6 @@ def interface(request, compute_id, iface):
                 return HttpResponseRedirect(reverse('interfaces', args=[compute_id]))
         conn.close()
     except libvirtError as lib_err:
-        error_messages.append(lib_err)
+        messages.error(request, lib_err)
 
     return render(request, 'interface.html', locals())
