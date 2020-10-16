@@ -6,16 +6,16 @@
 {% block style %}
     <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
 {% endblock %}
-{% block page_header %}{% trans "Instances" %}{% endblock page_header %}
+{% block page_heading %}{% trans "Instances" %}{% endblock page_heading %}
 
-{% block page_header_extra %}
+{% block page_heading_extra %}
 {% if request.user.is_superuser %}
     {% include 'create_inst_block.html' %}
 {% endif %}
 <div class="float-right search">
     <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
 </div>
-{% endblock page_header_extra %}
+{% endblock page_heading_extra %}
 
 {% block content %}
     {% for compute in computes %}

@@ -4,9 +4,9 @@
 {% trans "Confirm Destroy" %}
 {% endblock title %}
 
-{% block page_header %}
+{% block page_heading %}
 {% trans "Destroy instance" %} {{ instance }}
-{% endblock page_header %}
+{% endblock page_heading %}
 
 {% block content %}
 {% if request.user.is_superuser or userinstance.is_delete %}

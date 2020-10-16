@@ -1,6 +1,6 @@
 from django.db.models import CharField, IntegerField, Model
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from libvirt import virConnect
 
 from vrtManager.connection import connection_manager

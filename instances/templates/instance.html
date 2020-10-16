@@ -1,14 +1,16 @@
 {% extends "base.html" %}
 {% load staticfiles %}
 {% load i18n %}
+
 {% block title %}{% trans "Instance" %} - {{ instance.name }}{% endblock %}
+
+{% block page_heading %}
+{{ instance.name }}{% if instance.title %} ({{ instance.title }}){% endif %}
+{% endblock page_heading %}
+
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
-    <!-- Page Heading -->
      <div>
-        <div>
-            <h3>{{ instance.name }}{% if instance.title %}&nbsp;({{ instance.title }}){% endif %}</h3>
-        </div>
         <div>
             {% if instance.status == 5 %}
                <span class="badge badge-danger">{% trans "Off" %}</span>
@@ -61,8 +63,6 @@
         {% endif %}
         <hr>
     </div>
-
-    {% include 'errors_block.html' %}
 
     <div class="row" id="max-width-page">
         <div class="container">

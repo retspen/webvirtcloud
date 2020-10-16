@@ -1,17 +1,12 @@
-
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
-from libvirt import libvirtError
-from libvirt import (VIR_SECRET_USAGE_TYPE_NONE, 
-    VIR_SECRET_USAGE_TYPE_CEPH, 
-    VIR_SECRET_USAGE_TYPE_TLS,
-    VIR_SECRET_USAGE_TYPE_VOLUME, 
-    VIR_SECRET_USAGE_TYPE_ISCSI)
+from secrets.forms import AddSecret
 
 from admin.decorators import superuser_only
 from computes.models import Compute
-from secrets.forms import AddSecret
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from libvirt import (VIR_SECRET_USAGE_TYPE_CEPH, VIR_SECRET_USAGE_TYPE_ISCSI, VIR_SECRET_USAGE_TYPE_NONE,
+                     VIR_SECRET_USAGE_TYPE_TLS, VIR_SECRET_USAGE_TYPE_VOLUME, libvirtError)
 from vrtManager.secrets import wvmSecrets
 
 
@@ -24,7 +19,6 @@ def secrets(request, compute_id):
     """
 
     secrets_all = []
-    error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
     secret_usage_types = {
         VIR_SECRET_USAGE_TYPE_NONE: "none",
@@ -59,11 +53,12 @@ def secrets(request, compute_id):
                         data['ephemeral'],
                         data['private'],
                         data['usage_type'],
-                        data['data'])
+                        data['data'],
+                    )
                     return HttpResponseRedirect(request.get_full_path())
                 else:
                     for msg_err in form.errors.values():
-                        error_messages.append(msg_err.as_text())
+                        messages.error(request, msg_err.as_text())
             if 'delete' in request.POST:
                 uuid = request.POST.get('uuid', '')
                 conn.delete_secret(uuid)
@@ -74,9 +69,9 @@ def secrets(request, compute_id):
                 try:
                     conn.set_secret_value(uuid, value)
                 except Exception as err:
-                    error_messages.append(err)
+                    messages.error(request, err)
                 return HttpResponseRedirect(request.get_full_path())
     except libvirtError as err:
-        error_messages.append(err)
+        messages.error(request, err)
 
     return render(request, 'secrets.html', locals())

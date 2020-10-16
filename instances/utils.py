@@ -1,38 +1,15 @@
 import os
 import random
 import string
-from collections import OrderedDict
-
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import UserInstance
 from appsettings.settings import app_settings
-from logs.views import addlogmsg
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from vrtManager.connection import connection_manager
-from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.instance import wvmInstance, wvmInstances
 
 from .models import Instance
-
-
-def filesizefstr(size_str):
-    if size_str == '':
-        return 0
-    size_str = size_str.upper().replace("B", "")
-    if size_str[-1] == 'K':
-        return int(float(size_str[:-1])) << 10
-    elif size_str[-1] == 'M':
-        return int(float(size_str[:-1])) << 20
-    elif size_str[-1] == 'G':
-        return int(float(size_str[:-1])) << 30
-    elif size_str[-1] == 'T':
-        return int(float(size_str[:-1])) << 40
-    elif size_str[-1] == 'P':
-        return int(float(size_str[:-1])) << 50
-    else:
-        return int(float(size_str))
 
 
 def get_clone_free_names(size=10):
@@ -186,36 +163,6 @@ def migrate_instance(
     instance.save()
 
 
-def get_hosts_status(computes):
-    """
-        Function return all hosts all vds on host
-        """
-    compute_data = []
-    for compute in computes:
-        compute_data.append({
-            'id': compute.id,
-            'name': compute.name,
-            'hostname': compute.hostname,
-            'status': connection_manager.host_is_up(compute.type, compute.hostname),
-            'type': compute.type,
-            'login': compute.login,
-            'password': compute.password,
-            'details': compute.details,
-        })
-    return compute_data
-
-
-def get_userinstances_info(instance):
-    info = {}
-    uis = UserInstance.objects.filter(instance=instance)
-    info['count'] = uis.count()
-    if info['count'] > 0:
-        info['first_user'] = uis[0]
-    else:
-        info['first_user'] = None
-    return info
-
-
 def refr(compute):
     if compute.status is True:
         domains = compute.proxy.wvm.listAllDomains()
@@ -227,83 +174,6 @@ def refr(compute):
         for domain in domains:
             if domain.name() not in names:
                 Instance(compute=compute, name=domain.name(), uuid=domain.UUIDString()).save()
-
-
-def refresh_instance_database(comp, inst_name, info, all_host_vms, user):
-    # Multiple Instance Name Check
-    instances = Instance.objects.filter(name=inst_name)
-    if instances.count() > 1:
-        for i in instances:
-            user_instances_count = UserInstance.objects.filter(instance=i).count()
-            if user_instances_count == 0:
-                addlogmsg(user.username, i.name, _("Deleting due to multiple(Instance Name) records."))
-                i.delete()
-
-    # Multiple UUID Check
-    instances = Instance.objects.filter(uuid=info['uuid'])
-    if instances.count() > 1:
-        for i in instances:
-            if i.name != inst_name:
-                addlogmsg(user.username, i.name, _("Deleting due to multiple(UUID) records."))
-                i.delete()
-
-    try:
-        inst_on_db = Instance.objects.get(compute_id=comp["id"], name=inst_name)
-        if inst_on_db.uuid != info['uuid']:
-            inst_on_db.save()
-
-        all_host_vms[comp["id"], comp["name"], comp["status"], comp["cpu"], comp["mem_size"],
-                     comp["mem_perc"]][inst_name]['is_template'] = inst_on_db.is_template
-        all_host_vms[comp["id"], comp["name"], comp["status"], comp["cpu"], comp["mem_size"],
-                     comp["mem_perc"]][inst_name]['userinstances'] = get_userinstances_info(inst_on_db)
-    except Instance.DoesNotExist:
-        inst_on_db = Instance(compute_id=comp["id"], name=inst_name, uuid=info['uuid'])
-        inst_on_db.save()
-
-
-def get_user_instances(user):
-    all_user_vms = {}
-    user_instances = UserInstance.objects.filter(user=user)
-    for usr_inst in user_instances:
-        if connection_manager.host_is_up(usr_inst.instance.compute.type, usr_inst.instance.compute.hostname):
-            conn = wvmHostDetails(
-                usr_inst.instance.compute.hostname,
-                usr_inst.instance.compute.login,
-                usr_inst.instance.compute.password,
-                usr_inst.instance.compute.type,
-            )
-            all_user_vms[usr_inst] = conn.get_user_instances(usr_inst.instance.name)
-            all_user_vms[usr_inst].update({'compute_id': usr_inst.instance.compute.id})
-    return all_user_vms
-
-
-def get_host_instances(compute):
-    all_host_vms = OrderedDict()
-
-    # if compute.status:
-    comp_node_info = compute.proxy.get_node_info()
-    comp_mem = compute.proxy.get_memory_usage()
-    comp_instances = compute.proxy.get_host_instances(True)
-
-    # if comp_instances:
-    comp_info = {
-        "id": compute.id,
-        "name": compute.name,
-        "status": compute.status,
-        "cpu": comp_node_info[3],
-        "mem_size": comp_node_info[2],
-        "mem_perc": comp_mem['percent'],
-    }
-    # refr(compute)
-    all_host_vms[comp_info["id"], comp_info["name"], comp_info["status"], comp_info["cpu"], comp_info["mem_size"],
-                 comp_info["mem_perc"]] = comp_instances
-    for vm, info in comp_instances.items():
-        # TODO: Delete this function completely
-        refresh_instance_database(comp_info, vm, info, all_host_vms, User.objects.get(pk=1))
-
-    # else:
-    #     raise libvirtError(_(f"Problem occurred with host: {compute.name} - {status}"))
-    return all_host_vms
 
 
 def get_dhcp_mac_address(vname):
@@ -342,20 +212,3 @@ def get_clone_disk_name(disk, prefix, clone_name=''):
     else:
         image = f"{disk['image']}-clone"
     return image
-
-
-# TODO: this function is not used
-def _get_clone_disks(disks, vname=''):
-    clone_disks = []
-    for disk in disks:
-        new_image = get_clone_disk_name(disk, vname)
-        if not new_image:
-            continue
-        new_disk = {
-            'dev': disk['dev'],
-            'storage': disk['storage'],
-            'image': new_image,
-            'format': disk['format'],
-        }
-        clone_disks.append(new_disk)
-    return clone_disks

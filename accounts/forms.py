@@ -1,7 +1,7 @@
 from appsettings.settings import app_settings
 from django.contrib.auth import get_user_model
 from django.forms import ModelForm, ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from .models import UserInstance, UserSSHKey
 from .utils import validate_ssh_key

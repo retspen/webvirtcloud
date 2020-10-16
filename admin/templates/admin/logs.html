@@ -1,55 +1,48 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load bootstrap4 %}
+
 {% block title %}{% trans "Logs" %}{% endblock %}
+
+{% block page_heading %}{% trans "Logs" %}{% endblock page_heading %}
+
 {% block content %}
-    <!-- Page Heading -->
-    <div class="row">
-        <div class="col-lg-12">
-            <h2 class="page-header">{% trans "Logs" %}</h2>
-        </div>
-    </div>
-    <!-- /.row -->
-
-    {% include 'errors_block.html' %}
-
-    <div class="row">
-        <div class="col-lg-12">
-            {% if not logs %}
-                <div class="col-lg-12">
-                    <div class="alert alert-warning alert-dismissable">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                        <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Logs" %}
-                    </div>
+<div class="row">
+    <div class="col-lg-12">
+        {% if not logs %}
+            <div class="col-lg-12">
+                <div class="alert alert-warning alert-dismissable">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Logs" %}
                 </div>
-            {% else %}
-                {% include "paging.html" %}
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead>
+            </div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">{% trans "Date" %}</th>
+                            <th scope="col">{% trans "User" %}</th>
+                            <th scope="col">{% trans "Instance" %}</th>
+                            <th scope="col">{% trans "Message" %}</th>
+                            </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
                             <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">{% trans "Date" %}</th>
-                                <th scope="col">{% trans "User" %}</th>
-                                <th scope="col">{% trans "Instance" %}</th>
-                                <th scope="col">{% trans "Message" %}</th>
-                                </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs %}
-                                <tr>
-                                    <td>{{ log.id }}</td>
-                                    <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
-                                    <td>{{ log.user }}</td>
-                                    <td>{{ log.instance }}</td>
-                                    <td>{{ log.message }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% bootstrap_pagination logs %}
-            {% endif %}
-        </div>
+                                <td>{{ log.id }}</td>
+                                <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
+                                <td>{{ log.user }}</td>
+                                <td>{{ log.instance }}</td>
+                                <td>{{ log.message }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% bootstrap_pagination logs %}
+        {% endif %}
     </div>
+</div>
 {% endblock %}

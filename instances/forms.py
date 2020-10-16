@@ -1,7 +1,7 @@
 import re
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from appsettings.models import AppSettings
 from webvirtcloud.settings import QEMU_CONSOLE_LISTEN_ADDRESSES, QEMU_KEYMAPS
@@ -61,6 +61,4 @@ class NewVMForm(forms.Form):
         have_symbol = re.match('^[a-zA-Z0-9._-]+$', name)
         if not have_symbol:
             raise forms.ValidationError(_('The name of the virtual machine must not contain any special characters'))
-        elif len(name) > 64:
-            raise forms.ValidationError(_('The name of the virtual machine must not exceed 20 characters'))
         return name

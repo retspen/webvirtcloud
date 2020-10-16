@@ -40,15 +40,16 @@
       <div class"row">
         <div class="col-sm-12">
           <div class="float-right">
-            {% block page_header_extra %}
-            {% endblock page_header_extra %}
+            {% block page_heading_extra %}
+            {% endblock page_heading_extra %}
           </div>
           <h3 class="page-header">
-            {% block page_header %}
-            {% endblock page_header %}
+            {% block page_heading %}
+            {% endblock page_heading %}
           </h3>
         </div>
       </div>
+      <hr>
       {% bootstrap_messages %}
       {% block content %}{% endblock %}
     </div>

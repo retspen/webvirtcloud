@@ -1,80 +1,74 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Edit Settings" %}{% endblock %}
+
+{% block title %}{% trans "Edit Settings" %}{% endblock title %}
+
+{% block page_heading %}{% trans "Edit Settings" %}{% endblock page_heading %}
+
 {% block content %}
-        <!-- Page Heading -->
-        <div class="row">
-            <div class="col-lg-12">
-                <h2 class="page-header">{% trans "Edit Settings" %}</h2>
+<div class="">
+    <div class="col-lg-12">
+        <h3 class="page-header">{% trans "App Settings" %}</h3>
+        <form action="{% url 'set_language' %}" method="post" style="display:inline" aria-label="Edit language.name_local settings form">{% csrf_token %}
+            <div class="form-group row">
+                <input name="next" type="hidden" value="{{ redirect_to }}">
+                <label class="col-sm-3 col-form-label">{% trans "Language" %}</label>
+                <div class="col-sm-6">
+                    <select name="language" class="form-control" onchange="this.form.submit()">
+                        {% get_current_language as LANGUAGE_CODE %}
+                        {% get_available_languages as LANGUAGES %}
+                        {% get_language_info_list for LANGUAGES as languages %}
+                        {% for language in languages %}
+                            <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+                                {{ language.name_local }} ({{ language.code }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-        </div>
-        <!-- /.row -->
-
-        {% include 'errors_block.html' %}
-
-        <div class="">
-            <div class="col-lg-12">
-                <h3 class="page-header">{% trans "App Settings" %}</h3>
-                <form action="{% url 'set_language' %}" method="post" style="display:inline" aria-label="Edit language.name_local settings form">{% csrf_token %}
-                    <div class="form-group row">
-                        <input name="next" type="hidden" value="{{ redirect_to }}">
-                        <label class="col-sm-3 col-form-label">{% trans "Language" %}</label>
-                        <div class="col-sm-6">
-                            <select name="language" class="form-control" onchange="this.form.submit()">
-                                {% get_current_language as LANGUAGE_CODE %}
-                                {% get_available_languages as LANGUAGES %}
-                                {% get_language_info_list for LANGUAGES as languages %}
-                                {% for language in languages %}
-                                    <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
-                                        {{ language.name_local }} ({{ language.code }})
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                </form>
-                {% if request.user.is_superuser %}
-                <form method="post" action="" role="form" aria-label="Edit sass directory settings form">{% csrf_token %}
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans sass_dir.name %}</label>
-                        <div class="col-sm-6">
-                            <input class="form-control" name="{{ sass_dir.key }}" value="{{ sass_dir.value }}" onchange="this.form.submit()" title="{% trans sass_dir.description %}"/>
-                        </div>
-                    </div>
-                </form>
-                <form method="post" action="" role="form" aria-label="Edit theme settings form">{% csrf_token %}
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">{% trans bootstrap_theme.name %}</label>
-                        <div class="col-sm-6">
-                            <select class="form-control" name="{{ bootstrap_theme.key }}" onchange="this.form.submit()" title="{% trans bootstrap_theme.description %}">
-                            {% for theme in themes_list %}
-                                <option {% if bootstrap_theme.value == theme %}selected{% endif %} value="{{ theme }}">{{ theme }}</option>
+        </form>
+        {% if request.user.is_superuser %}
+        <form method="post" action="" role="form" aria-label="Edit sass directory settings form">{% csrf_token %}
+            <div class="form-group row">
+                <label class="col-sm-3 col-form-label">{% trans sass_dir.name %}</label>
+                <div class="col-sm-6">
+                    <input class="form-control" name="{{ sass_dir.key }}" value="{{ sass_dir.value }}" onchange="this.form.submit()" title="{% trans sass_dir.description %}"/>
+                </div>
+            </div>
+        </form>
+        <form method="post" action="" role="form" aria-label="Edit theme settings form">{% csrf_token %}
+            <div class="form-group row">
+                <label class="col-sm-3 col-form-label">{% trans bootstrap_theme.name %}</label>
+                <div class="col-sm-6">
+                    <select class="form-control" name="{{ bootstrap_theme.key }}" onchange="this.form.submit()" title="{% trans bootstrap_theme.description %}">
+                    {% for theme in themes_list %}
+                        <option {% if bootstrap_theme.value == theme %}selected{% endif %} value="{{ theme }}">{{ theme }}</option>
+                    {% endfor %}
+                    </select>
+                    <span class="text-muted">{% trans "After change please full refresh page with 'Ctrl + F5' "%}</span>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+            <h3 class="page-header">{% trans "Other Settings" %}</h3>
+        {% for setting in appsettings %}
+            <form method="post" action="" role="form" aria-label="{{setting.name}} form">{% csrf_token %}
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">{% trans setting.name %}</label>
+                    <div class="col-sm-6">
+                    {% if setting.choices %}
+                        <select class="form-control" name="{{ setting.key }}"  onchange="this.form.submit()" title="{% trans setting.description %}">
+                            {% for choice in setting.choices_as_list %}
+                                <option {% if setting.value == choice %} selected {% endif %} value={{ choice }}>{% trans choice %}</option>
                             {% endfor %}
-                            </select>
-                            <span class="text-muted">{% trans "After change please full refresh page with 'Ctrl + F5' "%}</span>
-                        </div>
+                        </select>
+                    {% else %}
+                        <input class="form-control" name="{{ setting.key }}" value="{{ setting.value }}" title="{% trans setting.description %}"  onchange="this.form.submit()"/>
+                    {% endif%}
                     </div>
-                </form>
-                {% endif %}
-                 <h3 class="page-header">{% trans "Other Settings" %}</h3>
-                {% for setting in appsettings %}
-                    <form method="post" action="" role="form" aria-label="{{setting.name}} form">{% csrf_token %}
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">{% trans setting.name %}</label>
-                            <div class="col-sm-6">
-                            {% if setting.choices %}
-                                <select class="form-control" name="{{ setting.key }}"  onchange="this.form.submit()" title="{% trans setting.description %}">
-                                    {% for choice in setting.choices_as_list %}
-                                        <option {% if setting.value == choice %} selected {% endif %} value={{ choice }}>{% trans choice %}</option>
-                                    {% endfor %}
-                                </select>
-                            {% else %}
-                                <input class="form-control" name="{{ setting.key }}" value="{{ setting.value }}" title="{% trans setting.description %}"  onchange="this.form.submit()"/>
-                            {% endif%}
-                            </div>
-                        </div>
-                    </form>
-                {% endfor %}
-            </div>
-        </div>
+                </div>
+            </form>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

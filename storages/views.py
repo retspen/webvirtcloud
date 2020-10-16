@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 
 from admin.decorators import superuser_only
@@ -23,8 +23,8 @@ def storages(request, compute_id):
     :return:
     """
 
-    error_messages = []
     compute = get_object_or_404(Compute, pk=compute_id)
+    errors = False
 
     try:
         conn = wvmStorages(compute.hostname, compute.login, compute.password, compute.type)
@@ -38,15 +38,18 @@ def storages(request, compute_id):
                     data = form.cleaned_data
                     if data['name'] in storages:
                         msg = _("Pool name already use")
-                        error_messages.append(msg)
+                        messages.error(request, msg)
+                        errors = True
                     if data['stg_type'] == 'rbd':
                         if not data['secret']:
                             msg = _("You need create secret for pool")
-                            error_messages.append(msg)
+                            messages.error(request, msg)
+                            errors = True
                         if not data['ceph_pool'] and not data['ceph_host'] and not data['ceph_user']:
                             msg = _("You need input all fields for creating ceph pool")
-                            error_messages.append(msg)
-                    if not error_messages:
+                            messages.error(request, msg)
+                            errors = True
+                    if not errors:
                         if data['stg_type'] == 'rbd':
                             conn.create_storage_ceph(data['stg_type'], data['name'], data['ceph_pool'], data['ceph_host'],
                                                      data['ceph_user'], data['secret'])
@@ -58,10 +61,10 @@ def storages(request, compute_id):
                         return HttpResponseRedirect(reverse('storage', args=[compute_id, data['name']]))
                 else:
                     for msg_err in form.errors.values():
-                        error_messages.append(msg_err.as_text())
+                        messages.error(request, msg_err.as_text())
         conn.close()
     except libvirtError as lib_err:
-        error_messages.append(lib_err)
+        messages.error(request, lib_err)
 
     return render(request, 'storages.html', locals())
 
