@@ -9,52 +9,53 @@ CMD ["/sbin/my_init"]
 
 RUN echo 'APT::Get::Clean=always;' >> /etc/apt/apt.conf.d/99AutomaticClean
 
-RUN apt-get update -qqy
-RUN DEBIAN_FRONTEND=noninteractive apt-get -qyy install \
-	-o APT::Install-Suggests=false \
+RUN apt-get update -qqy \
+    && DEBIAN_FRONTEND=noninteractive apt-get -qyy install \
+	--no-install-recommends \
 	git \
-	python3-virtualenv \
+	python3-venv \
 	python3-dev \
 	python3-lxml \
-	virtualenv \
 	libvirt-dev \
 	zlib1g-dev \
 	nginx \
-	libsasl2-modules
+	pkg-config \
+	gcc \
+	libsasl2-modules \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-ADD . /srv/webvirtcloud
+COPY . /srv/webvirtcloud
 RUN chown -R www-data:www-data /srv/webvirtcloud
 
 # Setup webvirtcloud
-RUN cd /srv/webvirtcloud && \
-	virtualenv --python=python3 venv && \
+WORKDIR /srv/webvirtcloud
+RUN python3 -m venv venv && \
 	. venv/bin/activate && \
 	pip3 install -U pip && \
+	pip3 install wheel && \
 	pip3 install -r conf/requirements.txt && \
 	chown -R www-data:www-data /srv/webvirtcloud
 
-RUN cd /srv/webvirtcloud && . venv/bin/activate && \
-	python3 manage.py migrate && \
+RUN . venv/bin/activate && \
+    python3 manage.py migrate && \
 	chown -R www-data:www-data /srv/webvirtcloud
 
 # Setup Nginx
-RUN echo "\ndaemon off;" >> /etc/nginx/nginx.conf && \
+RUN printf "\n%s" "daemon off;" >> /etc/nginx/nginx.conf && \
 	rm /etc/nginx/sites-enabled/default && \
 	chown -R www-data:www-data /var/lib/nginx
 
-ADD conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+COPY conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 
 # Register services to runit
 RUN	mkdir /etc/service/nginx && \
 	mkdir /etc/service/nginx-log-forwarder && \
 	mkdir /etc/service/webvirtcloud && \
 	mkdir /etc/service/novnc
-ADD conf/runit/nginx			/etc/service/nginx/run
-ADD conf/runit/nginx-log-forwarder	/etc/service/nginx-log-forwarder/run
-ADD conf/runit/novncd.sh		/etc/service/novnc/run
-ADD conf/runit/webvirtcloud.sh		/etc/service/webvirtcloud/run
+COPY conf/runit/nginx				/etc/service/nginx/run
+COPY conf/runit/nginx-log-forwarder	/etc/service/nginx-log-forwarder/run
+COPY conf/runit/novncd.sh			/etc/service/novnc/run
+COPY conf/runit/webvirtcloud.sh		/etc/service/webvirtcloud/run
 
 # Define mountable directories.
 #VOLUME []
