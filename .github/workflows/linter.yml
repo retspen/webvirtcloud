@@ -50,10 +50,17 @@ jobs:
       
     - name: Install Required packages
       run: |
-        sudo apt-get install -y libvirt-dev python3-lxml zlib1g-dev libxslt1-dev
+        sudo apt-get install -y python3-virtualenv libvirt-dev python3-lxml zlib1g-dev libxslt1-dev
+
+    - name: Create & Activate VENV
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
+        pip3 install wheel
         if [ -f dev/requirements.txt ]; then pip3 install -r dev/requirements.txt; else pip3 install -r conf/requirements.txt; fi
     ################################
     # Run Linter against code base #
@@ -61,6 +68,7 @@ jobs:
     - name: Lint Code Base
       uses: docker://github/super-linter:latest
       env:
+        FILTER_REGEX_EXCLUDE: .*(static|scss|venv)/.*
         DEFAULT_BRANCH: master
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VALIDATE_ANSIBLE: false
