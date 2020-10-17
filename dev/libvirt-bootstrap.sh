@@ -68,7 +68,7 @@ __test_distro_arch
 #   DESCRIPTION:  Strip duplicate strings
 #-------------------------------------------------------------------------------
 __strip_duplicates() {
-    echo $@ | tr -s '[:space:]' '\n' | awk "!x[$0]++"
+    echo "$@" | tr -s '[:space:]' '\n' | awk '!x[$0]++'
 }
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -79,7 +79,7 @@ __strip_duplicates() {
 #-------------------------------------------------------------------------------
 __function_defined() {
     FUNC_NAME=$1
-    if [ "$(command -v $FUNC_NAME)x" != "x" ]; then
+    if [ "$(command -v "$FUNC_NAME")x" != "x" ]; then
         echoinfo "Found function $FUNC_NAME"
         return 0
     fi
@@ -117,7 +117,7 @@ __sort_release_files() {
     primary_release_files=""
     secondary_release_files=""
     # Sort know VS un-known files first
-    for release_file in $(echo $@ | sed -r 's:[[:space:]]:\n:g' | sort --unique --ignore-case); do
+    for release_file in $(echo "$@" | sed -r 's:[[:space:]]:\n:g' | sort --unique --ignore-case); do
         match=$(echo "$release_file" | grep -E -i "${KNOWN_RELEASE_FILES}")
         if [ "x${match}" != "x" ]; then
             primary_release_files="${primary_release_files} ${release_file}"
@@ -129,14 +129,14 @@ __sort_release_files() {
     # Now let's sort by know files importance, max important goes last in the max_prio list
     max_prio="redhat-release centos-release"
     for entry in $max_prio; do
-        if [ "x$(echo ${primary_release_files} | grep $entry)" != "x" ]; then
+        if [ "x$(echo "${primary_release_files}" | grep "$entry")" != "x" ]; then
             primary_release_files=$(echo "${primary_release_files}" | sed -e "s:\(.*\)\($entry\)\(.*\):\2 \1 \3:g")
         fi
     done
     # Now, least important goes last in the min_prio list
     min_prio="lsb-release"
-    for entry in $max_prio; do
-        if [ "x$(echo ${primary_release_files} | grep $entry)" != "x" ]; then
+    for entry in $min_prio; do
+        if [ "x$(echo "${primary_release_files}" | grep "$entry")" != "x" ]; then
             primary_release_files=$(echo "${primary_release_files}" | sed -e "s:\(.*\)\($entry\)\(.*\):\1 \3 \2:g")
         fi
     done
@@ -183,11 +183,11 @@ __gather_linux_system_info() {
         return
     fi
 
-    for rsource in $(__sort_release_files $(
-            cd /etc && /bin/ls *[_-]release *[_-]version 2>/dev/null | env -i sort | \
+    for rsource in $(__sort_release_files "$(
+            cd /etc && find ./*[_-]release ./*[_-]version -printf "%f\n" 2>/dev/null  | env -i sort | \
             sed -e '/^redhat-release$/d' -e '/^lsb-release$/d'; \
             echo redhat-release lsb-release
-            )); do
+            )"); do
 
         [ -L "/etc/${rsource}" ] && continue        # Don't follow symlinks
         [ ! -f "/etc/${rsource}" ] && continue      # Does not exist
@@ -198,9 +198,9 @@ __gather_linux_system_info() {
         v=$(__parse_version_string "$rv")
         case $(echo "${n}" | tr '[:upper:]' '[:lower:]') in
             redhat             )
-                if [ ".$(grep -E 'CentOS' /etc/${rsource})" != . ]; then
+                if [ ".$(grep -E 'CentOS' /etc/"${rsource}")" != . ]; then
                     n="CentOS"
-                elif [ ".$(grep -E 'Red Hat Enterprise Linux' /etc/${rsource})" != . ]; then
+                elif [ ".$(grep -E 'Red Hat Enterprise Linux' /etc/"${rsource}")" != . ]; then
                     n="<R>ed <H>at <E>nterprise <L>inux"
                 else
                     n="<R>ed <H>at <L>inux"
@@ -257,9 +257,9 @@ __gather_linux_system_info() {
 __gather_linux_system_info
 
 # Simplify distro name naming on functions
-DISTRO_NAME_L=$(echo $DISTRO_NAME | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9_ ]//g' | sed -re 's/([[:space:]])+/_/g')
-DISTRO_MAJOR_VERSION="$(echo $DISTRO_VERSION | sed 's/^\([0-9]*\).*/\1/g')"
-DISTRO_MINOR_VERSION="$(echo $DISTRO_VERSION | sed 's/^\([0-9]*\).\([0-9]*\).*/\2/g')"
+DISTRO_NAME_L=$(echo "$DISTRO_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9_ ]//g' | sed -re 's/([[:space:]])+/_/g')
+DISTRO_MAJOR_VERSION="$(echo "$DISTRO_VERSION" | sed 's/^\([0-9]*\).*/\1/g')"
+DISTRO_MINOR_VERSION="$(echo "$DISTRO_VERSION" | sed 's/^\([0-9]*\).\([0-9]*\).*/\2/g')"
 PREFIXED_DISTRO_MAJOR_VERSION="_${DISTRO_MAJOR_VERSION}"
 if [ "${PREFIXED_DISTRO_MAJOR_VERSION}" = "_" ]; then
     PREFIXED_DISTRO_MAJOR_VERSION=""
@@ -293,9 +293,9 @@ __check_end_of_life_versions() {
             #  = 10.10
             #  = 11.04
             #  = 11.10
-            if ([ "$DISTRO_MAJOR_VERSION" -eq 10 ] && [ "$DISTRO_MINOR_VERSION" -eq 10 ]) || \
-               ([ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$DISTRO_MINOR_VERSION" -eq 04 ]) || \
-               ([ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$DISTRO_MINOR_VERSION" -eq 10 ]) || \
+            if { [ "$DISTRO_MAJOR_VERSION" -eq 10 ] && [ "$DISTRO_MINOR_VERSION" -eq 10 ]; } || \
+               { [ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$DISTRO_MINOR_VERSION" -eq 04 ]; } || \
+               { [ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$DISTRO_MINOR_VERSION" -eq 10 ]; } || \
                [ "$DISTRO_MAJOR_VERSION" -lt 10 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
@@ -308,7 +308,7 @@ __check_end_of_life_versions() {
             # openSUSE versions not supported
             #
             #  <= 12.1
-            if ([ "$DISTRO_MAJOR_VERSION" -eq 12 ] && [ "$DISTRO_MINOR_VERSION" -eq 1 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 12 ]; then
+            if { [ "$DISTRO_MAJOR_VERSION" -eq 12 ] && [ "$DISTRO_MINOR_VERSION" -eq 1 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 12 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    http://en.opensuse.org/Lifetime"
@@ -324,7 +324,7 @@ __check_end_of_life_versions() {
             if [ "x${SUSE_PATCHLEVEL}" = "x" ]; then
                 SUSE_PATCHLEVEL="00"
             fi
-            if ([ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$SUSE_PATCHLEVEL" -lt 02 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 11 ]; then
+            if { [ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$SUSE_PATCHLEVEL" -lt 02 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 11 ]; then
                 echoerror "Versions lower than SuSE 11 SP2 are not supported."
                 echoerror "Please consider upgrading to the next stable"
                 exit 1
@@ -343,7 +343,7 @@ __check_end_of_life_versions() {
 
         centos)
             # CentOS versions lower than 5 are no longer supported
-            if ([ "$DISTRO_MAJOR_VERSION" -eq 6 ] && [ "$DISTRO_MINOR_VERSION" -lt 3 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 5 ]; then
+            if { [ "$DISTRO_MAJOR_VERSION" -eq 6 ] && [ "$DISTRO_MINOR_VERSION" -lt 3 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 5 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    http://wiki.centos.org/Download"
@@ -353,7 +353,7 @@ __check_end_of_life_versions() {
 
         red_hat*linux)
             # Red Hat (Enterprise) Linux versions lower than 5 are no longer supported
-            if ([ "$DISTRO_MAJOR_VERSION" -eq 6 ] && [ "$DISTRO_MINOR_VERSION" -lt 3 ]) || [ "$DISTRO_MAJOR_VERSION" -lt 5 ]; then
+            if { [ "$DISTRO_MAJOR_VERSION" -eq 6 ] && [ "$DISTRO_MINOR_VERSION" -lt 3 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 5 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    https://access.redhat.com/support/policy/updates/errata/"
@@ -679,7 +679,7 @@ install_debian_post() {
     fi
     if [ -f /etc/default/$LIBVIRTSVC ]; then
         if [ "$( grep -c '^libvirtd_opts *=' /etc/default/$LIBVIRTSVC )" -gt 0 ]; then
-            if [ $( grep -c '^libvirtd_opts *=.*-l' /etc/default/$LIBVIRTSVC ) -eq 0 ]; then
+            if [ "$( grep -c '^libvirtd_opts *=.*-l' /etc/default/$LIBVIRTSVC )" -eq 0 ]; then
                 sed -i 's/^libvirtd_opts="\([^"]*\)"/libvirtd_opts="\1 -l"/g' /etc/default/$LIBVIRTSVC
             fi
         else

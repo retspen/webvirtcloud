@@ -183,6 +183,7 @@ run_as_app_user () {
 activate_python_environment () {
     cd "$APP_PATH" || exit
     virtualenv -p "$PYTHON" venv
+    # shellcheck disable=SC1091
     source venv/bin/activate
 }
 
@@ -203,7 +204,7 @@ install_webvirtcloud () {
   echo "* Configuring settings.py file."
   cp "$APP_PATH/webvirtcloud/settings.py.template" "$APP_PATH/webvirtcloud/settings.py"
   
-  local secret_key=$(generate_secret_key)
+  secret_key=$(generate_secret_key)
   echo "* Secret for Django generated: $secret_key"
 
   #TODO escape SED delimiter in variables
