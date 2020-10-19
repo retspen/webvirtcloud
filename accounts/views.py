@@ -1,7 +1,7 @@
 from admin.decorators import superuser_only
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,11 +9,11 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 
-from accounts.forms import ProfileForm, UserSSHKeyForm
+from accounts.forms import EmailOTPForm, ProfileForm, UserSSHKeyForm
 from accounts.models import *
 
 from . import forms
-from .utils import get_user_totp_device
+from .utils import get_user_totp_device, send_email_with_otp
 
 
 def profile(request):
@@ -65,13 +65,15 @@ def account(request, user_id):
     user_insts = UserInstance.objects.filter(user_id=user_id)
     instances = Instance.objects.all().order_by("name")
     publickeys = UserSSHKey.objects.filter(user_id=user_id)
-    if settings.OTP_ENABLED:
-        device = get_user_totp_device(user)
-        if not device:
-            device = user.totpdevice_set.create()
-        totp_url = device.config_url
 
-    return render(request, "account.html", locals())
+    return render(
+        request, "account.html", {
+            'user': user,
+            'user_insts': user_insts,
+            'instances': instances,
+            'publickeys': publickeys,
+            'otp_enabled': settings.OTP_ENABLED,
+        })
 
 
 @permission_required("accounts.change_password", raise_exception=True)
@@ -141,3 +143,33 @@ def user_instance_delete(request, pk):
         "common/confirm_delete.html",
         {"object": user_instance},
     )
+
+
+def email_otp(request):
+    form = EmailOTPForm(request.POST or None)
+    if form.is_valid():
+        UserModel = get_user_model()
+        try:
+            user = UserModel.objects.get(email=form.cleaned_data['email'])
+        except UserModel.DoesNotExist:
+            pass
+        else:
+            device = get_user_totp_device(user)
+            send_email_with_otp(user, device)
+
+        messages.success(request, _('OTP Sent to %s') % form.cleaned_data['email'])
+        return redirect('accounts:login')
+
+    return render(request, 'accounts/email_otp_form.html', {
+        'form': form,
+        'title': _('Email OTP'),
+    })
+
+
+@superuser_only
+def admin_email_otp(request, user_id):
+    user = get_object_or_404(get_user_model(), pk=user_id)
+    device = get_user_totp_device(user)
+    send_email_with_otp(user, device)
+    messages.success(request, _('OTP QR code was emailed to user %s') % user)
+    return redirect('accounts:account', user.id)

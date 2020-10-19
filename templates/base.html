@@ -34,7 +34,9 @@
 
   <body>
 
+    {% if request.user.is_authenticated %}
     {% include 'navbar.html' %}
+    {% endif %}
 
     <div role="main" class="container">
       <div class"row">

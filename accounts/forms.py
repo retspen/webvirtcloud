@@ -1,6 +1,6 @@
 from appsettings.settings import app_settings
 from django.contrib.auth import get_user_model
-from django.forms import ModelForm, ValidationError
+from django.forms import EmailField, Form, ModelForm, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from .models import UserInstance, UserSSHKey
@@ -69,3 +69,7 @@ class UserSSHKeyForm(ModelForm):
     class Meta:
         model = UserSSHKey
         fields = ('keyname', 'keypublic')
+
+
+class EmailOTPForm(Form):
+    email = EmailField(label=_('Email'))

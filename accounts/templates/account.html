@@ -8,7 +8,15 @@
 {% block page_heading %}{% trans "User Profile" %}: {{ user }}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-<a href="{% url 'accounts:user_instance_create' user.id %}" class="btn btn-success">
+{% if otp_enabled %}
+<a href="{% url 'accounts:admin_email_otp' user.id %}" class="btn btn-secondary" title="{% trans "Email OTP QR code" %}">
+    {% icon 'qrcode' %}
+</a>
+{% endif %}
+<a href="{% url 'admin:user_update' user.id %}?next={% url 'accounts:account' user.id %}" class="btn btn-primary" title="{% trans "Edit user" %}">
+    {% icon 'pencil' %}
+</a>
+<a href="{% url 'accounts:user_instance_create' user.id %}" class="btn btn-success" title="{% trans "Create user instance" %}">
     {% icon 'plus' %}
 </a>
 {% endblock page_heading_extra %}
@@ -21,11 +29,6 @@
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#public-keys">{% trans "Public Keys" %}</a>
         </li>
-        {% if totp_url %}
-        <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#otp">{% trans "OTP QR Code" %}</a>
-        </li>
-        {% endif %}
     </ul>
 
     <div class="tab-content">
@@ -82,12 +85,5 @@
                 </tbody>
             </table>
         </div>
-        {% if totp_url %}
-        <div class="tab-pane fade" id="otp">
-            <div class="text-center">
-                {% qr_from_text totp_url image_format="png" %}
-            </div>
-        </div>
-        {% endif %}
     </div>
 {% endblock content %}
