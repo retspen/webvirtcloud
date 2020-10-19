@@ -20,10 +20,14 @@ urlpatterns = [
 ]
 
 if settings.OTP_ENABLED:
-    urlpatterns += path(
-        'login/',
-        LoginView.as_view(template_name='accounts/otp_login.html', authentication_form=OTPAuthenticationForm),
-        name='login',
-    ),
+    urlpatterns += [
+        path(
+            'login/',
+            LoginView.as_view(template_name='accounts/otp_login.html', authentication_form=OTPAuthenticationForm),
+            name='login',
+        ),
+        path('email_otp/', views.email_otp, name='email_otp'),
+        path('admin_email_otp/<int:user_id>/', views.admin_email_otp, name='admin_email_otp'),
+    ]
 else:
     urlpatterns += path('login/', LoginView.as_view(template_name='login.html'), name='login'),
