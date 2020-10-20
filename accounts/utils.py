@@ -2,6 +2,9 @@ import base64
 import binascii
 import struct
 
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.translation import gettext as _
 from django_otp import devices_for_user
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
@@ -11,6 +14,9 @@ def get_user_totp_device(user):
     for device in devices:
         if isinstance(device, TOTPDevice):
             return device
+
+    device = user.totpdevice_set.create()
+    return device
 
 
 def validate_ssh_key(key):
@@ -37,3 +43,20 @@ def validate_ssh_key(key):
         return True
     else:
         return False
+
+
+def send_email_with_otp(user, device):
+    send_mail(
+        _('OTP QR Code'),
+        _('Please view HTML version of this message.'),
+        None,
+        [user.email],
+        html_message=render_to_string(
+            'accounts/email/otp.html',
+            {
+                'totp_url': device.config_url,
+                'user': user,
+            },
+        ),
+        fail_silently=False,
+    )

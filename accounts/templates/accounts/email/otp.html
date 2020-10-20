@@ -1,0 +1,7 @@
+{% load i18n %}
+{% load qr_code %}
+{% blocktrans %}
+Scan this QR code to get OTP for account '{{ user }}'
+{% endblocktrans %}
+<br>
+{% qr_from_text totp_url %}

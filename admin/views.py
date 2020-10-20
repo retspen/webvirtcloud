@@ -120,12 +120,12 @@ def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
     attributes = UserAttributes.objects.get(user=user)
     user_form = forms.UserForm(request.POST or None, instance=user)
-    attributes_form = forms.UserAttributesForm(
-        request.POST or None, instance=attributes)
+    attributes_form = forms.UserAttributesForm(request.POST or None, instance=attributes)
     if user_form.is_valid() and attributes_form.is_valid():
         user_form.save()
         attributes_form.save()
-        return redirect("admin:user_list")
+        next = request.GET.get('next')
+        return redirect(next or "admin:user_list")
 
     return render(
         request,
@@ -146,8 +146,7 @@ def user_update_password(request, pk):
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
-            messages.success(request, _(
-                "User password changed: {}".format(user.username)))
+            messages.success(request, _("User password changed: {}".format(user.username)))
             return redirect("admin:user_list")
         else:
             messages.error(request, _("Wrong Data Provided"))
@@ -159,8 +158,8 @@ def user_update_password(request, pk):
         "accounts/change_password_form.html",
         {
             "form": form,
-            "user": user.username
-        }
+            "user": user.username,
+        },
     )
 
 
