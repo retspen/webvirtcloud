@@ -4,7 +4,7 @@
 
 {% block title %}{% trans "Interfaces" %} - {{ compute.name }}{% endblock %}
 
-{% block page_heading%}{% trans "Interfaces" %} - {{ compute.name }}{% endblock page_heading %}
+{% block page_heading %}{{ compute.name }} - {% trans "Interfaces" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}{% include 'create_iface_block.html' %}{% endblock page_heading_extra %}
 
