@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}{{ compute.name }} - {% trans "Storages" %}{% endblock %}
+{% block title %}{% trans "Storages" %} - {{ compute.name }}{% endblock %}
 
 {% block page_heading %}{{ compute.name }} - {% trans "Storages" %}{% endblock page_heading %}
 
@@ -37,6 +37,7 @@
             </nav>
         </div>
     </div>
+
     <div class="row">
         {% if not storages %}
             <div class="col-lg-12">

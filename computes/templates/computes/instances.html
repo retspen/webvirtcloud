@@ -6,7 +6,7 @@
 {% block style %}
 <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
 {% endblock %}
-{% block page_heading %}{{ compute.name }}{% endblock page_heading %}
+{% block page_heading %}{{ compute.name }} - {% trans "Instances" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
 <a href="{% url 'instances:create_instance_select_type' compute.id %}"
