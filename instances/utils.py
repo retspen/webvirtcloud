@@ -144,7 +144,10 @@ def migrate_instance(
             compress,
             postcopy,
         )
+    finally:
+        conn_migrate.close()
 
+    try:
         conn_new = wvmInstance(
             new_compute.hostname,
             new_compute.login,
@@ -156,7 +159,6 @@ def migrate_instance(
         if autostart:
             conn_new.set_autostart(1)
     finally:
-        conn_migrate.close()
         conn_new.close()
 
     instance.compute = new_compute
