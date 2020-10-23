@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-20 09:29+0000\n"
+"POT-Creation-Date: 2020-10-23 07:53+0000\n"
 "PO-Revision-Date: 2020-06-09 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -22,87 +22,122 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: accounts/forms.py:24
+#: accounts/forms.py:25
 #, fuzzy
 #| msgid "Instance owners"
 msgid "Instance owned by another user"
-msgstr "Sanal makine sahipleri"
+msgstr "Diğer kullanının sanal makineleri"
 
-#: accounts/models.py:24
+#: accounts/forms.py:49
+msgid "Key name already exist"
+msgstr "Anahtar adı zaten mevcut"
+
+#: accounts/forms.py:56
+msgid "Public key already exist"
+msgstr "Açık anahtar zaten mevcut"
+
+#: accounts/forms.py:59
+#, fuzzy
+#| msgid "Invalid cache mode"
+msgid "Invalid key"
+msgstr "Geçersiz anahtar"
+
+#: accounts/forms.py:75
+msgid "Email"
+msgstr "E-posta"
+
+#: accounts/models.py:23
 #, python-format
 msgid "Instance \"%(inst)s\" of user %(user)s"
-msgstr ""
+msgstr " %(user)s kulanıcısının sanal makinesi \"%(inst)s\""
 
-#: accounts/models.py:32
+#: accounts/models.py:31
 msgid "key name"
 msgstr "anahtar adı"
 
-#: accounts/models.py:33
+#: accounts/models.py:32
 msgid "public key"
 msgstr "açık anahtar"
 
-#: accounts/models.py:42
+#: accounts/models.py:41
 msgid "max instances"
-msgstr "maksimum sanal makineler"
+msgstr "en fazla sanal makine"
 
-#: accounts/models.py:44 accounts/models.py:51 accounts/models.py:57
-#: accounts/models.py:63
+#: accounts/models.py:43 accounts/models.py:50 accounts/models.py:56
+#: accounts/models.py:62
 msgid "-1 for unlimited. Any integer value"
-msgstr "Herhangi bir değer. Sınırsız için -1."
+msgstr "Herhangi bir sayısal değer. Sınırsız için -1."
 
-#: accounts/models.py:49
+#: accounts/models.py:48
 msgid "max CPUs"
-msgstr "maksimum CPUlar"
+msgstr "en fazla CPU"
 
-#: accounts/models.py:55
+#: accounts/models.py:54
 msgid "max memory"
-msgstr "maksimum bellek"
+msgstr "en fazla bellek"
 
-#: accounts/models.py:61
+#: accounts/models.py:60
 msgid "max disk size"
-msgstr "Maksimum disk boyutu"
+msgstr "en fazla disk kapasitesi"
 
-#: accounts/models.py:77
+#: accounts/models.py:76
 msgid "Can change password"
 msgstr "Parola değiştirebilir"
 
-#: accounts/templates/account.html:4 accounts/templates/account.html:12
+#: accounts/templates/account.html:7 accounts/templates/account.html:8
 #, fuzzy
 #| msgid "View Profile"
 msgid "User Profile"
-msgstr "Profili Görüntüle"
+msgstr "Kullanıcı Profili"
 
-#: accounts/templates/account.html:21
+#: accounts/templates/account.html:12
+msgid "Email OTP QR code"
+msgstr "OTP QR Kodu e-postası"
+
+#: accounts/templates/account.html:16
+#, fuzzy
+#| msgid "Edit user info"
+msgid "Edit user"
+msgstr "Kullanıcı düzenle"
+
+#: accounts/templates/account.html:19
+#, fuzzy
+#| msgid "Create new instance"
+msgid "Create user instance"
+msgstr "Yeni sanal makine oluştur"
+
+#: accounts/templates/account.html:27
 #: computes/templates/computes/instances.html:5
+#: computes/templates/computes/instances.html:9
 #: computes/templates/computes/instances.html:32
-#: computes/templates/overview.html:16 instances/templates/allinstances.html:5
+#: computes/templates/overview.html:19 instances/templates/allinstances.html:5
 #: instances/templates/allinstances.html:9
 #: instances/templates/bottom_bar.html:17
-#: interfaces/templates/interface.html:14
-#: interfaces/templates/interfaces.html:17 networks/templates/network.html:16
-#: networks/templates/networks.html:20 nwfilters/templates/nwfilter.html:15
-#: nwfilters/templates/nwfilters.html:24 secrets/templates/secrets.html:20
-#: storages/templates/storage.html:20 storages/templates/storages.html:20
+#: interfaces/templates/interface.html:16
+#: interfaces/templates/interfaces.html:20 networks/templates/network.html:17
+#: networks/templates/networks.html:19 nwfilters/templates/nwfilter.html:17
+#: nwfilters/templates/nwfilters.html:25 secrets/templates/secrets.html:23
+#: storages/templates/storage.html:22 storages/templates/storages.html:19
 #: templates/navbar.html:14
 msgid "Instances"
 msgstr "Sanal Makineler"
 
-#: accounts/templates/account.html:24
+#: accounts/templates/account.html:30
 #, fuzzy
 #| msgid "Public key"
 msgid "Public Keys"
 msgstr "Açık anahtar"
 
-#: accounts/templates/account.html:34 admin/templates/admin/logs.html:34
-#: instances/templates/instance.html:4
+#: accounts/templates/account.html:40 admin/templates/admin/logs.html:27
+#: instances/templates/instance.html:5
 msgid "Instance"
 msgstr "Sanal Makine"
 
-#: accounts/templates/account.html:35
+#: accounts/templates/account.html:41
 msgid "VNC"
 msgstr "VNC"
 
-#: accounts/templates/account.html:36 instances/templates/instance.html:87
+#: accounts/templates/account.html:42 instances/templates/instance.html:87
 #: instances/templates/instances/resize_tab.html:56
 #: instances/templates/instances/resize_tab.html:58
 #: instances/templates/instances/resize_tab.html:85
@@ -112,346 +147,126 @@ msgstr "VNC"
 #: instances/templates/instances/resize_tab.html:153
 #: instances/templates/instances/resize_tab.html:158
 msgid "Resize"
-msgstr "Boyutlandır"
+msgstr "Yeniden Boyutlandır"
 
-#: accounts/templates/account.html:37 accounts/templates/account.html:55
-#: accounts/templates/accounts-list.html:133
-#: accounts/templates/accounts.html:126 accounts/templates/profile.html:60
-#: admin/templates/admin/common/list.html:22
-#: admin/templates/admin/group_list.html:47
-#: admin/templates/admin/user_list.html:67
-#: computes/templates/computes/list.html:55
+#: accounts/templates/account.html:43 accounts/templates/account.html:61
+#: accounts/templates/profile.html:51 admin/templates/admin/group_list.html:46
+#: admin/templates/admin/user_list.html:68
+#: computes/templates/computes/list.html:54
 #: instances/templates/instances/settings_tab.html:310
 #: instances/templates/instances/settings_tab.html:314
-#: interfaces/templates/interface.html:61 networks/templates/network.html:53
-#: nwfilters/templates/nwfilter.html:114 nwfilters/templates/nwfilter.html:154
-#: nwfilters/templates/nwfilters.html:123 secrets/templates/secrets.html:77
-#: storages/templates/storage.html:62 storages/templates/storage.html:175
-#: templates/common/confirm_delete.html:6
-#: templates/common/confirm_delete.html:16
+#: interfaces/templates/interface.html:60 networks/templates/network.html:50
+#: nwfilters/templates/nwfilter.html:111 nwfilters/templates/nwfilter.html:151
+#: nwfilters/templates/nwfilters.html:120 secrets/templates/secrets.html:77
+#: storages/templates/storage.html:61 storages/templates/storage.html:174
+#: templates/common/confirm_delete.html:21
 #: venv/lib/python3.6/site-packages/django/forms/formsets.py:375
 #: venv2/lib/python2.7/site-packages/django/forms/formsets.py:394
 msgid "Delete"
 msgstr "Sil"
 
-#: accounts/templates/account.html:38
-#: instances/templates/create_instance_w2.html:86
+#: accounts/templates/account.html:44
+#: instances/templates/create_instance_w2.html:81
 #: instances/templates/instances/settings_tab.html:239
 #: instances/templates/instances/snapshots_tab.html:49
-#: nwfilters/templates/nwfilter.html:104 nwfilters/templates/nwfilter.html:138
-#: nwfilters/templates/nwfilters.html:60 secrets/templates/secrets.html:62
-#: storages/templates/storage.html:101
+#: nwfilters/templates/nwfilter.html:101 nwfilters/templates/nwfilter.html:135
+#: nwfilters/templates/nwfilters.html:57 secrets/templates/secrets.html:62
+#: storages/templates/storage.html:100
 msgid "Action"
 msgstr "Eylem"
 
-#: accounts/templates/account.html:50
+#: accounts/templates/account.html:56
 msgid "edit"
 msgstr "düzenle"
 
-#: accounts/templates/account.html:68 accounts/templates/profile.html:74
+#: accounts/templates/account.html:74
 msgid "Key name"
 msgstr "Anahtar adı"
 
-#: accounts/templates/account.html:69 accounts/templates/profile.html:80
+#: accounts/templates/account.html:75
 msgid "Public key"
 msgstr "Açık anahtar"
 
-#: accounts/templates/accounts-list.html:4
-#: accounts/templates/accounts-list.html:13 accounts/templates/accounts.html:3
-#: accounts/templates/accounts.html:9 admin/templates/admin/group_list.html:5
-#: admin/templates/admin/user_list.html:6
-#: admin/templates/admin/user_list.html:16 admin/views.py:84
-#: instances/templates/instances/settings_tab.html:63 templates/navbar.html:29
-msgid "Users"
-msgstr "Kullanıcılar"
-
-#: accounts/templates/accounts-list.html:11
-#: admin/templates/admin/group_list.html:13
-#: admin/templates/admin/user_list.html:14
-#: computes/templates/computes/instances.html:18
-#: instances/templates/allinstances.html:16
-#: nwfilters/templates/nwfilters.html:11 storages/templates/storage.html:88
-#: templates/search_block.html:3
-msgid "Search"
-msgstr "Ara"
-
-#: accounts/templates/accounts-list.html:25 accounts/templates/accounts.html:21
-#: admin/templates/admin/group_list.html:24 admin/templates/admin/logs.html:22
-#: admin/templates/admin/user_list.html:25
-#: computes/templates/computes/instances.html:57
-#: computes/templates/computes/list.html:21
-#: instances/templates/create_instance_w2.html:71
-#: interfaces/templates/interfaces.html:47 networks/templates/networks.html:50
-#: nwfilters/templates/nwfilters.html:138 secrets/templates/secrets.html:50
-#: storages/templates/storage.html:188 storages/templates/storages.html:50
-msgid "Warning"
-msgstr "Uyarı"
-
-#: accounts/templates/accounts-list.html:25 accounts/templates/accounts.html:21
-#: admin/templates/admin/user_list.html:25
-msgid "You don't have any user"
-msgstr "Hiç kullanıcınız yok"
-
-#: accounts/templates/accounts-list.html:33 accounts/templates/profile.html:31
-#: admin/templates/admin/user_list.html:33
-msgid "Username"
-msgstr "Kullanıcı Adı"
-
-#: accounts/templates/accounts-list.html:34 accounts/templates/accounts.html:44
-#: admin/templates/admin/user_list.html:34
-#: computes/templates/computes/instances.html:68
-#: computes/templates/computes/list.html:30
-#: instances/templates/allinstances_index_grouped.html:9
-#: instances/templates/allinstances_index_nongrouped.html:9
-msgid "Status"
-msgstr "Durum"
-
-#: accounts/templates/accounts-list.html:35
-#: admin/templates/admin/user_list.html:35
-msgid "Staff"
-msgstr "Görevli"
-
-#: accounts/templates/accounts-list.html:36
-#: admin/templates/admin/user_list.html:36
-msgid "Superuser"
-msgstr "Süperkullanıcı"
-
-#: accounts/templates/accounts-list.html:37
-#: instances/templates/instance_actions.html:6
-#: instances/templates/instances/settings_tab.html:37
-#: instances/templates/instances/settings_tab.html:783
-#: instances/templates/instances/settings_tab.html:785
-#: nwfilters/templates/nwfilters.html:112
-#: nwfilters/templates/nwfilters.html:118 storages/templates/storage.html:156
-#: storages/templates/storage.html:163
-msgid "Clone"
-msgstr "Klonla"
-
-#: accounts/templates/accounts-list.html:45
-#: accounts/templates/accounts-list.html:148
-#: accounts/templates/accounts.html:36 accounts/templates/accounts.html:141
-#: admin/templates/admin/common/list.html:16
-#: admin/templates/admin/group_list.html:44
-#: admin/templates/admin/user_list.html:61
-#: computes/templates/computes/list.html:54 networks/templates/network.html:85
-#: nwfilters/templates/nwfilter.html:62 secrets/templates/secrets.html:74
-msgid "Edit"
-msgstr "Düzenle"
-
-#: accounts/templates/accounts-list.html:51 accounts/templates/accounts.html:48
-#: admin/templates/admin/user_list.html:50
-#: computes/templates/computes/instances.html:94
-#: instances/templates/allinstances_index_grouped.html:57
-#: instances/templates/allinstances_index_nongrouped.html:40
-#: instances/templates/instance.html:17
-msgid "Active"
-msgstr "Aktif"
-
-#: accounts/templates/accounts-list.html:53 accounts/templates/accounts.html:50
-#: admin/templates/admin/user_list.html:52
-msgid "Blocked"
-msgstr "Engelli"
-
-#: accounts/templates/accounts-list.html:71 accounts/templates/accounts.html:63
-msgid "Edit user info"
-msgstr "Kullanıcı bilgisi düzenle"
-
-#: accounts/templates/accounts-list.html:76 accounts/templates/accounts.html:69
-#: accounts/templates/create_user_block.html:18
-#: computes/templates/computes/instances.html:66
-#: computes/templates/computes/list.html:29
-#: instances/templates/add_instance_volume.html:40
-#: instances/templates/add_instance_volume.html:42
-#: instances/templates/allinstances_index_grouped.html:7
-#: instances/templates/allinstances_index_nongrouped.html:5
-#: instances/templates/create_instance_w2.html:82
-#: instances/templates/create_instance_w2.html:108
-#: instances/templates/create_instance_w2.html:111
-#: instances/templates/create_instance_w2.html:310
-#: instances/templates/create_instance_w2.html:312
-#: instances/templates/create_instance_w2.html:523
-#: instances/templates/create_instance_w2.html:525
-#: instances/templates/instances/settings_tab.html:340
-#: instances/templates/instances/snapshots_tab.html:47
-#: interfaces/templates/create_iface_block.html:18
-#: interfaces/templates/interface.html:76
-#: networks/templates/create_net_block.html:18
-#: networks/templates/modify_ipv4_fixed_address.html:30
-#: networks/templates/modify_ipv6_fixed_address.html:30
-#: networks/templates/network.html:177 networks/templates/network.html:286
-#: nwfilters/templates/nwfilter.html:44 nwfilters/templates/nwfilters.html:59
-#: nwfilters/templates/nwfilters.html:103
-#: nwfilters/templates/nwfilters.html:105
-#: storages/templates/create_stg_block.html:42
-#: storages/templates/create_stg_block.html:71
-#: storages/templates/create_stg_block.html:100
-#: storages/templates/create_stg_block.html:165
-#: storages/templates/create_stg_block.html:214
-#: storages/templates/create_stg_vol_block.html:21
-#: storages/templates/storage.html:97 storages/templates/storage.html:125
-#: storages/templates/storage.html:127
-msgid "Name"
-msgstr "Ad"
-
-#: accounts/templates/accounts-list.html:83 accounts/templates/accounts.html:76
-#: accounts/templates/create_user_block.html:24
-#: accounts/templates/login.html:19
-#: console/templates/console-spice-full.html:201
-#: console/templates/console-spice-lite.html:58
-#: console/templates/console-spice-lite.html:99
-msgid "Password"
-msgstr "Parola"
-
-#: accounts/templates/accounts-list.html:89 accounts/templates/accounts.html:82
-msgid "Is staff"
-msgstr "Görevli mi"
-
-#: accounts/templates/accounts-list.html:95 accounts/templates/accounts.html:88
-msgid "Is superuser"
-msgstr "Süperkullanıcı mı"
-
-#: accounts/templates/accounts-list.html:101
-#: accounts/templates/accounts.html:94
-msgid "Can clone instances"
-msgstr "Sanal makineleri klonlayabilir"
-
-#: accounts/templates/accounts-list.html:107
-#: accounts/templates/accounts.html:100
-msgid "Max instances"
-msgstr "Maksimum sanal makine"
-
-#: accounts/templates/accounts-list.html:113
-#: accounts/templates/accounts.html:106
-msgid "Max cpus"
-msgstr "Maksimum CPU"
-
-#: accounts/templates/accounts-list.html:119
-#: accounts/templates/accounts.html:112
-msgid "Max memory (MB)"
-msgstr "Maksimum Bellek (MB)"
-
-#: accounts/templates/accounts-list.html:125
-#: accounts/templates/accounts.html:118
-msgid "Max disk size (GB)"
-msgstr "Maksimum Disk Boyutu (GB)"
-
-#: accounts/templates/accounts-list.html:137
-#: accounts/templates/accounts.html:130 admin/templates/admin/user_list.html:63
-msgid "Block"
-msgstr "Engelle"
-
-#: accounts/templates/accounts-list.html:141
-#: accounts/templates/accounts.html:134 admin/templates/admin/user_list.html:65
-msgid "Unblock"
-msgstr "Engeli Kaldır"
-
-#: accounts/templates/accounts-list.html:145
-#: accounts/templates/accounts.html:138
-#: accounts/templates/create_user_block.html:31
-#: instances/templates/add_instance_network_block.html:49
-#: instances/templates/add_instance_owner_block.html:30
-#: instances/templates/add_instance_volume.html:89
-#: instances/templates/add_instance_volume.html:144
-#: instances/templates/create_flav_block.html:25
-#: instances/templates/create_inst_block.html:34
-#: instances/templates/create_instance_w2.html:274
-#: instances/templates/edit_instance_volume.html:123
-#: instances/templates/instances/settings_tab.html:427
-#: interfaces/templates/create_iface_block.html:135
-#: networks/templates/add_network_qos.html:50
-#: networks/templates/create_net_block.html:84
-#: networks/templates/modify_ipv4_fixed_address.html:44
-#: networks/templates/modify_ipv6_fixed_address.html:44
-#: nwfilters/templates/add_nwf_rule.html:25
-#: nwfilters/templates/create_nwfilter_block.html:23
-#: nwfilters/templates/nwfilters.html:83 nwfilters/templates/nwfilters.html:111
-#: secrets/templates/create_secret_block.html:54
-#: secrets/templates/secrets.html:102
-#: storages/templates/create_stg_block.html:55
-#: storages/templates/create_stg_block.html:84
-#: storages/templates/create_stg_block.html:140
-#: storages/templates/create_stg_block.html:202
-#: storages/templates/create_stg_block.html:230
-#: storages/templates/create_stg_vol_block.html:28
-#: storages/templates/create_stg_vol_block.html:56
-#: storages/templates/storage.html:155
-msgid "Close"
-msgstr "Kapat"
-
 #: accounts/templates/accounts/change_password_form.html:7
-#: accounts/templates/accounts/change_password_form.html:12
-#: accounts/templates/profile.html:21
+#: accounts/templates/accounts/change_password_form.html:14
+#: accounts/templates/profile.html:29
 #, fuzzy
 #| msgid "Can change password"
 msgid "Change Password"
-msgstr "Parola değiştirebilir"
+msgstr "Parola Değiştir"
 
-#: accounts/templates/accounts/change_password_form.html:22
-#: admin/templates/admin/user_form.html:22
+#: accounts/templates/accounts/change_password_form.html:25
+#: accounts/templates/accounts/email_otp_form.html:25
+#: admin/templates/admin/user_form.html:19
 #: computes/templates/computes/form.html:21
-#: templates/common/confirm_delete.html:14 templates/common/form.html:20
+#: templates/common/confirm_delete.html:19 templates/common/form.html:20
 msgid "Cancel"
 msgstr "İptal"
 
-#: accounts/templates/accounts/change_password_form.html:24
-#: accounts/templates/profile.html:44
-#: instances/templates/instances/settings_tab.html:633
-#: instances/templates/instances/settings_tab.html:637
-#: instances/templates/instances/settings_tab.html:819
-#: instances/templates/instances/settings_tab.html:821
+#: accounts/templates/accounts/change_password_form.html:27
+#: instances/templates/instances/settings_tab.html:638
+#: instances/templates/instances/settings_tab.html:642
+#: instances/templates/instances/settings_tab.html:824
+#: instances/templates/instances/settings_tab.html:826
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:397
 #: venv2/lib/python2.7/site-packages/django/forms/widgets.py:379
 msgid "Change"
 msgstr "Değiştir"
 
-#: accounts/templates/create_user_block.html:13
-msgid "Add New User"
-msgstr "Yeni Kullanıc Ekle"
+#: accounts/templates/accounts/email/otp.html:3
+#, python-format
+msgid ""
+"\n"
+"Scan this QR code to get OTP for account '%(user)s'\n"
+msgstr "'%(user)s' hesabında OTP açmak içim bu QR kodunu tara\n"
 
-#: accounts/templates/create_user_block.html:20
-msgid "john"
-msgstr "ali"
+#: accounts/templates/accounts/email_otp_form.html:12
+msgid ""
+"\n"
+"    Enter email address OTP QR code will be sent to.\n"
+"    "
+msgstr ""
+"\n"
+"    OTP QR kodunun gönderileceği e-posta adresini giriniz.\n"
+"    "
 
-#: accounts/templates/create_user_block.html:32
-#: instances/templates/create_instance_w1.html:95
-#: instances/templates/create_instance_w2.html:276
-#: instances/templates/create_instance_w2.html:278
-#: instances/templates/create_instance_w2.html:505
-#: instances/templates/create_instance_w2.html:509
-#: instances/templates/create_instance_w2.html:718
-#: instances/templates/create_instance_w2.html:722
-#: interfaces/templates/create_iface_block.html:138
-#: networks/templates/create_net_block.html:85
-#: networks/templates/modify_ipv4_fixed_address.html:45
-#: networks/templates/modify_ipv6_fixed_address.html:45
-#: nwfilters/templates/create_nwfilter_block.html:24
-#: secrets/templates/create_secret_block.html:55
-#: storages/templates/create_stg_block.html:56
-#: storages/templates/create_stg_block.html:85
-#: storages/templates/create_stg_block.html:144
-#: storages/templates/create_stg_block.html:148
-#: storages/templates/create_stg_block.html:205
-#: storages/templates/create_stg_block.html:233
-#: storages/templates/create_stg_vol_block.html:57
-msgid "Create"
-msgstr "Oluştur"
+#: accounts/templates/accounts/email_otp_form.html:27
+msgid "Send"
+msgstr "Gönder"
 
-#: accounts/templates/login.html:3 accounts/templates/logout.html:4
-msgid "WebVirtCloud"
-msgstr "WebVirtCloud"
+#: accounts/templates/accounts/otp_login.html:23
+msgid "I do not have/lost my OTP!"
+msgstr "OTP mevcut değil/kaybettim!"
 
-#: accounts/templates/login.html:3 accounts/templates/login.html:17
-#: accounts/templates/login.html:21
+#: accounts/templates/accounts/otp_login.html:24
+#: accounts/templates/login.html:5 accounts/templates/login.html:23
+#: accounts/templates/login.html:27
 msgid "Sign In"
 msgstr "Oturum Aç"
 
-#: accounts/templates/login.html:13
+#: accounts/templates/login.html:5 accounts/templates/logout.html:4
+msgid "WebVirtCloud"
+msgstr "WebVirtCloud"
+
+#: accounts/templates/login.html:19
 msgid "Incorrect username or password."
 msgstr "Kullanıcı adı veya parola hatalı."
 
-#: accounts/templates/login.html:18 accounts/templates/profile.html:25
-msgid "Login"
-msgstr "Bağlan"
+#: accounts/templates/login.html:24 admin/templates/admin/logs.html:26
+#: computes/templates/computes/instances.html:67
+#: instances/templates/add_instance_owner_block.html:18
+#: instances/templates/allinstances_index_grouped.html:8
+#: instances/templates/allinstances_index_nongrouped.html:7
+#: instances/templates/instances/stats_tab.html:84
+msgid "User"
+msgstr "Kullanıcı"
+
+#: accounts/templates/login.html:25 admin/forms.py:78
+#: console/templates/console-spice-full.html:206
+#: console/templates/console-spice-lite.html:58
+#: console/templates/console-spice-lite.html:99
+msgid "Password"
+msgstr "Parola"
 
 #: accounts/templates/logout.html:4
 msgid "Sign Out"
@@ -461,53 +276,35 @@ msgstr "Oturumu Kapat"
 msgid "Successful log out"
 msgstr "Oturumdan başarıyla çıkıldı"
 
-#: accounts/templates/profile.html:5 accounts/templates/profile.html:10
+#: accounts/templates/profile.html:7 accounts/templates/profile.html:9
 #: templates/navbar.html:45
 msgid "Profile"
 msgstr "Profil"
 
-#: accounts/templates/profile.html:19
+#: accounts/templates/profile.html:14
 msgid "Edit Profile"
 msgstr "Profil Düzenle"
 
-#: accounts/templates/profile.html:37
-msgid "Email"
-msgstr "E-posta"
-
-#: accounts/templates/profile.html:48
+#: accounts/templates/profile.html:17
 #: instances/templates/instances/access_tab.html:23
 msgid "SSH Keys"
 msgstr "SSH Anahtarları"
 
-#: accounts/templates/profile.html:60
-#: instances/templates/create_instance_w2.html:292
-#: instances/templates/instances/settings_tab.html:438
-#: instances/templates/instances/settings_tab.html:510
-#: instances/templates/instances/settings_tab.html:520
-#: instances/templates/instances/snapshots_tab.html:75
-#: interfaces/templates/interface.html:61
-#: interfaces/templates/interface.html:63 networks/templates/network.html:53
-#: networks/templates/network.html:55 networks/templates/network.html:65
-#: networks/templates/network.html:139 networks/templates/network.html:192
-#: networks/templates/network.html:197 networks/templates/network.html:252
-#: networks/templates/network.html:301 networks/templates/network.html:306
-#: networks/templates/network.html:356 networks/templates/network.html:361
-#: nwfilters/templates/nwfilter.html:114 nwfilters/templates/nwfilter.html:154
-#: nwfilters/templates/nwfilters.html:123 secrets/templates/secrets.html:77
-#: storages/templates/storage.html:63 storages/templates/storage.html:66
-#: storages/templates/storage.html:78 storages/templates/storage.html:175
-msgid "Are you sure?"
-msgstr "Emin misiniz?"
+#: accounts/templates/profile.html:34
+#: instances/templates/instances/settings_tab.html:686
+#: instances/templates/instances/settings_tab.html:688
+#, fuzzy
+#| msgid "date"
+msgid "Update"
+msgstr "Güncelle"
 
-#: accounts/templates/profile.html:76
-msgid "Enter Name"
-msgstr "Ad gir"
+#: accounts/templates/profile.html:64
+#, fuzzy
+#| msgid "SSH Keys"
+msgid "Add SSH Key"
+msgstr "Ekle SSH Anahtarı"
 
-#: accounts/templates/profile.html:82
-msgid "Enter Public Key"
-msgstr "Açık Anahtar Gir"
-
-#: accounts/templates/profile.html:87
+#: accounts/templates/profile.html:72
 #: instances/templates/add_instance_network_block.html:50
 #: instances/templates/add_instance_owner_block.html:31
 #: instances/templates/create_flav_block.html:28
@@ -515,343 +312,464 @@ msgstr "Açık Anahtar Gir"
 msgid "Add"
 msgstr "Ekle"
 
-#: accounts/views.py:39
-msgid "Key name already exist"
-msgstr "Anahtar adı zaten mevcut"
+#: accounts/utils.py:50
+msgid "OTP QR Code"
+msgstr "OTP QR Kodu"
 
-#: accounts/views.py:42
-msgid "Public key already exist"
-msgstr "Açık anahtar zaten mevcut"
+#: accounts/utils.py:51
+msgid "Please view HTML version of this message."
+msgstr "Lütfen bu mesajın HTML sürümünü görüntüleyin."
+
+#: accounts/views.py:26
+#, fuzzy
+#| msgid "Profile"
+msgid "Profile updated"
+msgstr "Profil güncellendi"
+
+#: accounts/views.py:40
+msgid "SSH key added"
+msgstr "SSH anahtarı eklendi"
 
 #: accounts/views.py:45
-msgid "Invalid characters in public key"
-msgstr "Açık anahtarda geçersiz karakterler mevcut"
+#, fuzzy
+#| msgid "SSH Keys"
+msgid "Add SSH key"
+msgstr "SSH Anahtarı Ekle"
 
-#: accounts/views.py:77
+#: accounts/views.py:53
+msgid "SSH key deleted"
+msgstr "SSH anahtarı silindi"
+
+#: accounts/views.py:58
+#, fuzzy
+#| msgid "Delete entry"
+msgid "Delete SSH key"
+msgstr "SSH anahtarı sil"
+
+#: accounts/views.py:86
 #, fuzzy
 #| msgid "Password"
 msgid "Password Changed"
-msgstr "Parola"
+msgstr "Parola Değişti"
 
-#: accounts/views.py:80
-msgid "Wrong Data Provided"
-msgstr "Hatalı Veri"
-
-#: accounts/views.py:100
+#: accounts/views.py:106
 #, fuzzy
 #| msgid "Create new instance"
 msgid "Create User Instance"
-msgstr "Yeni sanal makine oluştur"
+msgstr "Yeni Kullanıcı Sanal Makinesi Oluştur"
 
-#: accounts/views.py:118
+#: accounts/views.py:124
 #, fuzzy
 #| msgid "Update User"
 msgid "Update User Instance"
-msgstr "Kullanıcıyı Güncelle"
+msgstr "Kullanıcı Sanal Makinesini Güncelle"
 
-#: admin/forms.py:46
+#: accounts/views.py:160
+#, python-format
+msgid "OTP Sent to %s"
+msgstr "OTP %s ye gönderildi"
+
+#: accounts/views.py:165
+#, fuzzy
+#| msgid "Email"
+msgid "Email OTP"
+msgstr "OTP e-posta"
+
+#: accounts/views.py:175
+#, python-format
+msgid "OTP QR code was emailed to user %s"
+msgstr "OTP QR kodu %s kullanıcısına gönderildi"
+
+#: accounts/views.py:177
+msgid "User email not set, failed to send QR code"
+msgstr "Kullanıcı e-postası girilmemiş, QR kod gönderimi başarısız"
+
+#: admin/forms.py:49
 msgid "Permissions"
 msgstr "İzinler"
 
-#: admin/forms.py:53 admin/templates/admin/group_list.html:15
+#: admin/forms.py:56 admin/templates/admin/group_list.html:15
 #: templates/navbar.html:30
 msgid "Groups"
 msgstr "Gruplar"
 
-#: admin/templates/admin/common/list.html:9
-msgid "Create New"
-msgstr "Yeni Oluştur"
+#: admin/forms.py:79
+msgid ""
+"Raw passwords are not stored, so there is no way to see\n"
+"                this user's password, but you can change the password using "
+"<a href='{}'>this form</a>."
+msgstr ""
+"Açık parolalar saklanmadığından bu kullanıcının parolasını\n"
+"                görme imkanı yok. Faka parolayı <a href='{}'>bu formu</a> "
+"kullanarak değiştirebilirsiniz."
 
-#: admin/templates/admin/group_list.html:24
+#: admin/templates/admin/group_list.html:5 admin/views.py:87
+#: instances/templates/instances/settings_tab.html:63 templates/navbar.html:29
+msgid "Users"
+msgstr "Kullanıcılar"
+
+#: admin/templates/admin/group_list.html:13
+#: admin/templates/admin/user_list.html:16
+#: computes/templates/computes/instances.html:18
+#: instances/templates/allinstances.html:16
+#: nwfilters/templates/nwfilters.html:12 storages/templates/storage.html:87
+#: templates/search_block.html:3
+msgid "Search"
+msgstr "Ara"
+
+#: admin/templates/admin/group_list.html:23 admin/templates/admin/logs.html:16
+#: admin/templates/admin/user_list.html:26
+#: computes/templates/computes/instances.html:57
+#: computes/templates/computes/list.html:20
+#: instances/templates/create_instance_w2.html:66
+#: interfaces/templates/interfaces.html:47 networks/templates/networks.html:46
+#: nwfilters/templates/nwfilters.html:135 secrets/templates/secrets.html:50
+#: storages/templates/storage.html:187 storages/templates/storages.html:46
+msgid "Warning"
+msgstr "Uyarı"
+
+#: admin/templates/admin/group_list.html:23
 msgid "You don't have any groups"
 msgstr "Hiç grubunuz yok"
 
-#: admin/templates/admin/group_list.html:32
+#: admin/templates/admin/group_list.html:31
 msgid "Group Name"
 msgstr "Grup Adı"
 
-#: admin/templates/admin/group_list.html:33
-#: admin/templates/admin/user_list.html:38
+#: admin/templates/admin/group_list.html:32
+#: admin/templates/admin/user_list.html:39
 #: computes/templates/computes/instances.html:71
-#: computes/templates/computes/list.html:32
+#: computes/templates/computes/list.html:31
 #: instances/templates/allinstances_index_grouped.html:12
 #: instances/templates/allinstances_index_nongrouped.html:12
 #: instances/templates/instances/settings_tab.html:343
-#: instances/templates/instances/settings_tab.html:486
-#: networks/templates/network.html:178 networks/templates/network.html:287
-#: networks/templates/network.html:335
+#: instances/templates/instances/settings_tab.html:491
+#: networks/templates/network.html:175 networks/templates/network.html:284
+#: networks/templates/network.html:332
 msgid "Actions"
 msgstr "Eylemler"
 
-#: admin/templates/admin/logs.html:4 admin/templates/admin/logs.html:9
+#: admin/templates/admin/group_list.html:43
+#: admin/templates/admin/user_list.html:62
+#: computes/templates/computes/list.html:53 networks/templates/network.html:82
+#: nwfilters/templates/nwfilter.html:59 secrets/templates/secrets.html:74
+msgid "Edit"
+msgstr "Düzenle"
+
+#: admin/templates/admin/logs.html:5 admin/templates/admin/logs.html:7
 #: instances/templates/instances/stats_tab.html:13 templates/navbar.html:31
 msgid "Logs"
 msgstr "Loglar"
 
-#: admin/templates/admin/logs.html:22
+#: admin/templates/admin/logs.html:16
 msgid "You don't have any Logs"
 msgstr "Hiç Log kaydınız yok"
 
-#: admin/templates/admin/logs.html:32
+#: admin/templates/admin/logs.html:25
 #: instances/templates/instances/snapshots_tab.html:48
 #: instances/templates/instances/stats_tab.html:83
 msgid "Date"
 msgstr "Tarih"
 
-#: admin/templates/admin/logs.html:33 admin/templates/admin/user_form.html:6
-#: computes/templates/computes/instances.html:67
-#: instances/templates/add_instance_owner_block.html:18
-#: instances/templates/allinstances_index_grouped.html:8
-#: instances/templates/allinstances_index_nongrouped.html:7
-#: instances/templates/instances/stats_tab.html:84
-msgid "User"
-msgstr "Kullanıcı"
-
-#: admin/templates/admin/logs.html:35
+#: admin/templates/admin/logs.html:28
 #: instances/templates/instances/stats_tab.html:85
 msgid "Message"
 msgstr "Mesaj"
 
-#: admin/templates/admin/user_form.html:24
+#: admin/templates/admin/user_form.html:21
 #: computes/templates/computes/form.html:23
 #: instances/templates/edit_instance_volume.html:124
 #: networks/templates/add_network_qos.html:51 templates/common/form.html:22
 msgid "Save"
 msgstr "Kaydet"
 
+#: admin/templates/admin/user_list.html:26
+msgid "You don't have any user"
+msgstr "Hiç kullanıcınız yok"
+
+#: admin/templates/admin/user_list.html:34
+msgid "Username"
+msgstr "Kullanıcı Adı"
+
+#: admin/templates/admin/user_list.html:35
+#: computes/templates/computes/instances.html:68
+#: computes/templates/computes/list.html:29
+#: instances/templates/allinstances_index_grouped.html:9
+#: instances/templates/allinstances_index_nongrouped.html:9
+msgid "Status"
+msgstr "Durum"
+
+#: admin/templates/admin/user_list.html:36
+msgid "Staff"
+msgstr "Görevli"
+
 #: admin/templates/admin/user_list.html:37
+msgid "Superuser"
+msgstr "Süperkullanıcı"
+
+#: admin/templates/admin/user_list.html:38
 msgid "Can Clone"
 msgstr "Klonlayabilir"
 
-#: admin/templates/admin/user_list.html:60
-msgid "View Profile"
-msgstr "Profili Görüntüle"
+#: admin/templates/admin/user_list.html:51
+#: computes/templates/computes/instances.html:94
+#: instances/templates/allinstances_index_grouped.html:57
+#: instances/templates/allinstances_index_nongrouped.html:40
+#: instances/templates/instance.html:19
+msgid "Active"
+msgstr "Aktif"
 
-#: admin/views.py:39
+#: admin/templates/admin/user_list.html:53
+msgid "Blocked"
+msgstr "Engelli"
+
+#: admin/templates/admin/user_list.html:61
+msgid "View Profile"
+msgstr "Profil Görüntüle"
+
+#: admin/templates/admin/user_list.html:64
+msgid "Block"
+msgstr "Engelle"
+
+#: admin/templates/admin/user_list.html:66
+msgid "Unblock"
+msgstr "Engeli Kaldır"
+
+#: admin/views.py:42
 msgid "Create Group"
 msgstr "Grup Oluştur"
 
-#: admin/views.py:57
+#: admin/views.py:60
 msgid "Update Group"
 msgstr "Grubu Güncelle"
 
-#: admin/views.py:110
+#: admin/views.py:113
 msgid "Create User"
 msgstr "Kullanıcı Oluştur"
 
-#: admin/views.py:132
+#: admin/views.py:136
 msgid "Update User"
-msgstr "Kullanıcıyı Güncelle"
+msgstr "Kullanıcı Güncelle"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:10
+#: admin/views.py:149
+#, fuzzy
+#| msgid "Password"
+msgid "User password changed: {}"
+msgstr "Kullanıcı parolası değişti: {}"
+
+#: admin/views.py:152
+msgid "Wrong Data Provided"
+msgstr "Hatalı Veri"
+
+#: appsettings/migrations/0002_auto_20200527_1603.py:11
 msgid "Theme"
 msgstr "Tema"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:10
+#: appsettings/migrations/0002_auto_20200527_1603.py:11
 msgid "Bootstrap CSS & Bootswatch Theme"
 msgstr "Bootstrap CSS & Bootswatch Teması"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:11
+#: appsettings/migrations/0002_auto_20200527_1603.py:12
 msgid "Theme SASS Path"
 msgstr "Tema SASS Yolu"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:11
+#: appsettings/migrations/0002_auto_20200527_1603.py:12
 msgid "Bootstrap SASS & Bootswatch SASS Directory"
 msgstr "Bootstrap SASS & Bootswatch Directory"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:12
+#: appsettings/migrations/0002_auto_20200527_1603.py:13
 msgid "All Instances View Style"
 msgstr "Sanal Makineler Liste Görünümü"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:12
+#: appsettings/migrations/0002_auto_20200527_1603.py:13
 msgid "All instances list style"
 msgstr "Tüm Sanal Makineler Listesi Görünüm Stili"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:13
+#: appsettings/migrations/0002_auto_20200527_1603.py:14
 msgid "Logs per Page"
 msgstr "Herbir sayfa için Log sayısı"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:13
+#: appsettings/migrations/0002_auto_20200527_1603.py:14
 msgid "Pagination for logs"
 msgstr "Loglar için sayfalama"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:14
+#: appsettings/migrations/0002_auto_20200527_1603.py:15
 msgid "Multiple Owner for VM"
 msgstr "VM için çoklu sahiplik"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:14
+#: appsettings/migrations/0002_auto_20200527_1603.py:15
 msgid "Allow to have multiple owner for instance"
 msgstr "Bir sanal makine için çoklu sahip atanmasına izin verir"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:15
+#: appsettings/migrations/0002_auto_20200527_1603.py:16
 msgid "Quota Debug"
 msgstr "Kota Hata Ayıklama"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:15
+#: appsettings/migrations/0002_auto_20200527_1603.py:16
 msgid "Debug for user quotas"
 msgstr "Kullanıcı kotaları için hata ayıklama"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:16
+#: appsettings/migrations/0002_auto_20200527_1603.py:17
 msgid "Disk Format"
 msgstr "Disk Biçemi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:16
+#: appsettings/migrations/0002_auto_20200527_1603.py:17
 msgid "Instance disk format"
 msgstr "Sanal Makine Disk Biçemi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:17
+#: appsettings/migrations/0002_auto_20200527_1603.py:18
 msgid "Disk Bus"
 msgstr "Disk Veriyolu"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:17
+#: appsettings/migrations/0002_auto_20200527_1603.py:18
 msgid "Instance disk bus type"
 msgstr "Sanal makine diski veriyolu tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:18
+#: appsettings/migrations/0002_auto_20200527_1603.py:19
 msgid "Disk SCSI Controller"
 msgstr "Disk SCSI Denetleyicisi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:18
+#: appsettings/migrations/0002_auto_20200527_1603.py:19
 msgid "SCSI controller type"
 msgstr "SCSI denetleyicisi tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:19
+#: appsettings/migrations/0002_auto_20200527_1603.py:20
 msgid "Disk Cache"
 msgstr "Disk Ön Belleği"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:19
+#: appsettings/migrations/0002_auto_20200527_1603.py:20
 msgid "Disk volume cache type"
 msgstr "Disk birimi ön bellek tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:20
+#: appsettings/migrations/0002_auto_20200527_1603.py:21
 msgid "Disk IO Type"
 msgstr "Disk IO Tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:20
+#: appsettings/migrations/0002_auto_20200527_1603.py:21
 msgid "Volume io modes"
 msgstr "Birim IO modları"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:21
+#: appsettings/migrations/0002_auto_20200527_1603.py:22
 msgid "Disk Detect Zeroes"
 msgstr "Disk Sıfır Yakalama"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:21
+#: appsettings/migrations/0002_auto_20200527_1603.py:22
 msgid "Volume detect zeroes mode"
 msgstr "Disk birimi sıfır yakalama modu"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:22
+#: appsettings/migrations/0002_auto_20200527_1603.py:23
 msgid "Disk Discard"
 msgstr ""
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:22
+#: appsettings/migrations/0002_auto_20200527_1603.py:23
 msgid "Volume discard mode"
 msgstr ""
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:23
+#: appsettings/migrations/0002_auto_20200527_1603.py:24
 msgid "Disk Owner UID"
 msgstr "Disk sahip UIDsi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:23
+#: appsettings/migrations/0002_auto_20200527_1603.py:24
 msgid "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
 msgstr ""
 "Sahip UID değeri: işletim sistemine bağlı, 0=root, 107=qemu veya libvirt-"
 "bin(ubuntu için)"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:24
+#: appsettings/migrations/0002_auto_20200527_1603.py:25
 msgid "Disk Owner GID"
 msgstr "Disk sahibi GID"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:24
+#: appsettings/migrations/0002_auto_20200527_1603.py:25
 msgid "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
 msgstr ""
 "Sahip GID değeri: işletim sistemine bağlı, 0=root, 107=qemu veya libvirt-"
 "bin(ubuntu için)"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:25
+#: appsettings/migrations/0002_auto_20200527_1603.py:26
 msgid "VM CPU Mode"
 msgstr "VM CPU Modu"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:25
+#: appsettings/migrations/0002_auto_20200527_1603.py:26
 msgid "Cpu modes"
 msgstr "CPU Modları"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:26
+#: appsettings/migrations/0002_auto_20200527_1603.py:27
 msgid "VM Machine Type"
 msgstr "VM Makine Tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:26
+#: appsettings/migrations/0002_auto_20200527_1603.py:27
 msgid "Chipset/Machine type"
 msgstr "Yonga/Makine Tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:27
+#: appsettings/migrations/0002_auto_20200527_1603.py:28
 msgid "VM Firmware Type"
 msgstr "VM Yonga Tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:27
+#: appsettings/migrations/0002_auto_20200527_1603.py:28
 msgid "Firmware type for x86_64"
 msgstr "x86_64 için üretici yazılımı"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:28
+#: appsettings/migrations/0002_auto_20200527_1603.py:29
 msgid "VM Architecture Type"
 msgstr "VM Mimari Tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:28
+#: appsettings/migrations/0002_auto_20200527_1603.py:29
 msgid "Architecture type: x86_64, i686, etc"
 msgstr "Mimari Tipler: x86_64, i688, vs"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:29
+#: appsettings/migrations/0002_auto_20200527_1603.py:30
 msgid "VM Console Type"
 msgstr "VM Konsol Tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:29
+#: appsettings/migrations/0002_auto_20200527_1603.py:30
 msgid "Default console type"
 msgstr "Varsayılan konsol tipi"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:30
+#: appsettings/migrations/0002_auto_20200527_1603.py:31
 msgid "VM Clone Name Prefix"
 msgstr "VM Klon Adı Ön Eki"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:30
+#: appsettings/migrations/0002_auto_20200527_1603.py:31
 msgid "Prefix for cloned instance name"
 msgstr "Klonlanmış sanal makineler için ön ek"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:31
+#: appsettings/migrations/0002_auto_20200527_1603.py:32
 msgid "VM Clone Auto Name"
 msgstr "VM Klon Otomatik Ad"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:31
+#: appsettings/migrations/0002_auto_20200527_1603.py:32
 msgid "Generated name for cloned instance"
 msgstr "Klonamış Sanal Makine için Oluşturala isim"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:32
+#: appsettings/migrations/0002_auto_20200527_1603.py:33
 msgid "VM Clone Auto Migrate"
 msgstr "VM Klonu Otomatik Taşı"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:32
+#: appsettings/migrations/0002_auto_20200527_1603.py:33
 msgid "Auto migrate instance after clone"
 msgstr "Klondan sonra sanal makineyi otomatik taşı"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:33
+#: appsettings/migrations/0002_auto_20200527_1603.py:34
 msgid "VM Bottom Bar"
 msgstr "VM Alt Kısayol Çubuğu"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:33
+#: appsettings/migrations/0002_auto_20200527_1603.py:34
 msgid "Bottom navbar for instance details"
 msgstr "Sanal makine için alt gezinti çubuğu "
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:34
+#: appsettings/migrations/0002_auto_20200527_1603.py:35
 msgid "Show Access Root Pass"
 msgstr "Root Erişim Parolasını Göster"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:34
+#: appsettings/migrations/0002_auto_20200527_1603.py:35
 msgid "Show access root password"
 msgstr "Kök erişim parolasını göster"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:35
+#: appsettings/migrations/0002_auto_20200527_1603.py:36
 msgid "Show Access SSH Keys"
 msgstr "SSH Erişim Anahtarlarını Göster"
 
-#: appsettings/migrations/0002_auto_20200527_1603.py:35
+#: appsettings/migrations/0002_auto_20200527_1603.py:36
 msgid "Show access ssh keys"
 msgstr "SSH Erişim Anahtarlarını Göster"
 
@@ -859,7 +777,7 @@ msgstr "SSH Erişim Anahtarlarını Göster"
 #, fuzzy
 #| msgid "Console Access"
 msgid "Console Scale"
-msgstr "Konsol Erişimi"
+msgstr "Konsol Ölçekle"
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:11
 msgid "Allow console to scaling view"
@@ -877,7 +795,7 @@ msgstr "Sadece görüntülemeye izin ver düzenlemeye izin verme"
 #, fuzzy
 #| msgid "Console Access"
 msgid "Console Resize Session"
-msgstr "Konsol Erişimi"
+msgstr "Konsol Oturum Boyutlandır"
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:13
 #, fuzzy
@@ -897,63 +815,63 @@ msgstr "Konsol bağlantı noktası"
 msgid "Clip console viewport"
 msgstr "Konsol bağlantı noktası"
 
-#: appsettings/models.py:9 computes/models.py:11 instances/models.py:27
+#: appsettings/models.py:10 computes/models.py:11 instances/models.py:27
 msgid "name"
 msgstr "ad"
 
-#: appsettings/models.py:10
+#: appsettings/models.py:11
 msgid "key"
 msgstr "anahtar"
 
-#: appsettings/models.py:11
+#: appsettings/models.py:12
 msgid "value"
 msgstr "değer"
 
-#: appsettings/models.py:12
+#: appsettings/models.py:13
 msgid "choices"
 msgstr "seçenekler"
 
-#: appsettings/models.py:13
+#: appsettings/models.py:14
 msgid "description"
 msgstr "tanım"
 
-#: appsettings/templates/appsettings.html:3
-#: appsettings/templates/appsettings.html:8
+#: appsettings/templates/appsettings.html:4
+#: appsettings/templates/appsettings.html:6
 msgid "Edit Settings"
 msgstr "Ayarları Düzenle"
 
-#: appsettings/templates/appsettings.html:17
+#: appsettings/templates/appsettings.html:11
 msgid "App Settings"
 msgstr "Uygulama Ayarları"
 
-#: appsettings/templates/appsettings.html:21 templates/navbar.html:43
+#: appsettings/templates/appsettings.html:15 templates/navbar.html:43
 msgid "Language"
 msgstr "Dil"
 
-#: appsettings/templates/appsettings.html:54
+#: appsettings/templates/appsettings.html:48
 msgid "After change please full refresh page with 'Ctrl + F5' "
 msgstr "Değişiklikten sonra lütfen 'Ctrl + F5' ile sayfayı yenileyin"
 
-#: appsettings/templates/appsettings.html:59
+#: appsettings/templates/appsettings.html:53
 msgid "Other Settings"
 msgstr "Diğer Ayarlar"
 
-#: appsettings/views.py:42
+#: appsettings/views.py:38
 #, python-brace-format
 msgid "SASS directory path is changed. Now: {sass_dir.value}"
 msgstr "SASS dizin yolu değiştirildi. Şimdi: {sass_dir.value}"
 
-#: appsettings/views.py:68
+#: appsettings/views.py:65
 #, python-brace-format
 msgid "Theme changed. Now: {theme}"
 msgstr "Tema değiştirildi. Şimdi: {theme}"
 
-#: appsettings/views.py:83
+#: appsettings/views.py:80
 #, python-brace-format
 msgid "{setting.name} is changed. Now: {setting.value}"
 msgstr "{setting.name} değiştirildi. Şimdi: {setting.value}"
 
-#: computes/forms.py:19
+#: computes/forms.py:21
 msgid "FQDN/IP"
 msgstr "FQDN/IP"
 
@@ -982,65 +900,65 @@ msgid "Create Compute"
 msgstr "Sunucu Oluştur"
 
 #: computes/templates/computes/instances.html:29
-#: computes/templates/computes/list.html:50
-#: computes/templates/computes/list.html:52 computes/templates/overview.html:4
-#: computes/templates/overview.html:13 interfaces/templates/interface.html:11
-#: interfaces/templates/interfaces.html:14 networks/templates/network.html:13
-#: networks/templates/networks.html:17 nwfilters/templates/nwfilter.html:12
-#: nwfilters/templates/nwfilters.html:21 secrets/templates/secrets.html:17
-#: storages/templates/storage.html:17 storages/templates/storages.html:17
+#: computes/templates/computes/list.html:49
+#: computes/templates/computes/list.html:51 computes/templates/overview.html:6
+#: computes/templates/overview.html:16 interfaces/templates/interface.html:13
+#: interfaces/templates/interfaces.html:17 networks/templates/network.html:14
+#: networks/templates/networks.html:16 nwfilters/templates/nwfilter.html:14
+#: nwfilters/templates/nwfilters.html:22 secrets/templates/secrets.html:20
+#: storages/templates/storage.html:19 storages/templates/storages.html:16
 msgid "Overview"
 msgstr "Genel Görünüm"
 
 #: computes/templates/computes/instances.html:35
-#: computes/templates/overview.html:19 interfaces/templates/interface.html:17
-#: interfaces/templates/interfaces.html:20 networks/templates/network.html:19
-#: networks/templates/networks.html:23 nwfilters/templates/nwfilter.html:18
-#: nwfilters/templates/nwfilters.html:27 secrets/templates/secrets.html:23
-#: storages/templates/storage.html:23 storages/templates/storages.html:3
-#: storages/templates/storages.html:9 storages/templates/storages.html:23
+#: computes/templates/overview.html:22 interfaces/templates/interface.html:19
+#: interfaces/templates/interfaces.html:23 networks/templates/network.html:20
+#: networks/templates/networks.html:22 nwfilters/templates/nwfilter.html:20
+#: nwfilters/templates/nwfilters.html:28 secrets/templates/secrets.html:26
+#: storages/templates/storage.html:25 storages/templates/storages.html:4
+#: storages/templates/storages.html:6 storages/templates/storages.html:22
 msgid "Storages"
 msgstr "Depolamalar"
 
 #: computes/templates/computes/instances.html:38
-#: computes/templates/overview.html:22 interfaces/templates/interface.html:20
-#: interfaces/templates/interfaces.html:23 networks/templates/network.html:22
-#: networks/templates/networks.html:3 networks/templates/networks.html:9
-#: networks/templates/networks.html:26 nwfilters/templates/nwfilter.html:21
-#: nwfilters/templates/nwfilters.html:30 secrets/templates/secrets.html:26
-#: storages/templates/storage.html:26 storages/templates/storages.html:26
+#: computes/templates/overview.html:25 interfaces/templates/interface.html:22
+#: interfaces/templates/interfaces.html:26 networks/templates/network.html:23
+#: networks/templates/networks.html:4 networks/templates/networks.html:6
+#: networks/templates/networks.html:25 nwfilters/templates/nwfilter.html:23
+#: nwfilters/templates/nwfilters.html:31 secrets/templates/secrets.html:29
+#: storages/templates/storage.html:28 storages/templates/storages.html:25
 msgid "Networks"
 msgstr "Ağlar"
 
 #: computes/templates/computes/instances.html:41
-#: computes/templates/overview.html:25 interfaces/templates/interface.html:23
-#: interfaces/templates/interfaces.html:4
-#: interfaces/templates/interfaces.html:26 networks/templates/network.html:25
-#: networks/templates/networks.html:29 nwfilters/templates/nwfilter.html:24
-#: nwfilters/templates/nwfilters.html:33 secrets/templates/secrets.html:29
-#: storages/templates/storage.html:29 storages/templates/storages.html:29
+#: computes/templates/overview.html:28 interfaces/templates/interface.html:25
+#: interfaces/templates/interfaces.html:5
+#: interfaces/templates/interfaces.html:7
+#: interfaces/templates/interfaces.html:29 networks/templates/network.html:26
+#: networks/templates/networks.html:28 nwfilters/templates/nwfilter.html:26
+#: nwfilters/templates/nwfilters.html:34 secrets/templates/secrets.html:32
+#: storages/templates/storage.html:31 storages/templates/storages.html:28
 msgid "Interfaces"
 msgstr "Arabirimler"
 
 #: computes/templates/computes/instances.html:44
-#: computes/templates/overview.html:28 interfaces/templates/interface.html:26
-#: interfaces/templates/interfaces.html:29 networks/templates/network.html:28
-#: networks/templates/networks.html:32 nwfilters/templates/nwfilter.html:4
-#: nwfilters/templates/nwfilter.html:27 nwfilters/templates/nwfilters.html:4
-#: nwfilters/templates/nwfilters.html:13 nwfilters/templates/nwfilters.html:36
-#: secrets/templates/secrets.html:32 storages/templates/storage.html:32
-#: storages/templates/storages.html:32
+#: computes/templates/overview.html:31 interfaces/templates/interface.html:28
+#: interfaces/templates/interfaces.html:32 networks/templates/network.html:29
+#: networks/templates/networks.html:31 nwfilters/templates/nwfilter.html:29
+#: nwfilters/templates/nwfilters.html:5 nwfilters/templates/nwfilters.html:7
+#: nwfilters/templates/nwfilters.html:37 secrets/templates/secrets.html:35
+#: storages/templates/storage.html:34 storages/templates/storages.html:31
 msgid "NWFilters"
 msgstr "AğFiltreleri"
 
 #: computes/templates/computes/instances.html:47
-#: computes/templates/overview.html:31 interfaces/templates/interface.html:29
-#: interfaces/templates/interfaces.html:32 networks/templates/network.html:31
-#: networks/templates/networks.html:35 nwfilters/templates/nwfilter.html:30
-#: nwfilters/templates/nwfilters.html:39 secrets/templates/secrets.html:4
-#: secrets/templates/secrets.html:13 secrets/templates/secrets.html:35
+#: computes/templates/overview.html:34 interfaces/templates/interface.html:31
+#: interfaces/templates/interfaces.html:35 networks/templates/network.html:32
+#: networks/templates/networks.html:34 nwfilters/templates/nwfilter.html:32
+#: nwfilters/templates/nwfilters.html:40 secrets/templates/secrets.html:4
+#: secrets/templates/secrets.html:10 secrets/templates/secrets.html:38
 #: storages/templates/create_stg_block.html:124
-#: storages/templates/storage.html:35 storages/templates/storages.html:35
+#: storages/templates/storage.html:37 storages/templates/storages.html:34
 msgid "Secrets"
 msgstr "Parolalar"
 
@@ -1049,20 +967,55 @@ msgid "Hypervisor doesn't have any Instances"
 msgstr "Hipervizör üzerinde hiç sanal makine yok"
 
 #: computes/templates/computes/instances.html:66
+#: computes/templates/computes/list.html:28
+#: instances/templates/add_instance_volume.html:40
+#: instances/templates/add_instance_volume.html:42
 #: instances/templates/allinstances_index_grouped.html:7
 #: instances/templates/allinstances_index_nongrouped.html:5
-#: instances/templates/instances/settings_tab.html:777
-#: instances/templates/instances/settings_tab.html:800
+#: instances/templates/create_instance_w2.html:77
+#: instances/templates/create_instance_w2.html:103
+#: instances/templates/create_instance_w2.html:106
+#: instances/templates/create_instance_w2.html:305
+#: instances/templates/create_instance_w2.html:307
+#: instances/templates/create_instance_w2.html:518
+#: instances/templates/create_instance_w2.html:520
+#: instances/templates/instances/settings_tab.html:340
+#: instances/templates/instances/snapshots_tab.html:47
+#: interfaces/templates/create_iface_block.html:18
+#: interfaces/templates/interface.html:75
+#: networks/templates/create_net_block.html:18
+#: networks/templates/modify_ipv4_fixed_address.html:30
+#: networks/templates/modify_ipv6_fixed_address.html:30
+#: networks/templates/network.html:174 networks/templates/network.html:283
+#: nwfilters/templates/nwfilter.html:41 nwfilters/templates/nwfilters.html:56
+#: nwfilters/templates/nwfilters.html:100
+#: nwfilters/templates/nwfilters.html:102
+#: storages/templates/create_stg_block.html:42
+#: storages/templates/create_stg_block.html:71
+#: storages/templates/create_stg_block.html:100
+#: storages/templates/create_stg_block.html:165
+#: storages/templates/create_stg_block.html:214
+#: storages/templates/create_stg_vol_block.html:21
+#: storages/templates/storage.html:96 storages/templates/storage.html:124
+#: storages/templates/storage.html:126
+msgid "Name"
+msgstr "Ad"
+
+#: computes/templates/computes/instances.html:66
+#: instances/templates/allinstances_index_grouped.html:7
+#: instances/templates/allinstances_index_nongrouped.html:5
+#: instances/templates/instances/settings_tab.html:782
+#: instances/templates/instances/settings_tab.html:805
 msgid "Description"
 msgstr "Tanım"
 
 #: computes/templates/computes/instances.html:69
 #: instances/templates/allinstances_index_grouped.html:10
 #: instances/templates/allinstances_index_nongrouped.html:10
-#: instances/templates/create_instance_w2.html:83
-#: instances/templates/create_instance_w2.html:328
-#: instances/templates/create_instance_w2.html:541
-#: instances/templates/instance.html:40 instances/templates/instance.html:42
+#: instances/templates/create_instance_w2.html:78
+#: instances/templates/create_instance_w2.html:323
+#: instances/templates/create_instance_w2.html:536
+#: instances/templates/instance.html:42 instances/templates/instance.html:44
 msgid "VCPU"
 msgstr "VCPU"
 
@@ -1077,7 +1030,7 @@ msgstr "Bellek"
 #: computes/templates/computes/instances.html:96
 #: instances/templates/allinstances_index_grouped.html:58
 #: instances/templates/allinstances_index_nongrouped.html:42
-#: instances/templates/instance.html:14
+#: instances/templates/instance.html:16
 msgid "Off"
 msgstr "Kapalı"
 
@@ -1094,25 +1047,25 @@ msgstr "Duraklat"
 msgid "Computes"
 msgstr "Sunucular"
 
-#: computes/templates/computes/list.html:21
+#: computes/templates/computes/list.html:20
 #, fuzzy
 #| msgid "You don't have any groups"
 msgid "You don't have any computes"
-msgstr "Hiç grubunuz yok"
+msgstr "Hiç sunucunuz yok"
 
-#: computes/templates/computes/list.html:31 computes/templates/overview.html:92
+#: computes/templates/computes/list.html:30 computes/templates/overview.html:92
 #: instances/templates/instances/settings_tab.html:163
 #: instances/templates/instances/settings_tab.html:248
 msgid "Details"
 msgstr "Ayrıntılar"
 
-#: computes/templates/computes/list.html:42
+#: computes/templates/computes/list.html:41
 #: instances/templates/allinstances_index_grouped.html:28
-#: instances/templates/instances/settings_tab.html:876
+#: instances/templates/instances/settings_tab.html:881
 msgid "Connected"
 msgstr "Bağlı"
 
-#: computes/templates/computes/list.html:42
+#: computes/templates/computes/list.html:41
 msgid "Not Connected"
 msgstr "Bağlı değil"
 
@@ -1170,8 +1123,8 @@ msgid "Libvirt"
 msgstr "Libvirt"
 
 #: computes/templates/overview.html:84
-#: instances/templates/create_instance_w1.html:42
-#: instances/templates/create_instance_w1.html:58
+#: instances/templates/create_instance_w1.html:36
+#: instances/templates/create_instance_w1.html:52
 msgid "Architecture"
 msgstr "Mimari"
 
@@ -1233,33 +1186,33 @@ msgstr "sunucu adresi ve portu ayarlanmalı"
 #, fuzzy
 #| msgid "Disconnected"
 msgid "disconnect"
-msgstr "Bağlantı yok"
+msgstr "bağlantı kes"
 
 #: console/templates/console-spice-full.html:114
 #: console/templates/console-spice-lite.html:167
 #, fuzzy
 #| msgid "Console type not supported"
 msgid "File API is not supported"
-msgstr "Konsol tipi desteklenmiyor"
+msgstr "Dosya API desteklenmiyor"
 
-#: console/templates/console-spice-full.html:197
+#: console/templates/console-spice-full.html:202
 #: instances/templates/allinstances_index_nongrouped.html:7
 msgid "Host"
 msgstr "Sunucu"
 
-#: console/templates/console-spice-full.html:199
+#: console/templates/console-spice-full.html:204
 msgid "Port"
 msgstr "Bağlantı Noktası"
 
-#: console/templates/console-spice-full.html:207
+#: console/templates/console-spice-full.html:212
 msgid "Show console"
 msgstr "Konsol göster"
 
-#: console/templates/console-spice-full.html:209
-#: interfaces/templates/interface.html:60 networks/templates/network.html:52
-#: networks/templates/network.html:122 networks/templates/network.html:128
-#: networks/templates/network.html:234 networks/templates/network.html:240
-#: storages/templates/storage.html:61
+#: console/templates/console-spice-full.html:214
+#: interfaces/templates/interface.html:59 networks/templates/network.html:49
+#: networks/templates/network.html:119 networks/templates/network.html:125
+#: networks/templates/network.html:231 networks/templates/network.html:237
+#: storages/templates/storage.html:60
 msgid "Start"
 msgstr "Başlat"
 
@@ -1271,7 +1224,7 @@ msgstr "URL de sunucu adresi ve portu belirtilmelidir"
 msgid "noVNC encountered an error"
 msgstr "noVNC bir hatayla karşılaştı"
 
-#: console/templates/console-vnc-lite.html:222
+#: console/templates/console-vnc-lite.html:221
 msgid "Loading"
 msgstr "Yükleniyor"
 
@@ -1307,10 +1260,6 @@ msgstr "Lütfen bir video sürücüsü seçin"
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "Sanal makine adı özel karakterler içeremez"
 
-#: instances/forms.py:65
-msgid "The name of the virtual machine must not exceed 20 characters"
-msgstr "Sanal makine adı 20 karakterden fazla olamaz"
-
 #: instances/models.py:11
 msgid "label"
 msgstr "etiket"
@@ -1339,70 +1288,100 @@ msgstr "şablon mu"
 msgid "created"
 msgstr "oluşturuldu"
 
-#: instances/models.py:215
+#: instances/models.py:220
 #, fuzzy
 #| msgid "Show access root password"
 msgid "Can access console without password"
-msgstr "Kök erişim parolasını göster"
+msgstr "Parolasız konsol erişimi yapabilir"
 
 #: instances/templates/add_instance_network_block.html:12
 msgid "Add Instance Network"
 msgstr "Sanal makine ağı ekle"
 
 #: instances/templates/add_instance_network_block.html:18
-#: instances/templates/create_instance_w2.html:210
-#: instances/templates/instances/settings_tab.html:358
-#: instances/templates/instances/settings_tab.html:381
-#: instances/templates/instances/settings_tab.html:482
-#: interfaces/templates/interface.html:46
-#: interfaces/templates/interface.html:75
+#: instances/templates/create_instance_w2.html:205
+#: instances/templates/instances/settings_tab.html:359
+#: instances/templates/instances/settings_tab.html:382
+#: instances/templates/instances/settings_tab.html:487
+#: interfaces/templates/interface.html:45
+#: interfaces/templates/interface.html:74
 #: interfaces/templates/interfaces.html:63
 #: networks/templates/modify_ipv4_fixed_address.html:24
-#: networks/templates/network.html:175
+#: networks/templates/network.html:172
 msgid "MAC"
 msgstr "MAC"
 
 #: instances/templates/add_instance_network_block.html:24
-#: instances/templates/create_instance_w2.html:169
-#: instances/templates/create_instance_w2.html:393
-#: instances/templates/create_instance_w2.html:610
+#: instances/templates/create_instance_w2.html:164
+#: instances/templates/create_instance_w2.html:388
+#: instances/templates/create_instance_w2.html:605
 #: instances/templates/instances/settings_tab.html:30
-#: instances/templates/instances/settings_tab.html:393
-#: networks/templates/network.html:4 networks/templates/network.html:9
-#: networks/templates/network.html:110 networks/templates/network.html:221
+#: instances/templates/instances/settings_tab.html:394
+#: networks/templates/network.html:5 networks/templates/network.html:7
+#: networks/templates/network.html:107 networks/templates/network.html:218
 msgid "Network"
 msgstr "Ağ"
 
 #: instances/templates/add_instance_network_block.html:37
-#: instances/templates/create_instance_w2.html:188
-#: instances/templates/create_instance_w2.html:434
-#: instances/templates/create_instance_w2.html:647
-#: instances/templates/instances/settings_tab.html:402
-#: nwfilters/templates/nwfilter.html:9
+#: instances/templates/create_instance_w2.html:183
+#: instances/templates/create_instance_w2.html:429
+#: instances/templates/create_instance_w2.html:642
+#: instances/templates/instances/settings_tab.html:403
+#: nwfilters/templates/nwfilter.html:5 nwfilters/templates/nwfilter.html:7
 msgid "NWFilter"
 msgstr "AğFiltresi"
 
 #: instances/templates/add_instance_network_block.html:40
 #: instances/templates/add_instance_volume.html:117
 #: instances/templates/create_inst_block.html:25
-#: instances/templates/create_instance_w2.html:163
-#: instances/templates/create_instance_w2.html:191
-#: instances/templates/create_instance_w2.html:382
-#: instances/templates/create_instance_w2.html:437
-#: instances/templates/create_instance_w2.html:585
-#: instances/templates/create_instance_w2.html:604
-#: instances/templates/create_instance_w2.html:650
+#: instances/templates/create_instance_w2.html:158
+#: instances/templates/create_instance_w2.html:186
+#: instances/templates/create_instance_w2.html:377
+#: instances/templates/create_instance_w2.html:432
+#: instances/templates/create_instance_w2.html:580
+#: instances/templates/create_instance_w2.html:599
+#: instances/templates/create_instance_w2.html:645
 #: instances/templates/instances/access_tab.html:135
 #: instances/templates/instances/settings_tab.html:183
-#: instances/templates/instances/settings_tab.html:406
+#: instances/templates/instances/settings_tab.html:407
 #: instances/templates/instances/stats_tab.html:90
-#: interfaces/templates/interface.html:42
-#: interfaces/templates/interface.html:44 nwfilters/templates/nwfilter.html:81
+#: interfaces/templates/interface.html:41
+#: interfaces/templates/interface.html:43 nwfilters/templates/nwfilter.html:78
 #: storages/templates/create_stg_block.html:132
-#: storages/templates/storage.html:48 storages/templates/storage.html:50
-#: storages/templates/storage.html:52
+#: storages/templates/storage.html:47 storages/templates/storage.html:49
+#: storages/templates/storage.html:51
 msgid "None"
 msgstr "Hiçbiri"
+
+#: instances/templates/add_instance_network_block.html:49
+#: instances/templates/add_instance_owner_block.html:30
+#: instances/templates/add_instance_volume.html:89
+#: instances/templates/add_instance_volume.html:144
+#: instances/templates/create_flav_block.html:25
+#: instances/templates/create_inst_block.html:34
+#: instances/templates/create_instance_w2.html:269
+#: instances/templates/edit_instance_volume.html:123
+#: instances/templates/instances/settings_tab.html:428
+#: interfaces/templates/create_iface_block.html:135
+#: networks/templates/add_network_qos.html:50
+#: networks/templates/create_net_block.html:85
+#: networks/templates/modify_ipv4_fixed_address.html:44
+#: networks/templates/modify_ipv6_fixed_address.html:44
+#: nwfilters/templates/add_nwf_rule.html:25
+#: nwfilters/templates/create_nwfilter_block.html:23
+#: nwfilters/templates/nwfilters.html:80 nwfilters/templates/nwfilters.html:108
+#: secrets/templates/create_secret_block.html:54
+#: secrets/templates/secrets.html:102
+#: storages/templates/create_stg_block.html:55
+#: storages/templates/create_stg_block.html:84
+#: storages/templates/create_stg_block.html:140
+#: storages/templates/create_stg_block.html:202
+#: storages/templates/create_stg_block.html:230
+#: storages/templates/create_stg_vol_block.html:28
+#: storages/templates/create_stg_vol_block.html:56
+#: storages/templates/storage.html:154
+msgid "Close"
+msgstr "Kapat"
 
 #: instances/templates/add_instance_owner_block.html:12
 msgid "Add Instance Owner"
@@ -1433,27 +1412,27 @@ msgstr "Birim parametreleri"
 
 #: instances/templates/add_instance_volume.html:30
 #: instances/templates/add_instance_volume.html:100
-#: instances/templates/create_instance_w2.html:154
-#: instances/templates/create_instance_w2.html:596
+#: instances/templates/create_instance_w2.html:149
+#: instances/templates/create_instance_w2.html:591
 #: instances/templates/instances/settings_tab.html:237
-#: storages/templates/storage.html:4 storages/templates/storage.html:14
+#: storages/templates/storage.html:4 storages/templates/storage.html:9
 msgid "Storage"
 msgstr "Depolama"
 
 #: instances/templates/add_instance_volume.html:46
 #: storages/templates/create_stg_block.html:183
-#: storages/templates/storage.html:100 storages/templates/storage.html:138
+#: storages/templates/storage.html:99 storages/templates/storage.html:137
 msgid "Format"
 msgstr "Biçem"
 
 #: instances/templates/add_instance_volume.html:56
-#: storages/templates/storage.html:53 storages/templates/storage.html:99
-#: storages/templates/storages.html:66
+#: storages/templates/storage.html:52 storages/templates/storage.html:98
+#: storages/templates/storages.html:62
 msgid "Size"
 msgstr "Boyut"
 
 #: instances/templates/add_instance_volume.html:60
-#: instances/templates/create_instance_w2.html:96
+#: instances/templates/create_instance_w2.html:91
 msgid "GB"
 msgstr "GB"
 
@@ -1470,8 +1449,8 @@ msgid "Cache"
 msgstr "Önbellek"
 
 #: instances/templates/add_instance_volume.html:83
-#: instances/templates/instances/settings_tab.html:755
-#: storages/templates/storage.html:148
+#: instances/templates/instances/settings_tab.html:760
+#: storages/templates/storage.html:147
 msgid "Metadata"
 msgstr "Metaveri"
 
@@ -1516,180 +1495,222 @@ msgstr "Lütfen seçin"
 msgid "Choose"
 msgstr "Seç"
 
-#: instances/templates/create_instance_w1.html:4
+#: instances/templates/create_instance_w1.html:5
 #: instances/templates/create_instance_w2.html:5
 msgid "Create new instance"
 msgstr "Yeni sanal makine oluştur"
 
-#: instances/templates/create_instance_w1.html:4
+#: instances/templates/create_instance_w1.html:5
 msgid "Select Type"
 msgstr "Tip seçin"
 
-#: instances/templates/create_instance_w1.html:11
-#: instances/templates/create_instance_w2.html:14
+#: instances/templates/create_instance_w1.html:8
+#: instances/templates/create_instance_w2.html:12
 #, python-format
 msgid "New instance on %(host)s "
 msgstr "%(host)s üzerinde yeni sanal makine"
 
-#: instances/templates/create_instance_w1.html:47
+#: instances/templates/create_instance_w1.html:41
 #: instances/templates/instances/settings_tab.html:49
-#: networks/templates/network.html:75 nwfilters/templates/nwfilter.html:52
+#: networks/templates/network.html:72 nwfilters/templates/nwfilter.html:49
 msgid "XML"
 msgstr "XML"
 
-#: instances/templates/create_instance_w1.html:68
+#: instances/templates/create_instance_w1.html:62
 msgid "Chipset"
 msgstr "Yonga"
 
-#: instances/templates/create_instance_w1.html:78
+#: instances/templates/create_instance_w1.html:72
 msgid "Next"
 msgstr "İleri"
 
-#: instances/templates/create_instance_w2.html:50
+#: instances/templates/create_instance_w1.html:89
+#: instances/templates/create_instance_w2.html:271
+#: instances/templates/create_instance_w2.html:273
+#: instances/templates/create_instance_w2.html:500
+#: instances/templates/create_instance_w2.html:504
+#: instances/templates/create_instance_w2.html:713
+#: instances/templates/create_instance_w2.html:717
+#: interfaces/templates/create_iface_block.html:138
+#: networks/templates/create_net_block.html:86
+#: networks/templates/modify_ipv4_fixed_address.html:45
+#: networks/templates/modify_ipv6_fixed_address.html:45
+#: nwfilters/templates/create_nwfilter_block.html:24
+#: secrets/templates/create_secret_block.html:55
+#: storages/templates/create_stg_block.html:56
+#: storages/templates/create_stg_block.html:85
+#: storages/templates/create_stg_block.html:144
+#: storages/templates/create_stg_block.html:148
+#: storages/templates/create_stg_block.html:205
+#: storages/templates/create_stg_block.html:233
+#: storages/templates/create_stg_vol_block.html:57
+msgid "Create"
+msgstr "Oluştur"
+
+#: instances/templates/create_instance_w2.html:45
 msgid "Flavor"
 msgstr ""
 
-#: instances/templates/create_instance_w2.html:55
+#: instances/templates/create_instance_w2.html:50
 msgid "Custom"
 msgstr "Özel"
 
-#: instances/templates/create_instance_w2.html:60
+#: instances/templates/create_instance_w2.html:55
 msgid "Template"
 msgstr "Şablon"
 
-#: instances/templates/create_instance_w2.html:71
+#: instances/templates/create_instance_w2.html:66
 msgid "Hypervisor doesn't have any Flavors"
 msgstr ""
 
-#: instances/templates/create_instance_w2.html:76
+#: instances/templates/create_instance_w2.html:71
 msgid "Create from flavor"
 msgstr ""
 
-#: instances/templates/create_instance_w2.html:84
-#: instances/templates/create_instance_w2.html:357
-#: instances/templates/create_instance_w2.html:568
-#: instances/templates/instance.html:45
+#: instances/templates/create_instance_w2.html:79
+#: instances/templates/create_instance_w2.html:352
+#: instances/templates/create_instance_w2.html:563
+#: instances/templates/instance.html:47
 msgid "RAM"
 msgstr "RAM"
 
-#: instances/templates/create_instance_w2.html:85
-#: instances/templates/create_instance_w2.html:372
+#: instances/templates/create_instance_w2.html:80
+#: instances/templates/create_instance_w2.html:367
 msgid "HDD"
 msgstr "HDD"
 
-#: instances/templates/create_instance_w2.html:95
-#: instances/templates/create_instance_w2.html:361
-#: instances/templates/create_instance_w2.html:572
-#: instances/templates/instance.html:45
+#: instances/templates/create_instance_w2.html:90
+#: instances/templates/create_instance_w2.html:356
+#: instances/templates/create_instance_w2.html:567
+#: instances/templates/instance.html:47
 #: instances/templates/instances/resize_tab.html:95
 #: instances/templates/instances/resize_tab.html:108
 msgid "MB"
 msgstr "MB"
 
-#: instances/templates/create_instance_w2.html:102
+#: instances/templates/create_instance_w2.html:97
 msgid "Create Virtual Machine"
 msgstr "Sanal Makine Oluştur"
 
-#: instances/templates/create_instance_w2.html:120
-#: instances/templates/create_instance_w2.html:317
-#: instances/templates/create_instance_w2.html:530
+#: instances/templates/create_instance_w2.html:115
+#: instances/templates/create_instance_w2.html:312
+#: instances/templates/create_instance_w2.html:525
 msgid "Firmware"
 msgstr "Üretici yazılımı"
 
-#: instances/templates/create_instance_w2.html:132
-#: instances/templates/create_instance_w2.html:335
-#: instances/templates/create_instance_w2.html:547
+#: instances/templates/create_instance_w2.html:127
+#: instances/templates/create_instance_w2.html:330
+#: instances/templates/create_instance_w2.html:542
 msgid "VCPU Config"
 msgstr "VCPU Konfigi"
 
-#: instances/templates/create_instance_w2.html:135
-#: instances/templates/create_instance_w2.html:338
-#: instances/templates/create_instance_w2.html:550
+#: instances/templates/create_instance_w2.html:130
+#: instances/templates/create_instance_w2.html:333
+#: instances/templates/create_instance_w2.html:545
 msgid "no-mode"
 msgstr "mod-yok"
 
-#: instances/templates/create_instance_w2.html:179
-#: instances/templates/create_instance_w2.html:407
-#: instances/templates/create_instance_w2.html:620
+#: instances/templates/create_instance_w2.html:174
+#: instances/templates/create_instance_w2.html:402
+#: instances/templates/create_instance_w2.html:615
 #: instances/templates/edit_instance_volume.html:25
 msgid "Advanced"
 msgstr "Gelişmiş"
 
-#: instances/templates/create_instance_w2.html:199
-#: instances/templates/create_instance_w2.html:636
+#: instances/templates/create_instance_w2.html:194
+#: instances/templates/create_instance_w2.html:631
 msgid "HDD cache mode"
 msgstr "HDD önbellek modu"
 
-#: instances/templates/create_instance_w2.html:217
-#: instances/templates/create_instance_w2.html:446
-#: instances/templates/create_instance_w2.html:659
+#: instances/templates/create_instance_w2.html:212
+#: instances/templates/create_instance_w2.html:441
+#: instances/templates/create_instance_w2.html:654
 msgid "Graphics"
 msgstr "Grafikler"
 
-#: instances/templates/create_instance_w2.html:228
-#: instances/templates/create_instance_w2.html:457
-#: instances/templates/create_instance_w2.html:670
+#: instances/templates/create_instance_w2.html:223
+#: instances/templates/create_instance_w2.html:452
+#: instances/templates/create_instance_w2.html:665
 msgid "Video"
 msgstr "Video"
 
-#: instances/templates/create_instance_w2.html:242
-#: instances/templates/create_instance_w2.html:471
-#: instances/templates/create_instance_w2.html:684
+#: instances/templates/create_instance_w2.html:237
+#: instances/templates/create_instance_w2.html:466
+#: instances/templates/create_instance_w2.html:679
 msgid "Console Access"
 msgstr "Konsol Erişimi"
 
-#: instances/templates/create_instance_w2.html:252
-#: instances/templates/create_instance_w2.html:254
-#: instances/templates/create_instance_w2.html:481
-#: instances/templates/create_instance_w2.html:483
-#: instances/templates/create_instance_w2.html:694
-#: instances/templates/create_instance_w2.html:696
+#: instances/templates/create_instance_w2.html:247
+#: instances/templates/create_instance_w2.html:249
+#: instances/templates/create_instance_w2.html:476
+#: instances/templates/create_instance_w2.html:478
+#: instances/templates/create_instance_w2.html:689
+#: instances/templates/create_instance_w2.html:691
 msgid "Console Password"
 msgstr "Konsol Parolası"
 
-#: instances/templates/create_instance_w2.html:258
-#: instances/templates/create_instance_w2.html:487
-#: instances/templates/create_instance_w2.html:700
+#: instances/templates/create_instance_w2.html:253
+#: instances/templates/create_instance_w2.html:482
+#: instances/templates/create_instance_w2.html:695
 msgid "Guest Agent"
 msgstr "Misafir Aracı"
 
-#: instances/templates/create_instance_w2.html:265
-#: instances/templates/create_instance_w2.html:494
-#: instances/templates/create_instance_w2.html:707
+#: instances/templates/create_instance_w2.html:260
+#: instances/templates/create_instance_w2.html:489
+#: instances/templates/create_instance_w2.html:702
 msgid "VirtIO"
 msgstr "VirtIO"
 
-#: instances/templates/create_instance_w2.html:364
+#: instances/templates/create_instance_w2.html:287
+#: instances/templates/instances/settings_tab.html:439
+#: instances/templates/instances/settings_tab.html:515
+#: instances/templates/instances/settings_tab.html:525
+#: instances/templates/instances/snapshots_tab.html:75
+#: interfaces/templates/interface.html:60
+#: interfaces/templates/interface.html:62 networks/templates/network.html:50
+#: networks/templates/network.html:52 networks/templates/network.html:62
+#: networks/templates/network.html:136 networks/templates/network.html:189
+#: networks/templates/network.html:194 networks/templates/network.html:249
+#: networks/templates/network.html:298 networks/templates/network.html:303
+#: networks/templates/network.html:353 networks/templates/network.html:358
+#: nwfilters/templates/nwfilter.html:111 nwfilters/templates/nwfilter.html:151
+#: nwfilters/templates/nwfilters.html:120 secrets/templates/secrets.html:77
+#: storages/templates/storage.html:62 storages/templates/storage.html:65
+#: storages/templates/storage.html:77 storages/templates/storage.html:174
+msgid "Are you sure?"
+msgstr "Emin misiniz?"
+
+#: instances/templates/create_instance_w2.html:359
 msgid "Added Disks"
 msgstr "Eklenen Diskler"
 
-#: instances/templates/create_instance_w2.html:377
-#: instances/templates/create_instance_w2.html:580
+#: instances/templates/create_instance_w2.html:372
+#: instances/templates/create_instance_w2.html:575
 msgid "Select pool"
 msgstr "Havuz seçin"
 
-#: instances/templates/create_instance_w2.html:416
-#: instances/templates/create_instance_w2.html:629
+#: instances/templates/create_instance_w2.html:411
+#: instances/templates/create_instance_w2.html:624
 msgid "Disk Metadata"
 msgstr "Disk Metadata"
 
-#: instances/templates/create_instance_w2.html:418
-#: instances/templates/create_instance_w2.html:631
+#: instances/templates/create_instance_w2.html:413
+#: instances/templates/create_instance_w2.html:626
 msgid "Metadata preallocation"
 msgstr "Metadata öntahsis"
 
-#: instances/templates/create_instance_w2.html:420
-#: instances/templates/create_instance_w2.html:633
+#: instances/templates/create_instance_w2.html:415
+#: instances/templates/create_instance_w2.html:628
 #: venv/lib/python3.6/site-packages/django/db/models/fields/files.py:360
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/files.py:391
 msgid "Image"
 msgstr "İmaj"
 
-#: instances/templates/create_instance_w2.html:423
+#: instances/templates/create_instance_w2.html:418
 msgid "HDD Cache Mode"
 msgstr "HDD Önbellek Modu"
 
-#: instances/templates/create_instance_w2.html:575
+#: instances/templates/create_instance_w2.html:570
 msgid "Template Disk"
 msgstr "Şablon Disk"
 
@@ -1741,38 +1762,38 @@ msgstr "Diskard modu"
 msgid "Detect zeroes"
 msgstr "Sıfırları yakala"
 
-#: instances/templates/instance.html:20
+#: instances/templates/instance.html:22
 #: instances/templates/instance_actions.html:14
 #: instances/templates/instance_actions.html:25
 #: instances/templates/instance_actions.html:37
 #: instances/templates/instances/power_tab.html:25
-#: instances/templates/instances/power_tab.html:82 instances/views.py:287
+#: instances/templates/instances/power_tab.html:82 instances/views.py:264
 msgid "Suspend"
 msgstr "Duraklat"
 
-#: instances/templates/instance.html:26
+#: instances/templates/instance.html:28
 msgid "Guest Agent Enabled & Connected"
 msgstr "Misafir Aracı Etkin & Bağlı"
 
-#: instances/templates/instance.html:29
+#: instances/templates/instance.html:31
 msgid "Guest Agent Enabled but not Connected"
 msgstr "Misafir Aracı Etkin fakat bağlı değil"
 
-#: instances/templates/instance.html:33
+#: instances/templates/instance.html:35
 msgid "Guest Agent Not Enabled & Not Connected"
 msgstr "Misafir Aracı etkin değil & Bağlanmamış"
 
-#: instances/templates/instance.html:48
+#: instances/templates/instance.html:50
 #: instances/templates/instances/resize_tab.html:18
 #: instances/templates/instances/settings_tab.html:16
 msgid "Disk"
 msgstr "Disk"
 
-#: instances/templates/instance.html:55
+#: instances/templates/instance.html:57
 msgid "Refresh instance info"
 msgstr "Sanal makine bilgilerini yenile"
 
-#: instances/templates/instance.html:59
+#: instances/templates/instance.html:61
 msgid "quota reached"
 msgstr "kotaya erişildi"
 
@@ -1800,28 +1821,38 @@ msgstr "İstatistikler"
 #: instances/templates/instances/destroy_instance_form.html:40
 #: instances/templates/instances/destroy_tab.html:18
 #: instances/templates/instances/destroy_tab.html:20
-#: instances/templates/instances/destroy_tab.html:23 instances/views.py:329
+#: instances/templates/instances/destroy_tab.html:23 instances/views.py:306
 msgid "Destroy"
 msgstr "Sil"
+
+#: instances/templates/instance_actions.html:6
+#: instances/templates/instances/settings_tab.html:37
+#: instances/templates/instances/settings_tab.html:788
+#: instances/templates/instances/settings_tab.html:790
+#: nwfilters/templates/nwfilters.html:109
+#: nwfilters/templates/nwfilters.html:115 storages/templates/storage.html:155
+#: storages/templates/storage.html:162
+msgid "Clone"
+msgstr "Klonla"
 
 #: instances/templates/instance_actions.html:10
 #: instances/templates/instance_actions.html:35
 #: instances/templates/instances/power_tab.html:47
 #: instances/templates/instances/power_tab.html:121
-#: instances/templates/instances/power_tab.html:123 instances/views.py:262
+#: instances/templates/instances/power_tab.html:123 instances/views.py:239
 msgid "Power On"
 msgstr "Başlat"
 
 #: instances/templates/instance_actions.html:15
 #: instances/templates/instances/power_tab.html:9
-#: instances/templates/instances/power_tab.html:59 instances/views.py:278
+#: instances/templates/instances/power_tab.html:59 instances/views.py:255
 msgid "Power Off"
 msgstr "Kapat"
 
 #: instances/templates/instance_actions.html:16
 #: instances/templates/instance_actions.html:29
 #: instances/templates/instances/power_tab.html:14
-#: instances/templates/instances/power_tab.html:66 instances/views.py:271
+#: instances/templates/instances/power_tab.html:66 instances/views.py:248
 msgid "Power Cycle"
 msgstr "Yeniden başlat"
 
@@ -1833,7 +1864,7 @@ msgstr "VNC Konsol"
 #: instances/templates/instance_actions.html:22
 #: instances/templates/instances/power_tab.html:34
 #: instances/templates/instances/power_tab.html:93
-#: instances/templates/instances/power_tab.html:108 instances/views.py:295
+#: instances/templates/instances/power_tab.html:108 instances/views.py:272
 msgid "Resume"
 msgstr "Devam ettir"
 
@@ -1841,7 +1872,7 @@ msgstr "Devam ettir"
 #: instances/templates/instances/power_tab.html:19
 #: instances/templates/instances/power_tab.html:39
 #: instances/templates/instances/power_tab.html:74
-#: instances/templates/instances/power_tab.html:100 instances/views.py:302
+#: instances/templates/instances/power_tab.html:100 instances/views.py:279
 msgid "Force Off"
 msgstr "Zorla Kapat"
 
@@ -1886,7 +1917,7 @@ msgstr "Sadece Görüntüle"
 #, fuzzy
 #| msgid "Resize Memory"
 msgid "Resize Session"
-msgstr "Bellek Boyutlandır"
+msgstr "Oturumu Boyutlandır"
 
 #: instances/templates/instances/access_tab.html:71
 msgid "View Clipboard"
@@ -1939,6 +1970,16 @@ msgstr ""
 "Bu eylem sanal makinenin konsoluna bir bağlantı ile uzak görüntüleyiciyi "
 "açar."
 
+#: instances/templates/instances/access_tab.html:159
+msgid "To download console.vv file for virt-viewer."
+msgstr "virt-viewer için console.vv dosyasını indir."
+
+#: instances/templates/instances/access_tab.html:160
+#, fuzzy
+#| msgid "Send console.vv file"
+msgid "Get console.vv"
+msgstr "console.vv dosyası gönder"
+
 #: instances/templates/instances/destroy_instance_form.html:4
 #, fuzzy
 #| msgid "Destroy"
@@ -1971,7 +2012,7 @@ msgstr "Sanal makine NVRAM'ini sil"
 #, fuzzy
 #| msgid "Destroy Instance"
 msgid "You cannot destroy instance!"
-msgstr "Sanal makineyi sil"
+msgstr "Sanal makineyi silemezsiniz!"
 
 #: instances/templates/instances/destroy_tab.html:8
 msgid "Destroy Instance"
@@ -1981,7 +2022,7 @@ msgstr "Sanal makineyi sil"
 #, fuzzy
 #| msgid "This action restore the instance after suspend."
 msgid "This action starts remove instance process"
-msgstr "Bu eylem sanal makineyi sürdürmeye döndürür."
+msgstr "Bu eylem sanal makine silme işlemini başlatır."
 
 #: instances/templates/instances/power_tab.html:56
 msgid "This action sends an ACPI shutdown signal to the instance."
@@ -2048,7 +2089,7 @@ msgstr "Mantıksal sanal makine Aktif/Maksimum CPUları"
 #: instances/templates/instances/resize_tab.html:71
 #: instances/templates/instances/settings_tab.html:79
 #: instances/templates/instances/settings_tab.html:95
-#: networks/templates/network.html:65 storages/templates/storage.html:78
+#: networks/templates/network.html:62 storages/templates/storage.html:77
 msgid "Disable"
 msgstr "Devredışı"
 
@@ -2059,7 +2100,7 @@ msgstr "Sabit"
 #: instances/templates/instances/resize_tab.html:75
 #: instances/templates/instances/settings_tab.html:77
 #: instances/templates/instances/settings_tab.html:91
-#: networks/templates/network.html:63 storages/templates/storage.html:75
+#: networks/templates/network.html:60 storages/templates/storage.html:74
 msgid "Enable"
 msgstr "Etkin"
 
@@ -2092,8 +2133,8 @@ msgid "Boot"
 msgstr "Ön Yükleme"
 
 #: instances/templates/instances/settings_tab.html:44
-#: instances/templates/instances/settings_tab.html:616
-#: instances/templates/instances/settings_tab.html:618
+#: instances/templates/instances/settings_tab.html:621
+#: instances/templates/instances/settings_tab.html:623
 msgid "Migrate"
 msgstr "Taşı"
 
@@ -2102,7 +2143,7 @@ msgid "Options"
 msgstr "Seçenekler"
 
 #: instances/templates/instances/settings_tab.html:72
-#: networks/templates/network.html:59 storages/templates/storage.html:70
+#: networks/templates/network.html:56 storages/templates/storage.html:69
 msgid "Autostart"
 msgstr "Otomatik başlat"
 
@@ -2139,7 +2180,7 @@ msgid "down: move selected devices"
 msgstr "aşağı: seçili aygıtları taşı"
 
 #: instances/templates/instances/settings_tab.html:139
-#: instances/templates/instances/settings_tab.html:428
+#: instances/templates/instances/settings_tab.html:429
 msgid "Apply"
 msgstr "Uygula"
 
@@ -2154,7 +2195,7 @@ msgstr "CD-ROM Ekle"
 #: instances/templates/instances/settings_tab.html:169
 #: instances/templates/instances/settings_tab.html:234
 #: interfaces/templates/create_iface_block.html:34
-#: networks/templates/network.html:46 networks/templates/networks.html:63
+#: networks/templates/network.html:43 networks/templates/networks.html:59
 #: storages/templates/create_stg_block.html:77
 msgid "Device"
 msgstr "Aygıt"
@@ -2194,7 +2235,7 @@ msgid "Capacity"
 msgstr "Kapasite"
 
 #: instances/templates/instances/settings_tab.html:238
-#: instances/templates/instances/settings_tab.html:362
+#: instances/templates/instances/settings_tab.html:363
 msgid "Source"
 msgstr "Kaynak"
 
@@ -2233,261 +2274,260 @@ msgstr "Bilgi"
 msgid "active"
 msgstr "aktif"
 
-#: instances/templates/instances/settings_tab.html:360
-#: nwfilters/templates/nwfilter.html:78
+#: instances/templates/instances/settings_tab.html:361
+#: nwfilters/templates/nwfilter.html:75
 msgid "Filter"
 msgstr "Filtre"
 
-#: instances/templates/instances/settings_tab.html:367
+#: instances/templates/instances/settings_tab.html:368
 msgid "Edit NIC"
 msgstr "NIC Düzenle"
 
-#: instances/templates/instances/settings_tab.html:375
+#: instances/templates/instances/settings_tab.html:376
 msgid "Edit Instance Network"
 msgstr "Sanal Makine Ağını Düzenle"
 
-#: instances/templates/instances/settings_tab.html:388
+#: instances/templates/instances/settings_tab.html:389
 msgid "Net Source"
 msgstr "Ağ Kaynağı"
 
-#: instances/templates/instances/settings_tab.html:396
-#: interfaces/templates/interface.html:3 interfaces/templates/interface.html:8
-#: interfaces/templates/interface.html:40
+#: instances/templates/instances/settings_tab.html:397
+#: interfaces/templates/interface.html:4 interfaces/templates/interface.html:6
+#: interfaces/templates/interface.html:39
 msgid "Interface"
 msgstr "Arabirim"
 
-#: instances/templates/instances/settings_tab.html:414
-#: instances/templates/instances/settings_tab.html:453
+#: instances/templates/instances/settings_tab.html:415
+#: instances/templates/instances/settings_tab.html:454
 msgid "Model"
 msgstr "Model"
 
-#: instances/templates/instances/settings_tab.html:428
+#: instances/templates/instances/settings_tab.html:429
 msgid "Apply network changes"
 msgstr "Ağ değişikliklerini uygula"
 
-#: instances/templates/instances/settings_tab.html:437
+#: instances/templates/instances/settings_tab.html:438
 msgid "Delete Device"
 msgstr "Aygıt Sil"
 
-#: instances/templates/instances/settings_tab.html:445
+#: instances/templates/instances/settings_tab.html:446
 #: interfaces/templates/create_iface_block.html:71
-#: interfaces/templates/interface.html:42
+#: interfaces/templates/interface.html:41
 msgid "IPv4"
 msgstr "IPv4"
 
-#: instances/templates/instances/settings_tab.html:449
+#: instances/templates/instances/settings_tab.html:450
 #: interfaces/templates/create_iface_block.html:74
-#: interfaces/templates/interface.html:44
+#: interfaces/templates/interface.html:43
 msgid "IPv6"
 msgstr "IPv6"
 
-#: instances/templates/instances/settings_tab.html:455
+#: instances/templates/instances/settings_tab.html:456
 msgid "QoS"
 msgstr "QoS"
 
-#: instances/templates/instances/settings_tab.html:476
-#: networks/templates/network.html:325
+#: instances/templates/instances/settings_tab.html:468
+msgid ""
+"In most configurations, macvtap does not work for host to guest network "
+"communication"
+msgstr ""
+
+#: instances/templates/instances/settings_tab.html:481
+#: networks/templates/network.html:322
 msgid "QoS Configuration"
 msgstr "QoS Yapılandırması"
 
-#: instances/templates/instances/settings_tab.html:482
+#: instances/templates/instances/settings_tab.html:487
 #: networks/templates/add_network_qos.html:18
-#: networks/templates/network.html:331 nwfilters/templates/nwfilter.html:134
+#: networks/templates/network.html:328 nwfilters/templates/nwfilter.html:131
 msgid "Direction"
 msgstr "Yön"
 
-#: instances/templates/instances/settings_tab.html:483
+#: instances/templates/instances/settings_tab.html:488
 #: networks/templates/add_network_qos.html:27
-#: networks/templates/network.html:332
+#: networks/templates/network.html:329
 msgid "Average"
 msgstr "Ortalama"
 
-#: instances/templates/instances/settings_tab.html:484
+#: instances/templates/instances/settings_tab.html:489
 #: networks/templates/add_network_qos.html:34
-#: networks/templates/network.html:333
+#: networks/templates/network.html:330
 msgid "Peak"
 msgstr "Tepe"
 
-#: instances/templates/instances/settings_tab.html:485
+#: instances/templates/instances/settings_tab.html:490
 #: networks/templates/add_network_qos.html:41
-#: networks/templates/network.html:334
+#: networks/templates/network.html:331
 msgid "Burst"
 msgstr ""
 
-#: instances/templates/instances/settings_tab.html:510
-#: networks/templates/network.html:356
+#: instances/templates/instances/settings_tab.html:515
+#: networks/templates/network.html:353
 msgid "Edit QoS"
 msgstr "QoS Düzenle"
 
-#: instances/templates/instances/settings_tab.html:520
-#: networks/templates/network.html:361
+#: instances/templates/instances/settings_tab.html:525
+#: networks/templates/network.html:358
 msgid "Delete QoS"
 msgstr "QoS Sil"
 
-#: instances/templates/instances/settings_tab.html:536
+#: instances/templates/instances/settings_tab.html:541
 msgid "For migration both host servers must have equal settings and OS type"
 msgstr ""
 "Taşıma için iki sunucu da eşlenik ayarlara ve OS tipine sahip olmalıdır"
 
-#: instances/templates/instances/settings_tab.html:540
+#: instances/templates/instances/settings_tab.html:545
 msgid "Original host"
 msgstr "Orijinal Sunucu"
 
-#: instances/templates/instances/settings_tab.html:546
+#: instances/templates/instances/settings_tab.html:551
 msgid "Host migration"
 msgstr "Sunucu taşıma"
 
-#: instances/templates/instances/settings_tab.html:563
+#: instances/templates/instances/settings_tab.html:568
 msgid "Live migration"
 msgstr "Canlı olarak taşı"
 
-#: instances/templates/instances/settings_tab.html:571
+#: instances/templates/instances/settings_tab.html:576
 msgid "Unsafe migration"
 msgstr "Güvensiz taşıma"
 
-#: instances/templates/instances/settings_tab.html:579
+#: instances/templates/instances/settings_tab.html:584
 msgid "Delete original"
 msgstr "Orjinali sil"
 
-#: instances/templates/instances/settings_tab.html:587
+#: instances/templates/instances/settings_tab.html:592
 msgid "Offline migration"
 msgstr "Çevrimdışı olarak taşı"
 
-#: instances/templates/instances/settings_tab.html:595
+#: instances/templates/instances/settings_tab.html:600
 msgid "Post copy"
 msgstr ""
 
-#: instances/templates/instances/settings_tab.html:603
+#: instances/templates/instances/settings_tab.html:608
 msgid "Forces CPU convergence during live migration"
-msgstr ""
+msgstr "Canlı göç esnasında CPU yu yavaşlamaya zorlar"
 
-#: instances/templates/instances/settings_tab.html:603
+#: instances/templates/instances/settings_tab.html:608
 msgid "Auto converge"
-msgstr ""
+msgstr "Otomatik yavaşlat"
 
-#: instances/templates/instances/settings_tab.html:611
+#: instances/templates/instances/settings_tab.html:616
 msgid "Compress instance memory for fast migration"
 msgstr "Hızlı taşıma için sanal makine belleğini sıkıştır"
 
-#: instances/templates/instances/settings_tab.html:611
+#: instances/templates/instances/settings_tab.html:616
 msgid "Compressed"
 msgstr "Sıkıştırılmış"
 
-#: instances/templates/instances/settings_tab.html:624
+#: instances/templates/instances/settings_tab.html:629
 msgid "If you need to edit XML please Power Off the instance"
 msgstr ""
 "XML üzerinden ayarları değiştirmek istiyorsanız sanal makineyi kapatmalısınız"
 
-#: instances/templates/instances/settings_tab.html:646
+#: instances/templates/instances/settings_tab.html:651
 msgid "Instance owners"
 msgstr "Sanal makine sahipleri"
 
-#: instances/templates/instances/settings_tab.html:675
+#: instances/templates/instances/settings_tab.html:680
 #, fuzzy
 #| msgid "To create console password, shutdown the instance."
 msgid "To change console settings, shutdown the instance."
-msgstr "Konsol parolasını oluşturmak için sanal makineyi kapatın"
+msgstr "Konsol ayarlarını değiştirmek için sanal makineyi kapatın"
 
-#: instances/templates/instances/settings_tab.html:681
-#: instances/templates/instances/settings_tab.html:683
-#, fuzzy
-#| msgid "date"
-msgid "Update"
-msgstr "tarih"
-
-#: instances/templates/instances/settings_tab.html:692
+#: instances/templates/instances/settings_tab.html:697
 msgid "Create a clone"
 msgstr "Bir klon oluştur"
 
-#: instances/templates/instances/settings_tab.html:695
+#: instances/templates/instances/settings_tab.html:700
 msgid "Clone Name"
 msgstr "Klon Adı"
 
-#: instances/templates/instances/settings_tab.html:702
-#: instances/templates/instances/settings_tab.html:733
+#: instances/templates/instances/settings_tab.html:707
+#: instances/templates/instances/settings_tab.html:738
 msgid "Guess"
 msgstr "Tahmin"
 
-#: instances/templates/instances/settings_tab.html:721
+#: instances/templates/instances/settings_tab.html:726
 msgid "Network devices"
 msgstr "Ağ aygıtları"
 
-#: instances/templates/instances/settings_tab.html:731
+#: instances/templates/instances/settings_tab.html:736
 msgid "Random"
 msgstr "Rastgele"
 
-#: instances/templates/instances/settings_tab.html:746
+#: instances/templates/instances/settings_tab.html:751
 msgid "Storage devices"
 msgstr "Depolama aygıtları"
 
-#: instances/templates/instances/settings_tab.html:771
-#: instances/templates/instances/settings_tab.html:794
+#: instances/templates/instances/settings_tab.html:776
+#: instances/templates/instances/settings_tab.html:799
 msgid "Title"
 msgstr "Başlık"
 
-#: instances/templates/instances/settings_tab.html:791
+#: instances/templates/instances/settings_tab.html:796
 msgid "To set instance template name description, shutdown the instance."
 msgstr ""
 "Sanal makine şablon adını ve tanımını ayarlamak için sanal makineyi kapatın."
 
-#: instances/templates/instances/settings_tab.html:806
+#: instances/templates/instances/settings_tab.html:811
 msgid "Is template"
 msgstr "Şablon?"
 
-#: instances/templates/instances/settings_tab.html:827
+#: instances/templates/instances/settings_tab.html:832
 msgid "To set instance video model, shutdown the instance."
 msgstr "Sanal makine video modelini ayarlamak için sanal makineyi kapatın."
 
-#: instances/templates/instances/settings_tab.html:830
+#: instances/templates/instances/settings_tab.html:835
 msgid "Primary Video Model"
 msgstr "Birincil Video Model"
 
-#: instances/templates/instances/settings_tab.html:834
+#: instances/templates/instances/settings_tab.html:839
 msgid "please choose"
 msgstr "lütfen seçiniz"
 
-#: instances/templates/instances/settings_tab.html:841
-#: instances/templates/instances/settings_tab.html:843
-#: instances/templates/instances/settings_tab.html:863
-#: instances/templates/instances/settings_tab.html:865
-#: instances/templates/instances/settings_tab.html:893
+#: instances/templates/instances/settings_tab.html:846
+#: instances/templates/instances/settings_tab.html:848
+#: instances/templates/instances/settings_tab.html:868
+#: instances/templates/instances/settings_tab.html:870
+#: instances/templates/instances/settings_tab.html:898
 #: secrets/templates/secrets.html:103
 msgid "Set"
 msgstr "Ayarla"
 
-#: instances/templates/instances/settings_tab.html:851
+#: instances/templates/instances/settings_tab.html:856
 msgid "To set instance vCPUs hotpluggable"
 msgstr "Sanal makinenin vCPUlarını hotpluggable yapmak için"
 
-#: instances/templates/instances/settings_tab.html:854
+#: instances/templates/instances/settings_tab.html:859
 msgid "vCPU Hot Plug"
 msgstr ""
 
-#: instances/templates/instances/settings_tab.html:858
-#: instances/templates/instances/settings_tab.html:889
+#: instances/templates/instances/settings_tab.html:863
+#: instances/templates/instances/settings_tab.html:894
 msgid "Enabled"
 msgstr "Etkin"
 
-#: instances/templates/instances/settings_tab.html:859
-#: instances/templates/instances/settings_tab.html:890
+#: instances/templates/instances/settings_tab.html:864
+#: instances/templates/instances/settings_tab.html:895
 msgid "Disabled"
 msgstr "Devredışı"
 
-#: instances/templates/instances/settings_tab.html:873
+#: instances/templates/instances/settings_tab.html:878
 msgid "To Enable/Disable Qemu Guest Agent. Status"
 msgstr "Misafir Aracıyı Etkilenleştirme/Devredışı bırakmak için. Durum"
 
-#: instances/templates/instances/settings_tab.html:878
+#: instances/templates/instances/settings_tab.html:883
 msgid "Disconnected"
 msgstr "Bağlantı yok"
 
-#: instances/templates/instances/settings_tab.html:881
+#: instances/templates/instances/settings_tab.html:886
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:709
 #: venv2/lib/python2.7/site-packages/django/forms/widgets.py:703
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: instances/templates/instances/settings_tab.html:885
+#: instances/templates/instances/settings_tab.html:890
 msgid "Qemu Guest Agent"
 msgstr "Qemu Misafir Aracısı"
 
@@ -2555,289 +2595,321 @@ msgstr "Bant Genişliği Aygıtı"
 msgid "Disk I/O device"
 msgstr "Disk I/O aygıtı"
 
-#: instances/utils.py:122
+#: instances/utils.py:99
 msgid "None available device name"
 msgstr "Hiçbiri uygun aygıt adı değil"
 
-#: instances/utils.py:239
-msgid "Deleting due to multiple(Instance Name) records."
-msgstr "Çoklu kayıt(sanal makine adı) nedeniyle siliniyor"
-
-#: instances/utils.py:247
-msgid "Deleting due to multiple(UUID) records."
-msgstr "Çoklu(UUID) kayıtlar nedeniyle siliniyor."
-
-#: instances/views.py:259
+#: instances/views.py:236
 msgid "Templates cannot be started."
 msgstr "Şablon makineler başlatılamaz."
 
-#: instances/views.py:362
-#, python-brace-format
-msgid "Migrate to {new_compute.hostname}"
-msgstr "{new_compute.hostname} ya taşı"
+#: instances/views.py:339
+#, fuzzy, python-format
+#| msgid "Migrate to {new_compute.hostname}"
+msgid "Migrate to %(hostname)%"
+msgstr "%(hostname)% ya taşı"
 
-#: instances/views.py:385
+#: instances/views.py:362
 msgid "Reset root password"
 msgstr "Kök parolayı sıfırla"
 
-#: instances/views.py:391 instances/views.py:417
+#: instances/views.py:368 instances/views.py:397
 msgid "Please shutdown down your instance and then try again"
 msgstr "Lütfen sanal makinenizi kapatın ve yeniden deneyin"
 
-#: instances/views.py:409
-#, python-brace-format
-msgid "Installed new SSH public key {publickey.keyname}"
-msgstr ""
+#: instances/views.py:389
+#, python-format
+msgid "Installed new SSH public key %(keyname)s"
+msgstr "Yeni %(keyname)s SSH açık anahtarı kuruldu"
 
-#: instances/views.py:436
-#, python-brace-format
-msgid "User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!"
+#: instances/views.py:416
+#, fuzzy, python-format
+#| msgid ""
+#| "User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!"
+msgid ""
+"User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
 msgstr ""
-"{quota_msg} Kullanıcı kotası doldu, '{instance.name}' in CPU su yeniden "
+"%(quota_msg)s kullanıcısı kotası doldu, '%(instance_name)s' in CPU su yeniden "
 "boyutlandırılamıyor!"
 
-#: instances/views.py:442
+#: instances/views.py:425
 msgid "Resize CPU"
 msgstr "CPU Boyutlandır"
 
-#: instances/views.py:470
-#, python-brace-format
+#: instances/views.py:453
+#, fuzzy, python-format
+#| msgid ""
+#| "User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!"
 msgid ""
-"User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!"
+"User %(quota_msg)s quota reached, cannot resize memory of "
+"'%(instance_name)s'!"
 msgstr ""
-"{quota_msg} kullanıcı kotası doldu, '{instance.name}' in belleği yeniden "
+"%(quota_msg)s kullanıcı kotası doldu, '%(instance_name)s' in belleği yeniden "
 "boyutlandırılamıyor!"
 
-#: instances/views.py:476
+#: instances/views.py:462
 msgid "Resize Memory"
 msgstr "Bellek Boyutlandır"
 
-#: instances/views.py:506
-#, python-brace-format
+#: instances/views.py:491
+#, fuzzy, python-format
+#| msgid ""
+#| "User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!"
 msgid ""
-"User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!"
+"User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
 msgstr ""
-"{quota_msg} kullanıcı kotası doldu, '{instance.name}' in diski yeniden "
+"%(quota_msg)s kullanıcı kotası doldu, '%(instance_name)s' in diski yeniden "
 "boyutlandırılamıyor!"
 
-#: instances/views.py:510
+#: instances/views.py:498
 msgid "Disk resize"
-msgstr "Diski Boyutlandır"
+msgstr "Disk Boyutlandır"
 
-#: instances/views.py:549
-#, python-brace-format
-msgid "Attach new disk {name} ({format})"
-msgstr "Yeni disk tak {name} ({format})"
+#: instances/views.py:537
+#, fuzzy, python-format
+#| msgid "Attach new disk {name} ({format})"
+msgid "Attach new disk %(name)s (%(format)s)"
+msgstr "Yeni disk tak %(name)s (%(format)s)"
 
-#: instances/views.py:580
-#, python-brace-format
-msgid "Attach Existing disk: {target_dev}"
-msgstr "Takılan mevcut disk: {target_dev}"
+#: instances/views.py:568
+#, fuzzy, python-format
+#| msgid "Attach Existing disk: {target_dev}"
+msgid "Attach Existing disk: %(target_dev)s"
+msgstr "Takılan mevcut disk: %(target_dev)s"
 
-#: instances/views.py:636
+#: instances/views.py:624
 msgid "Volume changes are applied. But it will be activated after shutdown"
 msgstr ""
 "Birim değişiklikleri uygulandı. Ama yeniden başlatıldıktan sonra uygulanacak"
 
-#: instances/views.py:638
+#: instances/views.py:626
 msgid "Volume is changed successfully."
 msgstr "Birim başarıyla değiştirildi."
 
-#: instances/views.py:639
-#, python-brace-format
-msgid "Edit disk: {target_dev}"
-msgstr "Disk düzenle: {target_dev}"
+#: instances/views.py:627
+#, fuzzy, python-format
+#| msgid "Edit disk: {target_dev}"
+msgid "Edit disk: %(target_dev)s"
+msgstr "Disk düzenle: %(target_dev)s"
 
-#: instances/views.py:661
-#, python-brace-format
-msgid "Delete disk: {dev}"
-msgstr "Disk sil: {dev}"
+#: instances/views.py:649
+#, fuzzy, python-format
+#| msgid "Delete disk: {dev}"
+msgid "Delete disk: %(dev)s"
+msgstr "Disk sil: %(dev)s"
 
-#: instances/views.py:677
-#, python-brace-format
-msgid "Detach disk: {dev}"
-msgstr "Diski ayır: {dev}"
+#: instances/views.py:665
+#, fuzzy, python-format
+#| msgid "Detach disk: {dev}"
+msgid "Detach disk: %(dev)s"
+msgstr "Diski ayır: %(dev)s"
 
-#: instances/views.py:690
-#, python-brace-format
-msgid "Add CD-ROM: {target}"
-msgstr "CD-ROM Ekle: {target}"
+#: instances/views.py:678
+#, fuzzy, python-format
+#| msgid "Add CD-ROM: {target}"
+msgid "Add CD-ROM: %(target)s"
+msgstr "CD-ROM Ekle: %(target)s"
 
-#: instances/views.py:703
-#, python-brace-format
-msgid "Detach CD-ROM: {dev}"
-msgstr "CD-ROM ayır: {dev}"
+#: instances/views.py:691
+#, fuzzy, python-format
+#| msgid "Detach CD-ROM: {dev}"
+msgid "Detach CD-ROM: %(dev)s"
+msgstr "CD-ROM ayır: %(dev)s"
 
-#: instances/views.py:716
-#, python-brace-format
-msgid "Mount media: {dev}"
-msgstr "Medya tak: {dev}"
+#: instances/views.py:704
+#, fuzzy, python-format
+#| msgid "Mount media: {dev}"
+msgid "Mount media: %(dev)s"
+msgstr "Medya tak: %(dev)s"
 
-#: instances/views.py:729
-#, python-brace-format
-msgid "Umount media: {dev}"
-msgstr "Medyayı ayır: {dev}"
+#: instances/views.py:717
+#, fuzzy, python-format
+#| msgid "Umount media: {dev}"
+msgid "Unmount media: %(dev)s"
+msgstr "Medyayı ayır: %(dev)s"
 
-#: instances/views.py:742
-#, python-brace-format
-msgid "New snapshot : {name}"
-msgstr "Yeni anlık görüntü: {name}"
+#: instances/views.py:730
+#, fuzzy, python-format
+#| msgid "New snapshot : {name}"
+msgid "New snapshot: %(name)s"
+msgstr "Yeni anlık görüntü: %(name)s"
 
-#: instances/views.py:753
-#, python-brace-format
-msgid "Delete snapshot : {snap_name}"
-msgstr "Anlık görüntü sil: {snap_name}"
+#: instances/views.py:741
+#, fuzzy, python-format
+#| msgid "Delete snapshot : {snap_name}"
+msgid "Delete snapshot: %(snap_name)s"
+msgstr "Anlık görüntü sil: %(snap_name)s"
 
-#: instances/views.py:764
+#: instances/views.py:752
 msgid "Successful revert snapshot: "
 msgstr "Anlık görüntü geri dönüş başarılı:"
 
-#: instances/views.py:767
+#: instances/views.py:755
 msgid "Revert snapshot"
 msgstr "Snapshota dön"
 
-#: instances/views.py:781
-#, python-brace-format
-msgid "VCPU {id} is enabled={enabled}"
+#: instances/views.py:769
+#, python-format
+msgid "VCPU %(id)s is enabled=%(enabled)s"
 msgstr ""
 
-#: instances/views.py:792
-#, python-brace-format
-msgid "VCPU Hot-plug is enabled={status}"
+#: instances/views.py:780
+#, python-format
+msgid "VCPU Hot-plug is enabled=%(status)s"
 msgstr ""
 
-#: instances/views.py:803
+#: instances/views.py:791
 msgid "Set autostart"
 msgstr "Otomatik başlatmayı ayarla"
 
-#: instances/views.py:812
+#: instances/views.py:800
 msgid "Unset autostart"
 msgstr "Otomatik başlatmayı iptal et"
 
-#: instances/views.py:821
+#: instances/views.py:809
 msgid "Enable boot menu"
 msgstr "Ön yükleme menüsünü etkinleştir"
 
-#: instances/views.py:830
+#: instances/views.py:818
 msgid "Disable boot menu"
 msgstr "Ön yükleme menüsünü devredışı bırak"
 
-#: instances/views.py:845
+#: instances/views.py:833
 msgid "Set boot order"
 msgstr "Ön yükleme sırasını ayarla"
 
-#: instances/views.py:848
+#: instances/views.py:836
 msgid "Boot menu changes applied. But it will be activated after shutdown"
 msgstr ""
 "Ön yükleme menüsü değişiklikleri uygulandı. Fakat yeniden başlatılınca "
 "uygulanacak"
 
-#: instances/views.py:850
+#: instances/views.py:838
 msgid "Boot order changed successfully."
 msgstr "Ön yükleme sırası başarıyla değiştirildi."
 
-#: instances/views.py:861
+#: instances/views.py:849
 msgid "Edit XML"
 msgstr "XML Düzenle"
 
-#: instances/views.py:875
-#, python-brace-format
-msgid "Set Quest Agent {status}"
+#: instances/views.py:863
+#, fuzzy, python-format
+#| msgid "Set Quest Agent {status}"
+msgid "Set Guest Agent %(status)s"
 msgstr "Misafir Aracı Ayarla {status}"
 
-#: instances/views.py:885
+#: instances/views.py:873
 msgid "Set Video Model"
 msgstr "Video Modeli Ayarla"
 
-#: instances/views.py:894
+#: instances/views.py:882
 msgid "Change network"
 msgstr "Ağ değiştir"
 
-#: instances/views.py:907
+#: instances/views.py:895
 msgid "Network Device Config is changed. Please shutdown instance to activate."
 msgstr ""
 "Ağ aygıtı yapılandırması değiştirildi. Aktifleştirmek için lütfen sanal "
 "makineyi kapatın."
 
-#: instances/views.py:915
+#: instances/views.py:903
 msgid "Add network"
 msgstr "Ağ ekle"
 
-#: instances/views.py:929
+#: instances/views.py:917
 msgid "Delete network"
 msgstr "Ağ sil"
 
-#: instances/views.py:945
-#, python-brace-format
-msgid "Set Link State: {state}"
-msgstr "Bağlantı durumunu ayarla: {state}"
+#: instances/views.py:933
+#, fuzzy, python-format
+#| msgid "Set Link State: {state}"
+msgid "Set Link State: %(state)s"
+msgstr "Bağlantı durumunu ayarla: %(state)s"
 
-#: instances/views.py:964
-msgid "{qos_dir.capitalize()} QoS is set"
-msgstr "{qos_dir.capitalize()} QoS ayarlandı"
+#: instances/views.py:952
+#, fuzzy, python-format
+#| msgid "{qos_dir.capitalize()} QoS is set"
+msgid "%(qos_dir)s QoS is set"
+msgstr "%(qos_dir)s QoS ayarlandı"
 
-#: instances/views.py:968 networks/views.py:216
-msgid "{qos_dir.capitalize()} QoS is set. Network XML is changed."
+#: instances/views.py:956
+#, fuzzy, python-format
+#| msgid ""
+#| "Network XML is changed. \\Stop and start network to activate new config."
+msgid ""
+"%(qos_dir)s QoS is set. Network XML is changed.                 Stop and "
+"start network to activate new config."
 msgstr ""
-"{qos_dir.capitalize()} QoS ayarlandı. Ağ ayarları XML ile değiştirildi."
+"%(qos_dir)s QoS ayarlandı. Ağ XML i değiştirildi. \\ Aktifleştirmek için "
+"durdurun ve yeniden başlatın."
 
-#: instances/views.py:969 networks/views.py:217
-msgid "Stop and start network to activate new config"
-msgstr "Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve başlatın"
+#: instances/views.py:970
+#, fuzzy, python-format
+#| msgid "{qos_dir.capitalize()} QoS is deleted"
+msgid "%(qos_dir)s QoS is deleted"
+msgstr "%(qos_dir)s QoS silindi"
 
-#: instances/views.py:983 networks/views.py:233
-msgid "{qos_dir.capitalize()} QoS is deleted"
-msgstr "{qos_dir.capitalize()} QoS silindi"
-
-#: instances/views.py:987 networks/views.py:230
-msgid "{qos_dir.capitalize()} QoS is deleted. Network XML is changed. "
-msgstr "{qos_dir.capitalize()} QoS silindi. Ağ XML'i değiştirildi."
-
-#: instances/views.py:988 networks/views.py:231
-msgid "Stop and start network to activate new config."
+#: instances/views.py:974
+#, fuzzy, python-format
+#| msgid ""
+#| "Network XML is changed. \\Stop and start network to activate new config."
+msgid ""
+"%(qos_dir)s QoS is deleted. Network XML is changed.                 Stop and "
+"start network to activate new config."
 msgstr ""
-"Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve yeniden başlatın."
+"%(qos_dir)s QoS silindi. Ağ XML i değiştirildi. \\ Aktifleştirmek için "
+"durdurun ve yeniden başlatın."
 
-#: instances/views.py:1004
+#: instances/views.py:990
 msgid "Only one owner is allowed and the one already added"
 msgstr "Sadece bir sahibe izin verilmiştir ve bir sahip zaten eklenmiş"
 
-#: instances/views.py:1009
+#: instances/views.py:995
 #, fuzzy, python-format
 #| msgid "Added owner {user_id}"
 msgid "Added owner %(user)s"
-msgstr "Eklenmiş sahip {user_id}"
+msgstr "Eklenmiş sahip %(user)s"
 
-#: instances/views.py:1020
-#, python-brace-format
-msgid "Deleted owner {userinstance_id}"
-msgstr "Silinmiş sahip {userinstance_id}"
+#: instances/views.py:1006
+#, fuzzy, python-format
+#| msgid "Deleted owner {userinstance_id}"
+msgid "Deleted owner %(userinstance_id)s"
+msgstr "Silinmiş sahip %(userinstance_id)s"
 
-#: instances/views.py:1052
-msgid "User '{quota_msg}' quota reached, cannot create '{clone_data['name']}'!"
+#: instances/views.py:1038
+#, fuzzy, python-format
+#| msgid ""
+#| "User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!"
+msgid "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
 msgstr ""
+"%(quota_msg)s' Kullanıcı kotası doldu, '%(clone_name)s' in CPU su yeniden "
+"boyutlandırılamıyor!"
 
-#: instances/views.py:1055
-msgid "Instance '{clone_data['name']}' already exists!"
-msgstr "'{clone_data['name']}' sanal makinesi zaten mevcut!"
+#: instances/views.py:1044
+#, fuzzy
+#| msgid "Instance '{clone_data['name']}' already exists!"
+msgid "Instance '%(clone_name)s' already exists!"
+msgstr "'%(clone_name)s' sanal makinesi zaten mevcut!"
 
-#: instances/views.py:1058
-msgid "Instance name '{clone_data['name']}' contains invalid characters!"
-msgstr ""
-"Sanal makine adı '{clone_data['name']}' geçersiz karakterler içermektedir!"
+#: instances/views.py:1047
+#, fuzzy, python-format
+#| msgid "Instance name '{clone_data['name']}' contains invalid characters!"
+msgid "Instance name '%(clone_name)s' contains invalid characters!"
+msgstr "Sanal makine adı '%(clone_name)s' geçersiz karakterler içermektedir!"
 
-#: instances/views.py:1061
-msgid "Instance MAC '{clone_data['clone-net-mac-0']}' invalid format!"
-msgstr ""
-"Sanal makine MAC adresi '{clone_data['clone-net-mac-0']}' geçersiz biçemde "
-"belirtilmiş!"
+#: instances/views.py:1050
+#, fuzzy, python-format
+#| msgid "Instance MAC '{clone_data['clone-net-mac-0']}' invalid format!"
+msgid "Instance MAC '%(clone_mac)s' invalid format!"
+msgstr "Sanal makine MAC adresi '%(clone_mac)s' geçersiz biçemde belirtilmiş!"
 
-#: instances/views.py:1071
-#, python-brace-format
-msgid "Clone of '{instance.name}'"
-msgstr "'{instance.name}' un klonu"
+#: instances/views.py:1060
+#, fuzzy, python-format
+#| msgid "Clone of '{instance.name}'"
+msgid "Clone of '%(instance_name)s'"
+msgstr "'%(instance_name)s' un klonu"
 
-#: instances/views.py:1104
+#: instances/views.py:1093
 msgid ""
 "Error setting console password. You should check that your instance have an "
 "graphic device."
@@ -2845,95 +2917,97 @@ msgstr ""
 "Konsol parolası ayarlanırken hata oluştu. Sanal makinenin bir grafik "
 "aygıtına sahip olduğundan emin olunuz."
 
-#: instances/views.py:1107
+#: instances/views.py:1096
 msgid "Set VNC password"
 msgstr "VNC parolası ayarlar"
 
-#: instances/views.py:1115
+#: instances/views.py:1104
 msgid "Set VNC keymap"
 msgstr "VNC Keymapi ayarla"
 
-#: instances/views.py:1120
+#: instances/views.py:1109
 msgid "Set VNC type"
 msgstr "VNC tipini ayarla"
 
-#: instances/views.py:1125
+#: instances/views.py:1114
 msgid "Set VNC listen address"
 msgstr "VNC dinleme adresini ayarla"
 
-#: instances/views.py:1148
+#: instances/views.py:1137
 msgid "Edit options"
 msgstr "Seçenekleri düzenle"
 
-#: instances/views.py:1162
+#: instances/views.py:1151
 msgid "Send console.vv file"
 msgstr "console.vv dosyası gönder"
 
-#: instances/views.py:1214 instances/views.py:1307
+#: instances/views.py:1206 instances/views.py:1298
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/views.py:1288
+#: instances/views.py:1281
 msgid "You haven't defined any storage pools"
 msgstr "Hiç bir depolama havuzu tanımlamadınız"
 
-#: instances/views.py:1291
+#: instances/views.py:1283
 msgid "You haven't defined any network pools"
 msgstr "Hiç bir ağ havuzu tanımlamadınız"
 
-#: instances/views.py:1310
-msgid "There is an instance with same name. Are you sure?"
-msgstr "Aynı adlı bir sanal makine var. Emin misiniz?"
+#: instances/views.py:1300
+#, fuzzy
+#| msgid "There is an instance with same name. Are you sure?"
+msgid "There is an instance with same name. Remove it and try again!"
+msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
-#: instances/views.py:1313
+#: instances/views.py:1304
 msgid "No Virtual Machine MAC has been entered"
 msgstr "Sanal makine için MAC adresi belirtmediniz"
 
-#: instances/views.py:1337
+#: instances/views.py:1327
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 "İmaj zaten mevcut. Lütfen ya makine adını değişin ya da disk alanlarını "
 "kontrol edin"
 
-#: instances/views.py:1358
+#: instances/views.py:1347
 msgid "First you need to create or select an image"
 msgstr "Ya daha önce oluşturun ya da bir imaj seçin"
 
-#: instances/views.py:1377
+#: instances/views.py:1365
 msgid "Invalid cache mode"
 msgstr "Geçersiz önbellek modu"
 
-#: instances/views.py:1414
+#: instances/views.py:1402
 msgid "Instance is created"
 msgstr "Sanal makine oluşturuldu"
 
-#: instances/views.py:1433
+#: instances/views.py:1423
 #, fuzzy
 #| msgid "Create"
 msgid "Flavor Created"
-msgstr "Oluştur"
+msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:1441
+#: instances/views.py:1431
 #, fuzzy
 #| msgid "Create User"
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:1452
+#: instances/views.py:1442
 msgid "Flavor Updated"
-msgstr ""
+msgstr "Flavor Güncellendi"
 
-#: instances/views.py:1460
+#: instances/views.py:1450
 #, fuzzy
 #| msgid "Update User"
 msgid "Update Flavor"
-msgstr "Kullanıcıyı Güncelle"
+msgstr "Flavor Güncelle"
 
-#: instances/views.py:1470
+#: instances/views.py:1460
 #, fuzzy
 #| msgid "Delete"
 msgid "Flavor Deleted"
-msgstr "Sil"
+msgstr "Flavor Silindi"
 
 #: interfaces/forms.py:25
 msgid "The IPv4 address must not contain any special characters"
@@ -2996,13 +3070,13 @@ msgid "hotplug"
 msgstr ""
 
 #: interfaces/templates/create_iface_block.html:44
-#: interfaces/templates/interface.html:77
+#: interfaces/templates/interface.html:76
 #: interfaces/templates/interfaces.html:62
 #: storages/templates/create_stg_block.html:35
 #: storages/templates/create_stg_block.html:64
 #: storages/templates/create_stg_block.html:93
 #: storages/templates/create_stg_block.html:158
-#: storages/templates/storages.html:64
+#: storages/templates/storages.html:60
 msgid "Type"
 msgstr "Tip"
 
@@ -3036,7 +3110,7 @@ msgstr "IPv4 Modu"
 
 #: interfaces/templates/create_iface_block.html:85
 #: interfaces/templates/create_iface_block.html:112
-#: networks/templates/network.html:112 networks/templates/network.html:223
+#: networks/templates/network.html:109 networks/templates/network.html:220
 msgid "DHCP"
 msgstr "DHCP"
 
@@ -3070,34 +3144,34 @@ msgstr "IPv6 Adresi"
 msgid "IPv6 Gateway"
 msgstr "IPv6 Ağ Geçidi"
 
-#: interfaces/templates/interface.html:48
+#: interfaces/templates/interface.html:47
 msgid "Interface Type"
 msgstr "Arabirim Tipi"
 
-#: interfaces/templates/interface.html:51
+#: interfaces/templates/interface.html:50
 msgid "Bridge Device"
 msgstr "Köprü Aygıtı"
 
-#: interfaces/templates/interface.html:54
+#: interfaces/templates/interface.html:53
 msgid "Boot Mode"
 msgstr "Ön yükleme Modu"
 
-#: interfaces/templates/interface.html:56
-#: interfaces/templates/interface.html:79 networks/templates/network.html:48
-#: storages/templates/storage.html:57
+#: interfaces/templates/interface.html:55
+#: interfaces/templates/interface.html:78 networks/templates/network.html:45
+#: storages/templates/storage.html:56
 msgid "State"
 msgstr "Durum"
 
-#: interfaces/templates/interface.html:63 networks/templates/network.html:55
-#: storages/templates/storage.html:65
+#: interfaces/templates/interface.html:62 networks/templates/network.html:52
+#: storages/templates/storage.html:64
 msgid "Stop"
 msgstr "Durdur"
 
-#: interfaces/templates/interface.html:70
+#: interfaces/templates/interface.html:69
 msgid "Slaves"
 msgstr "Köleler"
 
-#: interfaces/templates/interface.html:78
+#: interfaces/templates/interface.html:77
 msgid "Speed"
 msgstr "Hız"
 
@@ -3198,54 +3272,58 @@ msgid "Type forwarding"
 msgstr "Yönlendirme Tipi"
 
 #: networks/templates/create_net_block.html:27
-#: networks/templates/network.html:98
+#: networks/templates/network.html:95
 msgid "NAT"
 msgstr "NAT"
 
 #: networks/templates/create_net_block.html:28
-#: networks/templates/network.html:101 networks/templates/network.html:218
+#: networks/templates/network.html:98 networks/templates/network.html:215
 msgid "ROUTE"
 msgstr "ROUTE"
 
 #: networks/templates/create_net_block.html:29
-#: networks/templates/network.html:107 networks/templates/network.html:216
+#: networks/templates/network.html:104 networks/templates/network.html:213
 msgid "ISOLATE"
 msgstr "ISOLATE"
 
 #: networks/templates/create_net_block.html:30
-#: networks/templates/network.html:104
+#: networks/templates/network.html:101
 msgid "BRIDGE"
 msgstr "BRIDGE"
 
-#: networks/templates/create_net_block.html:35
+#: networks/templates/create_net_block.html:31
+msgid "MACVTAP"
+msgstr ""
+
+#: networks/templates/create_net_block.html:36
 msgid "IPv4 Subnet pool"
 msgstr "IPv4 Subnet Havuzu"
 
-#: networks/templates/create_net_block.html:41
+#: networks/templates/create_net_block.html:42
 msgid "DHCPv4"
 msgstr "DHCPv4"
 
-#: networks/templates/create_net_block.html:47
+#: networks/templates/create_net_block.html:48
 msgid "Fixed Addresses"
 msgstr "Sabit Adresler"
 
-#: networks/templates/create_net_block.html:53
+#: networks/templates/create_net_block.html:54
 msgid "Enable IPv6"
 msgstr "IPv6 Etkileştir"
 
-#: networks/templates/create_net_block.html:59
+#: networks/templates/create_net_block.html:60
 msgid "IPv6 Subnet pool"
 msgstr "IPv6 Subnet havuzu"
 
-#: networks/templates/create_net_block.html:65
+#: networks/templates/create_net_block.html:66
 msgid "DHCPv6"
 msgstr "DHCPv6"
 
-#: networks/templates/create_net_block.html:71
+#: networks/templates/create_net_block.html:72
 msgid "Bridge Name"
 msgstr "Köprü Adı"
 
-#: networks/templates/create_net_block.html:77
+#: networks/templates/create_net_block.html:78
 msgid "Open vSwitch"
 msgstr "Open vSwitch"
 
@@ -3260,7 +3338,7 @@ msgstr "Subnet Havuzu"
 
 #: networks/templates/modify_ipv4_fixed_address.html:36
 #: networks/templates/modify_ipv6_fixed_address.html:36
-#: networks/templates/network.html:176 networks/templates/network.html:285
+#: networks/templates/network.html:173 networks/templates/network.html:282
 msgid "Address"
 msgstr "Adres"
 
@@ -3269,79 +3347,79 @@ msgid "Add IPV6 Fixed Address"
 msgstr "Sabit IPv6 Adresi Ekle"
 
 #: networks/templates/modify_ipv6_fixed_address.html:24
-#: networks/templates/network.html:284
+#: networks/templates/network.html:281
 msgid "ID"
 msgstr "ID"
 
-#: networks/templates/network.html:44
+#: networks/templates/network.html:41
 msgid "Network name"
 msgstr "Ağ adı"
 
-#: networks/templates/network.html:92
+#: networks/templates/network.html:89
 msgid "IPv4 Configuration"
 msgstr "IPv4 Yapılandırması"
 
-#: networks/templates/network.html:95
+#: networks/templates/network.html:92
 msgid "IPv4 Forwarding"
 msgstr "IPv4 Yönlendirme"
 
-#: networks/templates/network.html:115 networks/templates/network.html:227
+#: networks/templates/network.html:112 networks/templates/network.html:224
 msgid "ON"
 msgstr "AÇIK"
 
-#: networks/templates/network.html:117 networks/templates/network.html:229
+#: networks/templates/network.html:114 networks/templates/network.html:226
 msgid "OFF"
 msgstr "KAPALI"
 
-#: networks/templates/network.html:124 networks/templates/network.html:130
-#: networks/templates/network.html:236 networks/templates/network.html:242
+#: networks/templates/network.html:121 networks/templates/network.html:127
+#: networks/templates/network.html:233 networks/templates/network.html:239
 msgid "End"
 msgstr "Son"
 
-#: networks/templates/network.html:138 networks/templates/network.html:251
+#: networks/templates/network.html:135 networks/templates/network.html:248
 msgid "Edit DHCP Range"
 msgstr "DHCP Aralığı Düzenle"
 
-#: networks/templates/network.html:152
+#: networks/templates/network.html:149
 msgid "IPv4 Fixed Addresses"
 msgstr "IPv4 Sabit Adresleri"
 
-#: networks/templates/network.html:161 networks/templates/network.html:271
-#: nwfilters/templates/nwfilters.html:88
+#: networks/templates/network.html:158 networks/templates/network.html:268
+#: nwfilters/templates/nwfilters.html:85
 msgid "Show"
 msgstr "Göster"
 
-#: networks/templates/network.html:169 networks/templates/network.html:279
+#: networks/templates/network.html:166 networks/templates/network.html:276
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:395
 #: venv2/lib/python2.7/site-packages/django/forms/widgets.py:377
 msgid "Clear"
 msgstr "Temizle"
 
-#: networks/templates/network.html:192 networks/templates/network.html:301
+#: networks/templates/network.html:189 networks/templates/network.html:298
 msgid "Edit entry"
 msgstr "Girdiyi düzenle"
 
-#: networks/templates/network.html:197 networks/templates/network.html:306
+#: networks/templates/network.html:194 networks/templates/network.html:303
 msgid "Delete entry"
 msgstr "Girdiyi sil"
 
-#: networks/templates/network.html:210
+#: networks/templates/network.html:207
 msgid "IPv6 Configuration"
 msgstr "IPv6 Yapılandırması"
 
-#: networks/templates/network.html:213
+#: networks/templates/network.html:210
 msgid "IPv6 Forwarding"
 msgstr "IPv6 Yönlendirme"
 
-#: networks/templates/network.html:264
+#: networks/templates/network.html:261
 msgid "IPv6 Fixed Addresses"
 msgstr "IPv6 Sabit Adresleri"
 
-#: networks/templates/networks.html:50
+#: networks/templates/networks.html:46
 msgid "Hypervisor doesn't have any Network"
 msgstr "Hipervizör hiçbir Ağa sahip değil"
 
-#: networks/templates/networks.html:65
+#: networks/templates/networks.html:61
 msgid "Forward"
 msgstr "Yönledirme"
 
@@ -3349,43 +3427,67 @@ msgstr "Yönledirme"
 msgid "Network pool name already in use"
 msgstr "Ağ havuzu adı zaten kullanımda"
 
-#: networks/views.py:46
-msgid "Please enter bridge name"
-msgstr "Lütfen köprü adı giriniz"
+#: networks/views.py:47
+#, fuzzy
+#| msgid "Please enter bridge name"
+msgid "Please enter bridge/dev name"
+msgstr "Lütfen köprü/aygıt adı giriniz"
 
-#: networks/views.py:54
+#: networks/views.py:56
 msgid "For libvirt, the IPv6 network prefix must be /64"
 msgstr "Libvirt için IPv6 ağ prefixi /64 olmak zorundadır"
 
-#: networks/views.py:124
+#: networks/views.py:126
 msgid "Unknown Network Family"
 msgstr "Bilinmeyen Ağ Ailesi"
 
-#: networks/views.py:174
+#: networks/views.py:176
 msgid "{family.upper()} Fixed Address Operation Completed."
 msgstr "{family.upper()} sabit adres operasyonu tamamlandı."
 
-#: networks/views.py:184
+#: networks/views.py:186
 msgid "{family.upper()} Fixed Address is Deleted."
 msgstr "{family.upper()} sabit adresi silindi."
 
-#: networks/views.py:192
+#: networks/views.py:194
 msgid "{family.upper()} DHCP Range is Changed."
 msgstr "{family.upper()} DHCP aralığı değiştirildi."
 
-#: networks/views.py:201
+#: networks/views.py:203
 msgid ""
 "Network XML is changed. \\Stop and start network to activate new config."
 msgstr ""
 "Ağ XML i değiştirildi. \\ Aktifleştirmek için durdurun ve yeniden başlatın."
 
-#: networks/views.py:203
+#: networks/views.py:205
 msgid "Network XML is changed."
 msgstr "Ağ XML i değiştirildi."
 
+#: networks/views.py:218
+msgid "{qos_dir.capitalize()} QoS is set. Network XML is changed."
+msgstr ""
+"{qos_dir.capitalize()} QoS ayarlandı. Ağ ayarları XML ile değiştirildi."
+
 #: networks/views.py:219
+msgid "Stop and start network to activate new config"
+msgstr "Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve başlatın"
+
+#: networks/views.py:221
 msgid "{} QoS is set"
 msgstr "{} QoS ayarlandı"
+
+#: networks/views.py:232
+msgid "{qos_dir.capitalize()} QoS is deleted. Network XML is changed. "
+msgstr "{qos_dir.capitalize()} QoS silindi. Ağ XML'i değiştirildi."
+
+#: networks/views.py:233
+msgid "Stop and start network to activate new config."
+msgstr ""
+"Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve yeniden başlatın."
+
+#: networks/views.py:235
+msgid "{qos_dir.capitalize()} QoS is deleted"
+msgstr "{qos_dir.capitalize()} QoS silindi"
 
 #: nwfilters/templates/add_nwf_rule.html:12
 msgid "Add New NWFilter Rule"
@@ -3399,79 +3501,79 @@ msgstr "Eğer aynı niteliklerde bir kural varsa bu kuralla değiştirilecektir"
 msgid "Create New NWFilter"
 msgstr "Yeni AğFiltresi Oluştur"
 
-#: nwfilters/templates/nwfilter.html:42 nwfilters/templates/nwfilters.html:58
+#: nwfilters/templates/nwfilter.html:39 nwfilters/templates/nwfilters.html:55
 #: secrets/templates/secrets.html:59
 msgid "UUID"
 msgstr "UUID"
 
-#: nwfilters/templates/nwfilter.html:71
+#: nwfilters/templates/nwfilter.html:68
 msgid "Filter References"
 msgstr "Filtre Referansları"
 
-#: nwfilters/templates/nwfilter.html:103
+#: nwfilters/templates/nwfilter.html:100
 msgid "Reference"
 msgstr "Referans"
 
-#: nwfilters/templates/nwfilter.html:128
+#: nwfilters/templates/nwfilter.html:125
 msgid "Rules"
 msgstr "Kurallar"
 
-#: nwfilters/templates/nwfilter.html:132
+#: nwfilters/templates/nwfilter.html:129
 msgid "Rule"
 msgstr "Kural"
 
-#: nwfilters/templates/nwfilter.html:133
+#: nwfilters/templates/nwfilter.html:130
 msgid "Action Type"
 msgstr "Eylem Tipi"
 
-#: nwfilters/templates/nwfilter.html:135
+#: nwfilters/templates/nwfilter.html:132
 msgid "Priority"
 msgstr "Öncelik"
 
-#: nwfilters/templates/nwfilter.html:136
+#: nwfilters/templates/nwfilter.html:133
 msgid "Statematch"
 msgstr ""
 
-#: nwfilters/templates/nwfilter.html:137
+#: nwfilters/templates/nwfilter.html:134
 msgid "Directives"
 msgstr "Direktifler"
 
-#: nwfilters/templates/nwfilters.html:74
+#: nwfilters/templates/nwfilters.html:71
 msgid "Details of NWFilter"
 msgstr "AğFiltresi Ayrıntıları"
 
-#: nwfilters/templates/nwfilters.html:97
+#: nwfilters/templates/nwfilters.html:94
 msgid "Clone NWFilter"
 msgstr "AğFiltresi Klonla"
 
-#: nwfilters/templates/nwfilters.html:138
+#: nwfilters/templates/nwfilters.html:135
 msgid "Hypervisor doesn't have any NWFilters"
 msgstr "Hipervizör hiç bir AğFiltresine sahip değil"
 
-#: nwfilters/views.py:43
+#: nwfilters/views.py:41
 msgid "A network filter with this name already exists"
 msgstr "Bu isimde bir ağ filtresi zaten mevcut"
 
-#: nwfilters/views.py:46
+#: nwfilters/views.py:44
 msgid "A network filter with this UUID already exists"
 msgstr "Bu UUID ye sahip bir ağ filtresi zaten mevcut"
 
-#: nwfilters/views.py:50
+#: nwfilters/views.py:48
 #, python-format
 msgid "Creating NWFilter: %s"
 msgstr "AğFiltresi Oluşturuluyor: %s"
 
-#: nwfilters/views.py:59
+#: nwfilters/views.py:57
 #, python-brace-format
 msgid "Deleting NWFilter: {name}"
 msgstr "AğFiltresi Siliniyor: {name}"
 
-#: nwfilters/views.py:71
+#: nwfilters/views.py:69
 #, python-brace-format
 msgid "NWFilter is in use by {inst}. Cannot be deleted."
 msgstr "AğFiltresi, {inst} tarafından kullanımda. Silinemiyor."
 
-#: nwfilters/views.py:88
+#: nwfilters/views.py:86
 #, python-brace-format
 msgid "Cloning NWFilter {name} as {cln_name}"
 msgstr "Ağfiltresi  {name} , {cln_name} olarak klonlanıyor"
@@ -3499,7 +3601,7 @@ msgid "Private"
 msgstr "Özel"
 
 #: secrets/templates/create_secret_block.html:36
-#: storages/templates/storage.html:55
+#: storages/templates/storage.html:54
 msgid "Usage"
 msgstr "Kullanım"
 
@@ -3625,55 +3727,55 @@ msgstr "Yükleme"
 msgid "Add New Volume"
 msgstr "Yeni Birim Ekle"
 
-#: storages/templates/storage.html:45
+#: storages/templates/storage.html:44
 msgid "Pool name"
 msgstr "Havuz adı"
 
-#: storages/templates/storage.html:47
+#: storages/templates/storage.html:46
 msgid "Pool type"
 msgstr "Havuz tipi"
 
-#: storages/templates/storage.html:49
+#: storages/templates/storage.html:48
 msgid "Pool path"
 msgstr "Havuz yolu"
 
-#: storages/templates/storage.html:51
+#: storages/templates/storage.html:50
 msgid "Pool status"
 msgstr "Havuz durumu"
 
-#: storages/templates/storage.html:86 storages/templates/storages.html:68
+#: storages/templates/storage.html:85 storages/templates/storages.html:64
 msgid "Volumes"
 msgstr "Birimler"
 
-#: storages/templates/storage.html:98
+#: storages/templates/storage.html:97
 msgid "Allocated"
 msgstr "Tahsis Edilmiş"
 
-#: storages/templates/storage.html:119
+#: storages/templates/storage.html:118
 msgid "Clone image"
 msgstr "İmaj Klonla"
 
-#: storages/templates/storage.html:132
+#: storages/templates/storage.html:131
 msgid "Convert"
 msgstr "Dönüştür"
 
-#: storages/templates/storage.html:141
+#: storages/templates/storage.html:140
 msgid "raw"
 msgstr "raw"
 
-#: storages/templates/storage.html:142
+#: storages/templates/storage.html:141
 msgid "qcow"
 msgstr "qcow"
 
-#: storages/templates/storage.html:143
+#: storages/templates/storage.html:142
 msgid "qcow2"
 msgstr "qcow2"
 
-#: storages/templates/storage.html:188
+#: storages/templates/storage.html:187
 msgid "Hypervisor doesn't have any Volumes"
 msgstr "Hipervizör hiçbir birime sahip değil"
 
-#: storages/templates/storages.html:50
+#: storages/templates/storages.html:46
 msgid "Hypervisor doesn't have any Storages"
 msgstr "Hipervizör hiç bir depolama alanına sahip değil"
 
@@ -3681,36 +3783,36 @@ msgstr "Hipervizör hiç bir depolama alanına sahip değil"
 msgid "Pool name already use"
 msgstr "Havuz adı zaten kullanılıyor"
 
-#: storages/views.py:44
+#: storages/views.py:45
 msgid "You need create secret for pool"
 msgstr ""
 
-#: storages/views.py:47
+#: storages/views.py:49
 msgid "You need input all fields for creating ceph pool"
 msgstr ""
 
-#: storages/views.py:129
+#: storages/views.py:132
 #, python-brace-format
 msgid "Volume: {volname} is deleted."
 msgstr "Birim: {volname} silindi."
 
-#: storages/views.py:134
+#: storages/views.py:137
 msgid "ISO image already exist"
 msgstr "ISO imajı zaten mevcut"
 
-#: storages/views.py:138
+#: storages/views.py:141
 msgid "ISO: {request.FILES['file']} is uploaded."
 msgstr "ISO: {request.FILES['file']}  yüklendi."
 
-#: storages/views.py:147
+#: storages/views.py:150
 msgid "Name of volume already in use"
 msgstr "Birim adı zaten kullanımda"
 
-#: storages/views.py:157
+#: storages/views.py:160
 msgid "{data['image']} image cloned as {name} successfully"
 msgstr "{data['image']} imajı {name} olarak başarıyla klonlandı"
 
-#: storages/views.py:196
+#: storages/views.py:199
 #, python-brace-format
 msgid "Image file {name} is created successfully"
 msgstr "İmaj dosyası {name} başarıyla oluşturuldu"
@@ -3763,17 +3865,9 @@ msgstr ""
 "Sunucu bir iç hata ya da yanlış yaplandırma nedeniyle talebinizi "
 "tamamlayamıyor."
 
-#: templates/common/confirm_delete.html:12
+#: templates/common/confirm_delete.html:16
 msgid "Are you sure you want to delete"
 msgstr "Silmek istediğinize emin misiniz"
-
-#: templates/errors_block.html:8
-msgid "Error"
-msgstr "Hata"
-
-#: templates/messages_block.html:8
-msgid "Success"
-msgstr "Başarılı"
 
 #: templates/navbar.html:47
 msgid "Log Out"
@@ -3975,14 +4069,14 @@ msgstr ""
 msgid "Null characters are not allowed."
 msgstr "Null karakterlere izin verilmiyor."
 
-#: venv/lib/python3.6/site-packages/django/db/models/base.py:1162
+#: venv/lib/python3.6/site-packages/django/db/models/base.py:1165
 #: venv/lib/python3.6/site-packages/django/forms/models.py:756
 #: venv2/lib/python2.7/site-packages/django/db/models/base.py:1209
 #: venv2/lib/python2.7/site-packages/django/forms/models.py:749
 msgid "and"
 msgstr "ve"
 
-#: venv/lib/python3.6/site-packages/django/db/models/base.py:1164
+#: venv/lib/python3.6/site-packages/django/db/models/base.py:1167
 #: venv2/lib/python2.7/site-packages/django/db/models/base.py:1211
 #, python-format
 msgid "%(model_name)s with this %(field_labels)s already exists."
@@ -5198,82 +5292,9 @@ msgstr "Bağlan, yardım al veya katkıda bulun"
 msgid "Icon of {}"
 msgstr ""
 
-#: venv/lib/python3.6/site-packages/django_otp/forms.py:58
-#, fuzzy
-#| msgid "Please enter bridge name"
-msgid "Please enter your OTP token."
-msgstr "Lütfen köprü adı giriniz"
-
-#: venv/lib/python3.6/site-packages/django_otp/forms.py:59
-#, python-brace-format
-msgid "Error generating challenge: {0}"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/forms.py:60
-msgid "The selected OTP device is not interactive"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/forms.py:61
-#, python-brace-format
-msgid "OTP Challenge: {0}"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/forms.py:62
-msgid "Invalid token. Please make sure you have entered it correctly."
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/forms.py:64
+#: venv/lib/python3.6/site-packages/qr_code/qrcode/utils.py:73
 #, python-format
-msgid ""
-"Verification temporarily disabled because of %(failure_count)d failed "
-"attempt, please try again soon."
-msgid_plural ""
-"Verification temporarily disabled because of %(failure_count)d failed "
-"attempts, please try again soon."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.6/site-packages/django_otp/forms.py:67
-msgid "Verification of the token is currently disabled"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:36
-msgid "Please correct the error below."
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:36
-msgid "Please correct the errors below."
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:52
-#, python-format
-msgid ""
-"You are authenticated as %(username)s, but are not authorized to access this "
-"page. Would you like to login to a different account?"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:72
-#, fuzzy
-#| msgid "Device"
-msgid "OTP Device:"
-msgstr "Aygıt"
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:77
-msgid "OTP Token:"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:82
-msgid "Forgotten your password or username?"
-msgstr ""
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:86
-#, fuzzy
-#| msgid "Log Out"
-msgid "Log in"
-msgstr "Oturumu Kapat"
-
-#: venv/lib/python3.6/site-packages/django_otp/templates/otp/admin111/login.html:88
-msgid "Get OTP Challenge"
+msgid "The option '%s' is not a valid option for a QR code."
 msgstr ""
 
 #: venv2/lib/python2.7/site-packages/django/forms/models.py:1093
@@ -5296,11 +5317,11 @@ msgstr "%(truncated_text)s..."
 
 #: venv2/lib/python2.7/site-packages/django/views/debug.py:520
 msgid "Welcome to Django"
-msgstr ""
+msgstr "Djangoya Hoşgeldiniz"
 
 #: venv2/lib/python2.7/site-packages/django/views/debug.py:521
 msgid "It worked!"
-msgstr ""
+msgstr "Çalıştı!"
 
 #: venv2/lib/python2.7/site-packages/django/views/debug.py:522
 msgid "Congratulations on your first Django-powered page."
@@ -5419,12 +5440,12 @@ msgstr ""
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1952
 msgid "too few arguments"
-msgstr ""
+msgstr "çok az parametre"
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1959
 #, python-format
 msgid "argument %s is required"
-msgstr ""
+msgstr "%s parametresi zorunlu"
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1973
 #, python-format
@@ -5433,7 +5454,7 @@ msgstr ""
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2019
 msgid "expected one argument"
-msgstr ""
+msgstr "bir parametre bekleniyor"
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2020
 msgid "expected at most one argument"
@@ -5441,12 +5462,12 @@ msgstr ""
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2021
 msgid "expected at least one argument"
-msgstr ""
+msgstr "en azından bir parametre bekleniyor"
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2023
 #, python-format
 msgid "expected %s argument(s)"
-msgstr ""
+msgstr "beklenen parametre(ler) %s"
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2080
 #, python-format
@@ -5479,10 +5500,82 @@ msgstr ""
 msgid "%s: error: %s\n"
 msgstr ""
 
-#: webvirtcloud/middleware.py:21
+#: webvirtcloud/middleware.py:18
 #, python-format
 msgid "libvirt Error - %(exception)s"
-msgstr ""
+msgstr "libvirt Hatası - %(exception)s"
+
+#~ msgid "Login"
+#~ msgstr "Bağlan"
+
+#~ msgid "Is staff"
+#~ msgstr "Görevli mi"
+
+#~ msgid "Is superuser"
+#~ msgstr "Süperkullanıcı mı"
+
+#~ msgid "Can clone instances"
+#~ msgstr "Sanal makineleri klonlayabilir"
+
+#~ msgid "Max instances"
+#~ msgstr "Maksimum sanal makine"
+
+#~ msgid "Max cpus"
+#~ msgstr "Maksimum CPU"
+
+#~ msgid "Max memory (MB)"
+#~ msgstr "Maksimum Bellek (MB)"
+
+#~ msgid "Max disk size (GB)"
+#~ msgstr "Maksimum Disk Boyutu (GB)"
+
+#~ msgid "Add New User"
+#~ msgstr "Yeni Kullanıc Ekle"
+
+#~ msgid "john"
+#~ msgstr "ali"
+
+#~ msgid "Enter Name"
+#~ msgstr "Ad gir"
+
+#~ msgid "Enter Public Key"
+#~ msgstr "Açık Anahtar Gir"
+
+#~ msgid "Invalid characters in public key"
+#~ msgstr "Açık anahtarda geçersiz karakterler mevcut"
+
+#~ msgid "Create New"
+#~ msgstr "Yeni Oluştur"
+
+#~ msgid "The name of the virtual machine must not exceed 20 characters"
+#~ msgstr "Sanal makine adı 20 karakterden fazla olamaz"
+
+#~ msgid "Deleting due to multiple(Instance Name) records."
+#~ msgstr "Çoklu kayıt(sanal makine adı) nedeniyle siliniyor"
+
+#~ msgid "Deleting due to multiple(UUID) records."
+#~ msgstr "Çoklu(UUID) kayıtlar nedeniyle siliniyor."
+
+#~ msgid "Error"
+#~ msgstr "Hata"
+
+#~ msgid "Success"
+#~ msgstr "Başarılı"
+
+#, fuzzy
+#~| msgid "Please enter bridge name"
+#~ msgid "Please enter your OTP token."
+#~ msgstr "Lütfen köprü adı giriniz"
+
+#, fuzzy
+#~| msgid "Device"
+#~ msgid "OTP Device:"
+#~ msgstr "Aygıt"
+
+#, fuzzy
+#~| msgid "Log Out"
+#~ msgid "Log in"
+#~ msgstr "Oturumu Kapat"
 
 #~ msgid "No username has been entered"
 #~ msgstr "Kullanıcı adı girilmedi"
