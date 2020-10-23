@@ -21,7 +21,7 @@
     {% endif %}
     <form class="form-signin" method="post" role="form" aria-label="Login form">{% csrf_token %}
         <h2 class="form-signin-heading">{% trans "Sign In" %}</h2>
-        <input type="text" class="form-control" name="username" placeholder="{% trans "Login" %}" autocapitalize="none" autocorrect="off" autofocus>
+        <input type="text" class="form-control" name="username" placeholder="{% trans "User" %}" autocapitalize="none" autocorrect="off" autofocus>
         <input type="password" class="form-control" name="password" placeholder="{% trans "Password" %}">
         <input type="hidden" name="next" value="{{ next }}">
         <button class="btn btn-lg btn-success btn-block" type="submit">{% trans "Sign In" %}</button>
