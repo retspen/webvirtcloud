@@ -163,7 +163,7 @@ def validate_macaddr(val):
 
     form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)
     if form is None:
-        raise ValueError(f"MAC address must be of the format AA:BB:CC:DD:EE:FF, was {val}")
+        raise ValueError("MAC address must be of the format AA:BB:CC:DD:EE:FF, was {}".format(val))
 
 
 # Mapping of UEFI binary names to their associated architectures. We

@@ -61,7 +61,7 @@ def console(request):
         if console_type is None:
             console_error = "Fail to get console. Please check the console configuration of your VM."
         else:
-            console_error = f"Console type: {console_type} no support"
+            console_error = "Console type '%(type)s' has not support" % {"type": console_type} 
         response = render(request, "console-vnc-lite.html", locals())
 
     response.set_cookie("token", token)

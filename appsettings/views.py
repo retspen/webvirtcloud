@@ -29,13 +29,13 @@ def appsettings(request):
     # Bootstrap settings related with filesystems, because of that they are excluded from other settings
     appsettings = AppSettings.objects.exclude(description__startswith="Bootstrap").order_by("name")
 
-    if request.method == 'POST':
-        if 'SASS_DIR' in request.POST:
+    if request.method == "POST":
+        if "SASS_DIR" in request.POST:
             try:
                 sass_dir.value = request.POST.get("SASS_DIR", "")
                 sass_dir.save()
 
-                msg = _(f"SASS directory path is changed. Now: {sass_dir.value}")
+                msg = _("SASS directory path is changed. Now: %(dir)s") % {"dir": sass_dir.value}
                 messages.success(request, msg)
             except Exception as err:
                 msg = err
@@ -44,7 +44,7 @@ def appsettings(request):
             addlogmsg(request.user.username, "", msg)
             return HttpResponseRedirect(request.get_full_path())
 
-        if 'BOOTSTRAP_THEME' in request.POST:
+        if "BOOTSTRAP_THEME" in request.POST:
             theme = request.POST.get("BOOTSTRAP_THEME", "")
             scss_var = f"@import '{sass_dir.value}/wvc-theme/{theme}/variables';"
             scss_bootswatch = f"@import '{sass_dir.value}/wvc-theme/{theme}/bootswatch';"
@@ -54,15 +54,17 @@ def appsettings(request):
                 with open(sass_dir.value + "/wvc-main.scss", "w") as main:
                     main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch + "\n")
 
-                css_compressed = sass.compile(string=scss_var + "\n" + scss_boot + "\n" + scss_bootswatch,
-                                              output_style='compressed')
+                css_compressed = sass.compile(
+                    string=scss_var + "\n" + scss_boot + "\n" + scss_bootswatch,
+                    output_style="compressed",
+                )
                 with open("static/css/" + main_css, "w") as css:
                     css.write(css_compressed)
 
                 bootstrap_theme.value = theme
                 bootstrap_theme.save()
 
-                msg = _(f"Theme changed. Now: {theme}")
+                msg = _("Theme is changed. Now: %(theme)s") % {"theme": theme}
                 messages.success(request, msg)
             except Exception as err:
                 msg = err
@@ -77,7 +79,7 @@ def appsettings(request):
                     setting.value = request.POST.get(setting.key, "")
                     setting.save()
 
-                    msg = _(f"{setting.name} is changed. Now: {setting.value}")
+                    msg = _("%(setting)s is changed. Now: %(value)s") % {"setting": setting.name, "value": setting.value}
                     messages.success(request, msg)
                 except Exception as err:
                     msg = err
@@ -86,4 +88,4 @@ def appsettings(request):
                 addlogmsg(request.user.username, "", msg)
                 return HttpResponseRedirect(request.get_full_path())
 
-    return render(request, 'appsettings.html', locals())
+    return render(request, "appsettings.html", locals())

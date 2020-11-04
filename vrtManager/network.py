@@ -363,7 +363,7 @@ class wvmNetwork(wvmConnect):
             self.leases = self.net.DHCPLeases()
         except Exception as e:
             self.leases = []
-            raise f"Error getting {self} DHCP leases: {e}"
+            raise "Error getting {} DHCP leases: {}".format(self, e)
 
     def get_dhcp_leases(self):
         if self.leases is None:

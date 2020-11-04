@@ -25,14 +25,14 @@ def nwfilters(request, compute_id):
     try:
         conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)
 
-        if request.method == 'POST':
-            if 'create_nwfilter' in request.POST:
-                xml = request.POST.get('nwfilter_xml', '')
+        if request.method == "POST":
+            if "create_nwfilter" in request.POST:
+                xml = request.POST.get("nwfilter_xml", "")
                 if xml:
                     try:
                         util.etree.fromstring(xml)
-                        name = util.get_xml_path(xml, '/filter/@name')
-                        uuid = util.get_xml_path(xml, '/filter/uuid')
+                        name = util.get_xml_path(xml, "/filter/@name")
+                        uuid = util.get_xml_path(xml, "/filter/uuid")
                     except util.etree.ParseError:
                         name = None
 
@@ -45,28 +45,32 @@ def nwfilters(request, compute_id):
                             raise Exception(error_msg)
                     else:
                         try:
-                            msg = _("Creating NWFilter: %s" % name)
+                            msg = _("%(filter)s network filter is created") % {"filter": name}
                             conn.create_nwfilter(xml)
                             addlogmsg(request.user.username, compute.hostname, msg)
                         except libvirtError as lib_err:
                             messages.error(request, lib_err)
                             addlogmsg(request.user.username, compute.hostname, lib_err)
 
-            if 'del_nwfilter' in request.POST:
-                name = request.POST.get('nwfiltername', '')
-                msg = _(f"Deleting NWFilter: {name}")
+            if "del_nwfilter" in request.POST:
+                name = request.POST.get("nwfiltername", "")
+                msg = _("%(filter)s network filter is deleted") % {"filter": name}
                 in_use = False
                 nwfilter = conn.get_nwfilter(name)
 
-                is_conn = wvmInstances(compute.hostname, compute.login, compute.password, compute.type)
+                is_conn = wvmInstances(
+                    compute.hostname, compute.login, compute.password, compute.type
+                )
                 instances = is_conn.get_instances()
                 for inst in instances:
-                    i_conn = wvmInstance(compute.hostname, compute.login, compute.password, compute.type, inst)
+                    i_conn = wvmInstance(
+                        compute.hostname, compute.login, compute.password, compute.type, inst
+                    )
                     dom_filterrefs = i_conn.get_filterrefs()
 
                     if name in dom_filterrefs:
                         in_use = True
-                        msg = _(f"NWFilter is in use by {inst}. Cannot be deleted.")
+                        msg = _("NWFilter is in use by %(instance)s. Cannot be deleted.") % {"instance": inst}
                         messages.error(request, msg)
                         addlogmsg(request.user.username, compute.hostname, msg)
                         i_conn.close()
@@ -77,13 +81,13 @@ def nwfilters(request, compute_id):
                     nwfilter.undefine()
                     addlogmsg(request.user.username, compute.hostname, msg)
 
-            if 'cln_nwfilter' in request.POST:
+            if "cln_nwfilter" in request.POST:
 
-                name = request.POST.get('nwfiltername', '')
-                cln_name = request.POST.get('cln_name', name + '-clone')
+                name = request.POST.get("nwfiltername", "")
+                cln_name = request.POST.get("cln_name", name + "-clone")
 
                 conn.clone_nwfilter(name, cln_name)
-                msg = _(f"Cloning NWFilter {name} as {cln_name}")
+                msg = _("Cloning NWFilter %(name)s as %(clone)s") % {"name":name, "clone": cln_name}
                 addlogmsg(request.user.username, compute.hostname, msg)
 
         for nwf in conn.get_nwfilters():
@@ -97,10 +101,14 @@ def nwfilters(request, compute_id):
         messages.error(request, err)
         addlogmsg(request.user.username, compute.hostname, err)
 
-    return render(request, 'nwfilters.html', {
-        'nwfilters': nwfilters_all,
-        'compute': compute,
-    })
+    return render(
+        request,
+        "nwfilters.html",
+        {
+            "nwfilters": nwfilters_all,
+            "compute": compute,
+        },
+    )
 
 
 def nwfilter(request, compute_id, nwfltr):
@@ -114,7 +122,9 @@ def nwfilter(request, compute_id, nwfltr):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        nwfilter = wvmNWFilter(compute.hostname, compute.login, compute.password, compute.type, nwfltr)
+        nwfilter = wvmNWFilter(
+            compute.hostname, compute.login, compute.password, compute.type, nwfltr
+        )
         conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)
 
         for nwf in conn.get_nwfilters():
@@ -126,10 +136,10 @@ def nwfilter(request, compute_id, nwfltr):
         rules = nwfilter.get_rules()
         refs = nwfilter.get_filter_refs()
 
-        if request.method == 'POST':
+        if request.method == "POST":
 
-            if 'edit_nwfilter' in request.POST:
-                new_xml = request.POST.get('edit_xml', '')
+            if "edit_nwfilter" in request.POST:
+                new_xml = request.POST.get("edit_xml", "")
 
                 if new_xml:
                     nwfilter.delete()
@@ -139,10 +149,10 @@ def nwfilter(request, compute_id, nwfltr):
                         conn.create_nwfilter(xml)
                         raise libvirtError(lib_err)
 
-            if 'del_nwfilter_rule' in request.POST:
-                action = request.POST.get('action', '')
-                direction = request.POST.get('direction', '')
-                priority = request.POST.get('priority', '')
+            if "del_nwfilter_rule" in request.POST:
+                action = request.POST.get("action", "")
+                direction = request.POST.get("direction", "")
+                priority = request.POST.get("priority", "")
 
                 new_xml = nwfilter.delete_rule(action, direction, priority)
                 nwfilter.delete()
@@ -152,8 +162,8 @@ def nwfilter(request, compute_id, nwfltr):
                     conn.create_nwfilter(xml)
                     raise libvirtError(lib_err)
 
-            if 'del_nwfilter_ref' in request.POST:
-                ref_name = request.POST.get('ref')
+            if "del_nwfilter_ref" in request.POST:
+                ref_name = request.POST.get("ref")
                 new_xml = nwfilter.delete_ref(ref_name)
                 nwfilter.delete()
                 try:
@@ -162,8 +172,8 @@ def nwfilter(request, compute_id, nwfltr):
                     conn.create_nwfilter(xml)
                     raise libvirtError(lib_err)
 
-            if 'add_nwfilter_rule' in request.POST:
-                rule_xml = request.POST.get('nwfilterrule_xml', '')
+            if "add_nwfilter_rule" in request.POST:
+                rule_xml = request.POST.get("nwfilterrule_xml", "")
                 if not rule_xml:
                     return HttpResponseRedirect(request.get_full_path())
                 new_xml = nwfilter.add_rule(rule_xml)
@@ -174,8 +184,8 @@ def nwfilter(request, compute_id, nwfltr):
                     conn.create_nwfilter(xml)
                     raise libvirtError(lib_err)
 
-            if 'add_nwfilter_ref' in request.POST:
-                ref_name = request.POST.get('nwfilters_select', '')
+            if "add_nwfilter_ref" in request.POST:
+                ref_name = request.POST.get("nwfilters_select", "")
                 if not ref_name:
                     return HttpResponseRedirect(request.get_full_path())
                 new_xml = nwfilter.add_ref(ref_name)
@@ -194,4 +204,4 @@ def nwfilter(request, compute_id, nwfltr):
     except Exception as error_msg:
         messages.error(request, error_msg)
 
-    return render(request, 'nwfilter.html', locals())
+    return render(request, "nwfilter.html", locals())

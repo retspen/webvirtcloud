@@ -50,7 +50,7 @@ def group_update(request, pk):
     form = forms.GroupForm(request.POST or None, instance=group)
     if form.is_valid():
         form.save()
-        return redirect('admin:group_list')
+        return redirect("admin:group_list")
 
     return render(
         request,
@@ -107,11 +107,7 @@ def user_create(request):
     return render(
         request,
         "admin/user_form.html",
-        {
-            "user_form": user_form,
-            "attributes_form": attributes_form,
-            "title": _("Create User")
-        },
+        {"user_form": user_form, "attributes_form": attributes_form, "title": _("Create User")},
     )
 
 
@@ -124,29 +120,25 @@ def user_update(request, pk):
     if user_form.is_valid() and attributes_form.is_valid():
         user_form.save()
         attributes_form.save()
-        next = request.GET.get('next')
+        next = request.GET.get("next")
         return redirect(next or "admin:user_list")
 
     return render(
         request,
         "admin/user_form.html",
-        {
-            "user_form": user_form,
-            "attributes_form": attributes_form,
-            "title": _("Update User")
-        },
+        {"user_form": user_form, "attributes_form": attributes_form, "title": _("Update User")},
     )
 
 
 @superuser_only
 def user_update_password(request, pk):
     user = get_object_or_404(User, pk=pk)
-    if request.method == 'POST':
+    if request.method == "POST":
         form = AdminPasswordChangeForm(user, request.POST)
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
-            messages.success(request, _("User password changed: {}".format(user.username)))
+            messages.success(request, _("Password changed for %(user)s") % {"user": user.username})
             return redirect("admin:user_list")
         else:
             messages.error(request, _("Wrong Data Provided"))

@@ -35,11 +35,11 @@ def validate_ssh_key(key):
         return False
     # unpack the contents of data, from data[:4] , property of ssh key .
     try:
-        str_len = struct.unpack('>I', data[:4])[0]
+        str_len = struct.unpack(">I", data[:4])[0]
     except struct.error:
         return False
     # data[4:str_len] must have string which matches with the typeofkey, another ssh key property.
-    if data[4:4 + str_len] == typeofkey:
+    if data[4 : 4 + str_len] == typeofkey:
         return True
     else:
         return False
@@ -47,15 +47,15 @@ def validate_ssh_key(key):
 
 def send_email_with_otp(user, device):
     send_mail(
-        _('OTP QR Code'),
-        _('Please view HTML version of this message.'),
+        _("OTP QR Code"),
+        _("Please view HTML version of this message."),
         None,
         [user.email],
         html_message=render_to_string(
-            'accounts/email/otp.html',
+            "accounts/email/otp.html",
             {
-                'totp_url': device.config_url,
-                'user': user,
+                "totp_url": device.config_url,
+                "user": user,
             },
         ),
         fail_silently=False,

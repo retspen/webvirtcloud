@@ -1380,9 +1380,9 @@ class wvmInstance(wvmConnect):
                 elif net_source_type == 'iface':
                     source.set('dev', net_source)
                 else:
-                    raise libvirtError(f"Unknown network type: {net_source_type}")
+                    raise libvirtError("Unknown network type: {}".format(net_source_type))
             else:
-                raise libvirtError(f"Unknown network type: {interface.get('type')}")
+                raise libvirtError("Unknown network type: {}".format(interface.get('type')))
 
             source = interface.find('model')
             if net_model != 'default':
