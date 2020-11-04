@@ -4,13 +4,14 @@
 # See the COPYING file in the top-level directory.
 
 import functools
+import logging as log
 import os
 import queue
-import socket
 import signal
+import socket
 import threading
 
-import logging as log
+
 
 
 class _TunnelScheduler(object):

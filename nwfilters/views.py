@@ -25,6 +25,9 @@ def nwfilters(request, compute_id):
     try:
         conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)
 
+        for nwf in conn.get_nwfilters():
+            nwfilters_all.append(conn.get_nwfilter_info(nwf))
+
         if request.method == "POST":
             if "create_nwfilter" in request.POST:
                 xml = request.POST.get("nwfilter_xml", "")
@@ -36,11 +39,11 @@ def nwfilters(request, compute_id):
                     except util.etree.ParseError:
                         name = None
 
-                    for nwf in nwfilters:
-                        if name == nwf.name():
+                    for nwf in nwfilters_all:
+                        if name == nwf["name"]:
                             error_msg = _("A network filter with this name already exists")
                             raise Exception(error_msg)
-                        if uuid == nwf.UUIDString():
+                        if uuid == nwf["uuid"]:
                             error_msg = _("A network filter with this UUID already exists")
                             raise Exception(error_msg)
                     else:
@@ -89,9 +92,6 @@ def nwfilters(request, compute_id):
                 conn.clone_nwfilter(name, cln_name)
                 msg = _("Cloning NWFilter %(name)s as %(clone)s") % {"name":name, "clone": cln_name}
                 addlogmsg(request.user.username, compute.hostname, msg)
-
-        for nwf in conn.get_nwfilters():
-            nwfilters_all.append(conn.get_nwfilter_info(nwf))
 
         conn.close()
     except libvirtError as lib_err:

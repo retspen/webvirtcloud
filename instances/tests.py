@@ -8,11 +8,10 @@ from django.contrib.auth.models import Permission
 from django.http.response import Http404
 from django.shortcuts import reverse
 from django.test import TestCase
+from instances.views import instance
 from libvirt import VIR_DOMAIN_UNDEFINE_NVRAM
 from vrtManager.create import wvmCreate
 from vrtManager.util import randomUUID
-
-from instances.views import instance
 
 from .models import Flavor, Instance
 from .utils import refr

@@ -41,7 +41,7 @@ def validate_ssh_key(key):
     # data[4:str_len] must have string which matches with the typeofkey, another ssh key property.
     if data[4 : 4 + str_len] == typeofkey:
         return True
-    else:
+    else: 
         return False
 
 

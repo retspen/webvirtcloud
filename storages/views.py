@@ -45,11 +45,7 @@ def storages(request, compute_id):
                             msg = _("You need create secret for pool")
                             messages.error(request, msg)
                             errors = True
-                        if (
-                            not data["ceph_pool"]
-                            and not data["ceph_host"]
-                            and not data["ceph_user"]
-                        ):
+                        if not data["ceph_pool"] and not data["ceph_host"] and not data["ceph_user"]:
                             msg = _("You need input all fields for creating ceph pool")
                             messages.error(request, msg)
                             errors = True
@@ -73,12 +69,8 @@ def storages(request, compute_id):
                                 data["target"],
                             )
                         else:
-                            conn.create_storage(
-                                data["stg_type"], data["name"], data["source"], data["target"]
-                            )
-                        return HttpResponseRedirect(
-                            reverse("storage", args=[compute_id, data["name"]])
-                        )
+                            conn.create_storage(data["stg_type"], data["name"], data["source"], data["target"])
+                        return HttpResponseRedirect(reverse("storage", args=[compute_id, data["name"]]))
                 else:
                     for msg_err in form.errors.values():
                         messages.error(request, msg_err.as_text())
@@ -159,7 +151,7 @@ def storage(request, compute_id, pool):
                 messages.error(request, error_msg)
             else:
                 handle_uploaded_file(path, request.FILES["file"])
-                messages.success(request, _("ISO: %(file)s is uploaded.") % {"file": request.FILES['file']})
+                messages.success(request, _("ISO: %(file)s is uploaded.") % {"file": request.FILES["file"]})
                 return HttpResponseRedirect(request.get_full_path())
         if "cln_volume" in request.POST:
             form = CloneImage(request.POST)
@@ -179,7 +171,8 @@ def storage(request, compute_id, pool):
                 try:
                     name = conn.clone_volume(data["image"], data["name"], format, meta_prealloc)
                     messages.success(
-                        request, _("%(image)s image cloned as %(clone)s successfully") % {"image": data['image'], "name": name}
+                        request,
+                        _("%(image)s image cloned as %(clone)s successfully") % {"image": data["image"], "name": name},
                     )
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:
@@ -199,7 +192,7 @@ def create_volume(request, compute_id, pool):
     :param request:
     :param compute_id: compute id
     :param pool: pool name
-    :return: 
+    :return:
     """
     compute = get_object_or_404(Compute, pk=compute_id)
     meta_prealloc = False
@@ -225,7 +218,7 @@ def create_volume(request, compute_id, pool):
             disk_owner_uid,
             disk_owner_gid,
         )
-        messages.success(request, _("Image file %(name)s is created successfully") % {"name":name})
+        messages.success(request, _("Image file %(name)s is created successfully") % {"name": name})
     else:
         for msg_err in form.errors.values():
             messages.error(request, msg_err.as_text())

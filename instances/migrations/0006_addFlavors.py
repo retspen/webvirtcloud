@@ -33,3 +33,4 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(add_flavors, del_flavors),
     ]
+    

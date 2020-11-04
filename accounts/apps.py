@@ -8,7 +8,7 @@ def apply_change_password(sender, **kwargs):
     Depending on settings SHOW_PROFILE_EDIT_PASSWORD
     '''
     from django.conf import settings
-    from django.contrib.auth.models import User, Permission
+    from django.contrib.auth.models import Permission, User
     if hasattr(settings, 'SHOW_PROFILE_EDIT_PASSWORD'):
         print('\033[1m! \033[92mSHOW_PROFILE_EDIT_PASSWORD is found inside settings.py\033[0m')
         print('\033[1m* \033[92mApplying permission can_change_password for all users\033[0m')
@@ -29,8 +29,8 @@ def create_admin(sender, **kwargs):
     '''
     Create initial admin user
     '''
-    from django.contrib.auth.models import User
     from accounts.models import UserAttributes
+    from django.contrib.auth.models import User
 
     plan = kwargs.get('plan', [])
     for migration, rolled_back in plan:

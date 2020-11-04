@@ -19,6 +19,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from instances.models import Instance
 from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, libvirtError
 from logs.views import addlogmsg
 from vrtManager import util
@@ -26,8 +27,6 @@ from vrtManager.create import wvmCreate
 from vrtManager.instance import wvmInstances
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
-
-from instances.models import Instance
 
 from . import utils
 from .forms import ConsoleForm, FlavorForm, NewVMForm
@@ -438,7 +437,7 @@ def resizevm_cpu(request, pk):
                 cur_vcpu = new_cur_vcpu
                 vcpu = new_vcpu
                 instance.proxy.resize_cpu(cur_vcpu, vcpu)
-                msg = _("CPU is resized:  %(old)s to %(new)s") % {"old": cur_vcpu,"new": vcpu}
+                msg = _("CPU is resized:  %(old)s to %(new)s") % {"old": cur_vcpu, "new": vcpu}
                 addlogmsg(request.user.username, instance.name, msg)
                 messages.success(request, msg)
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
@@ -951,7 +950,7 @@ def change_network(request, pk):
 @superuser_only
 def add_network(request, pk):
     instance = get_instance(request.user, pk)
-    
+
     mac = request.POST.get("add-net-mac")
     nwfilter = request.POST.get("add-net-nwfilter")
     (source, source_type) = utils.get_network_tuple(request.POST.get("add-net-network"))
@@ -1181,8 +1180,8 @@ def update_console(request, pk):
                     instance.proxy.set_console_keymap("")
                 else:
                     instance.proxy.set_console_keymap(form.cleaned_data["keymap"])
-                msg = _("Set VNC keymap")
-                
+
+                msg = _("Set VNC keymap")            
                 addlogmsg(request.user.username, instance.name, msg)
 
             if "type" in form.changed_data:
@@ -1287,7 +1286,7 @@ def create_instance_select_type(request, compute_id):
             xml = request.POST.get("dom_xml", "")
             try:
                 name = util.get_xml_path(xml, "/domain/name")
-            except util.etree.Error as err:
+            except util.etree.Error:
                 name = None
             if name in instances:
                 error_msg = _("A virtual machine with this name already exists")

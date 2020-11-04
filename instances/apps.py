@@ -25,8 +25,8 @@ def apply_passwordless_console(sender, **kwargs):
     '''
     Apply new passwordless_console permission for all users
     '''
-    from django.contrib.auth.models import Permission
     from django.contrib.auth import get_user_model
+    from django.contrib.auth.models import Permission
     User = get_user_model()
     plan = kwargs.get('plan', [])
     for migration, rolled_back in plan:

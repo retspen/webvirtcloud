@@ -1,8 +1,6 @@
 import json
 
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
-from django.urls import reverse
+from django.http import HttpResponse
 
 from admin.decorators import superuser_only
 from instances.models import Instance
@@ -29,14 +27,14 @@ def vm_logs(request, vname):
     """
 
     vm = Instance.objects.get(name=vname)
-    logs_ = Logs.objects.filter(instance=vm.name, date__gte=vm.created).order_by('-date')
+    logs_ = Logs.objects.filter(instance=vm.name, date__gte=vm.created).order_by("-date")
     logs = []
     for l in logs_:
         log = dict()
-        log['user'] = l.user
-        log['instance'] = l.instance
-        log['message'] = l.message
-        log['date'] = l.date.strftime('%x %X')
+        log["user"] = l.user
+        log["instance"] = l.instance
+        log["message"] = l.message
+        log["date"] = l.date.strftime("%x %X")
         logs.append(log)
 
     return HttpResponse(json.dumps(logs))

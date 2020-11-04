@@ -239,7 +239,8 @@ def network(request, compute_id, pool):
             if conn.is_active():
                 messages.success(
                     request,
-                        _("%(qos_dir)s QoS is deleted. Network XML is changed. Stop and start network to activate new config") % {"qos_dir": qos_dir.capitalize()}
+                    _("%(qos_dir)s QoS is deleted. Network XML is changed. \
+                        Stop and start network to activate new config") % {"qos_dir": qos_dir.capitalize()}
                 )
             else:
                 messages.success(request, _("%(qos_dir)s QoS is deleted") % {"qos_dir": qos_dir.capitalize()})

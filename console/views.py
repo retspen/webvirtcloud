@@ -6,7 +6,11 @@ from libvirt import libvirtError
 from appsettings.settings import app_settings
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
-from webvirtcloud.settings import WS_PUBLIC_HOST, WS_PUBLIC_PATH, WS_PUBLIC_PORT
+from webvirtcloud.settings import (
+    WS_PUBLIC_HOST, 
+    WS_PUBLIC_PATH, 
+    WS_PUBLIC_PORT
+)
 
 
 def console(request):
@@ -57,7 +61,7 @@ def console(request):
     if console_type == "vnc" or console_type == "spice":
         console_page = "console-" + console_type + "-" + view_type + ".html"
         response = render(request, console_page, locals())
-    else:
+    else: 
         if console_type is None:
             console_error = "Fail to get console. Please check the console configuration of your VM."
         else:

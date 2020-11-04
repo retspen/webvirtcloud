@@ -1,7 +1,8 @@
-from django.core.exceptions import ValidationError
-
-from django.utils.translation import gettext_lazy as _
 import re
+
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+
 
 have_symbol = re.compile('[^a-zA-Z0-9._-]+')
 wrong_ip = re.compile('^0.|^255.')
