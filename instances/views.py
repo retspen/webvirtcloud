@@ -1063,7 +1063,11 @@ def clone(request, pk):
         }
         messages.error(request, msg)
     elif check_instance:
+<<<<<<< HEAD
         msg = _("Instance '%(clone_name)s' already exists!") % {"clone_name": clone_data["name"]}
+=======
+        msg = _("Instance '%(clone_name)s' already exists!") % {'clone_name': clone_data['name']}
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
         messages.error(request, msg)
     elif not re.match(r"^[a-zA-Z0-9-]+$", clone_data["name"]):
         msg = _("Instance name '%(clone_name)s' contains invalid characters!") % {"clone_name": clone_data["name"]}
