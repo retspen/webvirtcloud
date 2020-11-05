@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-23 07:53+0000\n"
+"POT-Creation-Date: 2020-11-05 09:36+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -299,49 +299,49 @@ msgstr ""
 msgid "Profile updated"
 msgstr ""
 
-#: accounts/views.py:40
+#: accounts/views.py:44
 msgid "SSH key added"
 msgstr ""
 
-#: accounts/views.py:45
+#: accounts/views.py:52
 msgid "Add SSH key"
 msgstr ""
 
-#: accounts/views.py:53
+#: accounts/views.py:61
 msgid "SSH key deleted"
 msgstr ""
 
-#: accounts/views.py:58
+#: accounts/views.py:69
 msgid "Delete SSH key"
 msgstr ""
 
-#: accounts/views.py:86
+#: accounts/views.py:101
 msgid "Password Changed"
 msgstr ""
 
-#: accounts/views.py:106
+#: accounts/views.py:121
 msgid "Create User Instance"
 msgstr ""
 
-#: accounts/views.py:124
+#: accounts/views.py:139
 msgid "Update User Instance"
-msgstr ""
-
-#: accounts/views.py:160
-#, python-format
-msgid "OTP Sent to %s"
-msgstr ""
-
-#: accounts/views.py:165
-msgid "Email OTP"
 msgstr ""
 
 #: accounts/views.py:175
 #, python-format
-msgid "OTP QR code was emailed to user %s"
+msgid "OTP Sent to %(email)s"
 msgstr ""
 
-#: accounts/views.py:177
+#: accounts/views.py:183
+msgid "Email OTP"
+msgstr ""
+
+#: accounts/views.py:194
+#, python-format
+msgid "OTP QR code was emailed to user %(user)s"
+msgstr ""
+
+#: accounts/views.py:196
 msgid "User email not set, failed to send QR code"
 msgstr ""
 
@@ -354,11 +354,12 @@ msgstr ""
 msgid "Groups"
 msgstr ""
 
-#: admin/forms.py:79
+#: admin/forms.py:81
 msgid ""
-"Raw passwords are not stored, so there is no way to see\n"
-"                this user's password, but you can change the password using "
-"<a href='{}'>this form</a>."
+"Raw passwords are not stored, so there is no way to see this user's "
+"password, \n"
+"                    but you can change the password using <a href='{}'>this "
+"form</a>."
 msgstr ""
 
 #: admin/templates/admin/group_list.html:5 admin/views.py:87
@@ -501,19 +502,20 @@ msgstr ""
 msgid "Update Group"
 msgstr ""
 
-#: admin/views.py:113
+#: admin/views.py:110
 msgid "Create User"
 msgstr ""
 
-#: admin/views.py:136
+#: admin/views.py:129
 msgid "Update User"
 msgstr ""
 
-#: admin/views.py:149
-msgid "User password changed: {}"
+#: admin/views.py:141
+#, python-format
+msgid "Password changed for %(user)s"
 msgstr ""
 
-#: admin/views.py:152
+#: admin/views.py:144
 msgid "Wrong Data Provided"
 msgstr ""
 
@@ -799,18 +801,18 @@ msgid "Other Settings"
 msgstr ""
 
 #: appsettings/views.py:38
-#, python-brace-format
-msgid "SASS directory path is changed. Now: {sass_dir.value}"
+#, python-format
+msgid "SASS directory path is changed. Now: %(dir)s"
 msgstr ""
 
-#: appsettings/views.py:65
-#, python-brace-format
-msgid "Theme changed. Now: {theme}"
+#: appsettings/views.py:67
+#, python-format
+msgid "Theme is changed. Now: %(theme)s"
 msgstr ""
 
-#: appsettings/views.py:80
-#, python-brace-format
-msgid "{setting.name} is changed. Now: {setting.value}"
+#: appsettings/views.py:82
+#, python-format
+msgid "%(setting)s is changed. Now: %(value)s"
 msgstr ""
 
 #: computes/forms.py:21
@@ -1698,7 +1700,7 @@ msgstr ""
 #: instances/templates/instance_actions.html:25
 #: instances/templates/instance_actions.html:37
 #: instances/templates/instances/power_tab.html:25
-#: instances/templates/instances/power_tab.html:82 instances/views.py:264
+#: instances/templates/instances/power_tab.html:82 instances/views.py:270
 msgid "Suspend"
 msgstr ""
 
@@ -1752,7 +1754,7 @@ msgstr ""
 #: instances/templates/instances/destroy_instance_form.html:40
 #: instances/templates/instances/destroy_tab.html:18
 #: instances/templates/instances/destroy_tab.html:20
-#: instances/templates/instances/destroy_tab.html:23 instances/views.py:306
+#: instances/templates/instances/destroy_tab.html:23 instances/views.py:312
 msgid "Destroy"
 msgstr ""
 
@@ -1770,20 +1772,20 @@ msgstr ""
 #: instances/templates/instance_actions.html:35
 #: instances/templates/instances/power_tab.html:47
 #: instances/templates/instances/power_tab.html:121
-#: instances/templates/instances/power_tab.html:123 instances/views.py:239
+#: instances/templates/instances/power_tab.html:123 instances/views.py:245
 msgid "Power On"
 msgstr ""
 
 #: instances/templates/instance_actions.html:15
 #: instances/templates/instances/power_tab.html:9
-#: instances/templates/instances/power_tab.html:59 instances/views.py:255
+#: instances/templates/instances/power_tab.html:59 instances/views.py:261
 msgid "Power Off"
 msgstr ""
 
 #: instances/templates/instance_actions.html:16
 #: instances/templates/instance_actions.html:29
 #: instances/templates/instances/power_tab.html:14
-#: instances/templates/instances/power_tab.html:66 instances/views.py:248
+#: instances/templates/instances/power_tab.html:66 instances/views.py:254
 msgid "Power Cycle"
 msgstr ""
 
@@ -1795,7 +1797,7 @@ msgstr ""
 #: instances/templates/instance_actions.html:22
 #: instances/templates/instances/power_tab.html:34
 #: instances/templates/instances/power_tab.html:93
-#: instances/templates/instances/power_tab.html:108 instances/views.py:272
+#: instances/templates/instances/power_tab.html:108 instances/views.py:278
 msgid "Resume"
 msgstr ""
 
@@ -1803,7 +1805,7 @@ msgstr ""
 #: instances/templates/instances/power_tab.html:19
 #: instances/templates/instances/power_tab.html:39
 #: instances/templates/instances/power_tab.html:74
-#: instances/templates/instances/power_tab.html:100 instances/views.py:279
+#: instances/templates/instances/power_tab.html:100 instances/views.py:285
 msgid "Force Off"
 msgstr ""
 
@@ -2450,7 +2452,7 @@ msgstr ""
 #: instances/templates/instances/snapshots_tab.html:22
 msgid ""
 "This may take more than an hour, depending on how much content is on your "
-"droplet and how large the disk is."
+"instance and how large the disk is."
 msgstr ""
 
 #: instances/templates/instances/snapshots_tab.html:27
@@ -2505,387 +2507,395 @@ msgstr ""
 msgid "None available device name"
 msgstr ""
 
-#: instances/views.py:236
+#: instances/views.py:242
 msgid "Templates cannot be started."
 msgstr ""
 
-#: instances/views.py:339
+#: instances/views.py:345
 #, python-format
-msgid "Migrate to %(hostname)%"
+msgid "Instance is migrated to %(hostname)s"
 msgstr ""
 
-#: instances/views.py:362
+#: instances/views.py:368
 msgid "Reset root password"
 msgstr ""
 
-#: instances/views.py:368 instances/views.py:397
+#: instances/views.py:374 instances/views.py:403
 msgid "Please shutdown down your instance and then try again"
 msgstr ""
 
-#: instances/views.py:389
+#: instances/views.py:395
 #, python-format
 msgid "Installed new SSH public key %(keyname)s"
 msgstr ""
 
-#: instances/views.py:416
+#: instances/views.py:422
 #, python-format
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
 msgstr ""
 
-#: instances/views.py:425
-msgid "Resize CPU"
+#: instances/views.py:431
+#, python-format
+msgid "CPU is resized:  %(old)s to %(new)s"
 msgstr ""
 
-#: instances/views.py:453
+#: instances/views.py:459
 #, python-format
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize memory of "
 "'%(instance_name)s'!"
 msgstr ""
 
-#: instances/views.py:462
-msgid "Resize Memory"
+#: instances/views.py:466
+#, python-format
+msgid ""
+"Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/"
+"%(new_max)s"
 msgstr ""
 
-#: instances/views.py:491
+#: instances/views.py:500
 #, python-format
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
 msgstr ""
 
-#: instances/views.py:498
-msgid "Disk resize"
-msgstr ""
-
-#: instances/views.py:537
+#: instances/views.py:507
 #, python-format
-msgid "Attach new disk %(name)s (%(format)s)"
+msgid "Disk is resized: %(dev)s"
 msgstr ""
 
-#: instances/views.py:568
+#: instances/views.py:546
+#, python-format
+msgid "Attach new disk: %(name)s (%(format)s)"
+msgstr ""
+
+#: instances/views.py:577
 #, python-format
 msgid "Attach Existing disk: %(target_dev)s"
 msgstr ""
 
-#: instances/views.py:624
+#: instances/views.py:635
 msgid "Volume changes are applied. But it will be activated after shutdown"
 msgstr ""
 
-#: instances/views.py:626
+#: instances/views.py:638
 msgid "Volume is changed successfully."
 msgstr ""
 
-#: instances/views.py:627
+#: instances/views.py:639
 #, python-format
 msgid "Edit disk: %(target_dev)s"
 msgstr ""
 
-#: instances/views.py:649
+#: instances/views.py:661
 #, python-format
 msgid "Delete disk: %(dev)s"
 msgstr ""
 
-#: instances/views.py:665
+#: instances/views.py:677
 #, python-format
 msgid "Detach disk: %(dev)s"
 msgstr ""
 
-#: instances/views.py:678
+#: instances/views.py:690
 #, python-format
 msgid "Add CD-ROM: %(target)s"
 msgstr ""
 
-#: instances/views.py:691
+#: instances/views.py:703
 #, python-format
 msgid "Detach CD-ROM: %(dev)s"
 msgstr ""
 
-#: instances/views.py:704
+#: instances/views.py:716
 #, python-format
 msgid "Mount media: %(dev)s"
 msgstr ""
 
-#: instances/views.py:717
+#: instances/views.py:729
 #, python-format
 msgid "Unmount media: %(dev)s"
 msgstr ""
 
-#: instances/views.py:730
+#: instances/views.py:742
 #, python-format
-msgid "New snapshot: %(name)s"
+msgid "Create snapshot: %(snap)s"
 msgstr ""
 
-#: instances/views.py:741
+#: instances/views.py:753
 #, python-format
-msgid "Delete snapshot: %(snap_name)s"
+msgid "Delete snapshot: %(snap)s"
 msgstr ""
 
-#: instances/views.py:752
+#: instances/views.py:764
 msgid "Successful revert snapshot: "
 msgstr ""
 
-#: instances/views.py:755
-msgid "Revert snapshot"
+#: instances/views.py:767
+msgid "Revert snapshot: %(snap)"
 msgstr ""
 
-#: instances/views.py:769
+#: instances/views.py:781
 #, python-format
 msgid "VCPU %(id)s is enabled=%(enabled)s"
 msgstr ""
 
-#: instances/views.py:780
+#: instances/views.py:790
 #, python-format
 msgid "VCPU Hot-plug is enabled=%(status)s"
 msgstr ""
 
-#: instances/views.py:791
+#: instances/views.py:800
 msgid "Set autostart"
 msgstr ""
 
-#: instances/views.py:800
+#: instances/views.py:809
 msgid "Unset autostart"
 msgstr ""
 
-#: instances/views.py:809
+#: instances/views.py:818
 msgid "Enable boot menu"
 msgstr ""
 
-#: instances/views.py:818
+#: instances/views.py:827
 msgid "Disable boot menu"
 msgstr ""
 
-#: instances/views.py:833
+#: instances/views.py:842
 msgid "Set boot order"
 msgstr ""
 
-#: instances/views.py:836
+#: instances/views.py:847
 msgid "Boot menu changes applied. But it will be activated after shutdown"
 msgstr ""
 
-#: instances/views.py:838
+#: instances/views.py:850
 msgid "Boot order changed successfully."
 msgstr ""
 
-#: instances/views.py:849
-msgid "Edit XML"
+#: instances/views.py:861
+msgid "Change instance XML"
 msgstr ""
 
-#: instances/views.py:863
+#: instances/views.py:875
 #, python-format
-msgid "Set Guest Agent %(status)s"
+msgid "Set Guest Agent: %(status)s"
 msgstr ""
 
-#: instances/views.py:873
-msgid "Set Video Model"
+#: instances/views.py:885
+msgid "Set Video Model: %(model)"
 msgstr ""
 
-#: instances/views.py:882
+#: instances/views.py:894
 msgid "Change network"
 msgstr ""
 
-#: instances/views.py:895
+#: instances/views.py:907
 msgid "Network Device Config is changed. Please shutdown instance to activate."
 msgstr ""
 
-#: instances/views.py:903
-msgid "Add network"
-msgstr ""
-
-#: instances/views.py:917
-msgid "Delete network"
+#: instances/views.py:922
+#, python-format
+msgid "Add network: %(mac)s"
 msgstr ""
 
 #: instances/views.py:933
 #, python-format
+msgid "Delete Network: %(mac)s"
+msgstr ""
+
+#: instances/views.py:946
+#, python-format
 msgid "Set Link State: %(state)s"
 msgstr ""
 
-#: instances/views.py:952
+#: instances/views.py:966 networks/views.py:231
 #, python-format
 msgid "%(qos_dir)s QoS is set"
 msgstr ""
 
-#: instances/views.py:956
+#: instances/views.py:971
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is set. Network XML is changed.                 Stop and "
 "start network to activate new config."
 msgstr ""
 
-#: instances/views.py:970
+#: instances/views.py:988 networks/views.py:246
 #, python-format
 msgid "%(qos_dir)s QoS is deleted"
 msgstr ""
 
-#: instances/views.py:974
+#: instances/views.py:993
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is deleted. Network XML is changed.                 Stop and "
 "start network to activate new config."
 msgstr ""
 
-#: instances/views.py:990
+#: instances/views.py:1012
 msgid "Only one owner is allowed and the one already added"
 msgstr ""
 
-#: instances/views.py:995
+#: instances/views.py:1017
 #, python-format
-msgid "Added owner %(user)s"
+msgid "Add owner: %(user)s"
 msgstr ""
 
-#: instances/views.py:1006
+#: instances/views.py:1028
 #, python-format
-msgid "Deleted owner %(userinstance_id)s"
-msgstr ""
-
-#: instances/views.py:1038
-#, python-format
-msgid "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
-msgstr ""
-
-#: instances/views.py:1044
-msgid "Instance 'clone_name' already exists!"
-msgstr ""
-
-#: instances/views.py:1047
-#, python-format
-msgid "Instance name '%(clone_name)s' contains invalid characters!"
-msgstr ""
-
-#: instances/views.py:1050
-#, python-format
-msgid "Instance MAC '%(clone_mac)s' invalid format!"
+msgid "Delete owner: %(userinstance_id)s "
 msgstr ""
 
 #: instances/views.py:1060
 #, python-format
-msgid "Clone of '%(instance_name)s'"
+msgid "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
 msgstr ""
 
-#: instances/views.py:1093
+#: instances/views.py:1066
+#, python-format
+msgid "Instance '%(clone_name)s' already exists!"
+msgstr ""
+
+#: instances/views.py:1069
+#, python-format
+msgid "Instance name '%(clone_name)s' contains invalid characters!"
+msgstr ""
+
+#: instances/views.py:1072
+#, python-format
+msgid "Instance MAC '%(clone_mac)s' invalid format!"
+msgstr ""
+
+#: instances/views.py:1082
+#, python-format
+msgid "Create a clone of '%(instance_name)s'"
+msgstr ""
+
+#: instances/views.py:1121
 msgid ""
 "Error setting console password. You should check that your instance have an "
 "graphic device."
 msgstr ""
 
-#: instances/views.py:1096
+#: instances/views.py:1126
 msgid "Set VNC password"
 msgstr ""
 
-#: instances/views.py:1104
+#: instances/views.py:1135
 msgid "Set VNC keymap"
 msgstr ""
 
-#: instances/views.py:1109
+#: instances/views.py:1140
 msgid "Set VNC type"
 msgstr ""
 
-#: instances/views.py:1114
+#: instances/views.py:1145
 msgid "Set VNC listen address"
 msgstr ""
 
-#: instances/views.py:1137
+#: instances/views.py:1168
 msgid "Edit options"
 msgstr ""
 
-#: instances/views.py:1151
+#: instances/views.py:1182
 msgid "Send console.vv file"
 msgstr ""
 
-#: instances/views.py:1206 instances/views.py:1298
+#: instances/views.py:1243 instances/views.py:1337
 msgid "A virtual machine with this name already exists"
 msgstr ""
 
-#: instances/views.py:1281
+#: instances/views.py:1320
 msgid "You haven't defined any storage pools"
 msgstr ""
 
-#: instances/views.py:1283
+#: instances/views.py:1322
 msgid "You haven't defined any network pools"
 msgstr ""
 
-#: instances/views.py:1300
+#: instances/views.py:1339
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr ""
 
-#: instances/views.py:1304
+#: instances/views.py:1343
 msgid "No Virtual Machine MAC has been entered"
 msgstr ""
 
-#: instances/views.py:1327
+#: instances/views.py:1374
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 
-#: instances/views.py:1347
+#: instances/views.py:1401
 msgid "First you need to create or select an image"
 msgstr ""
 
-#: instances/views.py:1365
+#: instances/views.py:1419
 msgid "Invalid cache mode"
 msgstr ""
 
-#: instances/views.py:1402
+#: instances/views.py:1460
 msgid "Instance is created"
 msgstr ""
 
-#: instances/views.py:1423
+#: instances/views.py:1481
 msgid "Flavor Created"
 msgstr ""
 
-#: instances/views.py:1431
+#: instances/views.py:1487
 msgid "Create Flavor"
 msgstr ""
 
-#: instances/views.py:1442
+#: instances/views.py:1497
 msgid "Flavor Updated"
 msgstr ""
 
-#: instances/views.py:1450
+#: instances/views.py:1503
 msgid "Update Flavor"
 msgstr ""
 
-#: instances/views.py:1460
+#: instances/views.py:1512
 msgid "Flavor Deleted"
 msgstr ""
 
-#: interfaces/forms.py:25
+#: interfaces/forms.py:26
 msgid "The IPv4 address must not contain any special characters"
 msgstr ""
 
-#: interfaces/forms.py:27
+#: interfaces/forms.py:28
 msgid "The IPv4 address must not exceed 20 characters"
 msgstr ""
 
-#: interfaces/forms.py:34
+#: interfaces/forms.py:35
 msgid "The IPv4 gateway must not contain any special characters"
 msgstr ""
 
-#: interfaces/forms.py:36
+#: interfaces/forms.py:37
 msgid "The IPv4 gateway must not exceed 20 characters"
 msgstr ""
 
-#: interfaces/forms.py:43
+#: interfaces/forms.py:44
 msgid "The IPv6 address must not contain any special characters"
 msgstr ""
 
-#: interfaces/forms.py:45
+#: interfaces/forms.py:46
 msgid "The IPv6 address must not exceed 100 characters"
 msgstr ""
 
-#: interfaces/forms.py:52
+#: interfaces/forms.py:53
 msgid "The IPv6 gateway must not contain any special characters"
 msgstr ""
 
-#: interfaces/forms.py:54
+#: interfaces/forms.py:55
 msgid "The IPv6 gateway must not exceed 100 characters"
 msgstr ""
 
-#: interfaces/forms.py:61 interfaces/forms.py:70
+#: interfaces/forms.py:62 interfaces/forms.py:71
 msgid "The interface must not contain any special characters"
 msgstr ""
 
-#: interfaces/forms.py:63 interfaces/forms.py:72
+#: interfaces/forms.py:64 interfaces/forms.py:73
 msgid "The interface must not exceed 10 characters"
 msgstr ""
 
@@ -3019,63 +3029,63 @@ msgstr ""
 msgid "Hypervisor doesn't have any Interfaces"
 msgstr ""
 
-#: logs/models.py:6
+#: logs/models.py:5
 msgid "user"
 msgstr ""
 
-#: logs/models.py:7
+#: logs/models.py:6
 msgid "instance"
 msgstr ""
 
-#: logs/models.py:8
+#: logs/models.py:7
 msgid "message"
 msgstr ""
 
-#: logs/models.py:9
+#: logs/models.py:8
 msgid "date"
 msgstr ""
 
-#: networks/forms.py:7 storages/forms.py:7
+#: networks/forms.py:8 storages/forms.py:8
 msgid "No pool name has been entered"
 msgstr ""
 
-#: networks/forms.py:9
+#: networks/forms.py:10
 msgid "No IPv4 subnet has been entered"
 msgstr ""
 
-#: networks/forms.py:11
+#: networks/forms.py:15
 msgid "No IPv6 subnet has been entered"
 msgstr ""
 
-#: networks/forms.py:24 storages/forms.py:22
+#: networks/forms.py:30 storages/forms.py:23
 msgid "The pool name must not contain any special characters"
 msgstr ""
 
-#: networks/forms.py:26 storages/forms.py:24
+#: networks/forms.py:32 storages/forms.py:25
 msgid "The pool name must not exceed 20 characters"
 msgstr ""
 
-#: networks/forms.py:33
+#: networks/forms.py:39
 msgid "The IPv4 subnet must not contain any special characters"
 msgstr ""
 
-#: networks/forms.py:35
+#: networks/forms.py:41
 msgid "The IPv4 subnet must not exceed 20 characters"
 msgstr ""
 
-#: networks/forms.py:42
+#: networks/forms.py:48
 msgid "The IPv6 subnet must not contain any special characters"
 msgstr ""
 
-#: networks/forms.py:44
+#: networks/forms.py:50
 msgid "The IPv6 subnet must not exceed 42 characters"
 msgstr ""
 
-#: networks/forms.py:52
+#: networks/forms.py:58
 msgid "The pool bridge name must not contain any special characters"
 msgstr ""
 
-#: networks/forms.py:54
+#: networks/forms.py:60
 msgid "The pool bridge name must not exceed 20 characters"
 msgstr ""
 
@@ -3271,57 +3281,50 @@ msgstr ""
 msgid "Please enter bridge/dev name"
 msgstr ""
 
-#: networks/views.py:56
+#: networks/views.py:57
 msgid "For libvirt, the IPv6 network prefix must be /64"
 msgstr ""
 
-#: networks/views.py:126
+#: networks/views.py:130
 msgid "Unknown Network Family"
 msgstr ""
 
-#: networks/views.py:176
-msgid "{family.upper()} Fixed Address Operation Completed."
+#: networks/views.py:180
+#, python-format
+msgid "Fixed address operation completed for %(family)s"
 msgstr ""
 
-#: networks/views.py:186
-msgid "{family.upper()} Fixed Address is Deleted."
+#: networks/views.py:190
+#, python-format
+msgid "%(family)s Fixed Address is Deleted."
 msgstr ""
 
-#: networks/views.py:194
-msgid "{family.upper()} DHCP Range is Changed."
+#: networks/views.py:198
+#, python-format
+msgid "%(family)s DHCP Range is Changed."
 msgstr ""
 
-#: networks/views.py:203
+#: networks/views.py:210
 msgid ""
 "Network XML is changed. \\Stop and start network to activate new config."
 msgstr ""
 
-#: networks/views.py:205
+#: networks/views.py:215
 msgid "Network XML is changed."
 msgstr ""
 
-#: networks/views.py:218
-msgid "{qos_dir.capitalize()} QoS is set. Network XML is changed."
+#: networks/views.py:228
+#, python-format
+msgid ""
+"%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network "
+"to activate new config"
 msgstr ""
 
-#: networks/views.py:219
-msgid "Stop and start network to activate new config"
-msgstr ""
-
-#: networks/views.py:221
-msgid "{} QoS is set"
-msgstr ""
-
-#: networks/views.py:232
-msgid "{qos_dir.capitalize()} QoS is deleted. Network XML is changed. "
-msgstr ""
-
-#: networks/views.py:233
-msgid "Stop and start network to activate new config."
-msgstr ""
-
-#: networks/views.py:235
-msgid "{qos_dir.capitalize()} QoS is deleted"
+#: networks/views.py:242
+#, python-format
+msgid ""
+"%(qos_dir)s QoS is deleted. Network XML is changed.                         "
+"Stop and start network to activate new config"
 msgstr ""
 
 #: nwfilters/templates/add_nwf_rule.html:12
@@ -3385,32 +3388,32 @@ msgstr ""
 msgid "Hypervisor doesn't have any NWFilters"
 msgstr ""
 
-#: nwfilters/views.py:41
+#: nwfilters/views.py:44
 msgid "A network filter with this name already exists"
 msgstr ""
 
-#: nwfilters/views.py:44
+#: nwfilters/views.py:47
 msgid "A network filter with this UUID already exists"
 msgstr ""
 
-#: nwfilters/views.py:48
+#: nwfilters/views.py:51
 #, python-format
-msgid "Creating NWFilter: %s"
+msgid "%(filter)s network filter is created"
 msgstr ""
 
-#: nwfilters/views.py:57
-#, python-brace-format
-msgid "Deleting NWFilter: {name}"
+#: nwfilters/views.py:60
+#, python-format
+msgid "%(filter)s network filter is deleted"
 msgstr ""
 
-#: nwfilters/views.py:69
-#, python-brace-format
-msgid "NWFilter is in use by {inst}. Cannot be deleted."
+#: nwfilters/views.py:76
+#, python-format
+msgid "NWFilter is in use by %(instance)s. Cannot be deleted."
 msgstr ""
 
-#: nwfilters/views.py:86
-#, python-brace-format
-msgid "Cloning NWFilter {name} as {cln_name}"
+#: nwfilters/views.py:93
+#, python-format
+msgid "Cloning NWFilter %(name)s as %(clone)s"
 msgstr ""
 
 #: secrets/templates/create_secret_block.html:12
@@ -3461,27 +3464,27 @@ msgstr ""
 msgid "Value"
 msgstr ""
 
-#: storages/forms.py:9 storages/forms.py:36
+#: storages/forms.py:10 storages/forms.py:37
 msgid "No path has been entered"
 msgstr ""
 
-#: storages/forms.py:33
+#: storages/forms.py:34
 msgid "The target must not contain any special characters"
 msgstr ""
 
-#: storages/forms.py:45
+#: storages/forms.py:46
 msgid "No device or path has been entered"
 msgstr ""
 
-#: storages/forms.py:47
+#: storages/forms.py:48
 msgid "The disk source must not contain any special characters"
 msgstr ""
 
-#: storages/forms.py:61 storages/forms.py:76
+#: storages/forms.py:62 storages/forms.py:77
 msgid "The image name must not contain any special characters"
 msgstr ""
 
-#: storages/forms.py:78
+#: storages/forms.py:79
 msgid "The image name must not exceed 120 characters"
 msgstr ""
 
@@ -3614,42 +3617,44 @@ msgstr ""
 msgid "Hypervisor doesn't have any Storages"
 msgstr ""
 
-#: storages/views.py:40
+#: storages/views.py:39
 msgid "Pool name already use"
 msgstr ""
 
-#: storages/views.py:45
+#: storages/views.py:44
 msgid "You need create secret for pool"
 msgstr ""
 
-#: storages/views.py:49
+#: storages/views.py:48
 msgid "You need input all fields for creating ceph pool"
 msgstr ""
 
-#: storages/views.py:132
-#, python-brace-format
-msgid "Volume: {volname} is deleted."
+#: storages/views.py:144
+#, python-format
+msgid "Volume: %(volume)s is deleted."
 msgstr ""
 
-#: storages/views.py:137
+#: storages/views.py:149
 msgid "ISO image already exist"
 msgstr ""
 
-#: storages/views.py:141
-msgid "ISO: {request.FILES['file']} is uploaded."
+#: storages/views.py:153
+#, python-format
+msgid "ISO: %(file)s is uploaded."
 msgstr ""
 
-#: storages/views.py:150
+#: storages/views.py:162
 msgid "Name of volume already in use"
 msgstr ""
 
-#: storages/views.py:160
-msgid "{data['image']} image cloned as {name} successfully"
+#: storages/views.py:174
+#, python-format
+msgid "%(image)s image cloned as %(clone)s successfully"
 msgstr ""
 
-#: storages/views.py:199
-#, python-brace-format
-msgid "Image file {name} is created successfully"
+#: storages/views.py:220
+#, python-format
+msgid "Image file %(name)s is created successfully"
 msgstr ""
 
 #: templates/403.html:3
