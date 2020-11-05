@@ -23,40 +23,52 @@ def profile(request):
 
     if profile_form.is_valid():
         profile_form.save()
-        messages.success(request, _('Profile updated'))
-        return redirect('accounts:profile')
+        messages.success(request, _("Profile updated"))
+        return redirect("accounts:profile")
 
-    return render(request, "profile.html", {
-        'publickeys': publickeys,
-        'profile_form': profile_form,
-        'ssh_key_form': ssh_key_form,
-    })
+    return render(
+        request,
+        "profile.html",
+        {
+            "publickeys": publickeys,
+            "profile_form": profile_form,
+            "ssh_key_form": ssh_key_form,
+        },
+    )
 
 
 def ssh_key_create(request):
     key_form = UserSSHKeyForm(request.POST or None, user=request.user)
     if key_form.is_valid():
         key_form.save()
-        messages.success(request, _('SSH key added'))
-        return redirect('accounts:profile')
+        messages.success(request, _("SSH key added"))
+        return redirect("accounts:profile")
 
-    return render(request, 'common/form.html', {
-        'form': key_form,
-        'title': _('Add SSH key'),
-    })
+    return render(
+        request,
+        "common/form.html",
+        {
+            "form": key_form,
+            "title": _("Add SSH key"),
+        },
+    )
 
 
 def ssh_key_delete(request, pk):
     ssh_key = get_object_or_404(UserSSHKey, pk=pk, user=request.user)
-    if request.method == 'POST':
+    if request.method == "POST":
         ssh_key.delete()
-        messages.success(request, _('SSH key deleted'))
-        return redirect('accounts:profile')
+        messages.success(request, _("SSH key deleted"))
+        return redirect("accounts:profile")
 
-    return render(request, 'common/confirm_delete.html', {
-        'object': ssh_key,
-        'title': _('Delete SSH key'),
-    })
+    return render(
+        request,
+        "common/confirm_delete.html",
+        {
+            "object": ssh_key,
+            "title": _("Delete SSH key"),
+        },
+    )
 
 
 @superuser_only
@@ -67,13 +79,16 @@ def account(request, user_id):
     publickeys = UserSSHKey.objects.filter(user_id=user_id)
 
     return render(
-        request, "account.html", {
-            'user': user,
-            'user_insts': user_insts,
-            'instances': instances,
-            'publickeys': publickeys,
-            'otp_enabled': settings.OTP_ENABLED,
-        })
+        request,
+        "account.html",
+        {
+            "user": user,
+            "user_insts": user_insts,
+            "instances": instances,
+            "publickeys": publickeys,
+            "otp_enabled": settings.OTP_ENABLED,
+        },
+    )
 
 
 @permission_required("accounts.change_password", raise_exception=True)
@@ -118,7 +133,7 @@ def user_instance_update(request, pk):
 
     return render(
         request,
-        'common/form.html',
+        "common/form.html",
         {
             "form": form,
             "title": _("Update User Instance"),
@@ -150,29 +165,33 @@ def email_otp(request):
     if form.is_valid():
         UserModel = get_user_model()
         try:
-            user = UserModel.objects.get(email=form.cleaned_data['email'])
+            user = UserModel.objects.get(email=form.cleaned_data["email"])
         except UserModel.DoesNotExist:
             pass
         else:
             device = get_user_totp_device(user)
             send_email_with_otp(user, device)
 
-        messages.success(request, _('OTP Sent to %s') % form.cleaned_data['email'])
-        return redirect('accounts:login')
+        messages.success(request, _("OTP Sent to %(email)s") % {"email": form.cleaned_data["email"]})
+        return redirect("accounts:login")
 
-    return render(request, 'accounts/email_otp_form.html', {
-        'form': form,
-        'title': _('Email OTP'),
-    })
+    return render(
+        request,
+        "accounts/email_otp_form.html",
+        {
+            "form": form,
+            "title": _("Email OTP"),
+        },
+    )
 
 
 @superuser_only
 def admin_email_otp(request, user_id):
     user = get_object_or_404(get_user_model(), pk=user_id)
     device = get_user_totp_device(user)
-    if user.email != '':
+    if user.email != "":
         send_email_with_otp(user, device)
-        messages.success(request, _('OTP QR code was emailed to user %s') % user)
+        messages.success(request, _("OTP QR code was emailed to user %(user)s") % {"user": user})
     else:
-        messages.error(request, _('User email not set, failed to send QR code'))
-    return redirect('accounts:account', user.id)
+        messages.error(request, _("User email not set, failed to send QR code"))
+    return redirect("accounts:account", user.id)

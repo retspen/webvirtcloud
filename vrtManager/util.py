@@ -1,8 +1,9 @@
 import random
-import string
 import re
-import lxml.etree as etree
+import string
+
 import libvirt
+import lxml.etree as etree
 
 
 def is_kvm_available(xml):
@@ -18,10 +19,8 @@ def randomMAC():
     # qemu MAC
     oui = [0x52, 0x54, 0x00]
 
-    mac = oui + [random.randint(0x00, 0xff),
-                 random.randint(0x00, 0xff),
-                 random.randint(0x00, 0xff)]
-    return ':'.join(map(lambda x: "%02x" % x, mac))
+    mac = oui + [random.randint(0x00, 0xFF), random.randint(0x00, 0xFF), random.randint(0x00, 0xFF)]
+    return ":".join(map(lambda x: "%02x" % x, mac))
 
 
 def randomUUID():
@@ -29,18 +28,17 @@ def randomUUID():
     u = [random.randint(0, 255) for ignore in range(0, 16)]
     u[6] = (u[6] & 0x0F) | (4 << 4)
     u[8] = (u[8] & 0x3F) | (2 << 6)
-    return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2,
-                     "%02x" * 6]) % tuple(u)
+    return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2, "%02x" * 6]) % tuple(u)
 
 
 def randomPasswd(length=12, alphabet=string.ascii_letters + string.digits):
     """Generate a random password"""
-    return ''.join([random.choice(alphabet) for i in range(length)])
+    return "".join([random.choice(alphabet) for i in range(length)])
 
 
 def get_max_vcpus(conn, type=None):
     """@param conn: libvirt connection to poll for max possible vcpus
-       @type type: optional guest type (kvm, etc.)"""
+    @type type: optional guest type (kvm, etc.)"""
     if type is None:
         type = conn.getType()
     try:
@@ -57,7 +55,7 @@ def xml_escape(str):
 
     str = str.replace("&", "&amp;")
     str = str.replace("'", "&apos;")
-    str = str.replace("\"", "&quot;")
+    str = str.replace('"', "&quot;")
     str = str.replace("<", "&lt;")
     str = str.replace(">", "&gt;")
     return str
@@ -109,7 +107,7 @@ def get_xpath(doc, path):
     if ret is not None:
         if isinstance(ret, list):
             if len(ret) >= 1:
-                if hasattr(ret[0], 'text'):
+                if hasattr(ret[0], "text"):
                     result = ret[0].text
                 else:
                     result = ret[0]
@@ -146,11 +144,11 @@ def validate_uuid(val):
             raise ValueError(
                 "UUID must be a 32-digit hexadecimal number. It may take "
                 "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
-                "omit hyphens altogether.")
+                "omit hyphens altogether."
+            )
 
-        else:   # UUID had no dashes, so add them in
-            val = (val[0:8] + "-" + val[8:12] + "-" + val[12:16] +
-                   "-" + val[16:20] + "-" + val[20:32])
+        else:  # UUID had no dashes, so add them in
+            val = val[0:8] + "-" + val[8:12] + "-" + val[12:16] + "-" + val[16:20] + "-" + val[20:32]
     return val
 
 
@@ -163,7 +161,7 @@ def validate_macaddr(val):
 
     form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)
     if form is None:
-        raise ValueError(f"MAC address must be of the format AA:BB:CC:DD:EE:FF, was {val}")
+        raise ValueError("MAC address must be of the format AA:BB:CC:DD:EE:FF, was {}".format(val))
 
 
 # Mapping of UEFI binary names to their associated architectures. We
@@ -177,7 +175,8 @@ UEFI_ARCH_PATTERNS = {
         r".*OVMF_CODE\.fd",  # RHEL
         r".*ovmf-x64/OVMF.*\.fd",  # gerd's firmware repo
         r".*ovmf-x86_64-.*",  # SUSE
-        r".*ovmf.*", ".*OVMF.*",  # generic attempt at a catchall
+        r".*ovmf.*",
+        ".*OVMF.*",  # generic attempt at a catchall
     ],
     "aarch64": [
         r".*AAVMF_CODE\.fd",  # RHEL

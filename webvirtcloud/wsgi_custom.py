@@ -16,7 +16,7 @@ exec(
     compile(
         open("/srv/webvirtcloud/venv/bin/activate", "rb").read(),
         "/srv/webvirtcloud/venv/bin/activate",
-        "exec"
+        "exec",
     )
 )
 

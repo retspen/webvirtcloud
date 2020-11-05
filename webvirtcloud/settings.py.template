@@ -8,102 +8,102 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SECRET_KEY = ''
+SECRET_KEY = ""
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 INSTALLED_APPS = [
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'bootstrap4',
-    'django_icons',
-    'django_otp',
-    'django_otp.plugins.otp_totp',
-    'accounts',
-    'admin',
-    'appsettings',
-    'computes',
-    'console',
-    'datasource',
-    'networks',
-    'instances',
-    'interfaces',
-    'nwfilters',
-    'storages',
-    'secrets',
-    'logs',
-    'qr_code',
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "bootstrap4",
+    "django_icons",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "accounts",
+    "admin",
+    "appsettings",
+    "computes",
+    "console",
+    "datasource",
+    "networks",
+    "instances",
+    "interfaces",
+    "nwfilters",
+    "storages",
+    "secrets",
+    "logs",
+    "qr_code",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django_otp.middleware.OTPMiddleware',
-    'login_required.middleware.LoginRequiredMiddleware',
-    'django.contrib.auth.middleware.RemoteUserMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'appsettings.middleware.AppSettingsMiddleware',
-    'webvirtcloud.middleware.ExceptionMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
+    "login_required.middleware.LoginRequiredMiddleware",
+    "django.contrib.auth.middleware.RemoteUserMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "appsettings.middleware.AppSettingsMiddleware",
+    "webvirtcloud.middleware.ExceptionMiddleware",
 ]
 
-ROOT_URLCONF = 'webvirtcloud.urls'
+ROOT_URLCONF = "webvirtcloud.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
+            os.path.join(BASE_DIR, "templates"),
         ],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'appsettings.context_processors.app_settings',
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "appsettings.context_processors.app_settings",
             ],
-            'libraries': {
-                'common_tags': 'webvirtcloud.common_tags',
+            "libraries": {
+                "common_tags": "webvirtcloud.common_tags",
             },
         },
     },
 ]
 
-WSGI_APPLICATION = 'webvirtcloud.wsgi.application'
+WSGI_APPLICATION = "webvirtcloud.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
     }
 }
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
-LOGIN_URL = '/accounts/login/'
+LOGIN_URL = "/accounts/login/"
 
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = "/accounts/login/"
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -111,30 +111,27 @@ USE_L10N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
 LOCALE_PATHS = [
-    'locale/',
+    "locale/",
 ]
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
-        "mail_admins": {
-            "level": "ERROR",
-            "class": "django.utils.log.AdminEmailHandler"
-        }
+        "mail_admins": {"level": "ERROR", "class": "django.utils.log.AdminEmailHandler"}
     },
     "loggers": {
         "django.request": {
             "handlers": ["mail_admins"],
             "level": "ERROR",
-            "propagate": True
+            "propagate": True,
         }
     },
 }
@@ -147,7 +144,7 @@ LOGGING = {
 WS_PORT = 6080
 
 # Websock host
-WS_HOST = '0.0.0.0'
+WS_HOST = "0.0.0.0"
 
 # Websock public port - 80 or 443 if reverse-proxy, else 6080
 WS_PUBLIC_PORT = 6080
@@ -156,22 +153,53 @@ WS_PUBLIC_PORT = 6080
 WS_PUBLIC_HOST = None
 
 # Websock public path
-WS_PUBLIC_PATH = '/novncd/'
+WS_PUBLIC_PATH = "/novncd/"
 
 # Websock Certificate for SSL
 WS_CERT = None
 
 # List of console listen addresses
 QEMU_CONSOLE_LISTEN_ADDRESSES = (
-    ('127.0.0.1', 'Localhost'),
-    ('0.0.0.0', 'All interfaces'),
+    ("127.0.0.1", "Localhost"),
+    ("0.0.0.0", "All interfaces"),
 )
 
 # List taken from http://qemu.weilnetz.de/qemu-doc.html#sec_005finvocation
-QEMU_KEYMAPS = ['ar', 'da', 'de', 'de-ch', 'en-gb', 'en-us', 'es', 'et', 'fi',
-                'fo', 'fr', 'fr-be', 'fr-ca', 'fr-ch', 'hr', 'hu', 'is', 'it',
-                'ja', 'lt', 'lv', 'mk', 'nl', 'nl-be', 'no', 'pl', 'pt',
-                'pt-br', 'ru', 'sl', 'sv', 'th', 'tr']
+QEMU_KEYMAPS = [
+    "ar",
+    "da",
+    "de",
+    "de-ch",
+    "en-gb",
+    "en-us",
+    "es",
+    "et",
+    "fi",
+    "fo",
+    "fr",
+    "fr-be",
+    "fr-ca",
+    "fr-ch",
+    "hr",
+    "hu",
+    "is",
+    "it",
+    "ja",
+    "lt",
+    "lv",
+    "mk",
+    "nl",
+    "nl-be",
+    "no",
+    "pl",
+    "pt",
+    "pt-br",
+    "ru",
+    "sl",
+    "sv",
+    "th",
+    "tr",
+]
 
 # Keepalive interval and count for libvirt connections
 LIBVIRT_KEEPALIVE_INTERVAL = 5
@@ -183,5 +211,4 @@ SHOW_PROFILE_EDIT_PASSWORD = True
 
 OTP_ENABLED = False
 
-LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ['accounts:email_otp']
-
+LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:email_otp"]

@@ -1,6 +1,7 @@
-from django import template
 import base64
 import hashlib
+
+from django import template
 
 register = template.Library()
 

@@ -11,8 +11,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
+<<<<<<< HEAD
+"POT-Creation-Date: 2020-11-05 09:36+0000\n"
+"PO-Revision-Date: 2020-11-04 12:00+0000\n"
+=======
 "POT-Creation-Date: 2020-10-23 07:53+0000\n"
 "PO-Revision-Date: 2020-06-09 12:00+0000\n"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
 "tr/)\n"
@@ -23,8 +28,11 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: accounts/forms.py:25
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "Instance owners"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Instance owned by another user"
 msgstr "Diğer kullanının sanal makineleri"
 
@@ -37,6 +45,15 @@ msgid "Public key already exist"
 msgstr "Açık anahtar zaten mevcut"
 
 #: accounts/forms.py:59
+<<<<<<< HEAD
+msgid "Invalid key"
+msgstr "Geçersiz anahtar"
+
+#: accounts/forms.py:75
+msgid "Email"
+msgstr "E-posta"
+
+=======
 #, fuzzy
 #| msgid "Invalid cache mode"
 msgid "Invalid key"
@@ -46,6 +63,7 @@ msgstr "Geçersiz anahtar"
 msgid "Email"
 msgstr "E-posta"
 
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #: accounts/models.py:23
 #, python-format
 msgid "Instance \"%(inst)s\" of user %(user)s"
@@ -85,14 +103,25 @@ msgid "Can change password"
 msgstr "Parola değiştirebilir"
 
 #: accounts/templates/account.html:7 accounts/templates/account.html:8
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "View Profile"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "User Profile"
 msgstr "Kullanıcı Profili"
 
 #: accounts/templates/account.html:12
 msgid "Email OTP QR code"
 msgstr "OTP QR Kodu e-postası"
+<<<<<<< HEAD
+
+#: accounts/templates/account.html:16
+msgid "Edit user"
+msgstr "Kullanıcı düzenle"
+
+#: accounts/templates/account.html:19
+=======
 
 #: accounts/templates/account.html:16
 #, fuzzy
@@ -103,6 +132,7 @@ msgstr "Kullanıcı düzenle"
 #: accounts/templates/account.html:19
 #, fuzzy
 #| msgid "Create new instance"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Create user instance"
 msgstr "Yeni sanal makine oluştur"
 
@@ -123,8 +153,11 @@ msgid "Instances"
 msgstr "Sanal Makineler"
 
 #: accounts/templates/account.html:30
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "Public key"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Public Keys"
 msgstr "Açık anahtar"
 
@@ -147,7 +180,11 @@ msgstr "VNC"
 #: instances/templates/instances/resize_tab.html:153
 #: instances/templates/instances/resize_tab.html:158
 msgid "Resize"
+<<<<<<< HEAD
+msgstr "Boyutlandır"
+=======
 msgstr "Yeniden Boyutlandır"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: accounts/templates/account.html:43 accounts/templates/account.html:61
 #: accounts/templates/profile.html:51 admin/templates/admin/group_list.html:46
@@ -190,8 +227,11 @@ msgstr "Açık anahtar"
 #: accounts/templates/accounts/change_password_form.html:7
 #: accounts/templates/accounts/change_password_form.html:14
 #: accounts/templates/profile.html:29
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "Can change password"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Change Password"
 msgstr "Parola Değiştir"
 
@@ -218,7 +258,13 @@ msgstr "Değiştir"
 msgid ""
 "\n"
 "Scan this QR code to get OTP for account '%(user)s'\n"
+<<<<<<< HEAD
+msgstr ""
+"\n"
+"'%(user)s' hesabı için bu OTP QR kodunu tarayin\n"
+=======
 msgstr "'%(user)s' hesabında OTP açmak içim bu QR kodunu tara\n"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: accounts/templates/accounts/email_otp_form.html:12
 msgid ""
@@ -227,6 +273,15 @@ msgid ""
 "    "
 msgstr ""
 "\n"
+<<<<<<< HEAD
+"   OTP QR kodunun gönderileceği e-posta adresini giriniz.\n"
+"    "
+
+#: accounts/templates/accounts/email_otp_form.html:27
+msgid "Send"
+msgstr "Gönder"
+
+=======
 "    OTP QR kodunun gönderileceği e-posta adresini giriniz.\n"
 "    "
 
@@ -234,6 +289,7 @@ msgstr ""
 msgid "Send"
 msgstr "Gönder"
 
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #: accounts/templates/accounts/otp_login.html:23
 msgid "I do not have/lost my OTP!"
 msgstr "OTP mevcut değil/kaybettim!"
@@ -293,16 +349,24 @@ msgstr "SSH Anahtarları"
 #: accounts/templates/profile.html:34
 #: instances/templates/instances/settings_tab.html:686
 #: instances/templates/instances/settings_tab.html:688
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "date"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Update"
 msgstr "Güncelle"
 
 #: accounts/templates/profile.html:64
+<<<<<<< HEAD
+msgid "Add SSH Key"
+msgstr "SSH Anahtarı Ekle"
+=======
 #, fuzzy
 #| msgid "SSH Keys"
 msgid "Add SSH Key"
 msgstr "Ekle SSH Anahtarı"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: accounts/templates/profile.html:72
 #: instances/templates/add_instance_network_block.html:50
@@ -319,6 +383,56 @@ msgstr "OTP QR Kodu"
 #: accounts/utils.py:51
 msgid "Please view HTML version of this message."
 msgstr "Lütfen bu mesajın HTML sürümünü görüntüleyin."
+<<<<<<< HEAD
+
+#: accounts/views.py:26
+msgid "Profile updated"
+msgstr "Profil güncellendi"
+
+#: accounts/views.py:44
+msgid "SSH key added"
+msgstr "SSH anahtarı eklendi"
+
+#: accounts/views.py:52
+msgid "Add SSH key"
+msgstr "SSH Anahtarı Ekle"
+
+#: accounts/views.py:61
+msgid "SSH key deleted"
+msgstr "SSH anahtarı silindi"
+
+#: accounts/views.py:69
+msgid "Delete SSH key"
+msgstr "SSH anahtarı sil"
+
+#: accounts/views.py:101
+msgid "Password Changed"
+msgstr "Parola Değişti"
+
+#: accounts/views.py:121
+msgid "Create User Instance"
+msgstr "Yeni Kullanıcı Sanal Makinesi Oluştur"
+
+#: accounts/views.py:139
+msgid "Update User Instance"
+msgstr "Kullanıcı Sanal Makinesini Güncelle"
+
+#: accounts/views.py:175
+#, python-format
+msgid "OTP Sent to %(email)s"
+msgstr "OTP %(email)s ye gönderildi"
+
+#: accounts/views.py:183
+msgid "Email OTP"
+msgstr "OTP E-Posta"
+
+#: accounts/views.py:194
+#, python-format
+msgid "OTP QR code was emailed to user %(user)s"
+msgstr "OTP QR kodu %(user)s kullanıcısına gönderildi"
+
+#: accounts/views.py:196
+=======
 
 #: accounts/views.py:26
 #, fuzzy
@@ -381,6 +495,7 @@ msgid "OTP QR code was emailed to user %s"
 msgstr "OTP QR kodu %s kullanıcısına gönderildi"
 
 #: accounts/views.py:177
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "User email not set, failed to send QR code"
 msgstr "Kullanıcı e-postası girilmemiş, QR kod gönderimi başarısız"
 
@@ -393,11 +508,25 @@ msgstr "İzinler"
 msgid "Groups"
 msgstr "Gruplar"
 
+<<<<<<< HEAD
+#: admin/forms.py:81
+#, fuzzy
+#| msgid ""
+#| "Raw passwords are not stored, so there is no way to see\n"
+#| "                this user's password, but you can change the password "
+#| "using <a href='{}'>this form</a>."
+msgid ""
+"Raw passwords are not stored, so there is no way to see this user's "
+"password, \n"
+"                    but you can change the password using <a href='{}'>this "
+"form</a>."
+=======
 #: admin/forms.py:79
 msgid ""
 "Raw passwords are not stored, so there is no way to see\n"
 "                this user's password, but you can change the password using "
 "<a href='{}'>this form</a>."
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgstr ""
 "Açık parolalar saklanmadığından bu kullanıcının parolasını\n"
 "                görme imkanı yok. Faka parolayı <a href='{}'>bu formu</a> "
@@ -547,6 +676,21 @@ msgstr "Grubu Güncelle"
 msgid "Create User"
 msgstr "Kullanıcı Oluştur"
 
+<<<<<<< HEAD
+#: admin/views.py:129
+msgid "Update User"
+msgstr "Kullanıcı Güncelle"
+
+#: admin/views.py:141
+#, python-format
+msgid "Password changed for %(user)s"
+msgstr "%(user)s parolası değiştirildi"
+
+#: admin/views.py:144
+msgid "Wrong Data Provided"
+msgstr "Hatalı Veri"
+
+=======
 #: admin/views.py:136
 msgid "Update User"
 msgstr "Kullanıcı Güncelle"
@@ -561,6 +705,7 @@ msgstr "Kullanıcı parolası değişti: {}"
 msgid "Wrong Data Provided"
 msgstr "Hatalı Veri"
 
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #: appsettings/migrations/0002_auto_20200527_1603.py:11
 msgid "Theme"
 msgstr "Tema"
@@ -774,10 +919,12 @@ msgid "Show access ssh keys"
 msgstr "SSH Erişim Anahtarlarını Göster"
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:11
-#, fuzzy
-#| msgid "Console Access"
 msgid "Console Scale"
+<<<<<<< HEAD
+msgstr "Konsolu Ölçekle"
+=======
 msgstr "Konsol Ölçekle"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:11
 msgid "Allow console to scaling view"
@@ -792,26 +939,22 @@ msgid "Allow only view not modify"
 msgstr "Sadece görüntülemeye izin ver düzenlemeye izin verme"
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:13
-#, fuzzy
-#| msgid "Console Access"
 msgid "Console Resize Session"
+<<<<<<< HEAD
+msgstr "Konsol Oturumunu Boyutlandır"
+=======
 msgstr "Konsol Oturum Boyutlandır"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:13
-#, fuzzy
-#| msgid "Allow to have multiple owner for instance"
 msgid "Allow to resize session for console"
 msgstr "Bir sanal makine için çoklu sahip atanmasına izin verir"
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:14
-#, fuzzy
-#| msgid "Console port"
 msgid "Console Clip Viewport"
 msgstr "Konsol bağlantı noktası"
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:14
-#, fuzzy
-#| msgid "Console port"
 msgid "Clip console viewport"
 msgstr "Konsol bağlantı noktası"
 
@@ -857,6 +1000,21 @@ msgid "Other Settings"
 msgstr "Diğer Ayarlar"
 
 #: appsettings/views.py:38
+<<<<<<< HEAD
+#, python-format
+msgid "SASS directory path is changed. Now: %(dir)s"
+msgstr "SASS dizin yolu değiştirildi. Şimdi: %(dir)s"
+
+#: appsettings/views.py:67
+#, python-format
+msgid "Theme is changed. Now: %(theme)s"
+msgstr "Tema değiştirildi. Şimdi: %(theme)s"
+
+#: appsettings/views.py:82
+#, python-format
+msgid "%(setting)s is changed. Now: %(value)s"
+msgstr "%(setting)s değiştirildi. Şimdi: %(value)s"
+=======
 #, python-brace-format
 msgid "SASS directory path is changed. Now: {sass_dir.value}"
 msgstr "SASS dizin yolu değiştirildi. Şimdi: {sass_dir.value}"
@@ -870,6 +1028,7 @@ msgstr "Tema değiştirildi. Şimdi: {theme}"
 #, python-brace-format
 msgid "{setting.name} is changed. Now: {setting.value}"
 msgstr "{setting.name} değiştirildi. Şimdi: {setting.value}"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: computes/forms.py:21
 msgid "FQDN/IP"
@@ -1037,10 +1196,8 @@ msgstr "Kapalı"
 #: computes/templates/computes/instances.html:98
 #: instances/templates/allinstances_index_grouped.html:60
 #: instances/templates/allinstances_index_nongrouped.html:44
-#, fuzzy
-#| msgid "Suspend"
 msgid "Suspended"
-msgstr "Duraklat"
+msgstr "Duraklatılmış"
 
 #: computes/templates/computes/list.html:6
 #: computes/templates/computes/list.html:12 templates/navbar.html:18
@@ -1048,8 +1205,11 @@ msgid "Computes"
 msgstr "Sunucular"
 
 #: computes/templates/computes/list.html:20
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "You don't have any groups"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "You don't have any computes"
 msgstr "Hiç sunucunuz yok"
 
@@ -1183,15 +1343,11 @@ msgstr "sunucu adresi ve portu ayarlanmalı"
 #: console/templates/console-spice-full.html:97
 #: console/templates/console-spice-lite.html:138
 #: console/templates/console-spice-lite.html:150
-#, fuzzy
-#| msgid "Disconnected"
 msgid "disconnect"
 msgstr "bağlantı kes"
 
 #: console/templates/console-spice-full.html:114
 #: console/templates/console-spice-lite.html:167
-#, fuzzy
-#| msgid "Console type not supported"
 msgid "File API is not supported"
 msgstr "Dosya API desteklenmiyor"
 
@@ -1289,8 +1445,11 @@ msgid "created"
 msgstr "oluşturuldu"
 
 #: instances/models.py:220
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "Show access root password"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Can access console without password"
 msgstr "Parolasız konsol erişimi yapabilir"
 
@@ -1767,7 +1926,11 @@ msgstr "Sıfırları yakala"
 #: instances/templates/instance_actions.html:25
 #: instances/templates/instance_actions.html:37
 #: instances/templates/instances/power_tab.html:25
+<<<<<<< HEAD
+#: instances/templates/instances/power_tab.html:82 instances/views.py:270
+=======
 #: instances/templates/instances/power_tab.html:82 instances/views.py:264
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Suspend"
 msgstr "Duraklat"
 
@@ -1821,7 +1984,11 @@ msgstr "İstatistikler"
 #: instances/templates/instances/destroy_instance_form.html:40
 #: instances/templates/instances/destroy_tab.html:18
 #: instances/templates/instances/destroy_tab.html:20
+<<<<<<< HEAD
+#: instances/templates/instances/destroy_tab.html:23 instances/views.py:312
+=======
 #: instances/templates/instances/destroy_tab.html:23 instances/views.py:306
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Destroy"
 msgstr "Sil"
 
@@ -1839,20 +2006,32 @@ msgstr "Klonla"
 #: instances/templates/instance_actions.html:35
 #: instances/templates/instances/power_tab.html:47
 #: instances/templates/instances/power_tab.html:121
+<<<<<<< HEAD
+#: instances/templates/instances/power_tab.html:123 instances/views.py:245
+=======
 #: instances/templates/instances/power_tab.html:123 instances/views.py:239
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Power On"
 msgstr "Başlat"
 
 #: instances/templates/instance_actions.html:15
 #: instances/templates/instances/power_tab.html:9
+<<<<<<< HEAD
+#: instances/templates/instances/power_tab.html:59 instances/views.py:261
+=======
 #: instances/templates/instances/power_tab.html:59 instances/views.py:255
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Power Off"
 msgstr "Kapat"
 
 #: instances/templates/instance_actions.html:16
 #: instances/templates/instance_actions.html:29
 #: instances/templates/instances/power_tab.html:14
+<<<<<<< HEAD
+#: instances/templates/instances/power_tab.html:66 instances/views.py:254
+=======
 #: instances/templates/instances/power_tab.html:66 instances/views.py:248
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Power Cycle"
 msgstr "Yeniden başlat"
 
@@ -1864,7 +2043,11 @@ msgstr "VNC Konsol"
 #: instances/templates/instance_actions.html:22
 #: instances/templates/instances/power_tab.html:34
 #: instances/templates/instances/power_tab.html:93
+<<<<<<< HEAD
+#: instances/templates/instances/power_tab.html:108 instances/views.py:278
+=======
 #: instances/templates/instances/power_tab.html:108 instances/views.py:272
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Resume"
 msgstr "Devam ettir"
 
@@ -1872,7 +2055,11 @@ msgstr "Devam ettir"
 #: instances/templates/instances/power_tab.html:19
 #: instances/templates/instances/power_tab.html:39
 #: instances/templates/instances/power_tab.html:74
+<<<<<<< HEAD
+#: instances/templates/instances/power_tab.html:100 instances/views.py:285
+=======
 #: instances/templates/instances/power_tab.html:100 instances/views.py:279
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Force Off"
 msgstr "Zorla Kapat"
 
@@ -1896,14 +2083,12 @@ msgid "VDI"
 msgstr "VDI"
 
 #: instances/templates/instances/access_tab.html:39
-#, fuzzy, python-format
-#| msgid ""
-#| "This action opens a new window with a VNC connection to the console of "
-#| "the instance."
+#, python-format
 msgid ""
 " This action opens a new window with a %(type)s connection to the console of "
 "the instance."
-msgstr "Bu eylem sanal makinenin konsoluna bir VNC bağlantısı penceresi açar."
+msgstr ""
+"Bu eylem sanal makinenin konsoluna bir %(type)s bağlantısı penceresi açar."
 
 #: instances/templates/instances/access_tab.html:47
 msgid "Scale"
@@ -1914,8 +2099,6 @@ msgid "View Only"
 msgstr "Sadece Görüntüle"
 
 #: instances/templates/instances/access_tab.html:63
-#, fuzzy
-#| msgid "Resize Memory"
 msgid "Resize Session"
 msgstr "Oturumu Boyutlandır"
 
@@ -1975,20 +2158,21 @@ msgid "To download console.vv file for virt-viewer."
 msgstr "virt-viewer için console.vv dosyasını indir."
 
 #: instances/templates/instances/access_tab.html:160
+<<<<<<< HEAD
+msgid "Get console.vv"
+msgstr "console.vv dosyası al"
+=======
 #, fuzzy
 #| msgid "Send console.vv file"
 msgid "Get console.vv"
 msgstr "console.vv dosyası gönder"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: instances/templates/instances/destroy_instance_form.html:4
-#, fuzzy
-#| msgid "Destroy"
 msgid "Confirm Destroy"
-msgstr "Sil"
+msgstr "Silme işlemini onayla"
 
 #: instances/templates/instances/destroy_instance_form.html:8
-#, fuzzy
-#| msgid "Destroy Instance"
 msgid "Destroy instance"
 msgstr "Sanal makineyi sil"
 
@@ -2009,8 +2193,6 @@ msgid "Remove Instance's NVRAM"
 msgstr "Sanal makine NVRAM'ini sil"
 
 #: instances/templates/instances/destroy_instance_form.html:46
-#, fuzzy
-#| msgid "Destroy Instance"
 msgid "You cannot destroy instance!"
 msgstr "Sanal makineyi silemezsiniz!"
 
@@ -2019,8 +2201,6 @@ msgid "Destroy Instance"
 msgstr "Sanal makineyi sil"
 
 #: instances/templates/instances/destroy_tab.html:15
-#, fuzzy
-#| msgid "This action restore the instance after suspend."
 msgid "This action starts remove instance process"
 msgstr "Bu eylem sanal makine silme işlemini başlatır."
 
@@ -2331,6 +2511,11 @@ msgid ""
 "In most configurations, macvtap does not work for host to guest network "
 "communication"
 msgstr ""
+<<<<<<< HEAD
+"macvtap bir çok yapılandırmada sunucu ile sanal makine ağı arasındaki "
+"iletişimde çalışmaz"
+=======
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: instances/templates/instances/settings_tab.html:481
 #: networks/templates/network.html:322
@@ -2430,8 +2615,11 @@ msgid "Instance owners"
 msgstr "Sanal makine sahipleri"
 
 #: instances/templates/instances/settings_tab.html:680
+<<<<<<< HEAD
+=======
 #, fuzzy
 #| msgid "To create console password, shutdown the instance."
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "To change console settings, shutdown the instance."
 msgstr "Konsol ayarlarını değiştirmek için sanal makineyi kapatın"
 
@@ -2544,8 +2732,10 @@ msgstr "Anlık Görüntüleri Yönet"
 #: instances/templates/instances/snapshots_tab.html:22
 msgid ""
 "This may take more than an hour, depending on how much content is on your "
-"droplet and how large the disk is."
+"instance and how large the disk is."
 msgstr ""
+"Bu işlem diskinizin büyüklüğüne ve sanal makinenizin boyutuna göre bir "
+"saatten fazla sürebilir"
 
 #: instances/templates/instances/snapshots_tab.html:27
 msgid "Enter Snapshot Name"
@@ -2599,6 +2789,27 @@ msgstr "Disk I/O aygıtı"
 msgid "None available device name"
 msgstr "Hiçbiri uygun aygıt adı değil"
 
+<<<<<<< HEAD
+#: instances/views.py:242
+msgid "Templates cannot be started."
+msgstr "Şablon makineler başlatılamaz."
+
+#: instances/views.py:345
+#, fuzzy, python-format
+#| msgid "Instance is migrated to %(hostname)s"
+msgid "Instance is migrated to %(hostname)s"
+msgstr "Sanal makine %(hostname)% ya taşındı"
+
+#: instances/views.py:368
+msgid "Reset root password"
+msgstr "Kök parolayı sıfırla"
+
+#: instances/views.py:374 instances/views.py:403
+msgid "Please shutdown down your instance and then try again"
+msgstr "Lütfen sanal makinenizi kapatın ve yeniden deneyin"
+
+#: instances/views.py:395
+=======
 #: instances/views.py:236
 msgid "Templates cannot be started."
 msgstr "Şablon makineler başlatılamaz."
@@ -2618,10 +2829,28 @@ msgid "Please shutdown down your instance and then try again"
 msgstr "Lütfen sanal makinenizi kapatın ve yeniden deneyin"
 
 #: instances/views.py:389
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #, python-format
 msgid "Installed new SSH public key %(keyname)s"
 msgstr "Yeni %(keyname)s SSH açık anahtarı kuruldu"
 
+<<<<<<< HEAD
+#: instances/views.py:422
+#, python-format
+msgid ""
+"User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
+msgstr ""
+"%(quota_msg)s kullanıcısı kotası doldu, '%(instance_name)s' in CPU su "
+"yeniden boyutlandırılamıyor!"
+
+#: instances/views.py:431
+#, python-format
+msgid "CPU is resized:  %(old)s to %(new)s"
+msgstr "CPU sayısı değiştirildi: %(old)s -> %(new)s"
+
+#: instances/views.py:459
+#, python-format
+=======
 #: instances/views.py:416
 #, fuzzy, python-format
 #| msgid ""
@@ -2640,6 +2869,7 @@ msgstr "CPU Boyutlandır"
 #, fuzzy, python-format
 #| msgid ""
 #| "User {quota_msg} quota reached, cannot resize memory of '{instance.name}'!"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize memory of "
 "'%(instance_name)s'!"
@@ -2647,6 +2877,20 @@ msgstr ""
 "%(quota_msg)s kullanıcı kotası doldu, '%(instance_name)s' in belleği yeniden "
 "boyutlandırılamıyor!"
 
+<<<<<<< HEAD
+#: instances/views.py:466
+#, fuzzy, python-format
+#| msgid "Memory is resized"
+msgid ""
+"Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/"
+"%(new_max)s"
+msgstr ""
+"Bellek kapasitesi değiştirildi: current/max: %(old_cur)s/%(old_max)s/"
+"%(new_max)s"
+
+#: instances/views.py:500
+#, python-format
+=======
 #: instances/views.py:462
 msgid "Resize Memory"
 msgstr "Bellek Boyutlandır"
@@ -2655,12 +2899,32 @@ msgstr "Bellek Boyutlandır"
 #, fuzzy, python-format
 #| msgid ""
 #| "User {quota_msg} quota reached, cannot resize disks of '{instance.name}'!"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
 msgstr ""
 "%(quota_msg)s kullanıcı kotası doldu, '%(instance_name)s' in diski yeniden "
 "boyutlandırılamıyor!"
 
+<<<<<<< HEAD
+#: instances/views.py:507
+#, python-format
+msgid "Disk is resized: %(dev)s"
+msgstr "Disk boyutu değiştirildi: %(dev)s"
+
+#: instances/views.py:546
+#, fuzzy, python-format
+#| msgid "Attach new disk %(name)s (%(format)s)"
+msgid "Attach new disk: %(name)s (%(format)s)"
+msgstr "Yeni disk tak %(name)s (%(format)s)"
+
+#: instances/views.py:577
+#, python-format
+msgid "Attach Existing disk: %(target_dev)s"
+msgstr "Takılan mevcut disk: %(target_dev)s"
+
+#: instances/views.py:635
+=======
 #: instances/views.py:498
 msgid "Disk resize"
 msgstr "Disk Boyutlandır"
@@ -2678,6 +2942,7 @@ msgid "Attach Existing disk: %(target_dev)s"
 msgstr "Takılan mevcut disk: %(target_dev)s"
 
 #: instances/views.py:624
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Volume changes are applied. But it will be activated after shutdown"
 msgstr ""
 "Birim değişiklikleri uygulandı. Ama yeniden başlatıldıktan sonra uygulanacak"
@@ -2686,6 +2951,53 @@ msgstr ""
 msgid "Volume is changed successfully."
 msgstr "Birim başarıyla değiştirildi."
 
+<<<<<<< HEAD
+#: instances/views.py:639
+#, python-format
+msgid "Edit disk: %(target_dev)s"
+msgstr "Disk düzenle: %(target_dev)s"
+
+#: instances/views.py:661
+#, python-format
+msgid "Delete disk: %(dev)s"
+msgstr "Disk sil: %(dev)s"
+
+#: instances/views.py:677
+#, python-format
+msgid "Detach disk: %(dev)s"
+msgstr "Diski ayır: %(dev)s"
+
+#: instances/views.py:690
+#, python-format
+msgid "Add CD-ROM: %(target)s"
+msgstr "CD-ROM Ekle: %(target)s"
+
+#: instances/views.py:703
+#, python-format
+msgid "Detach CD-ROM: %(dev)s"
+msgstr "CD-ROM ayır: %(dev)s"
+
+#: instances/views.py:716
+#, python-format
+msgid "Mount media: %(dev)s"
+msgstr "Medya tak: %(dev)s"
+
+#: instances/views.py:729
+#, python-format
+msgid "Unmount media: %(dev)s"
+msgstr "Medyayı ayır: %(dev)s"
+
+#: instances/views.py:742
+#, fuzzy, python-format
+#| msgid "Create snapshot: %(snap)s"
+msgid "Create snapshot: %(snap)s"
+msgstr "Anlık görüntü oluştur: %(snap_name)s"
+
+#: instances/views.py:753
+#, fuzzy, python-format
+#| msgid "Delete snapshot: %(snap)s"
+msgid "Delete snapshot: %(snap)s"
+=======
 #: instances/views.py:627
 #, fuzzy, python-format
 #| msgid "Edit disk: {target_dev}"
@@ -2738,26 +3050,64 @@ msgstr "Yeni anlık görüntü: %(name)s"
 #, fuzzy, python-format
 #| msgid "Delete snapshot : {snap_name}"
 msgid "Delete snapshot: %(snap_name)s"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgstr "Anlık görüntü sil: %(snap_name)s"
 
 #: instances/views.py:752
 msgid "Successful revert snapshot: "
 msgstr "Anlık görüntü geri dönüş başarılı:"
 
+<<<<<<< HEAD
+#: instances/views.py:767
+#, fuzzy
+#| msgid "Delete snapshot: %(snap_name)s"
+msgid "Revert snapshot: %(snap)"
+msgstr "Anlık görüntüye dönüldü: %(snap_name)s"
+
+#: instances/views.py:781
+=======
 #: instances/views.py:755
 msgid "Revert snapshot"
 msgstr "Snapshota dön"
 
 #: instances/views.py:769
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #, python-format
 msgid "VCPU %(id)s is enabled=%(enabled)s"
 msgstr ""
 
+<<<<<<< HEAD
+#: instances/views.py:790
+=======
 #: instances/views.py:780
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #, python-format
 msgid "VCPU Hot-plug is enabled=%(status)s"
 msgstr ""
 
+<<<<<<< HEAD
+#: instances/views.py:800
+msgid "Set autostart"
+msgstr "Otomatik başlatmayı ayarla"
+
+#: instances/views.py:809
+msgid "Unset autostart"
+msgstr "Otomatik başlatmayı iptal et"
+
+#: instances/views.py:818
+msgid "Enable boot menu"
+msgstr "Ön yükleme menüsünü etkinleştir"
+
+#: instances/views.py:827
+msgid "Disable boot menu"
+msgstr "Ön yükleme menüsünü devredışı bırak"
+
+#: instances/views.py:842
+msgid "Set boot order"
+msgstr "Ön yükleme sırasını ayarla"
+
+#: instances/views.py:847
+=======
 #: instances/views.py:791
 msgid "Set autostart"
 msgstr "Otomatik başlatmayı ayarla"
@@ -2779,6 +3129,7 @@ msgid "Set boot order"
 msgstr "Ön yükleme sırasını ayarla"
 
 #: instances/views.py:836
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Boot menu changes applied. But it will be activated after shutdown"
 msgstr ""
 "Ön yükleme menüsü değişiklikleri uygulandı. Fakat yeniden başlatılınca "
@@ -2788,6 +3139,23 @@ msgstr ""
 msgid "Boot order changed successfully."
 msgstr "Ön yükleme sırası başarıyla değiştirildi."
 
+<<<<<<< HEAD
+#: instances/views.py:861
+#, fuzzy
+#| msgid "Can clone instances"
+msgid "Change instance XML"
+msgstr "Sanal makineleri klonlayabilir"
+
+#: instances/views.py:875
+#, python-format
+msgid "Set Guest Agent: %(status)s"
+msgstr "Misafir Ajanını Ayarla: %(status)s"
+
+#: instances/views.py:885
+#, fuzzy
+#| msgid "Set Video Model"
+msgid "Set Video Model: %(model)"
+=======
 #: instances/views.py:849
 msgid "Edit XML"
 msgstr "XML Düzenle"
@@ -2800,6 +3168,7 @@ msgstr "Misafir Aracı Ayarla {status}"
 
 #: instances/views.py:873
 msgid "Set Video Model"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgstr "Video Modeli Ayarla"
 
 #: instances/views.py:882
@@ -2812,6 +3181,31 @@ msgstr ""
 "Ağ aygıtı yapılandırması değiştirildi. Aktifleştirmek için lütfen sanal "
 "makineyi kapatın."
 
+<<<<<<< HEAD
+#: instances/views.py:922
+#, fuzzy, python-format
+#| msgid "Add network"
+msgid "Add network: %(mac)s"
+msgstr "Ağ ekle: %(mac)s"
+
+#: instances/views.py:933
+#, python-format
+msgid "Delete Network: %(mac)s"
+msgstr "Ağ sil: %(mac)s"
+
+#: instances/views.py:946
+#, python-format
+msgid "Set Link State: %(state)s"
+msgstr "Bağlantı durumunu ayarla: %(state)s"
+
+#: instances/views.py:966 networks/views.py:231
+#, python-format
+msgid "%(qos_dir)s QoS is set"
+msgstr "%(qos_dir)s QoS ayarlandı"
+
+#: instances/views.py:971
+#, python-format
+=======
 #: instances/views.py:903
 msgid "Add network"
 msgstr "Ağ ekle"
@@ -2836,6 +3230,7 @@ msgstr "%(qos_dir)s QoS ayarlandı"
 #, fuzzy, python-format
 #| msgid ""
 #| "Network XML is changed. \\Stop and start network to activate new config."
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid ""
 "%(qos_dir)s QoS is set. Network XML is changed.                 Stop and "
 "start network to activate new config."
@@ -2843,6 +3238,15 @@ msgstr ""
 "%(qos_dir)s QoS ayarlandı. Ağ XML i değiştirildi. \\ Aktifleştirmek için "
 "durdurun ve yeniden başlatın."
 
+<<<<<<< HEAD
+#: instances/views.py:988 networks/views.py:246
+#, python-format
+msgid "%(qos_dir)s QoS is deleted"
+msgstr "%(qos_dir)s QoS silindi"
+
+#: instances/views.py:993
+#, python-format
+=======
 #: instances/views.py:970
 #, fuzzy, python-format
 #| msgid "{qos_dir.capitalize()} QoS is deleted"
@@ -2853,6 +3257,7 @@ msgstr "%(qos_dir)s QoS silindi"
 #, fuzzy, python-format
 #| msgid ""
 #| "Network XML is changed. \\Stop and start network to activate new config."
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid ""
 "%(qos_dir)s QoS is deleted. Network XML is changed.                 Stop and "
 "start network to activate new config."
@@ -2860,6 +3265,24 @@ msgstr ""
 "%(qos_dir)s QoS silindi. Ağ XML i değiştirildi. \\ Aktifleştirmek için "
 "durdurun ve yeniden başlatın."
 
+<<<<<<< HEAD
+#: instances/views.py:1012
+msgid "Only one owner is allowed and the one already added"
+msgstr "Sadece bir sahibe izin verilmiştir ve bir sahip zaten eklenmiş"
+
+#: instances/views.py:1017
+#, python-format
+msgid "Add owner: %(user)s"
+msgstr "Sahip ekle: %(user)s"
+
+#: instances/views.py:1028
+#, python-format
+msgid "Delete owner: %(userinstance_id)s "
+msgstr "Sahip sil: %(userinstance_id)s"
+
+#: instances/views.py:1060
+#, python-format
+=======
 #: instances/views.py:990
 msgid "Only one owner is allowed and the one already added"
 msgstr "Sadece bir sahibe izin verilmiştir ve bir sahip zaten eklenmiş"
@@ -2880,11 +3303,35 @@ msgstr "Silinmiş sahip %(userinstance_id)s"
 #, fuzzy, python-format
 #| msgid ""
 #| "User {quota_msg} quota reached, cannot resize CPU of '{instance.name}'!"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
 msgstr ""
 "%(quota_msg)s' Kullanıcı kotası doldu, '%(clone_name)s' in CPU su yeniden "
 "boyutlandırılamıyor!"
 
+<<<<<<< HEAD
+#: instances/views.py:1066
+#, python-format
+msgid "Instance '%(clone_name)s' already exists!"
+msgstr "'%(clone_name)s' sanal makinesi zaten mevcut!"
+
+#: instances/views.py:1069
+#, python-format
+msgid "Instance name '%(clone_name)s' contains invalid characters!"
+msgstr "Sanal makine adı '%(clone_name)s' geçersiz karakterler içermektedir!"
+
+#: instances/views.py:1072
+#, python-format
+msgid "Instance MAC '%(clone_mac)s' invalid format!"
+msgstr "Sanal makine MAC adresi '%(clone_mac)s' geçersiz biçemde belirtilmiş!"
+
+#: instances/views.py:1082
+#, python-format
+msgid "Create a clone of '%(instance_name)s'"
+msgstr "'%(instance_name)s' un klonu oluştur"
+
+#: instances/views.py:1121
+=======
 #: instances/views.py:1044
 #, fuzzy
 #| msgid "Instance '{clone_data['name']}' already exists!"
@@ -2910,6 +3357,7 @@ msgid "Clone of '%(instance_name)s'"
 msgstr "'%(instance_name)s' un klonu"
 
 #: instances/views.py:1093
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid ""
 "Error setting console password. You should check that your instance have an "
 "graphic device."
@@ -2917,6 +3365,53 @@ msgstr ""
 "Konsol parolası ayarlanırken hata oluştu. Sanal makinenin bir grafik "
 "aygıtına sahip olduğundan emin olunuz."
 
+<<<<<<< HEAD
+#: instances/views.py:1126
+msgid "Set VNC password"
+msgstr "VNC parolası ayarlar"
+
+#: instances/views.py:1135
+msgid "Set VNC keymap"
+msgstr "VNC Keymapi ayarla"
+
+#: instances/views.py:1140
+msgid "Set VNC type"
+msgstr "VNC tipini ayarla"
+
+#: instances/views.py:1145
+msgid "Set VNC listen address"
+msgstr "VNC dinleme adresini ayarla"
+
+#: instances/views.py:1168
+msgid "Edit options"
+msgstr "Seçenekleri düzenle"
+
+#: instances/views.py:1182
+msgid "Send console.vv file"
+msgstr "console.vv dosyası gönder"
+
+#: instances/views.py:1243 instances/views.py:1337
+msgid "A virtual machine with this name already exists"
+msgstr "Bu isimde bir sanal makine mevcut"
+
+#: instances/views.py:1320
+msgid "You haven't defined any storage pools"
+msgstr "Hiç bir depolama havuzu tanımlamadınız"
+
+#: instances/views.py:1322
+msgid "You haven't defined any network pools"
+msgstr "Hiç bir ağ havuzu tanımlamadınız"
+
+#: instances/views.py:1339
+msgid "There is an instance with same name. Remove it and try again!"
+msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
+
+#: instances/views.py:1343
+msgid "No Virtual Machine MAC has been entered"
+msgstr "Sanal makine için MAC adresi belirtmediniz"
+
+#: instances/views.py:1374
+=======
 #: instances/views.py:1096
 msgid "Set VNC password"
 msgstr "VNC parolası ayarlar"
@@ -2964,11 +3459,43 @@ msgid "No Virtual Machine MAC has been entered"
 msgstr "Sanal makine için MAC adresi belirtmediniz"
 
 #: instances/views.py:1327
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 "İmaj zaten mevcut. Lütfen ya makine adını değişin ya da disk alanlarını "
 "kontrol edin"
 
+<<<<<<< HEAD
+#: instances/views.py:1401
+msgid "First you need to create or select an image"
+msgstr "Ya daha önce oluşturun ya da bir imaj seçin"
+
+#: instances/views.py:1419
+msgid "Invalid cache mode"
+msgstr "Geçersiz önbellek modu"
+
+#: instances/views.py:1460
+msgid "Instance is created"
+msgstr "Sanal makine oluşturuldu"
+
+#: instances/views.py:1481
+msgid "Flavor Created"
+msgstr "Flavor Oluşturuldu"
+
+#: instances/views.py:1487
+msgid "Create Flavor"
+msgstr "Kullanıcı Oluştur"
+
+#: instances/views.py:1497
+msgid "Flavor Updated"
+msgstr "Flavor Güncellendi"
+
+#: instances/views.py:1503
+msgid "Update Flavor"
+msgstr "Flavor Güncelle"
+
+#: instances/views.py:1512
+=======
 #: instances/views.py:1347
 msgid "First you need to create or select an image"
 msgstr "Ya daha önce oluşturun ya da bir imaj seçin"
@@ -3006,46 +3533,47 @@ msgstr "Flavor Güncelle"
 #: instances/views.py:1460
 #, fuzzy
 #| msgid "Delete"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: interfaces/forms.py:25
+#: interfaces/forms.py:26
 msgid "The IPv4 address must not contain any special characters"
 msgstr "IPv4 adresi herhangi bir özel karakter içeremez"
 
-#: interfaces/forms.py:27
+#: interfaces/forms.py:28
 msgid "The IPv4 address must not exceed 20 characters"
 msgstr "IPv4 adresi 20 karakterden fazla olamaz"
 
-#: interfaces/forms.py:34
+#: interfaces/forms.py:35
 msgid "The IPv4 gateway must not contain any special characters"
 msgstr "IPv4 ağ geçidi adresi herhangi bir özel karakter içeremez"
 
-#: interfaces/forms.py:36
+#: interfaces/forms.py:37
 msgid "The IPv4 gateway must not exceed 20 characters"
 msgstr "IPv4 ağ geçidi adresi 20 karakterden fazla olamaz"
 
-#: interfaces/forms.py:43
+#: interfaces/forms.py:44
 msgid "The IPv6 address must not contain any special characters"
 msgstr "IPv6 adresi herhangi bir özel karakter içeremez"
 
-#: interfaces/forms.py:45
+#: interfaces/forms.py:46
 msgid "The IPv6 address must not exceed 100 characters"
 msgstr "IPv6 adresi 100 karakterden fazla olamaz"
 
-#: interfaces/forms.py:52
+#: interfaces/forms.py:53
 msgid "The IPv6 gateway must not contain any special characters"
 msgstr "IPv6 ağ geçidi adresi herhangi bir özel karakter içeremez"
 
-#: interfaces/forms.py:54
+#: interfaces/forms.py:55
 msgid "The IPv6 gateway must not exceed 100 characters"
 msgstr "IPv6 ağ geçidi adresi 100 karakterden fazla olamaz"
 
-#: interfaces/forms.py:61 interfaces/forms.py:70
+#: interfaces/forms.py:62 interfaces/forms.py:71
 msgid "The interface must not contain any special characters"
 msgstr "Arabirim hehangi bir özel karakter içeremez"
 
-#: interfaces/forms.py:63 interfaces/forms.py:72
+#: interfaces/forms.py:64 interfaces/forms.py:73
 msgid "The interface must not exceed 10 characters"
 msgstr "Arabirim 10 karakterden fazla olamaz"
 
@@ -3179,63 +3707,63 @@ msgstr "Hız"
 msgid "Hypervisor doesn't have any Interfaces"
 msgstr "Hipervizör hiçbir arabirime sahip değil"
 
-#: logs/models.py:6
+#: logs/models.py:5
 msgid "user"
 msgstr "kullanıcı"
 
-#: logs/models.py:7
+#: logs/models.py:6
 msgid "instance"
 msgstr "sanal makine"
 
-#: logs/models.py:8
+#: logs/models.py:7
 msgid "message"
 msgstr "mesaj"
 
-#: logs/models.py:9
+#: logs/models.py:8
 msgid "date"
 msgstr "tarih"
 
-#: networks/forms.py:7 storages/forms.py:7
+#: networks/forms.py:8 storages/forms.py:8
 msgid "No pool name has been entered"
 msgstr "Havuz adı girilmedi"
 
-#: networks/forms.py:9
+#: networks/forms.py:10
 msgid "No IPv4 subnet has been entered"
 msgstr "IPv4 subneti girilmemiş"
 
-#: networks/forms.py:11
+#: networks/forms.py:15
 msgid "No IPv6 subnet has been entered"
 msgstr "IPv6 subneti girilmemiş"
 
-#: networks/forms.py:24 storages/forms.py:22
+#: networks/forms.py:30 storages/forms.py:23
 msgid "The pool name must not contain any special characters"
 msgstr "Havuz adı herhangi bir özel karakter içermemelidir"
 
-#: networks/forms.py:26 storages/forms.py:24
+#: networks/forms.py:32 storages/forms.py:25
 msgid "The pool name must not exceed 20 characters"
 msgstr "Havuz adı 20 karakterden fazla olamaz"
 
-#: networks/forms.py:33
+#: networks/forms.py:39
 msgid "The IPv4 subnet must not contain any special characters"
 msgstr "IPv4 subnet herhangi bir özel karakter içeremez"
 
-#: networks/forms.py:35
+#: networks/forms.py:41
 msgid "The IPv4 subnet must not exceed 20 characters"
 msgstr "IPv4 subneti 20 karakterden fazla olamaz"
 
-#: networks/forms.py:42
+#: networks/forms.py:48
 msgid "The IPv6 subnet must not contain any special characters"
 msgstr "IPv6 subneti herhangi bir özel karakter içeremez"
 
-#: networks/forms.py:44
+#: networks/forms.py:50
 msgid "The IPv6 subnet must not exceed 42 characters"
 msgstr "IPv6 subneti 42 karakterden fazla olamaz"
 
-#: networks/forms.py:52
+#: networks/forms.py:58
 msgid "The pool bridge name must not contain any special characters"
 msgstr "Havuz köprü adı herhangi bir özel karakter içeremez"
 
-#: networks/forms.py:54
+#: networks/forms.py:60
 msgid "The pool bridge name must not exceed 20 characters"
 msgstr "Havuz köprü adı 20 karakterden fazla olamaz"
 
@@ -3428,6 +3956,35 @@ msgid "Network pool name already in use"
 msgstr "Ağ havuzu adı zaten kullanımda"
 
 #: networks/views.py:47
+<<<<<<< HEAD
+msgid "Please enter bridge/dev name"
+msgstr "Lütfen köprü/aygıt adı giriniz"
+
+#: networks/views.py:57
+msgid "For libvirt, the IPv6 network prefix must be /64"
+msgstr "Libvirt için IPv6 ağ prefixi /64 olmak zorundadır"
+
+#: networks/views.py:130
+msgid "Unknown Network Family"
+msgstr "Bilinmeyen Ağ Ailesi"
+
+#: networks/views.py:180
+#, python-format
+msgid "Fixed address operation completed for %(family)s"
+msgstr "{%(family)s} sabit adres operasyonu tamamlandı."
+
+#: networks/views.py:190
+#, python-format
+msgid "%(family)s Fixed Address is Deleted."
+msgstr "%(family)s sabit adresi silindi."
+
+#: networks/views.py:198
+#, python-format
+msgid "%(family)s DHCP Range is Changed."
+msgstr "%(family)s DHCP aralığı değiştirildi."
+
+#: networks/views.py:210
+=======
 #, fuzzy
 #| msgid "Please enter bridge name"
 msgid "Please enter bridge/dev name"
@@ -3454,11 +4011,38 @@ msgid "{family.upper()} DHCP Range is Changed."
 msgstr "{family.upper()} DHCP aralığı değiştirildi."
 
 #: networks/views.py:203
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid ""
 "Network XML is changed. \\Stop and start network to activate new config."
 msgstr ""
 "Ağ XML i değiştirildi. \\ Aktifleştirmek için durdurun ve yeniden başlatın."
 
+<<<<<<< HEAD
+#: networks/views.py:215
+msgid "Network XML is changed."
+msgstr "Ağ XML i değiştirildi."
+
+#: networks/views.py:228
+#, python-format
+msgid ""
+"%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network "
+"to activate new config"
+msgstr ""
+"%(qos_dir)s QoS is updated.Ağ XML i değiştirildi. \\ Aktifleştirmek için "
+"durdurun ve yeniden başlatın."
+
+#: networks/views.py:242
+#, fuzzy, python-format
+#| msgid ""
+#| "%(qos_dir)s QoS is deleted. Network XML is changed.                 Stop "
+#| "and start network to activate new config."
+msgid ""
+"%(qos_dir)s QoS is deleted. Network XML is changed.                         "
+"Stop and start network to activate new config"
+msgstr ""
+"%(qos_dir)s QoS silindi. Ağ XML i değiştirildi. \\ Aktifleştirmek için "
+"durdurun ve yeniden başlatın."
+=======
 #: networks/views.py:205
 msgid "Network XML is changed."
 msgstr "Ağ XML i değiştirildi."
@@ -3475,6 +4059,7 @@ msgstr "Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve başlatı
 #: networks/views.py:221
 msgid "{} QoS is set"
 msgstr "{} QoS ayarlandı"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: networks/views.py:232
 msgid "{qos_dir.capitalize()} QoS is deleted. Network XML is changed. "
@@ -3550,6 +4135,17 @@ msgstr "AğFiltresi Klonla"
 msgid "Hypervisor doesn't have any NWFilters"
 msgstr "Hipervizör hiç bir AğFiltresine sahip değil"
 
+<<<<<<< HEAD
+#: nwfilters/views.py:44
+msgid "A network filter with this name already exists"
+msgstr "Bu isimde bir ağ filtresi zaten mevcut"
+
+#: nwfilters/views.py:47
+msgid "A network filter with this UUID already exists"
+msgstr "Bu UUID ye sahip bir ağ filtresi zaten mevcut"
+
+#: nwfilters/views.py:51
+=======
 #: nwfilters/views.py:41
 msgid "A network filter with this name already exists"
 msgstr "Bu isimde bir ağ filtresi zaten mevcut"
@@ -3559,10 +4155,27 @@ msgid "A network filter with this UUID already exists"
 msgstr "Bu UUID ye sahip bir ağ filtresi zaten mevcut"
 
 #: nwfilters/views.py:48
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #, python-format
-msgid "Creating NWFilter: %s"
-msgstr "AğFiltresi Oluşturuluyor: %s"
+msgid "%(filter)s network filter is created"
+msgstr "%(filter)s ağ filtresi oluşturuldu"
 
+<<<<<<< HEAD
+#: nwfilters/views.py:60
+#, python-format
+msgid "%(filter)s network filter is deleted"
+msgstr "%(filter)s ağ filtresi silindi"
+
+#: nwfilters/views.py:76
+#, python-format
+msgid "NWFilter is in use by %(instance)s. Cannot be deleted."
+msgstr "AğFiltresi, %(instance)s tarafından kullanımda. Silinemiyor."
+
+#: nwfilters/views.py:93
+#, python-format
+msgid "Cloning NWFilter %(name)s as %(clone)s"
+msgstr "Ağfiltresi  %(name)s , %(clone)s olarak klonlanıyor"
+=======
 #: nwfilters/views.py:57
 #, python-brace-format
 msgid "Deleting NWFilter: {name}"
@@ -3577,6 +4190,7 @@ msgstr "AğFiltresi, {inst} tarafından kullanımda. Silinemiyor."
 #, python-brace-format
 msgid "Cloning NWFilter {name} as {cln_name}"
 msgstr "Ağfiltresi  {name} , {cln_name} olarak klonlanıyor"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: secrets/templates/create_secret_block.html:12
 msgid "Create New Secret"
@@ -3626,27 +4240,27 @@ msgstr ""
 msgid "Value"
 msgstr "Değer"
 
-#: storages/forms.py:9 storages/forms.py:36
+#: storages/forms.py:10 storages/forms.py:37
 msgid "No path has been entered"
 msgstr "Yol girilmedi"
 
-#: storages/forms.py:33
+#: storages/forms.py:34
 msgid "The target must not contain any special characters"
 msgstr "Hedef herhangi bir özel karakter içeremez"
 
-#: storages/forms.py:45
+#: storages/forms.py:46
 msgid "No device or path has been entered"
 msgstr "Aygıt ya da yol girilmedi"
 
-#: storages/forms.py:47
+#: storages/forms.py:48
 msgid "The disk source must not contain any special characters"
 msgstr "Disk kaynağı herhangi bir özel karakter içermemelidir"
 
-#: storages/forms.py:61 storages/forms.py:76
+#: storages/forms.py:62 storages/forms.py:77
 msgid "The image name must not contain any special characters"
 msgstr "İmaj adı herhangi bir özel karakter içeremez"
 
-#: storages/forms.py:78
+#: storages/forms.py:79
 msgid "The image name must not exceed 120 characters"
 msgstr "İmaj adı 120 karakterden fazla olamaz"
 
@@ -3697,7 +4311,7 @@ msgstr "Uzak Yol"
 
 #: storages/templates/create_stg_block.html:186
 msgid "auto"
-msgstr "oto"
+msgstr "otomatik"
 
 #: storages/templates/create_stg_block.html:187
 msgid "nfs"
@@ -3779,7 +4393,7 @@ msgstr "Hipervizör hiçbir birime sahip değil"
 msgid "Hypervisor doesn't have any Storages"
 msgstr "Hipervizör hiç bir depolama alanına sahip değil"
 
-#: storages/views.py:40
+#: storages/views.py:39
 msgid "Pool name already use"
 msgstr "Havuz adı zaten kullanılıyor"
 
@@ -3787,10 +4401,43 @@ msgstr "Havuz adı zaten kullanılıyor"
 msgid "You need create secret for pool"
 msgstr ""
 
+<<<<<<< HEAD
+#: storages/views.py:48
+=======
 #: storages/views.py:49
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 msgid "You need input all fields for creating ceph pool"
-msgstr ""
+msgstr "CEPH havuzu oluşturmak için tüm alanların doldurulmasına ihtiyaç var"
 
+<<<<<<< HEAD
+#: storages/views.py:144
+#, python-format
+msgid "Volume: %(volume)s is deleted."
+msgstr "Birim: %(volume)s silindi."
+
+#: storages/views.py:149
+msgid "ISO image already exist"
+msgstr "ISO imajı zaten mevcut"
+
+#: storages/views.py:153
+#, python-format
+msgid "ISO: %(file)s is uploaded."
+msgstr "ISO: %(file)s  yüklendi."
+
+#: storages/views.py:162
+msgid "Name of volume already in use"
+msgstr "Birim adı zaten kullanımda"
+
+#: storages/views.py:174
+#, python-format
+msgid "%(image)s image cloned as %(clone)s successfully"
+msgstr "%(image)s imajı %(clone)s olarak başarıyla klonlandı"
+
+#: storages/views.py:220
+#, python-format
+msgid "Image file %(name)s is created successfully"
+msgstr "İmaj dosyası %(name)s başarıyla oluşturuldu"
+=======
 #: storages/views.py:132
 #, python-brace-format
 msgid "Volume: {volname} is deleted."
@@ -3816,6 +4463,7 @@ msgstr "{data['image']} imajı {name} olarak başarıyla klonlandı"
 #, python-brace-format
 msgid "Image file {name} is created successfully"
 msgstr "İmaj dosyası {name} başarıyla oluşturuldu"
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: templates/403.html:3
 msgid "403"
@@ -3823,7 +4471,7 @@ msgstr "403"
 
 #: templates/403.html:7 templates/404.html:7 templates/500.html:7
 msgid "Oops!"
-msgstr "Oops!"
+msgstr "Amann!"
 
 #: templates/403.html:9
 msgid "403 Forbidden"
@@ -5290,12 +5938,20 @@ msgstr "Bağlan, yardım al veya katkıda bulun"
 
 #: venv/lib/python3.6/site-packages/django_icons/renderers/image.py:217
 msgid "Icon of {}"
+<<<<<<< HEAD
+msgstr "{} ikonu"
+=======
 msgstr ""
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: venv/lib/python3.6/site-packages/qr_code/qrcode/utils.py:73
 #, python-format
 msgid "The option '%s' is not a valid option for a QR code."
+<<<<<<< HEAD
+msgstr "'%s' seçeneği QR kodu için geçerli bir seçenek değil."
+=======
 msgstr ""
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 
 #: venv2/lib/python2.7/site-packages/django/forms/models.py:1093
 msgid "The inline foreign key did not match the parent instance primary key."
@@ -5350,10 +6006,8 @@ msgstr ""
 "ayarlamamışsınız."
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:313
-#, fuzzy
-#| msgid "Usage"
 msgid "usage: "
-msgstr "Kullanım"
+msgstr "kullanım:"
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:821
 msgid ".__call__() not defined"
@@ -5498,13 +6152,81 @@ msgstr ""
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2362
 #, python-format
 msgid "%s: error: %s\n"
-msgstr ""
+msgstr "%s hata: %s\n"
 
 #: webvirtcloud/middleware.py:18
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
 
+<<<<<<< HEAD
+#~ msgid ""
+#~ "%(qos_dir)s QoS is deleted. Network XML is changed. Stop and start "
+#~ "network to activate new config"
+#~ msgstr ""
+#~ "Ağ XML i değiştirildi. \\ Aktifleştirmek için durdurun ve yeniden "
+#~ "başlatın."
+
+#~ msgid "Stop and start network to activate new config."
+#~ msgstr ""
+#~ "Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve yeniden başlatın."
+
+#~ msgid "CPU is resized"
+#~ msgstr "Disk yeniden boyutlandırıldı"
+
+#~ msgid "New snapshot: %(name)s"
+#~ msgstr "Yeni anlık görüntü: %(name)s"
+
+#~ msgid "Revert snapshot"
+#~ msgstr "Snapshota dön"
+
+#~ msgid "Edit XML"
+#~ msgstr "XML Düzenle"
+
+#, fuzzy
+#~| msgid "Password"
+#~ msgid "User password changed: {}"
+#~ msgstr "Kullanıcı parolası değişti: {}"
+
+#, fuzzy
+#~| msgid "Theme changed. Now: {theme}"
+#~ msgid "{} is changed. Now: {}"
+#~ msgstr "Tema değiştirildi. Şimdi: {theme}"
+
+#~ msgid "{} QoS is set"
+#~ msgstr "{} QoS ayarlandı"
+
+#~ msgid "{} QoS is deleted"
+#~ msgstr "{} QoS silindi"
+
+#, fuzzy
+#~| msgid "Creating NWFilter: %s"
+#~ msgid "Creating NWFilter: {}"
+#~ msgstr "AğFiltresi Oluşturuluyor: {}"
+
+#, fuzzy
+#~| msgid "Deleting NWFilter: {name}"
+#~ msgid "Deleting NWFilter: {}"
+#~ msgstr "AğFiltresi Siliniyor: {}"
+
+#~ msgid "Resize CPU"
+#~ msgstr "CPU Boyutlandır"
+
+#~ msgid "Resize Memory"
+#~ msgstr "Bellek Boyutlandır"
+
+#~ msgid "{qos_dir.capitalize()} QoS is set. Network XML is changed."
+#~ msgstr ""
+#~ "{qos_dir.capitalize()} QoS ayarlandı. Ağ ayarları XML ile değiştirildi."
+
+#~ msgid "Stop and start network to activate new config"
+#~ msgstr "Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve başlatın"
+
+#~ msgid "{qos_dir.capitalize()} QoS is deleted. Network XML is changed. "
+#~ msgstr "{qos_dir.capitalize()} QoS silindi. Ağ XML'i değiştirildi."
+
+=======
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #~ msgid "Login"
 #~ msgstr "Bağlan"
 
@@ -5514,9 +6236,12 @@ msgstr "libvirt Hatası - %(exception)s"
 #~ msgid "Is superuser"
 #~ msgstr "Süperkullanıcı mı"
 
+<<<<<<< HEAD
+=======
 #~ msgid "Can clone instances"
 #~ msgstr "Sanal makineleri klonlayabilir"
 
+>>>>>>> 159e06221af435700047a8e5ababe758a12d7579
 #~ msgid "Max instances"
 #~ msgstr "Maksimum sanal makine"
 
