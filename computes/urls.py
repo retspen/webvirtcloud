@@ -1,7 +1,6 @@
 from secrets.views import secrets
 
 from django.urls import include, path
-
 # from instances.views import create_instance, create_instance_select_type
 from interfaces.views import interface, interfaces
 from networks.views import network, networks

@@ -1,14 +1,15 @@
 import time
+
 from vrtManager.connection import wvmConnect
 from vrtManager.util import get_xml_path
 
 
 def cpu_version(doc):
-    for info in doc.xpath('/sysinfo/processor/entry'):
-        elem = info.xpath('@name')[0]
-        if elem == 'version':
+    for info in doc.xpath("/sysinfo/processor/entry"):
+        elem = info.xpath("@name")[0]
+        if elem == "version":
             return info.text
-    return 'Unknown'
+    return "Unknown"
 
 
 class wvmHostDetails(wvmConnect):
@@ -19,14 +20,12 @@ class wvmHostDetails(wvmConnect):
         all_mem = self.wvm.getInfo()[1] * 1048576
         freemem = self.wvm.getMemoryStats(-1, 0)
         if isinstance(freemem, dict):
-            free = (freemem['buffers'] +
-                    freemem['free'] +
-                    freemem['cached']) * 1024
+            free = (freemem["buffers"] + freemem["free"] + freemem["cached"]) * 1024
             percent = abs(100 - ((free * 100) // all_mem))
-            usage = (all_mem - free)
-            mem_usage = {'total': all_mem, 'usage': usage, 'percent': percent}
+            usage = all_mem - free
+            mem_usage = {"total": all_mem, "usage": usage, "percent": percent}
         else:
-            mem_usage = {'total': None, 'usage': None, 'percent': None}
+            mem_usage = {"total": None, "usage": None, "percent": None}
         return mem_usage
 
     def get_cpu_usage(self):
@@ -38,7 +37,7 @@ class wvmHostDetails(wvmConnect):
         cpu = self.wvm.getCPUStats(-1, 0)
         if isinstance(cpu, dict):
             for num in range(2):
-                idle = self.wvm.getCPUStats(-1, 0)['idle']
+                idle = self.wvm.getCPUStats(-1, 0)["idle"]
                 total = sum(self.wvm.getCPUStats(-1, 0).values())
                 diff_idle = idle - prev_idle
                 diff_total = total - prev_total
@@ -51,8 +50,8 @@ class wvmHostDetails(wvmConnect):
                     if diff_usage < 0:
                         diff_usage = 0
         else:
-            return {'usage': None}
-        return {'usage': diff_usage}
+            return {"usage": None}
+        return {"usage": diff_usage}
 
     def get_node_info(self):
         """

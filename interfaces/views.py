@@ -26,19 +26,30 @@ def interfaces(request, compute_id):
         try:
             netdevs = conn.get_net_devices()
         except:
-            netdevs = ['eth0', 'eth1']
+            netdevs = ["eth0", "eth1"]
 
         for iface in ifaces:
             ifaces_all.append(conn.get_iface_info(iface))
 
-        if request.method == 'POST':
-            if 'create' in request.POST:
+        if request.method == "POST":
+            if "create" in request.POST:
                 form = AddInterface(request.POST)
                 if form.is_valid():
                     data = form.cleaned_data
-                    conn.create_iface(data['name'], data['itype'], data['start_mode'], data['netdev'], data['ipv4_type'],
-                                      data['ipv4_addr'], data['ipv4_gw'], data['ipv6_type'], data['ipv6_addr'],
-                                      data['ipv6_gw'], data['stp'], data['delay'])
+                    conn.create_iface(
+                        data["name"],
+                        data["itype"],
+                        data["start_mode"],
+                        data["netdev"],
+                        data["ipv4_type"],
+                        data["ipv4_addr"],
+                        data["ipv4_gw"],
+                        data["ipv6_type"],
+                        data["ipv6_addr"],
+                        data["ipv6_gw"],
+                        data["stp"],
+                        data["delay"],
+                    )
                     return HttpResponseRedirect(request.get_full_path())
                 else:
                     for msg_err in form.errors.values():
@@ -47,7 +58,7 @@ def interfaces(request, compute_id):
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
-    return render(request, 'interfaces.html', locals())
+    return render(request, "interfaces.html", locals())
 
 
 @superuser_only
@@ -75,18 +86,18 @@ def interface(request, compute_id, iface):
         bridge = conn.get_bridge()
         slave_ifaces = conn.get_bridge_slave_ifaces()
 
-        if request.method == 'POST':
-            if 'stop' in request.POST:
+        if request.method == "POST":
+            if "stop" in request.POST:
                 conn.stop_iface()
                 return HttpResponseRedirect(request.get_full_path())
-            if 'start' in request.POST:
+            if "start" in request.POST:
                 conn.start_iface()
                 return HttpResponseRedirect(request.get_full_path())
-            if 'delete' in request.POST:
+            if "delete" in request.POST:
                 conn.delete_iface()
-                return HttpResponseRedirect(reverse('interfaces', args=[compute_id]))
+                return HttpResponseRedirect(reverse("interfaces", args=[compute_id]))
         conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
-    return render(request, 'interface.html', locals())
+    return render(request, "interface.html", locals())

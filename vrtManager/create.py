@@ -1,4 +1,5 @@
 import string
+
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 
@@ -12,15 +13,15 @@ def get_rbd_storage_data(stg):
         for host in doc.xpath("/pool/source/host"):
             name = host.prop("name")
             if name:
-                hosts.append({'name': name, 'port': host.prop("port")})
+                hosts.append({"name": name, "port": host.prop("port")})
         return hosts
+
     ceph_hosts = util.get_xml_path(xml, func=get_ceph_hosts)
     secret_uuid = util.get_xml_path(xml, "/pool/source/auth/secret/@uuid")
     return ceph_user, secret_uuid, ceph_hosts
 
 
 class wvmCreate(wvmConnect):
-
     def get_storages_images(self):
         """
         Function return all images on all storages
@@ -31,10 +32,10 @@ class wvmCreate(wvmConnect):
             stg = self.get_storage(storage)
             try:
                 stg.refresh(0)
-            except:
+            except Exception:
                 pass
             for img in stg.listVolumes():
-                if img.lower().endswith('.iso'):
+                if img.lower().endswith(".iso"):
                     pass
                 else:
                     images.append(img)
@@ -52,11 +53,11 @@ class wvmCreate(wvmConnect):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
-        if storage_type == 'dir':
-            if image_format in ('qcow', 'qcow2'):
-                name += '.' + image_format
+        if storage_type == "dir":
+            if image_format in ("qcow", "qcow2"):
+                name += "." + image_format
             else:
-                name += '.img'
+                name += ".img"
             alloc = 0
         else:
             alloc = size
@@ -91,12 +92,12 @@ class wvmCreate(wvmConnect):
     def get_volume_type(self, path):
         vol = self.get_volume_by_path(path)
         vol_type = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        if vol_type == 'unknown' or vol_type == 'iso':
-            return 'raw'
+        if vol_type == "unknown" or vol_type == "iso":
+            return "raw"
         if vol_type:
             return vol_type
         else:
-            return 'raw'
+            return "raw"
 
     def get_volume_path(self, volume, pool=None):
         if not pool:
@@ -125,8 +126,8 @@ class wvmCreate(wvmConnect):
 
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        if storage_type == 'dir':
-            clone += '.img'
+        if storage_type == "dir":
+            clone += ".img"
         else:
             metadata = False
         xml = f"""
@@ -159,9 +160,27 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(path)
         vol.delete()
 
-    def create_instance(self, name, memory, vcpu, vcpu_mode, uuid, arch, machine, firmware, volumes,
-                        networks, nwfilter, graphics, virtio, listen_addr,
-                        video="vga", console_pass="random", mac=None, qemu_ga=True):
+    def create_instance(
+        self,
+        name,
+        memory,
+        vcpu,
+        vcpu_mode,
+        uuid,
+        arch,
+        machine,
+        firmware,
+        volumes,
+        networks,
+        nwfilter,
+        graphics,
+        virtio,
+        listen_addr,
+        video="vga",
+        console_pass="random",
+        mac=None,
+        qemu_ga=True,
+    ):
         """
         Create VM function
         """
@@ -178,33 +197,37 @@ class wvmCreate(wvmConnect):
                   <memory unit='KiB'>{memory}</memory>
                   <vcpu>{vcpu}</vcpu>"""
 
-        if dom_caps["os_support"] == 'yes':
+        if dom_caps["os_support"] == "yes":
             xml += f"""<os>
                           <type arch='{arch}' machine='{machine}'>{caps["os_type"]}</type>"""
             xml += """    <boot dev='hd'/>
                           <boot dev='cdrom'/>
                           <bootmenu enable='yes'/>"""
             if firmware:
-                if firmware["secure"] == 'yes':
-                    xml += """<loader readonly='%s' type='%s' secure='%s'>%s</loader>""" % (firmware["readonly"],
-                                                                                            firmware["type"],
-                                                                                            firmware["secure"],
-                                                                                            firmware["loader"])
-                if firmware["secure"] == 'no':
-                    xml += """<loader readonly='%s' type='%s'>%s</loader>""" % (firmware["readonly"],
-                                                                                firmware["type"],
-                                                                                firmware["loader"])
+                if firmware["secure"] == "yes":
+                    xml += """<loader readonly='%s' type='%s' secure='%s'>%s</loader>""" % (
+                        firmware["readonly"],
+                        firmware["type"],
+                        firmware["secure"],
+                        firmware["loader"],
+                    )
+                if firmware["secure"] == "no":
+                    xml += """<loader readonly='%s' type='%s'>%s</loader>""" % (
+                        firmware["readonly"],
+                        firmware["type"],
+                        firmware["loader"],
+                    )
             xml += """</os>"""
 
         if caps["features"]:
             xml += """<features>"""
-            if 'acpi' in caps["features"]:
+            if "acpi" in caps["features"]:
                 xml += """<acpi/>"""
-            if 'apic' in caps["features"]:
+            if "apic" in caps["features"]:
                 xml += """<apic/>"""
-            if 'pae' in caps["features"]:
+            if "pae" in caps["features"]:
                 xml += """<pae/>"""
-            if  firmware.get("secure", 'no') == 'yes':
+            if firmware.get("secure", "no") == "yes":
                 xml += """<smm state="on"/>"""
             xml += """</features>"""
 
@@ -235,56 +258,69 @@ class wvmCreate(wvmConnect):
 
         for volume in volumes:
 
-            disk_opts = ''
-            if volume['cache_mode'] is not None and volume['cache_mode'] != 'default':
+            disk_opts = ""
+            if volume["cache_mode"] is not None and volume["cache_mode"] != "default":
                 disk_opts += f"cache='{volume['cache_mode']}' "
-            if volume['io_mode'] is not None and volume['io_mode'] != 'default':
+            if volume["io_mode"] is not None and volume["io_mode"] != "default":
                 disk_opts += f"io='{volume['io_mode']}' "
-            if volume['discard_mode'] is not None and volume['discard_mode'] != 'default':
+            if volume["discard_mode"] is not None and volume["discard_mode"] != "default":
                 disk_opts += f"discard='{volume['discard_mode']}' "
-            if volume['detect_zeroes_mode'] is not None and volume['detect_zeroes_mode'] != 'default':
+            if volume["detect_zeroes_mode"] is not None and volume["detect_zeroes_mode"] != "default":
                 disk_opts += f"detect_zeroes='{volume['detect_zeroes_mode']}' "
 
-            stg = self.get_storage_by_vol_path(volume['path'])
+            stg = self.get_storage_by_vol_path(volume["path"])
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
 
-            if volume['device'] == 'cdrom': add_cd = False
+            if volume["device"] == "cdrom":
+                add_cd = False
 
-            if stg_type == 'rbd':
+            if stg_type == "rbd":
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
                 xml += """<disk type='network' device='disk'>
-                            <driver name='qemu' type='%s' %s />""" % (volume['type'], disk_opts)
+                            <driver name='qemu' type='%s' %s />""" % (
+                    volume["type"],
+                    disk_opts,
+                )
                 xml += """  <auth username='%s'>
                                 <secret type='ceph' uuid='%s'/>
                             </auth>
-                            <source protocol='rbd' name='%s'>""" % (ceph_user, secret_uuid, volume['path'])
+                            <source protocol='rbd' name='%s'>""" % (
+                    ceph_user,
+                    secret_uuid,
+                    volume["path"],
+                )
                 if isinstance(ceph_hosts, list):
                     for host in ceph_hosts:
-                        if host.get('port'):
+                        if host.get("port"):
                             xml += """
-                                   <host name='%s' port='%s'/>""" % (host.get('name'), host.get('port'))
+                                   <host name='%s' port='%s'/>""" % (
+                                host.get("name"),
+                                host.get("port"),
+                            )
                         else:
                             xml += """
-                                   <host name='%s'/>""" % host.get('name')
+                                   <host name='%s'/>""" % host.get(
+                                "name"
+                            )
                 xml += """</source>"""
             else:
-                xml += """<disk type='file' device='%s'>""" % volume['device']
-                xml += """ <driver name='qemu' type='%s' %s/>""" % (volume['type'], disk_opts)
-                xml += f""" <source file='%s'/>""" % volume['path']
+                xml += """<disk type='file' device='%s'>""" % volume["device"]
+                xml += """ <driver name='qemu' type='%s' %s/>""" % (volume["type"], disk_opts)
+                xml += """ <source file='%s'/>""" % volume["path"]
 
-            if volume.get('bus') == 'virtio':
-                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), volume.get('bus'))
-            elif volume.get('bus') == 'ide':
-                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), volume.get('bus'))
-            elif volume.get('bus') == 'fdc':
-                xml += """<target dev='fd%s' bus='%s'/>""" % (fd_disk_letters.pop(0), volume.get('bus'))
-            elif volume.get('bus') == 'sata' or volume.get('bus') == 'scsi':
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), volume.get('bus'))
+            if volume.get("bus") == "virtio":
+                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), volume.get("bus"))
+            elif volume.get("bus") == "ide":
+                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), volume.get("bus"))
+            elif volume.get("bus") == "fdc":
+                xml += """<target dev='fd%s' bus='%s'/>""" % (fd_disk_letters.pop(0), volume.get("bus"))
+            elif volume.get("bus") == "sata" or volume.get("bus") == "scsi":
+                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), volume.get("bus"))
             else:
                 xml += """<target dev='sd%s'/>""" % sd_disk_letters.pop(0)
             xml += """</disk>"""
 
-            if volume.get('bus') == 'scsi':
+            if volume.get("bus") == "scsi":
                 xml += f"""<controller type='scsi' model='{volume.get('scsi_model')}'/>"""
 
         if add_cd:
@@ -292,17 +328,17 @@ class wvmCreate(wvmConnect):
                           <driver name='qemu' type='raw'/>
                           <source file = '' />
                           <readonly/>"""
-            if 'ide' in dom_caps['disk_bus']:
-                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), 'ide')
-            elif 'sata' in dom_caps['disk_bus']:
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), 'sata')
-            elif 'scsi' in dom_caps['disk_bus']:
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), 'scsi')
+            if "ide" in dom_caps["disk_bus"]:
+                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), "ide")
+            elif "sata" in dom_caps["disk_bus"]:
+                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), "sata")
+            elif "scsi" in dom_caps["disk_bus"]:
+                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), "scsi")
             else:
-                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), 'virtio')
+                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), "virtio")
             xml += """</disk>"""
 
-        for net in networks.split(','):
+        for net in networks.split(","):
             xml += """<interface type='network'>"""
             if mac:
                 xml += f"""<mac address='{mac}'/>"""
@@ -319,10 +355,10 @@ class wvmCreate(wvmConnect):
             if not console_pass == "":
                 console_pass = "passwd='" + console_pass + "'"
 
-        if 'usb' in dom_caps['disk_bus']:
-            xml += """<input type='mouse' bus='{}'/>""".format('virtio' if virtio else 'usb')
-            xml += """<input type='keyboard' bus='{}'/>""".format('virtio' if virtio else 'usb')
-            xml += """<input type='tablet' bus='{}'/>""".format('virtio' if virtio else 'usb')
+        if "usb" in dom_caps["disk_bus"]:
+            xml += """<input type='mouse' bus='{}'/>""".format("virtio" if virtio else "usb")
+            xml += """<input type='keyboard' bus='{}'/>""".format("virtio" if virtio else "usb")
+            xml += """<input type='tablet' bus='{}'/>""".format("virtio" if virtio else "usb")
         else:
             xml += """<input type='mouse'/>"""
             xml += """<input type='keyboard'/>"""

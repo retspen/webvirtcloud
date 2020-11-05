@@ -1,8 +1,8 @@
 from xml.etree import ElementTree
-from libvirt import VIR_INTERFACE_XML_INACTIVE
-from vrtManager.connection import wvmConnect
-from vrtManager import util
 
+from libvirt import VIR_INTERFACE_XML_INACTIVE
+from vrtManager import util
+from vrtManager.connection import wvmConnect
 
 
 class wvmInterfaces(wvmConnect):
@@ -12,36 +12,37 @@ class wvmInterfaces(wvmConnect):
         mac = iface.MACString()
         itype = util.get_xml_path(xml, "/interface/@type")
         state = iface.isActive()
-        return {'name': name, 'type': itype, 'state': state, 'mac': mac}
+        return {"name": name, "type": itype, "state": state, "mac": mac}
 
     def define_iface(self, xml, flag=0):
         self.wvm.interfaceDefineXML(xml, flag)
 
-    def create_iface(self, name, itype, mode, netdev, ipv4_type, ipv4_addr, ipv4_gw,
-                     ipv6_type, ipv6_addr, ipv6_gw, stp, delay):
+    def create_iface(
+        self, name, itype, mode, netdev, ipv4_type, ipv4_addr, ipv4_gw, ipv6_type, ipv6_addr, ipv6_gw, stp, delay
+    ):
         xml = f"""<interface type='{itype}' name='{name}'>
                     <start mode='{mode}'/>"""
-        if ipv4_type == 'dhcp':
+        if ipv4_type == "dhcp":
             xml += """<protocol family='ipv4'>
                         <dhcp/>
                       </protocol>"""
-        if ipv4_type == 'static':
-            address, prefix = ipv4_addr.split('/')
+        if ipv4_type == "static":
+            address, prefix = ipv4_addr.split("/")
             xml += f"""<protocol family='ipv4'>
                         <ip address='{address}' prefix='{prefix}'/>
                         <route gateway='{ipv4_gw}'/>
                       </protocol>"""
-        if ipv6_type == 'dhcp':
+        if ipv6_type == "dhcp":
             xml += """<protocol family='ipv6'>
                         <dhcp/>
                       </protocol>"""
-        if ipv6_type == 'static':
-            address, prefix = ipv6_addr.split('/')
+        if ipv6_type == "static":
+            address, prefix = ipv6_addr.split("/")
             xml += f"""<protocol family='ipv6'>
                         <ip address='{address}' prefix='{prefix}'/>
                         <route gateway='{ipv6_gw}'/>
                       </protocol>"""
-        if itype == 'bridge':
+        if itype == "bridge":
             xml += f"""<bridge stp='{stp}' delay='{delay}'>
                         <interface name='{netdev}' type='ethernet'/>
                       </bridge>"""
@@ -85,9 +86,9 @@ class wvmInterface(wvmConnect):
             xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
             ipaddr = util.get_xml_path(xml, "/interface/protocol[@family='ipv4']/ip/@address")
             if ipaddr:
-                return 'static'
+                return "static"
             else:
-                return 'dhcp'
+                return "dhcp"
         except:
             return None
 
@@ -98,16 +99,16 @@ class wvmInterface(wvmConnect):
         if not int_ipv4_ip or not int_ipv4_mask:
             return None
         else:
-            return int_ipv4_ip + '/' + int_ipv4_mask
+            return int_ipv4_ip + "/" + int_ipv4_mask
 
     def get_ipv6_type(self):
         try:
             xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
             ipaddr = util.get_xml_path(xml, "/interface/protocol[@family='ipv6']/ip/@address")
             if ipaddr:
-                return 'static'
+                return "static"
             else:
-                return 'dhcp'
+                return "dhcp"
         except:
             return None
 
@@ -118,15 +119,15 @@ class wvmInterface(wvmConnect):
         if not int_ipv6_ip or not int_ipv6_mask:
             return None
         else:
-            return int_ipv6_ip + '/' + int_ipv6_mask
+            return int_ipv6_ip + "/" + int_ipv6_mask
 
     def get_bridge(self):
         bridge = None
-        if self.get_type() == 'bridge':
+        if self.get_type() == "bridge":
             bridge = util.get_xml_path(self._XMLDesc(), "/interface/bridge/interface/@name")
             for iface in self.get_bridge_slave_ifaces():
-                if iface.get('state') == 'up' and iface.get('speed') is not 'unknown':
-                    bridge = iface.get('name')
+                if iface.get("state") == "up" and iface.get("speed") != "unknown":
+                    bridge = iface.get("name")
                     return bridge
             return bridge
         else:
@@ -134,20 +135,20 @@ class wvmInterface(wvmConnect):
 
     def get_bridge_slave_ifaces(self):
         ifaces = list()
-        if self.get_type() == 'bridge':
+        if self.get_type() == "bridge":
             tree = ElementTree.fromstring(self._XMLDesc())
             for iface in tree.findall("./bridge/"):
                 address = state = speed = None
-                name = iface.get('name')
-                if_type = iface.get('type')
-                link = iface.find('link')
+                name = iface.get("name")
+                if_type = iface.get("type")
+                link = iface.find("link")
                 if link is not None:
-                    state = link.get('state')
-                    speed = link.get('speed')
-                mac = iface.find('mac')
+                    state = link.get("state")
+                    speed = link.get("speed")
+                mac = iface.find("mac")
                 if mac is not None:
-                    address = mac.get('address')
-                ifaces.append({'name': name, 'type': if_type, 'state': state, 'speed': speed, 'mac': address})
+                    address = mac.get("address")
+                ifaces.append({"name": name, "type": if_type, "state": state, "speed": speed, "mac": address})
             return ifaces
         else:
             return None

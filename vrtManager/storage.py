@@ -16,13 +16,7 @@ class wvmStorages(wvmConnect):
                 stg_vol = None
             stg_size = stg.info()[1]
             storages.append(
-                {
-                    "name": pool,
-                    "status": stg_status,
-                    "type": stg_type,
-                    "volumes": stg_vol,
-                    "size": stg_size
-                }
+                {"name": pool, "status": stg_status, "type": stg_type, "volumes": stg_vol, "size": stg_size}
             )
         return storages
 
@@ -103,12 +97,7 @@ class wvmStorage(wvmConnect):
         return self.pool.name()
 
     def get_status(self):
-        status = [
-            "Not running",
-            "Initializing pool, not available",
-            "Running normally",
-            "Running degraded"
-        ]
+        status = ["Not running", "Initializing pool, not available", "Running normally", "Running degraded"]
         try:
             return status[self.pool.info()[0]]
         except ValueError:
@@ -217,12 +206,12 @@ class wvmStorage(wvmConnect):
                     "name": volname,
                     "size": self.get_volume_size(volname),
                     "allocation": self.get_volume_allocation(volname),
-                    "type": self.get_volume_type(volname)
+                    "type": self.get_volume_type(volname),
                 }
             )
         return vol_list
 
-    def create_volume(self, name, size, vol_fmt='qcow2', metadata=False, disk_owner_uid=0, disk_owner_gid=0):
+    def create_volume(self, name, size, vol_fmt="qcow2", metadata=False, disk_owner_uid=0, disk_owner_gid=0):
         size = int(size) * 1073741824
         storage_type = self.get_type()
         alloc = size
@@ -258,7 +247,17 @@ class wvmStorage(wvmConnect):
         self._createXML(xml, metadata)
         return name
 
-    def clone_volume(self, name, target_file, vol_fmt=None, metadata=False, mode='0644', file_suffix='img', disk_owner_uid=0, disk_owner_gid=0):
+    def clone_volume(
+        self,
+        name,
+        target_file,
+        vol_fmt=None,
+        metadata=False,
+        mode="0644",
+        file_suffix="img",
+        disk_owner_uid=0,
+        disk_owner_gid=0,
+    ):
         vol = self.get_volume(name)
         if not vol_fmt:
             vol_fmt = self.get_volume_type(name)
@@ -266,10 +265,10 @@ class wvmStorage(wvmConnect):
         storage_type = self.get_type()
         if storage_type == "dir":
             if vol_fmt in ["qcow", "qcow2"]:
-                target_file += '.' + vol_fmt
+                target_file += "." + vol_fmt
             else:
-                suffix = '.' + file_suffix
-                target_file += suffix if len(suffix) > 1 else ''
+                suffix = "." + file_suffix
+                target_file += suffix if len(suffix) > 1 else ""
 
         xml = f"""
             <volume>

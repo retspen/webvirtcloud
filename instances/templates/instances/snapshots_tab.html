@@ -19,7 +19,7 @@
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
                 {% if instance.status == 5 %}
-                    <p>{% trans "This may take more than an hour, depending on how much content is on your droplet and how large the disk is." %}</p>
+                    <p>{% trans "This may take more than an hour, depending on how much content is on your instance and how large the disk is." %}</p>
                     <form action="{% url 'instances:snapshot' instance.id %}" class="form-inline" method="post" role="form" aria-label="Create snapshot form">
                         {% csrf_token %}
                         <div class="form-group row">

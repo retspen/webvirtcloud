@@ -1,12 +1,11 @@
-from django.db.models import Model, CharField, DateTimeField
+from django.db.models import CharField, DateTimeField, Model
 from django.utils.translation import gettext_lazy as _
 
-
 class Logs(Model):
-    user = CharField(_('user'), max_length=50)
-    instance = CharField(_('instance'), max_length=50)
-    message = CharField(_('message'), max_length=255)
-    date = DateTimeField(_('date'), auto_now=True)
+    user = CharField(_("user"), max_length=50)
+    instance = CharField(_("instance"), max_length=50)
+    message = CharField(_("message"), max_length=255)
+    date = DateTimeField(_("date"), auto_now=True)
 
     def __str__(self):
         return self.instance

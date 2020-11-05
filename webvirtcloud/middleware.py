@@ -15,7 +15,7 @@ class ExceptionMiddleware:
         if isinstance(exception, libvirtError):
             messages.error(
                 request,
-                _('libvirt Error - %(exception)s') % {'exception': exception},
+                _("libvirt Error - %(exception)s") % {"exception": exception},
             )
-            return render(request, '500.html', status=500)
+            return render(request, "500.html", status=500)
             # TODO: check connecting to host via VPN
