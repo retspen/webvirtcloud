@@ -71,6 +71,7 @@ jobs:
         FILTER_REGEX_EXCLUDE: .*(static|scss|venv|locale)/.*
         DEFAULT_BRANCH: master
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_ALL_CODEBASE: false
         VALIDATE_ANSIBLE: false
         VALIDATE_CLOJURE: false
         VALIDATE_COFFEE: false
