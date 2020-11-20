@@ -1,8 +1,13 @@
 import re
 
+from vrtManager.util import randomUUID
+
+from django.http.response import HttpResponseServerError
 from django.shortcuts import render
+from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 
+from accounts.models import UserInstance
 from appsettings.settings import app_settings
 from instances.models import Instance
 from vrtManager.instance import wvmInstance
@@ -35,7 +40,20 @@ def console(request):
         temptoken = token.split("-", 1)
         host = int(temptoken[0])
         uuid = temptoken[1]
-        instance = Instance.objects.get(compute_id=host, uuid=uuid)
+
+        if not request.user.is_superuser:
+            try:
+                userInstance = UserInstance.objects.get(
+                    instance__compute_id=host, instance__uuid=uuid, user__id=request.user.id
+                )
+                instance = Instance.objects.get(compute_id=host, uuid=uuid)
+            except UserInstance.DoesNotExist:
+                instance = None
+                console_error = _("User does not have permission to access console or host/instance not exist")
+                return HttpResponseServerError(console_error)
+        else:
+            instance = Instance.objects.get(compute_id=host, uuid=uuid)
+        
         conn = wvmInstance(
             instance.compute.hostname,
             instance.compute.login,
@@ -63,9 +81,9 @@ def console(request):
         response = render(request, console_page, locals())
     else:
         if console_type is None:
-            console_error = "Fail to get console. Please check the console configuration of your VM."
+            console_error = _("Fail to get console. Please check the console configuration of your VM.")
         else:
-            console_error = "Console type '%(type)s' has not support" % {"type": console_type}
+            console_error = _("Console type '%(type)s' has not support") % {"type": console_type}
         response = render(request, "console-vnc-lite.html", locals())
 
     response.set_cookie("token", token)
