@@ -173,8 +173,12 @@ def refr(compute):
         Instance.objects.filter(compute=compute).exclude(name__in=domain_names).delete()
         # Create instances that're not in DB
         names = Instance.objects.filter(compute=compute).values_list('name', flat=True)
+        uuids = Instance.objects.filter(compute=compute).values_list('uuid', flat=True)
         for domain in domains:
             if domain.name() not in names:
+                Instance(compute=compute, name=domain.name(), uuid=domain.UUIDString()).save()
+                continue
+            if domain.UUIDString() not in uuids:
                 Instance(compute=compute, name=domain.name(), uuid=domain.UUIDString()).save()
 
 

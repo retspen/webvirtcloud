@@ -19,8 +19,9 @@
                     <td>
                         <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">
                             {{ instance.name }}
-                        </a><br>
-                        <small><em>{{ instance.title }}</em></small>
+                        </a>
+                        <br>
+                        <p class="m-0 small font-italic">{{ instance.title }}</p>
                     </td>
                     {% if request.user.is_superuser %}
                         <td>

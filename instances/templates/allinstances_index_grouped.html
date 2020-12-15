@@ -41,7 +41,9 @@
                     <tr host="{{ compute.id }}">
                         <td class="text-right">{{ forloop.counter }} </td>
                         <td>
-                            <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a><br>
+                            <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
+                            <br>
+                            <p class="m-0 small font-italic">{{ instance.title }}</p>
                         </td>
                         <td>
                             <em>
