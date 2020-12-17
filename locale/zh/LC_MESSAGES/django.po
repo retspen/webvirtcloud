@@ -1139,7 +1139,7 @@ msgstr "主机名不得包含任何特殊字符"
 
 #: console/templates/console-base.html:51
 msgid "Send key(s)"
-msgstr "发送密钥"
+msgstr "发送按键"
 
 #: console/templates/console-base.html:71
 msgid "Fullscreen"
