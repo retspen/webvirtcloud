@@ -54,7 +54,14 @@
                    {{ ipv4 }} |
                {% endfor %}
             {% endfor %}
-            <a class="text-secondary" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}"><span class="fa fa-refresh"></span></a>
+            {% if instance.guest_agent_ready %}
+            <a class="text-secondary" title="{% trans 'Show Instance OS details' %}" onclick="get_osinfo()">
+                <span class="fa fa-info-circle"></span>
+            </a>
+            {% endif %}
+            <a class="text-secondary" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}">
+                <span class="fa fa-refresh"></span>
+            </a>
         </div>
         {% if user_quota_msg %}
             <div class="alert alert-warning fade show">
@@ -71,13 +78,13 @@
                 <ul class="nav nav-pills" id="navbtn" aria-label="Instance actions">
                     <li class="nav-item">
                         <a href="#power" class="nav-link action-button active" aria-controls="power" role="tab" data-toggle="tab">
-                            <i id="action-block" class="fa fa-power-off fa-2x" aria-hidden="true"></i>
+                            <span id="action-block" class="fa fa-power-off fa-2x" aria-hidden="true"></span>
                             {% trans "Power" %}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#access" class="nav-link action-button" aria-controls="access" role="tab" data-toggle="tab">
-                            <i id="action-block" class="fa fa-lock" aria-hidden="true"></i>
+                            <span id="action-block" class="fa fa-lock" aria-hidden="true"></span>
                             {% trans "Access" %}
                         </a>
                     </li>
@@ -684,7 +691,7 @@
             }
         });
     }
-    if (~$.inArray(hash, ['#boot_opt', "#disks", '#network', '#clone', '#xmledit', '#vncsettings', '#migrate', '#options', '#users'])) {
+    if (~$.inArray(hash, ['#osinfo', '#boot_opt', "#disks", '#network', '#clone', '#xmledit', '#vncsettings', '#migrate', '#options', '#users'])) {
         var btnsect = $('#navbtn>li>a');
         $(btnsect).each(function () {
             if ($(this).attr('href') === '#settings') {
@@ -712,6 +719,24 @@
             if ($(this).attr('href') === hash) {
                 $(this).trigger('click');
             }
+        });
+    }
+</script>
+<script>
+    function get_osinfo() {
+        $('#navbtn a[href="#settings"]').tab('show');
+        $('#settings a[href="#osinfo"]').tab('show');
+
+        $.getJSON('{% url 'instances:osinfo' instance.id %}', function (data) {
+            $.each(data, function() {
+                $('#oshostname').text(data['host-name']);
+                $('#osname').text(data.id);
+                $('#osprettyname').text(data['pretty-name']);
+                $('#oskernelrelease').text(data['kernel-release']);
+                $('#oskernelversion').text(data['kernel-version']);
+                $('#osversion').text(data.version);
+                $('#ostimezone').text(data.zone + " / " + data.offset);
+            })
         });
     }
 </script>

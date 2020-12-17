@@ -20,6 +20,7 @@ urlpatterns = [
     path('<int:pk>/migrate/', views.migrate, name='migrate'),
     path('<int:pk>/status/', views.status, name='status'),
     path('<int:pk>/stats/', views.stats, name='stats'),
+    path('<int:pk>/osinfo/', views.osinfo, name='osinfo'),
     path('<int:pk>/rootpasswd/', views.set_root_pass, name='rootpasswd'),
     path('<int:pk>/add_public_key/', views.add_public_key, name='add_public_key'),
     path('<int:pk>/resizevm_cpu/', views.resizevm_cpu, name='resizevm_cpu'),

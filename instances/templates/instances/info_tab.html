@@ -1,0 +1,20 @@
+{% load i18n %}
+<div role="tabpanel" class="tab-pane tab-pane-bordered" id="osinfo">
+    <h3 class="page-header">{% trans "Guest Info" %}</h3>
+    <dl class="mx-3 row">
+        <dt class="col-3">{% trans "Hostname" %}</dt>
+        <dd class="col-9" id="oshostname"></dd>
+        <dt class="col-3">{% trans "OS Name" %}</dt>
+        <dd class="col-9" id="osname"></dd>  
+        <dt class="col-3">{% trans "OS Pretty-Name" %}</dt>
+        <dd class="col-9" id="osprettyname"></dd>
+        <dt class="col-3">{% trans "Version" %}</dt>
+        <dd class="col-9" id="osversion"></dd>
+        <dt class="col-3">{% trans "Kernel Release" %}</dt>
+        <dd class="col-9" id="oskernelrelease"></dd>
+        <dt class="col-3">{% trans "Kernel Version" %}</dt>
+        <dd class="col-9" id="oskernelversion"></dd>
+        <dt class="col-3">{% trans "Timezone / Offset" %}</dt>
+        <dd class="col-9" id="ostimezone"></dd>  
+    </dl>
+</div>

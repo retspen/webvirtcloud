@@ -161,6 +161,11 @@ def stats(request, pk):
         }
     )
 
+def osinfo(request, pk):
+    instance = get_instance(request.user, pk)
+    results = instance.proxy.osinfo()
+    
+    return JsonResponse(results)
 
 def guess_mac_address(request, vname):
     data = {"vname": vname}
