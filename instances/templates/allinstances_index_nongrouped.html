@@ -1,0 +1,56 @@
+{% load i18n %}
+<table class="table table-hover sortable-theme-bootstrap" data-sortable>
+    <thead>
+        <tr>
+            <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
+            {% if request.user.is_superuser %}
+                <th scope="col">{% trans 'Host' %}<br>{% trans 'User' %}</th>
+            {% endif %}
+            <th scope="col">{% trans 'Status' %}</th>
+            <th scope="col">{% trans 'VCPU' %}</th>
+            <th scope="col">{% trans 'Memory' %}</th>
+            <th scope="col" data-sortable="false">{% trans 'Actions' %}</th>
+        </tr>
+    </thead>
+    <tbody class="searchable">
+        {% for instance in instances  %}
+            {% if instance.compute.status is True %}
+                <tr>
+                    <td>
+                        <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">
+                            {{ instance.name }}
+                        </a>
+                        <br>
+                        <p class="m-0 small font-italic">{{ instance.title }}</p>
+                    </td>
+                    {% if request.user.is_superuser %}
+                        <td>
+                            <a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a><br>
+                                <small><em>
+                                    {% if instance.userinstance_set.all.count > 0 %}
+                                    {{ instance.userinstance_set.all.0.user }}
+                                    {% if instance.userinstance_set.all.count > 1 %}
+                                    (+{{ instance.userinstance_set.all.count|add:"-1" }})
+                                    {% endif %}
+                                    {% endif %}
+                                </em></small>
+                        </td>
+                    {% endif %}
+                    <td>
+                        {% if instance.proxy.instance.info.0 == 1 %}<span
+                            class="text-success">{% trans "Active" %}</span>{% endif %}
+                        {% if instance.proxy.instance.info.0 == 5 %}<span
+                            class="text-danger">{% trans "Off" %}</span>{% endif %}
+                        {% if instance.proxy.instance.info.0 == 3 %}<span
+                            class="text-warning">{% trans "Suspended" %}</span>{% endif %}
+                    </td>
+                    <td>{{ instance.proxy.instance.info.3 }}</td>
+                    <td>{{ instance.cur_memory }} MB</td>
+                    <td class="text-nowrap">
+                        {% include 'instance_actions.html' %}
+                    </td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </tbody>
+</table>

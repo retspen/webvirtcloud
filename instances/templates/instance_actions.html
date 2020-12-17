@@ -1,0 +1,53 @@
+{% load i18n %}
+{% load icons %}
+<form action="" method="post" role="form" aria-label="Shortcut instance action form">{% csrf_token %}
+    {% if instance.proxy.instance.info.0 == 5 %}
+        {% if instance.is_template %}
+            <a href="{% url 'instances:instance' instance.id %}#clone" class="btn btn-sm btn-secondary" title="{% trans "Clone" %}">
+                {% icon 'clone' %}
+            </a>
+        {% else %}
+            <a class="btn btn-sm btn-secondary" href="{% url 'instances:poweron' instance.id %}" title="{% trans "Power On" %}">
+                {% icon 'play' %}
+            </a>
+        {% endif %}
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}">{% icon 'pause' %}</a>
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power Off" %}">{% icon 'power-off' %}</a>
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}">{% icon 'refresh' %}</a>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
+            <span class="fa fa-eye"></span>
+        </button>
+    {% endif %}
+    {% if instance.proxy.instance.info.0 == 3 %}
+        <a class="btn btn-sm btn-secondary" href="{% url 'instances:resume' instance.id %}" title="{% trans "Resume" %}">
+            {% icon 'play' %}
+        </a>
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}">{% icon 'pause' %}</a>
+        <a class="btn btn-sm btn-secondary" href="{% url 'instances:force_off' instance.id %}" title="{% trans "Force Off" %}">
+            {% icon 'power-off' %}
+        </a>
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}">{% icon 'refresh' %}</a>
+        <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
+            <span class="fa fa-eye"></span>
+        </button>
+    {% endif %}
+    {% if instance.proxy.instance.info.0 == 1 %}
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power On" %}">{% icon 'play' %}</a>
+        <a class="btn btn-sm btn-secondary" href="{% url 'instances:suspend' instance.id %}"
+            title="{% trans "Suspend" %}">{% icon 'pause' %}</a>
+        <a class="btn btn-sm btn-secondary" href="{% url 'instances:poweroff' instance.id %}">{% icon 'power-off' %}</a>
+        <a class="btn btn-sm btn-secondary" href="{% url 'instances:powercycle' instance.id %}">{% icon 'refresh' %}</a>
+        <button class="btn btn-sm btn-secondary" type="button" onclick='open_console("{{ instance.compute.id }}-{{ instance.get_uuid }}")'
+            title="{% trans "Console" %}">
+            <span class="fa fa-eye"></span>
+        </button>
+    {% endif %}
+</form>
+{% block script %}
+<script>
+    function open_console(uuid) {
+        url = '{% url 'console' %}?token=' + uuid + '';
+        window.open(url, '', 'width=850,height=650')
+    }
+</script>
+{% endblock script %}

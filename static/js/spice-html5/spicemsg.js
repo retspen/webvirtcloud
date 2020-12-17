@@ -21,14 +21,34 @@
 /*----------------------------------------------------------------------------
 **  Spice messages
 **      This file contains classes for passing messages to and from
-**  a spice server.  This file should arguably be generated from 
+**  a spice server.  This file should arguably be generated from
 **  spice.proto, but it was instead put together by hand.
 **--------------------------------------------------------------------------*/
+
+import { Constants } from './enums.js';
+import { SpiceDataView } from './spicedataview.js';
+import { create_rsa_from_mb } from './ticket.js';
+import {
+  SpiceChannelId,
+  SpiceRect,
+  SpiceClip,
+  SpiceCopy,
+  SpiceFill,
+  SpicePoint,
+  SpiceSurface,
+  SpicePoint16,
+  SpiceCursor,
+} from './spicetype.js';
+import {
+  keycode_to_start_scan,
+  keycode_to_end_scan,
+} from './utils.js';
+
 function SpiceLinkHeader(a, at)
 {
-    this.magic = SPICE_MAGIC;
-    this.major_version = SPICE_VERSION_MAJOR;
-    this.minor_version = SPICE_VERSION_MINOR;
+    this.magic = Constants.SPICE_MAGIC;
+    this.major_version = Constants.SPICE_VERSION_MAJOR;
+    this.minor_version = Constants.SPICE_VERSION_MINOR;
     this.size = 0;
     if (a !== undefined)
         this.from_buffer(a, at);
@@ -63,7 +83,7 @@ SpiceLinkHeader.prototype =
         dv.setUint32(at, this.size, true); at += 4;
     },
     buffer_size: function()
-    { 
+    {
         return 16;
     },
 }
@@ -160,7 +180,7 @@ SpiceLinkReply.prototype =
         this.error = dv.getUint32(at, true); at += 4;
 
         this.pub_key = create_rsa_from_mb(a, at);
-        at += SPICE_TICKET_PUBKEY_BYTES;
+        at += Constants.SPICE_TICKET_PUBKEY_BYTES;
 
         var num_common_caps = dv.getUint32(at, true); at += 4;
         var num_channel_caps  = dv.getUint32(at, true); at += 4;
@@ -195,7 +215,7 @@ SpiceLinkAuthTicket.prototype =
         var i;
         var dv = new SpiceDataView(a);
         dv.setUint32(at, this.auth_mechanism, true); at += 4;
-        for (i = 0; i < SPICE_TICKET_KEY_PAIR_LENGTH / 8; i++)
+        for (i = 0; i < Constants.SPICE_TICKET_KEY_PAIR_LENGTH / 8; i++)
         {
             if (this.encrypted_data && i < this.encrypted_data.length)
                 dv.setUint8(at, this.encrypted_data[i], true);
@@ -206,7 +226,7 @@ SpiceLinkAuthTicket.prototype =
     },
     buffer_size: function()
     {
-        return 4 + (SPICE_TICKET_KEY_PAIR_LENGTH / 8);
+        return 4 + (Constants.SPICE_TICKET_KEY_PAIR_LENGTH / 8);
     }
 }
 
@@ -461,7 +481,7 @@ SpiceMsgcMainAgentStart.prototype =
 
 function SpiceMsgcMainAgentData(type, data)
 {
-    this.protocol = VD_AGENT_PROTOCOL;
+    this.protocol = Constants.VD_AGENT_PROTOCOL;
     this.type = type;
     this.opaque = 0;
     this.size = data.buffer_size();
@@ -932,13 +952,11 @@ function SpiceMsgcMousePosition(sc, e)
     this.buttons_state = sc.buttons_state;
     if (e)
     {
-        var scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
-        var scrollLeft = document.body.scrollLeft || document.documentElement.scrollLeft;
+        this.x = e.offsetX;
+        this.y = e.offsetY;
 
-        this.x = e.clientX - sc.display.surfaces[sc.display.primary_surface].canvas.offsetLeft + scrollLeft;
-        this.y = e.clientY - sc.display.surfaces[sc.display.primary_surface].canvas.offsetTop + scrollTop;
-        sc.mousex = this.x;
-        sc.mousey = this.y; 
+        sc.mousex = e.offsetX;
+        sc.mousey = e.offsetY;
     }
     else
     {
@@ -971,16 +989,16 @@ function SpiceMsgcMouseMotion(sc, e)
     this.buttons_state = sc.buttons_state;
     if (e)
     {
-        this.x = e.clientX - sc.display.surfaces[sc.display.primary_surface].canvas.offsetLeft;
-        this.y = e.clientY - sc.display.surfaces[sc.display.primary_surface].canvas.offsetTop;
+        this.x = e.offsetX;
+        this.y = e.offsetY;
 
         if (sc.mousex !== undefined)
         {
             this.x -= sc.mousex;
             this.y -= sc.mousey;
         }
-        sc.mousex = e.clientX - sc.display.surfaces[sc.display.primary_surface].canvas.offsetLeft;
-        sc.mousey = e.clientY - sc.display.surfaces[sc.display.primary_surface].canvas.offsetTop;
+        sc.mousex = e.offsetX;
+        sc.mousey = e.offsetY;
     }
     else
     {
@@ -1002,8 +1020,8 @@ function SpiceMsgcMousePress(sc, e)
     }
     else
     {
-        this.button = SPICE_MOUSE_BUTTON_LEFT;
-        this.buttons_state = SPICE_MOUSE_BUTTON_MASK_LEFT;
+        this.button = Constants.SPICE_MOUSE_BUTTON_LEFT;
+        this.buttons_state = Constants.SPICE_MOUSE_BUTTON_MASK_LEFT;
     }
 }
 
@@ -1033,7 +1051,7 @@ function SpiceMsgcMouseRelease(sc, e)
     }
     else
     {
-        this.button = SPICE_MOUSE_BUTTON_LEFT;
+        this.button = Constants.SPICE_MOUSE_BUTTON_LEFT;
         this.buttons_state = 0;
     }
 }
@@ -1146,6 +1164,29 @@ SpiceMsgDisplayStreamData.prototype =
     },
 }
 
+function SpiceMsgDisplayStreamDataSized(a, at)
+{
+    this.from_buffer(a, at);
+}
+
+SpiceMsgDisplayStreamDataSized.prototype =
+{
+    from_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        this.base = new SpiceStreamDataHeader;
+        at = this.base.from_dv(dv, at, a);
+        this.width = dv.getUint32(at, true); at += 4;
+        this.height = dv.getUint32(at, true); at += 4;
+        this.dest = new SpiceRect;
+        at = this.dest.from_dv(dv, at, a);
+        this.data_size = dv.getUint32(at, true); at += 4;
+        this.data = dv.u8.subarray(at, at + this.data_size);
+    },
+}
+
+
 function SpiceMsgDisplayStreamClip(a, at)
 {
     this.from_buffer(a, at);
@@ -1178,6 +1219,60 @@ SpiceMsgDisplayStreamDestroy.prototype =
     },
 }
 
+function SpiceMsgDisplayStreamActivateReport(a, at)
+{
+    this.from_buffer(a, at);
+}
+
+SpiceMsgDisplayStreamActivateReport.prototype =
+{
+    from_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        this.stream_id = dv.getUint32(at, true); at += 4;
+        this.unique_id = dv.getUint32(at, true); at += 4;
+        this.max_window_size = dv.getUint32(at, true); at += 4;
+        this.timeout_ms = dv.getUint32(at, true); at += 4;
+    },
+}
+
+function SpiceMsgcDisplayStreamReport(stream_id, unique_id)
+{
+    this.stream_id = stream_id;
+    this.unique_id = unique_id;
+    this.start_frame_mm_time = 0;
+    this.end_frame_mm_time = 0;
+    this.num_frames = 0;
+    this.num_drops = 0;
+    this.last_frame_delay = 0;
+
+    // TODO - Implement audio delay
+    this.audio_delay = -1;
+}
+
+SpiceMsgcDisplayStreamReport.prototype =
+{
+    to_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        dv.setUint32(at, this.stream_id, true); at += 4;
+        dv.setUint32(at, this.unique_id, true); at += 4;
+        dv.setUint32(at, this.start_frame_mm_time, true); at += 4;
+        dv.setUint32(at, this.end_frame_mm_time, true); at += 4;
+        dv.setUint32(at, this.num_frames, true); at += 4;
+        dv.setUint32(at, this.num_drops, true); at += 4;
+        dv.setUint32(at, this.last_frame_delay, true); at += 4;
+        dv.setUint32(at, this.audio_delay, true); at += 4;
+        return at;
+    },
+    buffer_size: function()
+    {
+        return 8 * 4;
+    }
+}
+
 function SpiceMsgDisplayInvalList(a, at)
 {
     this.count = 0;
@@ -1201,3 +1296,76 @@ SpiceMsgDisplayInvalList.prototype =
         }
     },
 }
+
+function SpiceMsgPortInit(a, at)
+{
+    this.from_buffer(a,at);
+};
+
+SpiceMsgPortInit.prototype =
+{
+    from_buffer: function (a, at)
+    {
+        at = at || 0;
+        var dv = new SpiceDataView(a);
+        var namesize = dv.getUint32(at, true); at += 4;
+        var offset = dv.getUint32(at, true); at += 4;
+        this.opened = dv.getUint8(at, true); at += 1;
+        this.name = a.slice(offset, offset + namesize - 1);
+    }
+}
+
+export {
+  SpiceLinkHeader,
+  SpiceLinkMess,
+  SpiceLinkReply,
+  SpiceLinkAuthTicket,
+  SpiceLinkAuthReply,
+  SpiceMiniData,
+  SpiceMsgChannels,
+  SpiceMsgMainInit,
+  SpiceMsgMainMouseMode,
+  SpiceMsgMainAgentData,
+  SpiceMsgMainAgentTokens,
+  SpiceMsgSetAck,
+  SpiceMsgcAckSync,
+  SpiceMsgcMainMouseModeRequest,
+  SpiceMsgcMainAgentStart,
+  SpiceMsgcMainAgentData,
+  VDAgentAnnounceCapabilities,
+  VDAgentMonitorsConfig,
+  VDAgentFileXferStatusMessage,
+  VDAgentFileXferStartMessage,
+  VDAgentFileXferDataMessage,
+  SpiceMsgNotify,
+  SpiceMsgcDisplayInit,
+  SpiceMsgDisplayBase,
+  SpiceMsgDisplayDrawCopy,
+  SpiceMsgDisplayDrawFill,
+  SpiceMsgDisplayCopyBits,
+  SpiceMsgSurfaceCreate,
+  SpiceMsgSurfaceDestroy,
+  SpiceMsgInputsInit,
+  SpiceMsgInputsKeyModifiers,
+  SpiceMsgCursorInit,
+  SpiceMsgPlaybackData,
+  SpiceMsgPlaybackMode,
+  SpiceMsgPlaybackStart,
+  SpiceMsgCursorSet,
+  SpiceMsgcMousePosition,
+  SpiceMsgcMouseMotion,
+  SpiceMsgcMousePress,
+  SpiceMsgcMouseRelease,
+  SpiceMsgcKeyDown,
+  SpiceMsgcKeyUp,
+  SpiceMsgDisplayStreamCreate,
+  SpiceStreamDataHeader,
+  SpiceMsgDisplayStreamData,
+  SpiceMsgDisplayStreamDataSized,
+  SpiceMsgDisplayStreamClip,
+  SpiceMsgDisplayStreamDestroy,
+  SpiceMsgDisplayStreamActivateReport,
+  SpiceMsgcDisplayStreamReport,
+  SpiceMsgDisplayInvalList,
+  SpiceMsgPortInit,
+};

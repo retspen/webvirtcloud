@@ -1,4 +1,7 @@
 -r ../conf/requirements.txt
-pep8==1.6.2
-pyflakes==0.8.1
-pylint==1.4.3
+coverage==5.3
+django-debug-toolbar==3.1.1
+pycodestyle==2.6.0
+pyflakes==2.2.0
+pylint==2.6.0
+yapf==0.30.0

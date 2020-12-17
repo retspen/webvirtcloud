@@ -1,25 +1,75 @@
-import re
-from django import forms
-from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import User
-from django.conf import settings
+from appsettings.settings import app_settings
+from django.contrib.auth import get_user_model
+from django.forms import EmailField, Form, ModelForm, ValidationError
+from django.utils.translation import gettext_lazy as _
+
+from .models import UserInstance, UserSSHKey
+from .utils import validate_ssh_key
 
 
-class UserAddForm(forms.Form):
-    name = forms.CharField(label="Name",
-                           error_messages={'required': _('No User name has been entered')},
-                           max_length=20)
-    password = forms.CharField(required=not settings.ALLOW_EMPTY_PASSWORD, error_messages={'required': _('No password has been entered')},)
+class UserInstanceForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(UserInstanceForm, self).__init__(*args, **kwargs)
 
-    def clean_name(self):
-        name = self.cleaned_data['name']
-        have_symbol = re.match('^[a-z0-9]+$', name)
-        if not have_symbol:
-            raise forms.ValidationError(_('The flavor name must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The flavor name must not exceed 20 characters'))
-        try:
-            User.objects.get(username=name)
-        except User.DoesNotExist:
-            return name
-        raise forms.ValidationError(_('Flavor name is already use'))
+        # Make user and instance fields not editable after creation
+        instance = getattr(self, 'instance', None)
+        if instance and instance.id is not None:
+            self.fields['user'].disabled = True
+            self.fields['instance'].disabled = True
+
+    def clean_instance(self):
+        instance = self.cleaned_data['instance']
+        if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == 'False':
+            exists = UserInstance.objects.filter(instance=instance)
+            if exists:
+                raise ValidationError(_('Instance owned by another user'))
+
+        return instance
+
+    class Meta:
+        model = UserInstance
+        fields = '__all__'
+
+
+class ProfileForm(ModelForm):
+    class Meta:
+        model = get_user_model()
+        fields = ('first_name', 'last_name', 'email')
+
+
+class UserSSHKeyForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.publickeys = UserSSHKey.objects.filter(user=self.user)
+        super().__init__(*args, **kwargs)
+
+    def clean_keyname(self):
+        for key in self.publickeys:
+            if self.cleaned_data['keyname'] == key.keyname:
+                raise ValidationError(_("Key name already exist"))
+
+        return self.cleaned_data['keyname']
+
+    def clean_keypublic(self):
+        for key in self.publickeys:
+            if self.cleaned_data['keypublic'] == key.keypublic:
+                raise ValidationError(_("Public key already exist"))
+
+        if not validate_ssh_key(self.cleaned_data['keypublic']):
+            raise ValidationError(_('Invalid key'))
+        return self.cleaned_data['keypublic']
+
+    def save(self, commit=True):
+        ssh_key = super().save(commit=False)
+        ssh_key.user = self.user
+        if commit:
+            ssh_key.save()
+        return ssh_key
+
+    class Meta:
+        model = UserSSHKey
+        fields = ('keyname', 'keypublic')
+
+
+class EmailOTPForm(Form):
+    email = EmailField(label=_('Email'))

@@ -1,166 +1,45 @@
-import re
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
+
 from computes.models import Compute
 
-
-class ComputeAddTcpForm(forms.Form):
-    name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
-    hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
-                               max_length=100)
-    login = forms.CharField(error_messages={'required': _('No login has been entered')},
-                            max_length=100)
-    password = forms.CharField(error_messages={'required': _('No password has been entered')},
-                               max_length=100)
-
-    def clean_name(self):
-        name = self.cleaned_data['name']
-        have_symbol = re.match('[^a-zA-Z0-9._-]+', name)
-        if have_symbol:
-            raise forms.ValidationError(_('The host name must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The host name must not exceed 20 characters'))
-        try:
-            Compute.objects.get(name=name)
-        except Compute.DoesNotExist:
-            return name
-        raise forms.ValidationError(_('This host is already connected'))
-
-    def clean_hostname(self):
-        hostname = self.cleaned_data['hostname']
-        have_symbol = re.match('[^a-z0-9.-]+', hostname)
-        wrong_ip = re.match('^0.|^255.', hostname)
-        if have_symbol:
-            raise forms.ValidationError(_('Hostname must contain only numbers, or the domain name separated by "."'))
-        elif wrong_ip:
-            raise forms.ValidationError(_('Wrong IP address'))
-        try:
-            Compute.objects.get(hostname=hostname)
-        except Compute.DoesNotExist:
-            return hostname
-        raise forms.ValidationError(_('This host is already connected'))
+from .validators import validate_hostname
 
 
-class ComputeAddSshForm(forms.Form):
-    name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
-    hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
-                               max_length=100)
-    login = forms.CharField(error_messages={'required': _('No login has been entered')},
-                            max_length=20)
+class TcpComputeForm(forms.ModelForm):
+    hostname = forms.CharField(validators=[validate_hostname])
+    type = forms.IntegerField(widget=forms.HiddenInput, initial=CONN_TCP)
 
-    def clean_name(self):
-        name = self.cleaned_data['name']
-        have_symbol = re.match('[^a-zA-Z0-9._-]+', name)
-        if have_symbol:
-            raise forms.ValidationError(_('The name of the host must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The name of the host must not exceed 20 characters'))
-        try:
-            Compute.objects.get(name=name)
-        except Compute.DoesNotExist:
-            return name
-        raise forms.ValidationError(_('This host is already connected'))
-
-    def clean_hostname(self):
-        hostname = self.cleaned_data['hostname']
-        have_symbol = re.match('[^a-zA-Z0-9._-]+', hostname)
-        wrong_ip = re.match('^0.|^255.', hostname)
-        if have_symbol:
-            raise forms.ValidationError(_('Hostname must contain only numbers, or the domain name separated by "."'))
-        elif wrong_ip:
-            raise forms.ValidationError(_('Wrong IP address'))
-        try:
-            Compute.objects.get(hostname=hostname)
-        except Compute.DoesNotExist:
-            return hostname
-        raise forms.ValidationError(_('This host is already connected'))
+    class Meta:
+        model = Compute
+        widgets = {'password': forms.PasswordInput()}
+        fields = '__all__'
 
 
-class ComputeAddTlsForm(forms.Form):
-    name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
-    hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
-                               max_length=100)
-    login = forms.CharField(error_messages={'required': _('No login has been entered')},
-                            max_length=100)
-    password = forms.CharField(error_messages={'required': _('No password has been entered')},
-                               max_length=100)
+class SshComputeForm(forms.ModelForm):
+    hostname = forms.CharField(validators=[validate_hostname], label=_("FQDN/IP"))
+    type = forms.IntegerField(widget=forms.HiddenInput, initial=CONN_SSH)
 
-    def clean_name(self):
-        name = self.cleaned_data['name']
-        have_symbol = re.match('[^a-zA-Z0-9._-]+', name)
-        if have_symbol:
-            raise forms.ValidationError(_('The host name must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The host name must not exceed 20 characters'))
-        try:
-            Compute.objects.get(name=name)
-        except Compute.DoesNotExist:
-            return name
-        raise forms.ValidationError(_('This host is already connected'))
-
-    def clean_hostname(self):
-        hostname = self.cleaned_data['hostname']
-        have_symbol = re.match('[^a-z0-9.-]+', hostname)
-        wrong_ip = re.match('^0.|^255.', hostname)
-        if have_symbol:
-            raise forms.ValidationError(_('Hostname must contain only numbers, or the domain name separated by "."'))
-        elif wrong_ip:
-            raise forms.ValidationError(_('Wrong IP address'))
-        try:
-            Compute.objects.get(hostname=hostname)
-        except Compute.DoesNotExist:
-            return hostname
-        raise forms.ValidationError(_('This host is already connected'))
+    class Meta:
+        model = Compute
+        exclude = ['password']
 
 
-class ComputeEditHostForm(forms.Form):
-    host_id = forms.CharField()
-    name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
-    hostname = forms.CharField(error_messages={'required': _('No IP / Domain name has been entered')},
-                               max_length=100)
-    login = forms.CharField(error_messages={'required': _('No login has been entered')},
-                            max_length=100)
-    password = forms.CharField(max_length=100)
+class TlsComputeForm(forms.ModelForm):
+    hostname = forms.CharField(validators=[validate_hostname])
+    type = forms.IntegerField(widget=forms.HiddenInput, initial=CONN_TLS)
 
-    def clean_name(self):
-        name = self.cleaned_data['name']
-        have_symbol = re.match('[^a-zA-Z0-9._-]+', name)
-        if have_symbol:
-            raise forms.ValidationError(_('The name of the host must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The name of the host must not exceed 20 characters'))
-        return name
-
-    def clean_hostname(self):
-        hostname = self.cleaned_data['hostname']
-        have_symbol = re.match('[^a-zA-Z0-9._-]+', hostname)
-        wrong_ip = re.match('^0.|^255.', hostname)
-        if have_symbol:
-            raise forms.ValidationError(_('Hostname must contain only numbers, or the domain name separated by "."'))
-        elif wrong_ip:
-            raise forms.ValidationError(_('Wrong IP address'))
-        return hostname
+    class Meta:
+        model = Compute
+        widgets = {'password': forms.PasswordInput()}
+        fields = '__all__'
 
 
-class ComputeAddSocketForm(forms.Form):
-    name = forms.CharField(error_messages={'required': _('No hostname has been entered')},
-                           max_length=20)
-    details = forms.CharField(error_messages={'required': _('No details has been entred')},
-                           max_length=50)
+class SocketComputeForm(forms.ModelForm):
+    hostname = forms.CharField(widget=forms.HiddenInput, initial='localhost')
+    type = forms.IntegerField(widget=forms.HiddenInput, initial=CONN_SOCKET)
 
-    def clean_name(self):
-        name = self.cleaned_data['name']
-        have_symbol = re.match('[^a-zA-Z0-9._-]+', name)
-        if have_symbol:
-            raise forms.ValidationError(_('The host name must not contain any special characters'))
-        elif len(name) > 20:
-            raise forms.ValidationError(_('The host name must not exceed 20 characters'))
-        try:
-            Compute.objects.get(name=name)
-        except Compute.DoesNotExist:
-            return name
-        raise forms.ValidationError(_('This host is already connected'))
+    class Meta:
+        model = Compute
+        fields = ['name', 'details', 'hostname', 'type']

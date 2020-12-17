@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#addInstanceOwner" type="button" class="btn btn-success pull-right" data-toggle="modal">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+    <a href="#addInstanceOwner" type="button" class="btn btn-success float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
     </a>
 
     <!-- Modal pool -->
@@ -9,27 +9,27 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Add Instance Owner" %}</h4>
+                    <h5 class="modal-title">{% trans "Add Instance Owner" %}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> 
                 </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
-                        <div class="form-group">
-                            <label class="col-sm-4 control-label">{% trans "User" %}</label>
+                    <form id="add-owner-form" method="post" action="{% url 'instances:add_owner' instance.id %}" role="form" aria-label="Add instance owner form">{% csrf_token %}
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "User" %}</label>
                             <div class="col-sm-6">
-                                <select class="form-control" name="user_id">
+                                <select class="custom-select" name="user_id">
                                     {% for user in users %}
                                         <option value="{{ user.id }}">{{ user.username }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-                    <button type="submit" class="btn btn-primary" name="add_owner">{% trans "Add" %}</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="submit" class="btn btn-primary" form="add-owner-form">{% trans "Add" %}</button>
                 </div>
-                    </form>
             </div> <!-- /.modal-content -->
         </div> <!-- /.modal-dialog -->
     </div> <!-- /.modal -->

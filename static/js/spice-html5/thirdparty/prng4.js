@@ -15,9 +15,9 @@
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND, 
- * EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY 
- * WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  
+ * THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY
+ * WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
  *
  * IN NO EVENT SHALL TOM WU BE LIABLE FOR ANY SPECIAL, INCIDENTAL,
  * INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY KIND, OR ANY DAMAGES WHATSOEVER
@@ -77,3 +77,8 @@ function prng_newstate() {
 // Pool size must be a multiple of 4 and greater than 32.
 // An array of bytes the size of the pool will be passed to init()
 var rng_psize = 256;
+
+export {
+  prng_newstate,
+  rng_psize,
+};

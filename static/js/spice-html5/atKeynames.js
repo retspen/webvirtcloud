@@ -82,6 +82,8 @@
  *       2) Use the keyboards native set and translate it to common keysyms.
  */
 
+
+var KeyNames = {
 /*
  * definition of the AT84/MF101/MF102 Keyboard:
  * ============================================================
@@ -89,95 +91,99 @@
  *      Key Name            Main       Also       (hex)    (dec)
  *      ----------------   ---------- -------    ------    ------
  */
+  KEY_Escape      :/* Escape                0x01  */    1,
+  KEY_1           :/* 1           !         0x02  */    2,
+  KEY_2           :/* 2           @         0x03  */    3,
+  KEY_3           :/* 3           #         0x04  */    4,
+  KEY_4           :/* 4           $         0x05  */    5,
+  KEY_5           :/* 5           %         0x06  */    6,
+  KEY_6           :/* 6           ^         0x07  */    7,
+  KEY_7           :/* 7           &         0x08  */    8,
+  KEY_8           :/* 8           *         0x09  */    9,
+  KEY_9           :/* 9           (         0x0a  */   10,
+  KEY_0           :/* 0           )         0x0b  */   11,
+  KEY_Minus       :/* - (Minus)   _ (Under) 0x0c  */   12,
+  KEY_Equal       :/* = (Equal)   +         0x0d  */   13,
+  KEY_BackSpace   :/* Back Space            0x0e  */   14,
+  KEY_Tab         :/* Tab                   0x0f  */   15,
+  KEY_Q           :/* Q                     0x10  */   16,
+  KEY_W           :/* W                     0x11  */   17,
+  KEY_E           :/* E                     0x12  */   18,
+  KEY_R           :/* R                     0x13  */   19,
+  KEY_T           :/* T                     0x14  */   20,
+  KEY_Y           :/* Y                     0x15  */   21,
+  KEY_U           :/* U                     0x16  */   22,
+  KEY_I           :/* I                     0x17  */   23,
+  KEY_O           :/* O                     0x18  */   24,
+  KEY_P           :/* P                     0x19  */   25,
+  KEY_LBrace      :/* [           {         0x1a  */   26,
+  KEY_RBrace      :/* ]           }         0x1b  */   27,
+  KEY_Enter       :/* Enter                 0x1c  */   28,
+  KEY_LCtrl       :/* Ctrl(left)            0x1d  */   29,
+  KEY_A           :/* A                     0x1e  */   30,
+  KEY_S           :/* S                     0x1f  */   31,
+  KEY_D           :/* D                     0x20  */   32,
+  KEY_F           :/* F                     0x21  */   33,
+  KEY_G           :/* G                     0x22  */   34,
+  KEY_H           :/* H                     0x23  */   35,
+  KEY_J           :/* J                     0x24  */   36,
+  KEY_K           :/* K                     0x25  */   37,
+  KEY_L           :/* L                     0x26  */   38,
+  KEY_SemiColon   :/* ;(SemiColon) :(Colon) 0x27  */   39,
+  KEY_Quote       :/* ' (Apostr)  " (Quote) 0x28  */   40,
+  KEY_Tilde       :/* ` (Accent)  ~ (Tilde) 0x29  */   41,
+  KEY_ShiftL      :/* Shift(left)           0x2a  */   42,
+  KEY_BSlash      :/* \(BckSlash) |(VertBar)0x2b  */   43,
+  KEY_Z           :/* Z                     0x2c  */   44,
+  KEY_X           :/* X                     0x2d  */   45,
+  KEY_C           :/* C                     0x2e  */   46,
+  KEY_V           :/* V                     0x2f  */   47,
+  KEY_B           :/* B                     0x30  */   48,
+  KEY_N           :/* N                     0x31  */   49,
+  KEY_M           :/* M                     0x32  */   50,
+  KEY_Comma       :/* , (Comma)   < (Less)  0x33  */   51,
+  KEY_Period      :/* . (Period)  >(Greater)0x34  */   52,
+  KEY_Slash       :/* / (Slash)   ?         0x35  */   53,
+  KEY_ShiftR      :/* Shift(right)          0x36  */   54,
+  KEY_KP_Multiply :/* *                     0x37  */   55,
+  KEY_Alt         :/* Alt(left)             0x38  */   56,
+  KEY_Space       :/*   (SpaceBar)          0x39  */   57,
+  KEY_CapsLock    :/* CapsLock              0x3a  */   58,
+  KEY_F1          :/* F1                    0x3b  */   59,
+  KEY_F2          :/* F2                    0x3c  */   60,
+  KEY_F3          :/* F3                    0x3d  */   61,
+  KEY_F4          :/* F4                    0x3e  */   62,
+  KEY_F5          :/* F5                    0x3f  */   63,
+  KEY_F6          :/* F6                    0x40  */   64,
+  KEY_F7          :/* F7                    0x41  */   65,
+  KEY_F8          :/* F8                    0x42  */   66,
+  KEY_F9          :/* F9                    0x43  */   67,
+  KEY_F10         :/* F10                   0x44  */   68,
+  KEY_NumLock     :/* NumLock               0x45  */   69,
+  KEY_ScrollLock  :/* ScrollLock            0x46  */   70,
+  KEY_KP_7        :/* 7           Home      0x47  */   71,
+  KEY_KP_8        :/* 8           Up        0x48  */   72,
+  KEY_KP_9        :/* 9           PgUp      0x49  */   73,
+  KEY_KP_Minus    :/* - (Minus)             0x4a  */   74,
+  KEY_KP_4        :/* 4           Left      0x4b  */   75,
+  KEY_KP_5        :/* 5                     0x4c  */   76,
+  KEY_KP_6        :/* 6           Right     0x4d  */   77,
+  KEY_KP_Plus     :/* + (Plus)              0x4e  */   78,
+  KEY_KP_1        :/* 1           End       0x4f  */   79,
+  KEY_KP_2        :/* 2           Down      0x50  */   80,
+  KEY_KP_3        :/* 3           PgDown    0x51  */   81,
+  KEY_KP_0        :/* 0           Insert    0x52  */   82,
+  KEY_KP_Decimal  :/* . (Decimal) Delete    0x53  */   83,
+  KEY_SysRequest  :/* SysRequest            0x54  */   84,
+                   /* NOTUSED               0x55  */
+  KEY_Less        :/* < (Less)   >(Greater) 0x56  */   86,
+  KEY_F11         :/* F11                   0x57  */   87,
+  KEY_F12         :/* F12                   0x58  */   88,
 
-var KEY_Escape      =/* Escape                0x01  */    1
-var KEY_1           =/* 1           !         0x02  */    2
-var KEY_2           =/* 2           @         0x03  */    3
-var KEY_3           =/* 3           #         0x04  */    4
-var KEY_4           =/* 4           $         0x05  */    5
-var KEY_5           =/* 5           %         0x06  */    6
-var KEY_6           =/* 6           ^         0x07  */    7
-var KEY_7           =/* 7           &         0x08  */    8
-var KEY_8           =/* 8           *         0x09  */    9
-var KEY_9           =/* 9           (         0x0a  */   10
-var KEY_0           =/* 0           )         0x0b  */   11
-var KEY_Minus       =/* - (Minus)   _ (Under) 0x0c  */   12
-var KEY_Equal       =/* = (Equal)   +         0x0d  */   13
-var KEY_BackSpace   =/* Back Space            0x0e  */   14
-var KEY_Tab         =/* Tab                   0x0f  */   15
-var KEY_Q           =/* Q                     0x10  */   16
-var KEY_W           =/* W                     0x11  */   17
-var KEY_E           =/* E                     0x12  */   18
-var KEY_R           =/* R                     0x13  */   19
-var KEY_T           =/* T                     0x14  */   20
-var KEY_Y           =/* Y                     0x15  */   21
-var KEY_U           =/* U                     0x16  */   22
-var KEY_I           =/* I                     0x17  */   23
-var KEY_O           =/* O                     0x18  */   24
-var KEY_P           =/* P                     0x19  */   25
-var KEY_LBrace      =/* [           {         0x1a  */   26
-var KEY_RBrace      =/* ]           }         0x1b  */   27
-var KEY_Enter       =/* Enter                 0x1c  */   28
-var KEY_LCtrl       =/* Ctrl(left)            0x1d  */   29
-var KEY_A           =/* A                     0x1e  */   30
-var KEY_S           =/* S                     0x1f  */   31
-var KEY_D           =/* D                     0x20  */   32
-var KEY_F           =/* F                     0x21  */   33
-var KEY_G           =/* G                     0x22  */   34
-var KEY_H           =/* H                     0x23  */   35
-var KEY_J           =/* J                     0x24  */   36
-var KEY_K           =/* K                     0x25  */   37
-var KEY_L           =/* L                     0x26  */   38
-var KEY_SemiColon   =/* ;(SemiColon) :(Colon) 0x27  */   39
-var KEY_Quote       =/* ' (Apostr)  " (Quote) 0x28  */   40
-var KEY_Tilde       =/* ` (Accent)  ~ (Tilde) 0x29  */   41
-var KEY_ShiftL      =/* Shift(left)           0x2a  */   42
-var KEY_BSlash      =/* \(BckSlash) |(VertBar)0x2b  */   43
-var KEY_Z           =/* Z                     0x2c  */   44
-var KEY_X           =/* X                     0x2d  */   45
-var KEY_C           =/* C                     0x2e  */   46
-var KEY_V           =/* V                     0x2f  */   47
-var KEY_B           =/* B                     0x30  */   48
-var KEY_N           =/* N                     0x31  */   49
-var KEY_M           =/* M                     0x32  */   50
-var KEY_Comma       =/* , (Comma)   < (Less)  0x33  */   51
-var KEY_Period      =/* . (Period)  >(Greater)0x34  */   52
-var KEY_Slash       =/* / (Slash)   ?         0x35  */   53
-var KEY_ShiftR      =/* Shift(right)          0x36  */   54
-var KEY_KP_Multiply =/* *                     0x37  */   55
-var KEY_Alt         =/* Alt(left)             0x38  */   56
-var KEY_Space       =/*   (SpaceBar)          0x39  */   57
-var KEY_CapsLock    =/* CapsLock              0x3a  */   58
-var KEY_F1          =/* F1                    0x3b  */   59
-var KEY_F2          =/* F2                    0x3c  */   60
-var KEY_F3          =/* F3                    0x3d  */   61
-var KEY_F4          =/* F4                    0x3e  */   62
-var KEY_F5          =/* F5                    0x3f  */   63
-var KEY_F6          =/* F6                    0x40  */   64
-var KEY_F7          =/* F7                    0x41  */   65
-var KEY_F8          =/* F8                    0x42  */   66
-var KEY_F9          =/* F9                    0x43  */   67
-var KEY_F10         =/* F10                   0x44  */   68
-var KEY_NumLock     =/* NumLock               0x45  */   69
-var KEY_ScrollLock  =/* ScrollLock            0x46  */   70
-var KEY_KP_7        =/* 7           Home      0x47  */   71
-var KEY_KP_8        =/* 8           Up        0x48  */   72
-var KEY_KP_9        =/* 9           PgUp      0x49  */   73
-var KEY_KP_Minus    =/* - (Minus)             0x4a  */   74
-var KEY_KP_4        =/* 4           Left      0x4b  */   75
-var KEY_KP_5        =/* 5                     0x4c  */   76
-var KEY_KP_6        =/* 6           Right     0x4d  */   77
-var KEY_KP_Plus     =/* + (Plus)              0x4e  */   78
-var KEY_KP_1        =/* 1           End       0x4f  */   79
-var KEY_KP_2        =/* 2           Down      0x50  */   80
-var KEY_KP_3        =/* 3           PgDown    0x51  */   81
-var KEY_KP_0        =/* 0           Insert    0x52  */   82
-var KEY_KP_Decimal  =/* . (Decimal) Delete    0x53  */   83
-var KEY_SysReqest   =/* SysReqest             0x54  */   84
-                         /* NOTUSED               0x55  */
-var KEY_Less        =/* < (Less)   >(Greater) 0x56  */   86
-var KEY_F11         =/* F11                   0x57  */   87
-var KEY_F12         =/* F12                   0x58  */   88
+  KEY_Prefix0     :/* special               0x60  */   96,
+  KEY_Prefix1     :/* specail               0x61  */   97,
+};
 
-var KEY_Prefix0     =/* special               0x60  */   96
-var KEY_Prefix1     =/* specail               0x61  */   97
+export {
+  KeyNames,
+};

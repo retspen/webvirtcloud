@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block title %}{% trans "NWFilter" %}: {{ name }}{% endblock %}
+
+{% block page_heading %}{% trans "NWFilter" %}: {{ name }}{% endblock page_heading %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-lg-12">
+            <ol class="breadcrumb bg-light shadow-sm">
+                <li class="breadcrumb-item active">
+                    <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'storages' compute.id %}"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'secrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <dl class="ml-3 row">
+        <dt class="col-4">{% trans "UUID" %}:</dt>
+        <dd class="col-8">{{ uuid }}</dd>
+        <dt class="col-4">{% trans "Name" %}:</dt>
+        <dd class="col-8">{{ name }}</dd>
+    </dl>
+      
+   <div class="row">
+        <div class="col-lg-12">
+            <button class="btn btn-block btn-light mb-3"  role="button" data-toggle="collapse" data-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
+                <span class="fa fa-chevron-down"></span>
+                {% trans 'XML' %}
+            </button>
+            <div class="collapse" id="collapseXML">
+                <div class="card card-body">
+                    <form class="form" method="post" role="form">{% csrf_token %}
+                        <div class="col-12" id="xmlheight">
+                            <input type="hidden" name="edit_xml"/>
+                            <textarea id="edit_editor">{{ xml }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary float-right" name="edit_nwfilter">
+                            {% trans "Edit" %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+        <h5 class="page-header mr-auto">{% trans "Filter References" %}
+            
+        
+            <form class="form-inline float-right" method="post" role="form" aria-label="Add NWFilter form">{% csrf_token %}
+                <div class="form-group">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">{% trans "Filter" %}</span>
+                        </div>    
+                        <select id="nwfilter_select" name="nwfilters_select" class="custom-select">
+                            <option value="" selected>{% trans 'None' %}</option>
+                            {% for nwf in nwfilters_all %}
+                                <option value="{{ nwf.name }}">{{ nwf.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-success float-right" name="add_nwfilter_ref">
+                                <span class="fa fa-plus" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </h5>
+        </div>
+    </div>
+
+     <div class="row">
+        <div class="col-12 col-sm-12">
+            <table class="table table-hover mb-3">
+                <thead>
+                    <th scope="col">#</th>
+                    <th scope="col">{% trans "Reference" %}</th>
+                    <th scope="col">{% trans "Action" %}</th>
+                </thead>
+                <tbody>
+                 {% for ref in refs %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ ref }}</td>
+                        <td style="width:30px;">
+                            <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
+                                <input type="hidden" name="ref" value="{{ ref }}">
+                                <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    
+    {% include 'add_nwf_rule.html' %} 
+    <h5 class="page-header">{% trans "Rules" %}</h5>
+
+        <table class="table table-hover">
+            <thead>
+                <th scope="col">{% trans "Rule" %}</th>
+                <th scope="col" class="text-nowrap">{% trans "Action Type" %}</th>
+                <th scope="col">{% trans "Direction" %}</th>
+                <th scope="col">{% trans "Priority" %}</th>
+                <th scope="col">{% trans "Statematch" %}</th>
+                <th scope="col">{% trans "Directives" %}</th>
+                <th scope="col" style="width:30px;">{% trans "Action" %}</th>
+            </thead>
+            <tbody>
+            {% for rule in rules %}
+                <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>{{ rule.action }}</td>
+                    <td>{{ rule.direction }}</td>
+                    <td>{{ rule.priority }}</td>
+                    <td>{{ rule.statematch }}</td>
+                    <td>{{ rule.directives }}</td>
+                    <td>
+                        <form action="" method="post" role="form" aria-label="Delete NWFilter rule">{% csrf_token %}
+                            <input type="hidden" name="action" value="{{ rule.action }}">
+                            <input type="hidden" name="direction" value="{{ rule.direction }}">
+                            <input type="hidden" name="priority" value="{{ rule.priority }}">
+                            <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script src="{% static "js/sortable.min.js" %}"></script>
+    <script>
+        $(document).ready(function () {
+            (function ($) {
+                $('#filter').keyup(function () {
+                    var rex = new RegExp($(this).val(), 'i');
+                    $('.searchable tr').hide();
+                    $('.searchable tr').filter(function () {
+                        return rex.test($(this).text());
+                    }).show();
+                })
+            }(jQuery));
+        });
+    </script>
+    <script src="{% static "js/ace/ace.js" %}"></script>
+    <script>
+        var editor = ace.edit("edit_editor");
+        editor.getSession().setMode("ace/mode/xml");
+
+        var edit_input = $('input[name="edit_xml"]');
+        editor.getSession().on("change",function () {
+        edit_input.val(editor.getSession().getValue());
+        });
+
+        var rule_editor = ace.edit("rule_editor");
+        rule_editor.getSession().setMode("ace/mode/xml");
+
+        var rule_input = $('input[name="nwfilterrule_xml"]');
+        rule_editor.getSession().on("change",function () {
+        rule_input.val(rule_editor.getSession().getValue());
+        });
+    </script>
+
+{% endblock %}

@@ -7,8 +7,7 @@
 /* Global Styles */
 
 body {
-    padding-top: 70px;
-    background-color: #FFF;
+    padding-bottom: 50px;
 }
 
 .container {
@@ -132,4 +131,45 @@ p {
 .keyselect {
     display: inline;
     min-width: 250px;
+}
+
+.multipleselect {
+    width:27em;
+    height:10em;
+    border:solid 2px #c0c0c0;
+    overflow:auto;
+    padding: 0 1em;
+    margin: 0.9em;
+}
+
+.multipleselect label {
+    display:block;
+}
+
+.multipleselect-on {
+    color:#ffffff;
+    background-color:#000099;
+}
+
+.bottom-bar-margin {
+    margin-top: 65px;
+}
+
+.thumbnail {
+    padding: 10px;
+}
+
+/* make dropdowns show on hover */
+@media only screen and (min-width: 768px) {
+  .dropdown:hover .dropdown-menu {
+    display: block;
+  }
+}
+.table > tbody > tr > td {
+    vertical-align: middle;
+}
+
+/* remove ugly dotted outline on tabs */
+a {
+    outline: 0;
 }

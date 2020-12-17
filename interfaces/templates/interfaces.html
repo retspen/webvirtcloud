@@ -1,69 +1,78 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles %}
+
 {% block title %}{% trans "Interfaces" %} - {{ compute.name }}{% endblock %}
+
+{% block page_heading %}{{ compute.name }} - {% trans "Interfaces" %}{% endblock page_heading %}
+
+{% block page_heading_extra %}{% include 'create_iface_block.html' %}{% endblock page_heading_extra %}
+
 {% block content %}
-           <!-- Page Heading -->
-            <div class="row">
-                <div class="col-lg-12">
-                    {% include 'create_iface_block.html' %}
-                    <h1 class="page-header">{{ compute.name }}</h1>
-                    <ol class="breadcrumb">
-                        <li class="active">
-                            <i class="fa fa-dashboard"></i> <a href="{% url 'overview' compute.id %}">{% trans "Overview" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-hdd-o"></i> <a href="{% url 'storages' compute.id %}">{% trans "Storages" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-sitemap"></i> <a href="{% url 'networks' compute.id %}">{% trans "Networks" %}</a>
-                        </li>
-                        <li>
-                            <i class="fa fa-wifi"></i> {% trans "Interfaces" %}
-                        </li>
-                        <li>
-                            <i class="fa fa-key"></i> <a href="{% url 'secrets' compute.id %}">{% trans "Secrets" %}</a>
-                        </li>
-                    </ol>
+    <div class="row">
+        <div class="col-lg-12">
+            <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-light shadow-sm">
+                <li class="breadcrumb-item active">
+                    <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'storages' compute.id %}"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <span class="font-weight-bold"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</span>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'secrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                </li>
+            </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        {% if not  ifaces_all %}
+            <div class="col-lg-12">
+                <div class="alert alert-warning alert-dismissable">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Interfaces" %}
                 </div>
             </div>
-            <!-- /.row -->
-
-            {% include 'errors_block.html' %}
-
-            <div class="row">
-                {% if not  ifaces_all %}
-                    <div class="col-lg-12">
-                        <div class="alert alert-warning alert-dismissable">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                            <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning:" %}</strong> {% trans "Hypervisor doesn't have any Interfaces" %}
+        {% else %}
+            {% for iface in ifaces_all %}
+                <div class="col-12 col-sm-4">
+                    <div class="mb-3 card {% if iface.state == 1 %}border-success{% else %}border-danger{% endif %} shadow-sm">
+                        <div class="card-header {% if iface.state == 1 %}bg-success{% else %}bg-danger{% endif %}">
+                            <h6 class="my-0 card-title">
+                                <a class="card-link text-light" href="{% url 'interface' compute.id iface.name %}">{{ iface.name }}</a>
+                            </h6>
                         </div>
-                    </div>
-                {% else %}
-                    {% for iface in ifaces_all %}
-                        <div class="col-xs-12 col-sm-4">
-                            <div class="panel {% ifequal iface.state 1 %}panel-success{% else %}panel-danger{% endifequal %} panel-data">
-                                <div class="panel-heading">
-                                    <h3 class="panel-title"><a href="{% url 'interface' compute.id iface.name %}">{{ iface.name }}</a>
-                                    </h3>
+                        <div class="pl-0 pr-0 card-body">
+                            <div class="row">
+                                <div class="col-4 col-sm-5">
+                                    <p><strong>{% trans "Type" %}:</strong></p>
+                                    <p><strong>{% trans "MAC" %}:</strong></p>
                                 </div>
-                                <div class="panel-body">
-                                    <div class="row">
-                                        <div class="col-xs-4 col-sm-4">
-                                            <p><strong>{% trans "Type:" %}</strong></p>
-                                            <p><strong>{% trans "MAC:" %}</strong></p>
-                                        </div>
-                                        <div class="col-xs-6 col-sm-7">
-                                            <p>{{ iface.type }}</p>
-                                            <p>{{ iface.mac }}</p>
-                                        </div>
-                                    </div>
+                                <div class="col-6 col-sm-7">
+                                    <p>{{ iface.type }}</p>
+                                    <p>{{ iface.mac }}</p>
                                 </div>
                             </div>
                         </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 {% endblock %}
 {% block script %}
 <script>

@@ -54,37 +54,56 @@ table[data-sortable] th[data-sorted-direction="ascending"]:after {
   margin-top: 3px;
 }
 
-/* line 5, ../sass/sortable-theme-bootstrap.sass */
-table[data-sortable].sortable-theme-bootstrap {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 14px;
-  line-height: 20px;
+/* line 6, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick {
   color: #333333;
   background: white;
+  border: 1px solid #e0e0e0;
 }
-/* line 12, ../sass/sortable-theme-bootstrap.sass */
-table[data-sortable].sortable-theme-bootstrap thead th {
-  border-bottom: 2px solid #e0e0e0;
+/* line 11, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick thead th {
+  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #eeeeee));
+  background-image: -webkit-linear-gradient(#ffffff, #eeeeee);
+  background-image: -moz-linear-gradient(#ffffff, #eeeeee);
+  background-image: -o-linear-gradient(#ffffff, #eeeeee);
+  background-image: linear-gradient(#ffffff, #eeeeee);
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #e0e0e0;
 }
-/* line 15, ../sass/sortable-theme-bootstrap.sass */
-table[data-sortable].sortable-theme-bootstrap tbody td {
+/* line 16, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick tbody td {
   border-top: 1px solid #e0e0e0;
 }
-/* line 18, ../sass/sortable-theme-bootstrap.sass */
-table[data-sortable].sortable-theme-bootstrap th[data-sorted="true"] {
+/* line 19, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick tbody > tr:nth-child(odd) > td {
+  background-color: #f9f9f9;
+}
+/* line 22, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick th[data-sorted="true"] {
+  -webkit-box-shadow: inset 1px 0 #bce8f1, inset -1px 0 #bce8f1;
+  -moz-box-shadow: inset 1px 0 #bce8f1, inset -1px 0 #bce8f1;
+  box-shadow: inset 1px 0 #bce8f1, inset -1px 0 #bce8f1;
   color: #3a87ad;
   background: #d9edf7;
   border-bottom-color: #bce8f1;
 }
-/* line 23, ../sass/sortable-theme-bootstrap.sass */
-table[data-sortable].sortable-theme-bootstrap th[data-sorted="true"][data-sorted-direction="descending"]:after {
+/* line 28, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick th[data-sorted="true"]:first-child {
+  -webkit-box-shadow: inset -1px 0 #bce8f1;
+  -moz-box-shadow: inset -1px 0 #bce8f1;
+  box-shadow: inset -1px 0 #bce8f1;
+}
+/* line 31, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick th[data-sorted="true"]:last-child {
+  -webkit-box-shadow: inset 1px 0 #bce8f1;
+  -moz-box-shadow: inset 1px 0 #bce8f1;
+  box-shadow: inset 1px 0 #bce8f1;
+}
+/* line 34, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick th[data-sorted="true"][data-sorted-direction="descending"]:after {
   border-top-color: #3a87ad;
 }
-/* line 26, ../sass/sortable-theme-bootstrap.sass */
-table[data-sortable].sortable-theme-bootstrap th[data-sorted="true"][data-sorted-direction="ascending"]:after {
+/* line 37, ../sass/sortable-theme-slick.sass */
+table[data-sortable].sortable-theme-slick th[data-sorted="true"][data-sorted-direction="ascending"]:after {
   border-bottom-color: #3a87ad;
-}
-/* line 31, ../sass/sortable-theme-bootstrap.sass */
-table[data-sortable].sortable-theme-bootstrap.sortable-theme-bootstrap-striped tbody > tr:nth-child(odd) > td {
-  background-color: #f9f9f9;
 }

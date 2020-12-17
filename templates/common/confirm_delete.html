@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load bootstrap4 %}
+{% load icons %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_heading %}{{ title }}{% endblock page_heading %}
+
+{% block content %}
+<div class="row">
+    <div class="offset-3 col-6">
+        <form method="post">
+            {% csrf_token %}
+            <div class="alert alert-warning">
+                {%trans "Are you sure you want to delete" %} "{{ object }}"?
+            </div>
+            <div class="form-group mb-0 float-right">
+                <a class="btn btn-primary" href="javascript:history.back()">{% icon 'times' %} {% trans "Cancel" %}</a>
+                <button type="submit" class="btn btn-danger">
+                    {% icon 'trash' %} {% trans "Delete" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

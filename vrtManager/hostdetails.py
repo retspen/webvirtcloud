@@ -1,14 +1,15 @@
 import time
+
 from vrtManager.connection import wvmConnect
 from vrtManager.util import get_xml_path
 
 
-def cpu_version(ctx):
-    for info in ctx.xpathEval('/sysinfo/processor/entry'):
-        elem = info.xpathEval('@name')[0].content
-        if elem == 'version':
-            return info.content
-    return 'Unknown'
+def cpu_version(doc):
+    for info in doc.xpath("/sysinfo/processor/entry"):
+        elem = info.xpath("@name")[0]
+        if elem == "version":
+            return info.text
+    return "Unknown"
 
 
 class wvmHostDetails(wvmConnect):
@@ -16,17 +17,15 @@ class wvmHostDetails(wvmConnect):
         """
         Function return memory usage on node.
         """
-        get_all_mem = self.wvm.getInfo()[1] * 1048576
-        get_freemem = self.wvm.getMemoryStats(-1, 0)
-        if type(get_freemem) == dict:
-            free = (get_freemem.values()[0] +
-                    get_freemem.values()[2] +
-                    get_freemem.values()[3]) * 1024
-            percent = (100 - ((free * 100) / get_all_mem))
-            usage = (get_all_mem - free)
-            mem_usage = {'usage': usage, 'percent': percent}
+        all_mem = self.wvm.getInfo()[1] * 1048576
+        freemem = self.wvm.getMemoryStats(-1, 0)
+        if isinstance(freemem, dict):
+            free = (freemem["buffers"] + freemem["free"] + freemem["cached"]) * 1024
+            percent = abs(100 - ((free * 100) // all_mem))
+            usage = all_mem - free
+            mem_usage = {"total": all_mem, "usage": usage, "percent": percent}
         else:
-            mem_usage = {'usage': None, 'percent': None}
+            mem_usage = {"total": None, "usage": None, "percent": None}
         return mem_usage
 
     def get_cpu_usage(self):
@@ -36,9 +35,9 @@ class wvmHostDetails(wvmConnect):
         prev_idle = 0
         prev_total = 0
         cpu = self.wvm.getCPUStats(-1, 0)
-        if type(cpu) == dict:
+        if isinstance(cpu, dict):
             for num in range(2):
-                idle = self.wvm.getCPUStats(-1, 0).values()[1]
+                idle = self.wvm.getCPUStats(-1, 0)["idle"]
                 total = sum(self.wvm.getCPUStats(-1, 0).values())
                 diff_idle = idle - prev_idle
                 diff_total = total - prev_total
@@ -51,22 +50,18 @@ class wvmHostDetails(wvmConnect):
                     if diff_usage < 0:
                         diff_usage = 0
         else:
-            return {'usage': None}
-        return {'usage': diff_usage}
+            return {"usage": None}
+        return {"usage": diff_usage}
 
     def get_node_info(self):
         """
         Function return host server information: hostname, cpu, memory, ...
         """
-        info = []
-        info.append(self.wvm.getHostname())
-        info.append(self.wvm.getInfo()[0])
-        info.append(self.wvm.getInfo()[1] * 1048576)
-        info.append(self.wvm.getInfo()[2])
-        info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version))
-        info.append(self.wvm.getURI())
+        info = list()
+        info.append(self.wvm.getHostname())  # hostname
+        info.append(self.wvm.getInfo()[0])  # architecture
+        info.append(self.wvm.getInfo()[1] * 1048576)  # memory
+        info.append(self.wvm.getInfo()[2])  # cpu core count
+        info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version))  # cpu version
+        info.append(self.wvm.getURI())  # uri
         return info
-
-    def hypervisor_type(self):
-        """Return hypervisor type"""
-        return get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch/domain/@type")

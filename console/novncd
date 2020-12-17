@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -7,7 +7,7 @@ import django
 
 DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, '..', ''))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'webvirtcloud.settings')
 CERT = DIR_PATH + '/cert.pem'
 
 if ROOT_PATH not in sys.path:
@@ -15,18 +15,14 @@ if ROOT_PATH not in sys.path:
 
 django.setup()
 
-# VENV_PATH = ROOT_PATH + '/venv/lib/python2.7/site-packages'
-# if VENV_PATH not in sys.path:
-#     sys.path.append(VENV_PATH)
-
 import re
-import Cookie
 import socket
+from six.moves import http_cookies as Cookie
 from webvirtcloud.settings import WS_PORT, WS_HOST, WS_CERT
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
-from tunnel import Tunnel
-
+from console.sshtunnels import SSHTunnels
 from optparse import OptionParser
+
 parser = OptionParser()
 
 parser.add_option("-v",
@@ -66,7 +62,6 @@ parser.add_option("-c",
 
 (options, args) = parser.parse_args()
 
-
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
 if options.debug:
     logging.basicConfig(level=logging.DEBUG, format=FORMAT)
@@ -88,8 +83,7 @@ except ImportError:
     try:
         from novnc.wsproxy import WebSocketProxy
     except ImportError:
-        print('Unable to import a websockify implementation, ' +
-              'please install one')
+        print('Unable to import a websockify implementation,\n please install one')
         sys.exit(1)
     else:
         USE_HANDLER = False
@@ -120,8 +114,9 @@ def get_connection_infos(token):
         console_host = conn.get_console_listen_addr()
         console_port = conn.get_console_port()
         console_socket = conn.get_console_socket()
-    except Exception, e:
-        logging.error('Fail to retrieve console connexion infos for token %s : %s' % (token, e))
+    except Exception as e:
+        logging.error(
+            'Fail to retrieve console connection infos for token %s : %s' % (token, e))
         raise
     return (connhost, connport, connuser, conntype, console_host,
             console_port, console_socket)
@@ -129,17 +124,30 @@ def get_connection_infos(token):
 
 class CompatibilityMixIn(object):
     def _new_client(self, daemon, socket_factory):
-        cookie = Cookie.SimpleCookie()
-        cookie.load(self.headers.getheader('cookie'))
-        if 'token' not in cookie:
-            self.msg('No token cookie found !')
-            return False
-        token = cookie['token'].value
+        # NoVNC uses it's own convention that forward token
+        # from the request to a cookie header, we should check
+        # also for this behavior
+        hcookie = self.headers.get('cookie')
+
+        if hcookie:
+            cookie = Cookie.SimpleCookie()
+            for hcookie_part in hcookie.split(';'):
+                hcookie_part = hcookie_part.lstrip()
+                try:
+                    cookie.load(hcookie_part)
+                except Cookie.CookieError:
+                    # NOTE(stgleb): Do not print out cookie content
+                    # for security reasons.
+                    self.msg('Found malformed cookie')
+                else:
+                    if 'token' in cookie:
+                        token = cookie['token'].value
+
 
         (connhost, connport, connuser, conntype, console_host, console_port,
          console_socket) = get_connection_infos(token)
 
-        cnx_debug_msg = "Connexion infos :\n"
+        cnx_debug_msg = "Connection infos :\n"
         cnx_debug_msg += "- connhost : '%s'\n" % connhost
         cnx_debug_msg += "- connport : '%s'\n" % connport
         cnx_debug_msg += "- connuser : '%s'\n" % connuser
@@ -159,7 +167,7 @@ class CompatibilityMixIn(object):
             if conntype != CONN_SSH:
                 self.msg("Need a tunnel to access console but can't mount " +
                          "one because it's not a SSH host")
-                raise
+                raise Exception(self.msg)
             try:
                 # generate a string with all placeholders to avoid TypeErrors
                 # in sprintf
@@ -167,15 +175,16 @@ class CompatibilityMixIn(object):
                 error_msg = "Try to open tunnel on %s@%s:%s on console %s:%s "
                 error_msg += "(or socket %s)"
                 self.msg(error_msg % (connuser, connhost, connport,
-                         console_host, console_port, console_socket))
-                tunnel = Tunnel()
-                fd = tunnel.open(connhost, connuser, connport,
+                                      console_host, console_port, console_socket))
+                tunnel = SSHTunnels(connhost, connuser, connport,
                                  console_host, console_port, console_socket)
+                fd = tunnel.open_new()
+                tunnel.unlock()
                 tsock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
             except Exception as e:
                 self.msg("Fail to open tunnel : %s" % e)
                 raise
-            self.msg("Tunnel openned")
+            self.msg("Tunnel opened")
         else:
             # Direct access
             self.msg("connecting to: %s:%s" % (connhost, console_port))
@@ -189,18 +198,16 @@ class CompatibilityMixIn(object):
         try:
             self.msg("Start proxying")
             self.do_proxy(tsock)
-        except:
+        except Exception:
             if tunnel:
                 self.vmsg(
-                    "%s:%s (via %s@%s:%s) : Target closed" %
+                    "%s:%s (via %s@%s:%s) : Websocket client or Target closed" %
                     (console_host, console_port, connuser, connhost, connport))
                 if tsock:
                     tsock.shutdown(socket.SHUT_RDWR)
                     tsock.close()
-                if tunnel:
-                    tunnel.close()
+                tunnel.close_all()
             raise
-
 
 if USE_HANDLER:
     class NovaProxyRequestHandler(ProxyRequestHandler, CompatibilityMixIn):
@@ -220,7 +227,6 @@ if USE_HANDLER:
             socket_factory = self.server.socket
 
             self._new_client(daemon, socket_factory)
-
 else:
     class NovaWebSocketProxy(WebSocketProxy, CompatibilityMixIn):
 

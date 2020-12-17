@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load bootstrap4 %}
+{% load icons %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_heading %}{{ title }}{% endblock page_heading %}
+
+{% block content %}
+<div class="card col-sm-10 offset-1">
+    <div class="card-body">
+        <form id="create-update" action="" method="post">
+            {% csrf_token %}
+            {% bootstrap_form user_form layout='horizontal' %}
+            {% bootstrap_form attributes_form layout='horizontal' %}
+        </form>
+        <div class="form-group float-right">
+            <a class="btn btn-primary" href="javascript:history.back()">{% icon 'times' %} {% trans "Cancel" %}</a>
+            <button type="submit" form="create-update" class="btn btn-success">
+                {% icon 'check' %} {% trans "Save" %}
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock content %}

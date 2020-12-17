@@ -18,6 +18,11 @@
    along with spice-html5.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { RSAKey } from './thirdparty/rsa.js';
+import { BigInteger } from './thirdparty/jsbn.js';
+import { SecureRandom } from './thirdparty/rng.js';
+import { rstr_sha1 } from './thirdparty/sha1.js';
+
 var SHA_DIGEST_LENGTH = 20;
 
 /*----------------------------------------------------------------------------
@@ -248,3 +253,8 @@ function rsa_encrypt(rsa, str)
         ret[i / 2] = parseInt(h.substring(i, i + 2), 16);
     return ret;
 }
+
+export {
+  create_rsa_from_mb,
+  rsa_encrypt,
+};

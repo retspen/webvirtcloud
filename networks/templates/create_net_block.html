@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddNetPool" type="button" class="btn btn-success pull-right" data-toggle="modal">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+    <a href="#AddNetPool" type="button" class="btn btn-success float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
     </a>
 
     <!-- Modal pool -->
@@ -9,61 +9,80 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
+                    <h5 class="modal-title">{% trans "Add New Network" %}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Add New Network" %}</h4>
                 </div>
                 <div class="modal-body">
-                    <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
-                        <div class="form-group">
-                            <label class="col-sm-4 control-label">{% trans "Name" %}</label>
+                    <form method="post" action="" role="form" aria-label="Add New Network form" novalidate>{% csrf_token %}
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "Name" %}</label>
                             <div class="col-sm-6">
-                                <input type="text" class="form-control" name="name" placeholder="default" required pattern="[a-zA-Z0-9_]+">
+                                <input type="text" class="form-control" name="name" placeholder="{% trans "default" %}" required pattern="[a-zA-Z0-9_]+">
                             </div>
                         </div>
-                        <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-4 control-label">{% trans "Subnet pool" %}</label>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "Type forwarding" %}</label>
                             <div class="col-sm-6">
-                                <input type="text" class="form-control" name="subnet" value="192.168.100.0/24" required pattern="[0-9\/\.]+">
-                            </div>
-                        </div>
-                        <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-4 control-label">{% trans "DHCP" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" name="dhcp" value="true" checked>
-                            </div>
-                        </div>
-                        <div class="form-group bridge_name_form_group_dhcp">
-                            <label class="col-sm-4 control-label">{% trans "Fixed Address" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" name="fixed" value="true">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="col-sm-4 control-label">{% trans "Type forwarding" %}</label>
-                            <div class="col-sm-6">
-                                <select id="forward_select" class="form-control" name="forward">
+                                <select id="forward_select" class="custom-select" name="forward">
                                     <option value="nat">{% trans "NAT" %}</option>
                                     <option value="route">{% trans "ROUTE" %}</option>
                                     <option value="none">{% trans "ISOLATE" %}</option>
                                     <option value="bridge">{% trans "BRIDGE" %}</option>
+                                    <option value="macvtap">{% trans "MACVTAP" %}</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group bridge_name_form_group">
-                            <label class="col-sm-4 control-label">{% trans "Bridge Name" %}</label>
+                        <div class="form-group row bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 col-form-label">{% trans "IPv4 Subnet pool" %}</label>
                             <div class="col-sm-6">
-                                <input type="text" class="form-control" name="bridge_name" placeholder="br0" pattern="[a-z0-9\-_:]+">
+                                <input type="text" class="form-control" name="subnet" value="" placeholder="192.168.100.0/24" required pattern="[0-9\/\.]+">
                             </div>
                         </div>
-                        <div class="form-group bridge_name_form_group">
-                            <label class="col-sm-4 control-label">{% trans "Open vSwitch" %}</label>
+                        <div class="form-group row bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 col-form-label">{% trans "DHCPv4" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="dhcp4" value="true" checked>
+                            </div>
+                        </div>
+                        <div class="form-group row bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 col-form-label">{% trans "Fixed Addresses" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="fixed" value="true">
+                            </div>
+                        </div>
+                        <div class="form-group row bridge_name_form_group_dhcp">
+                            <label class="col-sm-4 col-form-label">{% trans "Enable IPv6" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" id="enable_ipv6" name="enable_ipv6" value="false">
+                            </div>
+                        </div>
+                        <div class="form-group row ipv6_group">
+                            <label class="col-sm-4 col-form-label">{% trans "IPv6 Subnet pool" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="subnet6" value="" placeholder="fd00:dead:baba:1::/64" required pattern="[0-9\/\.]+">
+                            </div>
+                        </div>
+                        <div class="form-group row ipv6_group">
+                            <label class="col-sm-4 col-form-label">{% trans "DHCPv6" %}</label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" name="dhcp6" value="true">
+                            </div>
+                        </div>
+                        <div class="form-group row bridge_name_form_group">
+                            <label class="col-sm-4 col-form-label" id="bridge_label">{% trans "Bridge Name" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="bridge_name" id="bridge_name" placeholder="br0" pattern="[a-z0-9\-_:]+">
+                            </div>
+                        </div>
+                        <div class="form-group row bridge_name_form_group openvswitch">
+                            <label class="col-sm-4 col-form-label">{% trans "Open vSwitch" %}</label>
                             <div class="col-sm-6">
                                 <input type="checkbox" name="openvswitch" value="true">
                             </div>
                         </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
                     <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
                 </div>
                     </form>
@@ -71,3 +90,4 @@
         </div> <!-- /.modal-dialog -->
     </div> <!-- /.modal -->
 {% endif %}
+

@@ -1,0 +1,15 @@
+{% extends "base_auth.html" %}
+{% load i18n %}
+{% block title %}{% trans "403" %}{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-12 text-center">
+            <h1>{% trans 'Oops!'%}</h1>
+
+            <p class="lead">{% trans "403 Forbidden" %}</p>
+
+            <p>{% trans "You do not have permission to access this page." %}</p>
+            <a class="btn btn-success" href="javascript:history.back()">&larr; {% trans 'Back'%}</a>
+        </div>
+    </div>
+{% endblock %}

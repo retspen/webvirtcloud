@@ -1,0 +1,131 @@
+{% load i18n %}
+<div role="tabpanel" class="tab-pane active" id="power">
+    <div role="tabpanel">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist" aria-label="Instance power actions">
+            {% if instance.status == 1 %}
+                <li class="nav-item">
+                    <a class="nav-link text-secondary active" href="#poweroff" aria-controls="poweroff" role="tab" data-toggle="tab">
+                        {% trans "Power Off" %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-secondary" href="#powercycle" aria-controls="powercycle" role="tab" data-toggle="tab">
+                        {% trans "Power Cycle" %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-secondary" href="#powerforce" aria-controls="powerforce" role="tab" data-toggle="tab">
+                        {% trans "Force Off" %}
+                    </a>
+                </li>
+                {% if request.user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" href="#suspend" aria-controls="suspend" role="tab" data-toggle="tab">
+                            {% trans "Suspend" %}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endif %}
+            {% if instance.status == 3 %}
+                {% if request.user.is_superuser %}
+                <li class="nav-item">
+                    <a class="nav-link text-secondary" href="#resume" aria-controls="resume" role="tab" data-toggle="tab">
+                        {% trans "Resume" %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-secondary" href="#powerforce" aria-controls="powerforce" role="tab" data-toggle="tab">
+                        {% trans "Force Off" %}
+                    </a>
+                </li>
+                {% endif %}
+            {% endif %}
+            {% if instance.status == 5 %}
+                <li class="nav-item">
+                    <a class="nav-link text-secondary active" href="#boot" aria-controls="boot" role="tab" data-toggle="tab">
+                        {% trans "Power On" %}
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+            {% if instance.status == 1 %}
+                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="poweroff">
+                    <p>{% trans "This action sends an ACPI shutdown signal to the instance." %}</p>
+                    <form action="{% url 'instances:poweroff' instance.id %}" method="post" role="form" aria-label0="Power off instance form">
+                        {% csrf_token %}
+                        <input type="submit" name="poweroff" class="btn btn-lg btn-success float-right" value="{% trans "Power Off" %}">
+                        <div class="clearfix"></div>
+                    </form>
+                </div>
+                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powercycle">
+                    <p>{% trans "This action forcibly powers off and start the instance and may cause data corruption." %}</p>
+                    <form action="{% url 'instances:powercycle' instance.id %}" method="post" role="form" aria-label="Power cycle instance form">{% csrf_token %}
+                        <input type="submit" name="powercycle" class="btn btn-lg btn-success float-right" value="{% trans "Power Cycle" %}">
+                        <div class="clearfix"></div>
+                    </form>
+                </div>
+                <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powerforce">
+                    <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
+                    <form action="{% url 'instances:force_off' instance.id %}" method="post" role="form" aria-label="Force to shotdown instance form">
+                        {% csrf_token %}
+                        <input type="submit" name="powerforce" class="btn btn-lg btn-success float-right" value="{% trans "Force Off" %}">
+                        <div class="clearfix"></div>
+                    </form>
+                </div>
+                {% if request.user.is_superuser %}
+                    <div role="tabpanel" class="tab-pane tab-pane-bordered" id="suspend">
+                        <p>{% trans "This action suspends the instance." %}</p>
+                        <form action="{% url 'instances:suspend' instance.id %}" method="post" role="form" aria-label="Suspend instance form">{% csrf_token %}
+                            <input type="submit" name="suspend" class="btn btn-lg btn-success float-right" value="{% trans "Suspend" %}">
+                            <div class="clearfix"></div>
+                        </form>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if instance.status == 3 %}
+                {% if request.user.is_superuser %}
+                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                        <p>{% trans "This action restore the instance after suspend." %}</p>
+                        <form action="{% url 'instances:resume' instance.id %}" method="post" role="form" aria-label="Resume instance from suspension form">{% csrf_token %}
+                            <input type="submit" name="resume" class="btn btn-lg btn-success float-right" value="{% trans "Resume" %}">
+                            <div class="clearfix"></div>
+                        </form>
+                    </div>
+                    <div role="tabpanel" class="tab-pane tab-pane-bordered" id="powerforce">
+                        <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
+                        <form action="{% url 'instances:force_off' instance.id %}" method="post" role="form" aria-label="Force to shutdown form">{% csrf_token %}
+                            <input type="submit" name="powerforce" class="btn btn-lg btn-success float-right" value="{% trans "Force Off" %}">
+                            <div class="clearfix"></div>
+                        </form>
+                    </div>
+                {% else %}
+                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resume">
+                        <p>{% trans "Administrator blocked your instance." %}</p>
+                        <form action="{% url 'instances:resume' instance.id %}" method="post" role="form" aria-label="Resume instance form">{% csrf_token %}
+                            <button class="btn btn-lg btn-success disabled float-right">{% trans "Resume" %}</button>
+                            <div class="clearfix"></div>
+                        </form>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if instance.status == 5 %}
+                <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot">
+                    <p>{% trans "Click on Power On button to start this instance." %}</p>
+                    <form action="{% url 'instances:poweron' instance.id %}" method="post" role="form" aria-label="Start instance form">
+                        {% csrf_token %}
+                        {% if instance.is_template %}
+                            <p>{% trans "Template instance cannot be started." %}</p>
+                            <input type="submit" name="poweron" class="btn btn-lg btn-success float-right disabled" value="{% trans "Power On" %}">
+                        {% else %}
+                            <input type="submit" name="poweron" class="btn btn-lg btn-success float-right" value="{% trans "Power On" %}">
+                        {% endif %}
+                        <div class="clearfix"></div>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

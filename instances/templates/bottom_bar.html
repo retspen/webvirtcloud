@@ -1,0 +1,25 @@
+{% load i18n %}
+<nav class="navbar navbar-expand-sm fixed-bottom navbar-light bg-light" aria-label="Instance bottom navbar">
+    <div class="container">
+        <a class="navbar-brand" href="#">{% trans 'HOST' %}</a>  
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar_bottom" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div id="navbar_bottom" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'overview' compute.id %}">
+                        <i class="fa fa-server"></i>
+                        {{ compute.name }} {% if compute.name != compute.hostname %} - {{ compute.hostname }}{% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'instances' compute.id %}"><i class="fa fa-desktop"></i> {% trans "Instances" %}</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="{% url 'instances:instance' instance.id %}"><i class="fa fa-hdd-o"></i> {{ instance.name }}</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

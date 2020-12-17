@@ -20,7 +20,7 @@ import os
 #       range.
 #
 
-#bind = 'unix:/srv/webvirtcloud/venv/wvcloud.socket'
+# bind = 'unix:/srv/webvirtcloud/venv/wvcloud.socket'
 bind = '127.0.0.1:8000'
 backlog = 2048
 

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block title %}{% trans "Create new instance" %} - {% trans "Select Type" %}{% endblock %}
+
+{% block page_heading%}
+{% blocktrans with host=compute.name %}New instance on {{ host }} {% endblocktrans %}
+{% endblock page_heading %}
+
+{% block content %}
+    {% include 'pleasewaitdialog.html' %}
+
+    {% if form.errors %}
+    {% for field in form %}
+        {% for error in field.errors %}
+            <div class="alert alert-danger">
+                <strong>{{ error|escape }}</strong>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+        <div class="alert alert-danger">
+            <strong>{{ error|escape }}</strong>
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row" id="max-width-page">
+        <div class="col-lg-12">
+            <div role="tabpanel">
+            <!-- Nav tabs -->
+                <ul class="nav nav-tabs" role="tablist" aria-label="Instance create method">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#select_architecture" aria-controls="flavor" role="tab" data-toggle="tab">
+                            {% trans "Architecture" %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#addFromXML" aria-controls="addFromXML" role="tab" data-toggle="tab">
+                            {% trans "XML" %}
+                        </a>
+                    </li>
+                </ul>
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="select_architecture">
+                        
+                            <div class="center-block">
+                            <form method="post" role="form" aria-label="Select instance architecture form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Architecture" %}</label>
+                                    <div class="col-sm-6">
+                                         <select class="custom-select" id="select_archs" name="archs" onchange="get_machine_types({{ compute_id }}, value);">
+                                            {% for hpv in hypervisors %}
+                                            <option value="{{ hpv }}" {% if hpv == default_arch %}selected{% endif %}>{{ hpv }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Chipset" %}</label>
+                                    <div class="col-sm-6">
+                                        <select class="custom-select" id="select_chipset" name="chipset">
+                                        <!-- fill with script -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-sm-6 offset-3">
+                                    <button class="btn btn-block btn-primary"  type="button" name="create_instance" onclick="goto_create()">
+                                         {% trans "Next" %}
+                                    </button>
+                                    </div>
+                                </div>
+                            </form>
+                            </div>
+                        
+                        <div class="clearfix"></div>
+                    </div>
+                    <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromXML">
+                        <div>
+                            <form method="post" role="form" aria-label="Create instance with XML form">{% csrf_token %}
+                                <div class="col-sm-12" id="xmlheight">
+                                     <input type="hidden" name="dom_xml"/>
+                                    <textarea id="editor"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary float-right" name="create_xml" onclick="showPleaseWaitDialog()">
+                                    {% trans "Create" %}
+                                </button>
+                            </form>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+<script>
+    $(document).ready(function () {
+        let arch = $("#select_archs").val();
+        get_machine_types({{ compute_id }}, arch);
+    });
+
+    function get_machine_types(compute_id, arch) {
+        get_machine_type_url = "/computes/" + compute_id + "/archs/" + arch + "/machines";
+        $.getJSON(get_machine_type_url, function (data) {
+            $("#select_chipset").find('option').remove();
+            $("#select_archs").val(arch);
+            $.each(data['machines'], function(i, item) {
+                if (item == '{{ default_machine }}') {
+                    var selected = 'selected';
+                }else{
+                    var selected = '';
+                }
+                $("#select_chipset").append('<option value="' + item + '"' + selected +'>' + item + '</option>');
+            });
+        });
+    }
+</script>
+
+<script src="{% static "js/ace/ace.js" %}"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.getSession().setMode("ace/mode/xml");
+
+    var input = $('input[name="dom_xml"]');
+    editor.getSession().on("change",function () {
+        input.val(editor.getSession().getValue());
+    })
+</script>
+{% if request.user.is_superuser %}
+    <script>
+        function goto_create() {
+            let compute = '{{ compute.id }}';
+            let arch = $("#select_archs").val();
+            let machine = $("#select_chipset").val();
+            //create_machine_url = "/computes/" + compute + "/create/archs/" + arch + "/machines/" + machine;
+            url = "{% url 'instances:create_instance' compute.id 'x86_64' 'pc' %}".replace(/x86_64/, arch).replace(/pc/, machine);
+            window.location.href = url;//create_machine_url;
+        }
+
+    </script>
+{% endif %}
+{% endblock %}

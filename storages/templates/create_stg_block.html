@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddStgPool" type="button" class="btn btn-success pull-right" data-toggle="modal">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+    <a href="#AddStgPool" type="button" class="btn btn-success float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
     </a>
 
     <!-- Modal Storage pool -->
@@ -9,115 +9,119 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
+                    <h5 class="modal-title">{% trans "Create Storage Pool" %}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title">{% trans "Create Storage Pool" %}</h4>
                 </div>
                 <div class="tabbable">
-                    <ul class="nav nav-tabs">
-                        <li class="active">
-                            <a href="#1" data-toggle="tab">{% trans "DIR" %}</a>
+                    <ul class="nav nav-tabs" aria-label="Storage create types">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dirtab" data-toggle="tab">{% trans "DIR" %}</a>
                         </li>
-                        <li><a href="#2" data-toggle="tab">{% trans "LVM" %}</a></li>
-                        <li><a href="#3" data-toggle="tab">{% trans "CEPH" %}</a></li>
-                        <li><a href="#4" data-toggle="tab">{% trans "NETFS" %}</a></li>
-                        <li><a href="#5" data-toggle="tab">{% trans "ISO" %}</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#lvmtab" data-toggle="tab">{% trans "LVM" %}</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#cephtab" data-toggle="tab">{% trans "CEPH" %}</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#netfstab" data-toggle="tab">{% trans "NETFS" %}</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#isotab" data-toggle="tab">{% trans "ISO" %}</a></li>
                     </ul>
                 </div>
                 <div class="tab-content">
-                    <div class="tab-pane active" id="1">
+                    <div class="tab-pane active" id="dirtab">
                         <div class="modal-body">
-                            <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Type" %}</label>
+                            <form method="post" action="" role="form" aria-label="Create storage with pool dir path form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="stg_type" value="dir" disabled>
                                         <input type="hidden" name="stg_type" value="dir">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="name" placeholder="default" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
+                                        <input type="text" class="form-control" name="name" placeholder="{% trans "default" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Path" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Path" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" name="target" class="form-control" value="/var/lib/libvirt/images" required pattern="[a-zA-Z0-9\/\-_]+">
                                     </div>
                                 </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
                             <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
                         </div>
                             </form>
                     </div>
-                    <div class="tab-pane" id="2">
+                    <div class="tab-pane" id="lvmtab">
                         <div class="modal-body">
-                            <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Type" %}</label>
+                            <form method="post" action="" role="form" aria-label="Create storage pool with LVM pool">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="stg_type" value="logical" disabled>
                                         <input type="hidden" name="stg_type" value="logical">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="name" placeholder="default" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
+                                        <input type="text" class="form-control" name="name" placeholder="{% trans "default" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Device" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Device" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="source" value="/dev/sdb" required pattern="[a-z0-9\/]+">
                                     </div>
                                 </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
                             <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
                         </div>
                             </form>
                     </div>
-                    <div class="tab-pane" id="3">
+                    <div class="tab-pane" id="cephtab">
                         <div class="modal-body">
-                            <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Type" %}</label>
+                            <form method="post" action="" role="form" aria-label="Create storage pool with ceph form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="stg_type" value="rbd" disabled>
                                         <input type="hidden" name="stg_type" value="rbd">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="name" placeholder="rbdpool" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Ceph User" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Ceph User" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="ceph_user" placeholder="libvirt" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Ceph Pool" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Ceph Pool" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="ceph_pool" placeholder="libvirt-pool" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Ceph Host" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Ceph Host" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="ceph_host" placeholder="mon0.ceph.host" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Secrets" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Secrets" %}</label>
                                     <div class="col-sm-6">
                                         <select name="secret" class="form-control">
                                             {% if secrets %}
@@ -132,7 +136,7 @@
                                 </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
                                 {% trans "Close" %}
                             </button>
                             {% if secrets %}
@@ -147,36 +151,36 @@
                         </div>
                             </form>
                     </div>
-                    <div class="tab-pane" id="4">
+                    <div class="tab-pane" id="netfstab">
                         <div class="modal-body">
-                            <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Type" %}</label>
+                            <form method="post" action="" role="form" aria-label="Create storage pool with net filesystem form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="stg_type" value="netfs" disabled>
                                         <input type="hidden" name="stg_type" value="netfs">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="name" placeholder="netfspool" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Hostname" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Hostname" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="netfs_host" placeholder="nfs.example.com" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Remote Path" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Remote Path" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="source" placeholder="/srv/storage/" maxlength="40" required pattern="[a-zA-Z0-9\/\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Format" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Format" %}</label>
                                     <div class="col-sm-6">
                                         <select name="source_format" class="form-control" id="source_format">
                                             <option value="auto">{% trans "auto" %}</option>
@@ -186,15 +190,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Local Path" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Local Path" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="target" placeholder="/srv/storage/" maxlength="40" required pattern="[a-zA-Z0-9\/\-_]+">
                                     </div>
                                 </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
                                 {% trans "Close" %}
                             </button>
                             <button type="submit" class="btn btn-primary" name="create">
@@ -203,26 +207,26 @@
                         </div>
                             </form>
                     </div>
-                    <div class="tab-pane" id="5">
+                    <div class="tab-pane" id="isotab">
                         <div class="modal-body">
-                            <form class="form-horizontal" method="post" action="" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                            <form method="post" action="" role="form" aria-label="Create iso pool form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="name" value="iso" disabled>
                                         <input type="hidden" name="name" value="iso">
                                         <input type="hidden" name="stg_type" value="dir">
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Path" %}</label>
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Path" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="target" value="/var/www/webvirtmgr/images" required pattern="[a-zA-Z0-9\/\-_]+">
                                     </div>
                                 </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
                                 {% trans "Close" %}
                             </button>
                             <button type="submit" class="btn btn-primary" name="create">

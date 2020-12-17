@@ -1,223 +1,258 @@
-import time
 import json
-from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from computes.models import Compute
-from instances.models import Instance
-from accounts.models import UserInstance
-from computes.forms import ComputeAddTcpForm, ComputeAddSshForm, ComputeEditHostForm, ComputeAddTlsForm, ComputeAddSocketForm
-from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.connection import CONN_SSH, CONN_TCP, CONN_TLS, CONN_SOCKET, connection_manager
+
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 from libvirt import libvirtError
 
+from admin.decorators import superuser_only
+from computes.forms import SocketComputeForm, SshComputeForm, TcpComputeForm, TlsComputeForm
+from computes.models import Compute
+from instances.models import Instance
+from vrtManager.connection import (
+    CONN_SOCKET,
+    CONN_SSH,
+    CONN_TCP,
+    CONN_TLS,
+    connection_manager,
+    wvmConnect,
+)
+from vrtManager.hostdetails import wvmHostDetails
 
-@login_required
+from . import utils
+
+
+@superuser_only
 def computes(request):
     """
     :param request:
     :return:
     """
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
+    computes = Compute.objects.filter().order_by("name")
 
-    def get_hosts_status(computes):
-        """
-        Function return all hosts all vds on host
-        """
-        compute_data = []
-        for compute in computes:
-            compute_data.append({'id': compute.id,
-                                 'name': compute.name,
-                                 'hostname': compute.hostname,
-                                 'status': connection_manager.host_is_up(compute.type, compute.hostname),
-                                 'type': compute.type,
-                                 'login': compute.login,
-                                 'password': compute.password,
-                                 'details': compute.details
-                                 })
-        return compute_data
-
-    error_messages = []
-    computes = Compute.objects.filter().order_by('name')
-    computes_info = get_hosts_status(computes)
-    
-    if request.method == 'POST':
-        if 'host_del' in request.POST:
-            compute_id = request.POST.get('host_id', '')
-            try:
-                del_user_inst_on_host = UserInstance.objects.filter(instance__compute_id=compute_id)
-                del_user_inst_on_host.delete()
-            finally:
-                try:
-                    del_inst_on_host = Instance.objects.filter(compute_id=compute_id)
-                    del_inst_on_host.delete()
-                finally:
-                    del_host = Compute.objects.get(id=compute_id)
-                    del_host.delete()
-            return HttpResponseRedirect(request.get_full_path())
-        if 'host_tcp_add' in request.POST:
-            form = ComputeAddTcpForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_tcp_host = Compute(name=data['name'],
-                                       hostname=data['hostname'],
-                                       type=CONN_TCP,
-                                       login=data['login'],
-                                       password=data['password'])
-                new_tcp_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-        if 'host_ssh_add' in request.POST:
-            form = ComputeAddSshForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_ssh_host = Compute(name=data['name'],
-                                       hostname=data['hostname'],
-                                       type=CONN_SSH,
-                                       login=data['login'])
-                new_ssh_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-        if 'host_tls_add' in request.POST:
-            form = ComputeAddTlsForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_tls_host = Compute(name=data['name'],
-                                       hostname=data['hostname'],
-                                       type=CONN_TLS,
-                                       login=data['login'],
-                                       password=data['password'])
-                new_tls_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-        if 'host_socket_add' in request.POST:
-            form = ComputeAddSocketForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                new_socket_host = Compute(name=data['name'],
-                                          details=data['details'],
-                                          hostname='localhost',
-                                          type=CONN_SOCKET,
-                                          login='',
-                                          password='')
-                new_socket_host.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-        if 'host_edit' in request.POST:
-            form = ComputeEditHostForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
-                compute_edit = Compute.objects.get(id=data['host_id'])
-                compute_edit.name = data['name']
-                compute_edit.hostname = data['hostname']
-                compute_edit.login = data['login']
-                compute_edit.password = data['password']
-                compute.edit_details = data['details']
-                compute_edit.save()
-                return HttpResponseRedirect(request.get_full_path())
-            else:
-                for msg_err in form.errors.values():
-                    error_messages.append(msg_err.as_text())
-    return render(request, 'computes.html', locals())
+    return render(request, "computes/list.html", {"computes": computes})
 
 
-@login_required
+@superuser_only
 def overview(request, compute_id):
-    """
-    :param request:
-    :return:
-    """
+    compute = get_object_or_404(Compute, pk=compute_id)
+    status = (
+        "true" if connection_manager.host_is_up(compute.type, compute.hostname) is True else "false"
+    )
 
-    if not request.user.is_superuser:
-        return HttpResponseRedirect(reverse('index'))
+    conn = wvmHostDetails(
+        compute.hostname,
+        compute.login,
+        compute.password,
+        compute.type,
+    )
+    hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
+    hypervisor = conn.get_hypervisors_domain_types()
+    mem_usage = conn.get_memory_usage()
+    emulator = conn.get_emulator(host_arch)
+    version = conn.get_version()
+    lib_version = conn.get_lib_version()
+    conn.close()
 
-    error_messages = []
+    return render(request, "overview.html", locals())
+
+
+@superuser_only
+def instances(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
 
-    try:
-        conn = wvmHostDetails(compute.hostname,
-                              compute.login,
-                              compute.password,
-                              compute.type)
-        hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
-        hypervisor = conn.hypervisor_type()
-        mem_usage = conn.get_memory_usage()
-        conn.close()
-    except libvirtError as lib_err:
-        error_messages.append(lib_err)
+    utils.refresh_instance_database(compute)
+    instances = Instance.objects.filter(compute=compute).prefetch_related("userinstance_set")
 
-    return render(request, 'overview.html', locals())
+    return render(request, "computes/instances.html", {"compute": compute, "instances": instances})
 
 
-@login_required
+@superuser_only
+def compute_create(request, FormClass):
+    form = FormClass(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect(reverse("computes"))
+
+    return render(request, "computes/form.html", {"form": form})
+
+
+@superuser_only
+def compute_update(request, compute_id):
+    compute = get_object_or_404(Compute, pk=compute_id)
+
+    if compute.type == 1:
+        FormClass = TcpComputeForm
+    elif compute.type == 2:
+        FormClass = SshComputeForm
+    elif compute.type == 3:
+        FormClass = TlsComputeForm
+    elif compute.type == 4:
+        FormClass = SocketComputeForm
+
+    form = FormClass(request.POST or None, instance=compute)
+    if form.is_valid():
+        form.save()
+        return redirect(reverse("computes"))
+
+    return render(request, "computes/form.html", {"form": form})
+
+
+@superuser_only
+def compute_delete(request, compute_id):
+    compute = get_object_or_404(Compute, pk=compute_id)
+    if request.method == "POST":
+        compute.delete()
+        return redirect("computes")
+
+    return render(
+        request,
+        "common/confirm_delete.html",
+        {"object": compute},
+    )
+
+
 def compute_graph(request, compute_id):
     """
     :param request:
+    :param compute_id:
     :return:
     """
-
-    points = 5
-    datasets = {}
-    cookies = {}
     compute = get_object_or_404(Compute, pk=compute_id)
-    curent_time = time.strftime("%H:%M:%S")
-
     try:
-        conn = wvmHostDetails(compute.hostname,
-                              compute.login,
-                              compute.password,
-                              compute.type)
+        conn = wvmHostDetails(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
+        current_time = timezone.now().strftime("%H:%M:%S")
         cpu_usage = conn.get_cpu_usage()
         mem_usage = conn.get_memory_usage()
         conn.close()
     except libvirtError:
-        cpu_usage = 0
-        mem_usage = 0
+        cpu_usage = {"usage": 0}
+        mem_usage = {"usage": 0}
+        current_time = 0
 
-    try:
-        cookies['cpu'] = request.COOKIES['cpu']
-        cookies['mem'] = request.COOKIES['mem']
-        cookies['timer'] = request.COOKIES['timer']
-    except KeyError:
-        cookies['cpu'] = None
-        cookies['mem'] = None
-
-    if not cookies['cpu'] or not cookies['mem']:
-        datasets['cpu'] = [0] * points
-        datasets['mem'] = [0] * points
-        datasets['timer'] = [0] * points
-    else:
-        datasets['cpu'] = eval(cookies['cpu'])
-        datasets['mem'] = eval(cookies['mem'])
-        datasets['timer'] = eval(cookies['timer'])
-
-    datasets['timer'].append(curent_time)
-    datasets['cpu'].append(int(cpu_usage['usage']))
-    datasets['mem'].append(int(mem_usage['usage']) / 1048576)
-
-    if len(datasets['timer']) > points:
-        datasets['timer'].pop(0)
-    if len(datasets['cpu']) > points:
-        datasets['cpu'].pop(0)
-    if len(datasets['mem']) > points:
-        datasets['mem'].pop(0)
-
-    data = json.dumps({'cpudata': datasets['cpu'], 'memdata': datasets['mem'], 'timeline': datasets['timer']})
+    data = json.dumps(
+        {
+            "cpudata": cpu_usage["usage"],
+            "memdata": mem_usage,
+            "timeline": current_time,
+        }
+    )
     response = HttpResponse()
-    response['Content-Type'] = "text/javascript"
-    response.cookies['cpu'] = datasets['cpu']
-    response.cookies['timer'] = datasets['timer']
-    response.cookies['mem'] = datasets['mem']
+    response["Content-Type"] = "text/javascript"
     response.write(data)
     return response
+
+
+def get_compute_disk_buses(request, compute_id, arch, machine, disk):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :param disk:
+    :return:
+    """
+    data = dict()
+    compute = get_object_or_404(Compute, pk=compute_id)
+    try:
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
+
+        disk_device_types = conn.get_disk_device_types(arch, machine)
+
+        if disk in disk_device_types:
+            if disk == "disk":
+                data["bus"] = sorted(disk_device_types)
+            elif disk == "cdrom":
+                data["bus"] = ["ide", "sata", "scsi"]
+            elif disk == "floppy":
+                data["bus"] = ["fdc"]
+            elif disk == "lun":
+                data["bus"] = ["scsi"]
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))
+
+
+def get_compute_machine_types(request, compute_id, arch):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :return:
+    """
+    data = dict()
+    try:
+        compute = get_object_or_404(Compute, pk=compute_id)
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
+        data["machines"] = conn.get_machine_types(arch)
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))
+
+
+def get_compute_video_models(request, compute_id, arch, machine):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :return:
+    """
+    data = dict()
+    try:
+        compute = get_object_or_404(Compute, pk=compute_id)
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
+        data["videos"] = conn.get_video_models(arch, machine)
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))
+
+
+def get_dom_capabilities(request, compute_id, arch, machine):
+    """
+    :param request:
+    :param compute_id:
+    :param arch:
+    :param machine:
+    :return:
+    """
+    data = dict()
+    try:
+        compute = get_object_or_404(Compute, pk=compute_id)
+        conn = wvmConnect(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+        )
+        data["videos"] = conn.get_disk_device_types(arch, machine)
+        data["bus"] = conn.get_disk_device_types(arch, machine)
+    except libvirtError:
+        pass
+
+    return HttpResponse(json.dumps(data))

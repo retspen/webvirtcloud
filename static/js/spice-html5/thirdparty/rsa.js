@@ -1,4 +1,5 @@
 // Downloaded from http://www-cs-students.stanford.edu/~tjw/jsbn/ by Jeremy White on 6/1/2012
+// Converted into an ES6 module
 
 /*
  * Copyright (c) 2003-2005  Tom Wu
@@ -15,9 +16,9 @@
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND, 
- * EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY 
- * WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  
+ * THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY
+ * WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
  *
  * IN NO EVENT SHALL TOM WU BE LIABLE FOR ANY SPECIAL, INCIDENTAL,
  * INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY KIND, OR ANY DAMAGES WHATSOEVER
@@ -33,6 +34,8 @@
 
 
 // Depends on jsbn.js and rng.js
+import { BigInteger } from './jsbn.js';
+import { SecureRandom } from './rng.js';
 
 // Version 1.1: support utf-8 encoding in pkcs1pad2
 
@@ -144,3 +147,7 @@ RSAKey.prototype.doPublic = RSADoPublic;
 RSAKey.prototype.setPublic = RSASetPublic;
 RSAKey.prototype.encrypt = RSAEncrypt;
 //RSAKey.prototype.encrypt_b64 = RSAEncryptB64;
+
+export {
+  RSAKey,
+};

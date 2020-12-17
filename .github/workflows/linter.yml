@@ -1,0 +1,89 @@
+###########################
+###########################
+## Linter GitHub Actions ##
+###########################
+###########################
+
+name: Lint Code Base
+
+#
+# Documentation:
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+#
+
+#############################
+# Start the job on all push #
+#############################
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches-ignore: [master]
+    
+
+###############
+# Set the Job #
+###############
+jobs:
+  build:
+    name: Lint Code Base
+    # Set the agent to run on
+    runs-on: ubuntu-latest
+
+    ##################
+    # Load all steps #
+    ###################
+    steps:
+      ##########################
+      # Checkout the code base #
+      ##########################
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      with:
+          # Full git history is needed to get a proper list of changed files within `super-linter`
+          fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'  
+      
+    - name: Install Required packages
+      run: |
+        sudo apt-get install -y python3-virtualenv libvirt-dev python3-lxml zlib1g-dev libxslt1-dev
+
+    - name: Create & Activate VENV
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install wheel
+        if [ -f dev/requirements.txt ]; then pip3 install -r dev/requirements.txt; else pip3 install -r conf/requirements.txt; fi
+    ################################
+    # Run Linter against code base #
+    ################################
+    - name: Lint Code Base
+      uses: docker://github/super-linter:latest
+      env:
+        FILTER_REGEX_EXCLUDE: .*(static|scss|venv|locale)/.*
+        DEFAULT_BRANCH: master
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_ALL_CODEBASE: false
+        VALIDATE_ANSIBLE: false
+        VALIDATE_CLOJURE: false
+        VALIDATE_COFFEE: false
+        VALIDATE_DART: false
+        VALIDATE_GO: false
+        VALIDATE_JSX: false
+        VALIDATE_KOTLIN: false
+        VALIDATE_POWERSHELL: false
+        VALIDATE_PERL: false
+        VALIDATE_PHP: false
+        VALIDATE_RAKU: false
+        VALIDATE_RUBY: false
+        VALIDATE_TSX: false
+        VALIDATE_TERRAFORM: false
+

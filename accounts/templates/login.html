@@ -1,25 +1,30 @@
-{% extends "base_auth.html" %}
+{% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "WebVirtCloud - Sign In" %}{% endblock %}
+{% load static %}
+
+{% block title %}{% trans "WebVirtCloud" %}  - {% trans "Sign In" %}{% endblock %}
+
+{% block style %}
+<link href="{% static "css/signin.css" %}" rel="stylesheet">
+{% endblock style %}
+
 {% block content %}
-    <div class="row">
-        <div class="page-header">
-            <a href="/"><h1>WebVirtCloud</h1></a>
+<div class="page-header">
+    <a class="" href="/"><h1>WebVirtCloud</h1></a>
+</div>
+<div class="col-12" role="main">
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            {% trans "Incorrect username or password." %}
         </div>
-        <div class="col-xs-12" role="main">
-            {% if form.errors %}
-                <div class="alert alert-danger">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                    {% trans "Incorrect username or password." %}
-                </div>
-            {% endif %}
-            <form class="form-signin" method="post" role="form">{% csrf_token %}
-                <h2 class="form-signin-heading">{% trans "Sign In" %}</h2>
-                <input type="text" class="form-control" name="username" placeholder="Login" autocapitalize="none" autocorrect="off" autofocus>
-                <input type="password" class="form-control" name="password" placeholder="Password">
-                <input name="next" id="next" type="hidden" value="{% url 'instances' %}">
-                <button class="btn btn-lg btn-success btn-block" type="submit">{% trans "Sign In" %}</button>
-            </form>
-        </div>
-    </div>
+    {% endif %}
+    <form class="form-signin" method="post" role="form" aria-label="Login form">{% csrf_token %}
+        <h2 class="form-signin-heading">{% trans "Sign In" %}</h2>
+        <input type="text" class="form-control" name="username" placeholder="{% trans "User" %}" autocapitalize="none" autocorrect="off" autofocus>
+        <input type="password" class="form-control" name="password" placeholder="{% trans "Password" %}">
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-lg btn-success btn-block" type="submit">{% trans "Sign In" %}</button>
+    </form>
+</div>
 {% endblock %}

@@ -61,6 +61,10 @@ var WEBM_CODEC_DELAY =                      [ 0x56, 0xAA ];
 var WEBM_CODEC_PRIVATE =                    [ 0x63, 0xA2 ];
 var WEBM_CODEC_ID =                         [ 0x86 ];
 
+var WEBM_VIDEO =                            [ 0xE0 ] ;
+var WEBM_PIXEL_WIDTH =                      [ 0xB0 ] ;
+var WEBM_PIXEL_HEIGHT =                     [ 0xBA ] ;
+
 var WEBM_AUDIO =                            [ 0xE1 ] ;
 var WEBM_SAMPLING_FREQUENCY =               [ 0xB5 ] ;
 var WEBM_CHANNELS =                         [ 0x9F ] ;
@@ -72,15 +76,20 @@ var WEBM_SIMPLE_BLOCK =                     [ 0xA3 ] ;
 /*----------------------------------------------------------------------------
 **  Various OPUS / Webm constants
 **--------------------------------------------------------------------------*/
-var CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME       = 1 << 7;
+var Constants = {
+  CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME       : 1 << 7,
 
-var OPUS_FREQUENCY                          = 48000;
-var OPUS_CHANNELS                           = 2;
+  OPUS_FREQUENCY                          : 48000,
+  OPUS_CHANNELS                           : 2,
 
-var SPICE_PLAYBACK_CODEC                    = 'audio/webm; codecs="opus"';
-var MAX_CLUSTER_TIME                        = 1000;
+  SPICE_PLAYBACK_CODEC                    : 'audio/webm; codecs="opus"',
+  MAX_CLUSTER_TIME                        : 1000,
 
-var GAP_DETECTION_THRESHOLD                 = 50;
+  EXPECTED_PACKET_DURATION                : 10,
+  GAP_DETECTION_THRESHOLD                 : 50,
+
+  SPICE_VP8_CODEC                         : 'video/webm; codecs="vp8"',
+};
 
 /*----------------------------------------------------------------------------
 **  EBML utility functions
@@ -268,7 +277,7 @@ function webm_Audio(frequency)
 {
     this.id = WEBM_AUDIO;
     this.sampling_frequency = frequency;
-    this.channels = OPUS_CHANNELS;
+    this.channels = Constants.OPUS_CHANNELS;
 }
 
 webm_Audio.prototype =
@@ -290,6 +299,34 @@ webm_Audio.prototype =
             WEBM_CHANNELS.length + 1 + 1;
     },
 }
+
+function webm_Video(width, height)
+{
+    this.id = WEBM_VIDEO;
+    this.width = width;
+    this.height = height;
+}
+
+webm_Video.prototype =
+{
+    to_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new DataView(a);
+        at = EBML_write_array(this.id, dv, at);
+        at = EBML_write_u64_data_len(this.buffer_size() - 8 - this.id.length, dv, at);
+        at = EBML_write_u16_value(WEBM_PIXEL_WIDTH, this.width, dv, at)
+        at = EBML_write_u16_value(WEBM_PIXEL_HEIGHT, this.height, dv, at)
+        return at;
+    },
+    buffer_size: function()
+    {
+        return this.id.length + 8 +
+            WEBM_PIXEL_WIDTH.length + 1 + 2 +
+            WEBM_PIXEL_HEIGHT.length + 1 + 2;
+    },
+}
+
 
 
 /* ---------------------------
@@ -356,7 +393,7 @@ webm_SeekHead.prototype =
    End of Seek Head
 */
 
-function webm_TrackEntry()
+function webm_AudioTrackEntry()
 {
     this.id = WEBM_TRACK_ENTRY;
     this.number = 1;
@@ -372,12 +409,12 @@ function webm_TrackEntry()
     this.seek_pre_roll = 0; // 80000000; // fixme - check
     this.codec_delay =   80000000; // Must match codec_private.preskip
     this.codec_id = "A_OPUS";
-    this.audio = new webm_Audio(OPUS_FREQUENCY);
+    this.audio = new webm_Audio(Constants.OPUS_FREQUENCY);
 
     // See:  http://tools.ietf.org/html/draft-terriberry-oggopus-01
     this.codec_private = [ 0x4f, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64,  // OpusHead
                            0x01, // Version
-                           OPUS_CHANNELS,
+                           Constants.OPUS_CHANNELS,
                            0x00, 0x0F, // Preskip - 3840 samples - should be 8ms at 48kHz
                            0x80, 0xbb, 0x00, 0x00,  // 48000
                            0x00, 0x00, // Output gain
@@ -385,7 +422,7 @@ function webm_TrackEntry()
                            ];
 }
 
-webm_TrackEntry.prototype =
+webm_AudioTrackEntry.prototype =
 {
     to_buffer: function(a, at)
     {
@@ -431,6 +468,70 @@ webm_TrackEntry.prototype =
             this.audio.buffer_size();
     },
 }
+
+function webm_VideoTrackEntry(width, height)
+{
+    this.id = WEBM_TRACK_ENTRY;
+    this.number = 1;
+    this.uid = 1;
+    this.type = 1; // Video
+    this.flag_enabled = 1;
+    this.flag_default = 1;
+    this.flag_forced = 1;
+    this.flag_lacing = 0;
+    this.min_cache = 0; // fixme - check
+    this.max_block_addition_id = 0;
+    this.codec_decode_all = 0; // fixme - check
+    this.seek_pre_roll = 0; // 80000000; // fixme - check
+    this.codec_delay =   80000000; // Must match codec_private.preskip
+    this.codec_id = "V_VP8";
+    this.video = new webm_Video(width, height);
+}
+
+webm_VideoTrackEntry.prototype =
+{
+    to_buffer: function(a, at)
+    {
+        at = at || 0;
+        var dv = new DataView(a);
+        at = EBML_write_array(this.id, dv, at);
+        at = EBML_write_u64_data_len(this.buffer_size() - 8 - this.id.length, dv, at);
+        at = EBML_write_u8_value(WEBM_TRACK_NUMBER, this.number, dv, at);
+        at = EBML_write_u8_value(WEBM_TRACK_UID, this.uid, dv, at);
+        at = EBML_write_u8_value(WEBM_FLAG_ENABLED, this.flag_enabled, dv, at);
+        at = EBML_write_u8_value(WEBM_FLAG_DEFAULT, this.flag_default, dv, at);
+        at = EBML_write_u8_value(WEBM_FLAG_FORCED, this.flag_forced, dv, at);
+        at = EBML_write_u8_value(WEBM_FLAG_LACING, this.flag_lacing, dv, at);
+        at = EBML_write_data(WEBM_CODEC_ID, this.codec_id, dv, at);
+        at = EBML_write_u8_value(WEBM_MIN_CACHE, this.min_cache, dv, at);
+        at = EBML_write_u8_value(WEBM_MAX_BLOCK_ADDITION_ID, this.max_block_addition_id, dv, at);
+        at = EBML_write_u8_value(WEBM_CODEC_DECODE_ALL, this.codec_decode_all, dv, at);
+        at = EBML_write_u32_value(WEBM_CODEC_DELAY, this.codec_delay, dv, at);
+        at = EBML_write_u32_value(WEBM_SEEK_PRE_ROLL, this.seek_pre_roll, dv, at);
+        at = EBML_write_u8_value(WEBM_TRACK_TYPE, this.type, dv, at);
+        at = this.video.to_buffer(a, at);
+        return at;
+    },
+    buffer_size: function()
+    {
+        return this.id.length + 8 +
+            WEBM_TRACK_NUMBER.length + 1 + 1 +
+            WEBM_TRACK_UID.length + 1 + 1 +
+            WEBM_FLAG_ENABLED.length + 1 + 1 +
+            WEBM_FLAG_DEFAULT.length + 1 + 1 +
+            WEBM_FLAG_FORCED.length + 1 + 1 +
+            WEBM_FLAG_LACING.length + 1 + 1 +
+            WEBM_CODEC_ID.length + this.codec_id.length + 1 +
+            WEBM_MIN_CACHE.length + 1 + 1 +
+            WEBM_MAX_BLOCK_ADDITION_ID.length + 1 + 1 +
+            WEBM_CODEC_DECODE_ALL.length + 1 + 1 +
+            WEBM_CODEC_DELAY.length + 1 + 4 +
+            WEBM_SEEK_PRE_ROLL.length + 1 + 4 +
+            WEBM_TRACK_TYPE.length + 1 + 1 +
+            this.video.buffer_size();
+    },
+}
+
 function webm_Tracks(entry)
 {
     this.id = WEBM_TRACKS;
@@ -498,7 +599,7 @@ webm_SimpleBlock.prototype =
         at = EBML_write_u64_data_len(this.data.byteLength + 4, dv, at);
         at = EBML_write_u1_data_len(1, dv, at); // Track #
         dv.setUint16(at, this.timecode); at += 2; // timecode - relative to cluster
-        dv.setUint8(at, this.keyframe ? CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME : 0); at += 1;  // flags
+        dv.setUint8(at, this.keyframe ? Constants.CLUSTER_SIMPLEBLOCK_FLAG_KEYFRAME : 0); at += 1;  // flags
 
         // FIXME - There should be a better way to copy
         var u8 = new Uint8Array(this.data);
@@ -526,9 +627,6 @@ function webm_Header()
     this.info = new webm_SegmentInformation;
 
     this.seek_head.track.pos = this.seek_head.info.pos + this.info.buffer_size();
-
-    this.track_entry = new webm_TrackEntry;
-    this.tracks = new webm_Tracks(this.track_entry);
 }
 
 webm_Header.prototype =
@@ -539,7 +637,6 @@ webm_Header.prototype =
         at = this.ebml.to_buffer(a, at);
         at = this.segment.to_buffer(a, at);
         at = this.info.to_buffer(a, at);
-        at = this.tracks.to_buffer(a, at);
 
         return at;
     },
@@ -547,7 +644,18 @@ webm_Header.prototype =
     {
         return this.ebml.buffer_size() +
                this.segment.buffer_size() +
-               this.info.buffer_size() +
-               this.tracks.buffer_size();
+               this.info.buffer_size();
     },
 }
+
+export {
+  Constants,
+  webm_Audio as Audio,
+  webm_Video as Video,
+  webm_AudioTrackEntry as AudioTrackEntry,
+  webm_VideoTrackEntry as VideoTrackEntry,
+  webm_Tracks as Tracks,
+  webm_Cluster as Cluster,
+  webm_SimpleBlock as SimpleBlock,
+  webm_Header as Header,
+};

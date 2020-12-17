@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+{% load bootstrap4 %}
+
+{% block title %}WebVirtCloud{% endblock title %}
+
+{% block page_heading %}WebVirtCloud{% endblock page_heading %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6 offset-3" role="main">
+        <div class="card">
+            <div class="card-body">
+                {% if form.errors %}
+                    {% bootstrap_form_errors form %}
+                {% endif %}
+                <form class="form-signin" method="post" role="form" aria-label="Login form">
+                    {% csrf_token %}
+                    {% bootstrap_field form.username layout='horizontal' %}
+                    {% bootstrap_field form.password layout='horizontal' %}
+                    {% bootstrap_field form.otp_token layout='horizontal' %}
+                    <a href="{% url 'accounts:email_otp' %}" class="float-right mb-2">{% trans "I do not have/lost my OTP!" %}</a>
+                    <button class="btn btn-lg btn-success btn-block" type="submit">{% trans "Sign In" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

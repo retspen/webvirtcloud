@@ -1,0 +1,29 @@
+{% load i18n %}
+<div role="tabpanel" class="tab-pane" id="undefine">
+    <div role="tabpanel">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist" aria-label="Instance destroy menu">
+            <li class="nav-item">
+                <a class="nav-link active" href="#destroy" aria-controls="destroy" role="tab" data-toggle="tab">
+                    {% trans "Destroy Instance" %}
+                </a>
+            </li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
+                <p>{% trans 'This action starts remove instance process' %}</p>
+                {% if request.user.is_superuser or userinstance.is_delete %}
+                    {% if instance.status == 3 %}
+                        <a class="btn btn-lg btn-success disabled float-right">{% trans "Destroy" %}</a>
+                    {% else %}
+                        <a href="{% url 'instances:destroy' instance.id %}" class="btn btn-lg btn-success float-right">{% trans "Destroy" %}</a>
+                    {% endif %}
+                {% else %}
+                    <button class="btn btn-lg btn-success disabled float-right" name="delete">{% trans "Destroy" %}</button>
+                {% endif %}
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+</div>

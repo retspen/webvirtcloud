@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load bootstrap4 %}
+{% load icons %}
+{% load i18n %}
+
+{% block title %}{% trans "Add Compute" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h2 class="page-header">{% trans "Create Compute" %}</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="thumbnail col-sm-10 offset-1">
+        <form id="create-update" action="" method="post">
+            {% csrf_token %}
+            {% bootstrap_form form layout='horizontal' %}
+        </form>
+        <div class="form-group float-right">
+            <a class="btn btn-primary" href="javascript:history.back()">{% icon 'times' %} {% trans "Cancel" %}</a>
+            <button type="submit" form="create-update" class="btn btn-success">
+                {% icon 'check' %} {% trans "Save" %}
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,56 @@
+{% load i18n %}
+{% if request.user.is_superuser %}
+    <a href="#addInstanceNetwork" type="button" class="btn btn-success float-right" data-toggle="modal">
+        <span class="fa fa-plus" aria-hidden="true"></span>
+    </a>
+
+    <!-- Modal pool -->
+    <div class="modal fade" id="addInstanceNetwork" tabindex="-1" role="dialog" aria-labelledby="addInstanceNetworkLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{% trans "Add Instance Network" %}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> 
+                </div>
+                <div class="modal-body">
+                    <form action="{% url 'instances:add_network' instance.id %}" method="post" action="" role="form" aria-label="Add instance network form">{% csrf_token %}
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "MAC" %}</label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" name="add-net-mac">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "Network" %}</label>
+                            <div class="col-sm-6">
+                                <select class="form-control" name="add-net-network">
+                                    {% for c_net in networks_host %}
+                                        <option value="net:{{ c_net }}">Network {{ c_net }}</option>
+                                    {% endfor %}
+                                    {% for c_iface in instance.interfaces %}
+                                        <option value="iface:{{ c_iface }}">Interface {{ c_iface }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label">{% trans "NWFilter" %}</label>
+                            <div class="col-sm-6">
+                                <select class="form-control" name="add-net-nwfilter">
+                                    <option value="">{% trans "None" %}</option>
+                                    {% for nwfilter in nwfilters_host %}
+                                        <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="submit" class="btn btn-primary" name="add_network">{% trans "Add" %}</button>
+                </div>
+                    </form>
+            </div> <!-- /.modal-content -->
+        </div> <!-- /.modal-dialog -->
+    </div> <!-- /.modal -->
+{% endif %}

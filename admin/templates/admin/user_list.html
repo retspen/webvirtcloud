@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load common_tags %}
+{% load icons %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_heading %}{{ title }}{% endblock page_heading %}
+
+{% block page_heading_extra %}
+<a href="{% url 'admin:user_create' %}" class="btn btn-success btn-header float-right">
+    {% icon 'plus' %}
+</a>
+<div class="float-right search">
+    <input id="filter" class="form-control" type="text" placeholder="{% trans "Search" %}">
+</div>
+{% endblock page_heading_extra %}
+
+{% block content %}
+<div class="row">
+    {% if not users %}
+        <div class="col-lg-12">
+            <div class="alert alert-warning alert-dismissable">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                {% icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any user" %}
+            </div>
+        </div>
+    {% else %}
+        <div class="col-lg-12">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th span="col">{% trans "Username" %}</th>
+                        <th span="col">{% trans "Status" %}</th>
+                        <th span="col">{% trans "Staff" %}</th>
+                        <th span="col">{% trans "Superuser" %}</th>
+                        <th span="col">{% trans "Can Clone" %}</th>
+                        <th span="col">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody class="searchable">
+                {% for user in users %}
+                    {% has_perm user 'instances.clone_instances' as can_clone %}
+                    <tr class="{% if not user.is_active %}danger{% endif %}">
+                        <td>
+                            {{ user.username }}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                                {% trans "Active" %}
+                            {% else %}
+                                {% trans "Blocked" %}
+                            {% endif %}
+                        </td>
+                        <td>{% if user.is_staff %}{% icon 'check' %}{% endif %}</td>
+                        <td>{% if user.is_superuser %}{% icon 'check' %}</span>{% endif %}</td>
+                        <td>{% if can_clone %}{% icon 'check' %}{% endif %}</td>
+                        <td>
+                            <div class="float-right btn-group">
+                                <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'accounts:account' user.id %}">{% icon 'eye' %}</a>
+                                <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'admin:user_update' user.id %}">{% icon 'pencil' %}</a>
+                                {% if user.is_active %}
+                                    <a class="btn btn-warning" title="{%trans "Block" %}" href="{% url 'admin:user_block' user.id %}">{% icon 'stop' %}</a>
+                                {% else %}
+                                    <a class="btn btn-success" title="{%trans "Unblock" %}" href="{% url 'admin:user_unblock' user.id %}">{% icon 'play' %}</a>
+                                {% endif %}
+                                <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'admin:user_delete' user.id %}">{% icon 'times' %}</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock content %}
+
+{% block script %}
+<script src="{% static "js/filter-table.js" %}"></script>
+{% endblock script %}

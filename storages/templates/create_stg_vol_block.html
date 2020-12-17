@@ -1,9 +1,10 @@
 {% load i18n %}
+{% load bootstrap4 %}
 {% if request.user.is_superuser %}
-    {% ifnotequal state 0 %}
-        {% ifequal pool "iso" %}
-            <a href="#IsoUpload" class="btn btn-success pull-right" data-toggle="modal">
-                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+    {% if state != 0 %}
+        {% if pool == "iso" %}
+            <a href="#IsoUpload" class="btn btn-success float-right" data-toggle="modal">
+                <span class="fa fa-plus" aria-hidden="true"></span>
             </a>
 
             <!-- Modal Upload -->
@@ -11,20 +12,20 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
+                            <h5 class="modal-title">{% trans "Upload ISO Image" %}</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                            <h4 class="modal-title">{% trans "Upload ISO Image" %}</h4>
                         </div>
                         <div class="modal-body">
-                            <form class="form-horizontal" enctype="multipart/form-data" method="post" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
+                            <form enctype="multipart/form-data" method="post" role="form" aria-label="Upload iso form">{% csrf_token %}
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">
                                         <input type="file" name="file" id="id_file">
                                     </div>
                                 </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
                             <button type="submit" class="btn btn-primary" name="iso_upload">{% trans "Upload" %}</button>
                         </div>
                             </form>
@@ -33,8 +34,8 @@
                 </div> <!-- /.modal-dialog -->
             </div> <!-- /.modal -->
         {% else %}
-            <a href="#AddImage" class="btn btn-success pull-right" data-toggle="modal">
-                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            <a href="#AddImage" class="btn btn-success float-right" data-toggle="modal">
+                <span class="fa fa-plus" aria-hidden="true"></span>
             </a>
 
             <!-- Modal Image -->
@@ -42,50 +43,22 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
+                            <h5 class="modal-title">{% trans "Add New Volume" %}</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                            <h4 class="modal-title">{% trans "Add New Volume" %}</h4>
                         </div>
                         <div class="modal-body">
-                            <form class="form-horizontal" method="post" role="form">{% csrf_token %}
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Name" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
-                                    </div>
-                                    <label class="col-sm-1 control-label">.img</label>
-                                </div>
-                                <div class="form-group" id="image_format">
-                                    <label class="col-sm-3 control-label">{% trans "Format" %}</label>
-                                    <div class="col-sm-6">
-                                        <select name="format" class="form-control image-format">
-                                            <option value="qcow2">{% trans "qcow2" %}</option>
-                                            <option value="qcow">{% trans "qcow" %}</option>
-                                            <option value="raw">{% trans "raw" %}</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">{% trans "Size" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="size" value="10" maxlength="3" required pattern="[0-9]+">
-                                    </div>
-                                    <label class="col-sm-1 control-label">{% trans "GB" %}</label>
-                                </div>
-                                <div class="form-group meta-prealloc">
-                                    <label class="col-sm-3 control-label">{% trans "Metadata" %}</label>
-                                    <div class="col-sm-6">
-                                        <input type="checkbox" name="meta_prealloc" value="true">
-                                    </div>
-                                </div>
+                            <form action="{% url 'create_volume' compute_id pool %}" id="create-volume" method="post" role="form" aria-label="Create volume to storage form">
+                                {% csrf_token %}
+                                {% bootstrap_form form layout='horizontal' %}
+                            </form>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">{% trans "Close" %}</button>
-                            <button type="submit" class="btn btn-primary" name="add_volume">{% trans "Create" %}</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="submit" form="create-volume" class="btn btn-primary">{% trans "Create" %}</button>
                         </div>
-                        </form>
                     </div> <!-- /.modal-content -->
                 </div> <!-- /.modal-dialog -->
             </div> <!-- /.modal -->
-        {% endifequal %}
-    {% endifnotequal %}
+        {% endif %}
+    {% endif %}
 {% endif %}
