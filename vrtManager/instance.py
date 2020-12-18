@@ -1,3 +1,4 @@
+import json
 import os.path
 import time
 
@@ -20,6 +21,10 @@ try:
         VIR_MIGRATE_POSTCOPY,
     )
     from libvirt import VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
+    from libvirt_qemu import (
+        qemuAgentCommand, 
+        VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT
+    )
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
@@ -159,6 +164,35 @@ class wvmInstance(wvmConnect):
         wvmConnect.__init__(self, host, login, passwd, conn)
         self._ip_cache = None
         self.instance = self.get_instance(vname)
+
+    def osinfo(self):
+        info_results = qemuAgentCommand(
+            self.instance, 
+            '{"execute":"guest-get-osinfo"}', 
+            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
+            )
+
+        timezone_results = qemuAgentCommand(
+            self.instance, 
+            '{"execute":"guest-get-timezone"}', 
+            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
+            )
+
+        hostname_results = qemuAgentCommand(
+            self.instance, 
+            '{"execute":"guest-get-host-name"}', 
+            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
+            )
+
+        info_results = json.loads(info_results).get('return')
+
+        timezone_results = json.loads(timezone_results).get('return')
+        hostname_results = json.loads(hostname_results).get('return')
+
+        info_results.update(timezone_results)
+        info_results.update(hostname_results)
+
+        return info_results
 
     def start(self):
         self.instance.create()
