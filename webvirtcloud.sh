@@ -455,7 +455,7 @@ case $distro in
     log "yum -y install wget epel-release"
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 python3-libguestfs"
+    PACKAGES="git python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
     install_packages
 
     set_hosts
