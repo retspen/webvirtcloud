@@ -45,7 +45,7 @@ echowarn() {
 #   DESCRIPTION:  Echo debug information to stdout.
 #-------------------------------------------------------------------------------
 echodebug() {
-    if [ "$_ECHO_DEBUG" -eq "$BS_TRUE" ]; then
+    if [ $_ECHO_DEBUG -eq $BS_TRUE ]; then
         printf "${BC} * DEBUG${EC}: %s\n" "$@";
     fi
 }
@@ -342,7 +342,7 @@ __check_end_of_life_versions() {
             ;;
 
         centos)
-            # CentOS versions lower than 5 are no longer supported
+            # CentOS versions lower than 6 are no longer supported
             if { [ "$DISTRO_MAJOR_VERSION" -eq 6 ] && [ "$DISTRO_MINOR_VERSION" -lt 3 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 5 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
@@ -374,26 +374,32 @@ __check_end_of_life_versions
 #   CentOS Install Functions
 #
 install_centos() {
-    if [ "$DISTRO_MAJOR_VERSION" -ge 6 ]; then
-        yum -y install qemu-kvm libvirt bridge-utils python-libguestfs libguestfs-tools supervisor cyrus-sasl-md5 epel-release || return 1
+    yum -y install epel-release || return 1
+
+    if [ "$DISTRO_MAJOR_VERSION" -lt 8 ]; then
+        yum -y install qemu-kvm libvirt bridge-utils python-libguestfs libguestfs-tools supervisor cyrus-sasl-md5 || return 1
+    else
+        yum -y install qemu-kvm libvirt python3-libguestfs libguestfs-tools cyrus-sasl-md5 supervisor || return 1
     fi
     return 0
 }
 
 install_centos_post() {
-    if [ -f /etc/sysconfig/libvirtd ]; then
-        sed -i 's/#LIBVIRTD_ARGS/LIBVIRTD_ARGS/g' /etc/sysconfig/libvirtd
-    else
-        echoerror "/etc/sysconfig/libvirtd not found. Exiting..."
-        exit 1
-    fi
-    if [ -f /etc/libvirt/libvirtd.conf ]; then
-        sed -i 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
-        sed -i 's/#listen_tcp/listen_tcp/g' /etc/libvirt/libvirtd.conf
-        sed -i 's/#auth_tcp/auth_tcp/g' /etc/libvirt/libvirtd.conf
-    else
-        echoerror "/etc/libvirt/libvirtd.conf not found. Exiting..."
-        exit 1
+    if [ "$DISTRO_MAJOR_VERSION" -lt 8 ]; then 
+        if [ -f /etc/sysconfig/libvirtd ]; then
+            sed -i 's/#LIBVIRTD_ARGS/LIBVIRTD_ARGS/g' /etc/sysconfig/libvirtd
+        else
+            echoerror "/etc/sysconfig/libvirtd not found. Exiting..."
+            exit 1
+        fi
+        if [ -f /etc/libvirt/libvirtd.conf ]; then
+            sed -i 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
+            sed -i 's/#listen_tcp/listen_tcp/g' /etc/libvirt/libvirtd.conf
+            sed -i 's/#auth_tcp/auth_tcp/g' /etc/libvirt/libvirtd.conf
+        else
+            echoerror "/etc/libvirt/libvirtd.conf not found. Exiting..."
+            exit 1
+        fi
     fi
     if [ -f /etc/libvirt/qemu.conf ]; then
         sed -i 's/#[ ]*vnc_listen.*/vnc_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
@@ -440,14 +446,24 @@ daemons_running_centos() {
         service libvirt-guests stop > /dev/null 2>&1
         service libvirt-guests start
     fi
-    if [ -f /usr/lib/systemd/system/libvirtd.service ]; then
-        systemctl stop libvirtd.service > /dev/null 2>&1
-        systemctl start libvirtd.service
+
+    if [ "$DISTRO_MAJOR_VERSION" -lt 8 ]; then
+        if [ -f /usr/lib/systemd/system/libvirtd.service ]; then
+            systemctl stop libvirtd.service > /dev/null 2>&1
+            systemctl start libvirtd.service
+        fi
+    else
+        if [ -f /usr/lib/systemd/system/libvirtd-tcp.socket ]; then
+            systemctl stop libvirtd-tcp.socket > /dev/null 2>&1
+            systemctl start libvirtd-tcp.socket
+        fi
     fi
+
     if [ -f /usr/lib/systemd/system/libvirt-guests.service ]; then
         systemctl stop libvirt-guests.service > /dev/null 2>&1
         systemctl start libvirt-guests.service
     fi
+
     if [ -f /etc/init.d/supervisord ]; then
         service supervisord stop > /dev/null 2>&1
         service supervisord start
@@ -598,7 +614,6 @@ install_ubuntu() {
     else
        apt install -y qemu-kvm libvirt-bin bridge-utils virt-manager sasl2-bin python3-guestfs supervisor || return 1
     fi
-
 
     return 0
 }

@@ -769,7 +769,7 @@ def revert_snapshot(request, pk):
         msg = _("Successful revert snapshot: ")
         msg += snap_name
         messages.success(request, msg)
-        msg = _("Revert snapshot: %(snap)") % {"snap": snap_name}
+        msg = _("Revert snapshot: %(snap)s") % {"snap": snap_name}
         addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
@@ -887,7 +887,7 @@ def set_video_model(request, pk):
     instance = get_instance(request.user, pk)
     video_model = request.POST.get("video_model", "vga")
     instance.proxy.set_video_model(video_model)
-    msg = _("Set Video Model: %(model)") % {"model": video_model}
+    msg = _("Set Video Model: %(model)s") % {"model": video_model}
     addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#options")
 
