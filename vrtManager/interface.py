@@ -6,13 +6,6 @@ from vrtManager.connection import wvmConnect
 
 
 class wvmInterfaces(wvmConnect):
-    def get_iface_info(self, name):
-        iface = self.get_iface(name)
-        xml = iface.XMLDesc(0)
-        mac = iface.MACString()
-        itype = util.get_xml_path(xml, "/interface/@type")
-        state = iface.isActive()
-        return {"name": name, "type": itype, "state": state, "mac": mac}
 
     def define_iface(self, xml, flag=0):
         self.wvm.interfaceDefineXML(xml, flag)
@@ -152,6 +145,12 @@ class wvmInterface(wvmConnect):
             return ifaces
         else:
             return None
+
+    def get_details(self):
+        mac = self.get_mac()
+        itype = self.get_type()
+        state = self.is_active()
+        return {"name": self.iface, "type": itype, "state": state, "mac": mac}
 
     def stop_iface(self):
         self.iface.destroy()
