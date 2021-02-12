@@ -1366,19 +1366,15 @@ class wvmInstance(wvmConnect):
         return bridge_name
 
     def add_network(self, mac_address, source, source_type="net", model="virtio", nwfilter=None):
-        forward_mode = ""
-        if source_type != "iface":
-            forward_mode = self.get_network_forward(source)
-
-        if forward_mode in ["nat", "isolated", "routed"]:
+            
+        if source_type == "net":
             interface_type = "network"
-        elif forward_mode == "":
-            interface_type = "direct"
+        elif source_type == "bridge":
+            interface_type = "bridge"
         else:
-            if self.get_bridge_name(source, source_type) is None:
-                interface_type = "network"
-            else:
-                interface_type = "bridge"
+            interface_type = "direct"
+       
+        # network modes not handled: default is bridge
 
         xml_iface = f"""
           <interface type='{interface_type}'>
@@ -1386,13 +1382,11 @@ class wvmInstance(wvmConnect):
         if interface_type == "network":
             xml_iface += f"""<source network='{source}'/>"""
         elif interface_type == "direct":
-            if source_type == "net":
-                xml_iface += f"""<source network='{source}' mode='bridge'/>"""
-            else:
-                xml_iface += f"""<source dev='{source}' mode='bridge'/>"""
+            xml_iface += f"""<source dev='{source}' mode='bridge'/>"""
+        elif interface_type == "bridge":
+            xml_iface += f"""<source bridge='{source}'/>"""
         else:
-            bridge_name = self.get_bridge_name(source, source_type)
-            xml_iface += f"""<source bridge='{bridge_name}'/>"""
+            raise libvirtError(f"'{interface_type}' is an unexpected interface type.")
         xml_iface += f"""<model type='{model}'/>"""
         if nwfilter:
             xml_iface += f"""<filterref filter='{nwfilter}'/>"""
@@ -1416,8 +1410,35 @@ class wvmInstance(wvmConnect):
                     self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
                 if self.get_status() == 5:
                     self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
+                return new_xml
+        return None
 
     def change_network(self, network_data):
+        net_mac = network_data.get("net-mac-0")
+        net_source = network_data.get("net-source-0")
+        net_source_type = network_data.get("net-source-0-type")
+        net_filter = network_data.get("net-nwfilter-0")
+        net_model = network_data.get("net-model-0")
+        
+        # Remove interface first, but keep network interface XML definition
+        # If there is an error happened while adding changed one, then add removed one to back.
+        status = self.delete_network(net_mac)
+        try:
+            self.add_network(net_mac, net_source, net_source_type, net_model, net_filter)
+        except libvirtError:
+            if status is not None:
+                if self.get_status() == 1:
+                    self.instance.attachDeviceFlags(status, VIR_DOMAIN_AFFECT_LIVE)
+                    self.instance.attachDeviceFlags(status, VIR_DOMAIN_AFFECT_CONFIG)
+                if self.get_status() == 5:
+                    self.instance.attachDeviceFlags(status, VIR_DOMAIN_AFFECT_CONFIG)
+
+
+    def change_network_oldway(self, network_data):
+        '''
+            change network firsh version...
+            will be removed if new one works as expected for all scenarios
+        '''
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)
         for num, interface in enumerate(tree.findall("devices/interface")):
