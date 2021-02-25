@@ -29,7 +29,8 @@ def interfaces(request, compute_id):
             netdevs = ["eth0", "eth1"]
 
         for iface in ifaces:
-            ifaces_all.append(conn.get_iface_info(iface))
+            interf = wvmInterface(compute.hostname, compute.login, compute.password, compute.type, iface)
+            ifaces_all.append(interf.get_details())
 
         if request.method == "POST":
             if "create" in request.POST:
