@@ -150,7 +150,7 @@ class wvmInterface(wvmConnect):
         mac = self.get_mac()
         itype = self.get_type()
         state = self.is_active()
-        return {"name": self.iface, "type": itype, "state": state, "mac": mac}
+        return {"name": self.iface.name(), "type": itype, "state": state, "mac": mac}
 
     def stop_iface(self):
         self.iface.destroy()

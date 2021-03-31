@@ -1,4 +1,4 @@
-// Minty 4.5.3
+// Minty 4.6.0
 // Bootswatch
 
 //
@@ -34,7 +34,7 @@ $success:       $green !default;
 $info:          $cyan !default;
 $warning:       $yellow !default;
 $danger:        $red !default;
-$light:         $gray-100 !default;
+$light:         $primary !default;
 $dark:          $gray-800 !default;
 
 $yiq-contrasted-threshold: 250 !default;
@@ -54,7 +54,6 @@ $border-radius-sm:            .3rem !default;
 // stylelint-disable-next-line value-keyword-case
 $headings-font-family:        Montserrat, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !default;
 $headings-color:              $gray-700 !default;
-$font-size-base:              .875rem !default;
 
 // Tables
 
@@ -66,8 +65,6 @@ $dropdown-link-hover-color:         $white !default;
 $dropdown-link-hover-bg:            $secondary !default;
 
 // Navbar
-
-$navbar-padding-y:                  .7rem !default;
 
 $navbar-dark-color:                 rgba($white, .6) !default;
 $navbar-dark-hover-color:           $white !default;
