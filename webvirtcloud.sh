@@ -147,7 +147,7 @@ configure_nginx () {
 
   if [ -n "$fqdn" ]; then
      fqdn_escape="$(echo -n "$fqdn"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-     sed -i "s|\\(#server_name\\).*|server_name = $fqdn_escape;|" "$nginxfile"
+     sed -i "s|\\(#server_name\\).*|server_name $fqdn_escape;|" "$nginxfile"
   fi
 
   novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
