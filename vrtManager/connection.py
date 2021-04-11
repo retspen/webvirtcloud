@@ -482,7 +482,7 @@ class wvmConnect(object):
 
     def get_networks(self):
         """
-        :return: list of networks
+        :return: list of host networks
         """
         virtnet = []
         for net in self.wvm.listNetworks():
@@ -493,7 +493,7 @@ class wvmConnect(object):
 
     def get_ifaces(self):
         """
-        :return: list of network interfaces
+        :return: list of host interfaces
         """
         interface = []
         for inface in self.wvm.listInterfaces():

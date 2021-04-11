@@ -146,10 +146,12 @@ configure_nginx () {
   cp "$APP_PATH"/conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 
   if [ -n "$fqdn" ]; then
-     sed -i "s|\\(#server_name\\).*|server_name = $fqdn|" "$nginxfile"
+     fqdn_escape="$(echo -n "$fqdn"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+     sed -i "s|\\(#server_name\\).*|server_name $fqdn_escape;|" "$nginxfile"
   fi
 
-  sed -i "s|\\(server 127.0.0.1:\\).*|\\1$novncd_port;|" "$nginxfile"
+  novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+  sed -i "s|\\(server 127.0.0.1:\\).*|\\1$novncd_port_escape;|" "$nginxfile"
 
 }
 
@@ -157,7 +159,8 @@ configure_supervisor () {
   # Copy template supervisor service for gunicorn and novnc
   echo "  * Copying supervisor configuration"
   cp "$APP_PATH"/conf/supervisor/webvirtcloud.conf "$supervisor_conf_path"/"$supervisor_file_name"
-  sed -i "s|^\\(user=\\).*|\\1$nginx_group|" "$supervisor_conf_path/$supervisor_file_name"
+  nginx_group_escape="$(echo -n "$nginx_group"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+  sed -i "s|^\\(user=\\).*|\\1$nginx_group_escape|" "$supervisor_conf_path/$supervisor_file_name"
 }
 
 create_user () {
@@ -206,13 +209,18 @@ install_webvirtcloud () {
   
   secret_key=$(generate_secret_key)
   echo "* Secret for Django generated: $secret_key"
+  tzone_escape="$(echo -n "$tzone"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+  secret_key_escape="$(echo -n "$secret_key"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+  novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+  novncd_public_port_escape="$(echo -n "$novncd_public_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+  novncd_host_escape="$(echo -n "$novncd_host"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
 
   #TODO escape SED delimiter in variables
-  sed -i "s|^\\(TIME_ZONE = \\).*|\\1$tzone|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(SECRET_KEY = \\).*|\\1\'$secret_key\'|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(WS_PORT = \\).*|\\1$novncd_port|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(WS_PUBLIC_PORT = \\).*|\\1$novncd_public_port|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(WS_HOST = \\).*|\\1\'$novncd_host\'|" "$APP_PATH/webvirtcloud/settings.py"
+  sed -i "s|^\\(TIME_ZONE = \\).*|\\1$tzone_escape|" "$APP_PATH/webvirtcloud/settings.py"
+  sed -i "s|^\\(SECRET_KEY = \\).*|\\1\'$secret_key_escape\'|" "$APP_PATH/webvirtcloud/settings.py"
+  sed -i "s|^\\(WS_PORT = \\).*|\\1$novncd_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
+  sed -i "s|^\\(WS_PUBLIC_PORT = \\).*|\\1$novncd_public_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
+  sed -i "s|^\\(WS_HOST = \\).*|\\1\'$novncd_host_escape\'|" "$APP_PATH/webvirtcloud/settings.py"
 
   echo "* Activate virtual environment."
   activate_python_environment
@@ -455,7 +463,7 @@ case $distro in
     log "yum -y install wget epel-release"
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 python3-libguestfs"
+    PACKAGES="git python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
     install_packages
 
     set_hosts

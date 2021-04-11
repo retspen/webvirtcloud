@@ -22,7 +22,7 @@
 How to update <code>gstfsd</code> daemon on hypervisor:
 
 ```bash
-wget -O - https://clck.ru/9VMRH | sudo tee -a /usr/local/bin/gstfsd
+wget -O - https://bit.ly/2NAaWXG | sudo tee -a /usr/local/bin/gstfsd
 sudo service supervisor restart
 ```
 
@@ -86,7 +86,7 @@ sudo service supervisor restart
 Setup libvirt and KVM on server
 
 ```bash
-wget -O - https://clck.ru/9V9fH | sudo sh
+wget -O - https://bit.ly/36baWUu | sudo sh
 ```
 
 Done!!

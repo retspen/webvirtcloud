@@ -1,4 +1,4 @@
-// Litera 4.5.3
+// Litera 4.6.0
 // Bootswatch
 
 //
@@ -65,14 +65,16 @@ $btn-font-family:             $font-family-sans-serif !default;
 $btn-font-size:               .875rem !default;
 $btn-font-size-sm:            .688rem !default;
 
+$btn-border-radius:           1.078em !default;
+$btn-border-radius-lg:        2.688em !default;
+$btn-border-radius-sm:        .844em !default;
+
 // Forms
 
-$input-border-color:        rgba(0, 0, 0, .1) !default;
-$input-group-addon-bg:        $gray-200 !default !default;
+$input-border-color:                    rgba(0, 0, 0, .1) !default;
+$input-group-addon-bg:                  $gray-200 !default !default;
 
 // Navbar
-
-$navbar-padding-y:                  .7rem !default;
 
 $navbar-dark-color:                 rgba($white, .6) !default;
 $navbar-dark-hover-color:           $white !default;
@@ -86,8 +88,8 @@ $tooltip-font-size:                 11px !default;
 // Badges
 
 $badge-font-weight:                 400 !default;
-$badge-padding-y:                   .3em !default;
-$badge-padding-x:                   .6em !default;
+$badge-padding-y:                   .6em !default;
+$badge-padding-x:                   1.2em !default;
 
 // Alerts
 

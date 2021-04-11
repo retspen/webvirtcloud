@@ -1,4 +1,4 @@
-// Lux 4.5.3
+// Lux 4.6.0
 // Bootswatch
 
 //
@@ -72,12 +72,12 @@ $input-btn-border-width:      0 !default;
 // Buttons
 
 $btn-line-height:             1.5rem !default;
-$input-btn-padding-y:         .6rem !default;
-$input-btn-padding-x:         1.2rem !default;
-$input-btn-padding-y-sm:      .4rem !default;
-$input-btn-padding-x-sm:      .8rem !default;
-$input-btn-padding-y-lg:      2rem !default;
-$input-btn-padding-x-lg:      2rem !default;
+$input-btn-padding-y:         .5rem !default;
+$input-btn-padding-x:         1rem !default;
+$input-btn-padding-y-sm:      .25rem !default;
+$input-btn-padding-x-sm:      .75rem !default;
+$input-btn-padding-y-lg:      1rem !default;
+$input-btn-padding-x-lg:      1rem !default;
 $btn-font-weight:             600 !default;
 
 // Forms
@@ -94,6 +94,7 @@ $navbar-dark-hover-color:           $white !default;
 $navbar-light-color:                rgba($black, .3) !default;
 $navbar-light-hover-color:          $gray-900 !default;
 $navbar-light-active-color:         $gray-900 !default;
+
 
 // Pagination
 

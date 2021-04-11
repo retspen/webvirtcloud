@@ -25,6 +25,7 @@ from logs.views import addlogmsg
 from vrtManager import util
 from vrtManager.create import wvmCreate
 from vrtManager.instance import wvmInstances
+from vrtManager.interface import wvmInterface
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
 
@@ -121,6 +122,7 @@ def instance(request, pk):
     memory_host = instance.proxy.get_max_memory()
     bus_host = instance.proxy.get_disk_bus_types(instance.arch, instance.machine)
     networks_host = sorted(instance.proxy.get_networks())
+    interfaces_host = sorted(instance.proxy.get_ifaces())
     nwfilters_host = instance.proxy.get_nwfilters()
     storages_host = sorted(instance.proxy.get_storages(True))
     net_models_host = instance.proxy.get_network_models()
@@ -161,6 +163,11 @@ def stats(request, pk):
         }
     )
 
+def osinfo(request, pk):
+    instance = get_instance(request.user, pk)
+    results = instance.proxy.osinfo()
+    
+    return JsonResponse(results)
 
 def guess_mac_address(request, vname):
     data = {"vname": vname}
@@ -764,7 +771,7 @@ def revert_snapshot(request, pk):
         msg = _("Successful revert snapshot: ")
         msg += snap_name
         messages.success(request, msg)
-        msg = _("Revert snapshot: %(snap)") % {"snap": snap_name}
+        msg = _("Revert snapshot: %(snap)s") % {"snap": snap_name}
         addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
@@ -882,7 +889,7 @@ def set_video_model(request, pk):
     instance = get_instance(request.user, pk)
     video_model = request.POST.get("video_model", "vga")
     instance.proxy.set_video_model(video_model)
-    msg = _("Set Video Model: %(model)") % {"model": video_model}
+    msg = _("Set Video Model: %(model)s") % {"model": video_model}
     addlogmsg(request.user.username, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#options")
 
@@ -899,6 +906,16 @@ def change_network(request, pk):
             (source, source_type) = utils.get_network_tuple(request.POST.get(post))
             network_data[post] = source
             network_data[post + "-type"] = source_type
+
+            if source_type == 'iface':
+                iface = wvmInterface(
+                    instance.compute.hostname,
+                    instance.compute.login,
+                    instance.compute.password,
+                    instance.compute.type,
+                    source,
+                )
+                network_data[post + "-type"] = iface.get_type()
         elif post.startswith("net-"):
             network_data[post] = request.POST.get(post, "")
 
@@ -917,6 +934,16 @@ def add_network(request, pk):
     mac = request.POST.get("add-net-mac")
     nwfilter = request.POST.get("add-net-nwfilter")
     (source, source_type) = utils.get_network_tuple(request.POST.get("add-net-network"))
+
+    if source_type == 'iface':
+        iface = wvmInterface(
+                instance.compute.hostname,
+                instance.compute.login,
+                instance.compute.password,
+                instance.compute.type,
+                source,
+            )
+        source_type = iface.get_type()
 
     instance.proxy.add_network(mac, source, source_type, nwfilter=nwfilter)
     msg = _("Add network: %(mac)s") % {"mac": mac}
