@@ -176,7 +176,7 @@ class wvmCreate(wvmConnect):
         graphics,
         virtio,
         listen_addr,
-        video="vga",
+        video="virtio",
         console_pass="random",
         mac=None,
         qemu_ga=True,
@@ -222,7 +222,8 @@ class wvmCreate(wvmConnect):
         if caps["features"]:
             xml += """<features>"""
             if "acpi" in caps["features"]:
-                xml += """<acpi/>"""
+                #xml += """<acpi/>"""
+                xml += """<acpi/> <gic version='3'/>"""
             if "apic" in caps["features"]:
                 xml += """<apic/>"""
             if "pae" in caps["features"]:
@@ -234,7 +235,8 @@ class wvmCreate(wvmConnect):
         if vcpu_mode == "host-model":
             xml += """<cpu mode='host-model'/>"""
         elif vcpu_mode == "host-passthrough":
-            xml += """<cpu mode='host-passthrough'/>"""
+            #xml += """<cpu mode='host-passthrough'/>"""
+            xml += """<cpu mode='host-passthrough' check='none'/>"""
         elif vcpu_mode == "":
             pass
         else:
@@ -259,10 +261,14 @@ class wvmCreate(wvmConnect):
         for volume in volumes:
 
             disk_opts = ""
-            if volume["cache_mode"] is not None and volume["cache_mode"] != "default":
-                disk_opts += f"cache='{volume['cache_mode']}' "
-            if volume["io_mode"] is not None and volume["io_mode"] != "default":
-                disk_opts += f"io='{volume['io_mode']}' "
+            #if volume["cache_mode"] is not None and volume["cache_mode"] != "default":
+            if volume["cache_mode"] is not None or volume["cache_mode"] == "default":
+                #disk_opts += f"cache='{volume['cache_mode']}' "
+                disk_opts += f"cache='writeback' "
+            #if volume["io_mode"] is not None and volume["io_mode"] != "default":
+            if volume["io_mode"] is not None or volume["io_mode"] == "default":
+                #disk_opts += f"io='{volume['io_mode']}' "
+                disk_opts += f"io='threads' "
             if volume["discard_mode"] is not None and volume["discard_mode"] != "default":
                 disk_opts += f"discard='{volume['discard_mode']}' "
             if volume["detect_zeroes_mode"] is not None and volume["detect_zeroes_mode"] != "default":
@@ -323,6 +329,11 @@ class wvmCreate(wvmConnect):
             if volume.get("bus") == "scsi":
                 xml += f"""<controller type='scsi' model='{volume.get('scsi_model')}'/>"""
 
+        ## add usb dom support with mode qemu-xhci
+        xml += f"""<controller type='usb' model='qemu-xhci'/>"""
+        xml += f"""<input type='mouse' bus='usb'/>"""
+        xml += f"""<input type='keyboard' bus='usb'/>"""
+
         if add_cd:
             xml += """<disk type='file' device='cdrom'>
                           <driver name='qemu' type='raw'/>
@@ -365,7 +376,7 @@ class wvmCreate(wvmConnect):
             xml += """<input type='tablet'/>"""
 
         xml += f"""
-                <graphics type='{graphics}' port='-1' autoport='yes' {console_pass} listen='{listen_addr}'/>
+                <graphics type='{graphics}' port='-1' autoport='yes' {console_pass} listen='{listen_addr}' keymap='en-us'/>
                 <console type='pty'/> """
 
         if qemu_ga and virtio:

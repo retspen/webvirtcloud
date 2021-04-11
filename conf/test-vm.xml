@@ -29,7 +29,7 @@
         </disk>
         <disk type="file" device="cdrom">
             <driver name="qemu" type="raw" />
-            <target dev="sda" bus="sata" />
+            <target dev="sda" bus="scsi" />
             <readonly />
             <address type="drive" controller="0" bus="0" target="0" unit="0" />
         </disk>

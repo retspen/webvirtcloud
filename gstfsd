@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+#
+# gstfsd - WebVirtCloud daemon for managing VM's filesystem
+#
+
+import socketserver
+import json
+import guestfs
+import re
+
+PORT = 16510
+ADDRESS = "0.0.0.0"
+
+
+class MyTCPServer(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True
+
+
+class MyTCPServerHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        # recive data
+        d = self.request.recv(1024).strip()
+        data = json.loads(d)
+
+        # GuestFS
+        gfs = guestfs.GuestFS(python_return_dict=True)
+        try:
+            gfs.add_domain(data['vname'])
+            gfs.launch()
+            parts = gfs.list_partitions()
+            for part in parts:
+                try:
+                    gfs.mount(part, '/')
+                    if gfs.is_file('/etc/shadow'):
+                        if data['action'] == 'password':
+                            file_shadow = gfs.cat('/etc/shadow')
+                            new_root_hash = "root:" + data['passwd'] + ":"
+                            file_shadow_new = re.sub('^root:.*?:', new_root_hash, file_shadow)
+                            gfs.write('/etc/shadow', file_shadow_new)
+                            gfs.chmod(640, '/etc/shadow')
+                            self.request.sendall(json.dumps({'return': 'success'}))
+                        if data['action'] == 'publickey':
+                            if not gfs.is_dir('/root/.ssh'):
+                                gfs.mkdir('/root/.ssh')
+                                gfs.chmod(700, "/root/.ssh")
+                            gfs.write('/root/.ssh/authorized_keys', data['key'])
+                            gfs.chmod(600, '/root/.ssh/authorized_keys')
+                            self.request.sendall(json.dumps({'return': 'success'}))
+                    gfs.umount(part)
+                except RuntimeError:
+                    pass
+            gfs.shutdown()
+            gfs.close()
+        except Exception as err:
+            self.request.sendall(bytes(json.dumps({'return': 'error', 'message': str(err)}).encode()))
+
+
+server = MyTCPServer((ADDRESS, PORT), MyTCPServerHandler)
+server.serve_forever()

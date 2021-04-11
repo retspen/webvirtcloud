@@ -229,8 +229,15 @@ msgid "Sign In"
 msgstr "登录"
 
 #: accounts/templates/login.html:5 accounts/templates/logout.html:4
+#: console/templates/console-vnc-lite.html:5
+#: console/templates/console-vnc-full.html:5
+#: console/templates/console-spice-lite.html:5
+#: console/templates/console-spice-full.html:5 templates/navbar.html:6
+#: accounts/templates/login.html:10 accounts/templates/logout.html:9
+#: accounts/templates/accounts/otp_login.html:5
+#: accounts/templates/accounts/otp_login.html:6
 msgid "WebVirtCloud"
-msgstr "私有云平台"
+msgstr "信创国产化私有云平台"
 
 #: accounts/templates/login.html:19
 msgid "Incorrect username or password."
@@ -372,12 +379,10 @@ msgstr "用户组"
 #: admin/forms.py:81 admin/forms.py:79
 msgid ""
 "Raw passwords are not stored, so there is no way to see\n"
-"                this user's password, but you can change the password using "
-"<a href='{}'>this form</a>."
+"                this user's password, but you can change the password using <a href='{}'>this form</a>."
 msgstr ""
 "原始密码未存储，因此无法查看\n"
-"                该用户的密码，但是您可以使用 <a href='{}'>此表单</a>更改密"
-"码。"
+"                该用户的密码，但是您可以使用 <a href='{}'>此表单</a>更改密码。"
 
 #: admin/templates/admin/group_list.html:5 admin/views.py:87
 #: instances/templates/instances/settings_tab.html:63 templates/navbar.html:29
@@ -914,7 +919,7 @@ msgstr "网络"
 #: nwfilters/templates/nwfilters.html:34 secrets/templates/secrets.html:32
 #: storages/templates/storage.html:31 storages/templates/storages.html:28
 msgid "Interfaces"
-msgstr "实例"
+msgstr "接口"
 
 #: computes/templates/computes/instances.html:44
 #: computes/templates/overview.html:31 interfaces/templates/interface.html:28
@@ -1066,6 +1071,7 @@ msgstr "基本细节"
 
 #: computes/templates/overview.html:44
 #: storages/templates/create_stg_block.html:171
+#: instances/templates/instances/info_tab.html:5
 msgid "Hostname"
 msgstr "主机名"
 
@@ -1082,6 +1088,7 @@ msgid "Emulator"
 msgstr "模拟器"
 
 #: computes/templates/overview.html:75
+#: instances/templates/instances/info_tab.html:11
 msgid "Version"
 msgstr "版本"
 
@@ -1125,8 +1132,7 @@ msgid "RAM Utilization"
 msgstr "内存利用率"
 
 #: computes/validators.py:16
-msgid ""
-"Hostname must contain only numbers, or the domain name separated by \".\""
+msgid "Hostname must contain only numbers, or the domain name separated by \".\""
 msgstr "主机名必须仅包含数字，或以 \".\" 分隔的域名格式。"
 
 #: computes/validators.py:18
@@ -1868,9 +1874,7 @@ msgstr "VDI"
 
 #: instances/templates/instances/access_tab.html:39
 #, python-format
-msgid ""
-" This action opens a new window with a %(type)s connection to the console of "
-"the instance."
+msgid " This action opens a new window with a %(type)s connection to the console of the instance."
 msgstr " 该操作将打开一个新窗口，并使用 %(type)s 类型的控制台连接到实例。"
 
 #: instances/templates/instances/access_tab.html:47
@@ -1929,9 +1933,7 @@ msgid "Add Public Key"
 msgstr "添加公钥"
 
 #: instances/templates/instances/access_tab.html:152
-msgid ""
-"This action opens a remote viewer with a connection to the console of the "
-"instance."
+msgid "This action opens a remote viewer with a connection to the console of the instance."
 msgstr "该操作将打开一个远程查看器来连接到实例控制台。"
 
 #: instances/templates/instances/access_tab.html:159
@@ -1983,15 +1985,12 @@ msgid "This action sends an ACPI shutdown signal to the instance."
 msgstr "此操作将ACPI关闭信号发送到实例。"
 
 #: instances/templates/instances/power_tab.html:64
-msgid ""
-"This action forcibly powers off and start the instance and may cause data "
-"corruption."
+msgid "This action forcibly powers off and start the instance and may cause data corruption."
 msgstr "该操作将强制关闭电源并启动实例，并可能导致数据损坏。"
 
 #: instances/templates/instances/power_tab.html:71
 #: instances/templates/instances/power_tab.html:98
-msgid ""
-"This action forcibly powers off the instance and may cause data corruption."
+msgid "This action forcibly powers off the instance and may cause data corruption."
 msgstr "该操作将强制关闭实例电源，并可能导致数据损坏。"
 
 #: instances/templates/instances/power_tab.html:80
@@ -2278,9 +2277,7 @@ msgid "QoS"
 msgstr "QoS 流量控制"
 
 #: instances/templates/instances/settings_tab.html:468
-msgid ""
-"In most configurations, macvtap does not work for host to guest network "
-"communication"
+msgid "In most configurations, macvtap does not work for host to guest network communication"
 msgstr "在大多数配置中，macvtap不适用于主机与客户机之间的网络通信"
 
 #: instances/templates/instances/settings_tab.html:481
@@ -2488,10 +2485,8 @@ msgid "Manage Snapshots"
 msgstr "管理快照"
 
 #: instances/templates/instances/snapshots_tab.html:22
-msgid ""
-"This may take more than an hour, depending on how much content is on your "
-"instance and how large the disk is."
-msgstr "这可能需要一个多小时，具体取决于实例上已使用的容量和磁盘大小。"
+msgid "This may take more than an hour, depending on how much content is on your instance and how large the disk is. It could cause web server timeout.."
+msgstr "这可能需要一个多小时，具体取决于实例上的内容量和磁盘的大小。 这可能会导致Web服务器超时。"
 
 #: instances/templates/instances/snapshots_tab.html:27
 msgid "Enter Snapshot Name"
@@ -2575,10 +2570,8 @@ msgstr "安装了新的 SSH 公钥 %(keyname)s"
 
 #: instances/views.py:422 instances/views.py:416
 #, python-format
-msgid ""
-"User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
-msgstr ""
-"已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的 CPU 大小！"
+msgid "User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
+msgstr "已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的 CPU 大小！"
 
 #: instances/views.py:431
 #, python-format
@@ -2591,20 +2584,13 @@ msgstr "调整 CPU"
 
 #: instances/views.py:453
 #, python-format
-msgid ""
-"User %(quota_msg)s quota reached, cannot resize memory of "
-"'%(instance_name)s'!"
-msgstr ""
-"已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的内存大小！"
+msgid "User %(quota_msg)s quota reached, cannot resize memory of '%(instance_name)s'!"
+msgstr "已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的内存大小！"
 
 #: instances/views.py:466
 #, python-format
-msgid ""
-"Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/"
-"%(new_max)s"
-msgstr ""
-"内存大小已调整：当前/最大值: %(old_cur)s/%(old_max)s 至 %(new_cur)s/"
-"%(new_max)s"
+msgid "Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/%(new_max)s"
+msgstr "内存大小已调整：当前/最大值: %(old_cur)s/%(old_max)s 至 %(new_cur)s/%(new_max)s"
 
 #: instances/views.py:500 instances/views.py:462
 msgid "Resize Memory"
@@ -2612,10 +2598,8 @@ msgstr "调整内存"
 
 #: instances/views.py:491
 #, python-format
-msgid ""
-"User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
-msgstr ""
-"已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的磁盘大小！"
+msgid "User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
+msgstr "已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的磁盘大小！"
 
 #: instances/views.py:507
 #, python-format
@@ -2809,12 +2793,8 @@ msgstr "%(qos_dir)s 已设置"
 
 #: instances/views.py:971 instances/views.py:956
 #, python-format
-msgid ""
-"%(qos_dir)s QoS is set. Network XML is changed.                 Stop and "
-"start network to activate new config."
-msgstr ""
-"%(qos_dir)s QoS 已设置。网络XML已更改。                 停止并启动网络以激活"
-"新的配置。"
+msgid "%(qos_dir)s QoS is set. Network XML is changed.                 Stop and start network to activate new config."
+msgstr "%(qos_dir)s QoS 已设置。网络XML已更改。                 停止并启动网络以激活新的配置。"
 
 #: instances/views.py:988 networks/views.py:246 instances/views.py:970
 #, python-format
@@ -2823,12 +2803,8 @@ msgstr "%(qos_dir)s QoS 已删除"
 
 #: instances/views.py:993 instances/views.py:974
 #, python-format
-msgid ""
-"%(qos_dir)s QoS is deleted. Network XML is changed.                 Stop and "
-"start network to activate new config."
-msgstr ""
-"%(qos_dir)s QoS 已删除。网络XML已更改。                 停止并启动网络以激活"
-"新的配置。"
+msgid "%(qos_dir)s QoS is deleted. Network XML is changed.                 Stop and start network to activate new config."
+msgstr "%(qos_dir)s QoS 已删除。网络XML已更改。                 停止并启动网络以激活新的配置。"
 
 #: instances/views.py:1012 instances/views.py:1017 instances/views.py:990
 msgid "Only one owner is allowed and the one already added"
@@ -2884,9 +2860,7 @@ msgid "Clone of '%(instance_name)s'"
 msgstr "'%(instance_name)s' 的克隆"
 
 #: instances/views.py:1093
-msgid ""
-"Error setting console password. You should check that your instance have an "
-"graphic device."
+msgid "Error setting console password. You should check that your instance have an graphic device."
 msgstr "设置控制台密码时出错。 您应检查实例是否具有图形设备。"
 
 #: instances/views.py:1126 instances/views.py:1512 instances/views.py:1096
@@ -3428,8 +3402,7 @@ msgid "{family.upper()} DHCP Range is Changed."
 msgstr "{family.upper()} DHCP 范围已更改。"
 
 #: networks/views.py:203
-msgid ""
-"Network XML is changed. \\Stop and start network to activate new config."
+msgid "Network XML is changed. \\Stop and start network to activate new config."
 msgstr "网络XML已更改。\\停止并启动网络以激活新配置。"
 
 #: networks/views.py:215 networks/views.py:242 networks/views.py:205
@@ -3439,9 +3412,7 @@ msgstr "网络XML已更改。"
 
 #: networks/views.py:228
 #, python-format
-msgid ""
-"%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network "
-"to activate new config"
+msgid "%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network to activate new config"
 msgstr "%(qos_dir)s 的 QoS 已更新。 网络XML已更改。 停止并启动网络以激活新配置"
 
 #: networks/views.py:218
@@ -3863,9 +3834,7 @@ msgid "500 Internal Server Error"
 msgstr "500 服务器内部错误"
 
 #: templates/500.html:11
-msgid ""
-"The server encountered an internal error or misconfiguration and was unable "
-"to complete you request."
+msgid "The server encountered an internal error or misconfiguration and was unable to complete you request."
 msgstr "服务器遇到内部错误或配置错误，无法完成您的请求。"
 
 #: templates/common/confirm_delete.html:16
@@ -3946,15 +3915,12 @@ msgstr "请输入有效的电子邮件地址。"
 #. Translators: "letters" means latin letters: a-z and A-Z.
 #: venv/lib/python3.6/site-packages/django/core/validators.py:239
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:245
-msgid ""
-"Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens."
+msgid "Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens."
 msgstr "请输入由字母，数字，下划线或连字符组成的有效“字段”。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:246
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:252
-msgid ""
-"Enter a valid 'slug' consisting of Unicode letters, numbers, underscores, or "
-"hyphens."
+msgid "Enter a valid 'slug' consisting of Unicode letters, numbers, underscores, or hyphens."
 msgstr "请输入由 Unicode 字母，数字，下划线或连字符组成的有效“字段”。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:255
@@ -4005,23 +3971,15 @@ msgstr "确保此值大于或等于 %(limit_value)s 。"
 #: venv/lib/python3.6/site-packages/django/core/validators.py:361
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:364
 #, python-format
-msgid ""
-"Ensure this value has at least %(limit_value)d character (it has "
-"%(show_value)d)."
-msgid_plural ""
-"Ensure this value has at least %(limit_value)d characters (it has "
-"%(show_value)d)."
+msgid "Ensure this value has at least %(limit_value)d character (it has %(show_value)d)."
+msgid_plural "Ensure this value has at least %(limit_value)d characters (it has %(show_value)d)."
 msgstr[0] "确保此值至少具有 %(limit_value)d 个字符（具有 %(show_value)d 个）。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:376
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:379
 #, python-format
-msgid ""
-"Ensure this value has at most %(limit_value)d character (it has "
-"%(show_value)d)."
-msgid_plural ""
-"Ensure this value has at most %(limit_value)d characters (it has "
-"%(show_value)d)."
+msgid "Ensure this value has at most %(limit_value)d character (it has %(show_value)d)."
+msgid_plural "Ensure this value has at most %(limit_value)d characters (it has %(show_value)d)."
 msgstr[0] "确保此值最多具有 %(limit_value)d 个字符（具有 %(show_value)d 个）。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:395
@@ -4049,21 +4007,15 @@ msgstr[0] "确保不超过 %(max)s 个小数位。"
 #: venv/lib/python3.6/site-packages/django/core/validators.py:407
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:409
 #, python-format
-msgid ""
-"Ensure that there are no more than %(max)s digit before the decimal point."
-msgid_plural ""
-"Ensure that there are no more than %(max)s digits before the decimal point."
+msgid "Ensure that there are no more than %(max)s digit before the decimal point."
+msgid_plural "Ensure that there are no more than %(max)s digits before the decimal point."
 msgstr[0] "确保小数点前的位数不超过 %(max)s 个。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:469
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:463
 #, python-format
-msgid ""
-"File extension '%(extension)s' is not allowed. Allowed extensions are: "
-"'%(allowed_extensions)s'."
-msgstr ""
-"不允许文件扩展名 '%(extension)s' 。 允许的扩展名"
-"是：'%(allowed_extensions)s' 。"
+msgid "File extension '%(extension)s' is not allowed. Allowed extensions are: '%(allowed_extensions)s'."
+msgstr "不允许文件扩展名 '%(extension)s' 。 允许的扩展名是：'%(allowed_extensions)s' 。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:521
 msgid "Null characters are not allowed."
@@ -4109,10 +4061,8 @@ msgstr "具有此 %(field_label)s 的 %(model_name)s 已存在。"
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:111
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:123
 #, python-format
-msgid ""
-"%(field_label)s must be unique for %(date_field_label)s %(lookup_type)s."
-msgstr ""
-"%(field_label)s 对于 %(date_field_label)s %(lookup_type)s 必须是唯一的。"
+msgid "%(field_label)s must be unique for %(date_field_label)s %(lookup_type)s."
+msgstr "%(field_label)s 对于 %(date_field_label)s %(lookup_type)s 必须是唯一的。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:128
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:140
@@ -4172,9 +4122,7 @@ msgstr "逗号分隔的整数"
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1153
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1172
 #, python-format
-msgid ""
-"'%(value)s' value has an invalid date format. It must be in YYYY-MM-DD "
-"format."
+msgid "'%(value)s' value has an invalid date format. It must be in YYYY-MM-DD format."
 msgstr "'%(value)s' 值的日期格式无效。 必须为 YYYY-MM-DD 格式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1155
@@ -4182,9 +4130,7 @@ msgstr "'%(value)s' 值的日期格式无效。 必须为 YYYY-MM-DD 格式。"
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1174
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1319
 #, python-format
-msgid ""
-"'%(value)s' value has the correct format (YYYY-MM-DD) but it is an invalid "
-"date."
+msgid "'%(value)s' value has the correct format (YYYY-MM-DD) but it is an invalid date."
 msgstr "'%(value)s' 值具有正确的格式（YYYY-MM-DD），但它是无效的日期。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1158
@@ -4195,22 +4141,14 @@ msgstr "日期（不包含时间）"
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1296
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1317
 #, python-format
-msgid ""
-"'%(value)s' value has an invalid format. It must be in YYYY-MM-DD HH:MM[:ss[."
-"uuuuuu]][TZ] format."
-msgstr ""
-"'%(value)s' 值的格式无效。 它必须采用 YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ] 格"
-"式。"
+msgid "'%(value)s' value has an invalid format. It must be in YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ] format."
+msgstr "'%(value)s' 值的格式无效。 它必须采用 YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ] 格式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1300
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1321
 #, python-format
-msgid ""
-"'%(value)s' value has the correct format (YYYY-MM-DD HH:MM[:ss[.uuuuuu]]"
-"[TZ]) but it is an invalid date/time."
-msgstr ""
-"'%(value)s' 值具有正确的格式（YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ]），但它是无"
-"效的日期/时间。"
+msgid "'%(value)s' value has the correct format (YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ]) but it is an invalid date/time."
+msgstr "'%(value)s' 值具有正确的格式（YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ]），但它是无效的日期/时间。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1304
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1325
@@ -4231,9 +4169,7 @@ msgstr "小数"
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1593
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1628
 #, python-format
-msgid ""
-"'%(value)s' value has an invalid format. It must be in [DD] [HH:[MM:]]ss[."
-"uuuuuu] format."
+msgid "'%(value)s' value has an invalid format. It must be in [DD] [HH:[MM:]]ss[.uuuuuu] format."
 msgstr "'%(value)s' 值的格式无效。 它必须为 [DD] [HH:[MM:]]ss[.uuuuuu] 格式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1596
@@ -4313,17 +4249,13 @@ msgstr "文本"
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2109
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2163
 #, python-format
-msgid ""
-"'%(value)s' value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] "
-"format."
+msgid "'%(value)s' value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] format."
 msgstr "'%(value)s' 值的格式无效。 它必须为 HH:MM[:ss[.uuuuuu]] 格式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2111
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2165
 #, python-format
-msgid ""
-"'%(value)s' value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an "
-"invalid time."
+msgid "'%(value)s' value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an invalid time."
 msgstr "'%(value)s' 值具有正确的格式（HH:MM[:ss[.uuuuuu]]），但时间无效。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2114
@@ -4454,8 +4386,7 @@ msgstr "提交的文件为空。"
 #: venv2/lib/python2.7/site-packages/django/forms/fields.py:551
 #, python-format
 msgid "Ensure this filename has at most %(max)d character (it has %(length)d)."
-msgid_plural ""
-"Ensure this filename has at most %(max)d characters (it has %(length)d)."
+msgid_plural "Ensure this filename has at most %(max)d characters (it has %(length)d)."
 msgstr[0] "确保此文件名最多具有 %(max)d 个字符（具有 %(length)d 个）。"
 
 #: venv/lib/python3.6/site-packages/django/forms/fields.py:539
@@ -4465,9 +4396,7 @@ msgstr "请提交文件或选中清除复选框，不能两者都选。"
 
 #: venv/lib/python3.6/site-packages/django/forms/fields.py:600
 #: venv2/lib/python2.7/site-packages/django/forms/fields.py:619
-msgid ""
-"Upload a valid image. The file you uploaded was either not an image or a "
-"corrupted image."
+msgid "Upload a valid image. The file you uploaded was either not an image or a corrupted image."
 msgstr "上载有效镜像。 您上传的文件不是镜像或镜像已损坏。"
 
 #: venv/lib/python3.6/site-packages/django/forms/fields.py:762
@@ -4552,12 +4481,8 @@ msgstr "请更正 %(field)s 的重复数据，该数据必须唯一。"
 #: venv/lib/python3.6/site-packages/django/forms/models.py:761
 #: venv2/lib/python2.7/site-packages/django/forms/models.py:754
 #, python-format
-msgid ""
-"Please correct the duplicate data for %(field_name)s which must be unique "
-"for the %(lookup)s in %(date_field)s."
-msgstr ""
-"请更正 %(field_name)s 的重复数据，该数据对于 %(date_field)s 中的 %(lookup)s "
-"必须是唯一的。"
+msgid "Please correct the duplicate data for %(field_name)s which must be unique for the %(lookup)s in %(date_field)s."
+msgstr "请更正 %(field_name)s 的重复数据，该数据对于 %(date_field)s 中的 %(lookup)s 必须是唯一的。"
 
 #: venv/lib/python3.6/site-packages/django/forms/models.py:770
 #: venv2/lib/python2.7/site-packages/django/forms/models.py:763
@@ -4581,12 +4506,8 @@ msgstr "\"%(pk)s\" 不是有效值。"
 #: venv/lib/python3.6/site-packages/django/forms/utils.py:162
 #: venv2/lib/python2.7/site-packages/django/forms/utils.py:172
 #, python-format
-msgid ""
-"%(datetime)s couldn't be interpreted in time zone %(current_timezone)s; it "
-"may be ambiguous or it may not exist."
-msgstr ""
-"%(datetime)s 无法在时区 %(current_timezone)s 中解释； 它可能是模棱两可的，也"
-"可能不存在。"
+msgid "%(datetime)s couldn't be interpreted in time zone %(current_timezone)s; it may be ambiguous or it may not exist."
+msgstr "%(datetime)s 无法在时区 %(current_timezone)s 中解释； 它可能是模棱两可的，也可能不存在。"
 
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:396
 #: venv2/lib/python2.7/site-packages/django/forms/widgets.py:378
@@ -5094,56 +5015,27 @@ msgstr "CSRF验证失败。 请求中止。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:115
 #: venv2/lib/python2.7/site-packages/django/views/csrf.py:114
-msgid ""
-"You are seeing this message because this HTTPS site requires a 'Referer "
-"header' to be sent by your Web browser, but none was sent. This header is "
-"required for security reasons, to ensure that your browser is not being "
-"hijacked by third parties."
-msgstr ""
-"您正在看到此消息，因为此 HTTPS 站点要求 Web 浏览器发送 “ Referer 标头”，但没"
-"有发送。 出于安全原因，此标头是必需的，以确保您的浏览器不会被第三方劫持。"
+msgid "You are seeing this message because this HTTPS site requires a 'Referer header' to be sent by your Web browser, but none was sent. This header is required for security reasons, to ensure that your browser is not being hijacked by third parties."
+msgstr "您正在看到此消息，因为此 HTTPS 站点要求 Web 浏览器发送 “ Referer 标头”，但没有发送。 出于安全原因，此标头是必需的，以确保您的浏览器不会被第三方劫持。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:120
 #: venv2/lib/python2.7/site-packages/django/views/csrf.py:119
-msgid ""
-"If you have configured your browser to disable 'Referer' headers, please re-"
-"enable them, at least for this site, or for HTTPS connections, or for 'same-"
-"origin' requests."
-msgstr ""
-"如果您已将浏览器配置为禁用 'Referer' 标头，请至少对本站点，HTTPS 连接或 “相同"
-"来源” 请求重新启用标头。"
+msgid "If you have configured your browser to disable 'Referer' headers, please re-enable them, at least for this site, or for HTTPS connections, or for 'same-origin' requests."
+msgstr "如果您已将浏览器配置为禁用 'Referer' 标头，请至少对本站点，HTTPS 连接或 “相同来源” 请求重新启用标头。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:124
-msgid ""
-"If you are using the <meta name=\"referrer\" content=\"no-referrer\"> tag or "
-"including the 'Referrer-Policy: no-referrer' header, please remove them. The "
-"CSRF protection requires the 'Referer' header to do strict referer checking. "
-"If you're concerned about privacy, use alternatives like <a rel=\"noreferrer"
-"\" ...> for links to third-party sites."
-msgstr ""
-"如果您使用的是 <meta name=\"referrer\" content=\"no-referrer\"> 标记或包含 "
-"'Referrer-Policy: no-referrer' 标头，请删除它们。 CSRF保护要求 'Referer' 标头"
-"进行严格的引用检查。 如果您担心隐私问题，请使用 <a rel=\"noreferrer\" ...> 之"
-"类的替代方法来链接到第三方网站。"
+msgid "If you are using the <meta name=\"referrer\" content=\"no-referrer\"> tag or including the 'Referrer-Policy: no-referrer' header, please remove them. The CSRF protection requires the 'Referer' header to do strict referer checking. If you're concerned about privacy, use alternatives like <a rel=\"noreferrer\" ...> for links to third-party sites."
+msgstr "如果您使用的是 <meta name=\"referrer\" content=\"no-referrer\"> 标记或包含 'Referrer-Policy: no-referrer' 标头，请删除它们。 CSRF保护要求 'Referer' 标头进行严格的引用检查。 如果您担心隐私问题，请使用 <a rel=\"noreferrer\" ...> 之类的替代方法来链接到第三方网站。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:132
 #: venv2/lib/python2.7/site-packages/django/views/csrf.py:124
-msgid ""
-"You are seeing this message because this site requires a CSRF cookie when "
-"submitting forms. This cookie is required for security reasons, to ensure "
-"that your browser is not being hijacked by third parties."
-msgstr ""
-"您看到此消息是因为提交表单时此站点需要 CSRF cookie 。 出于安全原因，此 "
-"cookie 是必需的，以确保您的浏览器不会被第三方劫持。"
+msgid "You are seeing this message because this site requires a CSRF cookie when submitting forms. This cookie is required for security reasons, to ensure that your browser is not being hijacked by third parties."
+msgstr "您看到此消息是因为提交表单时此站点需要 CSRF cookie 。 出于安全原因，此 cookie 是必需的，以确保您的浏览器不会被第三方劫持。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:137
 #: venv2/lib/python2.7/site-packages/django/views/csrf.py:129
-msgid ""
-"If you have configured your browser to disable cookies, please re-enable "
-"them, at least for this site, or for 'same-origin' requests."
-msgstr ""
-"如果您已将浏览器配置为禁用 Cookie ，请至少针对此站点或“相同来源”请求重新启用"
-"它们。"
+msgid "If you have configured your browser to disable cookies, please re-enable them, at least for this site, or for 'same-origin' requests."
+msgstr "如果您已将浏览器配置为禁用 Cookie ，请至少针对此站点或“相同来源”请求重新启用它们。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:142
 #: venv2/lib/python2.7/site-packages/django/views/csrf.py:134
@@ -5190,12 +5082,8 @@ msgstr "没有可用的 %(verbose_name_plural)s"
 #: venv/lib/python3.6/site-packages/django/views/generic/dates.py:589
 #: venv2/lib/python2.7/site-packages/django/views/generic/dates.py:669
 #, python-format
-msgid ""
-"Future %(verbose_name_plural)s not available because %(class_name)s."
-"allow_future is False."
-msgstr ""
-"将来的 %(verbose_name_plural)s 不可用，因为 %(class_name)s.allow_future 为"
-"False。"
+msgid "Future %(verbose_name_plural)s not available because %(class_name)s.allow_future is False."
+msgstr "将来的 %(verbose_name_plural)s 不可用，因为 %(class_name)s.allow_future 为False。"
 
 #: venv/lib/python3.6/site-packages/django/views/generic/dates.py:623
 #: venv2/lib/python2.7/site-packages/django/views/generic/dates.py:703
@@ -5249,12 +5137,8 @@ msgstr "Django：完美主义者的Web框架，有最后期限。"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:345
 #, python-format
-msgid ""
-"View <a href=\"https://docs.djangoproject.com/en/%(version)s/releases/\" "
-"target=\"_blank\" rel=\"noopener\">release notes</a> for Django %(version)s"
-msgstr ""
-"查看 Django %(version)s 的<a href=\"https://docs.djangoproject.com/en/"
-"%(version)s/releases/\" target=\"_blank\" rel=\"noopener\">发行说明</a>"
+msgid "View <a href=\"https://docs.djangoproject.com/en/%(version)s/releases/\" target=\"_blank\" rel=\"noopener\">release notes</a> for Django %(version)s"
+msgstr "查看 Django %(version)s 的<a href=\"https://docs.djangoproject.com/en/%(version)s/releases/\" target=\"_blank\" rel=\"noopener\">发行说明</a>"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:367
 msgid "The install worked successfully! Congratulations!"
@@ -5262,15 +5146,8 @@ msgstr "安装成功！ 恭喜您！"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:368
 #, python-format
-msgid ""
-"You are seeing this page because <a href=\"https://docs.djangoproject.com/en/"
-"%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener"
-"\">DEBUG=True</a> is in your settings file and you have not configured any "
-"URLs."
-msgstr ""
-"您之所以会看到此页面，是因为 <a href=\"https://docs.djangoproject.com/en/"
-"%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener"
-"\">DEBUG=True</a> 位于您的设置文件中，并且您尚未配置任何URL 。"
+msgid "You are seeing this page because <a href=\"https://docs.djangoproject.com/en/%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener\">DEBUG=True</a> is in your settings file and you have not configured any URLs."
+msgstr "您之所以会看到此页面，是因为 <a href=\"https://docs.djangoproject.com/en/%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener\">DEBUG=True</a> 位于您的设置文件中，并且您尚未配置任何URL 。"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:383
 msgid "Django Documentation"
@@ -5333,20 +5210,12 @@ msgid "Congratulations on your first Django-powered page."
 msgstr "恭喜，您的第一个 Django 驱动页面。"
 
 #: venv2/lib/python2.7/site-packages/django/views/debug.py:524
-msgid ""
-"Next, start your first app by running <code>python manage.py startapp "
-"[app_label]</code>."
-msgstr ""
-"接下来，通过运行 <code>python manage.py startapp [app_label]</code> 启动您的"
-"第一个应用程序。"
+msgid "Next, start your first app by running <code>python manage.py startapp [app_label]</code>."
+msgstr "接下来，通过运行 <code>python manage.py startapp [app_label]</code> 启动您的第一个应用程序。"
 
 #: venv2/lib/python2.7/site-packages/django/views/debug.py:527
-msgid ""
-"You're seeing this message because you have <code>DEBUG = True</code> in "
-"your Django settings file and you haven't configured any URLs. Get to work!"
-msgstr ""
-"您之所以会看到此消息，是因为Django设置文件中有 <code>DEBUG = True</code>，并"
-"且尚未配置任何URL。 开始工作！"
+msgid "You're seeing this message because you have <code>DEBUG = True</code> in your Django settings file and you haven't configured any URLs. Get to work!"
+msgstr "您之所以会看到此消息，是因为Django设置文件中有 <code>DEBUG = True</code>，并且尚未配置任何URL。 开始工作！"
 
 #: venv2/lib/python2.7/site-packages/gunicorn/argparse_compat.py:313
 msgid "usage: "
@@ -5500,3 +5369,27 @@ msgstr "%s: 错误： %s\n"
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt 错误- %(exception)s"
+
+#: instances/templates/instances/info_tab.html:3
+msgid "Guest Info"
+msgstr "客户机信息"
+
+#: instances/templates/instances/info_tab.html:7
+msgid "OS Name"
+msgstr "系统名称"
+
+#: instances/templates/instances/info_tab.html:9
+msgid "OS Pretty-Name"
+msgstr "系统详细名称"
+
+#: instances/templates/instances/info_tab.html:13
+msgid "Kernel Release"
+msgstr "内核发布版本"
+
+#: instances/templates/instances/info_tab.html:15
+msgid "Kernel Version"
+msgstr "内核版本时间"
+
+#: instances/templates/instances/info_tab.html:17
+msgid "Timezone / Offset"
+msgstr "时区/偏移"

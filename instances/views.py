@@ -691,7 +691,8 @@ def add_cdrom(request, pk):
     instance = get_instance(request.user, pk)
     allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
     if allow_admin_or_not_template:
-        bus = request.POST.get("bus", "ide" if instance.machine == "pc" else "sata")
+        #bus = request.POST.get("bus", "ide" if instance.machine == "pc" else "sata")
+        bus = request.POST.get("bus", "ide" if instance.machine == "pc" else "scsi")
         target = utils.get_new_disk_dev(instance.media, instance.disks, bus)
         instance.proxy.attach_disk(target, "", disk_device="cdrom", cache_mode="none", target_bus=bus, readonly=True)
         msg = _("Add CD-ROM: %(target)s") % {"target": target}
