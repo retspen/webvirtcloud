@@ -914,7 +914,7 @@ msgstr "网络"
 #: nwfilters/templates/nwfilters.html:34 secrets/templates/secrets.html:32
 #: storages/templates/storage.html:31 storages/templates/storages.html:28
 msgid "Interfaces"
-msgstr "实例"
+msgstr "接口"
 
 #: computes/templates/computes/instances.html:44
 #: computes/templates/overview.html:31 interfaces/templates/interface.html:28
