@@ -612,7 +612,7 @@ install_ubuntu() {
     if [ "$DISTRO_MAJOR_VERSION" -lt 18 ]; then
        apt-get -y install kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     else
-       apt install -y qemu-kvm libvirt-bin bridge-utils virt-manager sasl2-bin python3-guestfs supervisor || return 1
+       apt install -y qemu-kvm libvirt-clients libvirt-daemon-system bridge-utils virt-manager sasl2-bin python3-guestfs supervisor || return 1
     fi
 
     return 0
@@ -681,7 +681,7 @@ install_debian() {
     if [ "$DISTRO_MAJOR_VERSION" -lt 10 ]; then
 	    apt-get -y install qemu-kvm libvirt-bin bridge-utils sasl2-bin python-guestfs supervisor || return 1
     else
-	    apt-get -y install qemu qemu-kvm qemu-system qemu-utils libvirt-clients libvirt-daemon-system sasl2-bin virtinst supervisor || return 1
+	    apt-get -y install qemu qemu-kvm qemu-system qemu-utils libvirt-clients libvirt-daemon-system sasl2-bin python3-guestfs virtinst supervisor || return 1
     fi
     return 0
 }
