@@ -35,7 +35,9 @@ class LdapAuthenticationBackend(ModelBackend):
              return None
 
      def authenticate(self, request, username=None, password=None, **kwargs):
-        print("authenticate")
+        if not settings.LDAP_ENABLED:
+             return None
+        print("authenticate_ldap")
         # Get the user information from the LDAP if he can be authenticated
         isAdmin = False
         isStaff = False
@@ -97,7 +99,9 @@ class LdapAuthenticationBackend(ModelBackend):
         return user
 
      def get_user(self, user_id):
-        print("get_user")
+        if not settings.LDAP_ENABLED:
+             return None
+        print("get_user_ldap")
         try:
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
