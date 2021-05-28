@@ -21,6 +21,8 @@ RUN apt-get update -qqy \
 	nginx \
 	pkg-config \
 	gcc \
+	libldap2-dev \
+	libssl-dev \
 	libsasl2-modules \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
