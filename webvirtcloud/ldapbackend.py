@@ -62,15 +62,29 @@ class LdapAuthenticationBackend(ModelBackend):
         except User.DoesNotExist:
             print("authenticate-create new user")
             user = User(username=username)
+            user.is_active = True
             user.is_staff = isStaff
             user.is_superuser = isAdmin
-            user.password = uuid.uuid4().hex
+            user.set_password(uuid.uuid4().hex)
+            user.save()
+            maxInstances = 1
+            maxCpus = 1
+            maxMemory = 128
+            maxDiskSize = 1
+            if isStaff:
+                maxMemory = 2048
+                maxDiskSize = 20
+            if isAdmin:
+                maxInstances = -1
+                maxCpus = -1
+                maxMemory = -1
+                maxDiskSize = -1
             UserAttributes.objects.create(
                  user=user,
-                 max_instances=1,
-                 max_cpus=1,
-                 max_memory=2048,
-                 max_disk_size=20,
+                 max_instances=maxInstances,
+                 max_cpus=maxCpus,
+                 max_memory=maxMemory,
+                 max_disk_size=maxDiskSize,
             )
             permission = Permission.objects.get(codename='clone_instances')
             user.user_permissions.add(permission)       

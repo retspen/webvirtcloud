@@ -220,9 +220,9 @@ USE_SSL = False
 LDAP_MASTER_DN = 'cn=admin,dc=kendar,dc=org'
 LDAP_MASTER_PW = 'secret'
 LDAP_ROOT_DN = 'dc=kendar,dc=org'
-LDAP_SEARCH_GROUP_FILTER_ADMINS = 'memberOf=dc=admins,dc=staff,dc=webvirtcloud,ou=groups,dc=kendar,dc=org'
-LDAP_SEARCH_GROUP_FILTER_STAFF = 'memberOf=dc=staff,dc=webvirtcloud,ou=groups,dc=kendar,dc=org'
-LDAP_SEARCH_GROUP_FILTER_USERS = 'memberOf=dc=webvirtcloud,ou=groups,dc=kendar,dc=org'
+LDAP_SEARCH_GROUP_FILTER_ADMINS = 'memberOf=cn=admins,cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org'
+LDAP_SEARCH_GROUP_FILTER_STAFF = 'memberOf=cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org'
+LDAP_SEARCH_GROUP_FILTER_USERS = 'memberOf=cn=webvirtcloud,ou=groups,dc=kendar,dc=org'
 LDAP_USER_UID_PREFIX = 'cn'
 
 #sudo sed -r "s/SECRET_KEY = ''/SECRET_KEY = '"`python3 /srv/webvirtcloud/conf/runit/secret_generator.py`"'/" -i /srv/webvirtcloud/webvirtcloud/settings.py
