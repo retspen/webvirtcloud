@@ -74,20 +74,23 @@ class LdapAuthenticationBackend(ModelBackend):
             if isStaff:
                 maxMemory = 2048
                 maxDiskSize = 20
+                permission = Permission.objects.get(codename='clone_instances')
+                user.user_permissions.add(permission)
             if isAdmin:
                 maxInstances = -1
                 maxCpus = -1
                 maxMemory = -1
                 maxDiskSize = -1
+                permission = Permission.objects.get(codename='clone_instances')
+                user.user_permissions.add(permission)
+            user.save()
             UserAttributes.objects.create(
                  user=user,
                  max_instances=maxInstances,
                  max_cpus=maxCpus,
                  max_memory=maxMemory,
                  max_disk_size=maxDiskSize,
-            )
-            permission = Permission.objects.get(codename='clone_instances')
-            user.user_permissions.add(permission)       
+            )            
             user.save()
             
             print("authenticate-user created")
