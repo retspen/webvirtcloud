@@ -14,17 +14,10 @@ class LdapAuthenticationBackend(ModelBackend):
      def get_LDAP_user(self, username, password, filterString):
          logger.error("get_LDAP_user")
          try:
-             server = Server(settings.LDAP_URL, port=settings.LDAP_PORT,
-                 use_ssl=settings.USE_SSL get_info=ALL)
-             connection = Connection(server,
-                                     settings.LDAP_MASTER_DN,
-                                     settings.LDAP_MASTER_PW, auto_bind=True)
+             server = Server(settings.LDAP_URL, port=settings.LDAP_PORT,use_ssl=settings.USE_SSL,get_info=ALL)
+             connection = Connection(server,settings.LDAP_MASTER_DN, settings.LDAP_MASTER_PW, auto_bind=True)
 
-             connection.search(settings.LDAP_ROOT_DN, 
-                 '(&({attr}={login})({filter}))'.format(
-                     attr=settings.LDAP_USER_UID_PREFIX, 
-                     login=username,
-                     filter=filterString), attributes=[settings.LDAP_USER_UID_PREFIX])
+             connection.search(settings.LDAP_ROOT_DN, '(&({attr}={login})({filter}))'.format(attr=settings.LDAP_USER_UID_PREFIX, login=username,filter=filterString), attributes=[settings.LDAP_USER_UID_PREFIX])
 
              if len(connection.response) == 0:
                  return None
