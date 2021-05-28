@@ -215,15 +215,22 @@ OTP_ENABLED = False
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:email_otp"]
 
 LDAP_ENABLED = False
-LDAP_URL = '192.168.1.67'
+LDAP_URL = ''
 LDAP_PORT = 389
 USE_SSL = False
-LDAP_MASTER_DN = 'cn=admin,dc=kendar,dc=org'
-LDAP_MASTER_PW = 'secret'
-LDAP_ROOT_DN = 'dc=kendar,dc=org'
-LDAP_SEARCH_GROUP_FILTER_ADMINS = 'memberOf=cn=admins,cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org'
-LDAP_SEARCH_GROUP_FILTER_STAFF = 'memberOf=cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org'
-LDAP_SEARCH_GROUP_FILTER_USERS = 'memberOf=cn=webvirtcloud,ou=groups,dc=kendar,dc=org'
-LDAP_USER_UID_PREFIX = 'cn'
+## The user with search rights on ldap. (e.g cn=admin,dc=kendar,dc=org)
+LDAP_MASTER_DN = ''
+LDAP_MASTER_PW = ''
+## The root dn (e.g. dc=kendar,dc=org)
+LDAP_ROOT_DN = ''
+## Queries to identify the users, i use groupOfUniqueNames on openldap
 
-#sudo sed -r "s/SECRET_KEY = ''/SECRET_KEY = '"`python3 /srv/webvirtcloud/conf/runit/secret_generator.py`"'/" -i /srv/webvirtcloud/webvirtcloud/settings.py
+## e.g. memberOf=cn=admins,cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+LDAP_SEARCH_GROUP_FILTER_ADMINS = ''
+## e.g. memberOf=cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+LDAP_SEARCH_GROUP_FILTER_STAFF = ''
+## e.g. memberOf=cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+LDAP_SEARCH_GROUP_FILTER_USERS = ''
+
+## The user name prefix to identify the user name (e.g. cn)
+LDAP_USER_UID_PREFIX = ''
