@@ -95,7 +95,7 @@ DATABASES = {
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    "ldapbackend.LdapAuthenticationBackend"
+    "webvirtcloud.ldapbackend.LdapAuthenticationBackend"
 ]
 
 LOGIN_URL = "/accounts/login/"

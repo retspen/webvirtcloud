@@ -31,21 +31,21 @@ class LdapAuthenticationBackend(ModelBackend):
 
              return connection.response[0]
          except:
-         	 print('get_LDAP_user-error')
+             print('get_LDAP_user-error')
              return None
 
      def authenticate(self, request, username=None, password=None, **kwargs):
-     	print("authenticate")
+        print("authenticate")
         # Get the user information from the LDAP if he can be authenticated
         isAdmin = False
         isStaff = False
         
         if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS) is None:
-        	 print("authenticate-not admin")
+             print("authenticate-not admin")
              if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF) is None:
-             	  print("authenticate-not staff")
+                  print("authenticate-not staff")
                   if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS) is None:
-                  	  print("authenticate-not user")
+                      print("authenticate-not user")
                       return None
                   else:
                       print("authenticate-user")
@@ -80,9 +80,9 @@ class LdapAuthenticationBackend(ModelBackend):
         return user
 
      def get_user(self, user_id):
-     	print("get_user")
+        print("get_user")
         try:
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
-     	    print("get_user-user not found")
+            print("get_user-user not found")
             return None
