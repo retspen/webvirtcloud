@@ -6,45 +6,61 @@ from accounts.models import UserAttributes, UserInstance, UserSSHKey
 from django.contrib.auth.models import Permission
 from logs.models import Logs
 import uuid
-import logging
 
 #/srv/webvirtcloud/ldap/ldapbackend.py
 class LdapAuthenticationBackend(ModelBackend):
      
      def get_LDAP_user(self, username, password, filterString):
-         logger.error("get_LDAP_user")
+         print('get_LDAP_user')
          try:
-             server = Server(settings.LDAP_URL, port=settings.LDAP_PORT,use_ssl=settings.USE_SSL,get_info=ALL)
-             connection = Connection(server,settings.LDAP_MASTER_DN, settings.LDAP_MASTER_PW, auto_bind=True)
+             server = Server(settings.LDAP_URL, port=settings.LDAP_PORT,
+                 use_ssl=settings.USE_SSL,get_info=ALL)
+             connection = Connection(server,
+                                     settings.LDAP_MASTER_DN,
+                                     settings.LDAP_MASTER_PW, auto_bind=True)
 
-             connection.search(settings.LDAP_ROOT_DN, '(&({attr}={login})({filter}))'.format(attr=settings.LDAP_USER_UID_PREFIX, login=username,filter=filterString), attributes=[settings.LDAP_USER_UID_PREFIX])
+             connection.search(settings.LDAP_ROOT_DN, 
+                 '(&({attr}={login})({filter}))'.format(
+                     attr=settings.LDAP_USER_UID_PREFIX, 
+                     login=username,
+                     filter=filterString), attributes=[settings.LDAP_USER_UID_PREFIX])
 
              if len(connection.response) == 0:
+                 print('get_LDAP_user-no response')
                  return None
 
              return connection.response[0]
          except:
+         	 print('get_LDAP_user-error')
              return None
 
-    def authenticate(self, request, username=None, password=None, **kwargs):
-        logger.error("authenticate")
+     def authenticate(self, request, username=None, password=None, **kwargs):
+     	print("authenticate")
         # Get the user information from the LDAP if he can be authenticated
         isAdmin = False
         isStaff = False
-        if ldapAdmin 
-        if get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS) is None:
-             if get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF) is None:
-                  if get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS) is None:
+        
+        if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS) is None:
+        	 print("authenticate-not admin")
+             if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF) is None:
+             	  print("authenticate-not staff")
+                  if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS) is None:
+                  	  print("authenticate-not user")
                       return None
-             else
+                  else:
+                      print("authenticate-user")
+             else:
                   isStaff = True
-        else
+                  print("authenticate-staff")
+        else:
              isAdmin = True
              isStaff = True
+             print("authenticate-admin")
 
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
+            print("authenticate-create new user")
             user = User(username=username)
             user.is_staff = isStaff
             user.is_superuser = isAdmin
@@ -59,11 +75,14 @@ class LdapAuthenticationBackend(ModelBackend):
             permission = Permission.objects.get(codename='clone_instances')
             user.user_permissions.add(permission)       
             user.save()
+            
+            print("authenticate-user created")
         return user
 
-    def get_user(self, user_id):
-        logger.error("get_user")
+     def get_user(self, user_id):
+     	print("get_user")
         try:
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
+     	    print("get_user-user not found")
             return None
