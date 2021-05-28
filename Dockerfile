@@ -23,6 +23,7 @@ RUN apt-get update -qqy \
 	gcc \
 	libldap2-dev \
 	libssl-dev \
+	libsasl2-dev \
 	libsasl2-modules \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
