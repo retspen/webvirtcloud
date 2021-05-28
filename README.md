@@ -410,7 +410,7 @@ Set the attribute that will be used to find the username, i usually use the cn
 sudo sed -i "s/LDAP_USER_UID_PREFIX = ''/LDAP_USER_UID_PREFIX = 'cn'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
-You can now create the filters to retrieve the users for the various group
+You can now create the filters to retrieve the users for the various group. This will be used during the user creation only
 
 ```bash
 sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_ADMINS = ''/LDAP_SEARCH_GROUP_FILTER_ADMINS = 'memberOf=cn=admins,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
@@ -418,7 +418,9 @@ sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_STAFF = ''/LDAP_SEARCH_GROUP_FILTER_STAF
 sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_USERS = ''/LDAP_SEARCH_GROUP_FILTER_USERS = 'memberOf=cn=users,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
-Now when you login with an LDAP user it will be assigned the rights defined.
+Now when you login with an LDAP user it will be assigned the rights defined. The user will be authenticated then with ldap and authorized through the WebVirtCloud permissions.
+
+If you'd like to move a user from ldap to WebVirtCloud, just change its password from the UI and (eventually) remove from the group in ldap
 
 ## Screenshots
 
