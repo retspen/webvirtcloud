@@ -24,15 +24,17 @@ try:
                      '(&({attr}={login})({filter}))'.format(
                          attr=settings.LDAP_USER_UID_PREFIX, 
                          login=username,
-                         filter=filterString), attributes=[settings.LDAP_USER_UID_PREFIX])
+                         filter=filterString), attributes=['*'])
     
                  if len(connection.response) == 0:
                      print('get_LDAP_user-no response')
                      return None
-    
-                 return connection.response[0]
-             except:
-                 print('get_LDAP_user-error')
+                 specificUser = connection.response[0]
+                 userDn = str(specificUser.get('raw_dn'),'utf-8')
+                 with Connection(server,
+                                         userDn,
+                                         password) as con:
+                     return username
                  return None
     
          def authenticate(self, request, username=None, password=None, **kwargs):
@@ -44,21 +46,14 @@ try:
             isStaff = False
             
             if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS) is None:
-                 print("authenticate-not admin")
                  if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF) is None:
-                      print("authenticate-not staff")
                       if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS) is None:
-                          print("authenticate-not user")
                           return None
-                      else:
-                          print("authenticate-user")
                  else:
                       isStaff = True
-                      print("authenticate-staff")
             else:
                  isAdmin = True
                  isStaff = True
-                 print("authenticate-admin")
     
             try:
                 user = User.objects.get(username=username)
