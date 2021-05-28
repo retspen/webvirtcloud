@@ -62,6 +62,8 @@ try:
     
             try:
                 user = User.objects.get(username=username)
+                attributes = UserAttributes.objects.get(user=user)
+                # TODO VERIFY
             except User.DoesNotExist:
                 print("authenticate-create new user")
                 user = User(username=username)
