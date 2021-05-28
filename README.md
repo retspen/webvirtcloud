@@ -418,6 +418,8 @@ sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_STAFF = ''/LDAP_SEARCH_GROUP_FILTER_STAF
 sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_USERS = ''/LDAP_SEARCH_GROUP_FILTER_USERS = 'memberOf=cn=users,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
+Now when you login with an LDAP user it will be assigned the rights defined.
+
 ## Screenshots
 
 Instance Detail:
