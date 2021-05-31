@@ -24,6 +24,7 @@
                             <th scope="col">#</th>
                             <th scope="col">{% trans "Date" %}</th>
                             <th scope="col">{% trans "User" %}</th>
+                            <th scope="col">{% trans "Host" %}</th>
                             <th scope="col">{% trans "Instance" %}</th>
                             <th scope="col">{% trans "Message" %}</th>
                             </tr>
@@ -34,6 +35,7 @@
                                 <td>{{ log.id }}</td>
                                 <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
                                 <td>{{ log.user }}</td>
+                                <td>{{ log.host }}</td>
                                 <td>{{ log.instance }}</td>
                                 <td>{{ log.message }}</td>
                             </tr>

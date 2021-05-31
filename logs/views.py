@@ -7,14 +7,15 @@ from instances.models import Instance
 from logs.models import Logs
 
 
-def addlogmsg(user, instance, message):
+def addlogmsg(user, host, instance, message):
     """
     :param user:
+    :param host:
     :param instance:
     :param message:
     :return:
     """
-    add_log_msg = Logs(user=user, instance=instance, message=message)
+    add_log_msg = Logs(user=user, host=host, instance=instance, message=message)
     add_log_msg.save()
 
 
@@ -32,6 +33,7 @@ def vm_logs(request, vname):
     for l in logs_:
         log = dict()
         log["user"] = l.user
+        log["host"] = l.host
         log["instance"] = l.instance
         log["message"] = l.message
         log["date"] = l.date.strftime("%x %X")

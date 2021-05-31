@@ -50,10 +50,10 @@ def nwfilters(request, compute_id):
                         try:
                             msg = _("%(filter)s network filter is created") % {"filter": name}
                             conn.create_nwfilter(xml)
-                            addlogmsg(request.user.username, compute.hostname, msg)
+                            addlogmsg(request.user.username, compute.hostname, "", msg)
                         except libvirtError as lib_err:
                             messages.error(request, lib_err)
-                            addlogmsg(request.user.username, compute.hostname, lib_err)
+                            addlogmsg(request.user.username, compute.hostname, "", lib_err)
 
             if "del_nwfilter" in request.POST:
                 name = request.POST.get("nwfiltername", "")
@@ -75,14 +75,14 @@ def nwfilters(request, compute_id):
                         in_use = True
                         msg = _("NWFilter is in use by %(instance)s. Cannot be deleted.") % {"instance": inst}
                         messages.error(request, msg)
-                        addlogmsg(request.user.username, compute.hostname, msg)
+                        addlogmsg(request.user.username, compute.hostname, "", msg)
                         i_conn.close()
                         break
 
                 is_conn.close()
                 if nwfilter and not in_use:
                     nwfilter.undefine()
-                    addlogmsg(request.user.username, compute.hostname, msg)
+                    addlogmsg(request.user.username, compute.hostname, "", msg)
 
             if "cln_nwfilter" in request.POST:
 
@@ -91,15 +91,15 @@ def nwfilters(request, compute_id):
 
                 conn.clone_nwfilter(name, cln_name)
                 msg = _("Cloning NWFilter %(name)s as %(clone)s") % {"name":name, "clone": cln_name}
-                addlogmsg(request.user.username, compute.hostname, msg)
+                addlogmsg(request.user.username, compute.hostname, "", msg)
 
         conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
-        addlogmsg(request.user.username, compute.hostname, lib_err)
+        addlogmsg(request.user.username, compute.hostname, "", lib_err)
     except Exception as err:
         messages.error(request, err)
-        addlogmsg(request.user.username, compute.hostname, err)
+        addlogmsg(request.user.username, compute.hostname, "", err)
 
     return render(
         request,

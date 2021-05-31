@@ -24,7 +24,7 @@ def appsettings(request):
         themes_list = os.listdir(sass_dir.value + "/wvc-theme")
     except FileNotFoundError as err:
         messages.error(request, err)
-        addlogmsg(request.user.username, "", err)
+        addlogmsg(request.user.username, "-", "", err)
 
     # Bootstrap settings related with filesystems, because of that they are excluded from other settings
     appsettings = AppSettings.objects.exclude(description__startswith="Bootstrap").order_by("name")
@@ -41,7 +41,7 @@ def appsettings(request):
                 msg = err
                 messages.error(request, msg)
 
-            addlogmsg(request.user.username, "", msg)
+            addlogmsg(request.user.username, "-", "", msg)
             return HttpResponseRedirect(request.get_full_path())
 
         if "BOOTSTRAP_THEME" in request.POST:
@@ -70,7 +70,7 @@ def appsettings(request):
                 msg = err
                 messages.error(request, msg)
 
-            addlogmsg(request.user.username, "", msg)
+            addlogmsg(request.user.username, "-", "", msg)
             return HttpResponseRedirect(request.get_full_path())
 
         for setting in appsettings:
@@ -85,7 +85,7 @@ def appsettings(request):
                     msg = err
                     messages.error(request, msg)
 
-                addlogmsg(request.user.username, "", msg)
+                addlogmsg(request.user.username, "-", "", msg)
                 return HttpResponseRedirect(request.get_full_path())
 
     return render(request, "appsettings.html", locals())
