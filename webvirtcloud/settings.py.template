@@ -95,6 +95,7 @@ DATABASES = {
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
+    "webvirtcloud.ldapbackend.LdapAuthenticationBackend",
 ]
 
 LOGIN_URL = "/accounts/login/"
@@ -212,3 +213,24 @@ SHOW_PROFILE_EDIT_PASSWORD = True
 OTP_ENABLED = False
 
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:email_otp"]
+
+LDAP_ENABLED = False
+LDAP_URL = ''
+LDAP_PORT = 389
+USE_SSL = False
+## The user with search rights on ldap. (e.g cn=admin,dc=kendar,dc=org)
+LDAP_MASTER_DN = ''
+LDAP_MASTER_PW = ''
+## The root dn (e.g. dc=kendar,dc=org)
+LDAP_ROOT_DN = ''
+## Queries to identify the users, i use groupOfUniqueNames on openldap
+
+## e.g. memberOf=cn=admins,cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+LDAP_SEARCH_GROUP_FILTER_ADMINS = ''
+## e.g. memberOf=cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+LDAP_SEARCH_GROUP_FILTER_STAFF = ''
+## e.g. memberOf=cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+LDAP_SEARCH_GROUP_FILTER_USERS = ''
+
+## The user name prefix to identify the user name (e.g. cn)
+LDAP_USER_UID_PREFIX = ''
