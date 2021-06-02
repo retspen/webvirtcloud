@@ -106,12 +106,12 @@ def instance(request, pk):
     #         instance.uuid = uuid
     #         instance.save()
     #         msg = _(f"Fixing UUID {uuid}")
-    #         addlogmsg(request.user.username, instance.name, msg)
+    #         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     # except Instance.DoesNotExist:
     #     instance = Instance(compute=compute, name=vname, uuid=uuid)
     #     instance.save()
     #     msg = _("Instance does not exist: Creating new instance")
-    #     addlogmsg(request.user.username, instance.name, msg)
+    #     addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     # userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
     userinstances = instance.userinstance_set.order_by("user__username")
@@ -249,7 +249,7 @@ def poweron(request, pk):
         messages.warning(request, _("Templates cannot be started."))
     else:
         instance.proxy.start()
-        addlogmsg(request.user.username, instance.name, _("Power On"))
+        addlogmsg(request.user.username, instance.compute.name, instance.name, _("Power On"))
 
     return redirect(request.META.get("HTTP_REFERER"))
 
@@ -258,14 +258,14 @@ def powercycle(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.force_shutdown()
     instance.proxy.start()
-    addlogmsg(request.user.username, instance.name, _("Power Cycle"))
+    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Power Cycle"))
     return redirect(request.META.get("HTTP_REFERER"))
 
 
 def poweroff(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.shutdown()
-    addlogmsg(request.user.username, instance.name, _("Power Off"))
+    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Power Off"))
 
     return redirect(request.META.get("HTTP_REFERER"))
 
@@ -274,7 +274,7 @@ def poweroff(request, pk):
 def suspend(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.suspend()
-    addlogmsg(request.user.username, instance.name, _("Suspend"))
+    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Suspend"))
     return redirect(request.META.get("HTTP_REFERER"))
 
 
@@ -282,14 +282,14 @@ def suspend(request, pk):
 def resume(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.resume()
-    addlogmsg(request.user.username, instance.name, _("Resume"))
+    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Resume"))
     return redirect(request.META.get("HTTP_REFERER"))
 
 
 def force_off(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.force_shutdown()
-    addlogmsg(request.user.username, instance.name, _("Force Off"))
+    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Force Off"))
     return redirect(request.META.get("HTTP_REFERER"))
 
 
@@ -316,7 +316,7 @@ def destroy(request, pk):
             instance.proxy.delete(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
 
         instance.delete()
-        addlogmsg(request.user, instance.name, _("Destroy"))
+        addlogmsg(request.user.username, instance.compute.name, instance.name, _("Destroy"))
         return redirect(reverse("instances:index"))
 
     return render(
@@ -350,7 +350,7 @@ def migrate(request, pk):
         messages.error(request, err)
 
     msg = _("Instance is migrated to %(hostname)s") % {"hostname": new_compute.hostname}
-    addlogmsg(request.user, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.hostname, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER"))
 
@@ -373,7 +373,7 @@ def set_root_pass(request, pk):
                 s.close()
                 if result["return"] == "success":
                     msg = _("Reset root password")
-                    addlogmsg(request.user.username, instance.name, msg)
+                    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
                     messages.success(request, msg)
                 else:
                     messages.error(request, result["message"])
@@ -400,7 +400,7 @@ def add_public_key(request, pk):
                 msg = result["message"]
             else:
                 msg = _("Installed new SSH public key %(keyname)s") % {"keyname": publickey.keyname}
-            addlogmsg(request.user.username, instance.name, msg)
+            addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
             if result["return"] == "success":
                 messages.success(request, msg)
@@ -436,7 +436,7 @@ def resizevm_cpu(request, pk):
                 vcpu = new_vcpu
                 instance.proxy.resize_cpu(cur_vcpu, vcpu)
                 msg = _("CPU is resized:  %(old)s to %(new)s") % {"old": cur_vcpu, "new": vcpu}
-                addlogmsg(request.user.username, instance.name, msg)
+                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
                 messages.success(request, msg)
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
 
@@ -476,7 +476,7 @@ def resize_memory(request, pk):
                     "new_cur": new_cur_memory,
                     "new_max": new_memory,
                 }
-                addlogmsg(request.user.username, instance.name, msg)
+                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
                 messages.success(request, msg)
 
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
@@ -512,7 +512,7 @@ def resize_disk(request, pk):
             else:
                 instance.proxy.resize_disk(disks_new)
                 msg = _("Disk is resized: %(dev)s") % {"dev": disk["dev"]}
-                addlogmsg(request.user.username, instance.name, msg)
+                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
                 messages.success(request, msg)
 
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
@@ -551,7 +551,7 @@ def add_new_vol(request, pk):
         )
         instance.proxy.attach_disk(target_dev, source, target_bus=bus, driver_type=format, cache_mode=cache)
         msg = _("Attach new disk: %(name)s (%(format)s)") % {"name": name, "format": format}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
 
@@ -582,7 +582,7 @@ def add_existing_vol(request, pk):
 
         instance.proxy.attach_disk(target_dev, source, target_bus=bus, driver_type=driver_type, cache_mode=cache)
         msg = _("Attach Existing disk: %(target_dev)s") % {"target_dev": target_dev}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
 
@@ -644,7 +644,7 @@ def edit_volume(request, pk):
         else:
             messages.success(request, _("Volume is changed successfully."))
         msg = _("Edit disk: %(target_dev)s") % {"target_dev": target_dev}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
@@ -669,7 +669,7 @@ def delete_vol(request, pk):
         instance.proxy.detach_disk(dev)
         conn_delete.del_volume(name)
 
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
 
@@ -682,7 +682,7 @@ def detach_vol(request, pk):
         path = request.POST.get("path", "")
         instance.proxy.detach_disk(dev)
         msg = _("Detach disk: %(dev)s") % {"dev": dev}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
@@ -695,7 +695,7 @@ def add_cdrom(request, pk):
         target = utils.get_new_disk_dev(instance.media, instance.disks, bus)
         instance.proxy.attach_disk(target, "", disk_device="cdrom", cache_mode="none", target_bus=bus, readonly=True)
         msg = _("Add CD-ROM: %(target)s") % {"target": target}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
@@ -708,7 +708,7 @@ def detach_cdrom(request, pk, dev):
         # dev = request.POST.get('detach_cdrom', '')
         instance.proxy.detach_disk(dev)
         msg = _("Detach CD-ROM: %(dev)s") % {"dev": dev}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
@@ -721,7 +721,7 @@ def unmount_iso(request, pk):
         dev = request.POST.get("umount_iso", "")
         instance.proxy.umount_iso(dev, image)
         msg = _("Mount media: %(dev)s") % {"dev": dev}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
@@ -734,7 +734,7 @@ def mount_iso(request, pk):
         dev = request.POST.get("mount_iso", "")
         instance.proxy.mount_iso(dev, image)
         msg = _("Unmount media: %(dev)s") % {"dev": dev}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
@@ -747,7 +747,7 @@ def snapshot(request, pk):
         name = request.POST.get("name", "")
         instance.proxy.create_snapshot(name)
         msg = _("Create snapshot: %(snap)s") % {"snap": name}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
 
@@ -758,7 +758,7 @@ def delete_snapshot(request, pk):
         snap_name = request.POST.get("name", "")
         instance.proxy.snapshot_delete(snap_name)
         msg = _("Delete snapshot: %(snap)s") % {"snap": snap_name}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
 
@@ -772,7 +772,7 @@ def revert_snapshot(request, pk):
         msg += snap_name
         messages.success(request, msg)
         msg = _("Revert snapshot: %(snap)s") % {"snap": snap_name}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
 
@@ -786,7 +786,7 @@ def set_vcpu(request, pk):
     else:
         instance.proxy.set_vcpu(id, 0)
     msg = _("VCPU %(id)s is enabled=%(enabled)s") % {"id": id, "enabled": enabled}
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#resize")
 
 
@@ -796,7 +796,7 @@ def set_vcpu_hotplug(request, pk):
     status = request.POST.get("vcpu_hotplug", "")
     msg = _("VCPU Hot-plug is enabled=%(status)s") % {"status": status}
     instance.proxy.set_vcpu_hotplug(eval(status))
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#resize")
 
 
@@ -805,7 +805,7 @@ def set_autostart(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.set_autostart(1)
     msg = _("Set autostart")
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#boot_opt")
 
 
@@ -814,7 +814,7 @@ def unset_autostart(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.set_autostart(0)
     msg = _("Unset autostart")
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#boot_opt")
 
 
@@ -823,7 +823,7 @@ def set_bootmenu(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.set_bootmenu(1)
     msg = _("Enable boot menu")
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#boot_opt")
 
 
@@ -832,7 +832,7 @@ def unset_bootmenu(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.set_bootmenu(0)
     msg = _("Disable boot menu")
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#boot_opt")
 
 
@@ -855,7 +855,7 @@ def set_bootorder(request, pk):
             )
         else:
             messages.success(request, _("Boot order changed successfully."))
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#boot_opt")
 
 
@@ -866,7 +866,7 @@ def change_xml(request, pk):
     if new_xml:
         instance.proxy._defineXML(new_xml)
         msg = _("Change instance XML")
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#xmledit")
 
 
@@ -880,7 +880,7 @@ def set_guest_agent(request, pk):
         instance.proxy.remove_guest_agent()
 
     msg = _("Set Guest Agent: %(status)s") % {"status": status}
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#options")
 
 
@@ -890,7 +890,7 @@ def set_video_model(request, pk):
     video_model = request.POST.get("video_model", "vga")
     instance.proxy.set_video_model(video_model)
     msg = _("Set Video Model: %(model)s") % {"model": video_model}
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#options")
 
 
@@ -920,7 +920,7 @@ def change_network(request, pk):
             network_data[post] = request.POST.get(post, "")
 
     instance.proxy.change_network(network_data)
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     msg = _("Network Device Config is changed. Please shutdown instance to activate.")
     if instance.proxy.get_status() != 5:
         messages.success(request, msg)
@@ -947,7 +947,7 @@ def add_network(request, pk):
 
     instance.proxy.add_network(mac, source, source_type, nwfilter=nwfilter)
     msg = _("Add network: %(mac)s") % {"mac": mac}
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#network")
 
 
@@ -958,7 +958,7 @@ def delete_network(request, pk):
 
     instance.proxy.delete_network(mac_address)
     msg = _("Delete Network: %(mac)s") % {"mac": mac_address}
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#network")
 
 
@@ -971,7 +971,7 @@ def set_link_state(request, pk):
     state = "down" if state == "up" else "up"
     instance.proxy.set_link_state(mac_address, state)
     msg = _("Set Link State: %(state)s") % {"state": state}
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#network")
 
 
@@ -1042,7 +1042,7 @@ def add_owner(request, pk):
         add_user_inst.save()
         user = User.objects.get(id=user_id)
         msg = _("Add owner: %(user)s") % {"user": user}
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#users")
 
 
@@ -1053,7 +1053,7 @@ def del_owner(request, pk):
     userinstance = UserInstance.objects.get(pk=userinstance_id)
     userinstance.delete()
     msg = _("Delete owner: %(userinstance_id)s ") % {"userinstance_id": userinstance_id}
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#users")
 
 
@@ -1151,7 +1151,7 @@ def update_console(request, pk):
                     messages.error(request, msg)
                 else:
                     msg = _("Set VNC password")
-                    addlogmsg(request.user.username, instance.name, msg)
+                    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
             if "keymap" in form.changed_data or "clear_keymap" in form.changed_data:
                 if form.cleaned_data["clear_keymap"]:
@@ -1160,17 +1160,17 @@ def update_console(request, pk):
                     instance.proxy.set_console_keymap(form.cleaned_data["keymap"])
 
                 msg = _("Set VNC keymap")
-                addlogmsg(request.user.username, instance.name, msg)
+                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
             if "type" in form.changed_data:
                 instance.proxy.set_console_type(form.cleaned_data["type"])
                 msg = _("Set VNC type")
-                addlogmsg(request.user.username, instance.name, msg)
+                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
             if "listen_on" in form.changed_data:
                 instance.proxy.set_console_listen_addr(form.cleaned_data["listen_on"])
                 msg = _("Set VNC listen address")
-                addlogmsg(request.user.username, instance.name, msg)
+                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER") + "#vncsettings")
 
@@ -1193,7 +1193,7 @@ def change_options(request, pk):
         instance.proxy.set_options(options)
 
         msg = _("Edit options")
-        addlogmsg(request.user.username, instance.name, msg)
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#options")
 
 
@@ -1207,7 +1207,7 @@ def getvvfile(request, pk):
     )
 
     msg = _("Send console.vv file")
-    addlogmsg(request.user.username, instance.name, msg)
+    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     response = HttpResponse(
         content="",
         content_type="application/x-virt-viewer",
