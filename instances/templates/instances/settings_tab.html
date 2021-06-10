@@ -290,7 +290,7 @@
                                             <input type="hidden" name="dev" value="{{ disk.dev }}">
                                             <input type="hidden" name="storage" value="{{ disk.storage }}">
                                             <input type="hidden" name="name" value="{{ disk.image }}">
-                                            {% include 'edit_instance_volume.html' with id=forloop.counter0 %}
+                                            {% include 'instances/edit_instance_volume.html' with id=forloop.counter0 %}
                                         </form>
                                         <form class="d-inline" action="{% url 'instances:detach_vol' instance.id %}" method="post">
                                             {% csrf_token %}
