@@ -8,9 +8,7 @@
 
 {% block page_heading_extra %}
 {% include 'create_nwfilter_block.html' %}
-<div class="float-right search">
-    <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
-</div>
+{% include 'search_block.html' %}
 {% endblock page_heading_extra %}
 
 {% block content %}
@@ -142,24 +140,11 @@
 {% endblock %}
 
 {% block script %}
-<script src="{% static "js/sortable.min.js" %}"></script>
+<script src="{% static 'js/sortable.min.js' %}"></script>
+<script src="{% static 'js/filter-table.js' %}"></script>
+<script src="{% static 'js/ace/ace.js' %}"></script>
 <script>
-    $(document).ready(function () {
-        (function ($) {
-            $('#filter').keyup(function () {
-                var rex = new RegExp($(this).val(), 'i');
-                $('.searchable tr').hide();
-                $('.searchable tr').filter(function () {
-                    return rex.test($(this).text());
-                }).show();
-            })
-        }(jQuery));
-    });
-</script>
-
-<script src="{% static "js/ace/ace.js" %}"></script>
-<script>
-   var editor = ace.edit("editor");
+    var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
 
     var input = $('input[name="nwfilter_xml"]');
