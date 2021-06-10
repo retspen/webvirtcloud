@@ -1,6 +1,6 @@
 Django==2.2.22
 django-bootstrap4==3.0.1
-django-icons==3.0.0
+django-icons==4.0.0
 django-login-required-middleware==0.6.1
 django-otp==1.0.6
 django-qr-code==2.2.0

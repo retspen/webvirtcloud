@@ -83,6 +83,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "webvirtcloud.wsgi.application"
 
+# Settings for django-icons
+DJANGO_ICONS = {
+
+    'DEFAULTS': {
+        'renderer': 'fontawesome4',
+    },
+
+    'RENDERERS': {
+        'fontawesome4': 'FontAwesome4Renderer',
+        'bootstrap3': 'Bootstrap3Renderer',
+    },
+}
+
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
