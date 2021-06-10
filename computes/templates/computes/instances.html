@@ -14,9 +14,7 @@
     {% icon 'plus' %}
 </a>
 {% if instances %}
-<div class="float-right search">
-    <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
-</div>
+    {% include 'search_block.html' %}
 {% endif %}
 {% endblock page_heading_extra %}
 

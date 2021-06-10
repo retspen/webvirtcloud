@@ -12,9 +12,7 @@
 <a href="{% url 'admin:user_create' %}" class="btn btn-success btn-header float-right">
     {% icon 'plus' %}
 </a>
-<div class="float-right search">
-    <input id="filter" class="form-control" type="text" placeholder="{% trans "Search" %}">
-</div>
+{% include 'search_block.html' %}
 {% endblock page_heading_extra %}
 
 {% block content %}
