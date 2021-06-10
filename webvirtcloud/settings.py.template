@@ -212,7 +212,7 @@ SHOW_PROFILE_EDIT_PASSWORD = True
 
 OTP_ENABLED = False
 
-LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:email_otp"]
+LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:login", "accounts:email_otp"]
 
 LDAP_ENABLED = False
 LDAP_URL = ''
