@@ -1,7 +1,7 @@
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/retspen/webvirtcloud)
 
 # WebVirtCloud
-###### Python3 & Django 2.2
+###### Python 3.x & Django 3.2 LTS
 
 ## Features
 * QEMU/KVM Hypervisor Management
