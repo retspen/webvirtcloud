@@ -1,4 +1,4 @@
-Django==2.2.22
+Django==3.2.4
 django-bootstrap4==3.0.1
 django-icons==4.0.0
 django-login-required-middleware==0.6.1

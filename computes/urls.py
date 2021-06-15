@@ -1,4 +1,4 @@
-from secrets.views import secrets
+from virtsecrets.views import secrets
 
 from django.urls import include, path
 # from instances.views import create_instance, create_instance_select_type
