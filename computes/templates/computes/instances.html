@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load staticfiles %}
+{% load static %}
 {% load icons %}
 {% block title %}{% trans "Instances" %} - {{ compute.name }}{% endblock %}
 {% block style %}
@@ -14,9 +14,7 @@
     {% icon 'plus' %}
 </a>
 {% if instances %}
-<div class="float-right search">
-    <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
-</div>
+    {% include 'search_block.html' %}
 {% endif %}
 {% endblock page_heading_extra %}
 
@@ -44,7 +42,7 @@
                     <a href="{% url 'nwfilters' compute.id %}">{% icon 'filter' %} {% trans "NWFilters" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'secrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
+                    <a href="{% url 'virtsecrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
                 </li>
             </ol>
         </nav>

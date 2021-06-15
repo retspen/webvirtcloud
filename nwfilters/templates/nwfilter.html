@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load staticfiles %}
+{% load static %}
 
 {% block title %}{% trans "NWFilter" %}: {{ name }}{% endblock %}
 
@@ -29,7 +29,7 @@
                     <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'secrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                    <a href="{% url 'virtsecrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
                 </li>
             </ol>
         </div>
@@ -66,8 +66,6 @@
     <div class="row">
         <div class="col-lg-12">
         <h5 class="page-header mr-auto">{% trans "Filter References" %}
-            
-        
             <form class="form-inline float-right" method="post" role="form" aria-label="Add NWFilter form">{% csrf_token %}
                 <div class="form-group">
                     <div class="input-group">
@@ -108,7 +106,7 @@
                         <td style="width:30px;">
                             <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
                                 <input type="hidden" name="ref" value="{{ ref }}">
-                                <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}');">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             </form>
@@ -148,7 +146,7 @@
                             <input type="hidden" name="action" value="{{ rule.action }}">
                             <input type="hidden" name="direction" value="{{ rule.direction }}">
                             <input type="hidden" name="priority" value="{{ rule.priority }}">
-                            <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                            <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans 'Delete' %}" onclick="return confirm('{% trans "Are you sure?" %}');">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </form>
@@ -162,21 +160,8 @@
 {% endblock %}
 
 {% block script %}
-    <script src="{% static "js/sortable.min.js" %}"></script>
-    <script>
-        $(document).ready(function () {
-            (function ($) {
-                $('#filter').keyup(function () {
-                    var rex = new RegExp($(this).val(), 'i');
-                    $('.searchable tr').hide();
-                    $('.searchable tr').filter(function () {
-                        return rex.test($(this).text());
-                    }).show();
-                })
-            }(jQuery));
-        });
-    </script>
-    <script src="{% static "js/ace/ace.js" %}"></script>
+    <script src="{% static 'js/sortable.min.js' %}"></script>
+    <script src="{% static 'js/ace/ace.js' %}"></script>
     <script>
         var editor = ace.edit("edit_editor");
         editor.getSession().setMode("ace/mode/xml");

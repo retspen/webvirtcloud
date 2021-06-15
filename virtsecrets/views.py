@@ -1,4 +1,4 @@
-from secrets.forms import AddSecret
+from virtsecrets.forms import AddSecret
 
 from admin.decorators import superuser_only
 from computes.models import Compute
@@ -13,7 +13,7 @@ from libvirt import (
     VIR_SECRET_USAGE_TYPE_VOLUME,
     libvirtError,
 )
-from vrtManager.secrets import wvmSecrets
+from vrtManager.virtsecrets import wvmSecrets
 
 
 @superuser_only

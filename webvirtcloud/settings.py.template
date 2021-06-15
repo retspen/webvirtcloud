@@ -3,10 +3,10 @@ Django settings for webvirtcloud project.
 
 """
 
-import os
+from pathlib import Path
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = ""
 
@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     "interfaces",
     "nwfilters",
     "storages",
-    "secrets",
+    "virtsecrets",
     "logs",
     "qr_code",
 ]
@@ -63,7 +63,7 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            os.path.join(BASE_DIR, "templates"),
+            Path.joinpath(BASE_DIR, "templates"),
         ],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -83,6 +83,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "webvirtcloud.wsgi.application"
 
+
 # Settings for django-icons
 DJANGO_ICONS = {
 
@@ -96,13 +97,14 @@ DJANGO_ICONS = {
     },
 }
 
+
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        "NAME": Path.joinpath(BASE_DIR, "db.sqlite3"),
     }
 }
 
@@ -128,12 +130,34 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
+    Path.joinpath(BASE_DIR, "static"),
 ]
+
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 LOCALE_PATHS = [
     "locale/",
 ]
+
+
+# Settings for django-icons
+DJANGO_ICONS = {
+
+    'DEFAULTS': {
+        'renderer': 'fontawesome4',
+    },
+
+    'RENDERERS': {
+        'fontawesome4': 'FontAwesome4Renderer',
+        'bootstrap3': 'Bootstrap3Renderer',
+    },
+}
+
 
 LOGGING = {
     "version": 1,
@@ -149,6 +173,7 @@ LOGGING = {
         }
     },
 }
+
 
 #
 # WebVirtCloud settings
@@ -223,9 +248,14 @@ ALLOW_EMPTY_PASSWORD = False
 NEW_USER_DEFAULT_INSTANCES = []
 SHOW_PROFILE_EDIT_PASSWORD = True
 
+
+# OTP Config
 OTP_ENABLED = False
 
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:login", "accounts:email_otp"]
+
+# LDAP Config
+#
 
 LDAP_ENABLED = False
 LDAP_URL = ''

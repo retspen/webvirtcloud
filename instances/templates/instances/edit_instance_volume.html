@@ -121,7 +121,7 @@
                 <div class="clearfix"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
-                    <button type="submit" class="btn btn-success" name="edit_volume">{% trans "Save" %}</button>
+                    <button type="submit" class="btn btn-success" name="edit_volume" onclick="return confirm('{% trans "Are you sure to change volume properties?" %}')">{% trans "Save" %}</button>
                 </div><!-- /.modal-footer -->
 
             </div> <!-- /.modal-content -->

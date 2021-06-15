@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load staticfiles %}
+{% load static %}
 {% block title %}{{ compute }} - {% trans "Storage" %}: {{ pool }}{% endblock %}
 {% block style %}
     <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}"/>
@@ -34,7 +34,7 @@
                     <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'secrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                    <a href="{% url 'virtsecrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
                 </li>
             </ol>
         </div>
@@ -81,10 +81,10 @@
     </dl>
     
     {% if state %}
-        <div class="row">
-            <h5 class="page-header mr-auto">{% trans "Volumes" %}</h5>
-            <div class="col-3 ">
-                <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}">
+        <div class="container">
+            <div class="row">
+                <h5 class="page-header mr-auto">{% trans "Volumes" %}</h5>
+                {% include 'search_block.html' %}
             </div>
         </div>
             
@@ -194,7 +194,8 @@
     {% include 'pleasewaitdialog.html' %}
 {% endblock %}
 {% block script %}
-    <script src="{% static "js/sortable.min.js" %}"></script>
+    <script src="{% static 'js/sortable.min.js' %}"></script>
+    <script src="{% static 'js/filter-table.js' %}"></script>
     <script>
         $('.format-convert').hide();
         $(document).on('change', '.volume-convert', function () {
@@ -214,19 +215,6 @@
             } else {
                 $('.meta-prealloc').hide();
             }
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
-            (function ($) {
-                $('#filter').keyup(function () {
-                    var rex = new RegExp($(this).val(), 'i');
-                    $('.searchable tr').hide();
-                    $('.searchable tr').filter(function () {
-                        return rex.test($(this).text());
-                    }).show();
-                })
-            }(jQuery));
         });
     </script>
 {% endblock %}

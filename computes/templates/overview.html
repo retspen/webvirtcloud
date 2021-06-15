@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load staticfiles %}
+{% load static %}
 {% load icons %}
 
 {% block title %}{% trans "Overview" %} - {{ compute.name }}{% endblock %}
@@ -31,7 +31,7 @@
                     <a href="{% url 'nwfilters' compute.id %}">{% icon 'filter' %} {% trans "NWFilters" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'secrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
+                    <a href="{% url 'virtsecrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
                 </li>
             </ol>
             </nav>
