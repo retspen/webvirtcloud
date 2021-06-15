@@ -11,33 +11,35 @@ try:
     #/srv/webvirtcloud/ldap/ldapbackend.py
     class LdapAuthenticationBackend(ModelBackend):
          
-         def get_LDAP_user(self, username, password, filterString):
-             print('get_LDAP_user')
-             try:
-                 server = Server(settings.LDAP_URL, port=settings.LDAP_PORT,
-                     use_ssl=settings.USE_SSL,get_info=ALL)
-                 connection = Connection(server,
-                                         settings.LDAP_MASTER_DN,
-                                         settings.LDAP_MASTER_PW, auto_bind=True)
+        def get_LDAP_user(self, username, password, filterString):
+            print('get_LDAP_user')
+            try:
+                server = Server(settings.LDAP_URL, port=settings.LDAP_PORT,
+                    use_ssl=settings.USE_SSL,get_info=ALL)
+                connection = Connection(server,
+                                        settings.LDAP_MASTER_DN,
+                                        settings.LDAP_MASTER_PW, auto_bind=True)
+
+                connection.search(settings.LDAP_ROOT_DN, 
+                    '(&({attr}={login})({filter}))'.format(
+                        attr=settings.LDAP_USER_UID_PREFIX, 
+                        login=username,
+                        filter=filterString), attributes=['*'])
+
+                if len(connection.response) == 0:
+                    print('get_LDAP_user-no response')
+                    return None
+                specificUser = connection.response[0]
+                userDn = str(specificUser.get('raw_dn'),'utf-8')
+                with Connection(server,
+                                        userDn,
+                                        password) as con:
+                    return username
+            except:
+                return None
+            return None
     
-                 connection.search(settings.LDAP_ROOT_DN, 
-                     '(&({attr}={login})({filter}))'.format(
-                         attr=settings.LDAP_USER_UID_PREFIX, 
-                         login=username,
-                         filter=filterString), attributes=['*'])
-    
-                 if len(connection.response) == 0:
-                     print('get_LDAP_user-no response')
-                     return None
-                 specificUser = connection.response[0]
-                 userDn = str(specificUser.get('raw_dn'),'utf-8')
-                 with Connection(server,
-                                         userDn,
-                                         password) as con:
-                     return username
-                 return None
-    
-         def authenticate(self, request, username=None, password=None, **kwargs):
+        def authenticate(self, request, username=None, password=None, **kwargs):
             if not settings.LDAP_ENABLED:
                  return None
             print("authenticate_ldap")
@@ -96,7 +98,7 @@ try:
                 print("authenticate-user created")
             return user
     
-         def get_user(self, user_id):
+        def get_user(self, user_id):
             if not settings.LDAP_ENABLED:
                  return None
             print("get_user_ldap")
