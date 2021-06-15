@@ -115,7 +115,7 @@ class ComputesTestCase(TestCase):
     # TODO: add test for single nwfilter
 
     def test_secrets(self):
-        response = self.client.get(reverse('secrets', args=[1]))
+        response = self.client.get(reverse('virtsecrets', args=[1]))
         self.assertEqual(response.status_code, 200)
 
     # def test_create_instance_select_type(self):

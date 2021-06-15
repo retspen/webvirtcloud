@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     "interfaces",
     "nwfilters",
     "storages",
-    "secrets",
+    "virtsecrets",
     "logs",
     "qr_code",
 ]
