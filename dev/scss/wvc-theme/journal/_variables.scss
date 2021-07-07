@@ -1,5 +1,7 @@
-// Journal 4.6.0
+// Journal 5.0.2
 // Bootswatch
+
+$theme: "journal" !default;
 
 //
 // Color system
@@ -37,6 +39,8 @@ $danger:        $red !default;
 $light:         $gray-100 !default;
 $dark:          $gray-900 !default;
 
+$min-contrast-ratio:   1.28 !default;
+
 // Fonts
 
 $headings-font-family:   "News Cycle", "Arial Narrow Bold", sans-serif !default;
@@ -58,3 +62,10 @@ $navbar-light-active-color:         $black !default;
 $pagination-hover-color:            $white !default;
 $pagination-hover-bg:               $primary !default;
 $pagination-hover-border-color:     $primary !default;
+
+// Breadcrumbs
+
+$breadcrumb-padding-y:              .375rem !default;
+$breadcrumb-padding-x:              .75rem !default;
+
+$link-decoration:                   none !default;

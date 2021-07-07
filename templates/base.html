@@ -1,5 +1,5 @@
 {% load static %}
-{% load bootstrap4 %}
+{% load django_bootstrap5 %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -41,11 +41,11 @@
     <div role="main" class="container">
       <div class"row">
         <div>
-          <div class="float-right">
+          <div class="float-end">
             {% block page_heading_extra %}
             {% endblock page_heading_extra %}
           </div>
-          <h3 class="ml-0 page-header">
+          <h3 class="ms-0 page-header">
             {% block page_heading %}
             {% endblock page_heading %}
           </h3>
@@ -59,11 +59,11 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <!-- jQuery -->
-    <script src="{% static "js/jquery.js" %}"></script>
+    <script src="{% static 'js/jquery.js' %}"></script>
     <!-- Bootstrap Core JavaScript -->
-    <script src="{% static "js/bootstrap.bundle.min.js" %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <!-- JavaScript Cookie -->
-    <script src="{% static "js/js.cookie.js" %}"></script>
+    <script src="{% static 'js/js.cookie.js' %}"></script>
     {% block script %}{% endblock %}
   </body>
 </html>

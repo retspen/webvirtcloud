@@ -11,15 +11,15 @@
     <div class="row">
         <div class="col-lg-12">
             <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-light shadow-sm">
-                <li class="breadcrumb-item active">
+            <ol class="breadcrumb shadow-sm">
+                <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
                     <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <span class="font-weight-bold"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</span>
+                    <span class="fw-bold"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</span>
                 </li>
                 <li class="breadcrumb-item">
                     <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
@@ -41,8 +41,7 @@
     <div class="row">
         {% if not storages %}
             <div class="col-lg-12">
-                <div class="alert alert-warning alert-dismissable">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <div class="alert alert-warning shadow-sm">
                     <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Storages" %}
                 </div>
             </div>

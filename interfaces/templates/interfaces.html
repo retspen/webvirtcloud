@@ -6,14 +6,16 @@
 
 {% block page_heading %}{{ compute.name }} - {% trans "Interfaces" %}{% endblock page_heading %}
 
-{% block page_heading_extra %}{% include 'create_iface_block.html' %}{% endblock page_heading_extra %}
+{% block page_heading_extra %}
+{% include 'create_iface_block.html' %}
+{% endblock page_heading_extra %}
 
 {% block content %}
     <div class="row">
         <div class="col-lg-12">
             <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-light shadow-sm">
-                <li class="breadcrumb-item active">
+            <ol class="breadcrumb shadow-sm">
+                <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
@@ -26,7 +28,7 @@
                     <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <span class="font-weight-bold"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</span>
+                    <span class="fw-bold"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</span>
                 </li>
                 <li class="breadcrumb-item">
                     <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
@@ -42,8 +44,7 @@
     <div class="row">
         {% if not  ifaces_all %}
             <div class="col-lg-12">
-                <div class="alert alert-warning alert-dismissable">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <div class="alert alert-warning shadow-sm">
                     <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Interfaces" %}
                 </div>
             </div>
@@ -56,13 +57,13 @@
                                 <a class="card-link text-light" href="{% url 'interface' compute.id iface.name %}">{{ iface.name }}</a>
                             </h6>
                         </div>
-                        <div class="pl-0 pr-0 card-body">
+                        <div class="ps-0 pe-0 card-body">
                             <div class="row">
-                                <div class="col-4 col-sm-5">
+                                <div class="col-3 col-sm-4">
                                     <p><strong>{% trans "Type" %}:</strong></p>
                                     <p><strong>{% trans "MAC" %}:</strong></p>
                                 </div>
-                                <div class="col-6 col-sm-7">
+                                <div class="col-9 col-sm-8">
                                     <p>{{ iface.type }}</p>
                                     <p>{{ iface.mac }}</p>
                                 </div>

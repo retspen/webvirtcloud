@@ -1,16 +1,16 @@
 {% load i18n %}
-<div role="tabpanel" class="tab-pane" id="graphics">
+<div class="tab-pane" id="graphics" role="tabpanel" >
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance graphs and logs menu">
-        <li class="nav-item">
-            <a class="nav-link text-secondary active" href="#graphs" id="graphtab" aria-controls="graphs" role="tab" data-toggle="tab" aria-controls="graphs" aria-selected="true">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#graphs" type="button" role="tab" aria-controls="graphs" aria-selected="true">
                 {% trans "Real Time" %}
-            </a>
+            </button>
         </li>
-        <li class="nav-item">
-            <a class="nav-link text-secondary" href="#logs" id="logtab" aria-controls="logs" role="tab" data-toggle="tab" aria-controls="logs" onclick='update_logs_table("{{ instance.name }}");'>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab" aria-controls="logs" aria-selected="false">
                 {% trans "Logs" %}
-            </a>
+            </button>
         </li>
     </ul>
     <!-- Tab panes -->
@@ -19,7 +19,8 @@
             <div class="mb-1 card border-success">
                 <div class="card-header">
                     <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
-                        {% trans "CPU Usage" %}</h5>
+                        {% trans "CPU Usage" %}
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="flot-chart">
@@ -32,7 +33,8 @@
             <div class="mb-1 card border-danger">
                 <div class="card-header">
                     <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
-                        {% trans "Memory Usage" %}</h5>
+                        {% trans "Memory Usage" %}
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="flot-chart">
@@ -46,7 +48,8 @@
             <div class="mb-1 card border-info">
                 <div class="card-header">
                     <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
-                        {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}</h5>
+                        {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="flot-chart">
@@ -61,7 +64,8 @@
             <div class="mb-1 card border-warning">
                 <div class="card-header">
                     <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
-                        {% trans "Disk I/O device" %}: {{ disk.dev }}</h5>
+                        {% trans "Disk I/O device" %}: {{ disk.dev }}
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="flot-chart">

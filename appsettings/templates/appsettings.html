@@ -10,7 +10,7 @@
     <div class="col-lg-12">
         <h3 class="page-header">{% trans "App Settings" %}</h3>
         <form action="{% url 'set_language' %}" method="post" style="display:inline" aria-label="Edit language.name_local settings form">{% csrf_token %}
-            <div class="form-group row">
+            <div class="row mb-1">
                 <input name="next" type="hidden" value="{{ redirect_to }}">
                 <label class="col-sm-3 col-form-label">{% trans "Language" %}</label>
                 <div class="col-sm-6">
@@ -29,7 +29,7 @@
         </form>
         {% if request.user.is_superuser %}
         <form method="post" action="" role="form" aria-label="Edit sass directory settings form">{% csrf_token %}
-            <div class="form-group row">
+            <div class="row mb-1">
                 <label class="col-sm-3 col-form-label">{% trans sass_dir.name %}</label>
                 <div class="col-sm-6">
                     <input class="form-control" name="{{ sass_dir.key }}" value="{{ sass_dir.value }}" onchange="this.form.submit()" title="{% trans sass_dir.description %}"/>
@@ -37,10 +37,10 @@
             </div>
         </form>
         <form method="post" action="" role="form" aria-label="Edit theme settings form">{% csrf_token %}
-            <div class="form-group row">
+            <div class="row mb-1">
                 <label class="col-sm-3 col-form-label">{% trans bootstrap_theme.name %}</label>
                 <div class="col-sm-6">
-                    <select class="form-control" name="{{ bootstrap_theme.key }}" onchange="this.form.submit()" title="{% trans bootstrap_theme.description %}">
+                    <select class="form-select" name="{{ bootstrap_theme.key }}" onchange="this.form.submit()" title="{% trans bootstrap_theme.description %}">
                     {% for theme in themes_list %}
                         <option {% if bootstrap_theme.value == theme %}selected{% endif %} value="{{ theme }}">{{ theme }}</option>
                     {% endfor %}
@@ -53,11 +53,11 @@
             <h3 class="page-header">{% trans "Other Settings" %}</h3>
         {% for setting in appsettings %}
             <form method="post" action="" role="form" aria-label="{{setting.name}} form">{% csrf_token %}
-                <div class="form-group row">
+                <div class="row mb-1">
                     <label class="col-sm-3 col-form-label">{% trans setting.name %}</label>
                     <div class="col-sm-6">
                     {% if setting.choices %}
-                        <select class="form-control" name="{{ setting.key }}"  onchange="this.form.submit()" title="{% trans setting.description %}">
+                        <select class="form-select" name="{{ setting.key }}"  onchange="this.form.submit()" title="{% trans setting.description %}">
                             {% for choice in setting.choices_as_list %}
                                 <option {% if setting.value == choice %} selected {% endif %} value={{ choice }}>{% trans choice %}</option>
                             {% endfor %}

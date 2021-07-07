@@ -15,8 +15,8 @@
     <div class="row">
         <div class="col-lg-12">
             <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-light shadow-sm">
-                <li class="breadcrumb-item active">
+            <ol class="breadcrumb shadow-sm">
+                <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
@@ -32,7 +32,7 @@
                     <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <span class="font-weight-bold"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</span>
+                    <span class="fw-bold"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</span>
                 </li>
                 <li class="breadcrumb-item">
                     <a href="{% url 'virtsecrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
@@ -59,7 +59,7 @@
                     {% for nwfilter in nwfilters %}
                     <tr>
                         <th scope="row">{{ forloop.counter }}</th>
-                        <td><a class="text-secondary" href="{% url "nwfilter" compute.id nwfilter.name %} ">{{ nwfilter.uuid }}</a></td>
+                        <td><a class="link-primary" href="{% url 'nwfilter' compute.id nwfilter.name %} ">{{ nwfilter.uuid }}</a></td>
                         <td>{{ nwfilter.name }}</td>
                         <td>
                             <div class="modal fade" id="Show{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="showNWFilter" aria-hidden="true">
@@ -67,7 +67,7 @@
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h5 class="modal-title">{% trans "Details of NWFilter" %}: <span class="text-danger">{{ nwfilter.name }}</span></h5>
-                                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
                                             <textarea rows="10" class="w-100">
@@ -75,12 +75,12 @@
                                             </textarea>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                                         </div>
                                     </div> <!-- /.modal-content -->
                                 </div> <!-- /.modal-dialog -->
                             </div> <!-- /.modal -->
-                            <button class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#Show{{ forloop.counter }}" title="{% trans "Show" %}">
+                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Show{{ forloop.counter }}" title="{% trans "Show" %}">
                                 <i class="fa fa-eye"></i>
                             </button>
                         </td>
@@ -90,11 +90,11 @@
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h5 class="modal-title">{% trans "Clone NWFilter" %} <span class="text-danger">{{ nwfilter.name }}</span></h5>
-                                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <form method="post" role="form" aria-label="Clone NWFilter form">{% csrf_token %}
                                             <div class="modal-body">
-                                                <div class="form-group row">
+                                                <div class="row">
                                                     <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                                     <div class="col-sm-6">
                                                         <input type="text" class="form-control" name="cln_name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
@@ -103,14 +103,14 @@
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                                                 <button type="submit" class="btn btn-primary" name="cln_nwfilter">{% trans "Clone" %}</button>
                                             </div>
                                         </form>
                                     </div> <!-- /.modal-content -->
                                 </div> <!-- /.modal-dialog -->
                             </div> <!-- /.modal -->
-                            <button class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}"><i class="fa fa-files-o"></i></button>
+                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}"><i class="fa fa-files-o"></i></button>
                         </td>
                         <td>
                             <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
@@ -128,8 +128,7 @@
             {% else %}
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="alert alert-warning alert-dismissable">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <div class="alert alert-warning shadow-sm">
                         <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any NWFilters" %}
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddInterface" type="button" class="btn btn-success float-right" data-toggle="modal">
+    <a href="#AddInterface" type="button" class="btn btn-success float-end" data-bs-toggle="modal">
         <span class="fa fa-plus" aria-hidden="true"></span>
     </a>
 
@@ -10,56 +10,56 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{% trans "Create New Interface" %}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form method="post" action="" role="form" aria-label="Create New Interface form">{% csrf_token %}
-                        <div class="form-group row">
+                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" name="name" class="form-control" placeholder="br0" maxlength="10" required pattern="[a-z0-9\. ]+"/>
                             </div>
                         </div>
-                        <div class="form-group row">
+                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Start mode" %}</label>
                             <div class="col-sm-6">
-                                <select name="start_mode" class="custom-select">
+                                <select name="start_mode" class="form-select">
                                     <option value="none">{% trans "none" %}</option>
                                     <option value="onboot">{% trans "onboot" %}</option>
                                     <option value="hotplug">{% trans "hotplug" %}</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row">
+                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Device" %}</label>
                             <div class="col-sm-6">
-                                <select name="netdev" class="custom-select">
+                                <select name="netdev" class="form-select">
                                     {% for dev in netdevs %}
                                         <option value="{{ dev }}">{{ dev }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row">
+                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
                             <div class="col-sm-6">
-                                <select name="itype" class="custom-select" id="itype">
+                                <select name="itype" class="form-select" id="itype">
                                     <option value="bridge">{% trans "bridge" %}</option>
                                     <option value="ethernet">{% trans "ethernet" %}</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row bridge_name_form_group">
+                        <div class="row bridge_name_form_group">
                             <label class="col-sm-3 col-form-label">{% trans "STP" %}</label>
 
                             <div class="col-sm-6">
-                                <select name="stp" class="custom-select">
+                                <select name="stp" class="form-select">
                                     <option value="on">{% trans "on" %}</option>
                                     <option value="off">{% trans "off" %}</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row bridge_name_form_group">
+                        <div class="row bridge_name_form_group">
                             <label class="col-sm-3 col-form-label">{% trans "Delay" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" name="delay" class="form-control" value="0" maxlength="3" required pattern="[0-9]+"/>
@@ -67,34 +67,38 @@
                         </div>
                         <div class="tabbable">
                             <ul class="nav nav-tabs" aria-label="IP types">
-                                <li class="nav-item">
-                                    <a class="nav-link active" href="#ipv4tab" data-toggle="tab">{% trans "IPv4" %}</a>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ipv4tab" type="button" role="tab" aria-controls="ipv4tab" aria-selected="true">
+                                        {% trans "IPv4" %}
+                                    </button>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="#ipv6tab" data-toggle="tab">{% trans "IPv6" %}</a>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ipv6tab" type="button" role="tab" aria-controls="ipv6tab" aria-selected="false">
+                                        {% trans "IPv6" %}
+                                    </button>
                                 </li>
                             </ul>
                         </div>
                         <div class="tab-content">
                             <div class="tab-pane active" id="ipv4tab">
                                 <div class="modal-body">
-                                    <div class="form-group row">
+                                    <div class="row">
                                         <label class="col-sm-3 col-form-label">{% trans "IPv4 Mode" %}</label>
                                         <div class="col-sm-6">
-                                            <select name="ipv4_type" class="custom-select" id="ipv4">
+                                            <select name="ipv4_type" class="form-select" id="ipv4">
                                                 <option value="dhcp">{% trans "DHCP" %}</option>
                                                 <option value="static">{% trans "Static" %}</option>
                                                 <option value="none">{% trans "No configuration" %}</option>
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="form-group row static_ipv4_form_group">
+                                    <div class="row static_ipv4_form_group">
                                         <label class="col-sm-3 col-form-label">{% trans "IPv4 Address" %}</label>
                                         <div class="col-sm-6">
                                             <input type="text" class="form-control" name="ipv4_addr" maxlength="19" pattern="[0-9\.\/]+">
                                         </div>
                                     </div>
-                                    <div class="form-group row static_ipv4_form_group">
+                                    <div class="row static_ipv4_form_group">
                                         <label class="col-sm-3 col-form-label">{% trans "IPv4 Gateway" %}</label>
                                         <div class="col-sm-6">
                                             <input type="text" class="form-control" name="ipv4_gw" maxlength="16" pattern="[0-9\.]+">
@@ -104,23 +108,23 @@
                             </div>
                             <div class="tab-pane" id="ipv6tab">
                                 <div class="modal-body">
-                                    <div class="form-group row">
+                                    <div class="row">
                                         <label class="col-sm-3 col-form-label">{% trans "IPv6 Mode" %}</label>
                                         <div class="col-sm-6">
-                                            <select name="ipv6_type" class="custom-select" id="ipv6">
+                                            <select name="ipv6_type" class="form-select" id="ipv6">
                                                 <option value="none">{% trans "No configuration" %}</option>
                                                 <option value="dhcp">{% trans "DHCP" %}</option>
                                                 <option value="static">{% trans "Static" %}</option>
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="form-group row static_ipv6_form_group">
+                                    <div class="row static_ipv6_form_group">
                                         <label class="col-sm-3 col-form-label">{% trans "IPv6 Address" %}</label>
                                         <div class="col-sm-6">
                                             <input type="text" class="form-control" name="ipv6_addr" maxlength="100" pattern="[0-9a-f\:\/]+">
                                         </div>
                                     </div>
-                                    <div class="form-group row static_ipv6_form_group">
+                                    <div class="row static_ipv6_form_group">
                                         <label class="col-sm-3 col-form-label">{% trans "IPv6 Gateway" %}</label>
                                         <div class="col-sm-6">
                                             <input type="text" class="form-control" name="ipv6_gw" maxlength="100" pattern="[0-9a-f\:]+">
@@ -131,7 +135,7 @@
                         </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         {% trans "Close" %}
                     </button>
                     <button type="submit" class="btn btn-primary" name="create">

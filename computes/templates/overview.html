@@ -9,34 +9,32 @@
 
 {% block content %}
     <div class="row">
-        <div class="col-lg-12">
-            <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-light shadow-sm">
-                <li class="breadcrumb-item">
-                    <span class="font-weight-bold">{% icon 'dashboard' %} {% trans "Overview" %}</span>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'instances' compute.id %}">{% icon 'server' %} {% trans "Instances" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'storages' compute.id %}">{% icon 'hdd-o' %} {% trans "Storages" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'networks' compute.id %}">{% icon 'sitemap' %} {% trans "Networks" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'interfaces' compute.id %}">{% icon 'wifi' %} {% trans "Interfaces" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'nwfilters' compute.id %}">{% icon 'filter' %} {% trans "NWFilters" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'virtsecrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
-                </li>
-            </ol>
-            </nav>
+        <nav aria-label="breadcrumb">
+        <ol class="breadcrumb shadow-sm">
+            <li class="breadcrumb-item" aria-current="page">
+                <span class="fw-bold">{% icon 'dashboard' %} {% trans "Overview" %}</span>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'instances' compute.id %}">{% icon 'server' %} {% trans "Instances" %}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'storages' compute.id %}">{% icon 'hdd-o' %} {% trans "Storages" %}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'networks' compute.id %}">{% icon 'sitemap' %} {% trans "Networks" %}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'interfaces' compute.id %}">{% icon 'wifi' %} {% trans "Interfaces" %}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'nwfilters' compute.id %}">{% icon 'filter' %} {% trans "NWFilters" %}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'virtsecrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
+            </li>
+        </ol>
+        </nav>
         </div>
-    </div>
 
     <div class="shadow-sm">
         <h3 class="page-header">{% trans "Basic details" %}</h3>
@@ -47,10 +45,10 @@
             <dd class="col-9">
                 <div class="dropdown">
                     {% for arch, hpv in hypervisor.items|slice:":4" %}
-                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="hpvArchDrop{{ forloop.counter0 }}" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         {{ arch }}
                     </button>
-                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <div class="dropdown-menu" aria-labelledby="hpvArchDrop{{ forloop.counter0 }}">
                         {% for h in hpv %}
                             <a class="dropdown-item" href="#">{{ h }}</a>
                         {% endfor %}
@@ -59,10 +57,10 @@
                 </div>
                 <div class="dropdown">
                   {% if hypervisor.items|length > 4 %}
-                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton{{ forloop.counter0 }}" data-toggle="dropdown">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="hpvDrop{{ forloop.counter0 }}" data-bs-toggle="dropdown">
                         {{ hypervisor.items|slice:"4:"|length }} {% trans 'more' %}...
                     </button>
-                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ forloop.counter0 }}" role="menu">
+                    <div class="dropdown-menu" aria-labelledby="hpvDrop{{ forloop.counter0 }}" role="menu">
                         {% for arc in hypervisor.keys|slice:"4:" %}
                                 <a class="dropdown-item" tabindex="-1" href="#">{{ arc }}</a>
                         {% endfor %}
@@ -74,10 +72,10 @@
             <dd class="col-9">{{ emulator }}</dd>
             <dt class="col-3">{% trans "Version" %}</dt>
             <dd class="col-9">
-                <span class="badge bg-secondary text-light">{% trans 'Qemu' %} </span>
-                 <span class="badge bg-primary text-light">{{ version }}</span> &nbsp;
-                <span class="badge bg-secondary text-light">{% trans 'Libvirt' %} </span>
-                <span class="badge bg-primary text-light">{{ lib_version }}</span> &nbsp;
+                <span class="badge bg-secondary">{% trans 'Qemu' %} </span>
+                <span class="badge bg-primary">{{ version }}</span> &nbsp;
+                <span class="badge bg-secondary">{% trans 'Libvirt' %} </span>
+                <span class="badge bg-primary">{{ lib_version }}</span> &nbsp;
             </dd>
             <dt class="col-3">{% trans "Memory" %}</dt>
             <dd class="col-9">{{ host_memory|filesizeformat }}</dd>

@@ -1,39 +1,34 @@
-// Lumen 4.6.0
+// Lumen 5.0.2
 // Bootswatch
 
 
-// Variables ===================================================================
+// Variables
 
 $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,300;0,400;0,700;1,400&display=swap" !default;
-@import url($web-font-path);
+@if $web-font-path {
+  @import url($web-font-path);
+}
 
-// Mixins ======================================================================
+// Mixins
 
 @mixin shadow($width: 4px){
   border-style: solid;
   border-width: 0 1px $width 1px;
 }
 
-// Navbar ======================================================================
+// Navbar
 
 .navbar {
   @include shadow();
+
+  @each $color, $value in $theme-colors {
+    &.bg-#{$color} {
+      border-color: shade-color($value, 10%);
+    }
+  }
 }
 
-.bg-primary {
-  border-color: darken($primary, 5%);
-}
-
-.bg-dark {
-  border-color: darken($dark, 5%);
-}
-
-.bg-light {
-  background-color: $white !important;
-  border-color: darken($white, 5%);
-}
-
-// Buttons =====================================================================
+// Buttons
 
 .btn {
   @include shadow();
@@ -50,36 +45,21 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
     @include box-shadow(none);
   }
 
-  &-primary {
-    border-color: darken($primary, 5%);
-  }
+  @each $color, $value in $theme-colors {
+    &-#{$color} {
+      &:hover,
+      &:active,
+      &:focus {
+        background-color: $value;
+      }
 
-  &-secondary {
-    border-color: darken($secondary, 5%);
-  }
-
-  &-success {
-    border-color: darken($success, 5%);
-  }
-
-  &-info {
-    border-color: darken($info, 5%);
-  }
-
-  &-danger {
-    border-color: darken($danger, 5%);
-  }
-
-  &-warning {
-    border-color: darken($warning, 5%);
-  }
-
-  &-light {
-    border-color: darken($light, 5%);
-  }
-
-  &-dark {
-    border-color: darken($dark, 5%);
+      &,
+      &:not(.disabled):hover,
+      &:not(.disabled):active,
+      &:focus {
+        border-color: shade-color($value, 10%);
+      }
+    }
   }
 }
 
@@ -101,7 +81,7 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
   }
 }
 
-// Typography ==================================================================
+// Typography
 
 .text-secondary {
   color: $gray-700 !important;
@@ -111,177 +91,7 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
   color: $gray-600;
 }
 
-// Tables ======================================================================
-
-.table {
-  &-primary,
-  &-success,
-  &-info,
-  &-warning,
-  &-danger {
-    color: $white;
-  }
-
-  &-hover tbody {
-    .table-primary:hover,
-    .table-success:hover,
-    .table-info:hover,
-    .table-warning:hover,
-    .table-danger:hover,
-    .table-dark:hover {
-      color: $white;
-    }
-  }
-
-  &-primary {
-    &,
-    > th,
-    > td {
-      background-color: $primary;
-    }
-  }
-
-  &-secondary {
-    &,
-    > th,
-    > td {
-      background-color: $secondary;
-    }
-  }
-
-  &-light {
-    &,
-    > th,
-    > td {
-      background-color: $light;
-    }
-  }
-
-  &-dark {
-    &,
-    > th,
-    > td {
-      background-color: $dark;
-    }
-  }
-
-  &-success {
-    &,
-    > th,
-    > td {
-      background-color: $success;
-    }
-  }
-
-  &-info {
-    &,
-    > th,
-    > td {
-      background-color: $info;
-    }
-  }
-
-  &-danger {
-    &,
-    > th,
-    > td {
-      background-color: $danger;
-    }
-  }
-
-  &-warning {
-    &,
-    > th,
-    > td {
-      background-color: $warning;
-    }
-  }
-
-  &-active {
-    &,
-    > th,
-    > td {
-      background-color: $table-active-bg;
-    }
-  }
-
-  &-hover {
-    .table-primary:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($primary, 5%);
-      }
-    }
-
-    .table-secondary:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($secondary, 5%);
-      }
-    }
-
-    .table-light:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($light, 5%);
-      }
-    }
-
-    .table-dark:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($dark, 5%);
-      }
-    }
-
-    .table-success:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($success, 5%);
-      }
-    }
-
-    .table-info:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($info, 5%);
-      }
-    }
-
-    .table-danger:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($danger, 5%);
-      }
-    }
-
-    .table-warning:hover {
-      &,
-      > th,
-      > td {
-        background-color: darken($warning, 5%);
-      }
-    }
-
-    .table-active:hover {
-      &,
-      > th,
-      > td {
-        background-color: $table-active-bg;
-      }
-    }
-
-  }
-}
-
-// Forms =======================================================================
+// Forms
 
 .form-control {
   box-shadow: inset 0 2px 0 rgba(0, 0, 0, .075);
@@ -296,7 +106,7 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
   }
 }
 
-// Navs ========================================================================
+// Navs
 
 .nav {
   .open > a,
@@ -341,7 +151,10 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
 }
 
 .breadcrumb {
-  border-color: darken($breadcrumb-bg, 5%);
+  border-color: shade-color($breadcrumb-bg, 10%);
+  a {
+    text-decoration: none;
+  }
   @include shadow();
 }
 
@@ -352,7 +165,6 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
     top: 0;
     @include shadow();
     color: $pagination-color;
-    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
 
@@ -397,9 +209,9 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
   }
 }
 
-// Indicators ==================================================================
+// Indicators
 
-.close {
+.btn-close {
   text-decoration: none;
   opacity: .4;
 
@@ -415,42 +227,42 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
 
   &-primary {
     background-color: $primary;
-    border-color: darken($primary, 5%);
+    border-color: shade-color($primary, 10%);
   }
 
   &-secondary {
     background-color: $secondary;
-    border-color: darken($secondary, 5%);
+    border-color: shade-color($secondary, 10%);
   }
 
   &-success {
     background-color: $success;
-    border-color: darken($success, 5%);
+    border-color: shade-color($success, 10%);
   }
 
   &-info {
     background-color: $info;
-    border-color: darken($info, 5%);
+    border-color: shade-color($info, 10%);
   }
 
   &-danger {
     background-color: $danger;
-    border-color: darken($danger, 5%);
+    border-color: shade-color($danger, 10%);
   }
 
   &-warning {
     background-color: $warning;
-    border-color: darken($warning, 5%);
+    border-color: shade-color($warning, 10%);
   }
 
   &-dark {
     background-color: $dark;
-    border-color: darken($dark, 5%);
+    border-color: shade-color($dark, 10%);
   }
 
   &-light {
     background-color: $light;
-    border-color: darken($light, 5%);
+    border-color: shade-color($light, 10%);
   }
 
   .alert-link {
@@ -470,13 +282,13 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,w
 }
 
 .badge {
-  &-warning,
-  &-info {
-    color: $white;
+  &.bg-secondary,
+  &.bg-light {
+    color: $dark;
   }
 }
 
-// Containers ==================================================================
+// Containers
 
 a.list-group-item {
   &-success {
@@ -486,7 +298,7 @@ a.list-group-item {
 
     &.active:hover,
     &.active:focus {
-      background-color: darken($success, 5%);
+      background-color: shade-color($success, 10%);
     }
   }
 
@@ -497,7 +309,7 @@ a.list-group-item {
 
     &.active:hover,
     &.active:focus {
-      background-color: darken($warning, 5%);
+      background-color: shade-color($warning, 10%);
     }
   }
 
@@ -508,24 +320,14 @@ a.list-group-item {
 
     &.active:hover,
     &.active:focus {
-      background-color: darken($danger, 5%);
+      background-color: shade-color($danger, 10%);
     }
   }
 }
 
-.jumbotron {
-  border: 1px solid $gray-200;
-  box-shadow: inset 0 2px 0 rgba(0, 0, 0, .05);
-}
-
 .modal,
 .toast {
-  .close {
-    color: $black;
-
-    &:not(:disabled):not(.disabled):hover,
-    &:not(:disabled):not(.disabled):focus {
-      color: $black;
-    }
+  .btn-close {
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'><path d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/></svg>");
   }
 }

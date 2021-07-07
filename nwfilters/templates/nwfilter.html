@@ -9,8 +9,8 @@
 {% block content %}
     <div class="row">
         <div class="col-lg-12">
-            <ol class="breadcrumb bg-light shadow-sm">
-                <li class="breadcrumb-item active">
+            <ol class="breadcrumb shadow-sm">
+                <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
@@ -35,7 +35,7 @@
         </div>
     </div>
 
-    <dl class="ml-3 row">
+    <dl class="ms-3 row">
         <dt class="col-4">{% trans "UUID" %}:</dt>
         <dd class="col-8">{{ uuid }}</dd>
         <dt class="col-4">{% trans "Name" %}:</dt>
@@ -43,8 +43,8 @@
     </dl>
       
    <div class="row">
-        <div class="col-lg-12">
-            <button class="btn btn-block btn-light mb-3"  role="button" data-toggle="collapse" data-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
+        <div class="d-grid col-lg-12">
+            <button class="btn btn-light mb-3"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
                 <span class="fa fa-chevron-down"></span>
                 {% trans 'XML' %}
             </button>
@@ -55,7 +55,7 @@
                             <input type="hidden" name="edit_xml"/>
                             <textarea id="edit_editor">{{ xml }}</textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary float-right" name="edit_nwfilter">
+                        <button type="submit" class="btn btn-primary float-end" name="edit_nwfilter">
                             {% trans "Edit" %}
                         </button>
                     </form>
@@ -66,24 +66,18 @@
     <div class="row">
         <div class="col-lg-12">
         <h5 class="page-header mr-auto">{% trans "Filter References" %}
-            <form class="form-inline float-right" method="post" role="form" aria-label="Add NWFilter form">{% csrf_token %}
-                <div class="form-group">
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">{% trans "Filter" %}</span>
-                        </div>    
-                        <select id="nwfilter_select" name="nwfilters_select" class="custom-select">
-                            <option value="" selected>{% trans 'None' %}</option>
-                            {% for nwf in nwfilters_all %}
-                                <option value="{{ nwf.name }}">{{ nwf.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="input-group-append">
-                            <button type="submit" class="btn btn-success float-right" name="add_nwfilter_ref">
-                                <span class="fa fa-plus" aria-hidden="true"></span>
-                            </button>
-                        </div>
-                    </div>
+            <form class="float-end" method="post" role="form" aria-label="Add NWFilter form">{% csrf_token %}
+                <div class="input-group">
+                    <span class="input-group-text">{% trans "Filter" %}</span>
+                    <select id="nwfilter_select" name="nwfilters_select" class="form-select">
+                        <option value="" selected>{% trans 'None' %}</option>
+                        {% for nwf in nwfilters_all %}
+                            <option value="{{ nwf.name }}">{{ nwf.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-success float-end" name="add_nwfilter_ref">
+                        <span class="fa fa-plus" aria-hidden="true"></span>
+                    </button>
                 </div>
             </form>
         </h5>

@@ -9,7 +9,7 @@
 {% block page_heading %}{{ title }}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-<a href="{% url 'admin:user_create' %}" class="btn btn-success btn-header float-right">
+<a href="{% url 'admin:user_create' %}" class="btn btn-success btn-header float-end">
     {% icon 'plus' %}
 </a>
 {% include 'search_block.html' %}
@@ -19,8 +19,7 @@
 <div class="row">
     {% if not users %}
         <div class="col-lg-12">
-            <div class="alert alert-warning alert-dismissable">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            <div class="alert alert-warning shadow-sm">
                 {% icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any user" %}
             </div>
         </div>
@@ -55,7 +54,7 @@
                         <td>{% if user.is_superuser %}{% icon 'check' %}</span>{% endif %}</td>
                         <td>{% if can_clone %}{% icon 'check' %}{% endif %}</td>
                         <td>
-                            <div class="float-right btn-group">
+                            <div class="float-end btn-group">
                                 <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'accounts:account' user.id %}">{% icon 'eye' %}</a>
                                 <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'admin:user_update' user.id %}">{% icon 'pencil' %}</a>
                                 {% if user.is_active %}

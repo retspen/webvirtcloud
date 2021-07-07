@@ -15,8 +15,7 @@
 <div class="row">
     {% if not computes %}
         <div class="col-lg-12">
-            <div class="alert alert-warning alert-dismissable">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            <div class="alert alert-warning shadow-sm">
                 {% icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any computes" %}
             </div>
         </div>
@@ -44,7 +43,7 @@
                             {{ compute.details|default:"" }}
                         </td>
                         <td class="col-sm-2">
-                            <div class="float-right btn-group">
+                            <div class="float-end btn-group">
                                 {% if compute.status is True %}
                                     <a class="btn btn-success" title="{%trans "Overview" %}" href="{% url 'overview' compute.id %}">{% icon 'eye' %}</a>
                                 {% else %}

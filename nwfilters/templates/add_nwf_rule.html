@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <button data-target="#AddNWFilterRule" type="button" class="btn btn-success float-right" data-toggle="modal">
+    <button class="btn btn-success float-end" type="button" data-bs-toggle="modal" data-bs-target="#AddNWFilterRule">
         <span class="fa fa-plus" aria-hidden="true"></span>
     </button>
 
@@ -10,11 +10,11 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{% trans "Add New NWFilter Rule" %}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form method="post" role="form" aria-label="Add new NWFilter rule form">{% csrf_token %}
-                         <div class="form-group row">
+                         <div class="row">
                             <div class="col-12" id="xmlheight">
                                 <input type="hidden" name="nwfilterrule_xml"/>
                                 <textarea id="rule_editor"></textarea>
@@ -22,7 +22,7 @@
                             <p class="text-muted">{% trans 'If there is a rule which has same attributes it replaces that rule' %}...</p>
                          </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                             <button type="submit" class="btn btn-primary" name="add_nwfilter_rule">{% trans "Add" %}</button>
                         </div>
                     </form>

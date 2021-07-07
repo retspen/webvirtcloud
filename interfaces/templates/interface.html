@@ -8,8 +8,8 @@
 {% block content %}
     <div class="row">
         <div class="col-lg-12">
-            <ol class="breadcrumb bg-light shadow-sm">
-                <li class="breadcrumb-item active">
+            <ol class="breadcrumb shadow-sm">
+                <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
@@ -35,7 +35,7 @@
     </div>
 
     <div class="row">
-        <dl class="ml-3 row">
+        <dl class="ms-3 row">
             <dt class="col-4">{% trans "Interface" %}</dt>
             <dd class="col-8"><strong>{{ iface }}</strong></dd>
             <dt class="col-4">{% trans "IPv4" %} ({% if ipv4 == None %}{% trans 'None' %}{% else %}{{ ipv4_type }}{% endif %})</dt>

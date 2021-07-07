@@ -2,8 +2,8 @@
 {% load icons %}
 <table class="table table-hover sortable-theme-bootstrap" data-sortable>
     <thead>
-        <tr style="border: 2px solid transparent; ">
-            <th scope="col" data-sortable="false"><a class="text-secondary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
+        <tr>
+            <th scope="col" data-sortable="false"><a class="link-primary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
             <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
             <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
             <th scope="col">{% trans "Status" %}</th>
@@ -12,16 +12,16 @@
             <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
         </tr>
     </thead>
-    <tbody class="searchable">
-        {% for compute in computes %}
+    {% for compute in computes %}
+        <tbody class="searchable">
             {% if compute.status is True and compute.instance_set.count > 0 %}
-                <tr class="font-weight-bold active" style="border-bottom: 2px solid darkgray;border-top: 2px solid darkgray;">
+                <tr class="table-secondary fw-bold border-bottom border-dark">
                     <td>
                         <span id="collapse_host_instances_{{ compute.id }}" class="fa fa-chevron-up" onclick="hide_host_instances('{{ compute.id }}');"></span>
                     </td>
                     <td>
-                        <a class="text-secondary" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
-                        <span id="inst_count_badge_{{ compute.id }}" class="badge badge-secondary d-none">{{ compute.instance_set.count }}</span>
+                        <a class="link-dark" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
+                        <span id="inst_count_badge_{{ compute.id }}" class="badge bg-secondary d-none">{{ compute.instance_set.count }}</span>
                     </td>
                     <td class="d-none d-sm-table-cell"></td>
                     <td>
@@ -41,9 +41,9 @@
                     <tr host="{{ compute.id }}">
                         <td class="text-right">{{ forloop.counter }} </td>
                         <td>
-                            <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
+                            <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
                             <br>
-                            <p class="m-0 small font-italic">{{ instance.title }}</p>
+                            <p class="m-0 small fst-italic">{{ instance.title }}</p>
                         </td>
                         <td>
                             <em>
@@ -70,8 +70,8 @@
                     </tr>
                 {% endfor %}
             {% endif %}
-        {% endfor %}
-    </tbody>
+        </tbody>
+    {% endfor %}
 </table>
 
 {% block script %}

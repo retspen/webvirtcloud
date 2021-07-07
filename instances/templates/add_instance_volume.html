@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#addvol" type="button" class="btn btn-success float-right" data-toggle="modal" title="{% trans "Add Volume" %}">
+    <a href="#addvol" type="button" class="btn btn-success float-end" data-bs-toggle="modal" title="{% trans "Add Volume" %}">
         <span class="fa fa-plus" aria-hidden="true"></span>
     </a>
 
@@ -10,83 +10,87 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{% trans "Add Instance Volume" %}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
                 <ul class="nav nav-tabs" aria-label="Disk attach type">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#NewDisk" data-toggle="tab">{% trans 'New Disk' %}</a>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" aria-controls="NewDisk" data-bs-toggle="tab" data-bs-target="#NewDisk" type="button" role="tab" aria-selected="true">
+                            {% trans 'New Disk' %}
+                        </button>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#ExistingDisk" data-toggle="tab">{% trans 'Existing Disk' %}</a>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" aria-controls="ExistingDisk" data-bs-toggle="tab" data-bs-target="#ExistingDisk" type="button" role="tab" aria-selected="true">
+                            {% trans 'Existing Disk' %}
+                        </button>
                     </li>
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="NewDisk">
                         <form action="{% url 'instances:add_new_vol' instance.id %}" method="post" role="form" aria-label="Add new volume to disk form">{% csrf_token %}
                             <div class="modal-body">
-                                <p class="font-weight-bold">{% trans "Volume parameters" %}</p>
-                                <div class="form-group row">
+                                <p class="fw-bold">{% trans "Volume parameters" %}</p>
+                                <div class="row">
                                     <label class="col-sm-3 col-form-label">{% trans "Storage" %}</label>
                                     <div class="col-sm-6">
-                                        <select name="storage" class="custom-select image-format">
+                                        <select name="storage" class="form-select image-format">
                                             {% for storage in storages_host %}
                                                 <option value="{{ storage }}">{{ storage }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group row">
+                                <div class="row">
                                     <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
                                     </div>
                                 </div>
-                                <div class="form-group row">
+                                <div class="row">
                                     <label class="col-sm-3 col-form-label">{% trans "Format" %}</label>
                                     <div class="col-sm-6">
-                                        <select name="format" class="custom-select image-format">
+                                        <select name="format" class="form-select image-format">
                                             {% for format in instance.formats %}
                                                 <option value="{{ format }}" {% if format == default_format %}selected{% endif %}>{% trans format %}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group row">
+                                <div class="row">
                                     <label class="col-sm-3 col-form-label">{% trans "Size" %}</label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" name="size" value="10" maxlength="5" required pattern="[0-9]+">
                                     </div>
                                     <label class="col-sm-1 col-form-label">{% trans "GB" %}</label>
                                 </div>
-                                <div class="form-group row">
+                                <div class="row">
                                     <label class="col-sm-3 col-form-label">{% trans "Bus" %}</label>
                                     <div class="col-sm-6">
-                                        <select name="bus" class="custom-select image-format">
+                                        <select name="bus" class="form-select image-format">
                                             {% for bus in bus_host %}
                                                 <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group row">
+                                <div class="row">
                                     <label class="col-sm-3 col-form-label">{% trans "Cache" %}</label>
                                     <div class="col-sm-6">
-                                        <select name="cache" class="custom-select image-format">
+                                        <select name="cache" class="form-select image-format">
                                             {% for mode, name in instance.cache_modes %}
                                                 <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>{% trans name %}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group row meta-prealloc">
+                                <div class="row meta-prealloc">
                                     <label class="col-sm-3 col-form-label">{% trans "Metadata" %}</label>
                                     <div class="col-sm-6">
                                         <input type="checkbox" name="meta_prealloc" value="true">
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                                     <button type="submit" class="btn btn-success" name="add_new_vol">{% trans "Add Volume" %}</button>
                                 </div>
                         </form>
@@ -95,12 +99,12 @@
                         <div class="tab-pane" id="ExistingDisk">
                             <form action="{% url 'instances:add_existing_vol' instance.id %}" method="post" role="form" aria-label="Add existing volume to instance form">{% csrf_token %}
                                 <div class="modal-body">
-                                    <p class="font-weight-bold">{% trans "Volume parameters" %}</p>
-                                    <div class="form-group row">
+                                    <p class="fw-bold">{% trans "Volume parameters" %}</p>
+                                    <div class="row">
                                         <label class="col-sm-3 col-form-label">{% trans "Storage" %}</label>
                                         <div class="col-sm-6">
                                             <div class="dropdown">
-                                                <button id="select_storage" class="btn btn-secondary dropdown-toggle form-control" type="button" data-toggle="dropdown">{% trans 'Select Pool' %}...</button>
+                                                <button id="select_storage" class="btn btn-secondary dropdown-toggle form-control" type="button" data-bs-toggle="dropdown">{% trans 'Select Pool' %}...</button>
                                                 <div class="dropdown-menu">
                                                     {% for storage in storages_host %}
                                                         <a class="dropdown-item" href="#" onclick="get_volumes({{ instance.compute.id }}, '{{ storage }}')">{{ storage }}</a>
@@ -110,29 +114,29 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row">
+                                    <div class="row">
                                         <label class="col-sm-3 col-form-label" >{% trans "Volume" %}</label>
                                         <div class="col-sm-6">
-                                            <select id="vols" name="vols" class="form-control" disabled>
+                                            <select id="vols" name="vols" class="form-select" disabled>
                                                 <option value="" selected>{% trans 'None' %}</option>
                                                 <!-- populate with javascript -->
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="form-group row">
+                                    <div class="row">
                                         <label class="col-sm-3 col-form-label">{% trans "Bus" %}</label>
                                         <div class="col-sm-6">
-                                            <select name="bus" class="custom-select image-format">
+                                            <select name="bus" class="form-select image-format">
                                                 {% for bus in bus_host %}
                                                     <option value="{{ bus }}" {% if bus == default_bus %}selected{% endif %}>{% trans bus %}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="form-group row">
+                                    <div class="row">
                                         <label class="col-sm-3 col-form-label">{% trans "Cache" %}</label>
                                         <div class="col-sm-6">
-                                            <select name="cache" class="custom-select image-format">
+                                            <select name="cache" class="form-select image-format">
                                                 {% for mode, name in instance.cache_modes %}
                                                     <option value="{{ mode }}" {% if mode == default_cache %}selected{% endif %}>{% trans name %}</option>
                                                 {% endfor %}
@@ -141,7 +145,7 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                                     <button type="submit" class="btn btn-success">{% trans "Add Volume" %}</button>
                                 </div>
                             </form>

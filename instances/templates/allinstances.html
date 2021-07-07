@@ -20,9 +20,7 @@
         {% if compute.status is not True %}
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 {% trans 'Problem occurred with host' %} {{ compute.name }}: {{ compute.status }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
         {% endif %}
     {% endfor %}

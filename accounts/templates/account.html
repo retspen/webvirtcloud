@@ -23,11 +23,15 @@
 
 {% block content %}
     <ul class="nav nav-tabs">
-        <li class="nav-item">
-            <a class="nav-link active" data-toggle="tab" href="#instances">{% trans "Instances" %}</a>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#instances" type="button" role="tab" aria-controls="instances" aria-selected="true">
+                {% trans "Instances" %}
+            </button>
         </li>
-        <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#public-keys">{% trans "Public Keys" %}</a>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#public-keys" type="button" role="tab" aria-controls="public-keys" aria-selected="false">
+                {% trans "Public Keys" %}
+            </button>
         </li>
     </ul>
 

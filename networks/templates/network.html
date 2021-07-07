@@ -9,7 +9,7 @@
 {% block content %}
     <div class="row">
         <div class="col-lg-12">
-            <ol class="breadcrumb bg-light shadow-sm">
+            <ol class="breadcrumb shadow-sm">
                 <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
@@ -37,7 +37,7 @@
     </div>
 
     <div class="row">
-        <dl class="ml-3 row">
+        <dl class="ms-3 row">
             <dt class="col-6">{% trans "Network name" %}</dt>
             <dd class="col-6">{{ pool }}</dd>
             <dt class="col-6">{% trans "Device" %}</dt>
@@ -66,8 +66,8 @@
         </dl>
     </div>
 
-    <div class="col-lg-12">
-        <button class="btn btn-block btn-light"  role="button" data-toggle="collapse" data-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
+    <div class="d-grid col-lg-12">
+        <button class="btn btn-light"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
             <span class="fa fa-chevron-down"></span>
             {% trans 'XML' %}
         </button>
@@ -78,7 +78,7 @@
                         <input type="hidden" name="edit_xml"/>
                         <textarea id="edit_editor">{{ xml }}</textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary float-right" name="edit_network">
+                    <button type="submit" class="btn btn-primary float-end" name="edit_network">
                         {% trans "Edit" %}
                     </button>
                 </form>
@@ -88,7 +88,7 @@
     
     <h5 class="page-header">{% trans "IPv4 Configuration" %}</h5>
     
-    <dl class="ml-3 row">
+    <dl class="ms-3 row">
         <dt class="col-6">{% trans "IPv4 Forwarding" %}</dt>
         <dd class="col-6">
              {% if net_forward.0 == 'nat' %}
@@ -121,7 +121,7 @@
                 <dt class="col-6">{% trans "End" %}</dt>
                 <dd class="col-6">{{ ipv4_dhcp_range_end }}</dd>
             {%  else %}
-                <form class="form-inline col-lg-12 pl-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
+                <form class="col-lg-12 ps-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
                     <dt class="col-6">{% trans "Start" %}</dt>
                     <dd class="col-6"><input name="range_start" value="{{ ipv4_dhcp_range_start }}"/></dd>
                     <dt class="col-6">{% trans "End" %}</dt>
@@ -152,18 +152,18 @@
     
     {% if ipv4_fixed_address %}
         
-        <div class="col-12">
-            <button class="btn btn-block btn-light"  role="button" data-toggle="collapse" data-target="#collapseipv4fix" aria-expanded="true" aria-controls="collapseXML">
+        <div class="d-grid col-12">
+            <button class="btn btn-light"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv4fix" aria-expanded="true" aria-controls="collapseXML">
                 <span class="fa fa-chevron-down"></span>
                 {% trans 'Show' %}
             </button>
             <div id="collapseipv4fix" class="collapse">
-                <div class="input-append form-inline float-right">
-                    <div class="form-group row">
+                <div class="col-4 float-end mt-2">
+                    <div class="input-group ">
                         <input type="text" class="form-control" id="filter_input">
+                        <input type="button" class="btn btn-secondary" id="filter_button" value="Filter">
+                        <button type="button" class="btn btn-secondary" id="filter_clear">{% trans 'Clear' %}</button>
                     </div>
-                    <input type="button" class="btn btn-secondary" id="filter_button" value="Filter">
-                    <button type="button" class="btn btn-secondary" id="filter_clear">{% trans 'Clear' %}</button>
                 </div>
 
                 <table id="ipv4_table" class="table table-hover">
@@ -206,7 +206,7 @@
    
     <h5 class="page-header">{% trans "IPv6 Configuration" %}</h5>
 
-    <dl class="ml-3 row">
+    <dl class="ms-3 row">
         <dt class="col-6">{% trans "IPv6 Forwarding" %}</dt>
         <dd class="col-6">
             {% if not net_forward.0 %}
@@ -233,16 +233,16 @@
                 <dt class="col-6">{% trans "End" %}</dt>
                 <dd class="col-6">{{ ipv6_dhcp_range_end }}</dd>
             {%  else %}
-                <form class="form-inline col-lg-12 pl-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
+                <form class="col-lg-12 ps-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
                     <dt class="col-6">{% trans "Start" %}</dt>
                     <dd class="col-6"><input name="range_start" value="{{ ipv6_dhcp_range_start }}"/></dd>
                     <dt class="col-6">{% trans "End" %}</dt>
                     <dd class="col-6"><input  name="range_end" value="{{ ipv6_dhcp_range_end }}"/></dd>
                     <dt class="col-6"></dt>
-                    <dd class="col-6 ">
+                    <dd class="d-grid col-6">
                         <input 
                             type="submit" 
-                            class="btn btn-primary btn-block" 
+                            class="btn btn-primary" 
                             value="Apply"
                             name="modify_dhcp_range"
                             title="{% trans "Edit DHCP Range" %}" 
@@ -262,18 +262,18 @@
     {% endif %}
 
     {% if ipv6_fixed_address %}
-        <div class="col-12">
-            <button class="btn btn-block btn-light"  role="button" data-toggle="collapse" data-target="#collapseipv6fix" aria-expanded="true" aria-controls="collapseXML">
+        <div class="d-grid col-12">
+            <button class="btn btn-light" role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv6fix" aria-expanded="true" aria-controls="collapseipv6fix">
                 <span class="fa fa-chevron-down"></span>
                 {% trans 'Show' %}
             </button>
             <div id="collapseipv6fix" class="collapse">
-                <div class="input-append form-inline float-right">
-                    <div class="form-group">
+                <div class="col-4 float-end mt-2">
+                    <div class="input-group">
                         <input type="text" class="form-control" id="filter_input_ipv6">
+                        <input type="button" class="btn btn-secondary" id="filter_button_ipv6" value="Filter">
+                        <button type="button" class="btn btn-secondary" id="filter_clear_ipv6">{% trans 'Clear' %}</button>
                     </div>
-                    <input type="button" class="btn btn-secondary" id="filter_button_ipv6" value="Filter">
-                    <button type="button" class="btn btn-secondary" id="filter_clear_ipv6">{% trans 'Clear' %}</button>
                 </div>
                 <table id="ipv6_table" class="table table-hover">
                     <thead>
@@ -349,7 +349,7 @@
                         <td class="text-nowrap">
                             <input name="qos_direction" value="{{ q }}" hidden/>
                             <button type="submit" class="btn btn-sm btn-primary"
-                                    name="set_qos" data-toggle="modal"
+                                    name="set_qos" data-bs-toggle="modal"
                                     title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
                                 <i class="fa fa-save"></i>
                             </button>

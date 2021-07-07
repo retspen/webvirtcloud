@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load bootstrap4 %}
+{% load django_bootstrap5 %}
 {% load icons %}
 {% load tags_fingerprint %}
 
@@ -10,15 +10,19 @@
 
 {% block content %}
 <ul class="nav nav-tabs">
-    <li class="nav-item">
-        <a class="nav-link active" data-toggle="tab" href="#edit-profile">{% trans "Edit Profile" %}</a>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#editprofile" type="button" role="tab" aria-controls="editprofile" aria-selected="true">
+            {% trans "Edit Profile" %}
+        </button>
     </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#ssh-keys">{% trans "SSH Keys" %}</a>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sshkeys" type="button" role="tab" aria-controls="sshkeys" aria-selected="false">
+            {% trans "SSH Keys" %}
+        </button>
     </li>
 </ul>
 <div class="tab-content">
-    <div class="tab-pane tab-pane-bordered active" id="edit-profile">
+    <div class="tab-pane tab-pane-bordered active" id="editprofile">
         <div class="card">
             <div class="card-body">
                 <form method="post" action="" role="form" aria-label="Edit user info form">
@@ -29,7 +33,7 @@
                             {% icon 'lock' %} {% trans "Change Password" %}
                         </a>
                     {% endif %}
-                    <div class="form-group mb-0 float-right">
+                    <div class="mb-0 float-end">
                         <button type="submit" class="btn btn-primary">
                             {% icon 'pencil' %} {% trans "Update" %}
                         </button>
@@ -38,7 +42,7 @@
             </div>
         </div>
     </div>
-    <div class="tab-pane tab-pane-bordered fade" id="ssh-keys">
+    <div class="tab-pane tab-pane-bordered fade" id="sshkeys">
         {% if publickeys %}
         <div class="col-lg-12">
             <div class="table-responsive">
@@ -67,7 +71,7 @@
                 <form method="post" action="{% url 'accounts:ssh_key_create' %}" role="form" aria-label="Add key to user form">
                     {% csrf_token %}
                     {% bootstrap_form ssh_key_form layout='horizontal' %}
-                    <div class="form-group mb-0 float-right">
+                    <div class="mb-0 float-end">
                         <button type="submit" class="btn btn-primary">
                             {% icon 'plus' %} {% trans "Add" %}
                         </button>

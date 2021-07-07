@@ -60,6 +60,7 @@ def nwfilters(request, compute_id):
                 msg = _("%(filter)s network filter is deleted") % {"filter": name}
                 in_use = False
                 nwfilter = conn.get_nwfilter(name)
+                nwfilter_info = conn.get_nwfilter_info(name)
 
                 is_conn = wvmInstances(
                     compute.hostname, compute.login, compute.password, compute.type
@@ -82,14 +83,16 @@ def nwfilters(request, compute_id):
                 is_conn.close()
                 if nwfilter and not in_use:
                     nwfilter.undefine()
+                    nwfilters_all.remove(nwfilter_info)
                     addlogmsg(request.user.username, compute.hostname, "", msg)
 
             if "cln_nwfilter" in request.POST:
-
                 name = request.POST.get("nwfiltername", "")
                 cln_name = request.POST.get("cln_name", name + "-clone")
 
                 conn.clone_nwfilter(name, cln_name)
+                nwfilters_all.append(conn.get_nwfilter_info(cln_name))
+
                 msg = _("Cloning NWFilter %(name)s as %(clone)s") % {"name":name, "clone": cln_name}
                 addlogmsg(request.user.username, compute.hostname, "", msg)
 
