@@ -6,7 +6,7 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <a href="{% url 'admin:group_create' %}" class="btn btn-success btn-header float-right">
+        <a href="{% url 'admin:group_create' %}" class="btn btn-success btn-header float-end">
             {% icon 'plus' %}
         </a>
         {% include 'search_block.html' %}
@@ -16,8 +16,7 @@
 <div class="row">
     {% if not groups %}
         <div class="col-lg-12">
-            <div class="alert alert-warning alert-dismissable">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            <div class="alert alert-warning shadow-sm">
                 {% icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any groups" %}
             </div>
         </div>
@@ -37,7 +36,7 @@
                             <a href=""><strong>{{ group.name }}</strong></a>
                         </td>
                         <td>
-                            <div class="float-right btn-group">
+                            <div class="float-end btn-group">
                                 <a class="btn btn-primary" href="{% url 'admin:group_update' group.id %}" title="{%trans "Edit" %}">
                                     {% icon 'pencil' %}
                                 </a>
@@ -56,5 +55,5 @@
 {% endblock content %}
 
 {% block script %}
-<script src="{% static "js/filter-table.js" %}"></script>
+<script src="{% static 'js/filter-table.js' %}"></script>
 {% endblock script %}

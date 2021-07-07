@@ -13,30 +13,30 @@
      <div>
         <div>
             {% if instance.status == 5 %}
-               <span class="badge badge-danger">{% trans "Off" %}</span>
+               <span class="badge bg-danger">{% trans "Off" %}</span>
             {% endif %}
             {% if instance.status == 1 %}
-                <span class="badge badge-success">{% trans "Active" %}</span>
+                <span class="badge bg-success">{% trans "Active" %}</span>
             {% endif %}
             {% if instance.status == 3 %}
-                <span class="badge badge-warning">{% trans "Suspend" %}</span>
+                <span class="badge bg-warning">{% trans "Suspend" %}</span>
             {% endif %}
             |
             <span {%if instance.guest_agent %}
                     {% if instance.guest_agent_ready %}
-                        class="badge badge-success"
+                        class="badge bg-success"
                         title="{% trans "Guest Agent Enabled & Connected" %}"
                     {% else %}
-                        class="badge badge-warning"
+                        class="badge bg-warning"
                         title="{% trans "Guest Agent Enabled but not Connected" %}"
                     {% endif %}
                 {% else %}
-                    class="badge badge-danger"
+                    class="badge bg-danger"
                     title="{% trans "Guest Agent Not Enabled & Not Connected" %}"
                 {% endif %}><i class="fa fa-plug"></i></span>
             |
             {% if instance.snapshots %}
-                <i class="fa fa-camera text-primary" title="There are {{ instance.snapshots|length }} snapshot(s)"></i> |
+                <i class="fa fa-camera link-primary" title="There are {{ instance.snapshots|length }} snapshot(s)"></i>
             {% endif %}
             {% if instance.cur_vcpu %}
                 {{ instance.cur_vcpu }} {% trans "VCPU" %}
@@ -55,11 +55,11 @@
                {% endfor %}
             {% endfor %}
             {% if instance.guest_agent_ready %}
-            <a class="text-secondary" title="{% trans 'Show Instance OS details' %}" onclick="get_osinfo()">
+            <a class="link-secondary" title="{% trans 'Show Instance OS details' %}" onclick="get_osinfo();">
                 <span class="fa fa-info-circle"></span>
             </a>
             {% endif %}
-            <a class="text-secondary" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}">
+            <a class="link-secondary" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}">
                 <span class="fa fa-refresh"></span>
             </a>
         </div>
@@ -71,67 +71,63 @@
         <hr>
     </div>
 
-    <div class="row" id="max-width-page">
-        <div class="container">
-            <div role="tabpanel">
-                <!-- Nav tabs -->
-                <ul class="nav nav-pills" id="navbtn" aria-label="Instance actions">
-                    <li class="nav-item">
-                        <a href="#power" class="nav-link action-button active" aria-controls="power" role="tab" data-toggle="tab">
-                            <span id="action-block" class="fa fa-power-off fa-2x" aria-hidden="true"></span>
-                            {% trans "Power" %}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#access" class="nav-link action-button" aria-controls="access" role="tab" data-toggle="tab">
-                            <span id="action-block" class="fa fa-lock" aria-hidden="true"></span>
-                            {% trans "Access" %}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#resize" class="nav-link action-button" aria-controls="resize" role="tab" data-toggle="tab">
-                            <span id="action-block" class="fa fa-expand" aria-hidden="true"></span>
-                            {% trans "Resize" %}
-                        </a>
-                    </li>
-                    {% if allow_admin_or_not_template %}
-                        <li class="nav-item">
-                        <a href="#snapshots" class="nav-link action-button" aria-controls="snapshots" role="tab" data-toggle="tab">
-                            <span id="action-block" class="fa fa-camera" aria-hidden="true"></span>
-                            {% trans "Snapshot" %}
-                        </a>
-                    </li>
-                    {% endif %}
-                    <li class="nav-item">
-                        <a href="#settings" class="nav-link action-button" aria-controls="settings" role="tab" data-toggle="tab">
-                            <span id="action-block" class="fa fa-cog" aria-hidden="true"></span>
-                            {% trans "Settings" %}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#graphics" id="chartgraphs" class="nav-link action-button" aria-controls="graphics" role="tab" data-toggle="tab">
-                            <span id="action-block" class="fa fa-bar-chart" aria-hidden="true"></span>
-                            {% trans "Stats" %}
-                        </a>
-                    </li>
-                     <li class="nav-item">
-                        <a href="#undefine" class="nav-link action-button" aria-controls="undefine" role="tab" data-toggle="tab">
-                            <span id="action-block" class="fa fa-trash" aria-hidden="true"></span>
-                            {% trans "Destroy" %}
-                        </a>
-                    </li>
-                </ul>
-                <!-- Tab panes -->
-                <div class="tab-content">
-                    {% include 'instances/power_tab.html' %}
-                    {% include 'instances/access_tab.html' %}
-                    {% include 'instances/resize_tab.html' %}
-                    {% include 'instances/snapshots_tab.html' %}
-                    {% include 'instances/settings_tab.html' %}
-                    {% include 'instances/stats_tab.html' %}
-                    {% include 'instances/destroy_tab.html' %}
-                </div>
-            </div>
+    <div id="mainTabMenu">
+        <!-- Nav tabs -->
+        <ul class="nav nav-pills" id="navbtn" role="tablist" aria-label="Instance actions">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link action-button active" id="power-tab" aria-controls="power" data-bs-toggle="pill" data-bs-target="#power" type="button" role="tab" aria-selected="true">
+                    <span id="action-block" class="fa fa-power-off fa-2x" aria-hidden="true"></span>
+                    {% trans "Power" %}
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link action-button" id="access-tab" aria-controls="access" data-bs-toggle="pill" data-bs-target="#access" type="button" role="tab" aria-selected="false">
+                    <span id="action-block" class="fa fa-lock" aria-hidden="true"></span>
+                    {% trans "Access" %}
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link action-button" id="resize-tab" aria-controls="resize" data-bs-toggle="pill" data-bs-target="#resize" type="button" role="tab" aria-selected="false">
+                    <span id="action-block" class="fa fa-expand" aria-hidden="true"></span>
+                    {% trans "Resize" %}
+                </button>
+            </li>
+            {% if allow_admin_or_not_template %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link action-button" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">
+                    <span id="action-block" class="fa fa-camera" aria-hidden="true"></span>
+                    {% trans "Snapshot" %}
+                </button>
+            </li>
+            {% endif %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link action-button" id="settings-tab" aria-controls="settings" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab" aria-selected="false">
+                    <span id="action-block" class="fa fa-cog" aria-hidden="true"></span>
+                    {% trans "Settings" %}
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link action-button" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">
+                    <span id="action-block" class="fa fa-bar-chart" aria-hidden="true"></span>
+                    {% trans "Stats" %}
+                </button>
+            </li>
+                <li class="nav-item" role="presentation">
+                <button class="nav-link action-button" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">
+                    <span id="action-block" class="fa fa-trash" aria-hidden="true"></span>
+                    {% trans "Destroy" %}
+                </button>
+            </li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content" id=mainTabMenuContent>
+            {% include 'instances/power_tab.html' %}
+            {% include 'instances/access_tab.html' %}
+            {% include 'instances/resize_tab.html' %}
+            {% include 'instances/snapshots_tab.html' %}
+            {% include 'instances/settings_tab.html' %}
+            {% include 'instances/stats_tab.html' %}
+            {% include 'instances/destroy_tab.html' %}
         </div>
     </div>
 
@@ -141,7 +137,7 @@
 
 {% endblock %}
 {% block script %}
-<script src="{% static "js/ace/ace.js" %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'js/ace/ace.js' %}" type="text/javascript" charset="utf-8"></script>
 <script>
     function get_volumes(compute_id, pool) {
         get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
@@ -163,7 +159,6 @@
         //sto_input.innerHTML = pool;
     }
 </script>
-
 <script>
     var editor = ace.edit("editor");
     editor.getSession().setMode("ace/mode/xml");
@@ -175,7 +170,7 @@
 </script>
 <script>
     function random_mac(net) {
-        $.getJSON('{% url 'instances:random_mac_address' %}', function (data) {
+        $.getJSON("{% url 'instances:random_mac_address' %}", function (data) {
             $('input[name="' + net + '"]').val(data['mac']);
         });
     }
@@ -200,7 +195,7 @@
 </script>
 <script>
     function guess_clone_name() {
-        $.getJSON('{% url 'instances:guess_clone_name' %}', function(data) {
+        $.getJSON("{% url 'instances:guess_clone_name' %}", function(data) {
             guessed_name = data['name'].split(".")[0];
             $('#clone_name').val(guessed_name);
             update_clone_disk_name(guessed_name);
@@ -311,7 +306,7 @@
 </script>
 <script>
     $(document).ready(function(){
-        $('[data-toggle="popover"]').popover({
+        $('[data-bs-toggle="popover"]').popover({
             placement : 'top'
         });
     });
@@ -382,14 +377,15 @@
     $(function () {
         $('.js-custom__checkbox').change(function () {
             var container  = $(this).closest('.js-custom__container');
-            var toggles     = container.find('.js-custom__toggle');
+            var toggles    = container.find('.js-custom__toggle');
             toggles.toggle();
         });
     });
 </script>
-<script src="{% static "js/Chart.bundle.min.js" %}"></script>
+<script src="{% static 'js/Chart.bundle.min.js' %}"></script>
 <script>
-    $('#chartgraphs').on('shown.bs.tab', function (event) {
+    var stats_tab = document.querySelector('#graphics-tab');
+    stats_tab.addEventListener('shown.bs.tab', function (event) {
         var cpu_ctx = $("#cpuChart").get(0).getContext("2d");
         var cpuChart = new Chart(cpu_ctx, {
             type: 'line',
@@ -607,8 +603,7 @@
         {% endfor %}
 
         var graph_interval = window.setInterval(function graph_usage() {
-            $.getJSON('{% url 'instances:stats' instance.id %}', function (data) {
-
+            $.getJSON("{% url 'instances:stats' instance.id %}", function (data) {
                 cpuChart.data.labels.push(data.timeline);
                 cpuChart.data.datasets[0].data.push(data.cpudata);
                 if (cpuChart.data.datasets[0].data.length > 10){
@@ -660,7 +655,7 @@
     backgroundJobRunning = false;
     var status_interval = window.setInterval(function get_status() {
         var status = {{ instance.status|lower }};
-        $.getJSON('{% url 'instances:status' instance.id %}', function (data) {
+        $.getJSON("{% url 'instances:status' instance.id %}", function (data) {
             if (data['status'] != status && !backgroundJobRunning) {
                 window.location.reload()
             }
@@ -724,10 +719,10 @@
 </script>
 <script>
     function get_osinfo() {
-        $('#navbtn a[href="#settings"]').tab('show');
-        $('#settings a[href="#osinfo"]').tab('show');
+        document.querySelector("#settings-tab").click();
+        document.querySelector("#osinfo-tab").click();
 
-        $.getJSON('{% url 'instances:osinfo' instance.id %}', function (data) {
+        $.getJSON("{% url 'instances:osinfo' instance.id %}", function (data) {
             $.each(data, function() {
                 $('#oshostname').text(data['host-name']);
                 $('#osname').text(data.id);

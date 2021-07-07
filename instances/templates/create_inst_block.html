@@ -1,5 +1,5 @@
 {% load i18n %}
-<a href="#AddInstance" type="button" class="btn btn-success btn-header float-right" data-toggle="modal">
+<a href="#AddInstance" type="button" class="btn btn-success btn-header float-end" data-bs-toggle="modal">
     <span class="fa fa-plus" aria-hidden="true"></span>
 </a>
 
@@ -9,15 +9,15 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">{% trans "Choose a compute for new instance" %}</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form method="post" aria-label="Select compute for instance create form">
                     {% csrf_token %}
-                    <div class="form-group row">
+                    <div class="row">
                         <label class="col-sm-4 col-form-label">{% trans "Compute" %}</label>
                         <div class="col-sm-6">
-                            <select class="custom-select" id="compute_select">
+                            <select class="form-select" id="compute_select">
                                 <option>{% trans "Please select" %}</option>
                                 {% for compute in computes %}
                                     <option {% if compute.status is not True %} class="font-italic text-muted" {% else %} value="{{ compute.id }}" {% endif %}>{{ compute.name }}</option>
@@ -30,7 +30,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     {% trans "Close" %}
                 </button>
                 {% if computes %}

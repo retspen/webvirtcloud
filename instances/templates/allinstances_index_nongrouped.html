@@ -17,7 +17,7 @@
             {% if instance.compute.status is True %}
                 <tr>
                     <td>
-                        <a class="text-secondary" href="{% url 'instances:instance' instance.id %}">
+                        <a class="link-primary" href="{% url 'instances:instance' instance.id %}">
                             {{ instance.name }}
                         </a>
                         <br>

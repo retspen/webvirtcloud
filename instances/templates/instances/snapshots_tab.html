@@ -1,31 +1,32 @@
 {% load i18n %}
 {% load icons %}
-<div role="tabpanel" class="tab-pane" id="snapshots">
+<div class="tab-pane" id="snapshots" role="tabpanel">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance snapshot menu">
-        <li class="nav-item">
-            <a class="nav-link text-secondary active" href="#takesnapshot" aria-controls="takesnapshot" role="tab" data-toggle="tab">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#takesnapshot" type="button" role="tab" aria-controls="takesnapshot" aria-selected="true">
                 {% trans "Take Snapshot" %}
-            </a>
+            </button>
         </li>
-        <li class="nav-item">
-            <a class="nav-link text-secondary" href="#managesnapshot" aria-controls="managesnapshot" role="tab" data-toggle="tab">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#managesnapshot" type="button" role="tab" aria-controls="managesnapshot" aria-selected="false">
                 {% trans "Manage Snapshots" %}
-            </a>
+            </button>
         </li>
     </ul>
     <!-- Tab panes -->
     <div class="tab-content">
         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
             <p>{% trans "This may take more than an hour, depending on how much content is on your instance and how large the disk is. It could cause web server timeout.." %}</p>
-            <form action="{% url 'instances:snapshot' instance.id %}" class="form-inline" method="post" role="form" aria-label="Create snapshot form">
+            <form action="{% url 'instances:snapshot' instance.id %}" method="post" role="form" aria-label="Create snapshot form">
                 {% csrf_token %}
-                <div class="form-group row">
-                    <div class="col-sm-12">
+                
+                    <div class="input-group mb-3">
                         <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
+                        <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
                     </div>
-                </div>
-                <input type="submit" class="btn btn-lg btn-success float-right" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
+                
+                
             </form>
             <div class="clearfix"></div>
         </div>

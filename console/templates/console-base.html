@@ -38,16 +38,16 @@
         <nav class="navbar navbar-expand-md navbar-dark bg-primary" arial-label="console navbar">
             <div class="container">
                 <a class="navbar-brand">{{ instance.name }}</a>
-                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target=".navbar-collapse"
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                     aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
                 <div class="collapse navbar-collapse">
-                    <ul class="navbar-nav mr-auto mt-2 mt-md-0">
+                    <ul class="navbar-nav me-auto my-2 my-lg-0 navbar-nav-scroll" style="--bs-scroll-height: 100px;">
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" role="button"
-                                id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button"
+                                id="dropdownMenuLink" aria-haspopup="true" aria-expanded="false">
                                 {% trans "Send key(s)" %}
                             </a>
                             <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
@@ -83,7 +83,7 @@
     <script>
         function log_message(msg, type) {
             var exist = $('#status').is('div');
-            status_div = $('<div id="status" class="alert alert-' + type + ' role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' + msg + '</div>');
+            status_div = $('<div id="status" class="alert alert-' + type + ' role="alert"><button type="button" class="btn-close" aria-label="Close"></button>' + msg + '</div>');
             if (exist) {
                 $('#status').remove();
                 $('body').prepend(status_div);

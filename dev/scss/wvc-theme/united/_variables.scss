@@ -1,5 +1,7 @@
-// United 4.6.0
+// United 5.0.2
 // Bootswatch
+
+$theme: "united" !default;
 
 //
 // Color system
@@ -37,7 +39,7 @@ $danger:        $red !default;
 $light:         $gray-100 !default;
 $dark:          $purple !default;
 
-$yiq-contrasted-threshold: 200 !default;
+$min-contrast-ratio:   1.8 !default;
 
 // Body
 
@@ -53,13 +55,9 @@ $font-family-sans-serif:      Ubuntu, -apple-system, BlinkMacSystemFont, "Segoe 
 $table-dark-bg:               $dark !default;
 $table-dark-border-color:     darken($dark, 5%) !default;
 
+// Breadcrumbs
 
-// Navbar
+$breadcrumb-padding-y:              .375rem !default;
+$breadcrumb-padding-x:              .75rem !default;
 
-$navbar-padding-y:                  .7rem !default;
-
-// Breadcrumb
-
-$breadcrumb-padding-y:              .75rem !default;
-$breadcrumb-padding-x:              .25rem !default;
-$breadcrumb-item-padding:           .25rem !default;
+$link-decoration:                   none !default;

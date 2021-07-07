@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load static %}
-{% load bootstrap4 %}
+{% load django_bootstrap5 %}
 
 {% block title %}WebVirtCloud{% endblock title %}
 
@@ -20,7 +20,7 @@
                     {% bootstrap_field form.username layout='horizontal' %}
                     {% bootstrap_field form.password layout='horizontal' %}
                     {% bootstrap_field form.otp_token layout='horizontal' %}
-                    <a href="{% url 'accounts:email_otp' %}" class="float-right mb-2">{% trans "I do not have/lost my OTP!" %}</a>
+                    <a href="{% url 'accounts:email_otp' %}" class="float-end mb-2">{% trans "I do not have/lost my OTP!" %}</a>
                     <button class="btn btn-lg btn-success btn-block" type="submit">{% trans "Sign In" %}</button>
                 </form>
             </div>

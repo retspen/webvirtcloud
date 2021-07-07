@@ -13,9 +13,9 @@
 {% block content %}
     <div class="row">
         <div class="col-lg-12">
-            <h2 class="page-header"></h2>
-            <ol class="breadcrumb bg-light shadow-sm">
-               <li class="breadcrumb-item active">
+            
+            <ol class="breadcrumb shadow-sm">
+               <li class="breadcrumb-item">
                     <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
@@ -39,55 +39,55 @@
             </ol>
         </div>
     </div>
-
-    <dl class="ml-3 row">
-        <dt class="col-6">{% trans "Pool name" %}</dt>
-        <dd class="col-6">{{ pool }}</dd>
-        <dt class="col-6">{% trans "Pool type" %}</dt>
-        <dd class="col-6">{% if not type %}{% trans "None" %}{% else %}{{ type }}{% endif %}</dd>
-        <dt class="col-6">{% trans "Pool path" %}</dt>
-        <dd class="col-6">{% if not path %}{% trans "None" %}{% else %}{{ path }}{% endif %}</dd>
-        <dt class="col-6">{% trans "Pool status" %}</dt>
-        <dd class="col-6">{% if not status %}{% trans "None" %}{% else %}{{ status }}{% endif %}</dd>
-        <dt class="col-6">{% trans "Size" %} </dt>
-        <dd class="col-6">{{size|filesizeformat }}</dd>
-        <dt class="col-6">{% trans "Usage" %} ({{ percent }}%)</dt>
-        <dd class="col-6">{{ used|filesizeformat }}</dd>
-        <dt class="col-6">{% trans "State" %}</dt>
-        <dd class="col-6">
-            <form action="" method="post" role="form" aria-label="Storage start/stop form">{% csrf_token %}
-                {% if state == 0 %}
-                    <input type="submit" class="btn btn-sm btn-secondary" name="start" value="{% trans "Start" %}">
-                    <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}"
-                            onclick="return confirm('{% trans "Are you sure?" %}')">
-                {% else %}
-                    <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}"
-                            onclick="return confirm('{% trans "Are you sure?" %}')">
-                {% endif %}
-            </form>
-        </dd>
-        <dt class="col-6">{% trans "Autostart" %}</dt>
-        <dd class="col-6">
-            <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form">{% csrf_token %}
-            {% if autostart == 0 %}
-                <input type="submit" class="btn btn-sm btn-secondary" name="set_autostart"
-                        value="{% trans "Enable" %}">
-                {% else %}
-                <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart"
-                        onclick="return confirm('{% trans "Are you sure?" %}')" value="{% trans "Disable" %}">
-            {% endif %}
-        </form>
-        </dd>
-    </dl>
+    <div class="row">
+        <div class="col-lg-12">
+            <dl class="row">
+                <dt class="col-6">{% trans "Pool name" %}</dt>
+                <dd class="col-6">{{ pool }}</dd>
+                <dt class="col-6">{% trans "Pool type" %}</dt>
+                <dd class="col-6">{% if not type %}{% trans "None" %}{% else %}{{ type }}{% endif %}</dd>
+                <dt class="col-6">{% trans "Pool path" %}</dt>
+                <dd class="col-6">{% if not path %}{% trans "None" %}{% else %}{{ path }}{% endif %}</dd>
+                <dt class="col-6">{% trans "Pool status" %}</dt>
+                <dd class="col-6">{% if not status %}{% trans "None" %}{% else %}{{ status }}{% endif %}</dd>
+                <dt class="col-6">{% trans "Size" %} </dt>
+                <dd class="col-6">{{size|filesizeformat }}</dd>
+                <dt class="col-6">{% trans "Usage" %} ({{ percent }}%)</dt>
+                <dd class="col-6">{{ used|filesizeformat }}</dd>
+                <dt class="col-6">{% trans "State" %}</dt>
+                <dd class="col-6">
+                    <form action="" method="post" role="form" aria-label="Storage start/stop form">{% csrf_token %}
+                        {% if state == 0 %}
+                            <input type="submit" class="btn btn-sm btn-secondary" name="start" value="{% trans "Start" %}">
+                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}"
+                                    onclick="return confirm('{% trans "Are you sure?" %}')">
+                        {% else %}
+                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}"
+                                    onclick="return confirm('{% trans "Are you sure?" %}')">
+                        {% endif %}
+                    </form>
+                </dd>
+                <dt class="col-6">{% trans "Autostart" %}</dt>
+                <dd class="col-6">
+                    <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form">{% csrf_token %}
+                    {% if autostart == 0 %}
+                        <input type="submit" class="btn btn-sm btn-secondary" name="set_autostart"
+                                value="{% trans "Enable" %}">
+                        {% else %}
+                        <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart"
+                                onclick="return confirm('{% trans "Are you sure?" %}')" value="{% trans "Disable" %}">
+                    {% endif %}
+                </form>
+                </dd>
+            </dl>
+        </div>
+    </div>
     
     {% if state %}
-        <div class="container">
-            <div class="row">
-                <h5 class="page-header mr-auto">{% trans "Volumes" %}</h5>
-                {% include 'search_block.html' %}
-            </div>
-        </div>
-            
+        <p>
+            {% include 'search_block.html' %}
+            <h5 class="page-header">{% trans "Volumes" %}</h5>
+        </p>     
         {% if volumes  %}
             <table class="table table-hover sortable-theme-bootstrap" data-sortable>
                 <thead>
@@ -116,34 +116,34 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h5 class="modal-title">{% trans "Clone image" %} <span class="text-danger">{{ volume.name }}</span></h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>  
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <form method="post" role="form" aria-label="Clone image file form">{% csrf_token %}
                                         <div class="modal-body">
-                                            <div class="form-group row">
+                                            <div class="row">
                                                 <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
                                                 <div class="col-sm-6">
                                                     <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
                                                     <input type="hidden" name="image" value="{{ volume.name }}">
                                                 </div>
                                             </div>
-                                            <div class="form-group row" id="image_format">
+                                            <div class="row" id="image_format">
                                                 <label class="col-sm-3 col-form-label">{% trans "Convert" %}</label>
                                                 <div class="col-sm-6">
                                                     <input class="volume-convert" type="checkbox" name="convert" value="true">
                                                 </div>
                                             </div>
-                                            <div class="form-group row format-convert">
+                                            <div class="row format-convert">
                                                 <label class="col-sm-3 col-form-label">{% trans "Format" %}</label>
                                                 <div class="col-sm-6">
-                                                    <select name="format" class="custom-select image-format">
+                                                    <select name="format" class="form-select image-format">
                                                         <option value="raw">{% trans "raw" %}</option>
                                                         <option value="qcow">{% trans "qcow" %}</option>
                                                         <option value="qcow2">{% trans "qcow2" %}</option>
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="form-group row meta-prealloc" style="display: none;">
+                                            <div class="row meta-prealloc" style="display: none;">
                                                 <label class="col-sm-3 col-form-label">{% trans "Metadata" %}</label>
                                                 <div class="col-sm-6">
                                                     <input type="checkbox" name="meta_prealloc" value="true">
@@ -151,7 +151,7 @@
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                                             <button type="submit" class="btn btn-primary" name="cln_volume" onclick="showPleaseWaitDialog();">{% trans "Clone" %}</button>
                                         </div>
                                     </form>
@@ -159,7 +159,7 @@
                             </div> <!-- /.modal-dialog -->
                         </div> <!-- /.modal -->
                         {% ifnotequal volume.type "iso" %}
-                            <button class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}">
+                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}">
                                 <i class="fa fa-files-o"></i>
                             </button>
                         {% else %}
@@ -182,8 +182,7 @@
             </table>
         {% else %}
             <div class="col-lg-12">
-                <div class="alert alert-warning alert-dismissable">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <div class="alert alert-warning shadow-sm">
                     <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Volumes" %}
                 </div>
             </div>

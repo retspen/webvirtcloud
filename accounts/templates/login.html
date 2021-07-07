@@ -15,7 +15,7 @@
 <div class="col-12" role="main">
     {% if form.errors %}
         <div class="alert alert-danger">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close"></button>
             {% trans "Incorrect username or password." %}
         </div>
     {% endif %}
@@ -24,7 +24,9 @@
         <input type="text" class="form-control" name="username" placeholder="{% trans "User" %}" autocapitalize="none" autocorrect="off" autofocus>
         <input type="password" class="form-control" name="password" placeholder="{% trans "Password" %}">
         <input type="hidden" name="next" value="{{ next }}">
-        <button class="btn btn-lg btn-success btn-block" type="submit">{% trans "Sign In" %}</button>
+        <div class="d-grid">
+            <button class="btn btn-lg btn-success" type="submit">{% trans "Sign In" %}</button>
+        </div>
     </form>
 </div>
 {% endblock %}

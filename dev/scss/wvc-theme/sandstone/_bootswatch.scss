@@ -1,13 +1,15 @@
-// Sandstone 4.6.0
+// Sandstone 5.0.2
 // Bootswatch
 
 
-// Variables ===================================================================
+// Variables
 
 $web-font-path: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" !default;
-@import url($web-font-path);
+@if $web-font-path {
+  @import url($web-font-path);
+}
 
-// Navbar ======================================================================
+// Navbar
 
 .bg-primary {
   background-color: $dark !important;
@@ -22,7 +24,7 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;70
 }
 
 .sandstone {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 22px;
   font-weight: 500;
   text-transform: uppercase;
@@ -39,7 +41,7 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;70
   }
 }
 
-// Buttons =====================================================================
+// Buttons
 
 .btn {
   @extend .sandstone;
@@ -54,7 +56,7 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;70
   }
 }
 
-// Tables ======================================================================
+// Tables
 
 .table {
   .thead-dark th {
@@ -62,7 +64,7 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;70
   }
 }
 
-// Forms =======================================================================
+// Forms
 
 input,
 .form-control {
@@ -73,7 +75,7 @@ input,
   }
 }
 
-// Navs ========================================================================
+// Navs
 
 .nav-tabs {
   .nav-link {
@@ -122,6 +124,7 @@ input,
 
 .breadcrumb {
   @extend .sandstone;
+  text-decoration: none;
   border: 1px solid $gray-300;
 }
 
@@ -139,7 +142,7 @@ input,
   }
 }
 
-// Indicators ==================================================================
+// Indicators
 
 .alert {
   color: $white;
@@ -222,9 +225,8 @@ input,
 }
 
 .badge {
-  &-success,
-  &-warning {
-    color: $white;
+  &.bg-light {
+    color: $dark;
   }
 }
 
@@ -232,11 +234,11 @@ input,
   @extend .sandstone;
 }
 
-.close {
-  color: $gray-300;
-  opacity: 1;
+// Containers
 
-  &:hover {
-    color: darken($gray-300, 20%);
+.modal,
+.toast {
+  .btn-close {
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23dfd7ca'><path d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/></svg>");
   }
 }

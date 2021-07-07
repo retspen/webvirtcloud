@@ -1,8 +1,8 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#addInstanceNetwork" type="button" class="btn btn-success float-right" data-toggle="modal">
+    <button type="button" class="btn btn-success float-end" data-bs-toggle="modal" data-bs-target="#addInstanceNetwork">
         <span class="fa fa-plus" aria-hidden="true"></span>
-    </a>
+    </button>
 
     <!-- Modal pool -->
     <div class="modal fade" id="addInstanceNetwork" tabindex="-1" role="dialog" aria-labelledby="addInstanceNetworkLabel" aria-hidden="true">
@@ -10,17 +10,17 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{% trans "Add Instance Network" %}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> 
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form action="{% url 'instances:add_network' instance.id %}" method="post" action="" role="form" aria-label="Add instance network form">{% csrf_token %}
-                        <div class="form-group row">
+                        <div class="row">
                             <label class="col-sm-4 col-form-label">{% trans "MAC" %}</label>
                             <div class="col-sm-6">
                                 <input type="text" class="form-control" name="add-net-mac">
                             </div>
                         </div>
-                        <div class="form-group row">
+                        <div class="row">
                             <label class="col-sm-4 col-form-label">{% trans "Network" %}</label>
                             <div class="col-sm-6">
                                 <select class="form-control" name="add-net-network">
@@ -33,7 +33,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row">
+                        <div class="row">
                             <label class="col-sm-4 col-form-label">{% trans "NWFilter" %}</label>
                             <div class="col-sm-6">
                                 <select class="form-control" name="add-net-nwfilter">
@@ -46,7 +46,7 @@
                         </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                     <button type="submit" class="btn btn-primary" name="add_network">{% trans "Add" %}</button>
                 </div>
                     </form>

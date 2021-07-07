@@ -47,8 +47,11 @@ def appsettings(request):
         if "BOOTSTRAP_THEME" in request.POST:
             theme = request.POST.get("BOOTSTRAP_THEME", "")
             scss_var = f"@import '{sass_dir.value}/wvc-theme/{theme}/variables';"
-            scss_bootswatch = f"@import '{sass_dir.value}/wvc-theme/{theme}/bootswatch';"
+            #scss_boot = f"@import '{sass_dir.value}/bootstrap/bootstrap.scss';"
             scss_boot = f"@import '{sass_dir.value}/bootstrap-overrides.scss';"
+            scss_bootswatch = f"@import '{sass_dir.value}/wvc-theme/{theme}/bootswatch';"
+            
+            
 
             try:
                 with open(sass_dir.value + "/wvc-main.scss", "w") as main:

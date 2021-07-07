@@ -181,7 +181,7 @@ def refr(compute):
 
 
 def get_dhcp_mac_address(vname):
-    dhcp_file = settings.BASE_DIR + '/dhcpd.conf'
+    dhcp_file = str(settings.BASE_DIR) + '/dhcpd.conf'
     mac = ''
     if os.path.isfile(dhcp_file):
         with open(dhcp_file, 'r') as f:

@@ -18,31 +18,26 @@
         <div class="alert alert-danger">
             {% trans "This action is irreversible!" %}
         </div>
-        <form action="{% url 'instances:destroy' instance.id %}" class="form" method="post" role="form" id="delete_form">
-            {% csrf_token %}
-            <div class="ml-3 form-row">
-                <div class="custom-control custom-switch">
-                    <input class="custom-control-input" type="checkbox" name="delete_disk" value="true" checked id="delete_disk">
-                    <label class="custom-control-label font-weight-bold" for="delete_disk">{% trans "Remove Instance's data" %}</label>
-                </div>
+        <form action="{% url 'instances:destroy' instance.id %}" class="form" method="post" role="form" id="delete_form">{% csrf_token %}
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="delete_disk" value="true" checked id="delete_disk">
+                <label class="form-check-label fw-bold" for="delete_disk">{% trans "Remove Instance's data" %}</label>
             </div>
-            {% if instance.nvram %}
-            <div class="ml-3 form-row">
-                <div class="custom-control custom-switch">
-                    <input class="custom-control-input" type="checkbox" name="delete_nvram" value="true" id="delete_nvram" checked>
-                    <label class="custom-control-label font-weight-bold" for="delete_nvram">
-                        {% trans "Remove Instance's NVRAM" %}
-                    </label>
-                </div>
+            {% if instance.nvram %}    
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="delete_nvram" value="true" id="delete_nvram" checked>
+                <label class="form-check-label fw-bold" for="delete_nvram">
+                    {% trans "Remove Instance's NVRAM" %}
+                </label>
             </div>
             {% endif %}
-            <button type="submit" class="btn btn-lg btn-success float-right" name="delete">
+            <button type="submit" class="btn btn-lg btn-success float-end" name="delete">
                 {% trans "Destroy" %}
             </button>
         </form>
     {% endif %}
 {% else %}
-    <div class="alert alert-danger">
+    <div class="alert alert-danger" role="alert">
         {% trans "You cannot destroy instance!" %}
     </div>
 {% endif %}

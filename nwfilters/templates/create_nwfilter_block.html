@@ -1,8 +1,8 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <a href="#AddNWFilter" type="button" class="btn btn-success btn-header float-right" data-toggle="modal">
+    <button type="button" class="btn btn-success btn-header float-end" data-bs-toggle="modal" data-bs-target="#AddNWFilter">
         <span class="fa fa-plus" aria-hidden="true"></span>
-    </a>
+    </button>
 
     <!-- Modal Secret -->
     <div class="modal fade" id="AddNWFilter" tabindex="-1" role="dialog" aria-labelledby="AddNWFilter" aria-hidden="true">
@@ -10,21 +10,22 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{% trans "Create New NWFilter" %}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>                </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" role="form" aria-label="Create new NWFilter form">{% csrf_token %}
                 <div class="modal-body">
-                    <form method="post" role="form" aria-label=""Create new NWFilter form"">{% csrf_token %}
-                         <div class="form-group row">
-                            <div class="col-12" id="xmlheight">
-                                <input type="hidden" name="nwfilter_xml"/>
-                                <textarea id="editor" name="from_xml"></textarea>
-                            </div>
-                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
-                            <button type="submit" class="btn btn-primary" name="create_nwfilter">{% trans "Create" %}</button>
+                    <div class="row">
+                        <div class="col-12" id="xmlheight">
+                            <input type="hidden" name="nwfilter_xml"/>
+                            <textarea id="editor" name="from_xml"></textarea>
                         </div>
-                    </form>
-                </div> <!-- /.modal-content -->
+                    </div>
+                </div> <!-- /.modal-body -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="submit" class="btn btn-primary" name="create_nwfilter">{% trans "Create" %}</button>
+                </div>
+            </form>
             </div>
         </div> <!-- /.modal-dialog -->
     </div><!-- /.modal -->
