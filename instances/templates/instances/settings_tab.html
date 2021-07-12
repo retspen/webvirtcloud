@@ -235,7 +235,7 @@
                 </div>
                 {% empty %}
                 <div class="offset-3 col-sm-6">
-                    <div class="bg-light rounded shadow-sm">{% trans 'There is not any CD-ROM device.' %}</div>
+                    <div class="bg-warning rounded shadow-sm">{% trans 'There is not any CD-ROM device.' %}</div>
                 </div>
                 {% endfor %}
                 <div class="clearfix"></div>
@@ -416,7 +416,7 @@
                                                         <label class="col-form-label">{% trans "Net Source" %}</label>
                                                         <div class="input-group">
                                                             <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
-                                                            <select class="form-control" name="net-source-{{ forloop.counter0 }}">
+                                                            <select class="form-select" name="net-source-{{ forloop.counter0 }}">
                                                                 {% for c_net in networks_host %}
                                                                 <option value="net:{{ c_net }}" {% if c_net == network.nic %} selected {% endif %}>{% trans 'Network' %} {{ c_net }}</option>
                                                                 {% endfor %}
@@ -430,7 +430,7 @@
                                                         <label class="col-form-label">{% trans "NWFilter" %}</label>
                                                         <div class="input-group">
                                                             <input class="form-control" type="text" value="{{ network.filterref }}" readonly/>
-                                                            <select class="form-control" name="net-nwfilter-{{ forloop.counter0 }}">
+                                                            <select class="form-select" name="net-nwfilter-{{ forloop.counter0 }}">
                                                                 <option value="">{% trans "None" %}</option>
                                                                 {% for c_filters in nwfilters_host %}
                                                                 <option value="{{ c_filters }}" {% if c_filters == network.filterref  %} selected {% endif %}>{{ c_filters }}</option>
@@ -442,7 +442,7 @@
                                                         <label class="col-form-label">{% trans "Model" %} </label>
                                                         <div class="input-group">
                                                             <input class="form-control" type="text" value="{{ network.model }}" readonly/>
-                                                            <select class="form-control" name="net-model-{{ forloop.counter0 }}">
+                                                            <select class="form-select" name="net-model-{{ forloop.counter0 }}">
                                                                 {% for model in net_models_host %}
                                                                 <option value="{{ model }}" {% if model == network.model  %} selected {% endif %}>{{ model }}</option>
                                                                 {% endfor %}
