@@ -23,7 +23,7 @@
                         <div class="row">
                             <label class="col-sm-4 col-form-label">{% trans "Network" %}</label>
                             <div class="col-sm-6">
-                                <select class="form-control" name="add-net-network">
+                                <select class="form-select" name="add-net-network">
                                     {% for c_net in networks_host %}
                                         <option value="net:{{ c_net }}">Network {{ c_net }}</option>
                                     {% endfor %}
@@ -36,7 +36,7 @@
                         <div class="row">
                             <label class="col-sm-4 col-form-label">{% trans "NWFilter" %}</label>
                             <div class="col-sm-6">
-                                <select class="form-control" name="add-net-nwfilter">
+                                <select class="form-select" name="add-net-nwfilter">
                                     <option value="">{% trans "None" %}</option>
                                     {% for nwfilter in nwfilters_host %}
                                         <option value="{{ nwfilter }}">{{ nwfilter }}</option>
