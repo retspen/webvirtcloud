@@ -1486,7 +1486,7 @@ def create_instance(request, compute_id, arch, machine):
                             create_instance.save()
                             msg = _("Instance is created")
                             messages.success(request, msg)
-                            addlogmsg(request.user.username, create_instance.name, msg)
+                            addlogmsg(request.user.username, create_instance.compute.name, create_instance.name, msg)
                             return redirect(reverse("instances:instance", args=[create_instance.id]))
                         except libvirtError as lib_err:
                             if data["hdd_size"] or len(volume_list) > 0:
