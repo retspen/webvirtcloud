@@ -1108,7 +1108,7 @@ def clone(request, pk):
             user_instance.save()
             msg = _("Create a clone of '%(instance_name)s'") % {"instance_name": instance.name}
             messages.success(request, msg)
-            addlogmsg(request.user.username, new_instance.name, msg)
+            addlogmsg(request.user.username, instance.compute.name, new_instance.name, msg)
 
             if app_settings.CLONE_INSTANCE_AUTO_MIGRATE == "True":
                 new_compute = Compute.objects.order_by("?").first()
