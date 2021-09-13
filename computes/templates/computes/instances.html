@@ -72,9 +72,9 @@
                     {% for instance in instances  %}
                     <tr>
                         <td>
-                            <a class="link-primary" href="{% url 'instances:instance' instance.id %}">
-                                {{ instance.name }}
-                            </a>
+                            <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
+                            <br>
+                            <p class="m-0 small fst-italic">{{ instance.title }}</p>
                         </td>
                         <td>
                             <em>
