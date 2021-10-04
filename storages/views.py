@@ -171,7 +171,7 @@ def storage(request, compute_id, pool):
                     name = conn.clone_volume(data["image"], data["name"], format, meta_prealloc)
                     messages.success(
                         request,
-                        _("%(image)s image cloned as %(clone)s successfully") % {"image": data["image"], "name": name},
+                        _("%(image)s image cloned as %(name)s successfully") % {"image": data["image"], "name": name},
                     )
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:

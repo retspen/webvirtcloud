@@ -652,7 +652,7 @@
                     </div>
                 </div>
                 {% if computes_count != 1 %}
-                    <button type="submit" class="btn btn-lg btn-success float-end" name="migrate" onclick="showPleaseWaitDialog();">{% trans "Migrate" %}</button>
+                    <button type="submit" class="btn btn-lg btn-success float-end" onclick="showPleaseWaitDialog()" name="migrate" >{% trans "Migrate" %}</button>
                 {% else %}
                     <button class="btn btn-lg btn-success float-end disabled">{% trans "Migrate" %}</button>
                 {% endif %}

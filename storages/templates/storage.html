@@ -11,6 +11,7 @@
 {% block page_heading_extra %}{% include 'create_stg_vol_block.html' %}{% endblock page_heading_extra %}
 
 {% block content %}
+    {% include 'pleasewaitdialog.html' %}
     <div class="row">
         <div class="col-lg-12">
             
@@ -152,7 +153,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                            <button type="submit" class="btn btn-primary" name="cln_volume" onclick="showPleaseWaitDialog();">{% trans "Clone" %}</button>
+                                            <button type="submit" class="btn btn-primary" name="cln_volume" onclick="showPleaseWaitDialog()">{% trans "Clone" %}</button>
                                         </div>
                                     </form>
                                 </div> <!-- /.modal-content -->
@@ -190,7 +191,6 @@
     {% endif %}
     </div>
 
-    {% include 'pleasewaitdialog.html' %}
 {% endblock %}
 {% block script %}
     <script src="{% static 'js/sortable.min.js' %}"></script>
