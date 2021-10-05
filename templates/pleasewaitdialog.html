@@ -1,6 +1,6 @@
 {% load i18n %}
     <!-- Please wait dialog -->
-    <div class="modal fade" id="pleaseWaitDialog" tabindex="-1" role="dialog" aria-labelledby="pleaseWaitDialogLabel" data-backdrop="static" data-keyboard="false">
+    <div class="modal fade" id="pleaseWaitDialog" tabindex="-1" aria-labelledby="pleaseWaitDialogLabel" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
@@ -17,11 +17,17 @@
     </div>
 <script>
 function showPleaseWaitDialog() {
-    $('#pleaseWaitDialog').modal();
+    var pleaseModal = new bootstrap.Modal(document.getElementById('pleaseWaitDialog'), {
+        keyboard: false
+    });
+    pleaseModal.show();
     backgroundJobRunning = true;
 }
 function hidePleaseWaitDialog() {
-    $('#pleaseWaitDialog').modal('hide');
+    var pleaseModal = new bootstrap.Modal(document.getElementById('pleaseWaitDialog'), {
+        keyboard: false
+    })
+    pleaseModal.hide();
     backgroundJobRunning = false;
 }
 </script>
