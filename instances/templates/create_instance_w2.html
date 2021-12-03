@@ -179,6 +179,12 @@
                                                                 </div>
                                                                 <div class="collapse" id="flavAddCollapse">
                                                                     <div class="row">
+                                                                        <label class="col-sm-4 col-form-label">{% trans "MAC" %}</label>
+                                                                        <div class="col-sm-7">
+                                                                            <input type="text" class="form-control" name="mac" maxlength="17" value="{{ mac_auto }}" required pattern="[a-zA-Z0-9:]+">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
                                                                         <label class="col-sm-4 col-form-label">{% trans "NWFilter" %}</label>
                                                                         <div class="col-sm-7">
                                                                             <select class="form-select" name="nwfilter">
@@ -198,12 +204,6 @@
                                                                                     {% trans name %}</option>
                                                                                 {% endfor %}
                                                                             </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label class="col-sm-4 col-form-label">{% trans "MAC" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <input type="text" class="form-control" name="mac" maxlength="17" value="{{ mac_auto }}" required pattern="[a-zA-Z0-9:]+">
                                                                         </div>
                                                                     </div>
                                                                     {% if dom_caps.graphics_support == 'yes' %}
@@ -396,6 +396,7 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        <input id="mac" type="hidden" name="mac" value=""/>
                     </div>
                     <div class="row">
                         <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
@@ -601,13 +602,16 @@
                             </div>
                         </div>
                         <div class="row">
-                            <label class="col-sm-3 col-form-label">{% trans "Network" %}</label>
-                            <div class="col-sm-7">
+                            <label class="col-sm-3 col-form-label">{% trans "Network/MAC" %}</label>
+                            <div class="col-sm-3">
                                 <select class="form-select" name="networks">
                                     {% for network in networks %}
                                         <option value="{{ network }}">{{ network }}</option>
                                     {% endfor %}
                                 </select>
+                            </div>
+                            <div class="col-sm-4">
+                                <input type="text" class="form-control" name="mac" maxlength="17" value="{{ mac_auto }}" required pattern="[a-zA-Z0-9:]+">
                             </div>
                         </div>
                         <div class="row">
@@ -810,20 +814,38 @@
                 let input_value = toggleValue($('#networks').val(), element.val(), checked);
                 $('#networks').val(input_value);
                 let selected_list_html = '';
-                let counter = 0;
+                mac_array = [];
+                net_counter = 0;
                 if (input_value != '') {
                     $.each(input_value.split(','), function (index, value) {
-                        let li = '<li>eth' + counter +
+                        let li = '<li><input type="text" class="input-xs" name="mac'+ net_counter +'" maxlength="17" required pattern="[a-zA-Z0-9:]+" onchange="populate_mac(' + net_counter +')">' +
+                                ' eth' + net_counter +
                                 ' -> ' + value + ' ' +
                                 '<a class="btn-link float-end" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></li>';
+                        random_mac(net_counter);
                         selected_list_html += li;
-                        counter++;
+                        net_counter++;
                     });
+                    
                 }
                 $('#net-list').html(selected_list_html);
             }
         });
     });
+
+    var mac_array = [];
+    function random_mac(c) {
+        $.getJSON("{% url 'instances:random_mac_address' %}", function (data) {
+            mac_array[c] = data['mac'];
+            $('input[name="mac' + c + '"').val(data['mac']);
+            populate_mac(c);
+        });
+    }
+
+    function populate_mac(c){
+        mac_array[c] = $('input[name="mac' + c + '"').val();
+        $('input[name="mac"').val(mac_array.join(","));
+    }
 
     $("id[vcpu_mode]").multiselect();
 
@@ -866,7 +888,7 @@
 {% if request.user.is_superuser %}
     <script>
         function goto_compute() {
-            let compute = {{ compute.id }}
+            let compute = {{ compute.id }};
             window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
         }
     </script>
