@@ -338,10 +338,12 @@ class wvmCreate(wvmConnect):
                 xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), "virtio")
             xml += """</disk>"""
 
-        for net in networks.split(","):
+        if mac:
+            macs = mac.split(',')
+        for idx, net in enumerate(networks.split(",")):
             xml += """<interface type='network'>"""
             if mac:
-                xml += f"""<mac address='{mac}'/>"""
+                xml += f"""<mac address='{macs[idx]}'/>"""
             xml += f"""<source network='{net}'/>"""
             if nwfilter:
                 xml += f"""<filterref filter='{nwfilter}'/>"""
