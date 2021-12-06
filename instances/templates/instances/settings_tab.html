@@ -886,15 +886,15 @@
                     <label for="vcpu_hotplug" class="col-sm-3 col-form-label">{% trans "vCPU Hot Plug" %}</label>
                     <div class="col-sm-6">
                         <div class="input-group">
-                        <select id="vcpu_hotplug" class="form-control" name="vcpu_hotplug">
-                            <option value="True" {% if instance.vcpus %} selected {% endif %}>{% trans 'Enabled' %}</option>
-                            <option value="False" {% if not instance.vcpus %} selected {% endif %}>{% trans 'Disabled' %}</option>
-                        </select>
-                        {% if instance.status == 5 %}
+                            <select id="vcpu_hotplug" class="form-control" name="vcpu_hotplug">
+                                <option value="True" {% if instance.vcpus %} selected {% endif %}>{% trans 'Enabled' %}</option>
+                                <option value="False" {% if not instance.vcpus %} selected {% endif %}>{% trans 'Disabled' %}</option>
+                            </select>
+                            {% if instance.status == 5 %}
                             <button type="submit" class="btn btn-success" name="set_vcpu_hotplug">{% trans "Set" %}</button>
-                        {% else %}
+                            {% else %}
                             <button class="btn btn-success" name="set_vcpu_hotplug" disabled>{% trans "Set" %}</button>
-                        {% endif %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>

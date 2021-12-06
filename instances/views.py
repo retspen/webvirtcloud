@@ -793,9 +793,9 @@ def set_vcpu(request, pk):
 @superuser_only
 def set_vcpu_hotplug(request, pk):
     instance = get_instance(request.user, pk)
-    status = request.POST.get("vcpu_hotplug", "")
+    status = True if request.POST.get("vcpu_hotplug", "False") == 'True' else False
     msg = _("VCPU Hot-plug is enabled=%(status)s") % {"status": status}
-    instance.proxy.set_vcpu_hotplug(eval(status))
+    instance.proxy.set_vcpu_hotplug(status)
     addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#resize")
 
