@@ -37,6 +37,7 @@
             |
             {% if instance.snapshots %}
                 <i class="fa fa-camera link-primary" title="There are {{ instance.snapshots|length }} snapshot(s)"></i>
+            |
             {% endif %}
             {% if instance.cur_vcpu %}
                 {{ instance.cur_vcpu }} {% trans "VCPU" %}
