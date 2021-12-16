@@ -1,4 +1,5 @@
 import json
+import os
 
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
@@ -90,7 +91,10 @@ def storage(request, compute_id, pool):
     """
 
     def handle_uploaded_file(path, f_name):
-        target = path + "/" + str(f_name)
+        target = os.path.normpath(os.path.join(path, f_name))
+        if not target.startswith(path):
+            raise Exception("Security Issues with file uploading")
+        
         destination = open(target, "wb+")
         for chunk in f_name.chunks():
             destination.write(chunk)
@@ -141,7 +145,7 @@ def storage(request, compute_id, pool):
             volname = request.POST.get("volname", "")
             vol = conn.get_volume(volname)
             vol.delete(0)
-            messages.success(request, _("Volume: %(volume)s is deleted.") % {"vol": volname})
+            messages.success(request, _("Volume: %(vol)s is deleted.") % {"vol": volname})
             return redirect(reverse("storage", args=[compute.id, pool]))
             # return HttpResponseRedirect(request.get_full_path())
         if "iso_upload" in request.POST:

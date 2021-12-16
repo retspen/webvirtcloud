@@ -145,6 +145,9 @@ class wvmStorage(wvmConnect):
     def get_target_path(self):
         return util.get_xml_path(self._XMLDesc(0), "/pool/target/path")
 
+    def get_source_name(self):
+        return util.get_xml_path(self._XMLDesc(0), "/pool/source/name")
+
     def get_allocation(self):
         return int(util.get_xml_path(self._XMLDesc(0), "/pool/allocation"))
 
@@ -153,6 +156,34 @@ class wvmStorage(wvmConnect):
 
     def get_capacity(self):
         return int(util.get_xml_path(self._XMLDesc(0), "/pool/capacity"))
+
+    def get_rbd_source(self):
+        def hosts(doc):
+            hosts_array = []
+
+            for host in doc.xpath("/pool/source/host"):
+                name = host.get('name')
+                if name:
+                    port = host.get('port')
+                    if port:
+                        hosts_array.append({"hostname": name, "hostport": port})
+                    else:
+                        hosts_array.append({"hostname": name})
+
+            name = doc.get('name')
+            auth = doc.xpath("/pool/source/auth")
+            auth_type = auth[0].get("type")
+            auth_user = auth[0].get("username")
+            auth_uuid = auth[0].xpath("secret/@uuid")[0]
+
+            return({
+                "name": name,
+                "auth_type": auth_type,
+                "auth_user": auth_user,
+                "auth_uuid": auth_uuid,
+                "hosts": hosts_array
+            })
+        return util.get_xml_path(self._XMLDesc(0), func=hosts)
 
     def get_pretty_allocation(self):
         return util.pretty_bytes(self.get_allocation())
@@ -185,9 +216,13 @@ class wvmStorage(wvmConnect):
         vol = self.pool.storageVolLookupByName(name)
         vol.delete(0)
 
-    def get_volume_type(self, name):
+    def get_volume_format_type(self, name):
         vol_xml = self._vol_XMLDesc(name)
         return util.get_xml_path(vol_xml, "/volume/target/format/@type")
+
+    def get_volume_type(self, name):
+        vol_xml = self._vol_XMLDesc(name)
+        return util.get_xml_path(vol_xml, "/volume/@type")
 
     def refresh(self):
         self.pool.refresh(0)
@@ -206,7 +241,7 @@ class wvmStorage(wvmConnect):
                     "name": volname,
                     "size": self.get_volume_size(volname),
                     "allocation": self.get_volume_allocation(volname),
-                    "type": self.get_volume_type(volname),
+                    "type": self.get_volume_format_type(volname),
                 }
             )
         return vol_list
@@ -260,7 +295,7 @@ class wvmStorage(wvmConnect):
     ):
         vol = self.get_volume(name)
         if not vol_fmt:
-            vol_fmt = self.get_volume_type(name)
+            vol_fmt = self.get_volume_format_type(name)
 
         storage_type = self.get_type()
         if storage_type == "dir":

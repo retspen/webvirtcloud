@@ -549,7 +549,24 @@ def add_new_vol(request, pk):
             int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
             int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
         )
-        instance.proxy.attach_disk(target_dev, source, target_bus=bus, driver_type=format, cache_mode=cache)
+
+        conn_pool = wvmStorage(
+            instance.compute.hostname,
+            instance.compute.login,
+            instance.compute.password,
+            instance.compute.type,
+            storage,
+        )
+
+        pool_type = conn_pool.get_type()
+        disk_type = conn_pool.get_volume_type(os.path.basename(source))
+
+        if pool_type == 'rbd':
+            source_info = conn_pool.get_rbd_source()
+        else: # add more disk types to handle different pool and disk types
+            source_info = None
+
+        instance.proxy.attach_disk(target_dev, source, source_info=source_info, pool_type=pool_type, disk_type=disk_type, target_bus=bus, format_type=format, cache_mode=cache)
         msg = _("Attach new disk: %(name)s (%(format)s)") % {"name": name, "format": format}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
@@ -575,12 +592,20 @@ def add_existing_vol(request, pk):
             storage,
         )
 
-        driver_type = conn_create.get_volume_type(name)
-        path = conn_create.get_target_path()
+        format_type = conn_create.get_volume_format_type(name)
+        disk_type = conn_create.get_volume_type(name)
+        pool_type = conn_create.get_type()
+        if pool_type == 'rbd':
+            source_info = conn_create.get_rbd_source()
+            path = conn_create.get_source_name()
+        else:
+            source_info = None
+            path = conn_create.get_target_path()
+
         target_dev = utils.get_new_disk_dev(media, disks, bus)
         source = f"{path}/{name}"
 
-        instance.proxy.attach_disk(target_dev, source, target_bus=bus, driver_type=driver_type, cache_mode=cache)
+        instance.proxy.attach_disk(target_dev, source, source_info=source_info, pool_type=pool_type, disk_type=disk_type, target_bus=bus, format_type=format_type, cache_mode=cache)
         msg = _("Attach Existing disk: %(target_dev)s") % {"target_dev": target_dev}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
@@ -793,9 +818,9 @@ def set_vcpu(request, pk):
 @superuser_only
 def set_vcpu_hotplug(request, pk):
     instance = get_instance(request.user, pk)
-    status = request.POST.get("vcpu_hotplug", "")
+    status = True if request.POST.get("vcpu_hotplug", "False") == 'True' else False
     msg = _("VCPU Hot-plug is enabled=%(status)s") % {"status": status}
-    instance.proxy.set_vcpu_hotplug(eval(status))
+    instance.proxy.set_vcpu_hotplug(status)
     addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#resize")
 
@@ -1381,7 +1406,7 @@ def create_instance(request, compute_id, arch, machine):
                                 volume = dict()
                                 volume["device"] = "disk"
                                 volume["path"] = path
-                                volume["type"] = conn.get_volume_type(path)
+                                volume["type"] = conn.get_volume_format_type(path)
                                 volume["cache_mode"] = data["cache_mode"]
                                 volume["bus"] = default_bus
                                 if volume["bus"] == "scsi":
@@ -1411,7 +1436,7 @@ def create_instance(request, compute_id, arch, machine):
                                 )
                                 volume = dict()
                                 volume["path"] = clone_path
-                                volume["type"] = conn.get_volume_type(clone_path)
+                                volume["type"] = conn.get_volume_format_type(clone_path)
                                 volume["device"] = "disk"
                                 volume["cache_mode"] = data["cache_mode"]
                                 volume["bus"] = default_bus
@@ -1431,7 +1456,7 @@ def create_instance(request, compute_id, arch, machine):
                                     path = conn.get_volume_path(vol)
                                     volume = dict()
                                     volume["path"] = path
-                                    volume["type"] = conn.get_volume_type(path)
+                                    volume["type"] = conn.get_volume_format_type(path)
                                     volume["device"] = request.POST.get("device" + str(idx), "")
                                     volume["bus"] = request.POST.get("bus" + str(idx), "")
                                     if volume["bus"] == "scsi":

@@ -11,9 +11,13 @@ def get_rbd_storage_data(stg):
     def get_ceph_hosts(doc):
         hosts = list()
         for host in doc.xpath("/pool/source/host"):
-            name = host.prop("name")
+            name = host.get('name')
             if name:
-                hosts.append({"name": name, "port": host.prop("port")})
+                port = host.get('port')
+                if port:
+                    hosts.append({"name": name, "port": port})
+                else:
+                    hosts.append({"name": name})
         return hosts
 
     ceph_hosts = util.get_xml_path(xml, func=get_ceph_hosts)
@@ -60,6 +64,7 @@ class wvmCreate(wvmConnect):
                 name += ".img"
             alloc = 0
         else:
+            image_format = 'raw'
             alloc = size
             metadata = False
         xml = f"""
@@ -89,7 +94,7 @@ class wvmCreate(wvmConnect):
         vol = stg.storageVolLookupByName(name)
         return vol.path()
 
-    def get_volume_type(self, path):
+    def get_volume_format_type(self, path):
         vol = self.get_volume_by_path(path)
         vol_type = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
         if vol_type == "unknown" or vol_type == "iso":
@@ -276,37 +281,24 @@ class wvmCreate(wvmConnect):
 
             if stg_type == "rbd":
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
-                xml += """<disk type='network' device='disk'>
-                            <driver name='qemu' type='%s' %s />""" % (
-                    volume["type"],
-                    disk_opts,
-                )
-                xml += """  <auth username='%s'>
-                                <secret type='ceph' uuid='%s'/>
+                xml += f"""<disk type='network' device='disk'>
+                            <driver name='qemu' type='{volume["type"]}' {disk_opts} />"""
+                xml += f"""  <auth username='{ceph_user}'>
+                                <secret type='ceph' uuid='{secret_uuid}'/>
                             </auth>
-                            <source protocol='rbd' name='%s'>""" % (
-                    ceph_user,
-                    secret_uuid,
-                    volume["path"],
-                )
+                            <source protocol='rbd' name='{volume["path"]}'>"""
                 if isinstance(ceph_hosts, list):
                     for host in ceph_hosts:
                         if host.get("port"):
-                            xml += """
-                                   <host name='%s' port='%s'/>""" % (
-                                host.get("name"),
-                                host.get("port"),
-                            )
+                            xml += f"""
+                                   <host name='{host.get("name")}' port='{host.get("port")}'/>"""
                         else:
-                            xml += """
-                                   <host name='%s'/>""" % host.get(
-                                "name"
-                            )
+                            xml += f"""<host name='{host.get("name")}'/>"""
                 xml += """</source>"""
             else:
-                xml += """<disk type='file' device='%s'>""" % volume["device"]
-                xml += """ <driver name='qemu' type='%s' %s/>""" % (volume["type"], disk_opts)
-                xml += """ <source file='%s'/>""" % volume["path"]
+                xml += f"""<disk type='file' device='{volume["device"]}'>"""
+                xml += f""" <driver name='qemu' type='{volume["type"]}' {disk_opts}/>"""
+                xml += f""" <source file='{volume["path"]}'/>"""
 
             if volume.get("bus") == "virtio":
                 xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), volume.get("bus"))
