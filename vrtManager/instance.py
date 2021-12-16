@@ -713,11 +713,13 @@ class wvmInstance(wvmConnect):
         self,
         target_dev,
         source,
+        source_info = None,
+        pool_type="dir",
         target_bus="ide",
         disk_type="file",
         disk_device="disk",
         driver_name="qemu",
-        driver_type="raw",
+        format_type="raw",
         readonly=False,
         shareable=False,
         serial=None,
@@ -739,11 +741,33 @@ class wvmInstance(wvmConnect):
 
         xml_disk = f"<disk type='{disk_type}' device='{disk_device}'>"
         if disk_device == "cdrom":
-            xml_disk += f"<driver name='{driver_name}' type='{driver_type}'/>"
+            xml_disk += f"<driver name='{driver_name}' type='{format_type}'/>"
         elif disk_device == "disk":
-            xml_disk += f"<driver name='{driver_name}' type='{driver_type}' {additionals}/>"
-        xml_disk += f"""<source file='{source}'/>
-          <target dev='{target_dev}' bus='{target_bus}'/>"""
+            xml_disk += f"<driver name='{driver_name}' type='{format_type}' {additionals}/>"
+
+        if disk_type == 'file':
+            xml_disk += f"<source file='{source}'/>"
+        elif disk_type == 'network':
+            if pool_type == 'rbd':
+                auth_type = source_info.get('auth_type')
+                auth_user = source_info.get('auth_user')
+                auth_uuid = source_info.get("auth_uuid")
+                xml_disk += f"""<auth username='{auth_user}'>
+                                <secret type='{auth_type}' uuid='{auth_uuid}'/>
+                            </auth>"""
+                xml_disk += f"""<source protocol='{pool_type}' name='{source}'>"""
+                for host in source_info.get("hosts"):
+                    if host.get('hostport'):
+                        xml_disk += f"""<host name="{host.get('hostname')}" port='{host.get('hostport')}'/>"""
+                    else:
+                        xml_disk += f"""<host name="{host.get('hostname')}"/>"""
+                xml_disk +="""</source>"""
+            else:
+                raise Exception("Not implemented disk type")
+        else:
+            raise Exception("Not implemented disk type")
+
+        xml_disk +=f"<target dev='{target_dev}' bus='{target_bus}'/>"
         if readonly or disk_device == "cdrom":
             xml_disk += """<readonly/>"""
         if shareable:

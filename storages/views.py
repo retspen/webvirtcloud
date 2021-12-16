@@ -145,7 +145,7 @@ def storage(request, compute_id, pool):
             volname = request.POST.get("volname", "")
             vol = conn.get_volume(volname)
             vol.delete(0)
-            messages.success(request, _("Volume: %(volume)s is deleted.") % {"vol": volname})
+            messages.success(request, _("Volume: %(vol)s is deleted.") % {"vol": volname})
             return redirect(reverse("storage", args=[compute.id, pool]))
             # return HttpResponseRedirect(request.get_full_path())
         if "iso_upload" in request.POST:
