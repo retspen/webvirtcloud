@@ -91,14 +91,16 @@ def storage(request, compute_id, pool):
     """
 
     def handle_uploaded_file(path, f_name):
-        target = os.path.normpath(os.path.join(path, f_name))
+        target = os.path.normpath(os.path.join(path, str(f_name)))
         if not target.startswith(path):
-            raise Exception("Security Issues with file uploading")
+            raise Exception(_("Security Issues with file uploading"))
         
-        destination = open(target, "wb+")
-        for chunk in f_name.chunks():
-            destination.write(chunk)
-        destination.close()
+        try:
+            with open(target, "wb+") as f:
+                for chunk in f_name.chunks():
+                    f.write(chunk)
+        except FileNotFoundError:
+            messages.error(request, _("File not found. Check the path variable and filename"))
 
     compute = get_object_or_404(Compute, pk=compute_id)
     meta_prealloc = False
