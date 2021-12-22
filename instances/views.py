@@ -342,15 +342,17 @@ def migrate(request, pk):
     compress = request.POST.get("compress", False)
     postcopy = request.POST.get("postcopy", False)
 
-    new_compute = Compute.objects.get(id=compute_id)
+    current_host = instance.compute.hostname
+    target_host = Compute.objects.get(id=compute_id)
 
     try:
-        utils.migrate_instance(new_compute, instance, request.user, live, unsafe, xml_del, offline)
+        utils.migrate_instance(target_host, instance, request.user, live, unsafe, xml_del, offline)
     except libvirtError as err:
         messages.error(request, err)
 
-    msg = _("Instance is migrated to %(hostname)s") % {"hostname": new_compute.hostname}
-    addlogmsg(request.user.username, instance.compute.hostname, instance.name, msg)
+    migration_method = "live" if live is True else "offline"
+    msg = _("Instance is migrated(%(method)s) to %(hostname)s") % {"hostname": target_host.hostname, "method": migration_method}
+    addlogmsg(request.user.username, current_host, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER"))
 
