@@ -4,4 +4,4 @@ django-debug-toolbar==3.2.4
 pycodestyle==2.8.0
 pyflakes==2.4.0
 pylint==2.12.2
-yapf==0.31.0
+yapf==0.32.0
