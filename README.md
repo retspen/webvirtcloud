@@ -32,7 +32,7 @@ WebVirtCloud is a virtualization web interface for admins and users. It can dele
 
 ## Quick Install with Installer (Beta)
 
-Install an OS and run specified commands. Installer supported OSes: Ubuntu 18.04, Debian 10, Centos/OEL/RHEL 8.
+Install an OS and run specified commands. Installer supported OSes: Ubuntu 18.04/20.04, Debian 10/11, Centos/OEL/RHEL 8.
 It can be installed on a virtual machine, physical host or on a KVM host.
 
 ```bash
