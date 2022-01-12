@@ -268,6 +268,7 @@ LDAP_MASTER_PW = ''
 LDAP_ROOT_DN = ''
 ## Queries to identify the users, i use groupOfUniqueNames on openldap
 
+### PLEASE BE SURE memberOf overlay is activated on slapd
 ## e.g. memberOf=cn=admins,cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
 LDAP_SEARCH_GROUP_FILTER_ADMINS = ''
 ## e.g. memberOf=cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
