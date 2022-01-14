@@ -15,7 +15,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.4.2\n"
+"X-Generator: Poedit 2.3\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: accounts/forms.py:25
@@ -82,7 +82,7 @@ msgstr "用户资料"
 
 #: accounts/templates/account.html:12
 msgid "Email OTP QR code"
-msgstr "电子邮件 OTP QR 码"
+msgstr "电子邮件OTP QR 码"
 
 #: accounts/templates/account.html:16
 msgid "Edit user"
@@ -202,7 +202,7 @@ msgid ""
 "Scan this QR code to get OTP for account '%(user)s'\n"
 msgstr ""
 "\n"
-"扫描此 QR 码以获取该帐户 '%(user)s' 的 OTP\n"
+"扫描此QR码以获取该帐户 '%(user)s' 的OTP\n"
 
 #: accounts/templates/accounts/email_otp_form.html:12
 msgid ""
@@ -211,7 +211,7 @@ msgid ""
 "    "
 msgstr ""
 "\n"
-"    输入电子邮件地址，将发送 OTP QR 码。\n"
+"    输入电子邮件地址，将发送OTP QR 码。\n"
 "    "
 
 #: accounts/templates/accounts/email_otp_form.html:27
@@ -220,7 +220,7 @@ msgstr "发送"
 
 #: accounts/templates/accounts/otp_login.html:23
 msgid "I do not have/lost my OTP!"
-msgstr "我没有或失去了我的 OTP！"
+msgstr "我没有或失去了我的OTP！"
 
 #: accounts/templates/accounts/otp_login.html:24
 #: accounts/templates/login.html:5 accounts/templates/login.html:23
@@ -272,7 +272,7 @@ msgstr "编辑个人资料"
 #: accounts/templates/profile.html:20
 #: instances/templates/instances/access_tab.html:20
 msgid "SSH Keys"
-msgstr "SSH 密钥"
+msgstr "SSH密钥"
 
 #: accounts/templates/profile.html:38
 #: instances/templates/instances/settings_tab.html:720
@@ -282,7 +282,7 @@ msgstr "更新"
 
 #: accounts/templates/profile.html:68
 msgid "Add SSH Key"
-msgstr "添加 SSH 密钥"
+msgstr "添加SSH密钥"
 
 #: accounts/templates/profile.html:76
 #: instances/templates/add_instance_network_block.html:50
@@ -298,7 +298,7 @@ msgstr "OTP QR 码"
 
 #: accounts/utils.py:51
 msgid "Please view HTML version of this message."
-msgstr "请查看此消息的 HTML 版本内容。"
+msgstr "请查看此消息的HTML版本内容。"
 
 #: accounts/views.py:26
 msgid "Profile updated"
@@ -306,19 +306,19 @@ msgstr "个人资料已更新"
 
 #: accounts/views.py:44
 msgid "SSH key added"
-msgstr "SSH 密钥已添加"
+msgstr "SSH密钥已添加"
 
 #: accounts/views.py:52
 msgid "Add SSH key"
-msgstr "添加 SSH 密钥"
+msgstr "添加SSH密钥"
 
 #: accounts/views.py:61
 msgid "SSH key deleted"
-msgstr "SSH 密钥已删除"
+msgstr "SSH密钥已删除"
 
 #: accounts/views.py:69
 msgid "Delete SSH key"
-msgstr "删除 SSH 密钥"
+msgstr "删除SSH密钥"
 
 #: accounts/views.py:101
 msgid "Password Changed"
@@ -335,11 +335,11 @@ msgstr "更新用户实例"
 #: accounts/views.py:175
 #, python-format
 msgid "OTP Sent to %(email)s"
-msgstr "OTP 发送到 %(email)s"
+msgstr "OTP发送到 %(email)s"
 
 #: accounts/views.py:183
 msgid "Email OTP"
-msgstr "Email OTP"
+msgstr "电子邮件OTP"
 
 #: accounts/views.py:194
 #, python-format
@@ -348,7 +348,7 @@ msgstr "OTP QR 码已通过电子邮件发送给用户 %(user)s"
 
 #: accounts/views.py:196
 msgid "User email not set, failed to send QR code"
-msgstr "未设置用户电子邮件，无法发送 QR 码"
+msgstr "未设置用户电子邮件，无法发送QR码"
 
 #: admin/forms.py:49
 msgid "Permissions"
@@ -372,8 +372,8 @@ msgid ""
 "form</a>."
 msgstr ""
 "原始密码未存储，因此无法查看\n"
-"                该用户的密码，但是您可以使用 <a href='{}'>此表单</a>更改密"
-"码。"
+"                    该用户的密码，但是您可以使用 <a href='{}'>此表单</a>更改"
+"密码。"
 
 #: admin/templates/admin/group_list.html:5 admin/views.py:87
 #: instances/templates/instances/settings_tab.html:69 templates/navbar.html:29
@@ -535,15 +535,15 @@ msgstr "主题"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:11
 msgid "Bootstrap CSS & Bootswatch Theme"
-msgstr "Bootstrap CSS & Bootswatch 主题"
+msgstr "Bootstrap CSS & Bootswatch主题"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:12
 msgid "Theme SASS Path"
-msgstr "主题 SASS 路径"
+msgstr "主题SASS路径"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:12
 msgid "Bootstrap SASS & Bootswatch SASS Directory"
-msgstr "Bootstrap SASS & Bootswatch SASS 目录"
+msgstr "Bootstrap SASS & Bootswatch SASS目录"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:13
 msgid "All Instances View Style"
@@ -595,11 +595,11 @@ msgstr "实例磁盘总线类型"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:19
 msgid "Disk SCSI Controller"
-msgstr "磁盘 SCSI 控制器"
+msgstr "磁盘SCSI控制器"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:19
 msgid "SCSI controller type"
-msgstr "SCSI 控制器类型"
+msgstr "SCSI控制器类型"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:20
 msgid "Disk Cache"
@@ -611,11 +611,11 @@ msgstr "磁盘卷缓存类型"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:21
 msgid "Disk IO Type"
-msgstr "磁盘 IO 类型"
+msgstr "磁盘IO类型"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:21
 msgid "Volume io modes"
-msgstr "卷 IO 模式"
+msgstr "卷IO模式"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:22
 msgid "Disk Detect Zeroes"
@@ -635,27 +635,27 @@ msgstr "卷删除模式"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:24
 msgid "Disk Owner UID"
-msgstr "磁盘所有者 UID"
+msgstr "磁盘所有者UID"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:24
 msgid "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
-msgstr "所有者 UID： 参考系统中， 0=root，107=qemu 或 libvirt-bin (对于ubuntu)"
+msgstr "所有者UID： 参考系统中， 0=root，107=qemu 或 libvirt-bin (对于ubuntu)"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:25
 msgid "Disk Owner GID"
-msgstr "磁盘所有者 GID"
+msgstr "磁盘所有者GID"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:25
 msgid "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
-msgstr "所有者 GID： 参考系统中， 0=root，107=qemu 或 libvirt-bin (对于ubuntu)"
+msgstr "所有者GID： 参考系统中， 0=root，107=qemu 或 libvirt-bin (对于ubuntu)"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:26
 msgid "VM CPU Mode"
-msgstr "实例 CPU 模式"
+msgstr "实例CPU模式"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:26
 msgid "Cpu modes"
-msgstr "CPU 模式"
+msgstr "CPU模式"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:27
 msgid "VM Machine Type"
@@ -679,7 +679,7 @@ msgstr "实例 体系结构 (架构) 类型"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:29
 msgid "Architecture type: x86_64, i686, etc"
-msgstr "架构类型：x86_64，i686，aarch64，arm 等"
+msgstr "架构类型：x86_64，i686，aarch64，arm，arm64 等"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:30
 msgid "VM Console Type"
@@ -723,19 +723,19 @@ msgstr "底部导航栏用于显示实例详细信息"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:35
 msgid "Show Access Root Pass"
-msgstr "显示访问用户的 Root 密码"
+msgstr "显示访问用户的Root密码"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:35
 msgid "Show access root password"
-msgstr "显示访问用户的 Root 密码"
+msgstr "显示访问用户的Root密码"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:36
 msgid "Show Access SSH Keys"
-msgstr "显示访问用户的 SSH 密钥"
+msgstr "显示访问用户的SSH密钥"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:36
 msgid "Show access ssh keys"
-msgstr "显示访问用户的 SSH 密钥"
+msgstr "显示访问用户的SSH密钥"
 
 #: appsettings/migrations/0004_auto_20200716_0637.py:11
 msgid "Console Scale"
@@ -804,7 +804,7 @@ msgstr "语言"
 
 #: appsettings/templates/appsettings.html:48
 msgid "After change please full refresh page with 'Ctrl + F5' "
-msgstr "更改后，请使用 \"Ctrl+F5\" 完整刷新页面 "
+msgstr "更改后，请使用\"Ctrl+F5\"完整刷新页面 "
 
 #: appsettings/templates/appsettings.html:53
 msgid "Other Settings"
@@ -813,7 +813,7 @@ msgstr "其他设置"
 #: appsettings/views.py:38
 #, python-format
 msgid "SASS directory path is changed. Now: %(dir)s"
-msgstr "SASS 目录路径已更改。现在是：%(dir)s"
+msgstr "SASS目录路径已更改。现在是：%(dir)s"
 
 #: appsettings/views.py:70
 #, python-format
@@ -824,7 +824,7 @@ msgstr "主题已更改。现在是： %(theme)s"
 #, fuzzy, python-format
 #| msgid "{setting.name} is changed. Now: {setting.value}"
 msgid "%(setting)s is changed. Now: %(value)s"
-msgstr "{setting.name} 已改变。现在是： {setting.value}"
+msgstr "%(setting)s 已改变。现在是： %(value)s"
 
 #: computes/forms.py:21
 msgid "FQDN/IP"
@@ -972,7 +972,7 @@ msgstr "描述"
 #: instances/templates/create_instance_w2.html:536
 #: instances/templates/instance.html:43 instances/templates/instance.html:45
 msgid "VCPU"
-msgstr "VCPU"
+msgstr "虚拟CPU"
 
 #: computes/templates/computes/instances.html:67
 #: computes/templates/overview.html:80
@@ -1101,7 +1101,7 @@ msgstr "性能"
 
 #: computes/templates/overview.html:100
 msgid "CPU Utilization"
-msgstr "CPU 利用率"
+msgstr "CPU利用率"
 
 #: computes/templates/overview.html:109
 msgid "RAM Utilization"
@@ -1166,7 +1166,7 @@ msgstr "必须在 URL 中指定主机和端口"
 
 #: console/templates/console-vnc-full.html:78
 msgid "noVNC encountered an error"
-msgstr "noVNC 遇到错误"
+msgstr "noVNC遇到错误"
 
 #: console/templates/console-vnc-lite.html:221
 msgid "Loading"
@@ -1177,16 +1177,16 @@ msgstr "载入中"
 #| msgid "You do not have permission to access this page."
 msgid ""
 "User does not have permission to access console or host/instance not exist"
-msgstr "您没有权限访问此页面。"
+msgstr "您没有权限访问此页面"
 
 #: console/views.py:84
 msgid "Fail to get console. Please check the console configuration of your VM."
-msgstr ""
+msgstr "获取控制台失败。 请检查您虚拟机的控制台配置。"
 
 #: console/views.py:86
 #, python-format
 msgid "Console type '%(type)s' has not support"
-msgstr ""
+msgstr "不支持的 '%(type)s' 控制台类型"
 
 #: instances/forms.py:37
 msgid "No Virtual Machine name has been entered"
@@ -1230,7 +1230,7 @@ msgstr "内存"
 
 #: instances/models.py:13
 msgid "vcpu"
-msgstr "vcpu"
+msgstr "虚拟CPU"
 
 #: instances/models.py:14
 msgid "disk"
@@ -1267,7 +1267,7 @@ msgstr "添加实例网络"
 #: networks/templates/modify_ipv4_fixed_address.html:24
 #: networks/templates/network.html:172
 msgid "MAC"
-msgstr "MAC 地址"
+msgstr "MAC地址"
 
 #: instances/templates/add_instance_network_block.html:24
 #: instances/templates/create_instance_w2.html:163
@@ -1676,7 +1676,7 @@ msgstr "模板磁盘"
 #, fuzzy
 #| msgid "Network"
 msgid "Network/MAC"
-msgstr "网络"
+msgstr "网络/MAC地址"
 
 #: instances/templates/instance.html:22
 #: instances/templates/instance_actions.html:14
@@ -1709,7 +1709,7 @@ msgstr "磁盘"
 #, fuzzy
 #| msgid "Remove Instance's data"
 msgid "Show Instance OS details"
-msgstr "删除实例数据"
+msgstr "显示实例操作系统详细信息"
 
 #: instances/templates/instance.html:63
 msgid "Refresh instance info"
@@ -1868,7 +1868,7 @@ msgstr "输入密码"
 #: instances/templates/instances/access_tab.html:100
 #: instances/templates/instances/access_tab.html:103
 msgid "Reset Root Password"
-msgstr "重置 Root 密码"
+msgstr "重置Root密码"
 
 #: instances/templates/instances/access_tab.html:111
 msgid "You need shut down your instance and choose your public key."
@@ -1891,7 +1891,7 @@ msgstr "为virt-viewer下载console.vv文件。"
 
 #: instances/templates/instances/access_tab.html:146
 msgid "Get console.vv"
-msgstr "获取 console.vv"
+msgstr "获取console.vv"
 
 #: instances/templates/instances/destroy_instance_form.html:4
 msgid "Confirm Destroy"
@@ -1915,7 +1915,7 @@ msgstr "删除实例数据"
 
 #: instances/templates/instances/destroy_instance_form.html:30
 msgid "Remove Instance's NVRAM"
-msgstr "删除实例 NVRAM 数据"
+msgstr "删除实例NVRAM数据"
 
 #: instances/templates/instances/destroy_instance_form.html:41
 msgid "You cannot destroy instance!"
@@ -1959,7 +1959,7 @@ msgstr "缓存模式"
 
 #: instances/templates/instances/edit_instance_volume.html:61
 msgid "IO mode"
-msgstr "IO 模式"
+msgstr "IO模式"
 
 #: instances/templates/instances/edit_instance_volume.html:69
 msgid "Discard mode"
@@ -1981,37 +1981,37 @@ msgstr "储存格式"
 #, fuzzy
 #| msgid "Are you sure to detach volume?"
 msgid "Are you sure to change volume properties?"
-msgstr "您确定要分离卷吗？"
+msgstr "您确定要更改存储卷属性吗？"
 
 #: instances/templates/instances/info_tab.html:3
 #, fuzzy
 #| msgid "Guest Agent"
 msgid "Guest Info"
-msgstr "客户机代理"
+msgstr "客户机信息"
 
 #: instances/templates/instances/info_tab.html:7
 #, fuzzy
 #| msgid "Name"
 msgid "OS Name"
-msgstr "名称"
+msgstr "系统名称"
 
 #: instances/templates/instances/info_tab.html:9
 msgid "OS Pretty-Name"
-msgstr ""
+msgstr "系统的优雅别名"
 
 #: instances/templates/instances/info_tab.html:13
 msgid "Kernel Release"
-msgstr ""
+msgstr "发布的内核"
 
 #: instances/templates/instances/info_tab.html:15
 #, fuzzy
 #| msgid "Version"
 msgid "Kernel Version"
-msgstr "版本"
+msgstr "内核版本"
 
 #: instances/templates/instances/info_tab.html:17
 msgid "Timezone / Offset"
-msgstr ""
+msgstr "时区/偏移量"
 
 #: instances/templates/instances/power_tab.html:55
 msgid "This action sends an ACPI shutdown signal to the instance."
@@ -2051,7 +2051,7 @@ msgstr "模板实例无法启动。"
 
 #: instances/templates/instances/resize_tab.html:7
 msgid "CPU"
-msgstr "CPU"
+msgstr "中央处理器"
 
 #: instances/templates/instances/resize_tab.html:28
 msgid "Logical host CPUs"
@@ -2070,7 +2070,7 @@ msgstr "最大分配"
 
 #: instances/templates/instances/resize_tab.html:62
 msgid "Logical Instance Active/Maximum CPUs"
-msgstr "逻辑实例 活动/最大 CPU"
+msgstr "逻辑实例 活动/最大CPU"
 
 #: instances/templates/instances/resize_tab.html:70
 #: instances/templates/instances/settings_tab.html:86
@@ -2177,7 +2177,7 @@ msgstr "实例媒体"
 
 #: instances/templates/instances/settings_tab.html:159
 msgid "Add CD-ROM"
-msgstr "添加 CD-ROM"
+msgstr "添加CD-ROM"
 
 #: instances/templates/instances/settings_tab.html:182
 #: instances/templates/instances/settings_tab.html:221
@@ -2200,7 +2200,7 @@ msgstr "挂载"
 
 #: instances/templates/instances/settings_tab.html:201
 msgid "Detach CD-ROM (remove device)"
-msgstr "分离 CD-ROM (删除设备)"
+msgstr "分离CD-ROM (删除设备)"
 
 #: instances/templates/instances/settings_tab.html:227
 #: instances/templates/instances/settings_tab.html:229
@@ -2348,12 +2348,12 @@ msgstr "突发"
 #: instances/templates/instances/settings_tab.html:549
 #: networks/templates/network.html:353
 msgid "Edit QoS"
-msgstr "编辑 QoS"
+msgstr "编辑QoS"
 
 #: instances/templates/instances/settings_tab.html:559
 #: networks/templates/network.html:358
 msgid "Delete QoS"
-msgstr "删除 QoS"
+msgstr "删除QoS"
 
 #: instances/templates/instances/settings_tab.html:575
 msgid "For migration both host servers must have equal settings and OS type"
@@ -2476,11 +2476,11 @@ msgstr "设置"
 
 #: instances/templates/instances/settings_tab.html:883
 msgid "To set instance vCPUs hotpluggable"
-msgstr "设置实例 vCPU 热插拔"
+msgstr "设置实例vCPU热插拔"
 
 #: instances/templates/instances/settings_tab.html:886
 msgid "vCPU Hot Plug"
-msgstr "vCPU 热插拔"
+msgstr "vCPU热插拔"
 
 #: instances/templates/instances/settings_tab.html:890
 #: instances/templates/instances/settings_tab.html:919
@@ -2494,7 +2494,7 @@ msgstr "禁用"
 
 #: instances/templates/instances/settings_tab.html:903
 msgid "To Enable/Disable Qemu Guest Agent. Status"
-msgstr "启用/禁用 Qemu 客户机代理。 状态"
+msgstr "启用/禁用Qemu客户机代理。 状态"
 
 #: instances/templates/instances/settings_tab.html:908
 msgid "Disconnected"
@@ -2508,7 +2508,7 @@ msgstr "未知"
 
 #: instances/templates/instances/settings_tab.html:915
 msgid "Qemu Guest Agent"
-msgstr "Qemu 客户机代理"
+msgstr "Qemu客户机代理"
 
 #: instances/templates/instances/snapshots_tab.html:8
 #: instances/templates/instances/snapshots_tab.html:26
@@ -2527,7 +2527,9 @@ msgstr "管理快照"
 msgid ""
 "This may take more than an hour, depending on how much content is on your "
 "instance and how large the disk is. It could cause web server timeout.."
-msgstr "这可能需要一个多小时，具体取决于实例上已使用的容量和磁盘大小。"
+msgstr ""
+"这可能需要一个多小时，具体取决于您的实例上的。内容以及磁盘大小。 它可能导致"
+"Web服务器超时..."
 
 #: instances/templates/instances/snapshots_tab.html:25
 msgid "Enter Snapshot Name"
@@ -2559,7 +2561,7 @@ msgstr "实时时间"
 
 #: instances/templates/instances/stats_tab.html:22
 msgid "CPU Usage"
-msgstr "CPU 使用率"
+msgstr "CPU使用率"
 
 #: instances/templates/instances/stats_tab.html:36
 msgid "Memory Usage"
@@ -2571,7 +2573,7 @@ msgstr "带宽设备"
 
 #: instances/templates/instances/stats_tab.html:67
 msgid "Disk I/O device"
-msgstr "磁盘 I/O 设备"
+msgstr "磁盘I/O设备"
 
 #: instances/utils.py:99
 msgid "None available device name"
@@ -2588,7 +2590,7 @@ msgstr "实例已迁移到 %(hostname)s"
 
 #: instances/views.py:375
 msgid "Reset root password"
-msgstr "重置 Root 密码"
+msgstr "重置Root密码"
 
 #: instances/views.py:381 instances/views.py:410
 msgid "Please shutdown down your instance and then try again"
@@ -2597,14 +2599,14 @@ msgstr "请关闭您的实例，然后重试"
 #: instances/views.py:402
 #, python-format
 msgid "Installed new SSH public key %(keyname)s"
-msgstr "安装了新的 SSH 公钥 %(keyname)s"
+msgstr "安装了新的SSH公钥 %(keyname)s"
 
 #: instances/views.py:429
 #, python-format
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
 msgstr ""
-"已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的 CPU 大小！"
+"已达到用户 %(quota_msg)s 的配额，无法调整 '%(instance_name)s' 的CPU大小！"
 
 #: instances/views.py:438
 #, python-format
@@ -2702,7 +2704,7 @@ msgstr "创建快照：%(snap)s"
 #, fuzzy, python-format
 #| msgid "Delete snapshot: %(snap_name)s"
 msgid "Delete snapshot: %(snap)s"
-msgstr "删除快照：%(snap_name)s"
+msgstr "删除快照：%(snap)s"
 
 #: instances/views.py:796
 msgid "Successful revert snapshot: "
@@ -2712,7 +2714,7 @@ msgstr "成功还原快照： "
 #, fuzzy, python-format
 #| msgid "Revert snapshot: %(snap)"
 msgid "Revert snapshot: %(snap)s"
-msgstr "还原快照：%(snap)"
+msgstr "还原快照： %(snap)s"
 
 #: instances/views.py:813
 #, python-format
@@ -2765,7 +2767,7 @@ msgstr "设置客户机代理：%(status)s"
 #, fuzzy, python-format
 #| msgid "Set Video Model"
 msgid "Set Video Model: %(model)s"
-msgstr "设置视频模式"
+msgstr "设置视频模式：%(model)s"
 
 #: instances/views.py:926
 msgid "Change network"
@@ -2801,13 +2803,13 @@ msgid ""
 "%(qos_dir)s QoS is set. Network XML is changed.                 Stop and "
 "start network to activate new config."
 msgstr ""
-"%(qos_dir)s QoS 已设置。网络XML已更改。                 停止并启动网络以激活"
-"新的配置。"
+"%(qos_dir)s QoS已设置。网络XML已更改。                 停止并启动网络以激活新"
+"的配置。"
 
 #: instances/views.py:1040 networks/views.py:246
 #, python-format
 msgid "%(qos_dir)s QoS is deleted"
-msgstr "%(qos_dir)s QoS 已删除"
+msgstr "%(qos_dir)s QoS已删除"
 
 #: instances/views.py:1045
 #, python-format
@@ -2815,8 +2817,8 @@ msgid ""
 "%(qos_dir)s QoS is deleted. Network XML is changed.                 Stop and "
 "start network to activate new config."
 msgstr ""
-"%(qos_dir)s QoS 已删除。网络XML已更改。                 停止并启动网络以激活"
-"新的配置。"
+"%(qos_dir)s QoS已删除。网络XML已更改。                 停止并启动网络以激活新"
+"的配置。"
 
 #: instances/views.py:1064
 msgid "Only one owner is allowed and the one already added"
@@ -2865,19 +2867,19 @@ msgstr "设置控制台密码时出错。 您应检查实例是否具有图形�
 
 #: instances/views.py:1178
 msgid "Set VNC password"
-msgstr "设置 VNC 密码"
+msgstr "设置VNC密码"
 
 #: instances/views.py:1187
 msgid "Set VNC keymap"
-msgstr "设置 VNC 键盘"
+msgstr "设置VNC键盘"
 
 #: instances/views.py:1192
 msgid "Set VNC type"
-msgstr "设置 VNC 类型"
+msgstr "设置VNC类型"
 
 #: instances/views.py:1197
 msgid "Set VNC listen address"
-msgstr "设置 VNC 监听地址"
+msgstr "设置VNC监听地址"
 
 #: instances/views.py:1220
 msgid "Edit options"
@@ -2885,7 +2887,7 @@ msgstr "编辑选项"
 
 #: instances/views.py:1234
 msgid "Send console.vv file"
-msgstr "发送 console.vv 文件"
+msgstr "发送console.vv文件"
 
 #: instances/views.py:1295 instances/views.py:1389
 msgid "A virtual machine with this name already exists"
@@ -2905,7 +2907,7 @@ msgstr "有一个同名实例。 删除它，然后再试一次！"
 
 #: instances/views.py:1395
 msgid "No Virtual Machine MAC has been entered"
-msgstr "没有输入虚拟机 MAC 地址"
+msgstr "没有输入虚拟机MAC地址"
 
 #: instances/views.py:1426
 msgid "Image has already exist. Please check volumes or change instance name"
@@ -2945,35 +2947,35 @@ msgstr "规格已删除"
 
 #: interfaces/forms.py:26
 msgid "The IPv4 address must not contain any special characters"
-msgstr "IPv4 地址不得包含任何特殊字符"
+msgstr "IPv4地址不得包含任何特殊字符"
 
 #: interfaces/forms.py:28
 msgid "The IPv4 address must not exceed 20 characters"
-msgstr "IPv4 地址不得超过20个字符"
+msgstr "IPv4地址不得超过20个字符"
 
 #: interfaces/forms.py:35
 msgid "The IPv4 gateway must not contain any special characters"
-msgstr "IPv4 网关不得包含任何特殊字符"
+msgstr "IPv4网关不得包含任何特殊字符"
 
 #: interfaces/forms.py:37
 msgid "The IPv4 gateway must not exceed 20 characters"
-msgstr "IPv4 网关不得超过20个字符"
+msgstr "IPv4网关不得超过20个字符"
 
 #: interfaces/forms.py:44
 msgid "The IPv6 address must not contain any special characters"
-msgstr "IPv6 地址不得包含任何特殊字符"
+msgstr "IPv6地址不得包含任何特殊字符"
 
 #: interfaces/forms.py:46
 msgid "The IPv6 address must not exceed 100 characters"
-msgstr "IPv6 地址不得超过100个字符"
+msgstr "IPv6地址不得超过100个字符"
 
 #: interfaces/forms.py:53
 msgid "The IPv6 gateway must not contain any special characters"
-msgstr "IPv6 网关不得包含任何特殊字符"
+msgstr "IPv6网关不得包含任何特殊字符"
 
 #: interfaces/forms.py:55
 msgid "The IPv6 gateway must not exceed 100 characters"
-msgstr "IPv6 网关不得超过100个字符"
+msgstr "IPv6网关不得超过100个字符"
 
 #: interfaces/forms.py:62 interfaces/forms.py:71
 msgid "The interface must not contain any special characters"
@@ -3024,7 +3026,7 @@ msgstr "以太网络"
 
 #: interfaces/templates/create_iface_block.html:53
 msgid "STP"
-msgstr "STP 生成树协议"
+msgstr "STP生成树协议"
 
 #: interfaces/templates/create_iface_block.html:57
 msgid "on"
@@ -3040,7 +3042,7 @@ msgstr "延迟"
 
 #: interfaces/templates/create_iface_block.html:86
 msgid "IPv4 Mode"
-msgstr "IPv4 模式"
+msgstr "IPv4模式"
 
 #: interfaces/templates/create_iface_block.html:89
 #: interfaces/templates/create_iface_block.html:116
@@ -3060,23 +3062,23 @@ msgstr "没有配置"
 
 #: interfaces/templates/create_iface_block.html:96
 msgid "IPv4 Address"
-msgstr "IPv4 地址"
+msgstr "IPv4地址"
 
 #: interfaces/templates/create_iface_block.html:102
 msgid "IPv4 Gateway"
-msgstr "IPv4 网关"
+msgstr "IPv4网关"
 
 #: interfaces/templates/create_iface_block.html:112
 msgid "IPv6 Mode"
-msgstr "IPv6 类型"
+msgstr "IPv6类型"
 
 #: interfaces/templates/create_iface_block.html:122
 msgid "IPv6 Address"
-msgstr "IPv6 地址"
+msgstr "IPv6地址"
 
 #: interfaces/templates/create_iface_block.html:128
 msgid "IPv6 Gateway"
-msgstr "IPv6 网关"
+msgstr "IPv6网关"
 
 #: interfaces/templates/interface.html:47
 msgid "Interface Type"
@@ -3121,7 +3123,7 @@ msgstr "用户"
 #, fuzzy
 #| msgid "hostname"
 msgid "host"
-msgstr "主机名"
+msgstr "主机"
 
 #: logs/models.py:7
 msgid "instance"
@@ -3141,11 +3143,11 @@ msgstr "没有输入资源池名称"
 
 #: networks/forms.py:10
 msgid "No IPv4 subnet has been entered"
-msgstr "没有输入 IPv4 子网"
+msgstr "没有输入IPv4子网"
 
 #: networks/forms.py:15
 msgid "No IPv6 subnet has been entered"
-msgstr "没有输入 IPv6 子网"
+msgstr "没有输入IPv6子网"
 
 #: networks/forms.py:30 storages/forms.py:23
 msgid "The pool name must not contain any special characters"
@@ -3157,19 +3159,19 @@ msgstr "资源池名称不能超过20个字符"
 
 #: networks/forms.py:39
 msgid "The IPv4 subnet must not contain any special characters"
-msgstr "IPv4 子网不得包含任何特殊字符"
+msgstr "IPv4子网不得包含任何特殊字符"
 
 #: networks/forms.py:41
 msgid "The IPv4 subnet must not exceed 20 characters"
-msgstr "IPv4 子网不得超过20个字符"
+msgstr "IPv4子网不得超过20个字符"
 
 #: networks/forms.py:48
 msgid "The IPv6 subnet must not contain any special characters"
-msgstr "IPv6 子网不得包含任何特殊字符"
+msgstr "IPv6子网不得包含任何特殊字符"
 
 #: networks/forms.py:50
 msgid "The IPv6 subnet must not exceed 42 characters"
-msgstr "IPv6 子网不得超过42个字符"
+msgstr "IPv6子网不得超过42个字符"
 
 #: networks/forms.py:58
 msgid "The pool bridge name must not contain any special characters"
@@ -3181,7 +3183,7 @@ msgstr "资源池网桥名称不得超过20个字符"
 
 #: networks/templates/add_network_qos.html:13
 msgid "Add QoS for Network"
-msgstr "为网络添加 QoS 流控"
+msgstr "为网络添加QoS流控"
 
 #: networks/templates/add_network_qos.html:21
 msgid "Inbound"
@@ -3237,7 +3239,7 @@ msgstr "MACVTAP"
 
 #: networks/templates/create_net_block.html:36
 msgid "IPv4 Subnet pool"
-msgstr "IPv4 子网资源池"
+msgstr "IPv4子网资源池"
 
 #: networks/templates/create_net_block.html:42
 msgid "DHCPv4"
@@ -3249,11 +3251,11 @@ msgstr "固定地址"
 
 #: networks/templates/create_net_block.html:54
 msgid "Enable IPv6"
-msgstr "启用 IPv6"
+msgstr "启用IPv6"
 
 #: networks/templates/create_net_block.html:60
 msgid "IPv6 Subnet pool"
-msgstr "IPv6 子网资源池"
+msgstr "IPv6子网资源池"
 
 #: networks/templates/create_net_block.html:66
 msgid "DHCPv6"
@@ -3269,7 +3271,7 @@ msgstr "虚拟交换机"
 
 #: networks/templates/modify_ipv4_fixed_address.html:12
 msgid "Add IPv4 Fixed Address"
-msgstr "添加 IPv4 固定地址"
+msgstr "添加IPv4固定地址"
 
 #: networks/templates/modify_ipv4_fixed_address.html:18
 #: networks/templates/modify_ipv6_fixed_address.html:18
@@ -3284,7 +3286,7 @@ msgstr "地址"
 
 #: networks/templates/modify_ipv6_fixed_address.html:12
 msgid "Add IPV6 Fixed Address"
-msgstr "添加 IPV6 固定地址"
+msgstr "添加IPV6固定地址"
 
 #: networks/templates/modify_ipv6_fixed_address.html:24
 #: networks/templates/network.html:281
@@ -3297,11 +3299,11 @@ msgstr "网络名称"
 
 #: networks/templates/network.html:89
 msgid "IPv4 Configuration"
-msgstr "IPv4 配置"
+msgstr "IPv4配置"
 
 #: networks/templates/network.html:92
 msgid "IPv4 Forwarding"
-msgstr "IPv4 转发"
+msgstr "IPv4转发"
 
 #: networks/templates/network.html:112 networks/templates/network.html:224
 msgid "ON"
@@ -3318,11 +3320,11 @@ msgstr "结束"
 
 #: networks/templates/network.html:135 networks/templates/network.html:248
 msgid "Edit DHCP Range"
-msgstr "编辑 DHCP 范围"
+msgstr "编辑DHCP范围"
 
 #: networks/templates/network.html:149
 msgid "IPv4 Fixed Addresses"
-msgstr "IPv4 固定地址"
+msgstr "IPv4固定地址"
 
 #: networks/templates/network.html:158 networks/templates/network.html:268
 #: nwfilters/templates/nwfilters.html:83
@@ -3345,15 +3347,15 @@ msgstr "删除条目"
 
 #: networks/templates/network.html:207
 msgid "IPv6 Configuration"
-msgstr "IPv6 配置"
+msgstr "IPv6配置"
 
 #: networks/templates/network.html:210
 msgid "IPv6 Forwarding"
-msgstr "IPv6 转发"
+msgstr "IPv6转发"
 
 #: networks/templates/network.html:261
 msgid "IPv6 Fixed Addresses"
-msgstr "IPv6 固定地址"
+msgstr "IPv6固定地址"
 
 #: networks/templates/networks.html:45
 msgid "Hypervisor doesn't have any Network"
@@ -3373,7 +3375,7 @@ msgstr "请输入 网桥/设备 名称"
 
 #: networks/views.py:57
 msgid "For libvirt, the IPv6 network prefix must be /64"
-msgstr "对于 libvirt，IPv6 网络前缀必须为 /64"
+msgstr "对于libvirt，IPv6网络前缀必须为/64"
 
 #: networks/views.py:130
 msgid "Unknown Network Family"
@@ -3392,7 +3394,7 @@ msgstr "%(family)s 固定地址已被删除。"
 #: networks/views.py:198
 #, python-format
 msgid "%(family)s DHCP Range is Changed."
-msgstr "%(family)s DHCP 范围已更改。"
+msgstr "%(family)s DHCP范围已更改。"
 
 #: networks/views.py:210
 msgid ""
@@ -3408,7 +3410,7 @@ msgstr "网络XML已更改。"
 msgid ""
 "%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network "
 "to activate new config"
-msgstr "%(qos_dir)s 的 QoS 已更新。 网络XML已更改。 停止并启动网络以激活新配置"
+msgstr "%(qos_dir)s 的QoS已更新。 网络XML已更改。 停止并启动网络以激活新配置"
 
 #: networks/views.py:242
 #, fuzzy, python-format
@@ -3419,12 +3421,12 @@ msgid ""
 "%(qos_dir)s QoS is deleted. Network XML is changed.                         "
 "Stop and start network to activate new config"
 msgstr ""
-"%(qos_dir)s QoS 已删除。网络XML已更改。                 停止并启动网络以激活"
-"新的配置。"
+"%(qos_dir)s QoS 已删除。网络XML已更改。                         停止并启动网"
+"络以激活新的配置"
 
 #: nwfilters/templates/add_nwf_rule.html:12
 msgid "Add New NWFilter Rule"
-msgstr "添加新的 NWFilter 规则"
+msgstr "添加新的NWFilter规则"
 
 #: nwfilters/templates/add_nwf_rule.html:22
 msgid "If there is a rule which has same attributes it replaces that rule"
@@ -3432,7 +3434,7 @@ msgstr "如果存在具有相同属性的规则，它将替换该规则"
 
 #: nwfilters/templates/create_nwfilter_block.html:12
 msgid "Create New NWFilter"
-msgstr "创建新的 NWFilter"
+msgstr "创建新的NWFilter"
 
 #: nwfilters/templates/nwfilter.html:39 nwfilters/templates/nwfilters.html:53
 #: virtsecrets/templates/secrets.html:60
@@ -3473,15 +3475,15 @@ msgstr "指令"
 
 #: nwfilters/templates/nwfilters.html:69
 msgid "Details of NWFilter"
-msgstr "NWFilter 的详细信息"
+msgstr "NWFilter的详细信息"
 
 #: nwfilters/templates/nwfilters.html:92
 msgid "Clone NWFilter"
-msgstr "克隆 NWFilter"
+msgstr "克隆NWFilter"
 
 #: nwfilters/templates/nwfilters.html:132
 msgid "Hypervisor doesn't have any NWFilters"
-msgstr "虚拟机监控程序没有检测到任何 NWFilter"
+msgstr "虚拟机监控程序没有检测到任何NWFilter"
 
 #: nwfilters/views.py:44
 msgid "A network filter with this name already exists"
@@ -3489,7 +3491,7 @@ msgstr "具有该名称的网络过滤器已存在"
 
 #: nwfilters/views.py:47
 msgid "A network filter with this UUID already exists"
-msgstr "具有该 UUID 的网络过滤器已存在"
+msgstr "具有该UUID的网络过滤器已存在"
 
 #: nwfilters/views.py:51
 #, python-format
@@ -3510,7 +3512,7 @@ msgstr "%(instance)s 正在使用NWFilter。无法删除。"
 #, fuzzy, python-format
 #| msgid "Cloning NWFilter {name} as {cln_name}"
 msgid "Cloning NWFilter %(name)s as %(clone)s"
-msgstr "将NWFilter {name} 克隆为 {cln_name}"
+msgstr "将NWFilter %(name)s 克隆为 %(clone)s"
 
 #: storages/forms.py:10 storages/forms.py:37
 msgid "No path has been entered"
@@ -3567,15 +3569,15 @@ msgstr "路径"
 
 #: storages/templates/create_stg_block.html:120
 msgid "Ceph User"
-msgstr "Ceph 用户"
+msgstr "Ceph用户"
 
 #: storages/templates/create_stg_block.html:126
 msgid "Ceph Pool"
-msgstr "Ceph 资源池"
+msgstr "Ceph资源池"
 
 #: storages/templates/create_stg_block.html:132
 msgid "Ceph Host"
-msgstr "Ceph 主机"
+msgstr "Ceph主机"
 
 #: storages/templates/create_stg_block.html:191
 msgid "Remote Path"
@@ -3603,7 +3605,7 @@ msgstr "本地路径"
 
 #: storages/templates/create_stg_vol_block.html:15
 msgid "Upload ISO Image"
-msgstr "上传 ISO 镜像"
+msgstr "上传ISO镜像"
 
 #: storages/templates/create_stg_vol_block.html:29
 msgid "Upload"
@@ -3684,21 +3686,21 @@ msgstr "您需要输入所有字段以创建ceph资源池"
 
 #: storages/views.py:96
 msgid "Security Issues with file uploading"
-msgstr ""
+msgstr "文件上传遇到安全问题"
 
 #: storages/views.py:103
 msgid "File not found. Check the path variable and filename"
-msgstr ""
+msgstr "未找到文件。 请检查路径变量和文件名"
 
 #: storages/views.py:150
 #, fuzzy, python-format
 #| msgid "Volume: %(volume)s is deleted."
 msgid "Volume: %(vol)s is deleted."
-msgstr "卷：%(volume)s 已删除。"
+msgstr "卷：%(vol)s 已删除。"
 
 #: storages/views.py:155
 msgid "ISO image already exist"
-msgstr "ISO 镜像已存在"
+msgstr "ISO镜像已存在"
 
 #: storages/views.py:159
 #, python-format
@@ -3713,13 +3715,13 @@ msgstr "已使用的卷的名称"
 #, fuzzy, python-format
 #| msgid "%(image)s image cloned as %(clone)s successfully"
 msgid "%(image)s image cloned as %(name)s successfully"
-msgstr "镜像 %(image)s 已成功克隆为 %(clone)s"
+msgstr "镜像 %(image)s 已成功克隆为 %(name)s"
 
 #: storages/views.py:226
 #, fuzzy, python-format
 #| msgid "Image file {name} is created successfully"
 msgid "Image file %(name)s is created successfully"
-msgstr "镜像文件 {name} 已成功创建"
+msgstr "镜像文件 %(name)s 已成功创建"
 
 #: templates/403.html:3
 msgid "403"
@@ -3731,7 +3733,7 @@ msgstr "糟糕！"
 
 #: templates/403.html:9
 msgid "403 Forbidden"
-msgstr "403 被禁止"
+msgstr "403被禁止"
 
 #: templates/403.html:11
 msgid "You do not have permission to access this page."
@@ -3747,7 +3749,7 @@ msgstr "404"
 
 #: templates/404.html:9
 msgid "404 Not Found"
-msgstr "404 未找到"
+msgstr "404未找到"
 
 #: templates/404.html:11
 msgid "The requested page was not found on this server."
@@ -3759,7 +3761,7 @@ msgstr "500"
 
 #: templates/500.html:9
 msgid "500 Internal Server Error"
-msgstr "500 服务器内部错误"
+msgstr "500服务器内部错误"
 
 #: templates/500.html:11
 msgid ""
@@ -3786,12 +3788,12 @@ msgstr "搜索"
 #: venv/lib/python3.6/site-packages/click/_termui_impl.py:496
 #, python-brace-format
 msgid "{editor}: Editing failed"
-msgstr ""
+msgstr "{editor}:  编辑失败"
 
 #: venv/lib/python3.6/site-packages/click/_termui_impl.py:500
 #, python-brace-format
 msgid "{editor}: Editing failed: {e}"
-msgstr ""
+msgstr "{editor}: 编辑失败: {e}"
 
 #: venv/lib/python3.6/site-packages/click/_unicodefun.py:20
 msgid ""
@@ -3799,6 +3801,8 @@ msgid ""
 "ASCII as encoding for the environment. Consult https://click.palletsprojects."
 "com/unicode-support/ for mitigation steps."
 msgstr ""
+"点击将中止进一步的执行，因为Python被配置为使用ASCII作为环境的编码。 相关信"
+"息，请参阅 https://click.palletsprojects.com/unicode-support/。"
 
 #: venv/lib/python3.6/site-packages/click/_unicodefun.py:56
 msgid ""
@@ -3806,12 +3810,16 @@ msgid ""
 "discovered. This most likely requires resolving by reconfiguring the locale "
 "system."
 msgstr ""
+"附加信息：在此系统上未发现合适的 UTF-8 语言环境。 这很可能需要通过重新配置语"
+"言环境系统来解决。"
 
 #: venv/lib/python3.6/site-packages/click/_unicodefun.py:65
 msgid ""
 "This system supports the C.UTF-8 locale which is recommended. You might be "
 "able to resolve your issue by exporting the following environment variables:"
 msgstr ""
+"该系统支持推荐的 C.UTF-8 语言环境。 您可以通过导出以下环境变量来解决您的问"
+"题："
 
 #: venv/lib/python3.6/site-packages/click/_unicodefun.py:75
 #, python-brace-format
@@ -3819,6 +3827,8 @@ msgid ""
 "This system lists some UTF-8 supporting locales that you can pick from. The "
 "following suitable locales were discovered: {locales}"
 msgstr ""
+"该系统列出了一些您可以从中选择的支持 UTF-8 的语言环境。 发现了以下合适的语言"
+"环境：{locales}"
 
 #: venv/lib/python3.6/site-packages/click/_unicodefun.py:93
 msgid ""
@@ -3826,205 +3836,207 @@ msgid ""
 "could not pick up from it because it does not exist. The exported locale is "
 "{locale!r} but it is not supported."
 msgstr ""
+"点击并发现您导出了 UTF-8 语言环境，但语言环境系统无法从中提取，因为它不存"
+"在。 导出的语言环境是 {locale!r} 但不受支持。"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1095
 msgid "Aborted!"
-msgstr ""
+msgstr "中止！"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1279
 #: venv/lib/python3.6/site-packages/click/decorators.py:434
 #, fuzzy
 #| msgid "show this help message and exit"
 msgid "Show this message and exit."
-msgstr "显示此帮助消息并退出"
+msgstr "显示此消息并退出。"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1308
 #: venv/lib/python3.6/site-packages/click/core.py:1334
 #, python-brace-format
 msgid "(Deprecated) {text}"
-msgstr ""
+msgstr "（已弃用） {text}"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1375
 #, fuzzy, python-brace-format
 #| msgid "expected %s argument(s)"
 msgid "Got unexpected extra argument ({args})"
 msgid_plural "Got unexpected extra arguments ({args})"
-msgstr[0] "预期 %s argument(s)"
+msgstr[0] "有意外的额外参数  ({args})"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1390
 msgid "DeprecationWarning: The command {name!r} is deprecated."
-msgstr ""
+msgstr "弃用警告：命令 {name!r} 已弃用。"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1607
 msgid "Commands"
-msgstr ""
+msgstr "命令"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1639
 msgid "Missing command."
-msgstr ""
+msgstr "缺少命令。"
 
 #: venv/lib/python3.6/site-packages/click/core.py:1717
 msgid "No such command {name!r}."
-msgstr ""
+msgstr "没有这样的命令 {name!r} 。"
 
 #: venv/lib/python3.6/site-packages/click/core.py:2258
 #, fuzzy
 #| msgid "'%(value)s' value must be an integer."
 msgid "Value must be an iterable."
-msgstr "'%(value)s' 值必须是整数。"
+msgstr "值必须是可迭代的。"
 
 #: venv/lib/python3.6/site-packages/click/core.py:2278
 #, python-brace-format
 msgid "Takes {nargs} values but 1 was given."
 msgid_plural "Takes {nargs} values but {len} were given."
-msgstr[0] ""
+msgstr[0] "取 {nargs} 值，但给出 {len} 。"
 
 #: venv/lib/python3.6/site-packages/click/core.py:2701
 #, python-brace-format
 msgid "env var: {var}"
-msgstr ""
+msgstr "环境变量： {var}"
 
 #: venv/lib/python3.6/site-packages/click/core.py:2724
 msgid "(dynamic)"
-msgstr ""
+msgstr "（动态的）"
 
 #: venv/lib/python3.6/site-packages/click/core.py:2735
 #, python-brace-format
 msgid "default: {default}"
-msgstr ""
+msgstr "默认值：{default}"
 
 #: venv/lib/python3.6/site-packages/click/core.py:2748
 msgid "required"
-msgstr ""
+msgstr "必需的"
 
 #: venv/lib/python3.6/site-packages/click/decorators.py:339
 #, python-format
 msgid "%(prog)s, version %(version)s"
-msgstr ""
+msgstr "%(prog)s ， 版本 %(version)s"
 
 #: venv/lib/python3.6/site-packages/click/decorators.py:403
 #, fuzzy
 #| msgid "show this help message and exit"
 msgid "Show the version and exit."
-msgstr "显示此帮助消息并退出"
+msgstr "显示版本并退出。"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:43
 #: venv/lib/python3.6/site-packages/click/exceptions.py:79
 #, fuzzy, python-brace-format
 #| msgid "message"
 msgid "Error: {message}"
-msgstr "消息"
+msgstr "错误：{message}"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:71
 #, python-brace-format
 msgid "Try '{command} {option}' for help."
-msgstr ""
+msgstr "尝试通过 '{command} {option}' 来寻求帮助。"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:120
 #, fuzzy, python-brace-format
 #| msgid "invalid %s value: %r"
 msgid "Invalid value: {message}"
-msgstr "无效的 %s 数值：%r"
+msgstr "无效的数值：{message}"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:122
 #, python-brace-format
 msgid "Invalid value for {param_hint}: {message}"
-msgstr ""
+msgstr "{param_hint} 的值无效：{message}"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:178
 #, fuzzy
 #| msgid "positional arguments"
 msgid "Missing argument"
-msgstr "位置参数"
+msgstr "缺少参数"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:180
 #, fuzzy
 #| msgid "Edit options"
 msgid "Missing option"
-msgstr "编辑选项"
+msgstr "缺少选项"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:182
 msgid "Missing parameter"
-msgstr ""
+msgstr "缺少参数"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:184
 #, python-brace-format
 msgid "Missing {param_type}"
-msgstr ""
+msgstr "缺少 {param_type}"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:191
 #, python-brace-format
 msgid "Missing parameter: {param_name}"
-msgstr ""
+msgstr "缺少参数：{param_name}"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:211
 #, python-brace-format
 msgid "No such option: {name}"
-msgstr ""
+msgstr "没有这样的选项：{name}"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:223
 #, python-brace-format
 msgid "Did you mean {possibility}?"
 msgid_plural "(Possible options: {possibilities})"
-msgstr[0] ""
+msgstr[0] "(可能的选项：{possibilities}  )"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:261
 #, fuzzy
 #| msgid "Unknown"
 msgid "unknown error"
-msgstr "未知"
+msgstr "未知错误"
 
 #: venv/lib/python3.6/site-packages/click/exceptions.py:268
 msgid "Could not open file {filename!r}: {message}"
-msgstr ""
+msgstr "无法打开文件 {filename!r}: {message}"
 
 #: venv/lib/python3.6/site-packages/click/parser.py:231
 msgid "Argument {name!r} takes {nargs} values."
-msgstr ""
+msgstr "参数 {name!r} 采用 {nargs} 值。"
 
 #: venv/lib/python3.6/site-packages/click/parser.py:413
 msgid "Option {name!r} does not take a value."
-msgstr ""
+msgstr "选项 {name!r} 没有值。"
 
 #: venv/lib/python3.6/site-packages/click/parser.py:474
 msgid "Option {name!r} requires an argument."
 msgid_plural "Option {name!r} requires {nargs} arguments."
-msgstr[0] ""
+msgstr[0] "选项 {name!r} 需要 {nargs} 参数。"
 
 #: venv/lib/python3.6/site-packages/click/shell_completion.py:316
 msgid "Shell completion is not supported for Bash versions older than 4.4."
-msgstr ""
+msgstr "早于4.4的Bash版本不支持完成Shell动作执行。"
 
 #: venv/lib/python3.6/site-packages/click/shell_completion.py:322
 msgid "Couldn't detect Bash version, shell completion is not supported."
-msgstr ""
+msgstr "无法检测 Bash 版本，不支持完成shell动作执行。"
 
 #: venv/lib/python3.6/site-packages/click/termui.py:161
 #, fuzzy
 #| msgid "No configuration"
 msgid "Repeat for confirmation"
-msgstr "没有配置"
+msgstr "重复确认"
 
 #: venv/lib/python3.6/site-packages/click/termui.py:178
 msgid "Error: The value you entered was invalid."
-msgstr ""
+msgstr "错误：您输入的值无效。"
 
 #: venv/lib/python3.6/site-packages/click/termui.py:180
 #, python-brace-format
 msgid "Error: {e.message}"
-msgstr ""
+msgstr "错误：{e.message}"
 
 #: venv/lib/python3.6/site-packages/click/termui.py:191
 msgid "Error: The two entered values do not match."
-msgstr ""
+msgstr "错误：输入的两个值不匹配。"
 
 #: venv/lib/python3.6/site-packages/click/termui.py:247
 msgid "Error: invalid input"
-msgstr ""
+msgstr "错误：无效的输入"
 
 #: venv/lib/python3.6/site-packages/click/termui.py:798
 msgid "Press any key to continue..."
-msgstr ""
+msgstr "按任意键继续..."
 
 #: venv/lib/python3.6/site-packages/click/types.py:258
 #, python-brace-format
@@ -4032,85 +4044,87 @@ msgid ""
 "Choose from:\n"
 "\t{choices}"
 msgstr ""
+"选择：\n"
+"\t{choices}"
 
 #: venv/lib/python3.6/site-packages/click/types.py:290
 #, fuzzy
 #| msgid "Value %(value)r is not a valid choice."
 msgid "{value!r} is not {choice}."
 msgid_plural "{value!r} is not one of {choices}."
-msgstr[0] "值 %(value)r 不是有效的选择。"
+msgstr[0] "{value!r} 不是 {choice} /  {choices} 之一。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:380
 msgid "{value!r} does not match the format {format}."
 msgid_plural "{value!r} does not match the formats {formats}."
-msgstr[0] ""
+msgstr[0] "{value!r} 与格式 {formats} 不匹配。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:402
 #, fuzzy
 #| msgid "Value %(value)r is not a valid choice."
 msgid "{value!r} is not a valid {number_type}."
-msgstr "值 %(value)r 不是有效的选择。"
+msgstr "{value!r} 不是有效的 {number_type}。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:458
 #, python-brace-format
 msgid "{value} is not in the range {range}."
-msgstr ""
+msgstr "{value} 不在范围 {range} 内。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:599
 #, fuzzy
 #| msgid "Value %(value)r is not a valid choice."
 msgid "{value!r} is not a valid boolean."
-msgstr "值 %(value)r 不是有效的选择。"
+msgstr "{value!r} 不是有效的布尔值。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:623
 #, fuzzy
 #| msgid "'%(value)s' is not a valid UUID."
 msgid "{value!r} is not a valid UUID."
-msgstr "'%(value)s' 不是有效的UUID 。"
+msgstr "{value!r}  不是有效的UUID 。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:801
 #, fuzzy
 #| msgid "Profile"
 msgid "file"
-msgstr "个人资料"
+msgstr "文件"
 
 #: venv/lib/python3.6/site-packages/click/types.py:803
 #, fuzzy
 #| msgid "Direction"
 msgid "directory"
-msgstr "目的"
+msgstr "目录"
 
 #: venv/lib/python3.6/site-packages/click/types.py:805
 #, fuzzy
 #| msgid "Pool path"
 msgid "path"
-msgstr "资源池路径"
+msgstr "路径"
 
 #: venv/lib/python3.6/site-packages/click/types.py:851
 msgid "{name} {filename!r} does not exist."
-msgstr ""
+msgstr "{name} {filename!r} 不存在。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:860
 msgid "{name} {filename!r} is a file."
-msgstr ""
+msgstr "{name} {filename!r} 是一个文件。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:868
 msgid "{name} {filename!r} is a directory."
-msgstr ""
+msgstr "{name} {filename!r} 是一个目录。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:876
 msgid "{name} {filename!r} is not writable."
-msgstr ""
+msgstr "{name} {filename!r} 不可写。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:884
 msgid "{name} {filename!r} is not readable."
-msgstr ""
+msgstr "{name} {filename!r} 不可读。"
 
 #: venv/lib/python3.6/site-packages/click/types.py:951
 #, python-brace-format
 msgid "{len_type} values are required, but {len_value} was given."
 msgid_plural "{len_type} values are required, but {len_value} were given."
-msgstr[0] ""
+msgstr[0] "{len_type} 值是必需的，但给出了 {len_value} 。"
 
 #: venv/lib/python3.6/site-packages/django/contrib/messages/apps.py:7
 #: venv2/lib/python2.7/site-packages/django/contrib/messages/apps.py:7
@@ -4136,7 +4150,7 @@ msgstr "联合组织"
 #. range generated by paginators, e.g. [1, 2, '…', 5, 6, 7, '…', 9, 10].
 #: venv/lib/python3.6/site-packages/django/core/paginator.py:30
 msgid "…"
-msgstr ""
+msgstr "…"
 
 #: venv/lib/python3.6/site-packages/django/core/paginator.py:51
 #: venv2/lib/python2.7/site-packages/django/core/paginator.py:43
@@ -4163,7 +4177,7 @@ msgstr "请输入有效值。"
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:107
 #: venv2/lib/python2.7/site-packages/django/forms/fields.py:671
 msgid "Enter a valid URL."
-msgstr "请输入有效的 URL 地址。"
+msgstr "请输入有效的URL地址。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:150
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:160
@@ -4183,7 +4197,7 @@ msgstr "请输入有效的电子邮件地址。"
 #| "hyphens."
 msgid ""
 "Enter a valid “slug” consisting of letters, numbers, underscores or hyphens."
-msgstr "请输入由字母，数字，下划线或连字符组成的有效“字段”。"
+msgstr "输入由字母、数字、下划线或连字符组成的有效“slug”。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:269
 #, fuzzy
@@ -4193,7 +4207,7 @@ msgstr "请输入由字母，数字，下划线或连字符组成的有效“字
 msgid ""
 "Enter a valid “slug” consisting of Unicode letters, numbers, underscores, or "
 "hyphens."
-msgstr "请输入由 Unicode 字母，数字，下划线或连字符组成的有效“字段”。"
+msgstr "输入由 Unicode 字母、数字、下划线或连字符组成的有效“slug”。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:278
 #: venv/lib/python3.6/site-packages/django/core/validators.py:288
@@ -4201,21 +4215,21 @@ msgstr "请输入由 Unicode 字母，数字，下划线或连字符组成的有
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:257
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:277
 msgid "Enter a valid IPv4 address."
-msgstr "请输入有效的 IPv4 地址。"
+msgstr "请输入有效的IPv4地址。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:296
 #: venv/lib/python3.6/site-packages/django/core/validators.py:312
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:262
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:278
 msgid "Enter a valid IPv6 address."
-msgstr "请输入有效的 IPv6 地址。"
+msgstr "请输入有效的IPv6地址。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:306
 #: venv/lib/python3.6/site-packages/django/core/validators.py:310
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:272
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:276
 msgid "Enter a valid IPv4 or IPv6 address."
-msgstr "请输入有效的 IPv4 或 IPv6 地址。"
+msgstr "请输入有效的IPv4或IPv6地址。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:340
 #: venv2/lib/python2.7/site-packages/django/core/validators.py:308
@@ -4303,8 +4317,8 @@ msgid ""
 "File extension “%(extension)s” is not allowed. Allowed extensions are: "
 "%(allowed_extensions)s."
 msgstr ""
-"不允许文件扩展名 '%(extension)s' 。 允许的扩展名"
-"是：'%(allowed_extensions)s' 。"
+"不允许使用文件扩展名“%(extension)s”。 允许的扩展名是："
+"%(allowed_extensions)s 。"
 
 #: venv/lib/python3.6/site-packages/django/core/validators.py:559
 msgid "Null characters are not allowed."
@@ -4365,13 +4379,13 @@ msgstr "类型的字段：%(field_type)s"
 #, fuzzy, python-format
 #| msgid "'%(value)s' value must be either True or False."
 msgid "“%(value)s” value must be either True or False."
-msgstr "'%(value)s' 值必须为 True 或 False 。"
+msgstr "“%(value)s” 值必须为 True 或 False 。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:959
 #, fuzzy, python-format
 #| msgid "'%(value)s' value must be either True, False, or None."
 msgid "“%(value)s” value must be either True, False, or None."
-msgstr "'%(value)s' 值必须为 True，False 或 None 。"
+msgstr "“%(value)s”值必须为 True，False 或 None 。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:961
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:992
@@ -4397,7 +4411,7 @@ msgstr "逗号分隔的整数"
 msgid ""
 "“%(value)s” value has an invalid date format. It must be in YYYY-MM-DD "
 "format."
-msgstr "'%(value)s' 值的日期格式无效。 必须为 YYYY-MM-DD 格式。"
+msgstr "“%(value)s” 值的日期格式无效。 必须为 YYYY-MM-DD 格式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1147
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1290
@@ -4408,7 +4422,7 @@ msgstr "'%(value)s' 值的日期格式无效。 必须为 YYYY-MM-DD 格式。"
 msgid ""
 "“%(value)s” value has the correct format (YYYY-MM-DD) but it is an invalid "
 "date."
-msgstr "'%(value)s' 值具有正确的格式（YYYY-MM-DD），但它是无效的日期。"
+msgstr "“%(value)s”值具有正确的格式（YYYY-MM-DD），但它是无效的日期。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1150
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1177
@@ -4424,7 +4438,7 @@ msgid ""
 "“%(value)s” value has an invalid format. It must be in YYYY-MM-DD HH:MM[:ss[."
 "uuuuuu]][TZ] format."
 msgstr ""
-"'%(value)s' 值的格式无效。 它必须采用 YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ] 格"
+"“%(value)s” 值的格式无效。 它必须采用 YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ] 格"
 "式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1292
@@ -4436,7 +4450,7 @@ msgid ""
 "“%(value)s” value has the correct format (YYYY-MM-DD HH:MM[:ss[.uuuuuu]]"
 "[TZ]) but it is an invalid date/time."
 msgstr ""
-"'%(value)s' 值具有正确的格式（YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ]），但它是无"
+"“%(value)s” 值具有正确的格式（YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ]），但它是无"
 "效的日期/时间。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1296
@@ -4448,7 +4462,7 @@ msgstr "日期（包含时间）"
 #, fuzzy, python-format
 #| msgid "'%(value)s' value must be a decimal number."
 msgid "“%(value)s” value must be a decimal number."
-msgstr "'%(value)s' 值必须是十进制数字。"
+msgstr "“%(value)s” 值必须是十进制数字。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1446
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1477
@@ -4463,7 +4477,7 @@ msgstr "小数"
 msgid ""
 "“%(value)s” value has an invalid format. It must be in [DD] [[HH:]MM:]ss[."
 "uuuuuu] format."
-msgstr "'%(value)s' 值的格式无效。 它必须为 [DD] [HH:[MM:]]ss[.uuuuuu] 格式。"
+msgstr "“%(value)s”  值的格式无效。 它必须为 [DD] [HH:[MM:]]ss[.uuuuuu] 格式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1588
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1631
@@ -4484,7 +4498,7 @@ msgstr "文件路径"
 #, fuzzy, python-format
 #| msgid "'%(value)s' value must be a float."
 msgid "“%(value)s” value must be a float."
-msgstr "'%(value)s' 值必须是浮点数。"
+msgstr "“%(value)s”值必须是浮点数。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1729
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1775
@@ -4495,7 +4509,7 @@ msgstr "浮点数"
 #, fuzzy, python-format
 #| msgid "'%(value)s' value must be an integer."
 msgid "“%(value)s” value must be an integer."
-msgstr "'%(value)s' 值必须是整数。"
+msgstr "“%(value)s”值必须是整数。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1769
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:901
@@ -4529,7 +4543,7 @@ msgstr "IP 地址"
 #, fuzzy, python-format
 #| msgid "'%(value)s' value must be either None, True or False."
 msgid "“%(value)s” value must be either None, True or False."
-msgstr "'%(value)s' 值必须为 None，True 或 False 。"
+msgstr "“%(value)s” 值必须为 None，True 或 False 。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:1989
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2008
@@ -4540,7 +4554,7 @@ msgstr "布尔值（True，False 或 None）"
 #, fuzzy
 #| msgid "Positive integer"
 msgid "Positive big integer"
-msgstr "正整数"
+msgstr "正的大整数"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2056
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2071
@@ -4556,7 +4570,7 @@ msgstr "正小整数"
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2096
 #, python-format
 msgid "Slug (up to %(max_length)s)"
-msgstr "Slug (up to %(max_length)s)"
+msgstr "Slug (最多到 %(max_length)s)"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2115
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2137
@@ -4571,7 +4585,7 @@ msgstr "文本"
 msgid ""
 "“%(value)s” value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] "
 "format."
-msgstr "'%(value)s' 值的格式无效。 它必须为 HH:MM[:ss[.uuuuuu]] 格式。"
+msgstr "“%(value)s”值的格式无效。 它必须为 HH:MM[:ss[.uuuuuu]] 格式。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2183
 #, fuzzy, python-format
@@ -4581,7 +4595,7 @@ msgstr "'%(value)s' 值的格式无效。 它必须为 HH:MM[:ss[.uuuuuu]] 格�
 msgid ""
 "“%(value)s” value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an "
 "invalid time."
-msgstr "'%(value)s' 值具有正确的格式（HH:MM[:ss[.uuuuuu]]），但时间无效。"
+msgstr "“%(value)s” 值具有正确的格式（HH:MM[:ss[.uuuuuu]]），但时间无效。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2186
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2168
@@ -4602,7 +4616,7 @@ msgstr "原始二进制数据"
 #, fuzzy, python-format
 #| msgid "'%(value)s' is not a valid UUID."
 msgid "“%(value)s” is not a valid UUID."
-msgstr "'%(value)s' 不是有效的UUID 。"
+msgstr "“%(value)s”不是有效的UUID 。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/__init__.py:2401
 msgid "Universally unique identifier"
@@ -4615,11 +4629,11 @@ msgstr "文件"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/json.py:18
 msgid "A JSON object"
-msgstr ""
+msgstr "一个JSON对象"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/json.py:20
 msgid "Value must be valid JSON."
-msgstr ""
+msgstr "值必须是有效的JSON。"
 
 #: venv/lib/python3.6/site-packages/django/db/models/fields/related.py:790
 #: venv2/lib/python2.7/site-packages/django/db/models/fields/related.py:788
@@ -4768,7 +4782,7 @@ msgstr "请输入有效的UUID。"
 #, fuzzy
 #| msgid "Enter a valid URL."
 msgid "Enter a valid JSON."
-msgstr "请输入有效的 URL 地址。"
+msgstr "输入有效的 JSON。"
 
 #. Translators: This is the default suffix added to form field labels
 #: venv/lib/python3.6/site-packages/django/forms/forms.py:76
@@ -4788,6 +4802,8 @@ msgid ""
 "ManagementForm data is missing or has been tampered with. Missing fields: "
 "%(field_names)s. You may need to file a bug report if the issue persists."
 msgstr ""
+"管理表格数据丢失或被篡改。 缺少字段：%(field_names)s 。 如果问题仍然存在，您"
+"可能需要提交错误报告。"
 
 #: venv/lib/python3.6/site-packages/django/forms/formsets.py:370
 #, fuzzy, python-format
@@ -4795,7 +4811,7 @@ msgstr ""
 #| msgid_plural "Please submit %d or more forms."
 msgid "Please submit at most %d form."
 msgid_plural "Please submit at most %d forms."
-msgstr[0] "请提交 %d 或更多表格。"
+msgstr[0] "请最多提交 %d 个表格。"
 
 #: venv/lib/python3.6/site-packages/django/forms/formsets.py:377
 #, fuzzy, python-format
@@ -4803,14 +4819,14 @@ msgstr[0] "请提交 %d 或更多表格。"
 #| msgid_plural "Please submit %d or more forms."
 msgid "Please submit at least %d form."
 msgid_plural "Please submit at least %d forms."
-msgstr[0] "请提交 %d 或更多表格。"
+msgstr[0] "请至少提交 %d 个表格。"
 
 #: venv/lib/python3.6/site-packages/django/forms/formsets.py:405
 #: venv/lib/python3.6/site-packages/django/forms/formsets.py:412
 #: venv2/lib/python2.7/site-packages/django/forms/formsets.py:390
 #: venv2/lib/python2.7/site-packages/django/forms/formsets.py:392
 msgid "Order"
-msgstr "顺序"
+msgstr "排序"
 
 #: venv/lib/python3.6/site-packages/django/forms/models.py:763
 #: venv2/lib/python2.7/site-packages/django/forms/models.py:744
@@ -4852,7 +4868,7 @@ msgstr "选择一个有效的选择。 该选择不是可用的选择之一。"
 #, fuzzy, python-format
 #| msgid "\"%(pk)s\" is not a valid value."
 msgid "“%(pk)s” is not a valid value."
-msgstr "\"%(pk)s\" 不是有效值。"
+msgstr "“%(pk)s”不是有效值。"
 
 #: venv/lib/python3.6/site-packages/django/forms/utils.py:172
 #, fuzzy, python-format
@@ -4863,8 +4879,8 @@ msgid ""
 "%(datetime)s couldn’t be interpreted in time zone %(current_timezone)s; it "
 "may be ambiguous or it may not exist."
 msgstr ""
-"%(datetime)s 无法在时区 %(current_timezone)s 中解释； 它可能是模棱两可的，也"
-"可能不存在。"
+"%(datetime)s 无法在时区 %(current_timezone)s 中解释； 它可能不明确，也可能不"
+"存在。"
 
 #: venv/lib/python3.6/site-packages/django/forms/widgets.py:404
 #: venv2/lib/python2.7/site-packages/django/forms/widgets.py:378
@@ -5293,13 +5309,13 @@ msgstr "十二月"
 #: venv/lib/python3.6/site-packages/django/utils/ipv6.py:8
 #: venv2/lib/python2.7/site-packages/django/utils/ipv6.py:12
 msgid "This is not a valid IPv6 address."
-msgstr "这不是有效的 IPv6 地址。"
+msgstr "这不是有效的IPv6地址。"
 
 #: venv/lib/python3.6/site-packages/django/utils/text.py:71
 #, python-format
 msgctxt "String to return when truncating text"
 msgid "%(truncated_text)s…"
-msgstr "%(truncated_text)s…"
+msgstr "%(truncated_text)s …"
 
 #: venv/lib/python3.6/site-packages/django/utils/text.py:240
 #: venv2/lib/python2.7/site-packages/django/utils/text.py:251
@@ -5379,8 +5395,8 @@ msgid ""
 "required for security reasons, to ensure that your browser is not being "
 "hijacked by third parties."
 msgstr ""
-"您正在看到此消息，因为此 HTTPS 站点要求 Web 浏览器发送 “ Referer 标头”，但没"
-"有发送。 出于安全原因，此标头是必需的，以确保您的浏览器不会被第三方劫持。"
+"您看到此消息是因为此 HTTPS 站点需要您的 Web 浏览器发送“Referer 标头”，但没有"
+"发送。 出于安全原因，此标头是必需的，以确保您的浏览器不被第三方劫持。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:120
 #, fuzzy
@@ -5393,8 +5409,8 @@ msgid ""
 "enable them, at least for this site, or for HTTPS connections, or for “same-"
 "origin” requests."
 msgstr ""
-"如果您已将浏览器配置为禁用 'Referer' 标头，请至少对本站点，HTTPS 连接或 “相同"
-"来源” 请求重新启用标头。"
+"如果您已将浏览器配置为禁用“Referer”标头，请重新启用它们，至少对于此站点、"
+"HTTPS 连接或“同源”请求。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:124
 #, fuzzy
@@ -5411,8 +5427,8 @@ msgid ""
 "If you’re concerned about privacy, use alternatives like <a rel=\"noreferrer"
 "\" …> for links to third-party sites."
 msgstr ""
-"如果您使用的是 <meta name=\"referrer\" content=\"no-referrer\"> 标记或包含 "
-"'Referrer-Policy: no-referrer' 标头，请删除它们。 CSRF保护要求 'Referer' 标头"
+"如果您使用的是 <meta name=\"referrer\" content=\"no-referrer\"> 标记或包"
+"含“Referrer-Policy: no-referrer”标头，请删除它们。 CSRF保护要求“Referer”标头"
 "进行严格的引用检查。 如果您担心隐私问题，请使用 <a rel=\"noreferrer\" ...> 之"
 "类的替代方法来链接到第三方网站。"
 
@@ -5435,13 +5451,12 @@ msgid ""
 "If you have configured your browser to disable cookies, please re-enable "
 "them, at least for this site, or for “same-origin” requests."
 msgstr ""
-"如果您已将浏览器配置为禁用 Cookie ，请至少针对此站点或“相同来源”请求重新启用"
-"它们。"
+"如果您已将浏览器配置为禁用 cookie，请至少对本网站或“同源”请求重新启用它们。"
 
 #: venv/lib/python3.6/site-packages/django/views/csrf.py:142
 #: venv2/lib/python2.7/site-packages/django/views/csrf.py:134
 msgid "More information is available with DEBUG=True."
-msgstr "DEBUG = True 提供了更多信息。"
+msgstr "DEBUG=True 提供了更多信息。"
 
 #: venv/lib/python3.6/site-packages/django/views/generic/dates.py:41
 #: venv2/lib/python2.7/site-packages/django/views/generic/dates.py:48
@@ -5494,7 +5509,7 @@ msgstr ""
 #, fuzzy, python-format
 #| msgid "Invalid date string '%(datestr)s' given format '%(format)s'"
 msgid "Invalid date string “%(datestr)s” given format “%(format)s”"
-msgstr "给定格式 '%(format)s' 的日期字符串 '%(datestr)s' 无效"
+msgstr "给定格式 “%(datestr)s”的无效日期字符串 “%(format)s”"
 
 #: venv/lib/python3.6/site-packages/django/views/generic/detail.py:54
 #: venv2/lib/python2.7/site-packages/django/views/generic/detail.py:55
@@ -5506,7 +5521,7 @@ msgstr "找不到与查询匹配的 %(verbose_name)s"
 #, fuzzy
 #| msgid "Page is not 'last', nor can it be converted to an int."
 msgid "Page is not “last”, nor can it be converted to an int."
-msgstr "页面不是 'last' ，也不能转换为 int 。"
+msgstr "页不是 “last”，也不能转换为 int。"
 
 #: venv/lib/python3.6/site-packages/django/views/generic/list.py:72
 #: venv2/lib/python2.7/site-packages/django/views/generic/list.py:82
@@ -5518,7 +5533,7 @@ msgstr "页面无效 (%(page_number)s): %(message)s"
 #, fuzzy, python-format
 #| msgid "Empty list and '%(class_name)s.allow_empty' is False."
 msgid "Empty list and “%(class_name)s.allow_empty” is False."
-msgstr "空列表，并且  '%(class_name)s.allow_empty' 为False。"
+msgstr "空列表，并且“%(class_name)s.allow_empty” 为False。"
 
 #: venv/lib/python3.6/site-packages/django/views/static.py:40
 #: venv2/lib/python2.7/site-packages/django/views/static.py:44
@@ -5529,7 +5544,7 @@ msgstr "目录索引在这里是不允许的。"
 #, fuzzy, python-format
 #| msgid "\"%(path)s\" does not exist"
 msgid "“%(path)s” does not exist"
-msgstr "\"%(path)s\" 不存在"
+msgstr "“%(path)s” 不存在"
 
 #: venv/lib/python3.6/site-packages/django/views/static.py:80
 #: venv2/lib/python2.7/site-packages/django/views/static.py:86
@@ -5571,7 +5586,7 @@ msgstr "Django文档"
 #, fuzzy
 #| msgid "Topics, references, &amp; how-to's"
 msgid "Topics, references, &amp; how-to’s"
-msgstr "主题，参考资料，操作方法"
+msgstr "主题,参考资料, &amp; 操作方法"
 
 #: venv/lib/python3.6/site-packages/django/views/templates/default_urlconf.html:239
 msgid "Tutorial: A Polling App"
