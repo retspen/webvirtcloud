@@ -1,4 +1,4 @@
-Django==3.2.11
+Django==3.2.12
 django_bootstrap5==21.2
 django-icons==21.1
 django-login-required-middleware==0.7
@@ -6,7 +6,7 @@ django-otp==1.1.3
 django-qr-code==2.3.0
 gunicorn==20.1.0
 libsass==0.21.0
-libvirt-python==7.10.0
+libvirt-python==8.0.0
 lxml==4.7.1
 qrcode==7.3.1
 rwlock==0.0.7
