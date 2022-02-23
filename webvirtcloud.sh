@@ -334,7 +334,7 @@ case $distro in
     supervisor_conf_path=/etc/supervisor/conf.d
     supervisor_file_name=webvirtcloud.conf
     ;;
-  *centos*|*redhat*|*ol*|*rhel*)
+  *centos*|*redhat*|*ol*|*rhel*|*rocky*)
     echo "  The installer has detected $distro version $version."
     distro=centos
     nginx_group=nginx
