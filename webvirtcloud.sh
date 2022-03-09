@@ -382,7 +382,7 @@ until [[ $setupfqdn == "yes" ]] || [[ $setupfqdn == "no" ]]; do
   esac
 done
 
-echo -n "  Q. Do you want to change NOVNC service port number?(Default: 6080) "
+echo -n "  Q. NOVNC service port number?(Default: 6080) "
 read -r novncd_port
 if [ -z "$novncd_port" ]; then
   readonly novncd_port=6080
@@ -390,7 +390,7 @@ fi
 echo "     Setting novnc service port $novncd_port"
 echo ""
 
-echo -n "  Q. Do you want to change NOVNC public port number for reverse proxy(e.g: 80 or 443)?(Default: 6080) "
+echo -n "  Q. NOVNC public port number for reverse proxy(e.g: 80 or 443)?(Default: 6080) "
 read -r novncd_public_port
 if [ -z "$novncd_public_port" ]; then
   readonly novncd_public_port=6080
@@ -398,7 +398,7 @@ fi
 echo "     Setting novnc public port $novncd_public_port"
 echo ""
 
-echo -n "  Q. Do you want to change NOVNC host listen ip?(Default: 0.0.0.0) "
+echo -n "  Q. NOVNC host listen ip?(Default: 0.0.0.0) "
 read -r novncd_host
 if [ -z "$novncd_host" ]; then
   readonly novncd_host="0.0.0.0"
