@@ -312,7 +312,7 @@ echo '
 '
 
 echo "" 
-echo "  Welcome to Webvirtcloud Installer for CentOS, Fedora, Debian and Ubuntu!"
+echo "  Welcome to Webvirtcloud Installer for RHEL&Alternatives, Fedora, Debian and Ubuntu!"
 echo ""
 shopt -s nocasematch
 case $distro in
@@ -334,7 +334,7 @@ case $distro in
     supervisor_conf_path=/etc/supervisor/conf.d
     supervisor_file_name=webvirtcloud.conf
     ;;
-  *centos*|*redhat*|*ol*|*rhel*|*rocky*)
+  *centos*|*redhat*|*ol*|*rhel*|*rocky*|*alma*)
     echo "  The installer has detected $distro version $version."
     distro=centos
     nginx_group=nginx
