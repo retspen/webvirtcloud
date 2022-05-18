@@ -119,7 +119,7 @@ install_packages () {
         fi
       done;
       ;;
-    fedora|uos|openEuler)
+    fedora|openEuler)
       for p in $PACKAGES; do
         if dnf list installed "$p" >/dev/null 2>&1; then
           echo "  * $p already installed"
@@ -128,6 +128,24 @@ install_packages () {
           log "dnf -y install $p"
         fi
       done;
+      ;;
+    uos)
+      if test "${codename}" == "eagle"; then
+        check_package_cmd=("dpkg" "-s")
+        install_package_cmd="apt-get install -y"
+      else
+        check_package_cmd=("dnf" "list" "installed")
+        install_package_cmd="dnf -y install"
+      fi
+      for p in $PACKAGES; do
+        # shellcheck disable=SC2048
+        if ${check_package_cmd[*]} "$p" >/dev/null 2>&1; then
+          echo "  * $p already installed"
+        else
+          echo "  * Installing $p"
+          log "${install_package_cmd} $p"
+        fi
+      done
       ;;
   esac
 }
@@ -142,7 +160,12 @@ configure_nginx () {
   chown -R "$nginx_group":"$nginx_group" /var/lib/nginx
   # Copy new configuration and webvirtcloud.conf
   echo "  * Copying Nginx configuration"
-  cp "$APP_PATH"/conf/nginx/"$distro"_nginx.conf /etc/nginx/nginx.conf
+  local nginx_template_conf
+  nginx_template_conf="${APP_PATH}/conf/nginx/${distro}_${codename}_nginx.conf"
+  if ! test -f "${nginx_template_conf}"; then
+    nginx_template_conf="${APP_PATH}/conf/nginx/${distro}_nginx.conf"
+  fi
+  cp "${nginx_template_conf}" /etc/nginx/nginx.conf
   cp "$APP_PATH"/conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 
   if [ -n "$fqdn" ]; then
@@ -166,7 +189,8 @@ configure_supervisor () {
 create_user () {
   echo "* Creating webvirtcloud user."
 
-  if [ "$distro" == "ubuntu" ] || [ "$distro" == "debian" ] ; then
+  if [ "$distro" == "ubuntu" ] || [ "$distro" == "debian" ] ||
+    [[ "$distro" == "uos" && "$codename" == "eagle" ]]; then
     adduser --quiet --disabled-password --gecos '""' "$APP_USER"
   else
     adduser "$APP_USER"
@@ -242,7 +266,7 @@ install_webvirtcloud () {
 }
 
 set_firewall () {
-  if [ "$(firewall-cmd --state)" == "running" ]; then
+  if test -n "$(command -v firewall-cmd)" && test "$(firewall-cmd --state)" == "running"; then
     echo "* Configuring firewall to allow HTTP & novnc traffic."
     log "firewall-cmd --zone=public --add-port=http/tcp --permanent"
     log "firewall-cmd --zone=public --add-port=$novncd_port/tcp --permanent"
@@ -344,13 +368,25 @@ case $distro in
     supervisor_file_name=webvirtcloud.ini
     ;;
   *Uos*|*uos*)
-    echo "  The installer has detected $distro version $version."
+    # codename may be fuyu, kongzi, eagle or empty string.
+    output_expand=""
+    if test -n "${codename}"; then
+      output_expand=" codename ${codename}"
+    fi
+    echo "  The installer has detected $distro version $version${output_expand}."
     distro=uos
-    nginx_group=nginx
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    supervisor_service=supervisord
-    supervisor_conf_path=/etc/supervisord.d
-    supervisor_file_name=webvirtcloud.ini
+    if test "${codename}" == "eagle"; then
+      nginx_group=www-data
+      supervisor_service=supervisor
+      supervisor_conf_path=/etc/supervisor/conf.d
+      supervisor_file_name=webvirtcloud.conf
+    else
+      nginx_group=nginx
+      supervisor_service=supervisord
+      supervisor_conf_path=/etc/supervisord.d
+      supervisor_file_name=webvirtcloud.ini
+    fi
     ;;
   *OpenEuler*|*openEuler*)
     echo "  The installer has detected $distro version $version."
@@ -513,7 +549,11 @@ case $distro in
     tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel python3-pip libvirt-devel glibc gcc nginx supervisor python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
+    if test "${codename}" == "eagle"; then
+      PACKAGES="git virtualenv python3-virtualenv python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs uuid"
+    else
+      PACKAGES="git python3-virtualenv python3-devel python3-pip libvirt-devel glibc gcc nginx supervisor python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
+    fi
     install_packages
 
     set_hosts
