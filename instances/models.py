@@ -214,6 +214,7 @@ class PermissionSet(models.Model):
         permissions = [
             ('clone_instances', 'Can clone instances'),
             ('passwordless_console', _('Can access console without password')),
+            ('view_instances', 'Can view instances'),
         ]
 
         managed = False

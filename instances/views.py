@@ -46,7 +46,7 @@ def index(request):
     for compute in computes:
         utils.refr(compute)
 
-    if request.user.is_superuser:
+    if request.user.is_superuser or request.user.has_perm("instances.view_instances"):
         instances = Instance.objects.all().prefetch_related("userinstance_set")
     else:
         instances = Instance.objects.filter(userinstance__user=request.user).prefetch_related("userinstance_set")
@@ -237,7 +237,7 @@ def get_instance(user, pk):
     instance = get_object_or_404(Instance, pk=pk)
     user_instances = user.userinstance_set.all().values_list("instance", flat=True)
 
-    if user.is_superuser or instance.id in user_instances:
+    if user.is_superuser or user.has_perm("instances.view_instances") or instance.id in user_instances:
         return instance
     else:
         raise Http404()
