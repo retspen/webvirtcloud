@@ -30,8 +30,11 @@ try:
                     return None
                 specificUser = connection.response[0]
                 userDn = str(specificUser.get('raw_dn'),'utf-8')
+                userGivenName = connection.entries[0].givenName
+                userSn = connection.entries[0].sn
+                userMail = connection.entries[0].mail
                 with Connection(server, userDn, password) as con:
-                    return username
+                    return username, userGivenName, userSn, userMail
             except Exception as e:
                 print("LDAP Exception: {}".format(e))
                 return None
@@ -46,10 +49,14 @@ try:
             isStaff = False
             isTechnician = False
             
-            if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS) is None:
-                if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF) is None:
-                    if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_TECHNICIANS) is None:
-                        if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS) is None:
+            requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS)
+            if requeteLdap is None:
+                requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF)
+                if requeteLdap is None:
+                    requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_TECHNICIANS)
+                    if requeteLdap is None:
+                        requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS)
+                        if requeteLdap is None:
                             print("User does not belong to any search group. Check LDAP_SEARCH_GROUP_FILTER in settings.")
                             return None
                     else:
@@ -78,6 +85,9 @@ try:
             except User.DoesNotExist:
                 print("authenticate-create new user: {}".format(username))
                 user = User(username=username)
+                user.first_name = requeteLdap[1]
+                user.last_name = requeteLdap[2]
+                user.email = requeteLdap[3]
                 user.is_active = True
                 user.is_staff = isStaff
                 user.is_superuser = isAdmin
