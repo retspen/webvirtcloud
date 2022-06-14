@@ -269,10 +269,12 @@ LDAP_ROOT_DN = ''
 ## Queries to identify the users, i use groupOfUniqueNames on openldap
 
 ### PLEASE BE SURE memberOf overlay is activated on slapd
-## e.g. memberOf=cn=admins,cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+## e.g. memberOf=cn=admins,cn=staff,cn=technicians,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
 LDAP_SEARCH_GROUP_FILTER_ADMINS = ''
-## e.g. memberOf=cn=staff,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+## e.g. memberOf=cn=staff,cn=technicians,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
 LDAP_SEARCH_GROUP_FILTER_STAFF = ''
+## e.g. memberOf=cn=technicians,cn=webvirtcloud,ou=groups,dc=kendar,dc=org
+LDAP_SEARCH_GROUP_FILTER_TECHNICIANS = ''
 ## e.g. memberOf=cn=webvirtcloud,ou=groups,dc=kendar,dc=org
 LDAP_SEARCH_GROUP_FILTER_USERS = ''
 

@@ -1,5 +1,5 @@
 from django.contrib.auth.backends import ModelBackend
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.conf import settings
 from accounts.models import UserAttributes, UserInstance, UserSSHKey
 from django.contrib.auth.models import Permission
@@ -44,21 +44,36 @@ try:
             # Get the user information from the LDAP if he can be authenticated
             isAdmin = False
             isStaff = False
+            isTechnician = False
             
             if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS) is None:
-                 if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF) is None:
-                      if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS) is None:
-                          print("User does not belong to any search group. Check LDAP_SEARCH_GROUP_FILTER in settings.")
-                          return None
-                 else:
-                      isStaff = True
+                if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF) is None:
+                    if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_TECHNICIANS) is None:
+                        if self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS) is None:
+                            print("User does not belong to any search group. Check LDAP_SEARCH_GROUP_FILTER in settings.")
+                            return None
+                    else:
+                        isTechnician = True
+                else:
+                    isStaff = True
             else:
-                 isAdmin = True
-                 isStaff = True
+                isAdmin = True
+                isStaff = True
+
+            techniciansGroup = Group.objects.get(name='Technicians')
     
             try:
                 user = User.objects.get(username=username)
                 attributes = UserAttributes.objects.get(user=user)
+                user.is_staff = isStaff
+                user.is_superuser = isAdmin
+                if isTechnician is False and user.groups.filter(name='Technicians').exists():
+                    user.groups.remove(techniciansGroup)
+                elif isTechnician is True and user.groups.filter(name='Technicians').exists() is False:
+                    user.groups.add(techniciansGroup)
+                else:
+                    print("The user is already in the Technicians group")
+                    user.save()
                 # TODO VERIFY
             except User.DoesNotExist:
                 print("authenticate-create new user: {}".format(username))
@@ -68,6 +83,8 @@ try:
                 user.is_superuser = isAdmin
                 user.set_password(uuid.uuid4().hex)
                 user.save()
+                if isTechnician is True:
+                    user.groups.add(techniciansGroup)
                 maxInstances = 1
                 maxCpus = 1
                 maxMemory = 128
