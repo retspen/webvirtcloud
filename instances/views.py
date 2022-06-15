@@ -4,6 +4,7 @@ import os
 import re
 import socket
 import time
+import subprocess
 from bisect import insort
 
 from accounts.models import UserInstance, UserSSHKey
@@ -127,6 +128,9 @@ def instance(request, pk):
     storages_host = sorted(instance.proxy.get_storages(True))
     net_models_host = instance.proxy.get_network_models()
 
+    instance.drbd = drbd_status(request, pk)
+    instance.save()
+
     return render(request, "instance.html", locals())
 
 
@@ -134,6 +138,45 @@ def status(request, pk):
     instance = get_instance(request.user, pk)
     return JsonResponse({"status": instance.proxy.get_status()})
 
+def drbd_status(request, pk):
+    instance = get_instance(request.user, pk)
+    result = "None DRBD"
+
+    if instance.compute.type == 2:
+        conn = instance.compute.login + "@" + instance.compute.hostname
+        remoteDrbdStatus = subprocess.run(["ssh", conn, "sudo", "drbdadm", "status", "&&", "exit"], stdout=subprocess.PIPE, text=True)
+
+        if remoteDrbdStatus.stdout:
+            try:
+                instanceFindDrbd = re.compile(instance.name + '[_]*[A-Z]* role:(.+?)\n  disk:(.+?)\n', re.IGNORECASE)
+                instanceDrbd = instanceFindDrbd.findall(remoteDrbdStatus.stdout)
+
+                primaryCount = 0
+                secondaryCount = 0
+                statusDisk = "OK"
+
+                for disk in instanceDrbd:
+                    if disk[0] == "Primary":
+                        primaryCount = primaryCount + 1
+                    elif disk[0] == "Secondary":
+                        secondaryCount = secondaryCount + 1
+                    if disk[1] != "UpToDate":
+                        statusDisk = "NOK"
+
+                if primaryCount > 0 and secondaryCount > 0:
+                    statusRole = "NOK"
+                else:
+                    if primaryCount > secondaryCount:
+                        statusRole = "Primary"
+                    else:
+                        statusRole = "Secondary"
+
+                result = statusRole + "/" + statusDisk
+
+            except:
+                print("Error to get drbd role and status")
+
+    return result
 
 def stats(request, pk):
     instance = get_instance(request.user, pk)
