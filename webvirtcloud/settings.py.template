@@ -3,6 +3,7 @@ Django settings for webvirtcloud project.
 
 """
 
+import subprocess
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -263,7 +264,8 @@ LDAP_PORT = 389
 USE_SSL = False
 ## The user with search rights on ldap. (e.g cn=admin,dc=kendar,dc=org)
 LDAP_MASTER_DN = ''
-LDAP_MASTER_PW = ''
+LDAP_MASTER_PW_ENC = ''
+LDAP_MASTER_PW = subprocess.Popen(["bash", str(BASE_DIR) + "/webvirtcloud/.dec_ldap_pwd.sh", LDAP_MASTER_PW_ENC],stdout=subprocess.PIPE, text=True).stdout.read().strip('\n')
 ## The root dn (e.g. dc=kendar,dc=org)
 LDAP_ROOT_DN = ''
 ## Queries to identify the users, i use groupOfUniqueNames on openldap

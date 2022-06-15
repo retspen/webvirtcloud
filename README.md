@@ -397,11 +397,21 @@ sudo sed -i "s/LDAP_URL = ''/LDAP_URL = 'myldap.server.com'/g"" /srv/webvirtclou
 sudo sed -i "s/LDAP_ROOT_DN = ''/LDAP_ROOT_DN = 'dc=server,dc=com'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
-Set the user that has browse access to LDAP and its password
+Set the passphrase to decrypt the password
+```bash
+sudo sed -i "s/pass:MYPASSPHRASE/pass:MYTRUEPASSPHRASE/g" /srv/webvirtcloud/webvirtcloud/.dec_ldap_pwd.sh
+```
+
+Encrypt the password
+```bash
+echo MYPASSWORD | openssl enc -pbkdf2 -salt -pass pass:MYTRUEPASSPHRASE | base64
+```
+
+Set the user that has browse access to LDAP and its password encrypted
 
 ```bash
 sudo sed -i "s/LDAP_MASTER_DN = ''/LDAP_MASTER_DN = 'cn=admin,ou=users,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
-sudo sed -i "s/LDAP_MASTER_PW = ''/LDAP_MASTER_PW = 'password'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
+sudo sed -i "s/LDAP_MASTER_PW_ENC = ''/LDAP_MASTER_PW_ENC = 'MYPASSWORDENCRYPTED'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
 Set the attribute that will be used to find the username, i usually use the cn
