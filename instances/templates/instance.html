@@ -93,7 +93,7 @@
                     {% trans "Resize" %}
                 </button>
             </li>
-            {% if allow_admin_or_not_template %}
+            {% if allow_admin_or_not_template and 'instances.snapshot_instances' in perms %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link action-button" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">
                     <span id="action-block" class="fa fa-camera" aria-hidden="true"></span>

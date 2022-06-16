@@ -813,7 +813,7 @@ def snapshot(request, pk):
     instance = get_instance(request.user, pk)
     allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
 
-    if allow_admin_or_not_template:
+    if allow_admin_or_not_template and request.user.has_perm("instances.snapshot_instances"):
         name = request.POST.get("name", "")
         instance.proxy.create_snapshot(name)
         msg = _("Create snapshot: %(snap)s") % {"snap": name}
@@ -824,7 +824,7 @@ def snapshot(request, pk):
 def delete_snapshot(request, pk):
     instance = get_instance(request.user, pk)
     allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
-    if allow_admin_or_not_template:
+    if allow_admin_or_not_template and request.user.has_perm("instances.snapshot_instances"):
         snap_name = request.POST.get("name", "")
         instance.proxy.snapshot_delete(snap_name)
         msg = _("Delete snapshot: %(snap)s") % {"snap": snap_name}
@@ -835,7 +835,7 @@ def delete_snapshot(request, pk):
 def revert_snapshot(request, pk):
     instance = get_instance(request.user, pk)
     allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
-    if allow_admin_or_not_template:
+    if allow_admin_or_not_template and request.user.has_perm("instances.snapshot_instances"):
         snap_name = request.POST.get("name", "")
         instance.proxy.snapshot_revert(snap_name)
         msg = _("Successful revert snapshot: ")

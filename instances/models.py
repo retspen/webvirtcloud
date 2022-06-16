@@ -216,6 +216,7 @@ class PermissionSet(models.Model):
             ('clone_instances', 'Can clone instances'),
             ('passwordless_console', _('Can access console without password')),
             ('view_instances', 'Can view instances'),
+            ('snapshot_instances', 'Can snapshot instances'),
         ]
 
         managed = False
