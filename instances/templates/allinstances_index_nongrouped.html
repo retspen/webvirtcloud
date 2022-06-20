@@ -7,6 +7,7 @@
                 <th scope="col">{% trans 'Host' %}<br>{% trans 'User' %}</th>
             {% endif %}
             <th scope="col">{% trans 'Status' %}</th>
+	    <th scope="col">{% trans 'Role/Disk' %}</th>
             <th scope="col">{% trans 'VCPU' %}</th>
             <th scope="col">{% trans 'Memory' %}</th>
             <th scope="col" data-sortable="false">{% trans 'Actions' %}</th>
@@ -44,6 +45,9 @@
                         {% if instance.proxy.instance.info.0 == 3 %}<span
                             class="text-warning">{% trans "Suspended" %}</span>{% endif %}
                     </td>
+		    <td>
+			    {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="text-success">{% else %}<span class="text-danger">{% endif %}{{ instance.drbd }}</span>
+		    </td>
                     <td>{{ instance.proxy.instance.info.3 }}</td>
                     <td>{{ instance.cur_memory }} MB</td>
                     <td class="text-nowrap">

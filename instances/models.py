@@ -28,6 +28,7 @@ class Instance(models.Model):
     uuid = models.CharField(_('uuid'), max_length=36, db_index=True)
     is_template = models.BooleanField(_('is template'), default=False)
     created = models.DateTimeField(_('created'), auto_now_add=True)
+    drbd = models.CharField(_('drbd'), max_length=24, default="None")
 
     objects = InstanceManager()
 
@@ -214,6 +215,8 @@ class PermissionSet(models.Model):
         permissions = [
             ('clone_instances', 'Can clone instances'),
             ('passwordless_console', _('Can access console without password')),
+            ('view_instances', 'Can view instances'),
+            ('snapshot_instances', 'Can snapshot instances'),
         ]
 
         managed = False

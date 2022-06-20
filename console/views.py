@@ -41,7 +41,7 @@ def console(request):
         host = int(temptoken[0])
         uuid = temptoken[1]
 
-        if not request.user.is_superuser:
+        if not request.user.is_superuser and not request.user.has_perm("instances.view_instances"):
             try:
                 userInstance = UserInstance.objects.get(
                     instance__compute_id=host, instance__uuid=uuid, user__id=request.user.id
