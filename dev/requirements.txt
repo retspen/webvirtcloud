@@ -3,5 +3,5 @@ coverage==6.2
 django-debug-toolbar==3.2.4
 pycodestyle==2.8.0
 pyflakes==2.4.0
-pylint==2.13.7
+pylint==2.13.9
 yapf==0.32.0
