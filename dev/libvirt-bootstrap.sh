@@ -111,7 +111,7 @@ __parse_version_string() {
 #                 enough.
 #-------------------------------------------------------------------------------
 __sort_release_files() {
-    KNOWN_RELEASE_FILES=$(echo "(arch|centos|debian|ubuntu|fedora|redhat|suse|\
+    KNOWN_RELEASE_FILES=$(echo "(arch|centos|almalinux|rocky|debian|ubuntu|fedora|redhat|suse|\
         mandrake|mandriva|gentoo|slackware|turbolinux|unitedlinux|lsb|system|\
         os)(-|_)(release|version)" | sed -r 's:[[:space:]]::g')
     primary_release_files=""
@@ -208,6 +208,7 @@ __gather_linux_system_info() {
                 ;;
             arch               ) n="Arch Linux"     ;;
             centos             ) n="CentOS"         ;;
+            almalinux             ) n="AlmaLinux"   ;;
             debian             ) n="Debian"         ;;
             ubuntu             ) n="Ubuntu"         ;;
             fedora             ) n="Fedora"         ;;
