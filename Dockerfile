@@ -1,4 +1,4 @@
-FROM phusion/baseimage:focal-1.1.0
+FROM phusion/baseimage:jammy-1.0.0
 
 EXPOSE 80
 EXPOSE 6080
