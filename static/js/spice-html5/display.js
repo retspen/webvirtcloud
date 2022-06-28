@@ -559,6 +559,7 @@ SpiceDisplayConn.prototype.process_channel_message = function(msg)
             var v = document.createElement("video");
             v.src = window.URL.createObjectURL(media);
 
+            v.setAttribute('muted', true);
             v.setAttribute('autoplay', true);
             v.setAttribute('width', m.stream_width);
             v.setAttribute('height', m.stream_height);
@@ -571,7 +572,7 @@ SpiceDisplayConn.prototype.process_channel_message = function(msg)
                 top += this.surfaces[m.surface_id].canvas.offsetTop;
             }
             document.getElementById(this.parent.screen_id).appendChild(v);
-            v.setAttribute('style', "position: absolute; top:" + top + "px; left:" + left + "px;");
+            v.setAttribute('style', "pointer-events:none; position: absolute; top:" + top + "px; left:" + left + "px;");
 
             media.addEventListener('sourceopen', handle_video_source_open, false);
             media.addEventListener('sourceended', handle_video_source_ended, false);
@@ -1145,6 +1146,10 @@ function handle_append_video_buffer_done(e)
             stream.video.buffered.start(stream.video.buffered.length - 1));
         stream.video.currentTime = stream.video.buffered.start(stream.video.buffered.length - 1);
     }
+
+    /* Modern browsers try not to auto play video. */
+    if (this.stream.video.paused && this.stream.video.readyState >= 2)
+        var promise = this.stream.video.play();
 
     if (Utils.STREAM_DEBUG > 1)
         console.log(stream.video.currentTime + ":id " +  stream.id + " updateend " + Utils.dump_media_element(stream.video));

@@ -20,7 +20,7 @@
 */
 
 import { Constants } from './enums.js';
-import { DEBUG } from './utils.js';
+import { DEBUG, arraybuffer_to_str } from './utils.js';
 import { SpiceConn } from './spiceconn.js';
 import { SpiceMsgPortInit } from './spicemsg.js';
 
