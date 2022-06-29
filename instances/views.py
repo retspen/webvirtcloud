@@ -128,8 +128,9 @@ def instance(request, pk):
     storages_host = sorted(instance.proxy.get_storages(True))
     net_models_host = instance.proxy.get_network_models()
 
-    instance.drbd = drbd_status(request, pk)
-    instance.save()
+    if app_settings.VM_DRBD_STATUS == 'True':
+        instance.drbd = drbd_status(request, pk)
+        instance.save()
 
     return render(request, "instance.html", locals())
 
