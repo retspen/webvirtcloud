@@ -7,7 +7,9 @@
             <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
             <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
             <th scope="col">{% trans "Status" %}</th>
+	    {% if app_settings.VM_DRBD_STATUS == 'True' %}
 	    <th scope="col">{% trans "Role/Disk" %}</th>
+	    {% endif %}
             <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
             <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
             <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
@@ -28,7 +30,9 @@
                     <td>
                         <span class="text-success">{% trans "Connected" %}</span>
                     </td>
+		    {% if app_settings.VM_DRBD_STATUS == 'True' %}
 		    <td class="d-none d-sm-table-cell"></td>
+		    {% endif %}
                     <td class="d-none d-sm-table-cell text-center">{{ compute.cpu_count }}</td>
                     <td class="d-none d-sm-table-cell text-right">{{ compute.ram_size|filesizeformat }}</td>
                     <td>
@@ -64,9 +68,11 @@
                                 <span class="text-warning">{% trans "Suspended" %}</span>
                             {% endif %}
                         </td>
+			{% if app_settings.VM_DRBD_STATUS == 'True' %}
 			<td>
 				{% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="text-success">{% else %}<span class="text-danger">{% endif %}{{ instance.drbd }}</span>
 			</td>
+			{% endif %}
                         <td>{{ instance.proxy.instance.info.3 }}</td>
                         <td>{{ instance.cur_memory }} MB</td>
                         <td class="text-nowrap">
