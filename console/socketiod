@@ -171,7 +171,7 @@ def connect(sid, environ):
         (instance, conn) = get_connection_infos(token)
         uuid = conn.get_uuid() 
         uri = conn.wvm.getURI()
-        subprocess.run(["consolecallback", uri, uuid])
+        subprocess.run(["/srv/webvirtcloud/venv/bin/python3", "/srv/webvirtcloud/venv/bin/consolecallback", uri, uuid])
     else:
         # this is the parent process fork.
         sio.start_background_task(target=read_and_forward_pty_output)
