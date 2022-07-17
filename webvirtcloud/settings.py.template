@@ -198,6 +198,9 @@ WS_PUBLIC_PATH = "/novncd/"
 # Websock Certificate for SSL
 WS_CERT = None
 
+SOCKETIO_PORT = 6081
+SOCKETIO_HOST = '0.0.0.0'
+
 # List of console listen addresses
 QEMU_CONSOLE_LISTEN_ADDRESSES = (
     ("127.0.0.1", "Localhost"),

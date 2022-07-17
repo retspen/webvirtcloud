@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+import os
+import sys
+import logging
+import django
+
+DIR_PATH = os.path.dirname(os.path.abspath(__file__))
+ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, '..', ''))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'webvirtcloud.settings')
+CERT = DIR_PATH + '/cert.pem'
+
+if ROOT_PATH not in sys.path:
+    sys.path.append(ROOT_PATH)
+
+django.setup()
+
+import re
+import tempfile
+import io
+import socket
+import socketio
+import pty
+import select
+import subprocess
+import struct
+import fcntl
+import termios
+import signal
+import eventlet
+import atexit
+import tty
+import termios
+import libvirt
+
+from six.moves import http_cookies as Cookie
+from webvirtcloud.settings import SOCKETIO_PORT, SOCKETIO_HOST
+from vrtManager.connection import CONN_SSH, CONN_SOCKET
+from optparse import OptionParser
+
+parser = OptionParser()
+
+parser.add_option("-v",
+                  "--verbose",
+                  dest="verbose",
+                  action="store_true",
+                  help="Verbose mode",
+                  default=False)
+
+parser.add_option("-d",
+                  "--debug",
+                  dest="debug",
+                  action="store_true",
+                  help="Debug mode",
+                  default=False)
+
+parser.add_option("-H",
+                  "--host",
+                  dest="host",
+                  action="store",
+                  help="Listen host",
+                  default=SOCKETIO_HOST)
+
+parser.add_option("-p",
+                  "--port",
+                  dest="port",
+                  action="store",
+                  help="Listen port",
+                  default=SOCKETIO_PORT or 6081)
+
+(options, args) = parser.parse_args()
+
+FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
+if options.debug:
+    logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+    options.verbose = True
+elif options.verbose:
+    logging.basicConfig(level=logging.INFO, format=FORMAT)
+else:
+    logging.basicConfig(level=logging.WARNING, format=FORMAT)
+
+async_mode = "eventlet"
+sio = socketio.Server(async_mode=async_mode, cors_allowed_origins="https://vmm.cyborgside.net")
+
+fd = None
+child_pid = None
+
+def get_connection_infos(token):
+    from instances.models import Instance
+    from vrtManager.instance import wvmInstance
+
+    try:
+        temptoken = token.split('-', 1)
+        host = int(temptoken[0])
+        uuid = temptoken[1]
+        instance = Instance.objects.get(compute_id=host, uuid=uuid)
+        conn = wvmInstance(instance.compute.hostname,
+                           instance.compute.login,
+                           instance.compute.password,
+                           instance.compute.type,
+                           instance.name)
+    except Exception as e:
+        logging.error(
+            'Fail to retrieve console connection infos for token %s : %s' % (token, e))
+        raise
+    return (instance, conn)
+
+def set_winsize(fd, row, col, xpix=0, ypix=0):
+    winsize = struct.pack("HHHH", row, col, xpix, ypix)
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+
+
+def read_and_forward_pty_output():
+    global fd
+    max_read_bytes = 1024 * 20
+    while True:
+        sio.sleep(0.01)
+        if fd:
+            timeout_sec = 0
+            (data_ready, _, _) = select.select([fd], [], [], timeout_sec)
+            if data_ready:
+                output = os.read(fd, max_read_bytes).decode()
+                sio.emit("pty_output", {"output": output})
+        else:
+            return
+       
+
+@sio.event
+def resize(sid, message):   
+    global fd
+    if fd:
+        set_winsize(fd, message["rows"], message["cols"])
+
+@sio.event
+def pty_input(sid, message):
+    global fd
+    if fd:
+        os.write(fd, message["input"].encode())
+
+@sio.event
+def disconnect_request(sid):
+    sio.disconnect(sid)
+
+@sio.event
+def connect(sid, environ):
+    global fd
+    global child_pid
+
+    hcookie = environ.get('HTTP_COOKIE')
+    if hcookie:
+        cookie = Cookie.SimpleCookie()
+        for hcookie_part in hcookie.split(';'):
+            hcookie_part = hcookie_part.lstrip()
+            try:
+                cookie.load(hcookie_part)
+            except Cookie.CookieError:
+                logging.warn('Found malformed cookie')
+            else:
+                if 'token' in cookie:
+                    token = cookie['token'].value
+
+    if child_pid:
+        # already started child process, don't start another
+        # write a new line so that when a client refresh the shell prompt is printed
+        fd.write("\n")
+        return
+
+    # create child process attached to a pty we can read from and write to
+    (child_pid, fd) = pty.fork()
+
+    if child_pid == 0:
+        (instance, conn) = get_connection_infos(token)
+        uuid = conn.get_uuid() 
+        uri = conn.wvm.getURI()
+        subprocess.run(["consolecallback", uri, uuid])
+    else:
+        # this is the parent process fork.
+        sio.start_background_task(target=read_and_forward_pty_output)
+
+@sio.event
+def disconnect(sid):
+
+    global fd
+    global child_pid
+
+    # kill pty process
+    os.kill(child_pid,signal.SIGKILL)
+    os.wait()
+
+    # reset the variables
+    fd = None
+    child_pid = None
+
+app = socketio.WSGIApp(sio)
+import eventlet
+eventlet.wsgi.server(eventlet.listen((options.host,int(options.port))), app)

@@ -79,6 +79,8 @@ def console(request):
     if console_type == "vnc" or console_type == "spice":
         console_page = "console-" + console_type + "-" + view_type + ".html"
         response = render(request, console_page, locals())
+    elif console_type == "pty":
+        response = render(request, "console-xterm.html", locals())
     else:
         if console_type is None:
             console_error = _("Fail to get console. Please check the console configuration of your VM.")
