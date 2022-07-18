@@ -1019,6 +1019,8 @@ class wvmInstance(wvmConnect):
 
     def get_console_type(self):
         console_type = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@type")
+        if console_type is None:
+            console_type = util.get_xml_path(self._XMLDesc(0), "/domain/devices/console/@type")
         return console_type
 
     def set_console_type(self, console_type):

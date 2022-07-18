@@ -1,0 +1,75 @@
+{% extends "console-base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block head %}
+<title>WebVirtCloud - XTerm</title>
+<link rel="stylesheet" href="https://unpkg.com/xterm@3.6.0/dist/xterm.css" />
+<script src="https://unpkg.com/xterm@3.6.0/dist/xterm.js"></script>
+<script src="https://unpkg.com/xterm@3.6.0/dist/addons/fit/fit.js"></script>
+<script src="https://unpkg.com/xterm@3.6.0/dist/addons/fullscreen/fullscreen.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+
+{% endblock %}
+{% block content %}
+<div style="background: white; padding-bottom: 5px;">
+    <span style="font-size: small;">Status: <span style="font-size: small;" id="status">connecting...</span></span>
+    <button id="button"; type="button"; onclick="myFunction()";>Connect</button>
+</div>
+
+<div style="width: 100%; height:100%;" id="terminal"></div>
+<script crossorigin="anonymous">
+	Terminal.applyAddon(fit)
+
+        var socket = io.connect({transports: ["websocket", "polling"]});
+
+        const status = document.getElementById("status")
+        const button = document.getElementById("button")
+
+        var term = new Terminal({
+            cursorBlink: true,
+        });
+
+        term.open(document.getElementById('terminal'));
+
+        term.on('key', (key, ev) => {
+            console.log("pressed key", key)
+            socket.emit("pty_input", {"input": key})
+        });
+
+        socket.on("pty_output", function(output){
+            console.log(output["output"])
+            term.write(output["output"])
+        })
+
+        socket.on("connect", () => {
+        status.innerHTML = '<span style="background-color: lightgreen;">connected</span>'
+        button.innerHTML = 'Disconnect'
+        })
+
+        socket.on("disconnect", () => {
+        status.innerHTML =  '<span style="background-color: #ff8383;">disconnected</span>'
+        button.innerHTML = 'Connect'
+
+        })
+
+        function myFunction(){
+            if (button.innerHTML =='Connect'){
+               location.reload();
+            }
+
+            else if (button.innerHTML == "Disconnect"){
+                socket.emit("disconnect_request")
+            }
+        }
+
+        function resize(){
+            term.fit()
+            socket.emit("resize", {"cols": term.cols, "rows": term.rows})
+        }
+
+        window.onresize = resize
+        window.onload = resize
+</script>
+{% endblock %}
