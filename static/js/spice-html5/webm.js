@@ -62,6 +62,7 @@ var WEBM_CODEC_PRIVATE =                    [ 0x63, 0xA2 ];
 var WEBM_CODEC_ID =                         [ 0x86 ];
 
 var WEBM_VIDEO =                            [ 0xE0 ] ;
+var WEBM_FLAG_INTERLACED =                  [ 0x9A ] ;
 var WEBM_PIXEL_WIDTH =                      [ 0xB0 ] ;
 var WEBM_PIXEL_HEIGHT =                     [ 0xBA ] ;
 
@@ -303,6 +304,7 @@ webm_Audio.prototype =
 function webm_Video(width, height)
 {
     this.id = WEBM_VIDEO;
+    this.flag_interlaced = 0;
     this.width = width;
     this.height = height;
 }
@@ -315,6 +317,7 @@ webm_Video.prototype =
         var dv = new DataView(a);
         at = EBML_write_array(this.id, dv, at);
         at = EBML_write_u64_data_len(this.buffer_size() - 8 - this.id.length, dv, at);
+        at = EBML_write_u8_value(WEBM_FLAG_INTERLACED, this.flag_interlaced, dv, at);
         at = EBML_write_u16_value(WEBM_PIXEL_WIDTH, this.width, dv, at)
         at = EBML_write_u16_value(WEBM_PIXEL_HEIGHT, this.height, dv, at)
         return at;
@@ -322,6 +325,7 @@ webm_Video.prototype =
     buffer_size: function()
     {
         return this.id.length + 8 +
+            WEBM_FLAG_INTERLACED.length + 1 + 1 +
             WEBM_PIXEL_WIDTH.length + 1 + 2 +
             WEBM_PIXEL_HEIGHT.length + 1 + 2;
     },
@@ -397,7 +401,7 @@ function webm_AudioTrackEntry()
 {
     this.id = WEBM_TRACK_ENTRY;
     this.number = 1;
-    this.uid = 1;
+    this.uid = 2;  // Arbitrary id; most likely makes no difference
     this.type = 2; // Audio
     this.flag_enabled = 1;
     this.flag_default = 1;
@@ -471,20 +475,30 @@ webm_AudioTrackEntry.prototype =
 
 function webm_VideoTrackEntry(width, height)
 {
+    /*
+    ** In general, we follow specifications found by looking here:
+    **   https://www.webmproject.org/docs/container/
+    ** which points here:
+    **   https://www.matroska.org/technical/specs/index.html
+    ** and here:
+    **   https://datatracker.ietf.org/doc/draft-ietf-cellar-matroska/
+    ** Our goal is to supply mandatory values, and note where we differ
+    ** from the default.
+    */
     this.id = WEBM_TRACK_ENTRY;
     this.number = 1;
     this.uid = 1;
     this.type = 1; // Video
     this.flag_enabled = 1;
     this.flag_default = 1;
-    this.flag_forced = 1;
-    this.flag_lacing = 0;
-    this.min_cache = 0; // fixme - check
+    this.flag_forced = 1;  // Different than default; we wish to force
+    this.flag_lacing = 1;
+    this.min_cache = 0;
     this.max_block_addition_id = 0;
-    this.codec_decode_all = 0; // fixme - check
-    this.seek_pre_roll = 0; // 80000000; // fixme - check
-    this.codec_delay =   80000000; // Must match codec_private.preskip
     this.codec_id = "V_VP8";
+    this.codec_decode_all = 1;
+    this.seek_pre_roll = 0;
+
     this.video = new webm_Video(width, height);
 }
 
@@ -506,7 +520,6 @@ webm_VideoTrackEntry.prototype =
         at = EBML_write_u8_value(WEBM_MIN_CACHE, this.min_cache, dv, at);
         at = EBML_write_u8_value(WEBM_MAX_BLOCK_ADDITION_ID, this.max_block_addition_id, dv, at);
         at = EBML_write_u8_value(WEBM_CODEC_DECODE_ALL, this.codec_decode_all, dv, at);
-        at = EBML_write_u32_value(WEBM_CODEC_DELAY, this.codec_delay, dv, at);
         at = EBML_write_u32_value(WEBM_SEEK_PRE_ROLL, this.seek_pre_roll, dv, at);
         at = EBML_write_u8_value(WEBM_TRACK_TYPE, this.type, dv, at);
         at = this.video.to_buffer(a, at);
@@ -525,7 +538,6 @@ webm_VideoTrackEntry.prototype =
             WEBM_MIN_CACHE.length + 1 + 1 +
             WEBM_MAX_BLOCK_ADDITION_ID.length + 1 + 1 +
             WEBM_CODEC_DECODE_ALL.length + 1 + 1 +
-            WEBM_CODEC_DELAY.length + 1 + 4 +
             WEBM_SEEK_PRE_ROLL.length + 1 + 4 +
             WEBM_TRACK_TYPE.length + 1 + 1 +
             this.video.buffer_size();
