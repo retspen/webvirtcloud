@@ -15,6 +15,9 @@ from webvirtcloud.settings import (
     WS_PUBLIC_HOST,
     WS_PUBLIC_PATH,
     WS_PUBLIC_PORT,
+    SOCKETIO_PUBLIC_HOST,
+    SOCKETIO_PUBLIC_PORT,
+    SOCKETIO_PUBLIC_PATH
 )
 
 
@@ -80,6 +83,13 @@ def console(request):
         console_page = "console-" + console_type + "-" + view_type + ".html"
         response = render(request, console_page, locals())
     elif console_type == "pty":
+        socketio_host = SOCKETIO_PUBLIC_HOST if SOCKETIO_PUBLIC_HOST else request.get_host()
+        socketio_port = SOCKETIO_PUBLIC_PORT if SOCKETIO_PUBLIC_PORT else 6081
+        socketio_path = SOCKETIO_PUBLIC_PATH if SOCKETIO_PUBLIC_PATH else "/"
+
+        if ":" in socketio_host:
+            socketio_host = re.sub(":[0-9]+", "", socketio_host)
+
         response = render(request, "console-xterm.html", locals())
     else:
         if console_type is None:

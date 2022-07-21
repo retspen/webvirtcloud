@@ -254,7 +254,7 @@ install_webvirtcloud () {
   pip3 install -r conf/requirements.txt -q
 
   
-  cp "$APP_PATH/conf/daemon/consolecallback" "$APP_PATH/venv/bin/consolecallback"
+
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 
   

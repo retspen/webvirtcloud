@@ -32,7 +32,8 @@ import tty
 import termios
 import libvirt
 
-from six.moves import http_cookies as Cookie
+#from six.moves import http_cookies as Cookie
+from http import cookies as Cookie
 from webvirtcloud.settings import SOCKETIO_PORT, SOCKETIO_HOST
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
 from optparse import OptionParser
@@ -79,7 +80,7 @@ else:
     logging.basicConfig(level=logging.WARNING, format=FORMAT)
 
 async_mode = "eventlet"
-sio = socketio.Server(async_mode=async_mode, cors_allowed_origins="https://vmm.cyborgside.net")
+sio = socketio.Server(async_mode=async_mode, cors_allowed_origins=[])
 
 fd = None
 child_pid = None
@@ -171,7 +172,8 @@ def connect(sid, environ):
         (instance, conn) = get_connection_infos(token)
         uuid = conn.get_uuid() 
         uri = conn.wvm.getURI()
-        subprocess.run(["/srv/webvirtcloud/venv/bin/python3", "/srv/webvirtcloud/venv/bin/consolecallback", uri, uuid])
+        
+        subprocess.run(['conf/daemon/consolecallback', uri, uuid])
     else:
         # this is the parent process fork.
         sio.start_background_task(target=read_and_forward_pty_output)

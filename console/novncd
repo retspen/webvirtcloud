@@ -17,7 +17,8 @@ django.setup()
 
 import re
 import socket
-from six.moves import http_cookies as Cookie
+#from six.moves import http_cookies as Cookie
+from http import cookies as Cookie
 from webvirtcloud.settings import WS_PORT, WS_HOST, WS_CERT
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
 from console.sshtunnels import SSHTunnels
