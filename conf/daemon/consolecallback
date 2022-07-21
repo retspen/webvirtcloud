@@ -19,7 +19,7 @@ def error_handler(unused, error) -> None:
     # The console stream errors on VM shutdown; we don't care
     if error[0] == libvirt.VIR_ERR_RPC and error[1] == libvirt.VIR_FROM_STREAMS:
         return
-    logging.warn(error)
+    logging.warning(error)
 
 
 class Console(object):

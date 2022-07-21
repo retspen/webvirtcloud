@@ -4,28 +4,45 @@
 
 {% block head %}
 <title>WebVirtCloud - XTerm</title>
-<link rel="stylesheet" href="https://unpkg.com/xterm@3.6.0/dist/xterm.css" />
-<script src="https://unpkg.com/xterm@3.6.0/dist/xterm.js"></script>
-<script src="https://unpkg.com/xterm@3.6.0/dist/addons/fit/fit.js"></script>
-<script src="https://unpkg.com/xterm@3.6.0/dist/addons/fullscreen/fullscreen.js"></script>
+<link rel="stylesheet" href="{% static 'css/xterm.css' %}"/>
+<script src="{% static 'js/xterm@3.6.0/xterm.js' %}"></script>
+<script src="{% static 'js/xterm@3.6.0/addons/fit/fit.js' %}"></script>
+<script src="{% static 'js/xterm@3.6.0/addons/fullscreen/fullscreen.js' %}"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+<script src="{% static 'js/socket.io.js' %}"></script>
 
 {% endblock %}
 {% block content %}
 <div style="background: white; padding-bottom: 5px;">
     <span style="font-size: small;">Status: <span style="font-size: small;" id="status">connecting...</span></span>
-    <button id="button"; type="button"; onclick="myFunction()";>Connect</button>
+    <button id="button" type="button" onclick="myFunction();">Connect</button>
 </div>
 
 <div style="width: 100%; height:100%;" id="terminal"></div>
 <script crossorigin="anonymous">
-	Terminal.applyAddon(fit)
+	    Terminal.applyAddon(fit);
 
-        var socket = io.connect({transports: ["websocket", "polling"]});
+        let host = readQueryVariable('host', '{{ socketio_host }}');
+        let port = readQueryVariable('port', '{{ socketio_port }}');
+        let path = readQueryVariable('path', '{{ socketio_path }}');
+      
 
-        const status = document.getElementById("status")
-        const button = document.getElementById("button")
+        // Build the websocket URL used to connect
+        let url;
+        if (window.location.protocol === "https:") {
+            url = 'wss';
+        } else {
+            url = 'ws';
+        }
+        url += '://' + host;
+        if (port) {
+            url += ':' + port;
+        }
+
+        var socket = io.connect(url, {transports: ["websocket", "polling"]});
+
+        const status = document.getElementById("status");
+        const button = document.getElementById("button");
 
         var term = new Terminal({
             cursorBlink: true,
@@ -44,14 +61,13 @@
         })
 
         socket.on("connect", () => {
-        status.innerHTML = '<span style="background-color: lightgreen;">connected</span>'
-        button.innerHTML = 'Disconnect'
+            status.innerHTML = '<span style="background-color: lightgreen;">connected</span>'
+            button.innerHTML = 'Disconnect'
         })
 
         socket.on("disconnect", () => {
-        status.innerHTML =  '<span style="background-color: #ff8383;">disconnected</span>'
-        button.innerHTML = 'Connect'
-
+            status.innerHTML =  '<span style="background-color: #ff8383;">disconnected</span>'
+            button.innerHTML = 'Connect'
         })
 
         function myFunction(){
@@ -68,6 +84,26 @@
             term.fit()
             socket.emit("resize", {"cols": term.cols, "rows": term.rows})
         }
+
+        // This function extracts the value of one variable from the
+        // query string. If the variable isn't defined in the URL
+        // it returns the default value instead.
+        function readQueryVariable(name, defaultValue) {
+        // A URL with a query parameter can look like this:
+        // https://www.example.com?myqueryparam=myvalue
+        //
+        // Note that we use location.href instead of location.search
+        // because Firefox < 53 has a bug w.r.t location.search
+        const re = new RegExp('.*[?&]' + name + '=([^&#]*)'),
+            match = document.location.href.match(re);
+
+        if (match) {
+            // We have to decode the URL since want the cleartext value
+            return decodeURIComponent(match[1]);
+        }
+
+        return defaultValue;
+    }
 
         window.onresize = resize
         window.onload = resize
