@@ -201,6 +201,15 @@ WS_CERT = None
 SOCKETIO_PORT = 6081
 SOCKETIO_HOST = '0.0.0.0'
 
+# Socketio public host
+SOCKETIO_PUBLIC_HOST = None
+
+# Socketio public port - 80 or 443 if reverse-proxy, else 6081
+SOCKETIO_PUBLIC_PORT = 6081
+
+# Socketio public path
+SOCKETIO_PUBLIC_PATH = "socket.io/"
+
 # List of console listen addresses
 QEMU_CONSOLE_LISTEN_ADDRESSES = (
     ("127.0.0.1", "Localhost"),
