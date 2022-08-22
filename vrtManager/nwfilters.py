@@ -47,11 +47,8 @@ class wvmNWFilter(wvmConnect):
         return ElementTree.tostring(tree).decode()
 
     def get_filter_refs(self):
-        refs = []
         tree = ElementTree.fromstring(self._XMLDesc(0))
-        for ref in tree.findall("./filterref"):
-            refs.append(ref.get("filter"))
-        return refs
+        return [ref.get("filter") for ref in tree.findall("./filterref")]
 
     def get_rules(self):
         rules = []

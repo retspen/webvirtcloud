@@ -23,10 +23,8 @@ def network_size(subnet, dhcp=None):
     if addr.version() == 6:
         mask = mask.lstrip("/") if "/" in mask else mask
         dhcp_pool = [IP(addr[0].strCompressed() + hex(256)), IP(addr[0].strCompressed() + hex(512 - 1))]
-    if dhcp:
-        return gateway, mask, dhcp_pool
-    else:
-        return gateway, mask, None
+
+    return (gateway, mask, dhcp_pool) if dhcp else (gateway, mask, None)
 
 
 class wvmNetworks(wvmConnect):
@@ -43,6 +41,7 @@ class wvmNetworks(wvmConnect):
 
             net_forward = util.get_xml_path(net.XMLDesc(0), "/network/forward/@mode")
             networks.append({"name": network, "status": net_status, "device": net_bridge, "forward": net_forward})
+
         return networks
 
     def define_network(self, xml):
@@ -137,7 +136,7 @@ class wvmNetwork(wvmConnect):
     def get_bridge_device(self):
         try:
             return self.net.bridgeName()
-        except:
+        except Exception:
             return util.get_xml_path(self._XMLDesc(0), "/network/forward/interface/@dev")
 
     def start(self):
@@ -153,7 +152,7 @@ class wvmNetwork(wvmConnect):
         return self.net.update(command, section, parentIndex, xml, flags)
 
     def get_ip_networks(self):
-        ip_networks = dict()
+        ip_networks = {}
         xml = self._XMLDesc(0)
         if util.get_xml_path(xml, "/network/ip") is None:
             return ip_networks
@@ -164,10 +163,10 @@ class wvmNetwork(wvmConnect):
             netmask_str = ip.get("netmask")
             prefix = ip.get("prefix")
             family = ip.get("family", "ipv4")
-            base = 32 if family == "ipv4" else 128
             if prefix:
                 prefix = int(prefix)
-                binstr = (prefix * "1") + ((base - prefix) * "0")
+                base = 32 if family == "ipv4" else 128
+                binstr = prefix * "1" + (base - prefix) * "0"
                 netmask_str = str(IP(int(binstr, base=2)))
 
             if netmask_str:
@@ -183,8 +182,7 @@ class wvmNetwork(wvmConnect):
 
     def get_network_mac(self):
         xml = self._XMLDesc(0)
-        mac = util.get_xml_path(xml, "/network/mac/@address")
-        return mac
+        return util.get_xml_path(xml, "/network/mac/@address")
 
     def get_network_forward(self):
         xml = self._XMLDesc(0)
@@ -201,22 +199,15 @@ class wvmNetwork(wvmConnect):
             dhcpstart = util.get_xml_path(xml, "/network/ip[@family='ipv6']/dhcp/range[1]/@start")
             dhcpend = util.get_xml_path(xml, "/network/ip[@family='ipv6']/dhcp/range[1]/@end")
 
-        if not dhcpstart or not dhcpend:
-            return None
-
-        return [IP(dhcpstart), IP(dhcpend)]
+        return None if not dhcpstart or not dhcpend else [IP(dhcpstart), IP(dhcpend)]
 
     def get_dhcp_range_start(self, family="ipv4"):
         dhcp = self.get_dhcp_range(family)
-        if not dhcp:
-            return None
-        return dhcp[0]
+        return dhcp[0] if dhcp else None
 
     def get_dhcp_range_end(self, family="ipv4"):
         dhcp = self.get_dhcp_range(family)
-        if not dhcp:
-            return None
-        return dhcp[1]
+        return dhcp[1] if dhcp else None
 
     def can_pxe(self):
         xml = self._XMLDesc(0)
@@ -226,21 +217,19 @@ class wvmNetwork(wvmConnect):
         return bool(util.get_xml_path(xml, "/network/ip/dhcp/bootp/@file"))
 
     def get_dhcp_host_addr(self, family="ipv4"):
-        result = list()
+        result = []
         tree = etree.fromstring(self._XMLDesc(0))
-
         for ipdhcp in tree.findall("./ip"):
             if family == "ipv4":
-                if ipdhcp.get("family") is None:
-                    hosts = ipdhcp.findall("./dhcp/host")
-                    for host in hosts:
-                        host_ip = host.get("ip")
-                        mac = host.get("mac")
-                        name = host.get("name", "")
-                        result.append({"ip": host_ip, "mac": mac, "name": name})
-                    return result
-                else:
+                if ipdhcp.get("family") is not None:
                     continue
+                hosts = ipdhcp.findall("./dhcp/host")
+                for host in hosts:
+                    host_ip = host.get("ip")
+                    mac = host.get("mac")
+                    name = host.get("name", "")
+                    result.append({"ip": host_ip, "mac": mac, "name": name})
+                return result
             if family == "ipv6":
                 hosts = tree.xpath("./ip[@family='ipv6']/dhcp/host")
                 for host in hosts:
@@ -272,9 +261,9 @@ class wvmNetwork(wvmConnect):
         for h in hosts:
             if h.get("ip") == ip:
                 if family == "ipv4":
-                    new_xml = '<host mac="{}" name="{}" ip="{}"/>'.format(h.get("mac"), h.get("name"), ip)
+                    new_xml = f'<host mac="{h.get("mac")}" name="{h.get("name")}" ip="{ip}"/>'
                 if family == "ipv6":
-                    new_xml = '<host id="{}" name="{}" ip="{}"/>'.format(h.get("id"), h.get("name"), ip)
+                    new_xml = f'<host id="{h.get("id")}" name="{h.get("name")}" ip="{ip}"/>'
 
                 self.update(
                     VIR_NETWORK_UPDATE_COMMAND_DELETE,
@@ -298,12 +287,7 @@ class wvmNetwork(wvmConnect):
             compare_var = "id"
             parent_index = self.parent_count - 1
         new_host_xml = etree.fromstring(new_xml)
-
-        host = None
-        for h in hosts:
-            if h.get(compare_var) == mac_duid:
-                host = h
-                break
+        host = next((h for h in hosts if h.get(compare_var) == mac_duid), None)
         if host is None:
             self.update(
                 VIR_NETWORK_UPDATE_COMMAND_ADD_LAST,
@@ -326,7 +310,7 @@ class wvmNetwork(wvmConnect):
                 )
 
     def get_qos(self):
-        qos_values = dict()
+        qos_values = {}
         tree = etree.fromstring(self._XMLDesc(0))
         qos = tree.xpath("/network/bandwidth")
         if qos:
@@ -348,13 +332,10 @@ class wvmNetwork(wvmConnect):
         return qos_values
 
     def set_qos(self, direction, average, peak, burst):
-        if direction == "inbound":
-            xml = f"<inbound average='{average}' peak='{peak}' burst='{burst}'/>"
-        elif direction == "outbound":
-            xml = f"<outbound average='{average}' peak='{peak}' burst='{burst}'/>"
-        else:
+        if direction not in ("inbound","outbound"):
             raise Exception("Direction must be inbound or outbound")
 
+        xml = f"<{direction} average='{average}' peak='{peak}' burst='{burst}'/>"
         tree = etree.fromstring(self._XMLDesc(0))
 
         band = tree.xpath("/network/bandwidth")
@@ -388,7 +369,7 @@ class wvmNetwork(wvmConnect):
             self.leases = self.net.DHCPLeases()
         except Exception as e:
             self.leases = []
-            raise "Error getting {} DHCP leases: {}".format(self, e)
+            raise f"Error getting {self} DHCP leases: {e}" from e
 
     def get_dhcp_leases(self):
         if self.leases is None:
