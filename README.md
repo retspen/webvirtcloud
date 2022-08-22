@@ -432,6 +432,17 @@ Now when you login with an LDAP user it will be assigned the rights defined. The
 
 If you'd like to move a user from ldap to WebVirtCloud, just change its password from the UI and (eventually) remove from the group in ldap
 
+
+## REST API / BETA
+Webvirtcloud provides a REST API for programmatic access.
+To access API methods open your browser and check them with Swagger interface
+```bash
+http://<webvirtloud-address:port>/swagger
+```
+```bash
+http://<webvirtloud-address:port>/redoc
+```
+
 ## Screenshots
 
 Instance Detail:

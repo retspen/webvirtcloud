@@ -40,7 +40,12 @@ class wvmNetworks(wvmConnect):
                 net_bridge = util.get_xml_path(net.XMLDesc(0), "/network/forward/interface/@dev")
 
             net_forward = util.get_xml_path(net.XMLDesc(0), "/network/forward/@mode")
-            networks.append({"name": network, "status": net_status, "device": net_bridge, "forward": net_forward})
+            networks.append({
+                "name": network, 
+                "status": net_status, 
+                "device": net_bridge, 
+                "forward": net_forward
+                })
 
         return networks
 

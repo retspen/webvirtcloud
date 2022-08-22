@@ -112,7 +112,7 @@ def get_connection_infos(token):
             connport = 22
         connuser = instance.compute.login
         conntype = instance.compute.type
-        console_host = conn.get_console_listen_addr()
+        console_host = conn.get_console_listener_addr()
         console_port = conn.get_console_port()
         console_socket = conn.get_console_socket()
     except Exception as e:

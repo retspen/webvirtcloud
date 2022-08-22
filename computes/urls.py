@@ -1,7 +1,6 @@
 from virtsecrets.views import secrets
 
 from django.urls import include, path
-# from instances.views import create_instance, create_instance_select_type
 from interfaces.views import interface, interfaces
 from networks.views import network, networks
 from nwfilters.views import nwfilter, nwfilters
@@ -34,8 +33,6 @@ urlpatterns = [
             path('nwfilters/', nwfilters, name='nwfilters'),
             path('nwfilter/<str:nwfltr>/', nwfilter, name='nwfilter'),
             path('virtsecrets/', secrets, name='virtsecrets'),
-            # path('create/', create_instance_select_type, name='create_instance_select_type'),
-            # path('create/archs/<str:arch>/machines/<str:machine>/', create_instance, name='create_instance'),
             path('archs/<str:arch>/machines/', views.get_compute_machine_types, name='machines'),
             path(
                 'archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses/',

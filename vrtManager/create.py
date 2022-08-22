@@ -45,7 +45,7 @@ class wvmCreate(wvmConnect):
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/os_type")
 
     def get_host_arch(self):
-        """Get guest capabilities"""
+        """Get host architecture"""
         return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
 
     def create_volume(self, storage, name, size, image_format, metadata=False, disk_owner_uid=0, disk_owner_gid=0):
@@ -160,7 +160,7 @@ class wvmCreate(wvmConnect):
         nwfilter,
         graphics,
         virtio,
-        listen_addr,
+        listener_addr,
         video="vga",
         console_pass="random",
         mac=None,
@@ -332,7 +332,7 @@ class wvmCreate(wvmConnect):
             xml += """<input type='tablet'/>"""
 
         xml += f"""
-                <graphics type='{graphics}' port='-1' autoport='yes' {console_pass} listen='{listen_addr}'/>
+                <graphics type='{graphics}' port='-1' autoport='yes' {console_pass} listen='{listener_addr}'/>
                 <console type='pty'/> """
 
         if qemu_ga and virtio:
@@ -345,4 +345,4 @@ class wvmCreate(wvmConnect):
                    </video>
               </devices>
             </domain>"""
-        self._defineXML(xml)
+        return self._defineXML(xml)

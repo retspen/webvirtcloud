@@ -124,10 +124,10 @@ class wvmStorage(wvmConnect):
         return self.pool.UUIDString()
 
     def start(self):
-        self.pool.create(0)
+        return self.pool.create(0)
 
     def stop(self):
-        self.pool.destroy()
+        return self.pool.destroy()
 
     def delete(self):
         self.pool.undefine()
@@ -224,7 +224,27 @@ class wvmStorage(wvmConnect):
         return util.get_xml_path(vol_xml, "/volume/@type")
 
     def refresh(self):
-        self.pool.refresh(0)
+        return self.pool.refresh(0)
+
+    def get_volume_details(self, volname):
+        with contextlib.suppress(Exception):
+            self.refresh()
+
+        vols = self.get_volumes()
+        return [{"name": volname, 
+                 "size": self.get_volume_size(volname),
+                 "allocation": self.get_volume_allocation(volname),
+                 "type": self.get_volume_format_type(volname)} for volname in vols]
+                 
+    def get_volume_details(self, volname):
+        with contextlib.suppress(Exception):
+            self.refresh()
+        return {
+                "name": volname,
+                "size": self.get_volume_size(volname),
+                "allocation": self.get_volume_allocation(volname),
+                "type": self.get_volume_format_type(volname),
+        }
 
     def update_volumes(self):
         with contextlib.suppress(Exception):

@@ -22,10 +22,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
     "django_bootstrap5",
     "django_icons",
     "django_otp",
     "django_otp.plugins.otp_totp",
+    "drf_yasg",
     "accounts",
     "admin",
     "appsettings",
@@ -40,6 +42,7 @@ INSTALLED_APPS = [
     "virtsecrets",
     "logs",
     "qr_code",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -211,7 +214,7 @@ SOCKETIO_PUBLIC_PORT = 6081
 SOCKETIO_PUBLIC_PATH = "socket.io/"
 
 # List of console listen addresses
-QEMU_CONSOLE_LISTEN_ADDRESSES = (
+QEMU_CONSOLE_LISTENER_ADDRESSES = (
     ("127.0.0.1", "Localhost"),
     ("0.0.0.0", "All interfaces"),
 )

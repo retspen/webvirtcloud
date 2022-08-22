@@ -269,9 +269,9 @@
     });
     $(document).ready(function () {
         // set current console listen address or fall back to default
-        var console_listen_address = "{{ console_listen_address }}";
-        if (console_listen_address != '') {
-            $("#console_select_listen_address option[value='" + console_listen_address + "']").prop('selected', true);
+        var console_listener_address = "{{ console_listener_address }}";
+        if (console_listener_address != '') {
+            $("#console_select_listener_address option[value='" + console_listener_address + "']").prop('selected', true);
         }
     });
     $(document).ready(function () {
