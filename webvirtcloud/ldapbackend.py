@@ -42,48 +42,49 @@ try:
     
         def authenticate(self, request, username=None, password=None, **kwargs):
             if not settings.LDAP_ENABLED:
-                 return None
+                return None
             print("authenticate_ldap")
             # Get the user information from the LDAP if he can be authenticated
             isAdmin = False
             isStaff = False
             isTechnician = False
-            
+
             requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_ADMINS)
+            isAdmin = requeteLdap is not None
+            isStaff = requeteLdap is not None
+
             if requeteLdap is None:
                 requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_STAFF)
-                if requeteLdap is None:
-                    requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_TECHNICIANS)
-                    if requeteLdap is None:
-                        requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS)
-                        if requeteLdap is None:
-                            print("User does not belong to any search group. Check LDAP_SEARCH_GROUP_FILTER in settings.")
-                            return None
-                    else:
-                        isTechnician = True
-                else:
-                    isStaff = True
-            else:
-                isAdmin = True
-                isStaff = True
+                isStaff = requeteLdap is not None
+
+            if requeteLdap is None:
+                requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_TECHNICIANS)
+                isTechnician = requeteLdap is not None
+
+            if requeteLdap is None:
+                requeteLdap = self.get_LDAP_user(username, password, settings.LDAP_SEARCH_GROUP_FILTER_USERS)
+
+            if requeteLdap is None:
+                print("User does not belong to any search group. Check LDAP_SEARCH_GROUP_FILTER in settings.")
+                return None
 
             techniciansGroup = Group.objects.get(name='Technicians')
-    
+
             try:
                 user = User.objects.get(username=username)
                 attributes = UserAttributes.objects.get(user=user)
                 user.is_staff = isStaff
                 user.is_superuser = isAdmin
-                if isTechnician is False and user.groups.filter(name='Technicians').exists():
+                if not isTechnician and user.groups.filter(name='Technicians').exists():
                     user.groups.remove(techniciansGroup)
-                elif isTechnician is True and user.groups.filter(name='Technicians').exists() is False:
+                elif isTechnician and not user.groups.filter(name='Technicians').exists():
                     user.groups.add(techniciansGroup)
                 else:
                     print("The user is already in the Technicians group")
                     user.save()
                 # TODO VERIFY
             except User.DoesNotExist:
-                print("authenticate-create new user: {}".format(username))
+                print(f"authenticate-create new user: {username}")
                 user = User(username=username)
                 user.first_name = requeteLdap[1]
                 user.last_name = requeteLdap[2]
@@ -93,7 +94,7 @@ try:
                 user.is_superuser = isAdmin
                 user.set_password(uuid.uuid4().hex)
                 user.save()
-                if isTechnician is True:
+                if isTechnician:
                     user.groups.add(techniciansGroup)
                 maxInstances = 1
                 maxCpus = 1

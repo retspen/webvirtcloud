@@ -181,10 +181,7 @@ class IPint(object):
         if isinstance(data, INT_TYPES):
             self.ip = int(data)
             if ipversion == 0:
-                if self.ip <= MAX_IPV4_ADDRESS:
-                    ipversion = 4
-                else:
-                    ipversion = 6
+                ipversion = 4 if self.ip <= MAX_IPV4_ADDRESS else 6
             if ipversion == 4:
                 if self.ip > MAX_IPV4_ADDRESS:
                     raise ValueError("IPv4 Address can't be larger than %x: %x" % (MAX_IPV4_ADDRESS, self.ip))

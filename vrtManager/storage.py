@@ -1,3 +1,5 @@
+import contextlib
+
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 
@@ -10,10 +12,7 @@ class wvmStorages(wvmConnect):
             stg = self.get_storage(pool)
             stg_status = stg.isActive()
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
-            if stg_status:
-                stg_vol = len(stg.listVolumes())
-            else:
-                stg_vol = None
+            stg_vol = len(stg.listVolumes()) if stg_status else None
             stg_size = stg.info()[1]
             storages.append(
                 {"name": pool, "status": stg_status, "type": stg_type, "volumes": stg_vol, "size": stg_size}
@@ -33,7 +32,7 @@ class wvmStorages(wvmConnect):
                             <format type='lvm2'/>
                         </source>"""
         if stg_type == "logical":
-            target = "/dev/" + name
+            target = f"/dev/{name}"
         xml += f"""
                   <target>
                        <path>{target}</path>
@@ -125,10 +124,10 @@ class wvmStorage(wvmConnect):
         return self.pool.UUIDString()
 
     def start(self):
-        self.pool.create(0)
+        return self.pool.create(0)
 
     def stop(self):
-        self.pool.destroy()
+        return self.pool.destroy()
 
     def delete(self):
         self.pool.undefine()
@@ -225,26 +224,30 @@ class wvmStorage(wvmConnect):
         return util.get_xml_path(vol_xml, "/volume/@type")
 
     def refresh(self):
-        self.pool.refresh(0)
+        return self.pool.refresh(0)
 
-    def update_volumes(self):
+    def get_volume_details(self, volname):
         try:
             self.refresh()
         except Exception:
             pass
-        vols = self.get_volumes()
-        vol_list = []
 
-        for volname in vols:
-            vol_list.append(
-                {
-                    "name": volname,
-                    "size": self.get_volume_size(volname),
-                    "allocation": self.get_volume_allocation(volname),
-                    "type": self.get_volume_format_type(volname),
-                }
-            )
-        return vol_list
+        return {
+                "name": volname,
+                "size": self.get_volume_size(volname),
+                "allocation": self.get_volume_allocation(volname),
+                "type": self.get_volume_format_type(volname),
+        }
+
+
+    def update_volumes(self):
+        with contextlib.suppress(Exception):
+            self.refresh()
+        vols = self.get_volumes()
+        return [{"name": volname, "size": self.get_volume_size(volname),
+                 "allocation": self.get_volume_allocation(volname),
+                 "type": self.get_volume_format_type(volname)} for volname in vols]
+
 
     def create_volume(self, name, size, vol_fmt="qcow2", metadata=False, disk_owner_uid=0, disk_owner_gid=0):
         size = int(size) * 1073741824
@@ -253,10 +256,7 @@ class wvmStorage(wvmConnect):
         if vol_fmt == "unknown":
             vol_fmt = "raw"
         if storage_type == "dir":
-            if vol_fmt in ("qcow", "qcow2"):
-                name += "." + vol_fmt
-            else:
-                name += ".img"
+            name += f".{vol_fmt}" if vol_fmt in ("qcow", "qcow2") else ".img"
             alloc = 0
         xml = f"""
             <volume>
@@ -300,9 +300,9 @@ class wvmStorage(wvmConnect):
         storage_type = self.get_type()
         if storage_type == "dir":
             if vol_fmt in ["qcow", "qcow2"]:
-                target_file += "." + vol_fmt
+                target_file += f".{vol_fmt}"
             else:
-                suffix = "." + file_suffix
+                suffix = f".{file_suffix}"
                 target_file += suffix if len(suffix) > 1 else ""
 
         xml = f"""

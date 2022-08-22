@@ -9,10 +9,7 @@ import lxml.etree as etree
 
 def is_kvm_available(xml):
     kvm_domains = get_xml_path(xml, "//domain/@type='kvm'")
-    if kvm_domains > 0:
-        return True
-    else:
-        return False
+    return kvm_domains > 0
 
 
 def randomMAC():
@@ -26,40 +23,40 @@ def randomMAC():
 
 def randomUUID():
     """Generate a random UUID."""
-    u = [secrets.randbelow(256) for ignore in range(0, 16)]
-    u[6] = (u[6] & 0x0F) | (4 << 4)
-    u[8] = (u[8] & 0x3F) | (2 << 6)
+    u = [secrets.randbelow(256) for _ in range(16)]
+    u[6] = u[6] & 15 | 4 << 4
+    u[8] = u[8] & 63 | 2 << 6
     return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2, "%02x" * 6]) % tuple(u)
 
 
 def randomPasswd(length=12, alphabet=string.ascii_letters + string.digits):
     """Generate a random password"""
-    return "".join([secrets.choice(alphabet) for i in range(length)])
+    return "".join([secrets.choice(alphabet) for _ in range(length)])
 
 
-def get_max_vcpus(conn, type=None):
+def get_max_vcpus(conn, guest_type=None):
     """@param conn: libvirt connection to poll for max possible vcpus
-    @type type: optional guest type (kvm, etc.)"""
+    @param guest_type: optional guest type (kvm, etc.)"""
     if type is None:
-        type = conn.getType()
+        guest_type = conn.getType()
     try:
-        m = conn.getMaxVcpus(type.lower())
+        m = conn.getMaxVcpus(guest_type.lower())
     except libvirt.libvirtError:
         m = 32
     return m
 
 
-def xml_escape(str):
+def xml_escape(xml_str):
     """Replaces chars ' " < > & with xml safe counterparts"""
-    if str is None:
+    if xml_str is None:
         return None
 
-    str = str.replace("&", "&amp;")
-    str = str.replace("'", "&apos;")
-    str = str.replace('"', "&quot;")
-    str = str.replace("<", "&lt;")
-    str = str.replace(">", "&gt;")
-    return str
+    xml_str = xml_str.replace("&", "&amp;")
+    xml_str = xml_str.replace("'", "&apos;")
+    xml_str = xml_str.replace('"', "&quot;")
+    xml_str = xml_str.replace("<", "&lt;")
+    xml_str = xml_str.replace(">", "&gt;")
+    return xml_str
 
 
 def compareMAC(p, q):
@@ -108,10 +105,7 @@ def get_xpath(doc, path):
     if ret is not None:
         if isinstance(ret, list):
             if len(ret) >= 1:
-                if hasattr(ret[0], "text"):
-                    result = ret[0].text
-                else:
-                    result = ret[0]
+                result = ret[0].text if hasattr(ret[0], "text") else ret[0]
         else:
             result = ret
 

@@ -21,12 +21,11 @@ class wvmHostDetails(wvmConnect):
         freemem = self.wvm.getMemoryStats(-1, 0)
         if isinstance(freemem, dict):
             free = (freemem["buffers"] + freemem["free"] + freemem["cached"]) * 1024
-            percent = abs(100 - ((free * 100) // all_mem))
+            percent = abs(100 - free * 100 // all_mem)
             usage = all_mem - free
-            mem_usage = {"total": all_mem, "usage": usage, "percent": percent}
+            return {"total": all_mem, "usage": usage, "percent": percent}
         else:
-            mem_usage = {"total": None, "usage": None, "percent": None}
-        return mem_usage
+            return {"total": None, "usage": None, "percent": None}
 
     def get_cpu_usage(self):
         """
@@ -35,30 +34,30 @@ class wvmHostDetails(wvmConnect):
         prev_idle = 0
         prev_total = 0
         cpu = self.wvm.getCPUStats(-1, 0)
-        if isinstance(cpu, dict):
-            for num in range(2):
-                idle = self.wvm.getCPUStats(-1, 0)["idle"]
-                total = sum(self.wvm.getCPUStats(-1, 0).values())
-                diff_idle = idle - prev_idle
-                diff_total = total - prev_total
-                diff_usage = (1000 * (diff_total - diff_idle) / diff_total + 5) / 10
-                prev_total = total
-                prev_idle = idle
-                if num == 0:
-                    time.sleep(1)
-                else:
-                    if diff_usage < 0:
-                        diff_usage = 0
-        else:
+        if not isinstance(cpu, dict):
             return {"usage": None}
+
+        for num in range(2):
+            idle = self.wvm.getCPUStats(-1, 0)["idle"]
+            total = sum(self.wvm.getCPUStats(-1, 0).values())
+            diff_idle = idle - prev_idle
+            diff_total = total - prev_total
+            diff_usage = (1000 * (diff_total - diff_idle) /
+                          diff_total + 5) / 10
+            prev_total = total
+            prev_idle = idle
+            if num == 0:
+                time.sleep(1)
+            else:
+                diff_usage = max(diff_usage, 0)
+
         return {"usage": diff_usage}
 
     def get_node_info(self):
         """
         Function return host server information: hostname, cpu, memory, ...
         """
-        info = list()
-        info.append(self.wvm.getHostname())  # hostname
+        info = [self.wvm.getHostname()]  # hostname
         info.append(self.wvm.getInfo()[0])  # architecture
         info.append(self.wvm.getInfo()[1] * 1048576)  # memory
         info.append(self.wvm.getInfo()[2])  # cpu core count

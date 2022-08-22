@@ -67,12 +67,12 @@ def instance(request, pk):
     console_form = ConsoleForm(
         initial={
             "type": instance.console_type,
-            "listen_on": instance.console_listen_address,
+            "listen_on": instance.console_listener_address,
             "password": instance.console_passwd,
             "keymap": instance.console_keymap,
         }
     )
-    console_listen_addresses = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
+    console_listener_addresses = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
     bottom_bar = app_settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR
     allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
     try:
@@ -344,7 +344,7 @@ def destroy(request, pk):
     except Exception:
         userinstance = UserInstance(is_delete=request.user.is_superuser)
 
-    if request.method == "POST" and userinstance.is_delete:
+    if request.method in ["POST", "DELETE"] and userinstance.is_delete:
         if instance.proxy.get_status() == 1:
             instance.proxy.force_shutdown()
 
@@ -390,7 +390,7 @@ def migrate(request, pk):
     target_host = Compute.objects.get(id=compute_id)
 
     try:
-        utils.migrate_instance(target_host, instance, request.user, live, unsafe, xml_del, offline)
+        utils.migrate_instance(target_host, instance, request.user, live, unsafe, xml_del, offline, autoconverge, compress, postcopy)
     except libvirtError as err:
         messages.error(request, err)
 
@@ -1239,7 +1239,7 @@ def update_console(request, pk):
                 addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
             if "listen_on" in form.changed_data:
-                instance.proxy.set_console_listen_addr(form.cleaned_data["listen_on"])
+                instance.proxy.set_console_listener_addr(form.cleaned_data["listen_on"])
                 msg = _("Set VNC listen address")
                 addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
@@ -1385,7 +1385,7 @@ def create_instance(request, compute_id, arch, machine):
         default_disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
         default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
         default_scsi_disk_model = app_settings.INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
-        listener_addr = settings.QEMU_CONSOLE_LISTEN_ADDRESSES
+        listener_addr = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
         mac_auto = util.randomMAC()
         disk_devices = conn.get_disk_device_types(arch, machine)
         disk_buses = conn.get_disk_bus_types(arch, machine)
@@ -1545,7 +1545,7 @@ def create_instance(request, compute_id, arch, machine):
                                 volumes=volume_list,
                                 networks=data["networks"],
                                 virtio=data["virtio"],
-                                listen_addr=data["listener_addr"],
+                                listener_addr=data["listener_addr"],
                                 nwfilter=data["nwfilter"],
                                 graphics=data["graphics"],
                                 video=data["video"],
@@ -1568,6 +1568,7 @@ def create_instance(request, compute_id, arch, machine):
             conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
+
     return render(request, "create_instance_w2.html", locals())
 
 

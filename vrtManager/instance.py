@@ -130,12 +130,12 @@ class wvmInstances(wvmConnect):
 
     def graphics_listen(self, name):
         inst = self.get_instance(name)
-        listen_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@listen")
-        if listen_addr is None:
-            listen_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/listen/@address")
-            if listen_addr is None:
+        listener_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@listen")
+        if listener_addr is None:
+            listener_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/listen/@address")
+            if listener_addr is None:
                 return "None"
-        return listen_addr
+        return listener_addr
 
     def graphics_port(self, name):
         inst = self.get_instance(name)
@@ -252,6 +252,9 @@ class wvmInstance(wvmConnect):
             return int(cur_vcpu)
         else:
             return self.get_vcpu()
+
+    def get_vcpu_mode(self):
+        return util.get_xml_path(self._XMLDesc(0), "/domain/cpu/@current")
 
     def get_arch(self):
         return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@arch")
@@ -979,15 +982,15 @@ class wvmInstance(wvmConnect):
                                 telnet_port = service_port
         return telnet_port
 
-    def get_console_listen_addr(self):
-        listen_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@listen")
-        if listen_addr is None:
-            listen_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/listen/@address")
-            if listen_addr is None:
+    def get_console_listener_addr(self):
+        listener_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@listen")
+        if listener_addr is None:
+            listener_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/listen/@address")
+            if listener_addr is None:
                 return "127.0.0.1"
-        return listen_addr
+        return listener_addr
 
-    def set_console_listen_addr(self, listen_addr):
+    def set_console_listener_addr(self, listener_addr):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         root = ElementTree.fromstring(xml)
         console_type = self.get_console_type()
@@ -1001,9 +1004,9 @@ class wvmInstance(wvmConnect):
         listen = graphic.find("listen[@type='address']")
         if listen is None:
             return False
-        if listen_addr:
-            graphic.set("listen", listen_addr)
-            listen.set("address", listen_addr)
+        if listener_addr:
+            graphic.set("listen", listener_addr)
+            listen.set("address", listener_addr)
         else:
             try:
                 graphic.attrib.pop("listen")
