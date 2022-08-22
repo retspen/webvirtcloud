@@ -227,18 +227,24 @@ class wvmStorage(wvmConnect):
         return self.pool.refresh(0)
 
     def get_volume_details(self, volname):
-        try:
+        with contextlib.suppress(Exception):
             self.refresh()
-        except Exception:
-            pass
 
+        vols = self.get_volumes()
+        return [{"name": volname, 
+                 "size": self.get_volume_size(volname),
+                 "allocation": self.get_volume_allocation(volname),
+                 "type": self.get_volume_format_type(volname)} for volname in vols]
+                 
+    def get_volume_details(self, volname):
+        with contextlib.suppress(Exception):
+            self.refresh()
         return {
                 "name": volname,
                 "size": self.get_volume_size(volname),
                 "allocation": self.get_volume_allocation(volname),
                 "type": self.get_volume_format_type(volname),
         }
-
 
     def update_volumes(self):
         with contextlib.suppress(Exception):
@@ -247,7 +253,6 @@ class wvmStorage(wvmConnect):
         return [{"name": volname, "size": self.get_volume_size(volname),
                  "allocation": self.get_volume_allocation(volname),
                  "type": self.get_volume_format_type(volname)} for volname in vols]
-
 
     def create_volume(self, name, size, vol_fmt="qcow2", metadata=False, disk_owner_uid=0, disk_owner_gid=0):
         size = int(size) * 1073741824

@@ -46,6 +46,7 @@ class wvmNetworks(wvmConnect):
                 "device": net_bridge, 
                 "forward": net_forward
                 })
+
         return networks
 
     def define_network(self, xml):
