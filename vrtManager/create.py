@@ -1,4 +1,5 @@
 import string
+import contextlib
 
 from vrtManager import util
 from vrtManager.connection import wvmConnect
@@ -30,19 +31,13 @@ class wvmCreate(wvmConnect):
         """
         Function return all images on all storages
         """
-        images = list()
+        images = []
         storages = self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
-            try:
+            with contextlib.suppress(Exception):
                 stg.refresh(0)
-            except Exception:
-                pass
-            for img in stg.listVolumes():
-                if img.lower().endswith(".iso"):
-                    pass
-                else:
-                    images.append(img)
+            images.extend(img for img in stg.listVolumes() if not img.lower().endswith(".iso"))
         return images
 
     def get_os_type(self):
@@ -58,10 +53,7 @@ class wvmCreate(wvmConnect):
         stg = self.get_storage(storage)
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         if storage_type == "dir":
-            if image_format in ("qcow", "qcow2"):
-                name += "." + image_format
-            else:
-                name += ".img"
+            name += f".{image_format}" if image_format in ("qcow", "qcow2") else ".img"
             alloc = 0
         else:
             image_format = 'raw'
@@ -87,28 +79,19 @@ class wvmCreate(wvmConnect):
                 </target>
             </volume>"""
         stg.createXML(xml, metadata)
-        try:
+
+        with contextlib.suppress(Exception):
             stg.refresh(0)
-        except:
-            pass
         vol = stg.storageVolLookupByName(name)
         return vol.path()
 
     def get_volume_format_type(self, path):
         vol = self.get_volume_by_path(path)
         vol_type = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        if vol_type == "unknown" or vol_type == "iso":
-            return "raw"
-        if vol_type:
-            return vol_type
-        else:
-            return "raw"
+        return "raw" if vol_type in ["unknown", "iso"] else vol_type or "raw"
 
     def get_volume_path(self, volume, pool=None):
-        if not pool:
-            storages = self.get_storages(only_actives=True)
-        else:
-            storages = [pool]
+        storages = [pool] if pool else self.get_storages(only_actives=True)
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
@@ -124,10 +107,7 @@ class wvmCreate(wvmConnect):
 
     def clone_from_template(self, clone, template, storage=None, metadata=False, disk_owner_uid=0, disk_owner_gid=0):
         vol = self.get_volume_by_path(template)
-        if not storage:
-            stg = vol.storagePoolLookupByVolume()
-        else:
-            stg = self.get_storage(storage)
+        stg = self.get_storage(storage) if storage else vol.storagePoolLookupByVolume()
 
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
@@ -226,12 +206,8 @@ class wvmCreate(wvmConnect):
 
         if caps["features"]:
             xml += """<features>"""
-            if "acpi" in caps["features"]:
-                xml += """<acpi/>"""
-            if "apic" in caps["features"]:
-                xml += """<apic/>"""
-            if "pae" in caps["features"]:
-                xml += """<pae/>"""
+            for feat in [x for x in ("acpi", "apic", "pae",) if x in caps["features"]]:
+                xml += f"""<{feat}/>"""
             if firmware.get("secure", "no") == "yes":
                 xml += """<smm state="on"/>"""
             xml += """</features>"""
@@ -240,9 +216,7 @@ class wvmCreate(wvmConnect):
             xml += """<cpu mode='host-model'/>"""
         elif vcpu_mode == "host-passthrough":
             xml += """<cpu mode='host-passthrough'/>"""
-        elif vcpu_mode == "":
-            pass
-        else:
+        elif vcpu_mode != "":
             xml += f"""<cpu mode='custom' match='exact' check='none'>
                         <model fallback='allow'>{vcpu_mode}</model>"""
             xml += """</cpu>"""
@@ -306,7 +280,7 @@ class wvmCreate(wvmConnect):
                 xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), volume.get("bus"))
             elif volume.get("bus") == "fdc":
                 xml += """<target dev='fd%s' bus='%s'/>""" % (fd_disk_letters.pop(0), volume.get("bus"))
-            elif volume.get("bus") == "sata" or volume.get("bus") == "scsi":
+            elif volume.get("bus") in ["sata", "scsi"]:
                 xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), volume.get("bus"))
             else:
                 xml += """<target dev='sd%s'/>""" % sd_disk_letters.pop(0)
@@ -345,14 +319,13 @@ class wvmCreate(wvmConnect):
 
         if console_pass == "random":
             console_pass = "passwd='" + util.randomPasswd() + "'"
-        else:
-            if not console_pass == "":
-                console_pass = "passwd='" + console_pass + "'"
+        elif console_pass != "":
+            console_pass = "passwd='" + console_pass + "'"
 
         if "usb" in dom_caps["disk_bus"]:
-            xml += """<input type='mouse' bus='{}'/>""".format("virtio" if virtio else "usb")
-            xml += """<input type='keyboard' bus='{}'/>""".format("virtio" if virtio else "usb")
-            xml += """<input type='tablet' bus='{}'/>""".format("virtio" if virtio else "usb")
+            xml += f"""<input type='mouse' bus='{"virtio" if virtio else "usb"}'/>"""
+            xml += f"""<input type='keyboard' bus='{"virtio" if virtio else "usb"}'/>"""
+            xml += f"""<input type='tablet' bus='{"virtio" if virtio else "usb"}'/>"""
         else:
             xml += """<input type='mouse'/>"""
             xml += """<input type='keyboard'/>"""

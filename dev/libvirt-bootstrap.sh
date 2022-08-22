@@ -45,7 +45,7 @@ echowarn() {
 #   DESCRIPTION:  Echo debug information to stdout.
 #-------------------------------------------------------------------------------
 echodebug() {
-    if [ $_ECHO_DEBUG -eq $BS_TRUE ]; then
+    if [ "${_ECHO_DEBUG}" -eq "${BS_TRUE}" ]; then
         printf "${BC} * DEBUG${EC}: %s\n" "$@";
     fi
 }
@@ -154,8 +154,7 @@ __gather_linux_system_info() {
     DISTRO_VERSION=""
 
     # Let's test if the lsb_release binary is available
-    rv=$(lsb_release >/dev/null 2>&1)
-    if [ $? -eq 0 ]; then
+    if lsb_release >/dev/null 2>&1; then
         DISTRO_NAME=$(lsb_release -si)
         if [ "x$(echo "$DISTRO_NAME" | grep RedHat)" != "x" ]; then
             # Let's convert CamelCase to Camel Case
@@ -208,7 +207,7 @@ __gather_linux_system_info() {
                 ;;
             arch               ) n="Arch Linux"     ;;
             centos             ) n="CentOS"         ;;
-            almalinux             ) n="AlmaLinux"   ;;
+            almalinux          ) n="AlmaLinux"      ;;
             debian             ) n="Debian"         ;;
             ubuntu             ) n="Ubuntu"         ;;
             fedora             ) n="Fedora"         ;;
@@ -248,7 +247,7 @@ __gather_linux_system_info() {
                         ;;
                 esac
                 ;;
-            *                  ) n="${n}"           ;
+            *                  ) ;;
         esac
         DISTRO_NAME=$n
         DISTRO_VERSION=$v
@@ -779,8 +778,7 @@ if [ "$INSTALL_FUNC" = "null" ]; then
     exit 1
 else
     echoinfo "Running ${INSTALL_FUNC}()"
-    $INSTALL_FUNC
-    if [ $? -ne 0 ]; then
+    if ! $INSTALL_FUNC; then
         echoerror "Failed to run ${INSTALL_FUNC}()!!!"
         exit 1
     fi
@@ -803,8 +801,7 @@ if [ "$POST_INSTALL_FUNC" = "null" ]; then
     exit 1
 else
     echoinfo "Running ${POST_INSTALL_FUNC}()"
-    $POST_INSTALL_FUNC
-    if [ $? -ne 0 ]; then
+    if ! $POST_INSTALL_FUNC; then
         echoerror "Failed to run ${POST_INSTALL_FUNC}()!!!"
         exit 1
     fi
@@ -827,8 +824,7 @@ if [ "$DAEMONS_RUNNING_FUNC" = "null" ]; then
     exit 1
 else
     echoinfo "Running ${DAEMONS_RUNNING_FUNC}()"
-    $DAEMONS_RUNNING_FUNC
-    if [ $? -ne 0 ]; then
+    if ! $DAEMONS_RUNNING_FUNC; then
         echoerror "Failed to run ${DAEMONS_RUNNING_FUNC}()!!!"
         exit 1
     fi
