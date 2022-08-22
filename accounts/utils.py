@@ -30,7 +30,7 @@ def validate_ssh_key(key):
     username = array[2]
     # must have only valid rsa-ssh key characters ie binascii characters
     try:
-        data = base64.decodestring(string)
+        data = base64.decodebytes(string)
     except binascii.Error:
         return False
     # unpack the contents of data, from data[:4] , property of ssh key .
