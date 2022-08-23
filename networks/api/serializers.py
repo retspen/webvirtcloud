@@ -10,10 +10,3 @@ class NetworksSerializer(serializers.ModelSerializer):
         fields = ['name', 'status', 'device', 'forward'] 
 
 
-
-# class VolumeSerializer(serializers.ModelSerializer):
-#     allocation = serializers.ReadOnlyField()
-#     meta_prealloc = serializers.BooleanField(write_only=True)
-#     class Meta:
-#         model = Volume
-#         fields = ['name', 'type', 'allocation', 'size', 'meta_prealloc'] 

@@ -210,16 +210,16 @@ class Instance(models.Model):
 
 
 class MigrateInstance(models.Model):
-    instance = models.ForeignKey(Instance, on_delete=models.DO_NOTHING)
-    target_compute = models.ForeignKey(Compute, related_name='target', on_delete=models.DO_NOTHING)
+    instance = models.ForeignKey(Instance, related_name='source_host', on_delete=models.DO_NOTHING)
+    target_compute = models.ForeignKey(Compute, related_name='target_host', on_delete=models.DO_NOTHING)
 
-    live = models.BooleanField(_('Live'), blank=False)
-    xml_del = models.BooleanField(_('Undefine XML'), blank=False, default=True)
-    offline = models.BooleanField(_('Offline'), blank=False)
-    autoconverge = models.BooleanField(_('Auto Converge'), blank=False, default=True)
-    compress = models.BooleanField(_('Compress'), blank=False, default=False)
-    postcopy = models.BooleanField(_('Post Copy'), blank=False, default=False)
-    unsafe = models.BooleanField(_('Unsafe'), blank=False, default=False)
+    live = models.BooleanField(_('Live'))
+    xml_del = models.BooleanField(_('Undefine XML'), default=True)
+    offline = models.BooleanField(_('Offline'))
+    autoconverge = models.BooleanField(_('Auto Converge'), default=True)
+    compress = models.BooleanField(_('Compress'), default=False)
+    postcopy = models.BooleanField(_('Post Copy'), default=False)
+    unsafe = models.BooleanField(_('Unsafe'), default=False)
 
     class Meta:
         managed = False
