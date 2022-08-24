@@ -46,7 +46,7 @@ chmod 744 install.sh
 
 ### Generate secret key
 
-You should generate SECRET_KEY after cloning repo. Then put it into webvirtcloud/settings.py.
+You should generate SECRET_KEY after cloning repository. Then put it into webvirtcloud/settings.py.
 
 ```python3
 import random, string
@@ -101,7 +101,7 @@ sudo yum -y install epel-release
 sudo yum -y install python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml git python3-libguestfs iproute-tc cyrus-sasl-md5 python3-libguestfs libsasl2-dev libldap2-dev libssl-dev
 ```
 
-#### Creating directories and cloning repo
+#### Creating directories and cloning repository
 
 ```bash
 sudo mkdir /srv && cd /srv

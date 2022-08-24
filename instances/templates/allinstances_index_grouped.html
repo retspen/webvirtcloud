@@ -3,7 +3,7 @@
 <table class="table table-hover sortable-theme-bootstrap" data-sortable>
     <thead>
         <tr>
-            <th scope="col" data-sortable="false"><a class="link-primary" href="#" id="hide_all_instances" onclick="hide_all_host_instances()">#</a></th>
+            <th scope="col" data-sortable="false"><a class="link-primary" href="#" id="hide-all-instances" onclick="hide_all_host_instances()">#</a></th>
             <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
             <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
             <th scope="col">{% trans "Status" %}</th>
@@ -31,7 +31,7 @@
                         <span class="text-success">{% trans "Connected" %}</span>
                     </td>
                     {% if app_settings.VM_DRBD_STATUS == 'True' %}
-                    <td class="d-none d-sm-table-cell"></td>
+                        <td class="d-none d-sm-table-cell"></td>
                     {% endif %}
                     <td class="d-none d-sm-table-cell text-center">{{ compute.cpu_count }}</td>
                     <td class="d-none d-sm-table-cell text-right">{{ compute.ram_size|filesizeformat }}</td>

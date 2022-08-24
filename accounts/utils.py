@@ -27,7 +27,7 @@ def validate_ssh_key(key):
         return False
     typeofkey = array[0]
     string = array[1]
-    username = array[2]
+
     # must have only valid rsa-ssh key characters ie binascii characters
     try:
         data = base64.decodebytes(string)
@@ -39,10 +39,9 @@ def validate_ssh_key(key):
     except struct.error:
         return False
     # data[4:str_len] must have string which matches with the typeofkey, another ssh key property.
-    if data[4 : 4 + str_len] == typeofkey:
-        return True
-    else: 
+    if data[4 : 4 + str_len] != typeofkey:
         return False
+    return True
 
 
 def send_email_with_otp(user, device):
