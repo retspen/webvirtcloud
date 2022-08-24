@@ -37,6 +37,7 @@ RUN python3 -m venv venv && \
 	pip3 install -U pip && \
 	pip3 install wheel && \
 	pip3 install -r conf/requirements.txt && \
+	pip3 cache purge && \
 	chown -R www-data:www-data /srv/webvirtcloud
 
 RUN . venv/bin/activate && \
