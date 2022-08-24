@@ -51,7 +51,7 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#addFromTemp" type="button" role="tab" aria-controls="addFromTemp" aria-selected="false">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#add-from-temp" type="button" role="tab" aria-controls="add-from-temp" aria-selected="false">
                             {% trans "Template" %}
                         </button>
                     </li>
@@ -172,12 +172,12 @@
                                                                  <div class="row">
                                                                     <label class="col-sm-4 col-form-label">{% trans "Advanced" %}</label>
                                                                     <div class="d-grid col-sm-7">
-                                                                        <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#flavAddCollapse" aria-expanded="false" aria-controls="flavAddCollapse">
+                                                                        <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#flav-add-collapse" aria-expanded="false" aria-controls="flav-add-collapse">
                                                                             <span class="fa fa-caret-down"></span>
                                                                         </button>
                                                                     </div>        
                                                                 </div>
-                                                                <div class="collapse" id="flavAddCollapse">
+                                                                <div class="collapse" id="flav-add-collapse">
                                                                     <div class="row">
                                                                         <label class="col-sm-4 col-form-label">{% trans "MAC" %}</label>
                                                                         <div class="col-sm-7">
@@ -511,7 +511,7 @@
                 <div class="clearfix"></div>
             </div>
 
-            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromTemp">
+            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="add-from-temp">
                 <div>
                     <form method="post" role="form" aria-label="Create instance from template form">{% csrf_token %}
                         <div class="row">

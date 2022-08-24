@@ -1215,10 +1215,20 @@ class wvmInstance(wvmConnect):
             name,
             time.time(),
         )
+        self.change_snapshot_xml()
         xml += self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         xml += """<active>0</active>
                   </domainsnapshot>"""
         self._snapshotCreateXML(xml, 0)
+        self.recover_snapshot_xml()
+
+    def change_snapshot_xml(self):
+        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace("<loader readonly='yes' type='pflash'>","<loader readonly='yes' type='rom'>")
+        self._defineXML(xml_temp)
+
+    def recover_snapshot_xml(self):
+        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace("<loader readonly='yes' type='rom'>","<loader readonly='yes' type='pflash'>")
+        self._defineXML(xml_temp)
 
     def get_snapshot(self):
         snapshots = []
@@ -1234,8 +1244,10 @@ class wvmInstance(wvmConnect):
         snap.delete(0)
 
     def snapshot_revert(self, snapshot):
+        self.change_snapshot_xml()
         snap = self.instance.snapshotLookupByName(snapshot, 0)
         self.instance.revertToSnapshot(snap, 0)
+        self.recover_snapshot_xml()
 
     def get_managed_save_image(self):
         return self.instance.hasManagedSaveImage(0)

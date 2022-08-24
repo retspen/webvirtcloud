@@ -132,9 +132,13 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-STATICFILES_DIRS = [
-    Path.joinpath(BASE_DIR, "static"),
-]
+if not DEBUG:
+    STATIC_ROOT = Path.joinpath(BASE_DIR, "static")
+else:
+    STATICFILES_DIRS = [
+        Path.joinpath(BASE_DIR, "static"),
+    ]
+
 
 
 # Default primary key field type

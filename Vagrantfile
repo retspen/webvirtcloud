@@ -42,7 +42,9 @@ Vagrant.configure(2) do |config|
      sudo cp /srv/webvirtcloud/conf/nginx/webvirtcloud.conf /etc/nginx/conf.d
      sudo cp /srv/webvirtcloud/webvirtcloud/settings.py.template /srv/webvirtcloud/webvirtcloud/settings.py
      sudo sed "s/SECRET_KEY = ''/SECRET_KEY = '"`python3 /srv/webvirtcloud/conf/runit/secret_generator.py`"'/" -i /srv/webvirtcloud/webvirtcloud/settings.py
+     python3 /srv/webvirtcloud/manage.py makemigrations
      python3 /srv/webvirtcloud/manage.py migrate
+     python3 /srv/webvirtcloud/manage.py collectstatic --noinput
      sudo rm /etc/nginx/sites-enabled/default
      sudo chown -R www-data:www-data /srv/webvirtcloud
      sudo service nginx restart

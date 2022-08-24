@@ -46,7 +46,7 @@ chmod 744 install.sh
 
 ### Generate secret key
 
-You should generate SECRET_KEY after cloning repo. Then put it into webvirtcloud/settings.py.
+You should generate SECRET_KEY after cloning repository. Then put it into webvirtcloud/settings.py.
 
 ```python3
 import random, string
@@ -72,6 +72,7 @@ virtualenv -p python3 venv
 source venv/bin/activate
 pip install -r conf/requirements.txt
 python3 manage.py migrate
+python3 manage.py collectstatic --noinput
 sudo chown -R www-data:www-data /srv/webvirtcloud
 sudo rm /etc/nginx/sites-enabled/default
 ```
@@ -100,7 +101,7 @@ sudo yum -y install epel-release
 sudo yum -y install python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml git python3-libguestfs iproute-tc cyrus-sasl-md5 python3-libguestfs libsasl2-dev libldap2-dev libssl-dev
 ```
 
-#### Creating directories and cloning repo
+#### Creating directories and cloning repository
 
 ```bash
 sudo mkdir /srv && cd /srv
@@ -119,6 +120,7 @@ source venv/bin/activate
 pip3 install -r conf/requirements.txt
 cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 python3 manage.py migrate
+python3 manage.py collectstatic --noinput
 ```
 
 #### Configure the supervisor for CentOS
@@ -357,6 +359,7 @@ source venv/bin/activate
 git pull
 pip3 install -U -r conf/requirements.txt 
 python3 manage.py migrate
+python3 manage.py collectstatic --noinput
 sudo service supervisor restart
 ```
 

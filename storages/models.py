@@ -9,11 +9,11 @@ class Storages(models.Model):
     size = models.IntegerField(_('size'))
     volumes = models.IntegerField(_('volumes'))
 
-    def __str__(self):
-        return f'{self.name}'
-    
     class Meta:
         managed = False
+
+    def __str__(self):
+        return f'{self.name}'
 
 
 class Volume(models.Model):
@@ -22,12 +22,12 @@ class Volume(models.Model):
     allocation = models.IntegerField(_('allocation'))
     size = models.IntegerField(_('size'))
 
-    def __str__(self):
-        return f'{self.name}'
-
     class Meta:
         managed = False
         verbose_name_plural = "Volumes"
+
+    def __str__(self):
+        return f'{self.name}'
 
 
 class Storage(models.Model):
@@ -38,10 +38,10 @@ class Storage(models.Model):
     path = models.CharField(_('path'), max_length=128)
     type = models.CharField(_('type'), max_length=128)
     autostart = models.BooleanField(_('autostart'))
-    volumes = models.ForeignKey(Volume, on_delete=models.DO_NOTHING)
-
-    def __str__(self):
-        return f'{self.path}'
+    volumes = models.ForeignKey(Volume, related_name="storage_volumes", on_delete=models.DO_NOTHING)
 
     class Meta:
         managed = False
+
+    def __str__(self):
+        return f'{self.path}'

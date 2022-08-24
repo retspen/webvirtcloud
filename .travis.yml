@@ -1,15 +1,17 @@
+---
 language: python
 python:
-  - "3.6"
+  - "3.9"
 env:
-  - DJANGO=3.2.4
+  - DJANGO=3.2.15
 install:
   - pip install -r dev/requirements.txt
 script:
-  - pep8 --exclude=IPy.py --ignore=E501 vrtManager accounts admin appsettings computes \
-                                        console create datasource instances interfaces \
-                                        logs networks nwfilters storages virtsecrets 
-  - pyflakes vrtManager accounts admin appsettings computes console create datasource instances interfaces \
-             logs networks nwfilters storages virtsecrets
+  - pep8 --exclude=IPy.py --ignore=E501 vrtManager accounts admin appsettings \
+                                        computesconsole create datasource instances \
+                                        interfaceslogs networks nwfilters storages \
+                                        virtsecrets
+  - pyflakes vrtManager accounts admin appsettings computes console create datasource \
+             instances interfaces logs networks nwfilters storages virtsecrets
   - python manage.py migrate
   - python manage.py test --settings=webvirtcloud.settings-dev
