@@ -260,9 +260,14 @@ install_webvirtcloud () {
   
   echo "* Django Migrate."
   log "$PYTHON $APP_PATH/manage.py migrate"
-  $PYTHON $APP_PATH/manage.py migrate
   $PYTHON $APP_PATH/manage.py makemigrations
-
+  $PYTHON $APP_PATH/manage.py migrate
+  
+  
+  echo "* Django Collect Static"
+  log "$PYTHON $APP_PATH/manage.py collectstatic --noinput"
+  $PYTHON $APP_PATH/manage.py collectstatic --noinput
+  
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 }
 
