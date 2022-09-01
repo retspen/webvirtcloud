@@ -119,7 +119,7 @@ install_packages () {
         fi
       done;
       ;;
-    fedora|openEuler)
+    fedora|openEuler|openAnolis)
       for p in $PACKAGES; do
         if dnf list installed "$p" >/dev/null 2>&1; then
           echo "  * $p already installed"
@@ -403,6 +403,15 @@ case $distro in
     supervisor_conf_path=/etc/supervisord.d
     supervisor_file_name=webvirtcloud.ini
     ;;
+  *OpenAnolis*|*openAnolis*)
+    echo "  The installer has detected $distro version $version."
+    distro=uos
+    nginx_group=nginx
+    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
+    supervisor_service=supervisord
+    supervisor_conf_path=/etc/supervisord.d
+    supervisor_file_name=webvirtcloud.ini
+    ;;
   *)
     echo "  The installer was unable to determine your OS. Exiting for safety."
     exit 1
@@ -583,6 +592,33 @@ case $distro in
   openEuler)
   if [[ "$version" == "20.03" ]]; then
     # Install for openEuler 20.03
+    tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
+
+    echo "* Installing OS requirements."
+    PACKAGES="git python3-virtualenv python3-devel python3-pip libvirt-devel glibc gcc nginx supervisor python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
+    install_packages
+
+    set_hosts
+
+    install_webvirtcloud
+
+    echo "* Configuring Nginx."
+    configure_nginx
+
+    echo "* Configuring Supervisor."
+    configure_supervisor
+
+    set_firewall
+
+    set_selinux
+
+    restart_supervisor
+    restart_nginx
+  fi
+  ;;
+  openAnolis)
+  if [[ "$version" == "20" ]]; then
+    # Install for openAnolis 20
     tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
 
     echo "* Installing OS requirements."
