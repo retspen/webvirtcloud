@@ -405,7 +405,7 @@ case $distro in
     ;;
   *OpenAnolis*|*openAnolis*)
     echo "  The installer has detected $distro version $version."
-    distro=uos
+    distro=openAnolis
     nginx_group=nginx
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
     supervisor_service=supervisord
@@ -617,8 +617,8 @@ case $distro in
   fi
   ;;
   openAnolis)
-  if [[ "$version" == "20" ]]; then
-    # Install for openAnolis 20
+  if [[ "$version" == "8.4" ]]; then
+    # Install for openAnolis 8.4
     tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
 
     echo "* Installing OS requirements."
