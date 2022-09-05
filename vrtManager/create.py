@@ -296,10 +296,10 @@ class wvmCreate(wvmConnect):
                           <readonly/>"""
             if "ide" in dom_caps["disk_bus"]:
                 xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), "ide")
-            elif "sata" in dom_caps["disk_bus"]:
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), "sata")
             elif "scsi" in dom_caps["disk_bus"]:
                 xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), "scsi")
+            elif "sata" in dom_caps["disk_bus"]:
+                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), "sata")
             else:
                 xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), "virtio")
             xml += """</disk>"""
