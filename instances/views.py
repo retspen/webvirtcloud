@@ -1376,6 +1376,7 @@ def create_instance(request, compute_id, arch, machine):
         default_cpu_mode = app_settings.INSTANCE_CPU_DEFAULT_MODE
         instances = conn.get_instances()
         videos = conn.get_video_models(arch, machine)
+        default_video = app_settings.INSTANCE_VIDEO_DEFAULT_TYPE
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = app_settings.INSTANCE_VOLUME_DEFAULT_CACHE
         default_io = app_settings.INSTANCE_VOLUME_DEFAULT_IO
@@ -1394,6 +1395,7 @@ def create_instance(request, compute_id, arch, machine):
         nwfilters = conn.get_nwfilters()
         storages = sorted(conn.get_storages(only_actives=True))
         default_graphics = app_settings.QEMU_CONSOLE_DEFAULT_TYPE
+        default_cdrom = app_settings.INSTANCE_CDROM_ADD
 
         dom_caps = conn.get_dom_capabilities(arch, machine)
         caps = conn.get_capabilities(arch)
@@ -1552,6 +1554,7 @@ def create_instance(request, compute_id, arch, machine):
                                 console_pass=data["console_pass"],
                                 mac=data["mac"],
                                 qemu_ga=data["qemu_ga"],
+                                add_cdrom=data["add_cdrom"]
                             )
                             create_instance = Instance(compute_id=compute_id, name=data["name"], uuid=uuid)
                             create_instance.save()

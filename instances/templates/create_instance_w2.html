@@ -227,7 +227,7 @@
                                                                                     <option value="cirrus">cirrus</option>
                                                                                 {% endif %}
                                                                                 {% for video in videos %}
-                                                                                    <option value="{{ video }}">{{ video }}</option>
+                                                                                    <option value="{{ video }}" {% if default_video == video %}selected{% endif %}>{{ video }}</option>
                                                                                 {% endfor %}
                                                                             </select>
                                                                         </div>
@@ -246,6 +246,19 @@
                                                                         <label class="col-sm-4 col-form-label">{% trans "Console Password" %}</label>
                                                                         <div class="col-sm-7">
                                                                             <input class="form-control" type="password" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <label class="col-sm-4 col-form-label">{% trans "Add CD-Rom" %}</label>
+                                                                        <div class="col-sm-7">
+                                                                            <select class="form-select" id="add_cdrom" name="add_cdrom">
+                                                                                <option value="None" {% if bus == default_cdrom %}selected{% endif %}>--{% trans "False" %}--</option>
+                                                                                {% for bus in disk_buses %}
+                                                                                    <option value="{{ bus }}" {% if bus == default_cdrom %}selected {% endif %}>
+                                                                                        {% trans bus %}
+                                                                                    </option>
+                                                                                {% endfor %}
+                                                                            </select>
                                                                         </div>
                                                                     </div>
                                                                     <div class="row">
@@ -479,6 +492,19 @@
                             </div>
                         </div>
                         <div class="row">
+                            <label class="col-sm-3 col-form-label">{% trans "Add CD-Rom" %}</label>
+                            <div class="col-sm-7">
+                                <select class="form-select" id="add_cdrom" name="add_cdrom">
+                                    <option value="None" {% if bus == default_cdrom %}selected{% endif %} >--{% trans "False" %}--</option>
+                                    {% for bus in disk_buses %}
+                                        <option value="{{ bus }}" {% if bus == default_cdrom %}selected {% endif %}>
+                                            {% trans bus %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
                             <div class="col-sm-6">
                                 <input type="checkbox" name="qemu_ga" value="true" checked>
@@ -692,6 +718,19 @@
                                 <label class="col-sm-3 col-form-label">{% trans "Console Password" %}</label>
                                 <div class="col-sm-7">
                                     <input type="password" class="form-control" name="console_pass" placeholder="{% trans "Console Password" %}" maxlength="64">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-sm-3 col-form-label">{% trans "Add CD-Rom" %}</label>
+                                <div class="col-sm-7">
+                                    <select class="form-select" id="add_cdrom" name="add_cdrom">
+                                        <option value="None" {% if bus == default_cdrom %}selected{% endif %}>--{% trans "False" %}--</option>
+                                        {% for bus in disk_buses %}
+                                            <option value="{{ bus }}" {% if bus == default_cdrom %}selected {% endif %}>
+                                                {% trans bus %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                             <div class="row">

@@ -244,6 +244,7 @@ class CreateInstance(models.Model):
     qemu_ga = models.BooleanField(default=False)
     mac = models.CharField(max_length=17, blank=True)
     console_pass = models.CharField(max_length=64, blank=True)
+    add_cdrom = models.CharField(max_length=16)
     graphics = models.CharField(max_length=16, error_messages={'required': _('Please select a graphics type')})
     video = models.CharField(max_length=16, error_messages={'required': _('Please select a video driver')})
     listener_addr = models.CharField(max_length=20, choices=QEMU_CONSOLE_LISTENER_ADDRESSES)
