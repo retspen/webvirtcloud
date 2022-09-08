@@ -24,5 +24,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-	migrations.RunPython(add_default_settings, del_default_settings),
+	    migrations.RunPython(add_default_settings, del_default_settings),
     ]

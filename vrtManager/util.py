@@ -182,3 +182,15 @@ UEFI_ARCH_PATTERNS = {
         r".*arm/QEMU_EFI.*",  # fedora, gerd's firmware repo
     ],
 }
+
+
+def vol_dev_type(vol_bus):
+    if vol_bus == "ide":
+        return "hd"
+    elif vol_bus == "fdc":
+        return "fd"
+    elif vol_bus == "virtio":
+        return "vd"
+    elif vol_bus in ["scsi", "sata"]:
+        return "sd"
+

@@ -41,6 +41,7 @@ RUN python3 -m venv venv && \
 	chown -R www-data:www-data /srv/webvirtcloud
 
 RUN . venv/bin/activate && \
+	python3 manage.py makemigrations && \
     python3 manage.py migrate && \
 	python3 manage.py collectstatic --noinput && \
 	chown -R www-data:www-data /srv/webvirtcloud

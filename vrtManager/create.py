@@ -165,6 +165,8 @@ class wvmCreate(wvmConnect):
         console_pass="random",
         mac=None,
         qemu_ga=True,
+        add_cdrom="sata",
+        add_input="default"
     ):
         """
         Create VM function
@@ -233,10 +235,20 @@ class wvmCreate(wvmConnect):
         fd_disk_letters = list(string.ascii_lowercase)
         hd_disk_letters = list(string.ascii_lowercase)
         sd_disk_letters = list(string.ascii_lowercase)
-        add_cd = True
+        def get_letter(bus_type):
+            if bus_type == "ide":
+                return hd_disk_letters.pop(0)
+            elif bus_type in ["sata", "scsi"]:
+                return sd_disk_letters.pop(0)
+            elif bus_type == "fdc":
+                return fd_disk_letters.pop(0)
+            elif bus_type == "virtio":
+                return vd_disk_letters.pop(0)
+            else:
+                return sd_disk_letters.pop(0)
+        
 
         for volume in volumes:
-
             disk_opts = ""
             if volume["cache_mode"] is not None and volume["cache_mode"] != "default":
                 disk_opts += f"cache='{volume['cache_mode']}' "
@@ -251,7 +263,7 @@ class wvmCreate(wvmConnect):
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
 
             if volume["device"] == "cdrom":
-                add_cd = False
+                add_cdrom = "None"
 
             if stg_type == "rbd":
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
@@ -274,34 +286,24 @@ class wvmCreate(wvmConnect):
                 xml += f""" <driver name='qemu' type='{volume["type"]}' {disk_opts}/>"""
                 xml += f""" <source file='{volume["path"]}'/>"""
 
-            if volume.get("bus") == "virtio":
-                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), volume.get("bus"))
-            elif volume.get("bus") == "ide":
-                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), volume.get("bus"))
-            elif volume.get("bus") == "fdc":
-                xml += """<target dev='fd%s' bus='%s'/>""" % (fd_disk_letters.pop(0), volume.get("bus"))
-            elif volume.get("bus") in ["sata", "scsi"]:
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), volume.get("bus"))
+            if volume.get("bus") in dom_caps["disk_bus"]:
+                dev_prefix = util.vol_dev_type(volume.get("bus"))
+                xml += """<target dev='%s%s' bus='%s'/>""" % (dev_prefix, get_letter(volume.get("bus")), volume.get("bus"))
             else:
-                xml += """<target dev='sd%s'/>""" % sd_disk_letters.pop(0)
+                xml += """<target dev='sd%s'/>""" % get_letter("sata")
             xml += """</disk>"""
 
             if volume.get("bus") == "scsi":
                 xml += f"""<controller type='scsi' model='{volume.get('scsi_model')}'/>"""
 
-        if add_cd:
+        if add_cdrom != "None":
             xml += """<disk type='file' device='cdrom'>
                           <driver name='qemu' type='raw'/>
                           <source file = '' />
                           <readonly/>"""
-            if "ide" in dom_caps["disk_bus"]:
-                xml += """<target dev='hd%s' bus='%s'/>""" % (hd_disk_letters.pop(0), "ide")
-            elif "sata" in dom_caps["disk_bus"]:
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), "sata")
-            elif "scsi" in dom_caps["disk_bus"]:
-                xml += """<target dev='sd%s' bus='%s'/>""" % (sd_disk_letters.pop(0), "scsi")
-            else:
-                xml += """<target dev='vd%s' bus='%s'/>""" % (vd_disk_letters.pop(0), "virtio")
+            if add_cdrom in dom_caps["disk_bus"]:
+                dev_prefix = util.vol_dev_type(add_cdrom)
+                xml += """<target dev='%s%s' bus='%s'/>""" % (dev_prefix, get_letter(add_cdrom), add_cdrom)
             xml += """</disk>"""
 
         if mac:
@@ -322,14 +324,16 @@ class wvmCreate(wvmConnect):
         elif console_pass != "":
             console_pass = "passwd='" + console_pass + "'"
 
-        if "usb" in dom_caps["disk_bus"]:
-            xml += f"""<input type='mouse' bus='{"virtio" if virtio else "usb"}'/>"""
-            xml += f"""<input type='keyboard' bus='{"virtio" if virtio else "usb"}'/>"""
-            xml += f"""<input type='tablet' bus='{"virtio" if virtio else "usb"}'/>"""
-        else:
-            xml += """<input type='mouse'/>"""
-            xml += """<input type='keyboard'/>"""
-            xml += """<input type='tablet'/>"""
+        if add_input != "None":
+            xml += """<controller type='usb'/>"""
+            if add_input in dom_caps["disk_bus"]:
+                xml += f"""<input type='mouse' bus='{add_input}'/>"""
+                xml += f"""<input type='keyboard' bus='{add_input}'/>"""
+                xml += f"""<input type='tablet' bus='{add_input}'/>"""
+            else:
+                xml += """<input type='mouse'/>"""
+                xml += """<input type='keyboard'/>"""
+                xml += """<input type='tablet'/>"""
 
         xml += f"""
                 <graphics type='{graphics}' port='-1' autoport='yes' {console_pass} listen='{listener_addr}'/>
