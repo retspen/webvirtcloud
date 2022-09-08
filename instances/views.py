@@ -145,7 +145,7 @@ def drbd_status(request, pk):
 
     if instance.compute.type == 2:
         conn = instance.compute.login + "@" + instance.compute.hostname
-        remoteDrbdStatus = subprocess.run(["ssh", conn, "sudo", "drbdadm", "status", "&&", "exit"], stdout=subprocess.PIPE, text=True)
+        remoteDrbdStatus = subprocess.run(["ssh", conn, "sudo", "/usr/sbin/drbdadm", "status", "&&", "exit"], stdout=subprocess.PIPE, text=True)
 
         if remoteDrbdStatus.stdout:
             try:
