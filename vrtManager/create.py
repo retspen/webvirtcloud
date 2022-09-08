@@ -249,7 +249,6 @@ class wvmCreate(wvmConnect):
         
 
         for volume in volumes:
-
             disk_opts = ""
             if volume["cache_mode"] is not None and volume["cache_mode"] != "default":
                 disk_opts += f"cache='{volume['cache_mode']}' "
@@ -264,7 +263,7 @@ class wvmCreate(wvmConnect):
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
 
             if volume["device"] == "cdrom":
-                add_cdrom = None
+                add_cdrom = "None"
 
             if stg_type == "rbd":
                 ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
