@@ -1396,6 +1396,8 @@ def create_instance(request, compute_id, arch, machine):
         storages = sorted(conn.get_storages(only_actives=True))
         default_graphics = app_settings.QEMU_CONSOLE_DEFAULT_TYPE
         default_cdrom = app_settings.INSTANCE_CDROM_ADD
+        input_device_buses = ['default', 'virtio', 'usb']
+        default_input_device_bus = app_settings.INSTANCE_INPUT_DEFAULT_DEVICE
 
         dom_caps = conn.get_dom_capabilities(arch, machine)
         caps = conn.get_capabilities(arch)
@@ -1554,7 +1556,8 @@ def create_instance(request, compute_id, arch, machine):
                                 console_pass=data["console_pass"],
                                 mac=data["mac"],
                                 qemu_ga=data["qemu_ga"],
-                                add_cdrom=data["add_cdrom"]
+                                add_cdrom=data["add_cdrom"],
+                                add_input=data["add_input"],
                             )
                             create_instance = Instance(compute_id=compute_id, name=data["name"], uuid=uuid)
                             create_instance.save()

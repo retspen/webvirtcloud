@@ -166,6 +166,7 @@ class wvmCreate(wvmConnect):
         mac=None,
         qemu_ga=True,
         add_cdrom="sata",
+        add_input="default"
     ):
         """
         Create VM function
@@ -324,14 +325,16 @@ class wvmCreate(wvmConnect):
         elif console_pass != "":
             console_pass = "passwd='" + console_pass + "'"
 
-        if "usb" in dom_caps["disk_bus"]:
-            xml += f"""<input type='mouse' bus='{"virtio" if virtio else "usb"}'/>"""
-            xml += f"""<input type='keyboard' bus='{"virtio" if virtio else "usb"}'/>"""
-            xml += f"""<input type='tablet' bus='{"virtio" if virtio else "usb"}'/>"""
-        else:
-            xml += """<input type='mouse'/>"""
-            xml += """<input type='keyboard'/>"""
-            xml += """<input type='tablet'/>"""
+        if add_input != "None":
+            xml += """<controller type='usb'/>"""
+            if add_input in dom_caps["disk_bus"]:
+                xml += f"""<input type='mouse' bus='{add_input}'/>"""
+                xml += f"""<input type='keyboard' bus='{add_input}'/>"""
+                xml += f"""<input type='tablet' bus='{add_input}'/>"""
+            else:
+                xml += """<input type='mouse'/>"""
+                xml += """<input type='keyboard'/>"""
+                xml += """<input type='tablet'/>"""
 
         xml += f"""
                 <graphics type='{graphics}' port='-1' autoport='yes' {console_pass} listen='{listener_addr}'/>

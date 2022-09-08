@@ -262,6 +262,19 @@
                                                                         </div>
                                                                     </div>
                                                                     <div class="row">
+                                                                        <label class="col-sm-4 col-form-label">{% trans "Add Input Device" %}</label>
+                                                                        <div class="col-sm-7">
+                                                                            <select class="form-select" id="add_input" name="add_input">
+                                                                                <option value="None" {% if bus == default_input_device_bus %}selected{% endif %}>--{% trans "False" %}--</option>
+                                                                                {% for bus in input_device_buses %}
+                                                                                    <option value="{{ bus }}" {% if bus == default_input_device_bus %}selected{% endif %}>
+                                                                                        {% trans bus %}
+                                                                                    </option>
+                                                                                {% endfor %}
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
                                                                         <label class="col-sm-4 col-form-label">{% trans "Guest Agent" %}</label>
                                                                         <div class="col-sm-7">
                                                                             <input type="checkbox" name="qemu_ga" value="true" checked>
@@ -505,6 +518,19 @@
                             </div>
                         </div>
                         <div class="row">
+                            <label class="col-sm-3 col-form-label">{% trans "Add Input Device" %}</label>
+                            <div class="col-sm-7">
+                                <select class="form-select" id="add_input" name="add_input">
+                                    <option value="None" {% if bus == default_input_device_bus %}selected{% endif %}>--{% trans "False" %}--</option>
+                                    {% for bus in input_device_buses %}
+                                        <option value="{{ bus }}" {% if bus == default_input_device_bus %}selected{% endif %}>
+                                            {% trans bus %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
                             <div class="col-sm-6">
                                 <input type="checkbox" name="qemu_ga" value="true" checked>
@@ -727,6 +753,19 @@
                                         <option value="None" {% if bus == default_cdrom %}selected{% endif %}>--{% trans "False" %}--</option>
                                         {% for bus in disk_buses %}
                                             <option value="{{ bus }}" {% if bus == default_cdrom %}selected {% endif %}>
+                                                {% trans bus %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-sm-3 col-form-label">{% trans "Add Input Device" %}</label>
+                                <div class="col-sm-7">
+                                    <select class="form-select" id="add_input" name="add_input">
+                                        <option value="None" {% if bus == default_input_device_bus %}selected{% endif %}>--{% trans "False" %}--</option>
+                                        {% for bus in input_device_buses %}
+                                            <option value="{{ bus }}" {% if bus == default_input_device_bus %}selected{% endif %}>
                                                 {% trans bus %}
                                             </option>
                                         {% endfor %}
