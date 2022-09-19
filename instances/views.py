@@ -816,7 +816,8 @@ def snapshot(request, pk):
 
     if allow_admin_or_not_template and request.user.has_perm("instances.snapshot_instances"):
         name = request.POST.get("name", "")
-        instance.proxy.create_snapshot(name)
+        desc = request.POST.get("description", "")
+        instance.proxy.create_snapshot(name, desc)
         msg = _("Create snapshot: %(snap)s") % {"snap": name}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")

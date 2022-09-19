@@ -1207,12 +1207,16 @@ class wvmInstance(wvmConnect):
     def _snapshotCreateXML(self, xml, flag):
         self.instance.snapshotCreateXML(xml, flag)
 
-    def create_snapshot(self, name):
+    def create_snapshot(self, name, desc=None):
+        state = 'shutoff' if self.get_status()==5 else 'running'
         xml = """<domainsnapshot>
                      <name>%s</name>
-                     <state>shutoff</state>
+                     <description>%s</description>
+                     <state>%s</state>
                      <creationTime>%d</creationTime>""" % (
             name,
+            desc,
+            state,
             time.time(),
         )
         self.change_snapshot_xml()
@@ -1235,8 +1239,15 @@ class wvmInstance(wvmConnect):
         snapshot_list = self.instance.snapshotListNames(0)
         for snapshot in snapshot_list:
             snap = self.instance.snapshotLookupByName(snapshot, 0)
+            snap_description = util.get_xml_path(snap.getXMLDesc(0), "/domainsnapshot/description")
             snap_time_create = util.get_xml_path(snap.getXMLDesc(0), "/domainsnapshot/creationTime")
-            snapshots.append({"date": datetime.fromtimestamp(int(snap_time_create)), "name": snapshot})
+            snapshots.append(
+                {
+                    "date": datetime.fromtimestamp(int(snap_time_create)),
+                    "name": snapshot,
+                    "description": snap_description,
+                }
+            )
         return snapshots
 
     def snapshot_delete(self, snapshot):
