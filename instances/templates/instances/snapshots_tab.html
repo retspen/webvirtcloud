@@ -17,16 +17,20 @@
     <!-- Tab panes -->
     <div class="tab-content">
         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="takesnapshot">
-            <p>{% trans "This may take more than an hour, depending on how much content is on your instance and how large the disk is. It could cause web server timeout.." %}</p>
+            {% if instance.status != 5 %}
+            <p>{% trans "With running machine, internal snapshots may take more than an hour, depending on how much memory has on your instance and how large the disk is." %} </p>
+                <p class="text-danger">{% trans "Live snapshot could cause server timeout and instance might be paused!!!" %}</p>
+            {% else %}
+                <p>{% trans "Create an internal snapshot" %}</p>
+            {% endif %}
             <form action="{% url 'instances:snapshot' instance.id %}" method="post" role="form" aria-label="Create snapshot form">
                 {% csrf_token %}
-                
                     <div class="input-group mb-3">
-                        <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Enter Snapshot Name" %}" maxlength="14">
+                        <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="14">
+                        <span class="input-group-text">|</span>
+                        <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
                         <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
                     </div>
-                
-                
             </form>
             <div class="clearfix"></div>
         </div>
@@ -36,15 +40,17 @@
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
-                            <th scope="col">{% trans "Name" %}</th>
                             <th scope="col">{% trans "Date" %}</th>
+                            <th scope="col">{% trans "Name" %}</th>
+                            <th scope="col">{% trans "Description" %}</th>
                             <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
                         </thead>
                         <tbody>
                         {% for snap in instance.snapshots %}
                             <tr>
-                                <td><strong>{{ snap.name }}</strong></td>
                                 <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                <td><strong>{{ snap.name }}</strong></td>
+                                <td>{{ snap.description }}</td>
                                 <td style="width:30px;">
                                     <form action="{% url 'instances:revert_snapshot' instance.id %}" method="post" role="form" aria-label="Restore snapshot form">
                                         {% csrf_token %}
