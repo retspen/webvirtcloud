@@ -5,3 +5,5 @@ Scan this QR code to get OTP for account '{{ user }}'
 {% endblocktrans %}
 <br>
 {% qr_from_text totp_url %}
+<p class="small">{% trans 'Some e-mail clients does not render SVG, also generating PNG.' %}</p>
+{% qr_from_text totp_url size="s" image_format="png" error_correction="M" %}
