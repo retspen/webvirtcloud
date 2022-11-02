@@ -12,7 +12,7 @@ from .models import CreateInstance, Flavor
 class FlavorForm(forms.ModelForm):
     class Meta:
         model = Flavor
-        fields = '__all__'
+        fields = "__all__"
 
 
 class ConsoleForm(forms.Form):
@@ -20,17 +20,25 @@ class ConsoleForm(forms.Form):
     listen_on = forms.ChoiceField()
     generate_password = forms.BooleanField(required=False)
     clear_password = forms.BooleanField(required=False)
-    password = forms.CharField(widget=forms.PasswordInput(render_value=True), required=False)
+    password = forms.CharField(
+        widget=forms.PasswordInput(render_value=True),
+        required=False
+    )
     clear_keymap = forms.BooleanField(required=False)
     keymap = forms.ChoiceField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(ConsoleForm, self).__init__(*args, **kwargs)
-        type_choices = ((c, c) for c in AppSettings.objects.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list())
-        keymap_choices = [('auto', 'Auto')] + list((c, c) for c in QEMU_KEYMAPS)
-        self.fields['type'] = forms.ChoiceField(choices=type_choices)
-        self.fields['listen_on'] = forms.ChoiceField(choices=QEMU_CONSOLE_LISTENER_ADDRESSES)
-        self.fields['keymap'] = forms.ChoiceField(choices=keymap_choices)
+        type_choices = (
+            (c, c)
+            for c in AppSettings.objects.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list()
+        )
+        keymap_choices = [("auto", "Auto")] + list((c, c) for c in QEMU_KEYMAPS)
+        self.fields["type"] = forms.ChoiceField(choices=type_choices)
+        self.fields["listen_on"] = forms.ChoiceField(
+            choices=QEMU_CONSOLE_LISTENER_ADDRESSES
+        )
+        self.fields["keymap"] = forms.ChoiceField(choices=keymap_choices)
 
 
 class NewVMForm(forms.ModelForm):
@@ -57,12 +65,16 @@ class NewVMForm(forms.ModelForm):
     # listener_addr = forms.ChoiceField(required=True, widget=forms.RadioSelect, choices=QEMU_CONSOLE_LISTENER_ADDRESSES)
     class Meta:
         model = CreateInstance
-        fields = '__all__'
-        exclude = ['compute']
+        fields = "__all__"
+        exclude = ["compute"]
 
     def clean_name(self):
-        name = self.cleaned_data['name']
-        have_symbol = re.match('^[a-zA-Z0-9._-]+$', name)
+        name = self.cleaned_data["name"]
+        have_symbol = re.match("^[a-zA-Z0-9._-]+$", name)
         if not have_symbol:
-            raise forms.ValidationError(_('The name of the virtual machine must not contain any special characters'))
+            raise forms.ValidationError(
+                _(
+                    "The name of the virtual machine must not contain any special characters"
+                )
+            )
         return name

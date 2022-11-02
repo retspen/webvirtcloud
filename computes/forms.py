@@ -13,8 +13,8 @@ class TcpComputeForm(forms.ModelForm):
 
     class Meta:
         model = Compute
-        widgets = {'password': forms.PasswordInput()}
-        fields = '__all__'
+        widgets = {"password": forms.PasswordInput()}
+        fields = "__all__"
 
 
 class SshComputeForm(forms.ModelForm):
@@ -23,7 +23,7 @@ class SshComputeForm(forms.ModelForm):
 
     class Meta:
         model = Compute
-        exclude = ['password']
+        exclude = ["password"]
 
 
 class TlsComputeForm(forms.ModelForm):
@@ -32,14 +32,14 @@ class TlsComputeForm(forms.ModelForm):
 
     class Meta:
         model = Compute
-        widgets = {'password': forms.PasswordInput()}
-        fields = '__all__'
+        widgets = {"password": forms.PasswordInput()}
+        fields = "__all__"
 
 
 class SocketComputeForm(forms.ModelForm):
-    hostname = forms.CharField(widget=forms.HiddenInput, initial='localhost')
+    hostname = forms.CharField(widget=forms.HiddenInput, initial="localhost")
     type = forms.IntegerField(widget=forms.HiddenInput, initial=CONN_SOCKET)
 
     class Meta:
         model = Compute
-        fields = ['name', 'details', 'hostname', 'type']
+        fields = ["name", "details", "hostname", "type"]

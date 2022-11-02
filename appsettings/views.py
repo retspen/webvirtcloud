@@ -27,7 +27,9 @@ def appsettings(request):
         addlogmsg(request.user.username, "-", "", err)
 
     # Bootstrap settings related with filesystems, because of that they are excluded from other settings
-    appsettings = AppSettings.objects.exclude(description__startswith="Bootstrap").order_by("name")
+    appsettings = AppSettings.objects.exclude(
+        description__startswith="Bootstrap"
+    ).order_by("name")
 
     if request.method == "POST":
         if "SASS_DIR" in request.POST:
@@ -35,7 +37,9 @@ def appsettings(request):
                 sass_dir.value = request.POST.get("SASS_DIR", "")
                 sass_dir.save()
 
-                msg = _("SASS directory path is changed. Now: %(dir)s") % {"dir": sass_dir.value}
+                msg = _("SASS directory path is changed. Now: %(dir)s") % {
+                    "dir": sass_dir.value
+                }
                 messages.success(request, msg)
             except Exception as err:
                 msg = err
@@ -47,15 +51,17 @@ def appsettings(request):
         if "BOOTSTRAP_THEME" in request.POST:
             theme = request.POST.get("BOOTSTRAP_THEME", "")
             scss_var = f"@import '{sass_dir.value}/wvc-theme/{theme}/variables';"
-            #scss_boot = f"@import '{sass_dir.value}/bootstrap/bootstrap.scss';"
+            # scss_boot = f"@import '{sass_dir.value}/bootstrap/bootstrap.scss';"
             scss_boot = f"@import '{sass_dir.value}/bootstrap-overrides.scss';"
-            scss_bootswatch = f"@import '{sass_dir.value}/wvc-theme/{theme}/bootswatch';"
-            
-            
+            scss_bootswatch = (
+                f"@import '{sass_dir.value}/wvc-theme/{theme}/bootswatch';"
+            )
 
             try:
                 with open(sass_dir.value + "/wvc-main.scss", "w") as main:
-                    main.write(scss_var + "\n" + scss_boot + "\n" + scss_bootswatch + "\n")
+                    main.write(
+                        scss_var + "\n" + scss_boot + "\n" + scss_bootswatch + "\n"
+                    )
 
                 css_compressed = sass.compile(
                     string=scss_var + "\n" + scss_boot + "\n" + scss_bootswatch,
@@ -82,7 +88,10 @@ def appsettings(request):
                     setting.value = request.POST.get(setting.key, "")
                     setting.save()
 
-                    msg = _("%(setting)s is changed. Now: %(value)s") % {"setting": setting.name, "value": setting.value}
+                    msg = _("%(setting)s is changed. Now: %(value)s") % {
+                        "setting": setting.name,
+                        "value": setting.value,
+                    }
                     messages.success(request, msg)
                 except Exception as err:
                     msg = err

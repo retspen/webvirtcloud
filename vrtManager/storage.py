@@ -15,7 +15,13 @@ class wvmStorages(wvmConnect):
             stg_vol = len(stg.listVolumes()) if stg_status else None
             stg_size = stg.info()[1]
             storages.append(
-                {"name": pool, "status": stg_status, "type": stg_type, "volumes": stg_vol, "size": stg_size}
+                {
+                    "name": pool,
+                    "status": stg_status,
+                    "type": stg_type,
+                    "volumes": stg_vol,
+                    "size": stg_size,
+                }
             )
         return storages
 
@@ -47,7 +53,9 @@ class wvmStorages(wvmConnect):
 
         return stg
 
-    def create_storage_ceph(self, stg_type, name, ceph_pool, ceph_host, ceph_user, secret):
+    def create_storage_ceph(
+        self, stg_type, name, ceph_pool, ceph_host, ceph_user, secret
+    ):
         xml = f"""
                 <pool type='{stg_type}'>
                 <name>{name}</name>
@@ -65,7 +73,9 @@ class wvmStorages(wvmConnect):
         stg.create(0)
         stg.setAutostart(1)
 
-    def create_storage_netfs(self, stg_type, name, netfs_host, source, source_format, target):
+    def create_storage_netfs(
+        self, stg_type, name, netfs_host, source, source_format, target
+    ):
         xml = f"""
                 <pool type='{stg_type}'>
                 <name>{name}</name>
@@ -96,7 +106,12 @@ class wvmStorage(wvmConnect):
         return self.pool.name()
 
     def get_status(self):
-        status = ["Not running", "Initializing pool, not available", "Running normally", "Running degraded"]
+        status = [
+            "Not running",
+            "Initializing pool, not available",
+            "Running normally",
+            "Running degraded",
+        ]
         try:
             return status[self.pool.info()[0]]
         except ValueError:
@@ -161,27 +176,28 @@ class wvmStorage(wvmConnect):
             hosts_array = []
 
             for host in doc.xpath("/pool/source/host"):
-                name = host.get('name')
+                name = host.get("name")
                 if name:
-                    port = host.get('port')
+                    port = host.get("port")
                     if port:
                         hosts_array.append({"hostname": name, "hostport": port})
                     else:
                         hosts_array.append({"hostname": name})
 
-            name = doc.get('name')
+            name = doc.get("name")
             auth = doc.xpath("/pool/source/auth")
             auth_type = auth[0].get("type")
             auth_user = auth[0].get("username")
             auth_uuid = auth[0].xpath("secret/@uuid")[0]
 
-            return({
+            return {
                 "name": name,
                 "auth_type": auth_type,
                 "auth_user": auth_user,
                 "auth_uuid": auth_uuid,
-                "hosts": hosts_array
-            })
+                "hosts": hosts_array,
+            }
+
         return util.get_xml_path(self._XMLDesc(0), func=hosts)
 
     def get_pretty_allocation(self):
@@ -231,30 +247,49 @@ class wvmStorage(wvmConnect):
             self.refresh()
 
         vols = self.get_volumes()
-        return [{"name": volname, 
-                 "size": self.get_volume_size(volname),
-                 "allocation": self.get_volume_allocation(volname),
-                 "type": self.get_volume_format_type(volname)} for volname in vols]
-                 
-    def get_volume_details(self, volname):
-        with contextlib.suppress(Exception):
-            self.refresh()
-        return {
+        return [
+            {
                 "name": volname,
                 "size": self.get_volume_size(volname),
                 "allocation": self.get_volume_allocation(volname),
                 "type": self.get_volume_format_type(volname),
+            }
+            for volname in vols
+        ]
+
+    def get_volume_details(self, volname):
+        with contextlib.suppress(Exception):
+            self.refresh()
+        return {
+            "name": volname,
+            "size": self.get_volume_size(volname),
+            "allocation": self.get_volume_allocation(volname),
+            "type": self.get_volume_format_type(volname),
         }
 
     def update_volumes(self):
         with contextlib.suppress(Exception):
             self.refresh()
         vols = self.get_volumes()
-        return [{"name": volname, "size": self.get_volume_size(volname),
-                 "allocation": self.get_volume_allocation(volname),
-                 "type": self.get_volume_format_type(volname)} for volname in vols]
+        return [
+            {
+                "name": volname,
+                "size": self.get_volume_size(volname),
+                "allocation": self.get_volume_allocation(volname),
+                "type": self.get_volume_format_type(volname),
+            }
+            for volname in vols
+        ]
 
-    def create_volume(self, name, size, vol_fmt="qcow2", metadata=False, disk_owner_uid=0, disk_owner_gid=0):
+    def create_volume(
+        self,
+        name,
+        size,
+        vol_fmt="qcow2",
+        metadata=False,
+        disk_owner_uid=0,
+        disk_owner_gid=0,
+    ):
         size = int(size) * 1073741824
         storage_type = self.get_type()
         alloc = size

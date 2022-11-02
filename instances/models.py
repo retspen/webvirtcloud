@@ -10,10 +10,10 @@ from vrtManager.instance import wvmInstance
 
 
 class Flavor(models.Model):
-    label = models.CharField(_('label'), max_length=12, unique=True)
-    memory = models.IntegerField(_('memory'))
-    vcpu = models.IntegerField(_('vcpu'))
-    disk = models.IntegerField(_('disk'))
+    label = models.CharField(_("label"), max_length=12, unique=True)
+    memory = models.IntegerField(_("memory"))
+    vcpu = models.IntegerField(_("vcpu"))
+    disk = models.IntegerField(_("disk"))
 
     def __str__(self):
         return self.label
@@ -21,21 +21,21 @@ class Flavor(models.Model):
 
 class InstanceManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().select_related('compute')
+        return super().get_queryset().select_related("compute")
 
 
 class Instance(models.Model):
     compute = models.ForeignKey(Compute, on_delete=models.CASCADE)
-    name = models.CharField(_('name'), max_length=120, db_index=True)
-    uuid = models.CharField(_('uuid'), max_length=36, db_index=True)
-    is_template = models.BooleanField(_('is template'), default=False)
-    created = models.DateTimeField(_('created'), auto_now_add=True)
-    drbd = models.CharField(_('drbd'), max_length=24, default="None")
+    name = models.CharField(_("name"), max_length=120, db_index=True)
+    uuid = models.CharField(_("uuid"), max_length=36, db_index=True)
+    is_template = models.BooleanField(_("is template"), default=False)
+    created = models.DateTimeField(_("created"), auto_now_add=True)
+    drbd = models.CharField(_("drbd"), max_length=24, default="None")
 
     objects = InstanceManager()
 
     def __str__(self):
-        return f'{self.compute}/{self.name}'
+        return f"{self.compute}/{self.name}"
 
     @cached_property
     def proxy(self):
@@ -173,7 +173,7 @@ class Instance(models.Model):
 
     @cached_property
     def snapshots(self):
-        return sorted(self.proxy.get_snapshot(), reverse=True, key=lambda k: k['date'])
+        return sorted(self.proxy.get_snapshot(), reverse=True, key=lambda k: k["date"])
 
     @cached_property
     def inst_xml(self):
@@ -209,35 +209,59 @@ class Instance(models.Model):
 
 
 class MigrateInstance(models.Model):
-    instance = models.ForeignKey(Instance, related_name='source_host', on_delete=models.DO_NOTHING)
-    target_compute = models.ForeignKey(Compute, related_name='target_host', on_delete=models.DO_NOTHING)
+    instance = models.ForeignKey(
+        Instance,
+        related_name="source_host",
+        on_delete=models.DO_NOTHING
+    )
+    target_compute = models.ForeignKey(
+        Compute,
+        related_name="target_host",
+        on_delete=models.DO_NOTHING
+    )
 
-    live = models.BooleanField(_('Live'))
-    xml_del = models.BooleanField(_('Undefine XML'), default=True)
-    offline = models.BooleanField(_('Offline'))
-    autoconverge = models.BooleanField(_('Auto Converge'), default=True)
-    compress = models.BooleanField(_('Compress'), default=False)
-    postcopy = models.BooleanField(_('Post Copy'), default=False)
-    unsafe = models.BooleanField(_('Unsafe'), default=False)
+    live = models.BooleanField(_("Live"))
+    xml_del = models.BooleanField(_("Undefine XML"), default=True)
+    offline = models.BooleanField(_("Offline"))
+    autoconverge = models.BooleanField(_("Auto Converge"), default=True)
+    compress = models.BooleanField(_("Compress"), default=False)
+    postcopy = models.BooleanField(_("Post Copy"), default=False)
+    unsafe = models.BooleanField(_("Unsafe"), default=False)
 
     class Meta:
         managed = False
 
 
 class CreateInstance(models.Model):
-    compute = models.ForeignKey(Compute, related_name='host', on_delete=models.DO_NOTHING)
-    name = models.CharField(max_length=64, error_messages={'required': _('No Virtual Machine name has been entered')})
+    compute = models.ForeignKey(
+        Compute,
+        related_name="host",
+        on_delete=models.DO_NOTHING
+    )
+    name = models.CharField(
+        max_length=64,
+        error_messages={"required": _("No Virtual Machine name has been entered")},
+    )
     firmware = models.CharField(max_length=64)
-    vcpu = models.IntegerField(error_messages={'required': _('No VCPU has been entered')})
+    vcpu = models.IntegerField(
+        error_messages={"required": _("No VCPU has been entered")}
+    )
     vcpu_mode = models.CharField(max_length=20, blank=True)
     disk = models.IntegerField(blank=True)
-    memory = models.IntegerField(error_messages={'required': _('No RAM size has been entered')})
-    networks = models.CharField(max_length=256, error_messages={'required': _('No Network pool has been choosen')})
+    memory = models.IntegerField(
+        error_messages={"required": _("No RAM size has been entered")}
+    )
+    networks = models.CharField(
+        max_length=256,
+        error_messages={"required": _("No Network pool has been choosen")},
+    )
     nwfilter = models.CharField(max_length=256, blank=True)
     storage = models.CharField(max_length=256, blank=True)
     template = models.CharField(max_length=256, blank=True)
     images = models.CharField(max_length=256, blank=True)
-    cache_mode = models.CharField(max_length=16, error_messages={'required': _('Please select HDD cache mode')})
+    cache_mode = models.CharField(
+        max_length=16, error_messages={"required": _("Please select HDD cache mode")}
+    )
     hdd_size = models.IntegerField(blank=True)
     meta_prealloc = models.BooleanField(default=False, blank=True)
     virtio = models.BooleanField(default=True)
@@ -246,9 +270,15 @@ class CreateInstance(models.Model):
     console_pass = models.CharField(max_length=64, blank=True)
     add_cdrom = models.CharField(max_length=16)
     add_input = models.CharField(max_length=16)
-    graphics = models.CharField(max_length=16, error_messages={'required': _('Please select a graphics type')})
-    video = models.CharField(max_length=16, error_messages={'required': _('Please select a video driver')})
-    listener_addr = models.CharField(max_length=20, choices=QEMU_CONSOLE_LISTENER_ADDRESSES)
+    graphics = models.CharField(
+        max_length=16, error_messages={"required": _("Please select a graphics type")}
+    )
+    video = models.CharField(
+        max_length=16, error_messages={"required": _("Please select a video driver")}
+    )
+    listener_addr = models.CharField(
+        max_length=20, choices=QEMU_CONSOLE_LISTENER_ADDRESSES
+    )
 
     class Meta:
         managed = False
@@ -258,13 +288,14 @@ class PermissionSet(models.Model):
     """
     Dummy model for holding set of permissions we need to be automatically added by Django
     """
+
     class Meta:
         default_permissions = ()
         permissions = [
-            ('clone_instances', 'Can clone instances'),
-            ('passwordless_console', _('Can access console without password')),
-            ('view_instances', 'Can view instances'),
-            ('snapshot_instances', 'Can snapshot instances'),
+            ("clone_instances", "Can clone instances"),
+            ("passwordless_console", _("Can access console without password")),
+            ("view_instances", "Can view instances"),
+            ("snapshot_instances", "Can snapshot instances"),
         ]
 
         managed = False

@@ -21,10 +21,7 @@ try:
         VIR_MIGRATE_POSTCOPY,
     )
     from libvirt import VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
-    from libvirt_qemu import (
-        qemuAgentCommand, 
-        VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT
-    )
+    from libvirt_qemu import qemuAgentCommand, VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
@@ -94,7 +91,18 @@ class wvmInstances(wvmConnect):
         dom = self.get_instance(name)
         dom.resume()
 
-    def moveto(self, conn, name, live, unsafe, undefine, offline, autoconverge=False, compress=False, postcopy=False):
+    def moveto(
+        self,
+        conn,
+        name,
+        live,
+        unsafe,
+        undefine,
+        offline,
+        autoconverge=False,
+        compress=False,
+        postcopy=False,
+    ):
         flags = VIR_MIGRATE_PERSIST_DEST
         if live and conn.get_status() != 5:
             flags |= VIR_MIGRATE_LIVE
@@ -117,29 +125,39 @@ class wvmInstances(wvmConnect):
         dom_emulator = conn.get_dom_emulator()
 
         if dom_emulator != self.get_emulator(dom_arch):
-            raise libvirtError("Destination host emulator is different. Cannot be migrated")
+            raise libvirtError(
+                "Destination host emulator is different. Cannot be migrated"
+            )
 
         dom.migrate(self.wvm, flags, None, None, 0)
 
     def graphics_type(self, name):
         inst = self.get_instance(name)
-        console_type = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@type")
+        console_type = util.get_xml_path(
+            inst.XMLDesc(0), "/domain/devices/graphics/@type"
+        )
         if console_type is None:
             return "None"
         return console_type
 
     def graphics_listen(self, name):
         inst = self.get_instance(name)
-        listener_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@listen")
+        listener_addr = util.get_xml_path(
+            inst.XMLDesc(0), "/domain/devices/graphics/@listen"
+        )
         if listener_addr is None:
-            listener_addr = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/listen/@address")
+            listener_addr = util.get_xml_path(
+                inst.XMLDesc(0), "/domain/devices/graphics/listen/@address"
+            )
             if listener_addr is None:
                 return "None"
         return listener_addr
 
     def graphics_port(self, name):
         inst = self.get_instance(name)
-        console_port = util.get_xml_path(inst.XMLDesc(0), "/domain/devices/graphics/@port")
+        console_port = util.get_xml_path(
+            inst.XMLDesc(0), "/domain/devices/graphics/@port"
+        )
         if console_port is None:
             return "None"
         return console_port
@@ -153,7 +171,9 @@ class wvmInstances(wvmConnect):
 
     def graphics_passwd(self, name):
         inst = self.get_instance(name)
-        password = util.get_xml_path(inst.XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd")
+        password = util.get_xml_path(
+            inst.XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd"
+        )
         if password is None:
             return "None"
         return password
@@ -167,27 +187,30 @@ class wvmInstance(wvmConnect):
 
     def osinfo(self):
         info_results = qemuAgentCommand(
-            self.instance, 
-            '{"execute":"guest-get-osinfo"}', 
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
-            )
+            self.instance,
+            '{"execute":"guest-get-osinfo"}',
+            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
+            0,
+        )
 
         timezone_results = qemuAgentCommand(
-            self.instance, 
-            '{"execute":"guest-get-timezone"}', 
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
-            )
+            self.instance,
+            '{"execute":"guest-get-timezone"}',
+            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
+            0,
+        )
 
         hostname_results = qemuAgentCommand(
-            self.instance, 
-            '{"execute":"guest-get-host-name"}', 
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
-            )
+            self.instance,
+            '{"execute":"guest-get-host-name"}',
+            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
+            0,
+        )
 
-        info_results = json.loads(info_results).get('return')
+        info_results = json.loads(info_results).get("return")
 
-        timezone_results = json.loads(timezone_results).get('return')
-        hostname_results = json.loads(hostname_results).get('return')
+        timezone_results = json.loads(timezone_results).get("return")
+        hostname_results = json.loads(hostname_results).get("return")
 
         info_results.update(timezone_results)
         info_results.update(hostname_results)
@@ -283,7 +306,11 @@ class wvmInstance(wvmConnect):
             enabled = vcpu.get("enabled")
             hotplug = vcpu.get("hotpluggable")
             order = vcpu.get("order")
-            vcpus[vcpu_id] = {"enabled": enabled, "hotpluggable": hotplug, "order": order}
+            vcpus[vcpu_id] = {
+                "enabled": enabled,
+                "hotpluggable": hotplug,
+                "order": order,
+            }
 
         return vcpus
 
@@ -382,7 +409,9 @@ class wvmInstance(wvmConnect):
             return
 
         if self.is_agent_ready():
-            self._ip_cache["qemuga"] = self._get_interface_addresses(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
+            self._ip_cache["qemuga"] = self._get_interface_addresses(
+                VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
+            )
 
         arp_flag = 3  # libvirt."VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP"
         self._ip_cache["arp"] = self._get_interface_addresses(arp_flag)
@@ -395,9 +424,17 @@ class wvmInstance(wvmConnect):
                 interface_type = net.xpath("@type")[0]
                 mac_inst = net.xpath("mac/@address")[0]
                 nic_inst = net.xpath("source/@network|source/@bridge|source/@dev")[0]
-                target_inst = "" if not net.xpath("target/@dev") else net.xpath("target/@dev")[0]
-                link_state = "up" if not net.xpath("link") else net.xpath("link/@state")[0]
-                filterref_inst = "" if not net.xpath("filterref/@filter") else net.xpath("filterref/@filter")[0]
+                target_inst = (
+                    "" if not net.xpath("target/@dev") else net.xpath("target/@dev")[0]
+                )
+                link_state = (
+                    "up" if not net.xpath("link") else net.xpath("link/@state")[0]
+                )
+                filterref_inst = (
+                    ""
+                    if not net.xpath("filterref/@filter")
+                    else net.xpath("filterref/@filter")[0]
+                )
                 model_type = net.xpath("model/@type")[0]
                 if net.xpath("bandwidth/inbound"):
                     in_attr = net.xpath("bandwidth/inbound")[0]
@@ -451,7 +488,9 @@ class wvmInstance(wvmConnect):
                         dev = disk.xpath("target/@dev")[0]
                         bus = disk.xpath("target/@bus")[0]
                         try:
-                            src_file = disk.xpath("source/@file|source/@dev|source/@name")[0]
+                            src_file = disk.xpath(
+                                "source/@file|source/@dev|source/@name"
+                            )[0]
                         except Exception:
                             v = disk.xpath("source/@volume")[0]
                             s_name = disk.xpath("source/@pool")[0]
@@ -480,7 +519,11 @@ class wvmInstance(wvmConnect):
 
                         readonly = True if disk.xpath("readonly") else False
                         shareable = True if disk.xpath("shareable") else False
-                        serial = disk.xpath("serial")[0].text if disk.xpath("serial") else None
+                        serial = (
+                            disk.xpath("serial")[0].text
+                            if disk.xpath("serial")
+                            else None
+                        )
 
                         try:
                             vol = self.get_volume_by_path(src_file)
@@ -541,7 +584,15 @@ class wvmInstance(wvmConnect):
                     except:
                         pass
                     finally:
-                        result.append({"dev": dev, "image": volume, "storage": storage, "path": src_file, "bus": bus})
+                        result.append(
+                            {
+                                "dev": dev,
+                                "image": volume,
+                                "storage": storage,
+                                "path": src_file,
+                                "bus": bus,
+                            }
+                        )
             return result
 
         return util.get_xml_path(self._XMLDesc(0), func=disks)
@@ -567,7 +618,9 @@ class wvmInstance(wvmConnect):
         elif flag == -1:  # Remove
             os.remove(menu)
         else:
-            raise Exception("Unknown boot menu option, please choose one of 0:disable, 1:enable, -1:remove")
+            raise Exception(
+                "Unknown boot menu option, please choose one of 0:disable, 1:enable, -1:remove"
+            )
 
         xmldom = ElementTree.tostring(tree).decode()
         self._defineXML(xmldom)
@@ -614,7 +667,11 @@ class wvmInstance(wvmConnect):
                 elif dev_type == "usb":
                     pass
 
-                boot_order[int(idx) - 1] = {"type": dev_type, "dev": dev_device, "target": dev_target}
+                boot_order[int(idx) - 1] = {
+                    "type": dev_type,
+                    "dev": dev_device,
+                    "target": dev_target,
+                }
 
         return boot_order
 
@@ -716,7 +773,7 @@ class wvmInstance(wvmConnect):
         self,
         target_dev,
         source,
-        source_info = None,
+        source_info=None,
         pool_type="dir",
         target_bus="ide",
         disk_type="file",
@@ -733,7 +790,11 @@ class wvmInstance(wvmConnect):
     ):
 
         additionals = ""
-        if cache_mode is not None and cache_mode != "default" and disk_device != "cdrom":
+        if (
+            cache_mode is not None
+            and cache_mode != "default"
+            and disk_device != "cdrom"
+        ):
             additionals += f"cache='{cache_mode}' "
         if io_mode is not None and io_mode != "default":
             additionals += f"io='{io_mode}' "
@@ -746,31 +807,33 @@ class wvmInstance(wvmConnect):
         if disk_device == "cdrom":
             xml_disk += f"<driver name='{driver_name}' type='{format_type}'/>"
         elif disk_device == "disk":
-            xml_disk += f"<driver name='{driver_name}' type='{format_type}' {additionals}/>"
+            xml_disk += (
+                f"<driver name='{driver_name}' type='{format_type}' {additionals}/>"
+            )
 
-        if disk_type == 'file':
+        if disk_type == "file":
             xml_disk += f"<source file='{source}'/>"
-        elif disk_type == 'network':
-            if pool_type == 'rbd':
-                auth_type = source_info.get('auth_type')
-                auth_user = source_info.get('auth_user')
+        elif disk_type == "network":
+            if pool_type == "rbd":
+                auth_type = source_info.get("auth_type")
+                auth_user = source_info.get("auth_user")
                 auth_uuid = source_info.get("auth_uuid")
                 xml_disk += f"""<auth username='{auth_user}'>
                                 <secret type='{auth_type}' uuid='{auth_uuid}'/>
                             </auth>"""
                 xml_disk += f"""<source protocol='{pool_type}' name='{source}'>"""
                 for host in source_info.get("hosts"):
-                    if host.get('hostport'):
+                    if host.get("hostport"):
                         xml_disk += f"""<host name="{host.get('hostname')}" port='{host.get('hostport')}'/>"""
                     else:
                         xml_disk += f"""<host name="{host.get('hostname')}"/>"""
-                xml_disk +="""</source>"""
+                xml_disk += """</source>"""
             else:
                 raise Exception("Not implemented disk type")
         else:
             raise Exception("Not implemented disk type")
 
-        xml_disk +=f"<target dev='{target_dev}' bus='{target_bus}'/>"
+        xml_disk += f"<target dev='{target_dev}' bus='{target_bus}'/>"
         if readonly or disk_device == "cdrom":
             xml_disk += """<readonly/>"""
         if shareable:
@@ -787,7 +850,9 @@ class wvmInstance(wvmConnect):
     def detach_disk(self, target_dev):
         tree = etree.fromstring(self._XMLDesc(0))
 
-        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[0].getparent()
+        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[
+            0
+        ].getparent()
         xml_disk = etree.tostring(disk_el).decode()
         devices = tree.find("devices")
         devices.remove(disk_el)
@@ -813,7 +878,9 @@ class wvmInstance(wvmConnect):
         detect_zeroes_mode,
     ):
         tree = etree.fromstring(self._XMLDesc(0))
-        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[0].getparent()
+        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[
+            0
+        ].getparent()
         old_disk_type = disk_el.get("type")
         old_disk_device = disk_el.get("device")
         old_driver_name = disk_el.xpath("driver/@name")[0]
@@ -833,7 +900,9 @@ class wvmInstance(wvmConnect):
         if old_disk_device == "cdrom":
             xml_disk += f"<driver name='{old_driver_name}' type='{format}'/>"
         elif old_disk_device == "disk":
-            xml_disk += f"<driver name='{old_driver_name}' type='{format}' {additionals}/>"
+            xml_disk += (
+                f"<driver name='{old_driver_name}' type='{format}' {additionals}/>"
+            )
 
         xml_disk += f"""<source file='{source}'/>
           <target dev='{target_dev}' bus='{target_bus}'/>"""
@@ -855,7 +924,7 @@ class wvmInstance(wvmConnect):
             time.sleep(1)
             cpu_use_now = self.instance.info()[4]
             diff_usage = cpu_use_now - cpu_use_ago
-            cpu_usage["cpu"] = 100 * diff_usage / (1 * nbcore * 10 ** 9)
+            cpu_usage["cpu"] = 100 * diff_usage / (1 * nbcore * 10**9)
         else:
             cpu_usage["cpu"] = 0
         return cpu_usage
@@ -864,7 +933,7 @@ class wvmInstance(wvmConnect):
         self.instance.setVcpu(str(cpu_id), enabled)
 
     def set_vcpu_hotplug(self, status, vcpus_hotplug=0):
-        """ vcpus_hotplug = 0 make all vpus hotpluggable """
+        """vcpus_hotplug = 0 make all vpus hotpluggable"""
         vcpus_hotplug = int(self.get_vcpu()) if vcpus_hotplug == 0 else vcpus_hotplug
         if self.get_status() == 5:  # shutoff
             if status:
@@ -887,7 +956,9 @@ class wvmInstance(wvmConnect):
                     parent.remove(vcpu)
                     self._defineXML(etree.tostring(tree).decode())
         else:
-            raise libvirtError("Please shutdown the instance then try to enable vCPU hotplug")
+            raise libvirtError(
+                "Please shutdown the instance then try to enable vCPU hotplug"
+            )
 
     def mem_usage(self):
         mem_usage = {}
@@ -983,9 +1054,13 @@ class wvmInstance(wvmConnect):
         return telnet_port
 
     def get_console_listener_addr(self):
-        listener_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@listen")
+        listener_addr = util.get_xml_path(
+            self._XMLDesc(0), "/domain/devices/graphics/@listen"
+        )
         if listener_addr is None:
-            listener_addr = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/listen/@address")
+            listener_addr = util.get_xml_path(
+                self._XMLDesc(0), "/domain/devices/graphics/listen/@address"
+            )
             if listener_addr is None:
                 return "127.0.0.1"
         return listener_addr
@@ -1021,9 +1096,13 @@ class wvmInstance(wvmConnect):
         return socket
 
     def get_console_type(self):
-        console_type = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@type")
+        console_type = util.get_xml_path(
+            self._XMLDesc(0), "/domain/devices/graphics/@type"
+        )
         if console_type is None:
-            console_type = util.get_xml_path(self._XMLDesc(0), "/domain/devices/console/@type")
+            console_type = util.get_xml_path(
+                self._XMLDesc(0), "/domain/devices/console/@type"
+            )
         return console_type
 
     def set_console_type(self, console_type):
@@ -1046,18 +1125,24 @@ class wvmInstance(wvmConnect):
     def get_console_port(self, console_type=None):
         if console_type is None:
             console_type = self.get_console_type()
-        port = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics[@type='%s']/@port" % console_type)
+        port = util.get_xml_path(
+            self._XMLDesc(0),
+            "/domain/devices/graphics[@type='%s']/@port" % console_type,
+        )
         return port
 
     def get_console_websocket_port(self):
         console_type = self.get_console_type()
         websocket_port = util.get_xml_path(
-            self._XMLDesc(0), "/domain/devices/graphics[@type='%s']/@websocket" % console_type
+            self._XMLDesc(0),
+            "/domain/devices/graphics[@type='%s']/@websocket" % console_type,
         )
         return websocket_port
 
     def get_console_passwd(self):
-        return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd")
+        return util.get_xml_path(
+            self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd"
+        )
 
     def set_console_passwd(self, passwd):
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
@@ -1100,10 +1185,15 @@ class wvmInstance(wvmConnect):
         self._defineXML(newxml)
 
     def get_console_keymap(self):
-        return util.get_xml_path(self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@keymap") or ""
+        return (
+            util.get_xml_path(
+                self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@keymap"
+            )
+            or ""
+        )
 
     def get_video_model(self):
-        """ :return only primary video card"""
+        """:return only primary video card"""
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = etree.fromstring(xml)
         video_models = tree.xpath("/domain/devices/video/model")
@@ -1112,7 +1202,7 @@ class wvmInstance(wvmConnect):
                 return model.get("type")
 
     def set_video_model(self, model):
-        """ Changes only primary video card"""
+        """Changes only primary video card"""
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = etree.fromstring(xml)
         video_models = tree.xpath("/domain/devices/video/model")
@@ -1208,7 +1298,7 @@ class wvmInstance(wvmConnect):
         self.instance.snapshotCreateXML(xml, flag)
 
     def create_snapshot(self, name, desc=None):
-        state = 'shutoff' if self.get_status()==5 else 'running'
+        state = "shutoff" if self.get_status() == 5 else "running"
         xml = """<domainsnapshot>
                      <name>%s</name>
                      <description>%s</description>
@@ -1227,11 +1317,17 @@ class wvmInstance(wvmConnect):
         self.recover_snapshot_xml()
 
     def change_snapshot_xml(self):
-        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace("<loader readonly='yes' type='pflash'>","<loader readonly='yes' type='rom'>")
+        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace(
+            "<loader readonly='yes' type='pflash'>",
+            "<loader readonly='yes' type='rom'>",
+        )
         self._defineXML(xml_temp)
 
     def recover_snapshot_xml(self):
-        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace("<loader readonly='yes' type='rom'>","<loader readonly='yes' type='pflash'>")
+        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace(
+            "<loader readonly='yes' type='rom'>",
+            "<loader readonly='yes' type='pflash'>",
+        )
         self._defineXML(xml_temp)
 
     def get_snapshot(self):
@@ -1239,8 +1335,12 @@ class wvmInstance(wvmConnect):
         snapshot_list = self.instance.snapshotListNames(0)
         for snapshot in snapshot_list:
             snap = self.instance.snapshotLookupByName(snapshot, 0)
-            snap_description = util.get_xml_path(snap.getXMLDesc(0), "/domainsnapshot/description")
-            snap_time_create = util.get_xml_path(snap.getXMLDesc(0), "/domainsnapshot/creationTime")
+            snap_description = util.get_xml_path(
+                snap.getXMLDesc(0), "/domainsnapshot/description"
+            )
+            snap_time_create = util.get_xml_path(
+                snap.getXMLDesc(0), "/domainsnapshot/creationTime"
+            )
             snapshots.append(
                 {
                     "date": datetime.fromtimestamp(int(snap_time_create)),
@@ -1338,7 +1438,9 @@ class wvmInstance(wvmConnect):
                     elm.set("file", clone_path)
 
                     vol = self.get_volume_by_path(source_file)
-                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
+                    vol_format = util.get_xml_path(
+                        vol.XMLDesc(0), "/volume/target/format/@type"
+                    )
 
                     if vol_format == "qcow2" and meta_prealloc:
                         meta_prealloc = True
@@ -1373,7 +1475,9 @@ class wvmInstance(wvmConnect):
                     elm.set("name", clone_name)
 
                     vol = self.get_volume_by_path(source_name)
-                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
+                    vol_format = util.get_xml_path(
+                        vol.XMLDesc(0), "/volume/target/format/@type"
+                    )
 
                     vol_clone_xml = f"""
                                     <volume type='network'>
@@ -1417,15 +1521,22 @@ class wvmInstance(wvmConnect):
                 bridge_name = None
         return bridge_name
 
-    def add_network(self, mac_address, source, source_type="net", model="virtio", nwfilter=None):
-            
+    def add_network(
+        self,
+        mac_address,
+        source,
+        source_type="net",
+        model="virtio",
+        nwfilter=None
+    ):
+
         if source_type == "net":
             interface_type = "network"
         elif source_type == "bridge":
             interface_type = "bridge"
         else:
             interface_type = "direct"
-       
+
         # network modes not handled: default is bridge
 
         xml_iface = f"""
@@ -1471,12 +1582,18 @@ class wvmInstance(wvmConnect):
         net_source_type = network_data.get("net-source-0-type")
         net_filter = network_data.get("net-nwfilter-0")
         net_model = network_data.get("net-model-0")
-        
+
         # Remove interface first, but keep network interface XML definition
         # If there is an error happened while adding changed one, then add removed one to back.
         status = self.delete_network(net_mac)
         try:
-            self.add_network(net_mac, net_source, net_source_type, net_model, net_filter)
+            self.add_network(
+                net_mac,
+                net_source,
+                net_source_type,
+                net_model,
+                net_filter
+            )
         except libvirtError:
             if status is not None:
                 if self.get_status() == 1:
@@ -1485,12 +1602,11 @@ class wvmInstance(wvmConnect):
                 if self.get_status() == 5:
                     self.instance.attachDeviceFlags(status, VIR_DOMAIN_AFFECT_CONFIG)
 
-
     def change_network_oldway(self, network_data):
-        '''
-            change network firsh version...
-            will be removed if new one works as expected for all scenarios
-        '''
+        """
+        change network firsh version...
+        will be removed if new one works as expected for all scenarios
+        """
         xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         tree = ElementTree.fromstring(xml)
         for num, interface in enumerate(tree.findall("devices/interface")):
@@ -1512,9 +1628,13 @@ class wvmInstance(wvmConnect):
                 elif net_source_type == "iface":
                     source.set("dev", net_source)
                 else:
-                    raise libvirtError("Unknown network type: {}".format(net_source_type))
+                    raise libvirtError(
+                        "Unknown network type: {}".format(net_source_type)
+                    )
             else:
-                raise libvirtError("Unknown network type: {}".format(interface.get("type")))
+                raise libvirtError(
+                    "Unknown network type: {}".format(interface.get("type"))
+                )
 
             source = interface.find("model")
             if net_model != "default":
@@ -1615,7 +1735,12 @@ class wvmInstance(wvmConnect):
                     out_peak = out_qos.get("peak")
                     out_burst = out_qos.get("burst")
                     bound_list.append(
-                        {"direction": "outbound", "average": out_av, "peak": out_peak, "burst": out_burst}
+                        {
+                            "direction": "outbound",
+                            "average": out_av,
+                            "peak": out_peak,
+                            "burst": out_burst,
+                        }
                     )
                 qos_values[mac[0]] = bound_list
         return qos_values
@@ -1652,9 +1777,13 @@ class wvmInstance(wvmConnect):
 
     def unset_qos(self, mac, direction):
         tree = etree.fromstring(self._XMLDesc(0))
-        for direct in tree.xpath("/domain/devices/interface/bandwidth/{}".format(direction)):
+        for direct in tree.xpath(
+            "/domain/devices/interface/bandwidth/{}".format(direction)
+        ):
             band_el = direct.getparent()
-            interface_el = band_el.getparent()  # parent bandwidth,its parent is interface
+            interface_el = (
+                band_el.getparent()
+            )  # parent bandwidth,its parent is interface
             parent_mac = interface_el.xpath("mac/@address")
             if parent_mac[0] == mac:
                 band_el.remove(direct)
@@ -1675,7 +1804,9 @@ class wvmInstance(wvmConnect):
 
     def remove_guest_agent(self):
         tree = etree.fromstring(self._XMLDesc(0))
-        for target in tree.xpath("/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"):
+        for target in tree.xpath(
+            "/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"
+        ):
             parent = target.getparent()
             channel_xml = etree.tostring(parent).decode()
             if self.get_status() == 1:

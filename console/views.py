@@ -17,7 +17,7 @@ from webvirtcloud.settings import (
     WS_PUBLIC_PORT,
     SOCKETIO_PUBLIC_HOST,
     SOCKETIO_PUBLIC_PORT,
-    SOCKETIO_PUBLIC_PATH
+    SOCKETIO_PUBLIC_PATH,
 )
 
 
@@ -31,32 +31,39 @@ def console(request):
     if request.method == "GET":
         token = request.GET.get("token", "")
         view_type = request.GET.get("view", "lite")
-        view_only = request.GET.get(
-            "view_only", app_settings.CONSOLE_VIEW_ONLY.lower())
+        view_only = request.GET.get("view_only", app_settings.CONSOLE_VIEW_ONLY.lower())
         scale = request.GET.get("scale", app_settings.CONSOLE_SCALE.lower())
         resize_session = request.GET.get(
-            "resize_session", app_settings.CONSOLE_RESIZE_SESSION.lower())
+            "resize_session", app_settings.CONSOLE_RESIZE_SESSION.lower()
+        )
         clip_viewport = request.GET.get(
-            "clip_viewport", app_settings.CONSOLE_CLIP_VIEWPORT.lower())
+            "clip_viewport", app_settings.CONSOLE_CLIP_VIEWPORT.lower()
+        )
 
     try:
         temptoken = token.split("-", 1)
         host = int(temptoken[0])
         uuid = temptoken[1]
 
-        if not request.user.is_superuser and not request.user.has_perm("instances.view_instances"):
+        if not request.user.is_superuser and not request.user.has_perm(
+            "instances.view_instances"
+        ):
             try:
                 userInstance = UserInstance.objects.get(
-                    instance__compute_id=host, instance__uuid=uuid, user__id=request.user.id
+                    instance__compute_id=host,
+                    instance__uuid=uuid,
+                    user__id=request.user.id,
                 )
                 instance = Instance.objects.get(compute_id=host, uuid=uuid)
             except UserInstance.DoesNotExist:
                 instance = None
-                console_error = _("User does not have permission to access console or host/instance not exist")
+                console_error = _(
+                    "User does not have permission to access console or host/instance not exist"
+                )
                 return HttpResponseServerError(console_error)
         else:
             instance = Instance.objects.get(compute_id=host, uuid=uuid)
-        
+
         conn = wvmInstance(
             instance.compute.hostname,
             instance.compute.login,
@@ -83,7 +90,9 @@ def console(request):
         console_page = "console-" + console_type + "-" + view_type + ".html"
         response = render(request, console_page, locals())
     elif console_type == "pty":
-        socketio_host = SOCKETIO_PUBLIC_HOST if SOCKETIO_PUBLIC_HOST else request.get_host()
+        socketio_host = (
+            SOCKETIO_PUBLIC_HOST if SOCKETIO_PUBLIC_HOST else request.get_host()
+        )
         socketio_port = SOCKETIO_PUBLIC_PORT if SOCKETIO_PUBLIC_PORT else 6081
         socketio_path = SOCKETIO_PUBLIC_PATH if SOCKETIO_PUBLIC_PATH else "/"
 
@@ -93,9 +102,13 @@ def console(request):
         response = render(request, "console-xterm.html", locals())
     else:
         if console_type is None:
-            console_error = _("Fail to get console. Please check the console configuration of your VM.")
+            console_error = _(
+                "Fail to get console. Please check the console configuration of your VM."
+            )
         else:
-            console_error = _("Console type '%(type)s' has not support") % {"type": console_type}
+            console_error = _("Console type '%(type)s' has not support") % {
+                "type": console_type
+            }
         response = render(request, "console-vnc-lite.html", locals())
 
     response.set_cookie("token", token)

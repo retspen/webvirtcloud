@@ -27,7 +27,12 @@ def storages(request, compute_id):
     errors = False
 
     try:
-        conn = wvmStorages(compute.hostname, compute.login, compute.password, compute.type)
+        conn = wvmStorages(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type
+        )
         storages = conn.get_storages_info()
         secrets = conn.get_secrets()
 
@@ -45,7 +50,11 @@ def storages(request, compute_id):
                             msg = _("You need create secret for pool")
                             messages.error(request, msg)
                             errors = True
-                        if not data["ceph_pool"] and not data["ceph_host"] and not data["ceph_user"]:
+                        if (
+                            not data["ceph_pool"]
+                            and not data["ceph_host"]
+                            and not data["ceph_user"]
+                        ):
                             msg = _("You need input all fields for creating ceph pool")
                             messages.error(request, msg)
                             errors = True
@@ -69,8 +78,15 @@ def storages(request, compute_id):
                                 data["target"],
                             )
                         else:
-                            conn.create_storage(data["stg_type"], data["name"], data["source"], data["target"])
-                        return HttpResponseRedirect(reverse("storage", args=[compute_id, data["name"]]))
+                            conn.create_storage(
+                                data["stg_type"],
+                                data["name"],
+                                data["source"],
+                                data["target"],
+                            )
+                        return HttpResponseRedirect(
+                            reverse("storage", args=[compute_id, data["name"]])
+                        )
                 else:
                     for msg_err in form.errors.values():
                         messages.error(request, msg_err.as_text())
@@ -94,19 +110,26 @@ def storage(request, compute_id, pool):
         target = os.path.normpath(os.path.join(path, str(f_name)))
         if not target.startswith(path):
             raise Exception(_("Security Issues with file uploading"))
-        
+
         try:
             with open(target, "wb+") as f:
                 for chunk in f_name.chunks():
                     f.write(chunk)
         except FileNotFoundError:
-            messages.error(request, _("File not found. Check the path variable and filename"))
+            messages.error(
+                request, _("File not found. Check the path variable and filename")
+            )
 
     compute = get_object_or_404(Compute, pk=compute_id)
     meta_prealloc = False
     form = CreateVolumeForm()
 
-    conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
+    conn = wvmStorage(
+        compute.hostname,
+        compute.login,
+        compute.password,
+        compute.type, pool
+    )
 
     storages = conn.get_storages()
     state = conn.is_active()
@@ -147,7 +170,9 @@ def storage(request, compute_id, pool):
             volname = request.POST.get("volname", "")
             vol = conn.get_volume(volname)
             vol.delete(0)
-            messages.success(request, _("Volume: %(vol)s is deleted.") % {"vol": volname})
+            messages.success(
+                request, _("Volume: %(vol)s is deleted.") % {"vol": volname}
+            )
             return redirect(reverse("storage", args=[compute.id, pool]))
             # return HttpResponseRedirect(request.get_full_path())
         if "iso_upload" in request.POST:
@@ -156,7 +181,10 @@ def storage(request, compute_id, pool):
                 messages.error(request, error_msg)
             else:
                 handle_uploaded_file(path, request.FILES["file"])
-                messages.success(request, _("ISO: %(file)s is uploaded.") % {"file": request.FILES["file"]})
+                messages.success(
+                    request,
+                    _("ISO: %(file)s is uploaded.") % {"file": request.FILES["file"]},
+                )
                 return HttpResponseRedirect(request.get_full_path())
         if "cln_volume" in request.POST:
             form = CloneImage(request.POST)
@@ -174,10 +202,13 @@ def storage(request, compute_id, pool):
                 else:
                     format = None
                 try:
-                    name = conn.clone_volume(data["image"], data["name"], format, meta_prealloc)
+                    name = conn.clone_volume(
+                        data["image"], data["name"], format, meta_prealloc
+                    )
                     messages.success(
                         request,
-                        _("%(image)s image cloned as %(name)s successfully") % {"image": data["image"], "name": name},
+                        _("%(image)s image cloned as %(name)s successfully")
+                        % {"image": data["image"], "name": name},
                     )
                     return HttpResponseRedirect(request.get_full_path())
                 except libvirtError as lib_err:
@@ -202,7 +233,13 @@ def create_volume(request, compute_id, pool):
     compute = get_object_or_404(Compute, pk=compute_id)
     meta_prealloc = False
 
-    conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
+    conn = wvmStorage(
+        compute.hostname,
+        compute.login,
+        compute.password,
+        compute.type,
+        pool
+    )
 
     storages = conn.get_storages()
 
@@ -223,7 +260,9 @@ def create_volume(request, compute_id, pool):
             disk_owner_uid,
             disk_owner_gid,
         )
-        messages.success(request, _("Image file %(name)s is created successfully") % {"name": name})
+        messages.success(
+            request, _("Image file %(name)s is created successfully") % {"name": name}
+        )
     else:
         for msg_err in form.errors.values():
             messages.error(request, msg_err.as_text())
@@ -241,7 +280,13 @@ def get_volumes(request, compute_id, pool):
     data = {}
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
-        conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
+        conn = wvmStorage(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+            pool
+        )
         conn.refresh()
         data["vols"] = sorted(conn.get_volumes())
     except libvirtError:
