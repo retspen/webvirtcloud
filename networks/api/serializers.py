@@ -1,5 +1,5 @@
-from rest_framework import serializers
 from networks.models import Networks
+from rest_framework import serializers
 
 
 class NetworksSerializer(serializers.ModelSerializer):

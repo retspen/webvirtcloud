@@ -1,5 +1,5 @@
-import string
 import contextlib
+import string
 
 from vrtManager import util
 from vrtManager.connection import wvmConnect

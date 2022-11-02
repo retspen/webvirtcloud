@@ -3,8 +3,8 @@ import json
 import os
 import re
 import socket
-import time
 import subprocess
+import time
 from bisect import insort
 
 from accounts.models import UserInstance, UserSSHKey
@@ -20,12 +20,8 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from instances.models import Instance
-from libvirt import (
-    VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
-    VIR_DOMAIN_UNDEFINE_NVRAM,
-    libvirtError,
-)
+from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM,
+                     libvirtError)
 from logs.views import addlogmsg
 from vrtManager import util
 from vrtManager.create import wvmCreate
@@ -33,6 +29,8 @@ from vrtManager.instance import wvmInstances
 from vrtManager.interface import wvmInterface
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
+
+from instances.models import Instance
 
 from . import utils
 from .forms import ConsoleForm, FlavorForm, NewVMForm

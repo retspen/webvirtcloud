@@ -1,5 +1,3 @@
-from virtsecrets.forms import AddSecret
-
 from admin.decorators import superuser_only
 from computes.models import Compute
 from django.contrib import messages
@@ -14,6 +12,8 @@ from libvirt import (
     libvirtError,
 )
 from vrtManager.virtsecrets import wvmSecrets
+
+from virtsecrets.forms import AddSecret
 
 
 @superuser_only
@@ -36,10 +36,7 @@ def secrets(request, compute_id):
 
     try:
         conn = wvmSecrets(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type
+            compute.hostname, compute.login, compute.password, compute.type
         )
         secrets = conn.get_secrets()
 

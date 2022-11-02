@@ -1,17 +1,29 @@
 from xml.etree import ElementTree
 
 from libvirt import VIR_INTERFACE_XML_INACTIVE
+
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 
 
 class wvmInterfaces(wvmConnect):
-
     def define_iface(self, xml, flag=0):
         self.wvm.interfaceDefineXML(xml, flag)
 
     def create_iface(
-        self, name, itype, mode, netdev, ipv4_type, ipv4_addr, ipv4_gw, ipv6_type, ipv6_addr, ipv6_gw, stp, delay
+        self,
+        name,
+        itype,
+        mode,
+        netdev,
+        ipv4_type,
+        ipv4_addr,
+        ipv4_gw,
+        ipv6_type,
+        ipv6_addr,
+        ipv6_gw,
+        stp,
+        delay,
     ):
         xml = f"""<interface type='{itype}' name='{name}'>
                     <start mode='{mode}'/>"""
@@ -74,15 +86,21 @@ class wvmInterface(wvmConnect):
     def get_ipv4_type(self):
         try:
             xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
-            ipaddr = util.get_xml_path(xml, "/interface/protocol[@family='ipv4']/ip/@address")
+            ipaddr = util.get_xml_path(
+                xml, "/interface/protocol[@family='ipv4']/ip/@address"
+            )
             return "static" if ipaddr else "dhcp"
         except Exception:
             return None
 
     def get_ipv4(self):
         xml = self._XMLDesc()
-        int_ipv4_ip = util.get_xml_path(xml, "/interface/protocol[@family='ipv4']/ip/@address")
-        int_ipv4_mask = util.get_xml_path(xml, "/interface/protocol[@family='ipv4']/ip/@prefix")
+        int_ipv4_ip = util.get_xml_path(
+            xml, "/interface/protocol[@family='ipv4']/ip/@address"
+        )
+        int_ipv4_mask = util.get_xml_path(
+            xml, "/interface/protocol[@family='ipv4']/ip/@prefix"
+        )
         if not int_ipv4_ip or not int_ipv4_mask:
             return None
         else:
@@ -91,15 +109,21 @@ class wvmInterface(wvmConnect):
     def get_ipv6_type(self):
         try:
             xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
-            ipaddr = util.get_xml_path(xml, "/interface/protocol[@family='ipv6']/ip/@address")
+            ipaddr = util.get_xml_path(
+                xml, "/interface/protocol[@family='ipv6']/ip/@address"
+            )
             return "static" if ipaddr else "dhcp"
         except Exception:
             return None
 
     def get_ipv6(self):
         xml = self._XMLDesc()
-        int_ipv6_ip = util.get_xml_path(xml, "/interface/protocol[@family='ipv6']/ip/@address")
-        int_ipv6_mask = util.get_xml_path(xml, "/interface/protocol[@family='ipv6']/ip/@prefix")
+        int_ipv6_ip = util.get_xml_path(
+            xml, "/interface/protocol[@family='ipv6']/ip/@address"
+        )
+        int_ipv6_mask = util.get_xml_path(
+            xml, "/interface/protocol[@family='ipv6']/ip/@prefix"
+        )
         if not int_ipv6_ip or not int_ipv6_mask:
             return None
         else:
@@ -133,7 +157,15 @@ class wvmInterface(wvmConnect):
             mac = iface.find("mac")
             if mac is not None:
                 address = mac.get("address")
-            ifaces.append({"name": name, "type": if_type, "state": state, "speed": speed, "mac": address})
+            ifaces.append(
+                {
+                    "name": name,
+                    "type": if_type,
+                    "state": state,
+                    "speed": speed,
+                    "mac": address,
+                }
+            )
         return ifaces
 
     def get_details(self):

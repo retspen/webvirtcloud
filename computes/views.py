@@ -1,20 +1,12 @@
 import json
 
+from admin.decorators import superuser_only
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from libvirt import libvirtError
-
-from admin.decorators import superuser_only
-from computes.forms import (
-    SocketComputeForm,
-    SshComputeForm,
-    TcpComputeForm,
-    TlsComputeForm,
-)
-from computes.models import Compute
 from instances.models import Instance
+from libvirt import libvirtError
 from vrtManager.connection import (
     CONN_SOCKET,
     CONN_SSH,
@@ -24,6 +16,14 @@ from vrtManager.connection import (
     wvmConnect,
 )
 from vrtManager.hostdetails import wvmHostDetails
+
+from computes.forms import (
+    SocketComputeForm,
+    SshComputeForm,
+    TcpComputeForm,
+    TlsComputeForm,
+)
+from computes.models import Compute
 
 from . import utils
 
@@ -45,7 +45,8 @@ def overview(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
     status = (
         "true"
-        if connection_manager.host_is_up(compute.type, compute.hostname) is True else "false"
+        if connection_manager.host_is_up(compute.type, compute.hostname) is True
+        else "false"
     )
 
     conn = wvmHostDetails(
@@ -82,9 +83,7 @@ def instances(request, compute_id):
     )
 
     return render(
-        request,
-        "computes/instances.html",
-        {"compute": compute, "instances": instances}
+        request, "computes/instances.html", {"compute": compute, "instances": instances}
     )
 
 

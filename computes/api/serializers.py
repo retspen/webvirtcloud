@@ -1,11 +1,6 @@
-from rest_framework import serializers
 from computes.models import Compute
-from vrtManager.connection import (
-    CONN_SOCKET,
-    CONN_SSH,
-    CONN_TCP,
-    CONN_TLS,
-)
+from rest_framework import serializers
+from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 
 
 class ComputeSerializer(serializers.ModelSerializer):

@@ -12,4 +12,6 @@ def refresh_instance_database(compute):
     names = Instance.objects.filter(compute=compute).values_list("name", flat=True)
     for domain in domains:
         if domain.name() not in names:
-            Instance( compute=compute, name=domain.name(), uuid=domain.UUIDString()).save()
+            Instance(
+                compute=compute, name=domain.name(), uuid=domain.UUIDString()
+            ).save()

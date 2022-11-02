@@ -1,6 +1,5 @@
+from instances.models import CreateInstance, Flavor, Instance, MigrateInstance
 from rest_framework import serializers
-
-from instances.models import Flavor, Instance, MigrateInstance, CreateInstance
 
 
 class InstanceSerializer(serializers.ModelSerializer):
