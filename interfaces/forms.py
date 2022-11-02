@@ -7,13 +7,33 @@ from django.utils.translation import gettext_lazy as _
 class AddInterface(forms.Form):
     name = forms.CharField(max_length=10, required=True)
     itype = forms.ChoiceField(required=True, choices=(('bridge', 'bridge'), ('ethernet', 'ethernet')))
-    start_mode = forms.ChoiceField(required=True,
-                                   choices=(('none', 'none'), ('onboot', 'onboot'), ('hotplug', 'hotplug')))
+    start_mode = forms.ChoiceField(
+        required=True,
+        choices=(
+            ('none', 'none'),
+            ('onboot', 'onboot'),
+            ('hotplug', 'hotplug')
+        )
+    )
     netdev = forms.CharField(max_length=15, required=True)
-    ipv4_type = forms.ChoiceField(required=True, choices=(('dhcp', 'dhcp'), ('static', 'static'), ('none', 'none')))
+    ipv4_type = forms.ChoiceField(
+        required=True,
+        choices=(
+            ('dhcp', 'dhcp'),
+            ('static', 'static'),
+            ('none', 'none')
+        )
+    )
     ipv4_addr = forms.CharField(max_length=18, required=False)
     ipv4_gw = forms.CharField(max_length=15, required=False)
-    ipv6_type = forms.ChoiceField(required=True, choices=(('dhcp', 'dhcp'), ('static', 'static'), ('none', 'none')))
+    ipv6_type = forms.ChoiceField(
+        required=True,
+        choices=(
+            ('dhcp', 'dhcp'),
+            ('static', 'static'),
+            ('none', 'none')
+        )
+    )
     ipv6_addr = forms.CharField(max_length=100, required=False)
     ipv6_gw = forms.CharField(max_length=100, required=False)
     stp = forms.ChoiceField(required=False, choices=(('on', 'on'), ('off', 'off')))
@@ -39,7 +59,7 @@ class AddInterface(forms.Form):
 
     def clean_ipv6_addr(self):
         ipv6_addr = self.cleaned_data['ipv6_addr']
-        have_symbol = re.match('^[0-9a-f./:]+$', ipv6_addr)
+        have_symbol = re.match('^[0-9a-f./:]+|^$', ipv6_addr)
         if not have_symbol:
             raise forms.ValidationError(_('The IPv6 address must not contain any special characters'))
         elif len(ipv6_addr) > 100:
@@ -48,7 +68,7 @@ class AddInterface(forms.Form):
 
     def clean_ipv6_gw(self):
         ipv6_gw = self.cleaned_data['ipv6_gw']
-        have_symbol = re.match('^[0-9.]+$', ipv6_gw)
+        have_symbol = re.match('^[0-9a-f./:]+|^$', ipv6_gw)
         if not have_symbol:
             raise forms.ValidationError(_('The IPv6 gateway must not contain any special characters'))
         elif len(ipv6_gw) > 100:
