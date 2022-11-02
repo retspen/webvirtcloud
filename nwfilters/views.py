@@ -23,7 +23,12 @@ def nwfilters(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)
+        conn = wvmNWFilters(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type
+        )
 
         for nwf in conn.get_nwfilters():
             nwfilters_all.append(conn.get_nwfilter_info(nwf))
@@ -41,19 +46,27 @@ def nwfilters(request, compute_id):
 
                     for nwf in nwfilters_all:
                         if name == nwf["name"]:
-                            error_msg = _("A network filter with this name already exists")
+                            error_msg = _(
+                                "A network filter with this name already exists"
+                            )
                             raise Exception(error_msg)
                         if uuid == nwf["uuid"]:
-                            error_msg = _("A network filter with this UUID already exists")
+                            error_msg = _(
+                                "A network filter with this UUID already exists"
+                            )
                             raise Exception(error_msg)
                     else:
                         try:
-                            msg = _("%(filter)s network filter is created") % {"filter": name}
+                            msg = _("%(filter)s network filter is created") % {
+                                "filter": name
+                            }
                             conn.create_nwfilter(xml)
                             addlogmsg(request.user.username, compute.hostname, "", msg)
                         except libvirtError as lib_err:
                             messages.error(request, lib_err)
-                            addlogmsg(request.user.username, compute.hostname, "", lib_err)
+                            addlogmsg(
+                                request.user.username, compute.hostname, "", lib_err
+                            )
 
             if "del_nwfilter" in request.POST:
                 name = request.POST.get("nwfiltername", "")
@@ -63,18 +76,27 @@ def nwfilters(request, compute_id):
                 nwfilter_info = conn.get_nwfilter_info(name)
 
                 is_conn = wvmInstances(
-                    compute.hostname, compute.login, compute.password, compute.type
+                    compute.hostname,
+                    compute.login,
+                    compute.password,
+                    compute.type
                 )
                 instances = is_conn.get_instances()
                 for inst in instances:
                     i_conn = wvmInstance(
-                        compute.hostname, compute.login, compute.password, compute.type, inst
+                        compute.hostname,
+                        compute.login,
+                        compute.password,
+                        compute.type,
+                        inst,
                     )
                     dom_filterrefs = i_conn.get_filterrefs()
 
                     if name in dom_filterrefs:
                         in_use = True
-                        msg = _("NWFilter is in use by %(instance)s. Cannot be deleted.") % {"instance": inst}
+                        msg = _(
+                            "NWFilter is in use by %(instance)s. Cannot be deleted."
+                        ) % {"instance": inst}
                         messages.error(request, msg)
                         addlogmsg(request.user.username, compute.hostname, "", msg)
                         i_conn.close()
@@ -93,7 +115,10 @@ def nwfilters(request, compute_id):
                 conn.clone_nwfilter(name, cln_name)
                 nwfilters_all.append(conn.get_nwfilter_info(cln_name))
 
-                msg = _("Cloning NWFilter %(name)s as %(clone)s") % {"name":name, "clone": cln_name}
+                msg = _("Cloning NWFilter %(name)s as %(clone)s") % {
+                    "name": name,
+                    "clone": cln_name,
+                }
                 addlogmsg(request.user.username, compute.hostname, "", msg)
 
         conn.close()
@@ -126,9 +151,18 @@ def nwfilter(request, compute_id, nwfltr):
 
     try:
         nwfilter = wvmNWFilter(
-            compute.hostname, compute.login, compute.password, compute.type, nwfltr
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+            nwfltr
         )
-        conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)
+        conn = wvmNWFilters(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type
+        )
 
         for nwf in conn.get_nwfilters():
             nwfilters_all.append(conn.get_nwfilter_info(nwf))

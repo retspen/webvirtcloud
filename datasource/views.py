@@ -99,7 +99,13 @@ def get_vdi_url(request, compute_id, vname):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmInstance(compute.hostname, compute.login, compute.password, compute.type, vname)
+        conn = wvmInstance(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+            vname
+        )
 
         fqdn = get_hostname_by_ip(compute.hostname)
         url = f"{conn.get_console_type()}://{fqdn}:{conn.get_console_port()}"

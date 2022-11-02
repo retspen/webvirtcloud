@@ -1,4 +1,3 @@
-
 from rest_framework import serializers
 from computes.models import Compute
 from vrtManager.connection import (
@@ -10,18 +9,17 @@ from vrtManager.connection import (
 
 
 class ComputeSerializer(serializers.ModelSerializer):
-     # Use <input type="password"> for the input.
-    password = serializers.CharField(style={'input_type': 'password'})
+    # Use <input type="password"> for the input.
+    password = serializers.CharField(style={"input_type": "password"})
     # Use a radio input instead of a select input.
     conn_types = (
-        (CONN_SSH, 'SSH'), 
-        (CONN_TCP, 'TCP'),
-        (CONN_TLS, 'TLS'), 
-        (CONN_SOCKET, 'SOCK'),
+        (CONN_SSH, "SSH"),
+        (CONN_TCP, "TCP"),
+        (CONN_TLS, "TLS"),
+        (CONN_SOCKET, "SOCK"),
     )
     type = serializers.ChoiceField(choices=conn_types)
 
-
     class Meta:
         model = Compute
-        fields = ['id', 'name', 'hostname', 'login', 'password', 'type', 'details']
+        fields = ["id", "name", "hostname", "login", "password", "type", "details"]

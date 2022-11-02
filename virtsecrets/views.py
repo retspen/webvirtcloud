@@ -35,7 +35,12 @@ def secrets(request, compute_id):
     }
 
     try:
-        conn = wvmSecrets(compute.hostname, compute.login, compute.password, compute.type)
+        conn = wvmSecrets(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type
+        )
         secrets = conn.get_secrets()
 
         for uuid in secrets:

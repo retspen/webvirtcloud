@@ -7,7 +7,7 @@ class Permission(P):
     """
 
     def __str__(self):
-        return f'{self.content_type.app_label}: {self.name}'
+        return f"{self.content_type.app_label}: {self.name}"
 
     class Meta:
         proxy = True

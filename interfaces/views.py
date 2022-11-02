@@ -21,7 +21,12 @@ def interfaces(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmInterfaces(compute.hostname, compute.login, compute.password, compute.type)
+        conn = wvmInterfaces(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type
+        )
         ifaces = conn.get_ifaces()
         try:
             netdevs = conn.get_net_devices()
@@ -29,7 +34,13 @@ def interfaces(request, compute_id):
             netdevs = ["eth0", "eth1"]
 
         for iface in ifaces:
-            interf = wvmInterface(compute.hostname, compute.login, compute.password, compute.type, iface)
+            interf = wvmInterface(
+                compute.hostname,
+                compute.login,
+                compute.password,
+                compute.type,
+                iface
+            )
             ifaces_all.append(interf.get_details())
 
         if request.method == "POST":
@@ -75,7 +86,13 @@ def interface(request, compute_id, iface):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     try:
-        conn = wvmInterface(compute.hostname, compute.login, compute.password, compute.type, iface)
+        conn = wvmInterface(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type,
+            iface
+        )
         start_mode = conn.get_start_mode()
         state = conn.is_active()
         mac = conn.get_mac()

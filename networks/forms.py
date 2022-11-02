@@ -5,7 +5,10 @@ from django.utils.translation import gettext_lazy as _
 
 
 class AddNetPool(forms.Form):
-    name = forms.CharField(error_messages={"required": _("No pool name has been entered")}, max_length=20)
+    name = forms.CharField(
+        error_messages={"required": _("No pool name has been entered")}, 
+        max_length=20
+    )
     subnet = forms.CharField(
         error_messages={"required": _("No IPv4 subnet has been entered")},
         max_length=20,
@@ -27,27 +30,39 @@ class AddNetPool(forms.Form):
         name = self.cleaned_data["name"]
         have_symbol = re.match(r"^[a-zA-Z0-9\.\_\-]+$", name)
         if not have_symbol:
-            raise forms.ValidationError(_("The pool name must not contain any special characters"))
+            raise forms.ValidationError(
+                _("The pool name must not contain any special characters")
+            )
         elif len(name) > 20:
-            raise forms.ValidationError(_("The pool name must not exceed 20 characters"))
+            raise forms.ValidationError(
+                _("The pool name must not exceed 20 characters")
+            )
         return name
 
     def clean_subnet(self):
         subnet = self.cleaned_data["subnet"]
         have_symbol = re.match("^[0-9./]+$", subnet if subnet else ".")
         if not have_symbol:
-            raise forms.ValidationError(_("The IPv4 subnet must not contain any special characters"))
+            raise forms.ValidationError(
+                _("The IPv4 subnet must not contain any special characters")
+            )
         elif len(subnet) > 20:
-            raise forms.ValidationError(_("The IPv4 subnet must not exceed 20 characters"))
+            raise forms.ValidationError(
+                _("The IPv4 subnet must not exceed 20 characters")
+            )
         return subnet
 
     def clean_subnet6(self):
         subnet = self.cleaned_data["subnet6"]
         have_symbol = re.match("^[0-9a-fA-F:/]+$", subnet if subnet else ":")
         if not have_symbol:
-            raise forms.ValidationError(_("The IPv6 subnet must not contain any special characters"))
+            raise forms.ValidationError(
+                _("The IPv6 subnet must not contain any special characters")
+            )
         elif len(subnet) > 42:
-            raise forms.ValidationError(_("The IPv6 subnet must not exceed 42 characters"))
+            raise forms.ValidationError(
+                _("The IPv6 subnet must not exceed 42 characters")
+            )
         return subnet
 
     def clean_bridge_name(self):
@@ -55,7 +70,11 @@ class AddNetPool(forms.Form):
         if self.cleaned_data["forward"] in ["bridge", "macvtap"]:
             have_symbol = re.match(r"^[a-zA-Z0-9\.\_\:\-]+$", bridge_name)
             if not have_symbol:
-                raise forms.ValidationError(_("The pool bridge name must not contain any special characters"))
+                raise forms.ValidationError(
+                    _("The pool bridge name must not contain any special characters")
+                )
             elif len(bridge_name) > 20:
-                raise forms.ValidationError(_("The pool bridge name must not exceed 20 characters"))
+                raise forms.ValidationError(
+                    _("The pool bridge name must not exceed 20 characters")
+                )
             return bridge_name

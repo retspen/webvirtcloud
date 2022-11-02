@@ -9,7 +9,7 @@ def refresh_instance_database(compute):
     Instance.objects.filter(compute=compute).exclude(name__in=domain_names).delete()
     Instance.objects.filter(compute=compute).exclude(uuid__in=domain_uuids).delete()
     # Create instances that're on host but not in DB
-    names = Instance.objects.filter(compute=compute).values_list('name', flat=True)
+    names = Instance.objects.filter(compute=compute).values_list("name", flat=True)
     for domain in domains:
         if domain.name() not in names:
-            Instance(compute=compute, name=domain.name(), uuid=domain.UUIDString()).save()
+            Instance( compute=compute, name=domain.name(), uuid=domain.UUIDString()).save()

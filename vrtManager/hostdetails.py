@@ -42,8 +42,7 @@ class wvmHostDetails(wvmConnect):
             total = sum(self.wvm.getCPUStats(-1, 0).values())
             diff_idle = idle - prev_idle
             diff_total = total - prev_total
-            diff_usage = (1000 * (diff_total - diff_idle) /
-                          diff_total + 5) / 10
+            diff_usage = (1000 * (diff_total - diff_idle) / diff_total + 5) / 10
             prev_total = total
             prev_idle = idle
             if num == 0:
@@ -61,6 +60,8 @@ class wvmHostDetails(wvmConnect):
         info.append(self.wvm.getInfo()[0])  # architecture
         info.append(self.wvm.getInfo()[1] * 1048576)  # memory
         info.append(self.wvm.getInfo()[2])  # cpu core count
-        info.append(get_xml_path(self.wvm.getSysinfo(0), func=cpu_version))  # cpu version
+        info.append(
+            get_xml_path(self.wvm.getSysinfo(0), func=cpu_version)
+        )  # cpu version
         info.append(self.wvm.getURI())  # uri
         return info

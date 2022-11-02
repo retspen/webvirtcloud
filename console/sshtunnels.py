@@ -28,15 +28,19 @@ class _TunnelScheduler(object):
 
     def _handle_queue(self):
         while True:
-            lock_cb, cb, args, = self._queue.get()
+            (
+                lock_cb,
+                cb,
+                args,
+            ) = self._queue.get()
             lock_cb()
             cb(*args)
 
     def schedule(self, lock_cb, cb, *args):
         if not self._thread:
-            self._thread = threading.Thread(name="Tunnel thread",
-                                            target=self._handle_queue,
-                                            args=())
+            self._thread = threading.Thread(
+                name="Tunnel thread", target=self._handle_queue, args=()
+            )
             self._thread.daemon = True
         if not self._thread.is_alive():
             self._thread.start()
@@ -63,8 +67,11 @@ class _Tunnel(object):
             return
         self._closed = True
 
-        log.debug("Close tunnel PID=%s ERRFD=%s",
-                  self._pid, self._errfd and self._errfd.fileno() or None)
+        log.debug(
+            "Close tunnel PID=%s ERRFD=%s",
+            self._pid,
+            self._errfd and self._errfd.fileno() or None,
+        )
 
         # Since this is a socket object, the file descriptor is closed
         # when it's garbage collected.
@@ -110,8 +117,7 @@ class _Tunnel(object):
 
         self._errfd = errfds[0]
         self._errfd.setblocking(0)
-        log.debug("Opened tunnel PID=%d ERRFD=%d",
-                  pid, self._errfd.fileno())
+        log.debug("Opened tunnel PID=%d ERRFD=%d", pid, self._errfd.fileno())
 
         self._pid = pid
 
@@ -124,7 +130,7 @@ def _make_ssh_command(connhost, connuser, connport, gaddr, gport, gsocket):
         argv += ["-p", str(connport)]
 
     if connuser:
-        argv += ['-l', connuser]
+        argv += ["-l", connuser]
 
     argv += [connhost]
 
@@ -151,8 +157,8 @@ def _make_ssh_command(connhost, connuser, connport, gaddr, gport, gsocket):
         """else"""
         """   CMD="nc %(nc_params)s";"""
         """fi;"""
-        """eval "$CMD";""" %
-        {'nc_params': nc_params})
+        """eval "$CMD";""" % {"nc_params": nc_params}
+    )
 
     argv.append("sh -c")
     argv.append("'%s'" % nc_cmd)
@@ -166,7 +172,8 @@ class SSHTunnels(object):
     def __init__(self, connhost, connuser, connport, gaddr, gport, gsocket):
         self._tunnels = []
         self._sshcommand = _make_ssh_command(
-            connhost, connuser, connport, gaddr, gport, gsocket)
+            connhost, connuser, connport, gaddr, gport, gsocket
+        )
         self._locked = False
 
     def open_new(self):

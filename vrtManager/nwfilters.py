@@ -88,7 +88,8 @@ class wvmNWFilter(wvmConnect):
         tree = ElementTree.fromstring(self._XMLDesc(0))
 
         rule_tree = tree.findall(
-            "./rule[@action='%s'][@direction='%s'][@priority='%s']" % (action, direction, priority)
+            "./rule[@action='%s'][@direction='%s'][@priority='%s']"
+            % (action, direction, priority)
         )
         if rule_tree:
             tree.remove(rule_tree[0])
@@ -111,7 +112,8 @@ class wvmNWFilter(wvmConnect):
         rule_priority = rule.get("priority")
         rule_directives = rule.find("./")
         rule_tree = tree.findall(
-            "./rule[@action='%s'][@direction='%s'][@priority='%s']" % (rule_action, rule_direction, rule_priority)
+            "./rule[@action='%s'][@direction='%s'][@priority='%s']"
+            % (rule_action, rule_direction, rule_priority)
         )
 
         if rule_tree:

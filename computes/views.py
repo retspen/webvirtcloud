@@ -7,7 +7,12 @@ from django.utils import timezone
 from libvirt import libvirtError
 
 from admin.decorators import superuser_only
-from computes.forms import SocketComputeForm, SshComputeForm, TcpComputeForm, TlsComputeForm
+from computes.forms import (
+    SocketComputeForm,
+    SshComputeForm,
+    TcpComputeForm,
+    TlsComputeForm,
+)
 from computes.models import Compute
 from instances.models import Instance
 from vrtManager.connection import (
@@ -39,7 +44,8 @@ def computes(request):
 def overview(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
     status = (
-        "true" if connection_manager.host_is_up(compute.type, compute.hostname) is True else "false"
+        "true"
+        if connection_manager.host_is_up(compute.type, compute.hostname) is True else "false"
     )
 
     conn = wvmHostDetails(
@@ -48,7 +54,14 @@ def overview(request, compute_id):
         compute.password,
         compute.type,
     )
-    hostname, host_arch, host_memory, logical_cpu, model_cpu, uri_conn = conn.get_node_info()
+    (
+        hostname,
+        host_arch,
+        host_memory,
+        logical_cpu,
+        model_cpu,
+        uri_conn,
+    ) = conn.get_node_info()
     hypervisor = conn.get_hypervisors_domain_types()
     mem_usage = conn.get_memory_usage()
     emulator = conn.get_emulator(host_arch)
@@ -64,9 +77,15 @@ def instances(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     utils.refresh_instance_database(compute)
-    instances = Instance.objects.filter(compute=compute).prefetch_related("userinstance_set")
+    instances = Instance.objects.filter(compute=compute).prefetch_related(
+        "userinstance_set"
+    )
 
-    return render(request, "computes/instances.html", {"compute": compute, "instances": instances})
+    return render(
+        request,
+        "computes/instances.html",
+        {"compute": compute, "instances": instances}
+    )
 
 
 @superuser_only

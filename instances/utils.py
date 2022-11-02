@@ -38,8 +38,8 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     instance += user_instances.count()
     for usr_inst in user_instances:
         if connection_manager.host_is_up(
-                usr_inst.instance.compute.type,
-                usr_inst.instance.compute.hostname,
+            usr_inst.instance.compute.type,
+            usr_inst.instance.compute.hostname,
         ):
             conn = wvmInstance(
                 usr_inst.instance.compute.hostname,
@@ -51,8 +51,8 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
             cpu += int(conn.get_vcpu())
             memory += int(conn.get_memory())
             for disk in conn.get_disk_devices():
-                if disk['size']:
-                    disk_size += int(disk['size']) >> 30
+                if disk["size"]:
+                    disk_size += int(disk["size"]) >> 30
 
     if ua.max_instances > 0 and instance > ua.max_instances:
         msg = "instance"
@@ -86,17 +86,17 @@ def get_new_disk_dev(media, disks, bus):
         dev_base = "sd"
 
     if disks:
-        existing_disk_devs = [disk['dev'] for disk in disks]
+        existing_disk_devs = [disk["dev"] for disk in disks]
 
     # cd-rom bus could be virtio/sata, because of that we should check it also
     if media:
-        existing_media_devs = [m['dev'] for m in media]
+        existing_media_devs = [m["dev"] for m in media]
 
     for al in string.ascii_lowercase:
         dev = dev_base + al
         if dev not in existing_disk_devs and dev not in existing_media_devs:
             return dev
-    raise Exception(_('None available device name'))
+    raise Exception(_("None available device name"))
 
 
 def get_network_tuple(network_source_str):
@@ -104,7 +104,7 @@ def get_network_tuple(network_source_str):
     if len(network_source_pack) > 1:
         return network_source_pack[1], network_source_pack[0]
     else:
-        return network_source_pack[0], 'net'
+        return network_source_pack[0], "net"
 
 
 def migrate_instance(
@@ -174,44 +174,44 @@ def refr(compute):
         Instance.objects.filter(compute=compute).exclude(name__in=domain_names).delete()
         Instance.objects.filter(compute=compute).exclude(uuid__in=domain_uuids).delete()
         # Create instances that're not in DB
-        names = Instance.objects.filter(compute=compute).values_list('name', flat=True)
+        names = Instance.objects.filter(compute=compute).values_list("name", flat=True)
         for domain in domains:
             if domain.name() not in names:
                 Instance(compute=compute, name=domain.name(), uuid=domain.UUIDString()).save()
 
 
 def get_dhcp_mac_address(vname):
-    dhcp_file = str(settings.BASE_DIR) + '/dhcpd.conf'
-    mac = ''
+    dhcp_file = str(settings.BASE_DIR) + "/dhcpd.conf"
+    mac = ""
     if os.path.isfile(dhcp_file):
-        with open(dhcp_file, 'r') as f:
+        with open(dhcp_file, "r") as f:
             name_found = False
             for line in f:
                 if "host %s." % vname in line:
                     name_found = True
                 if name_found and "hardware ethernet" in line:
-                    mac = line.split(' ')[-1].strip().strip(';')
+                    mac = line.split(" ")[-1].strip().strip(";")
                     break
     return mac
 
 
 def get_random_mac_address():
-    mac = '52:54:00:%02x:%02x:%02x' % (
-        random.randint(0x00, 0xff),
-        random.randint(0x00, 0xff),
-        random.randint(0x00, 0xff),
+    mac = "52:54:00:%02x:%02x:%02x" % (
+        random.randint(0x00, 0xFF),
+        random.randint(0x00, 0xFF),
+        random.randint(0x00, 0xFF),
     )
     return mac
 
 
-def get_clone_disk_name(disk, prefix, clone_name=''):
-    if not disk['image']:
+def get_clone_disk_name(disk, prefix, clone_name=""):
+    if not disk["image"]:
         return None
-    if disk['image'].startswith(prefix) and clone_name:
-        suffix = disk['image'][len(prefix):]
+    if disk["image"].startswith(prefix) and clone_name:
+        suffix = disk["image"][len(prefix) :]
         image = f"{clone_name}{suffix}"
-    elif "." in disk['image'] and len(disk['image'].rsplit(".", 1)[1]) <= 7:
-        name, suffix = disk['image'].rsplit(".", 1)
+    elif "." in disk["image"] and len(disk["image"].rsplit(".", 1)[1]) <= 7:
+        name, suffix = disk["image"].rsplit(".", 1)
         image = f"{name}-clone.{suffix}"
     else:
         image = f"{disk['image']}-clone"

@@ -107,7 +107,11 @@ def user_create(request):
     return render(
         request,
         "admin/user_form.html",
-        {"user_form": user_form, "attributes_form": attributes_form, "title": _("Create User")},
+        {
+            "user_form": user_form,
+            "attributes_form": attributes_form,
+            "title": _("Create User"),
+        },
     )
 
 
@@ -116,7 +120,9 @@ def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
     attributes = UserAttributes.objects.get(user=user)
     user_form = forms.UserForm(request.POST or None, instance=user)
-    attributes_form = forms.UserAttributesForm(request.POST or None, instance=attributes)
+    attributes_form = forms.UserAttributesForm(
+        request.POST or None, instance=attributes
+    )
     if user_form.is_valid() and attributes_form.is_valid():
         user_form.save()
         attributes_form.save()
@@ -126,7 +132,11 @@ def user_update(request, pk):
     return render(
         request,
         "admin/user_form.html",
-        {"user_form": user_form, "attributes_form": attributes_form, "title": _("Update User")},
+        {
+            "user_form": user_form,
+            "attributes_form": attributes_form,
+            "title": _("Update User"),
+        },
     )
 
 
@@ -138,7 +148,10 @@ def user_update_password(request, pk):
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
-            messages.success(request, _("Password changed for %(user)s") % {"user": user.username})
+            messages.success(
+                request,
+                _("Password changed for %(user)s") % {"user": user.username}
+            )
             return redirect("admin:user_list")
         else:
             messages.error(request, _("Wrong Data Provided"))

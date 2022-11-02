@@ -21,7 +21,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
-from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, libvirtError
+from libvirt import (
+    VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
+    VIR_DOMAIN_UNDEFINE_NVRAM,
+    libvirtError,
+)
 from logs.views import addlogmsg
 from vrtManager import util
 from vrtManager.create import wvmCreate
@@ -50,9 +54,13 @@ def index(request):
     if request.user.is_superuser or request.user.has_perm("instances.view_instances"):
         instances = Instance.objects.all().prefetch_related("userinstance_set")
     else:
-        instances = Instance.objects.filter(userinstance__user=request.user).prefetch_related("userinstance_set")
+        instances = Instance.objects.filter(
+            userinstance__user=request.user
+        ).prefetch_related("userinstance_set")
 
-    return render(request, "allinstances.html", {"computes": computes, "instances": instances})
+    return render(
+        request, "allinstances.html", {"computes": computes, "instances": instances}
+    )
 
 
 def instance(request, pk):
@@ -63,7 +71,9 @@ def instance(request, pk):
     users = User.objects.all().order_by("username")
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     keymaps = settings.QEMU_KEYMAPS
-    console_types = AppSettings.objects.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list()
+    console_types = AppSettings.objects.get(
+        key="QEMU_CONSOLE_DEFAULT_TYPE"
+    ).choices_as_list()
     console_form = ConsoleForm(
         initial={
             "type": instance.console_type,
@@ -74,10 +84,14 @@ def instance(request, pk):
     )
     console_listener_addresses = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
     bottom_bar = app_settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
     try:
         userinstance = UserInstance.objects.get(
-            instance__compute_id=compute.id, instance__name=instance.name, user__id=request.user.id
+            instance__compute_id=compute.id,
+            instance__name=instance.name,
+            user__id=request.user.id,
         )
     except UserInstance.DoesNotExist:
         userinstance = None
@@ -116,7 +130,9 @@ def instance(request, pk):
 
     # userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
     userinstances = instance.userinstance_set.order_by("user__username")
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
 
     # Host resources
     vcpu_host = len(instance.vcpu_range)
@@ -128,7 +144,7 @@ def instance(request, pk):
     storages_host = sorted(instance.proxy.get_storages(True))
     net_models_host = instance.proxy.get_network_models()
 
-    if app_settings.VM_DRBD_STATUS == 'True':
+    if app_settings.VM_DRBD_STATUS == "True":
         instance.drbd = drbd_status(request, pk)
         instance.save()
 
@@ -139,17 +155,25 @@ def status(request, pk):
     instance = get_instance(request.user, pk)
     return JsonResponse({"status": instance.proxy.get_status()})
 
+
 def drbd_status(request, pk):
     instance = get_instance(request.user, pk)
     result = "None DRBD"
 
     if instance.compute.type == 2:
         conn = instance.compute.login + "@" + instance.compute.hostname
-        remoteDrbdStatus = subprocess.run(["ssh", conn, "sudo", "/usr/sbin/drbdadm", "status", "&&", "exit"], stdout=subprocess.PIPE, text=True)
+        remoteDrbdStatus = subprocess.run(
+            ["ssh", conn, "sudo", "/usr/sbin/drbdadm", "status", "&&", "exit"],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
 
         if remoteDrbdStatus.stdout:
             try:
-                instanceFindDrbd = re.compile(instance.name + '[_]*[A-Z]* role:(.+?)\n  disk:(.+?)\n', re.IGNORECASE)
+                instanceFindDrbd = re.compile(
+                    instance.name + "[_]*[A-Z]* role:(.+?)\n  disk:(.+?)\n",
+                    re.IGNORECASE,
+                )
                 instanceDrbd = instanceFindDrbd.findall(remoteDrbdStatus.stdout)
 
                 primaryCount = 0
@@ -179,6 +203,7 @@ def drbd_status(request, pk):
 
     return result
 
+
 def stats(request, pk):
     instance = get_instance(request.user, pk)
     json_blk = []
@@ -192,10 +217,20 @@ def stats(request, pk):
 
     current_time = time.strftime("%H:%M:%S")
     for blk in blk_usage:
-        json_blk.append({"dev": blk["dev"], "data": [int(blk["rd"]) / 1048576, int(blk["wr"]) / 1048576]})
+        json_blk.append(
+            {
+                "dev": blk["dev"],
+                "data": [int(blk["rd"]) / 1048576, int(blk["wr"]) / 1048576],
+            }
+        )
 
     for net in net_usage:
-        json_net.append({"dev": net["dev"], "data": [int(net["rx"]) / 1048576, int(net["tx"]) / 1048576]})
+        json_net.append(
+            {
+                "dev": net["dev"],
+                "data": [int(net["rx"]) / 1048576, int(net["tx"]) / 1048576],
+            }
+        )
 
     return JsonResponse(
         {
@@ -207,11 +242,13 @@ def stats(request, pk):
         }
     )
 
+
 def osinfo(request, pk):
     instance = get_instance(request.user, pk)
     results = instance.proxy.osinfo()
-    
+
     return JsonResponse(results)
+
 
 def guess_mac_address(request, vname):
     data = {"vname": vname}
@@ -232,7 +269,9 @@ def guess_clone_name(request):
     dhcp_file = "/srv/webvirtcloud/dhcpd.conf"
     prefix = app_settings.CLONE_INSTANCE_DEFAULT_PREFIX
     if os.path.isfile(dhcp_file):
-        instance_names = [i.name for i in Instance.objects.filter(name__startswith=prefix)]
+        instance_names = [
+            i.name for i in Instance.objects.filter(name__startswith=prefix)
+        ]
         with open(dhcp_file, "r") as f:
             for line in f:
                 line = line.strip()
@@ -281,7 +320,11 @@ def get_instance(user, pk):
     instance = get_object_or_404(Instance, pk=pk)
     user_instances = user.userinstance_set.all().values_list("instance", flat=True)
 
-    if user.is_superuser or user.has_perm("instances.view_instances") or instance.id in user_instances:
+    if (
+        user.is_superuser
+        or user.has_perm("instances.view_instances")
+        or instance.id in user_instances
+    ):
         return instance
     else:
         raise Http404()
@@ -293,7 +336,9 @@ def poweron(request, pk):
         messages.warning(request, _("Templates cannot be started."))
     else:
         instance.proxy.start()
-        addlogmsg(request.user.username, instance.compute.name, instance.name, _("Power On"))
+        addlogmsg(
+            request.user.username, instance.compute.name, instance.name, _("Power On")
+        )
 
     return redirect(request.META.get("HTTP_REFERER"))
 
@@ -302,14 +347,18 @@ def powercycle(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.force_shutdown()
     instance.proxy.start()
-    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Power Cycle"))
+    addlogmsg(
+        request.user.username, instance.compute.name, instance.name, _("Power Cycle")
+    )
     return redirect(request.META.get("HTTP_REFERER"))
 
 
 def poweroff(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.shutdown()
-    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Power Off"))
+    addlogmsg(
+        request.user.username, instance.compute.name, instance.name, _("Power Off")
+    )
 
     return redirect(request.META.get("HTTP_REFERER"))
 
@@ -333,7 +382,9 @@ def resume(request, pk):
 def force_off(request, pk):
     instance = get_instance(request.user, pk)
     instance.proxy.force_shutdown()
-    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Force Off"))
+    addlogmsg(
+        request.user.username, instance.compute.name, instance.name, _("Force Off")
+    )
     return redirect(request.META.get("HTTP_REFERER"))
 
 
@@ -349,7 +400,9 @@ def destroy(request, pk):
             instance.proxy.force_shutdown()
 
         if request.POST.get("delete_disk", ""):
-            snapshots = sorted(instance.proxy.get_snapshot(), reverse=True, key=lambda k: k["date"])
+            snapshots = sorted(
+                instance.proxy.get_snapshot(), reverse=True, key=lambda k: k["date"]
+            )
             for snapshot in snapshots:
                 instance.proxy.snapshot_delete(snapshot["name"])
             instance.proxy.delete_all_disks()
@@ -360,7 +413,9 @@ def destroy(request, pk):
             instance.proxy.delete(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
 
         instance.delete()
-        addlogmsg(request.user.username, instance.compute.name, instance.name, _("Destroy"))
+        addlogmsg(
+            request.user.username, instance.compute.name, instance.name, _("Destroy")
+        )
         return redirect(reverse("instances:index"))
 
     return render(
@@ -390,12 +445,26 @@ def migrate(request, pk):
     target_host = Compute.objects.get(id=compute_id)
 
     try:
-        utils.migrate_instance(target_host, instance, request.user, live, unsafe, xml_del, offline, autoconverge, compress, postcopy)
+        utils.migrate_instance(
+            target_host,
+            instance,
+            request.user,
+            live,
+            unsafe,
+            xml_del,
+            offline,
+            autoconverge,
+            compress,
+            postcopy,
+        )
     except libvirtError as err:
         messages.error(request, err)
 
     migration_method = "live" if live is True else "offline"
-    msg = _("Instance is migrated(%(method)s) to %(hostname)s") % {"hostname": target_host.hostname, "method": migration_method}
+    msg = _("Instance is migrated(%(method)s) to %(hostname)s") % {
+        "hostname": target_host.hostname,
+        "method": migration_method,
+    }
     addlogmsg(request.user.username, current_host, instance.name, msg)
 
     return redirect(request.META.get("HTTP_REFERER"))
@@ -419,7 +488,9 @@ def set_root_pass(request, pk):
                 s.close()
                 if result["return"] == "success":
                     msg = _("Reset root password")
-                    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                    addlogmsg(
+                        request.user.username, instance.compute.name, instance.name, msg
+                    )
                     messages.success(request, msg)
                 else:
                     messages.error(request, result["message"])
@@ -434,7 +505,11 @@ def add_public_key(request, pk):
     if request.method == "POST":
         sshkeyid = request.POST.get("sshkeyid", "")
         publickey = UserSSHKey.objects.get(id=sshkeyid)
-        data = {"action": "publickey", "key": publickey.keypublic, "vname": instance.name}
+        data = {
+            "action": "publickey",
+            "key": publickey.keypublic,
+            "vname": instance.name,
+        }
 
         if instance.proxy.get_status() == 5:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -445,7 +520,9 @@ def add_public_key(request, pk):
             if result["return"] == "error":
                 msg = result["message"]
             else:
-                msg = _("Installed new SSH public key %(keyname)s") % {"keyname": publickey.keyname}
+                msg = _("Installed new SSH public key %(keyname)s") % {
+                    "keyname": publickey.keyname
+                }
             addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
             if result["return"] == "success":
@@ -470,9 +547,13 @@ def resizevm_cpu(request, pk):
             new_vcpu = request.POST.get("vcpu", "")
             new_cur_vcpu = request.POST.get("cur_vcpu", "")
 
-            quota_msg = utils.check_user_quota(request.user, 0, int(new_vcpu) - vcpu, 0, 0)
+            quota_msg = utils.check_user_quota(
+                request.user, 0, int(new_vcpu) - vcpu, 0, 0
+            )
             if not request.user.is_superuser and quota_msg:
-                msg = _("User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!") % {
+                msg = _(
+                    "User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
+                ) % {
                     "quota_msg": quota_msg,
                     "instance_name": instance.name,
                 }
@@ -481,8 +562,13 @@ def resizevm_cpu(request, pk):
                 cur_vcpu = new_cur_vcpu
                 vcpu = new_vcpu
                 instance.proxy.resize_cpu(cur_vcpu, vcpu)
-                msg = _("CPU is resized:  %(old)s to %(new)s") % {"old": cur_vcpu, "new": vcpu}
-                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                msg = _("CPU is resized:  %(old)s to %(new)s") % {
+                    "old": cur_vcpu,
+                    "new": vcpu,
+                }
+                addlogmsg(
+                    request.user.username, instance.compute.name, instance.name, msg
+                )
                 messages.success(request, msg)
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
 
@@ -507,22 +593,30 @@ def resize_memory(request, pk):
             new_cur_memory_custom = request.POST.get("cur_memory_custom", "")
             if new_cur_memory_custom:
                 new_cur_memory = new_cur_memory_custom
-            quota_msg = utils.check_user_quota(request.user, 0, 0, int(new_memory) - memory, 0)
+            quota_msg = utils.check_user_quota(
+                request.user, 0, 0, int(new_memory) - memory, 0
+            )
             if not request.user.is_superuser and quota_msg:
-                msg = _("User %(quota_msg)s quota reached, cannot resize memory of '%(instance_name)s'!") % {
+                msg = _(
+                    "User %(quota_msg)s quota reached, cannot resize memory of '%(instance_name)s'!"
+                ) % {
                     "quota_msg": quota_msg,
                     "instance_name": instance.name,
                 }
                 messages.error(request, msg)
             else:
                 instance.proxy.resize_mem(new_cur_memory, new_memory)
-                msg = _("Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/%(new_max)s") % {
+                msg = _(
+                    "Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/%(new_max)s"
+                ) % {
                     "old_cur": cur_memory,
                     "old_max": memory,
                     "new_cur": new_cur_memory,
                     "new_max": new_memory,
                 }
-                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                addlogmsg(
+                    request.user.username, instance.compute.name, instance.name, msg
+                )
                 messages.success(request, msg)
 
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
@@ -542,15 +636,21 @@ def resize_disk(request, pk):
         if request.user.is_superuser or request.user.is_staff or userinstance.is_change:
             disks_new = list()
             for disk in disks:
-                input_disk_size = int(request.POST.get("disk_size_" + disk["dev"], "0")) * 1073741824
+                input_disk_size = (
+                    int(request.POST.get("disk_size_" + disk["dev"], "0")) * 1073741824
+                )
                 if input_disk_size > disk["size"] + (64 << 20):
                     disk["size_new"] = input_disk_size
                     disks_new.append(disk)
             disk_sum = sum([disk["size"] >> 30 for disk in disks_new])
             disk_new_sum = sum([disk["size_new"] >> 30 for disk in disks_new])
-            quota_msg = utils.check_user_quota(request.user, 0, 0, 0, disk_new_sum - disk_sum)
+            quota_msg = utils.check_user_quota(
+                request.user, 0, 0, 0, disk_new_sum - disk_sum
+            )
             if not request.user.is_superuser and quota_msg:
-                msg = _("User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!") % {
+                msg = _(
+                    "User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
+                ) % {
                     "quota_msg": quota_msg,
                     "instance_name": instance.name,
                 }
@@ -558,7 +658,9 @@ def resize_disk(request, pk):
             else:
                 instance.proxy.resize_disk(disks_new)
                 msg = _("Disk is resized: %(dev)s") % {"dev": disk["dev"]}
-                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                addlogmsg(
+                    request.user.username, instance.compute.name, instance.name, msg
+                )
                 messages.success(request, msg)
 
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
@@ -566,7 +668,9 @@ def resize_disk(request, pk):
 
 def add_new_vol(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
 
     if allow_admin_or_not_template:
         media = instance.proxy.get_media_devices()
@@ -607,20 +711,34 @@ def add_new_vol(request, pk):
         pool_type = conn_pool.get_type()
         disk_type = conn_pool.get_volume_type(os.path.basename(source))
 
-        if pool_type == 'rbd':
+        if pool_type == "rbd":
             source_info = conn_pool.get_rbd_source()
-        else: # add more disk types to handle different pool and disk types
+        else:  # add more disk types to handle different pool and disk types
             source_info = None
 
-        instance.proxy.attach_disk(target_dev, source, source_info=source_info, pool_type=pool_type, disk_type=disk_type, target_bus=bus, format_type=format, cache_mode=cache)
-        msg = _("Attach new disk: %(name)s (%(format)s)") % {"name": name, "format": format}
+        instance.proxy.attach_disk(
+            target_dev,
+            source,
+            source_info=source_info,
+            pool_type=pool_type,
+            disk_type=disk_type,
+            target_bus=bus,
+            format_type=format,
+            cache_mode=cache,
+        )
+        msg = _("Attach new disk: %(name)s (%(format)s)") % {
+            "name": name,
+            "format": format,
+        }
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
 
 
 def add_existing_vol(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
     if allow_admin_or_not_template:
         storage = request.POST.get("selected_storage", "")
         name = request.POST.get("vols", "")
@@ -641,7 +759,7 @@ def add_existing_vol(request, pk):
         format_type = conn_create.get_volume_format_type(name)
         disk_type = conn_create.get_volume_type(name)
         pool_type = conn_create.get_type()
-        if pool_type == 'rbd':
+        if pool_type == "rbd":
             source_info = conn_create.get_rbd_source()
             path = conn_create.get_source_name()
         else:
@@ -651,7 +769,16 @@ def add_existing_vol(request, pk):
         target_dev = utils.get_new_disk_dev(media, disks, bus)
         source = f"{path}/{name}"
 
-        instance.proxy.attach_disk(target_dev, source, source_info=source_info, pool_type=pool_type, disk_type=disk_type, target_bus=bus, format_type=format_type, cache_mode=cache)
+        instance.proxy.attach_disk(
+            target_dev,
+            source,
+            source_info=source_info,
+            pool_type=pool_type,
+            disk_type=disk_type,
+            target_bus=bus,
+            format_type=format_type,
+            cache_mode=cache,
+        )
         msg = _("Attach Existing disk: %(target_dev)s") % {"target_dev": target_dev}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#disks")
@@ -659,7 +786,9 @@ def add_existing_vol(request, pk):
 
 def edit_volume(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
     if "edit_volume" in request.POST and allow_admin_or_not_template:
         target_dev = request.POST.get("dev", "")
 
@@ -671,10 +800,16 @@ def edit_volume(request, pk):
         new_bus = request.POST.get("vol_bus", bus)
         serial = request.POST.get("vol_serial", "")
         format = request.POST.get("vol_format", "")
-        cache = request.POST.get("vol_cache", app_settings.INSTANCE_VOLUME_DEFAULT_CACHE)
+        cache = request.POST.get(
+            "vol_cache", app_settings.INSTANCE_VOLUME_DEFAULT_CACHE
+        )
         io = request.POST.get("vol_io_mode", app_settings.INSTANCE_VOLUME_DEFAULT_IO)
-        discard = request.POST.get("vol_discard_mode", app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD)
-        zeroes = request.POST.get("vol_detect_zeroes", app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES)
+        discard = request.POST.get(
+            "vol_discard_mode", app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD
+        )
+        zeroes = request.POST.get(
+            "vol_detect_zeroes", app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
+        )
         new_target_dev = utils.get_new_disk_dev(instance.media, instance.disks, new_bus)
 
         if new_bus != bus:
@@ -710,7 +845,10 @@ def edit_volume(request, pk):
         if not instance.proxy.get_status() == 5:
             messages.success(
                 request,
-                _("Volume changes are applied. " + "But it will be activated after shutdown"),
+                _(
+                    "Volume changes are applied. "
+                    + "But it will be activated after shutdown"
+                ),
             )
         else:
             messages.success(request, _("Volume is changed successfully."))
@@ -722,7 +860,9 @@ def edit_volume(request, pk):
 
 def delete_vol(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
     if allow_admin_or_not_template:
         storage = request.POST.get("storage", "")
         conn_delete = wvmStorage(
@@ -746,7 +886,9 @@ def delete_vol(request, pk):
 
 def detach_vol(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
 
     if allow_admin_or_not_template:
         dev = request.POST.get("dev", "")
@@ -760,11 +902,20 @@ def detach_vol(request, pk):
 
 def add_cdrom(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
     if allow_admin_or_not_template:
         bus = request.POST.get("bus", "ide" if instance.machine == "pc" else "sata")
         target = utils.get_new_disk_dev(instance.media, instance.disks, bus)
-        instance.proxy.attach_disk(target, "", disk_device="cdrom", cache_mode="none", target_bus=bus, readonly=True)
+        instance.proxy.attach_disk(
+            target,
+            "",
+            disk_device="cdrom",
+            cache_mode="none",
+            target_bus=bus,
+            readonly=True,
+        )
         msg = _("Add CD-ROM: %(target)s") % {"target": target}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
@@ -773,7 +924,9 @@ def add_cdrom(request, pk):
 
 def detach_cdrom(request, pk, dev):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
 
     if allow_admin_or_not_template:
         # dev = request.POST.get('detach_cdrom', '')
@@ -786,7 +939,9 @@ def detach_cdrom(request, pk, dev):
 
 def unmount_iso(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
     if allow_admin_or_not_template:
         image = request.POST.get("path", "")
         dev = request.POST.get("umount_iso", "")
@@ -799,7 +954,9 @@ def unmount_iso(request, pk):
 
 def mount_iso(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
     if allow_admin_or_not_template:
         image = request.POST.get("media", "")
         dev = request.POST.get("mount_iso", "")
@@ -812,9 +969,13 @@ def mount_iso(request, pk):
 
 def snapshot(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
 
-    if allow_admin_or_not_template and request.user.has_perm("instances.snapshot_instances"):
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
         name = request.POST.get("name", "")
         desc = request.POST.get("description", "")
         instance.proxy.create_snapshot(name, desc)
@@ -825,8 +986,12 @@ def snapshot(request, pk):
 
 def delete_snapshot(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
-    if allow_admin_or_not_template and request.user.has_perm("instances.snapshot_instances"):
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
         snap_name = request.POST.get("name", "")
         instance.proxy.snapshot_delete(snap_name)
         msg = _("Delete snapshot: %(snap)s") % {"snap": snap_name}
@@ -836,8 +1001,12 @@ def delete_snapshot(request, pk):
 
 def revert_snapshot(request, pk):
     instance = get_instance(request.user, pk)
-    allow_admin_or_not_template = request.user.is_superuser or request.user.is_staff or not instance.is_template
-    if allow_admin_or_not_template and request.user.has_perm("instances.snapshot_instances"):
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
         snap_name = request.POST.get("name", "")
         instance.proxy.snapshot_revert(snap_name)
         msg = _("Successful revert snapshot: ")
@@ -865,7 +1034,7 @@ def set_vcpu(request, pk):
 @superuser_only
 def set_vcpu_hotplug(request, pk):
     instance = get_instance(request.user, pk)
-    status = True if request.POST.get("vcpu_hotplug", "False") == 'True' else False
+    status = True if request.POST.get("vcpu_hotplug", "False") == "True" else False
     msg = _("VCPU Hot-plug is enabled=%(status)s") % {"status": status}
     instance.proxy.set_vcpu_hotplug(status)
     addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
@@ -923,7 +1092,10 @@ def set_bootorder(request, pk):
         if not instance.proxy.get_status() == 5:
             messages.success(
                 request,
-                _("Boot menu changes applied. " + "But it will be activated after shutdown"),
+                _(
+                    "Boot menu changes applied. "
+                    + "But it will be activated after shutdown"
+                ),
             )
         else:
             messages.success(request, _("Boot order changed successfully."))
@@ -979,7 +1151,7 @@ def change_network(request, pk):
             network_data[post] = source
             network_data[post + "-type"] = source_type
 
-            if source_type == 'iface':
+            if source_type == "iface":
                 iface = wvmInterface(
                     instance.compute.hostname,
                     instance.compute.login,
@@ -1007,14 +1179,14 @@ def add_network(request, pk):
     nwfilter = request.POST.get("add-net-nwfilter")
     (source, source_type) = utils.get_network_tuple(request.POST.get("add-net-network"))
 
-    if source_type == 'iface':
+    if source_type == "iface":
         iface = wvmInterface(
-                instance.compute.hostname,
-                instance.compute.login,
-                instance.compute.password,
-                instance.compute.type,
-                source,
-            )
+            instance.compute.hostname,
+            instance.compute.login,
+            instance.compute.password,
+            instance.compute.type,
+            source,
+        )
         source_type = iface.get_type()
 
     instance.proxy.add_network(mac, source, source_type, nwfilter=nwfilter)
@@ -1062,7 +1234,9 @@ def set_qos(request, pk):
 
     instance.proxy.set_qos(mac, qos_dir, average, peak, burst)
     if instance.proxy.get_status() == 5:
-        messages.success(request, _("%(qos_dir)s QoS is set") % {"qos_dir": qos_dir.capitalize()})
+        messages.success(
+            request, _("%(qos_dir)s QoS is set") % {"qos_dir": qos_dir.capitalize()}
+        )
     else:
         messages.success(
             request,
@@ -1084,7 +1258,9 @@ def unset_qos(request, pk):
     instance.proxy.unset_qos(mac, qos_dir)
 
     if instance.proxy.get_status() == 5:
-        messages.success(request, _("%(qos_dir)s QoS is deleted") % {"qos_dir": qos_dir.capitalize()})
+        messages.success(
+            request, _("%(qos_dir)s QoS is deleted") % {"qos_dir": qos_dir.capitalize()}
+        )
     else:
         messages.success(
             request,
@@ -1108,7 +1284,9 @@ def add_owner(request, pk):
         check_inst = UserInstance.objects.filter(instance=instance).count()
 
     if check_inst > 0:
-        messages.error(request, _("Only one owner is allowed and the one already added"))
+        messages.error(
+            request, _("Only one owner is allowed and the one already added")
+        )
     else:
         add_user_inst = UserInstance(instance=instance, user_id=user_id)
         add_user_inst.save()
@@ -1137,7 +1315,9 @@ def clone(request, pk):
     clone_data["name"] = request.POST.get("name", "")
 
     disk_sum = sum([disk["size"] >> 30 for disk in instance.disks])
-    quota_msg = utils.check_user_quota(request.user, 1, instance.vcpu, instance.memory, disk_sum)
+    quota_msg = utils.check_user_quota(
+        request.user, 1, instance.vcpu, instance.memory, disk_sum
+    )
     check_instance = Instance.objects.filter(name=clone_data["name"])
 
     clone_data["disk_owner_uid"] = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
@@ -1156,19 +1336,31 @@ def clone(request, pk):
             clone_data[disk_dev] = disk_name
 
     if not request.user.is_superuser and quota_msg:
-        msg = _("User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!") % {
+        msg = _(
+            "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
+        ) % {
             "quota_msg": quota_msg,
             "clone_name": clone_data["name"],
         }
         messages.error(request, msg)
     elif check_instance:
-        msg = _("Instance '%(clone_name)s' already exists!") % {"clone_name": clone_data["name"]}
+        msg = _("Instance '%(clone_name)s' already exists!") % {
+            "clone_name": clone_data["name"]
+        }
         messages.error(request, msg)
     elif not re.match(r"^[a-zA-Z0-9-]+$", clone_data["name"]):
-        msg = _("Instance name '%(clone_name)s' contains invalid characters!") % {"clone_name": clone_data["name"]}
+        msg = _("Instance name '%(clone_name)s' contains invalid characters!") % {
+            "clone_name": clone_data["name"]
+        }
         messages.error(request, msg)
-    elif not re.match(r"^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$", clone_data["clone-net-mac-0"], re.IGNORECASE):
-        msg = _("Instance MAC '%(clone_mac)s' invalid format!") % {"clone_mac": clone_data["clone-net-mac-0"]}
+    elif not re.match(
+        r"^([0-9A-F]{2})(:?[0-9A-F]{2}){5}$",
+        clone_data["clone-net-mac-0"],
+        re.IGNORECASE,
+    ):
+        msg = _("Instance MAC '%(clone_mac)s' invalid format!") % {
+            "clone_mac": clone_data["clone-net-mac-0"]
+        }
         messages.error(request, msg)
     else:
         new_instance = Instance(compute=instance.compute, name=clone_data["name"])
@@ -1176,15 +1368,23 @@ def clone(request, pk):
             new_uuid = instance.proxy.clone_instance(clone_data)
             new_instance.uuid = new_uuid
             new_instance.save()
-            user_instance = UserInstance(instance_id=new_instance.id, user_id=request.user.id, is_delete=True)
+            user_instance = UserInstance(
+                instance_id=new_instance.id, user_id=request.user.id, is_delete=True
+            )
             user_instance.save()
-            msg = _("Create a clone of '%(instance_name)s'") % {"instance_name": instance.name}
+            msg = _("Create a clone of '%(instance_name)s'") % {
+                "instance_name": instance.name
+            }
             messages.success(request, msg)
-            addlogmsg(request.user.username, instance.compute.name, new_instance.name, msg)
+            addlogmsg(
+                request.user.username, instance.compute.name, new_instance.name, msg
+            )
 
             if app_settings.CLONE_INSTANCE_AUTO_MIGRATE == "True":
                 new_compute = Compute.objects.order_by("?").first()
-                utils.migrate_instance(new_compute, new_instance, request.user, xml_del=True, offline=True)
+                utils.migrate_instance(
+                    new_compute, new_instance, request.user, xml_del=True, offline=True
+                )
 
             return redirect(reverse("instances:instance", args=[new_instance.id]))
         except Exception as e:
@@ -1223,7 +1423,9 @@ def update_console(request, pk):
                     messages.error(request, msg)
                 else:
                     msg = _("Set VNC password")
-                    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                    addlogmsg(
+                        request.user.username, instance.compute.name, instance.name, msg
+                    )
 
             if "keymap" in form.changed_data or "clear_keymap" in form.changed_data:
                 if form.cleaned_data["clear_keymap"]:
@@ -1232,17 +1434,23 @@ def update_console(request, pk):
                     instance.proxy.set_console_keymap(form.cleaned_data["keymap"])
 
                 msg = _("Set VNC keymap")
-                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                addlogmsg(
+                    request.user.username, instance.compute.name, instance.name, msg
+                )
 
             if "type" in form.changed_data:
                 instance.proxy.set_console_type(form.cleaned_data["type"])
                 msg = _("Set VNC type")
-                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                addlogmsg(
+                    request.user.username, instance.compute.name, instance.name, msg
+                )
 
             if "listen_on" in form.changed_data:
                 instance.proxy.set_console_listener_addr(form.cleaned_data["listen_on"])
                 msg = _("Set VNC listen address")
-                addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+                addlogmsg(
+                    request.user.username, instance.compute.name, instance.name, msg
+                )
 
     return redirect(request.META.get("HTTP_REFERER") + "#vncsettings")
 
@@ -1326,7 +1534,15 @@ def create_instance_select_type(request, compute_id):
     all_hypervisors = conn.get_hypervisors_machines()
 
     # Supported hypervisors by webvirtcloud: i686, x86_64(for now)
-    supported_arch = ["x86_64", "i686", "aarch64", "armv7l", "ppc64", "ppc64le", "s390x"]
+    supported_arch = [
+        "x86_64",
+        "i686",
+        "aarch64",
+        "armv7l",
+        "ppc64",
+        "ppc64le",
+        "s390x",
+    ]
     hypervisors = [hpv for hpv in all_hypervisors.keys() if hpv in supported_arch]
     default_machine = app_settings.INSTANCE_MACHINE_DEFAULT_TYPE
     default_arch = app_settings.INSTANCE_ARCH_DEFAULT_TYPE
@@ -1371,7 +1587,12 @@ def create_instance(request, compute_id, arch, machine):
     appsettings = AppSettings.objects.all()
 
     try:
-        conn = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
+        conn = wvmCreate(
+            compute.hostname,
+            compute.login,
+            compute.password,
+            compute.type
+        )
 
         default_firmware = app_settings.INSTANCE_FIRMWARE_DEFAULT_TYPE
         default_cpu_mode = app_settings.INSTANCE_CPU_DEFAULT_MODE
@@ -1397,7 +1618,7 @@ def create_instance(request, compute_id, arch, machine):
         storages = sorted(conn.get_storages(only_actives=True))
         default_graphics = app_settings.QEMU_CONSOLE_DEFAULT_TYPE
         default_cdrom = app_settings.INSTANCE_CDROM_ADD
-        input_device_buses = ['default', 'virtio', 'usb']
+        input_device_buses = ["default", "virtio", "usb"]
         default_input_device_bus = app_settings.INSTANCE_INPUT_DEFAULT_DEVICE
 
         dom_caps = conn.get_dom_capabilities(arch, machine)
@@ -1437,13 +1658,21 @@ def create_instance(request, compute_id, arch, machine):
                             meta_prealloc = True
                         if instances:
                             if data["name"] in instances:
-                                raise libvirtError(_("A virtual machine with this name already exists"))
+                                raise libvirtError(
+                                    _("A virtual machine with this name already exists")
+                                )
                             if Instance.objects.filter(name__exact=data["name"]):
-                                raise libvirtError(_("There is an instance with same name. Remove it and try again!"))
+                                raise libvirtError(
+                                    _(
+                                        "There is an instance with same name. Remove it and try again!"
+                                    )
+                                )
 
                         if data["hdd_size"]:
                             if not data["mac"]:
-                                raise libvirtError(_("No Virtual Machine MAC has been entered"))
+                                raise libvirtError(
+                                    _("No Virtual Machine MAC has been entered")
+                                )
                             else:
                                 path = conn.create_volume(
                                     data["storage"],
@@ -1471,10 +1700,14 @@ def create_instance(request, compute_id, arch, machine):
 
                         elif data["template"]:
                             templ_path = conn.get_volume_path(data["template"])
-                            dest_vol = conn.get_volume_path(data["name"] + ".img", data["storage"])
+                            dest_vol = conn.get_volume_path(
+                                data["name"] + ".img", data["storage"]
+                            )
                             if dest_vol:
                                 raise libvirtError(
-                                    _("Image has already exist. Please check volumes or change instance name")
+                                    _(
+                                        "Image has already exist. Please check volumes or change instance name"
+                                    )
                                 )
                             else:
                                 clone_path = conn.clone_from_template(
@@ -1501,15 +1734,21 @@ def create_instance(request, compute_id, arch, machine):
                                 is_disk_created = True
                         else:
                             if not data["images"]:
-                                raise libvirtError(_("First you need to create or select an image"))
+                                raise libvirtError(
+                                    _("First you need to create or select an image")
+                                )
                             else:
                                 for idx, vol in enumerate(data["images"].split(",")):
                                     path = conn.get_volume_path(vol)
                                     volume = dict()
                                     volume["path"] = path
                                     volume["type"] = conn.get_volume_format_type(path)
-                                    volume["device"] = request.POST.get("device" + str(idx), "")
-                                    volume["bus"] = request.POST.get("bus" + str(idx), "")
+                                    volume["device"] = request.POST.get(
+                                        "device" + str(idx), ""
+                                    )
+                                    volume["bus"] = request.POST.get(
+                                        "bus" + str(idx), ""
+                                    )
                                     if volume["bus"] == "scsi":
                                         volume["scsi_model"] = default_scsi_disk_model
                                     volume["cache_mode"] = data["cache_mode"]
@@ -1560,12 +1799,21 @@ def create_instance(request, compute_id, arch, machine):
                                 add_cdrom=data["add_cdrom"],
                                 add_input=data["add_input"],
                             )
-                            create_instance = Instance(compute_id=compute_id, name=data["name"], uuid=uuid)
+                            create_instance = Instance(
+                                compute_id=compute_id, name=data["name"], uuid=uuid
+                            )
                             create_instance.save()
                             msg = _("Instance is created")
                             messages.success(request, msg)
-                            addlogmsg(request.user.username, create_instance.compute.name, create_instance.name, msg)
-                            return redirect(reverse("instances:instance", args=[create_instance.id]))
+                            addlogmsg(
+                                request.user.username,
+                                create_instance.compute.name,
+                                create_instance.name,
+                                msg,
+                            )
+                            return redirect(
+                                reverse("instances:instance", args=[create_instance.id])
+                            )
                         except libvirtError as lib_err:
                             if data["hdd_size"] or len(volume_list) > 0:
                                 if is_disk_created:
