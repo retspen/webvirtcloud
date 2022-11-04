@@ -90,7 +90,7 @@
         "../../dev/scss/bootstrap/utilities/_text.scss",
         "../../dev/scss/bootstrap/utilities/_visibility.scss",
         "../../dev/scss/bootstrap/_print.scss",
-        "../../dev/scss/wvc-theme/wvc-theme.scss"
+        "../../dev/scss/wvc-themes/wvc-theme.scss"
     ],
     "names": [],
     "file": "wvc-main.min.css"
