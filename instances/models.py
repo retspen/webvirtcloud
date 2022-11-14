@@ -1,12 +1,10 @@
+from computes.models import Compute
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-
 from libvirt import VIR_DOMAIN_XML_SECURE
-from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES
-
-from computes.models import Compute
 from vrtManager.instance import wvmInstance
+from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES
 
 
 class Flavor(models.Model):
@@ -210,14 +208,10 @@ class Instance(models.Model):
 
 class MigrateInstance(models.Model):
     instance = models.ForeignKey(
-        Instance,
-        related_name="source_host",
-        on_delete=models.DO_NOTHING
+        Instance, related_name="source_host", on_delete=models.DO_NOTHING
     )
     target_compute = models.ForeignKey(
-        Compute,
-        related_name="target_host",
-        on_delete=models.DO_NOTHING
+        Compute, related_name="target_host", on_delete=models.DO_NOTHING
     )
 
     live = models.BooleanField(_("Live"))
@@ -234,9 +228,7 @@ class MigrateInstance(models.Model):
 
 class CreateInstance(models.Model):
     compute = models.ForeignKey(
-        Compute,
-        related_name="host",
-        on_delete=models.DO_NOTHING
+        Compute, related_name="host", on_delete=models.DO_NOTHING
     )
     name = models.CharField(
         max_length=64,

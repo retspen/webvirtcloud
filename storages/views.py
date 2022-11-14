@@ -1,18 +1,18 @@
 import json
 import os
 
+from admin.decorators import superuser_only
+from appsettings.settings import app_settings
+from computes.models import Compute
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
-
-from admin.decorators import superuser_only
-from appsettings.settings import app_settings
-from computes.models import Compute
-from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
 from vrtManager.storage import wvmStorage, wvmStorages
+
+from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
 
 
 @superuser_only
@@ -28,10 +28,7 @@ def storages(request, compute_id):
 
     try:
         conn = wvmStorages(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type
+            compute.hostname, compute.login, compute.password, compute.type
         )
         storages = conn.get_storages_info()
         secrets = conn.get_secrets()
@@ -125,10 +122,7 @@ def storage(request, compute_id, pool):
     form = CreateVolumeForm()
 
     conn = wvmStorage(
-        compute.hostname,
-        compute.login,
-        compute.password,
-        compute.type, pool
+        compute.hostname, compute.login, compute.password, compute.type, pool
     )
 
     storages = conn.get_storages()
@@ -234,11 +228,7 @@ def create_volume(request, compute_id, pool):
     meta_prealloc = False
 
     conn = wvmStorage(
-        compute.hostname,
-        compute.login,
-        compute.password,
-        compute.type,
-        pool
+        compute.hostname, compute.login, compute.password, compute.type, pool
     )
 
     storages = conn.get_storages()
@@ -281,11 +271,7 @@ def get_volumes(request, compute_id, pool):
     compute = get_object_or_404(Compute, pk=compute_id)
     try:
         conn = wvmStorage(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-            pool
+            compute.hostname, compute.login, compute.password, compute.type, pool
         )
         conn.refresh()
         data["vols"] = sorted(conn.get_volumes())

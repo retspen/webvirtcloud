@@ -1,3 +1,4 @@
+import contextlib
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
@@ -28,10 +29,10 @@ def interfaces(request, compute_id):
             compute.type
         )
         ifaces = conn.get_ifaces()
-        try:
+
+        netdevs = ["eth0", "eth1"]
+        with contextlib.suppress(Exception):
             netdevs = conn.get_net_devices()
-        except:
-            netdevs = ["eth0", "eth1"]
 
         for iface in ifaces:
             interf = wvmInterface(

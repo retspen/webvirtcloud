@@ -1,9 +1,8 @@
 import re
 
+from appsettings.models import AppSettings
 from django import forms
 from django.utils.translation import gettext_lazy as _
-
-from appsettings.models import AppSettings
 from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES, QEMU_KEYMAPS
 
 from .models import CreateInstance, Flavor

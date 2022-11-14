@@ -30,8 +30,9 @@ def create_admin(sender, **kwargs):
     """
     Create initial admin user
     """
-    from accounts.models import UserAttributes
     from django.contrib.auth.models import User
+
+    from accounts.models import UserAttributes
 
     plan = kwargs.get("plan", [])
     for migration, rolled_back in plan:

@@ -1,33 +1,31 @@
-from django.shortcuts import get_object_or_404
 from appsettings.settings import app_settings
-from computes.models import Compute
 from computes import utils
+from computes.models import Compute
+from django.shortcuts import get_object_or_404
 from instances.models import Flavor, Instance
-from instances.views import get_instance
 from instances.utils import migrate_instance
+from instances.views import destroy as instance_destroy
 from instances.views import (
-    poweron,
+    force_off,
+    get_instance,
     powercycle,
     poweroff,
-    force_off,
-    suspend,
+    poweron,
     resume,
-    destroy as instance_destroy,
+    suspend,
 )
-
-from rest_framework import status, viewsets, permissions
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
 from vrtManager import util
-
 from vrtManager.create import wvmCreate
+
 from .serializers import (
-    FlavorSerializer,
-    InstanceSerializer,
-    InstanceDetailsSerializer,
-    MigrateSerializer,
     CreateInstanceSerializer,
+    FlavorSerializer,
+    InstanceDetailsSerializer,
+    InstanceSerializer,
+    MigrateSerializer,
 )
 
 
@@ -40,14 +38,16 @@ class InstancesViewSet(viewsets.ViewSet):
 
     def list(self, request):
 
-        if request.user.is_superuser or request.user.has_perm("instances.view_instances"):
+        if request.user.is_superuser or request.user.has_perm(
+            "instances.view_instances"
+        ):
             queryset = Instance.objects.all().prefetch_related("userinstance_set")
         else:
-            queryset = Instance.objects.filter(userinstance__user=request.user).prefetch_related("userinstance_set")
+            queryset = Instance.objects.filter(
+                userinstance__user=request.user
+            ).prefetch_related("userinstance_set")
         serializer = InstanceSerializer(
-            queryset,
-            many=True,
-            context={"request": request}
+            queryset, many=True, context={"request": request}
         )
 
         return Response(serializer.data)
@@ -72,11 +72,11 @@ class InstanceViewSet(viewsets.ViewSet):
 
         utils.refresh_instance_database(compute)
 
-        queryset = Instance.objects.filter(compute=compute).prefetch_related("userinstance_set")
+        queryset = Instance.objects.filter(compute=compute).prefetch_related(
+            "userinstance_set"
+        )
         serializer = InstanceSerializer(
-            queryset,
-            many=True,
-            context={"request": request}
+            queryset, many=True, context={"request": request}
         )
 
         return Response(serializer.data)
@@ -190,7 +190,9 @@ class CreateInstanceViewSet(viewsets.ViewSet):
             default_io = app_settings.INSTANCE_VOLUME_DEFAULT_IO
             default_discard = app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD
             default_zeroes = app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
-            default_scsi_disk_model = app_settings.INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
+            default_scsi_disk_model = (
+                app_settings.INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
+            )
             default_disk_format = app_settings.INSTANCE_VOLUME_DEFAULT_FORMAT
             default_disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
             default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
@@ -227,7 +229,9 @@ class CreateInstanceViewSet(viewsets.ViewSet):
             volume_list.append(volume)
 
             if "UEFI" in serializer.validated_data["firmware"]:
-                firmware["loader"] = (serializer.validated_data["firmware"].split(":")[1].strip())
+                firmware["loader"] = (
+                    serializer.validated_data["firmware"].split(":")[1].strip()
+                )
                 firmware["secure"] = "no"
                 firmware["readonly"] = "yes"
                 firmware["type"] = "pflash"

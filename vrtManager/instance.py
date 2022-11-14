@@ -1,27 +1,26 @@
+import contextlib
 import json
 import os.path
 import time
 
 try:
     from libvirt import (
-        libvirtError,
-        VIR_DOMAIN_XML_SECURE,
-        VIR_DOMAIN_RUNNING,
-        VIR_DOMAIN_AFFECT_LIVE,
         VIR_DOMAIN_AFFECT_CONFIG,
-    )
-    from libvirt import (
-        VIR_MIGRATE_LIVE,
-        VIR_MIGRATE_UNSAFE,
-        VIR_MIGRATE_PERSIST_DEST,
-        VIR_MIGRATE_UNDEFINE_SOURCE,
-        VIR_MIGRATE_OFFLINE,
-        VIR_MIGRATE_COMPRESSED,
+        VIR_DOMAIN_AFFECT_LIVE,
+        VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT,
+        VIR_DOMAIN_RUNNING,
+        VIR_DOMAIN_XML_SECURE,
         VIR_MIGRATE_AUTO_CONVERGE,
+        VIR_MIGRATE_COMPRESSED,
+        VIR_MIGRATE_LIVE,
+        VIR_MIGRATE_OFFLINE,
+        VIR_MIGRATE_PERSIST_DEST,
         VIR_MIGRATE_POSTCOPY,
+        VIR_MIGRATE_UNDEFINE_SOURCE,
+        VIR_MIGRATE_UNSAFE,
+        libvirtError,
     )
-    from libvirt import VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
-    from libvirt_qemu import qemuAgentCommand, VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT
+    from libvirt_qemu import VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, qemuAgentCommand
 except:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
 
@@ -496,26 +495,21 @@ class wvmInstance(wvmConnect):
                             s_name = disk.xpath("source/@pool")[0]
                             s = self.wvm.storagePoolLookupByName(s_name)
                             src_file = s.storageVolLookupByName(v).path()
-                        try:
+
+                        with contextlib.suppress(Exception):
                             disk_format = disk.xpath("driver/@type")[0]
-                        except:
-                            pass
-                        try:
+
+                        with contextlib.suppress(Exception):
                             disk_cache = disk.xpath("driver/@cache")[0]
-                        except:
-                            pass
-                        try:
+
+                        with contextlib.suppress(Exception):
                             disk_io = disk.xpath("driver/@io")[0]
-                        except:
-                            pass
-                        try:
+
+                        with contextlib.suppress(Exception):
                             disk_discard = disk.xpath("driver/@discard")[0]
-                        except:
-                            pass
-                        try:
+
+                        with contextlib.suppress(Exception):
                             disk_zeroes = disk.xpath("driver/@detect_zeroes")[0]
-                        except:
-                            pass
 
                         readonly = True if disk.xpath("readonly") else False
                         shareable = True if disk.xpath("shareable") else False
@@ -572,15 +566,14 @@ class wvmInstance(wvmConnect):
                     try:
                         dev = media.xpath("target/@dev")[0]
                         bus = media.xpath("target/@bus")[0]
-                        try:
+                        src_file = None
+                        volume = src_file
+                        with contextlib.suppress(Exception):
                             src_file = media.xpath("source/@file")[0]
                             vol = self.get_volume_by_path(src_file)
                             volume = vol.name()
                             stg = vol.storagePoolLookupByVolume()
                             storage = stg.name()
-                        except:
-                            src_file = None
-                            volume = src_file
                     except:
                         pass
                     finally:
@@ -1083,11 +1076,10 @@ class wvmInstance(wvmConnect):
             graphic.set("listen", listener_addr)
             listen.set("address", listener_addr)
         else:
-            try:
+            with contextlib.suppress(Exception):
                 graphic.attrib.pop("listen")
                 listen.attrib.pop("address")
-            except:
-                pass
+
         newxml = ElementTree.tostring(root).decode()
         return self._defineXML(newxml)
 
@@ -1158,10 +1150,9 @@ class wvmInstance(wvmConnect):
         if passwd:
             graphic.set("passwd", passwd)
         else:
-            try:
+            with contextlib.suppress(Exception):
                 graphic.attrib.pop("passwd")
-            except:
-                pass
+
         newxml = ElementTree.tostring(root).decode()
         return self._defineXML(newxml)
 
@@ -1177,10 +1168,9 @@ class wvmInstance(wvmConnect):
         if keymap != "auto":
             graphic.set("keymap", keymap)
         else:
-            try:
+            with contextlib.suppress(Exception):
                 graphic.attrib.pop("keymap")
-            except:
-                pass
+
         newxml = ElementTree.tostring(root).decode()
         self._defineXML(newxml)
 
@@ -1279,10 +1269,9 @@ class wvmInstance(wvmConnect):
         for storage in storages:
             stg = self.get_storage(storage)
             if stg.info()[0] != 0:
-                try:
+                with contextlib.suppress(Exception):
                     stg.refresh(0)
-                except:
-                    pass
+
                 for img in stg.listVolumes():
                     if img.lower().endswith(".iso"):
                         iso.append(img)
@@ -1424,10 +1413,10 @@ class wvmInstance(wvmConnect):
                 device_name = elm.get("dev")
                 if device_name:
                     target_file = clone_data["disk-" + device_name]
-                    try:
+                    meta_prealloc = False
+                    with contextlib.suppress(Exception):
                         meta_prealloc = clone_data["meta-" + device_name]
-                    except:
-                        meta_prealloc = False
+
                     elm.set("dev", device_name)
 
                 elm = disk.find("source")
@@ -1522,12 +1511,7 @@ class wvmInstance(wvmConnect):
         return bridge_name
 
     def add_network(
-        self,
-        mac_address,
-        source,
-        source_type="net",
-        model="virtio",
-        nwfilter=None
+        self, mac_address, source, source_type="net", model="virtio", nwfilter=None
     ):
 
         if source_type == "net":
@@ -1588,11 +1572,7 @@ class wvmInstance(wvmConnect):
         status = self.delete_network(net_mac)
         try:
             self.add_network(
-                net_mac,
-                net_source,
-                net_source_type,
-                net_model,
-                net_filter
+                net_mac, net_source, net_source_type, net_model, net_filter
             )
         except libvirtError:
             if status is not None:

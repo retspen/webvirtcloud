@@ -1,20 +1,12 @@
 import json
 
+from admin.decorators import superuser_only
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from libvirt import libvirtError
-
-from admin.decorators import superuser_only
-from computes.forms import (
-    SocketComputeForm,
-    SshComputeForm,
-    TcpComputeForm,
-    TlsComputeForm,
-)
-from computes.models import Compute
 from instances.models import Instance
+from libvirt import libvirtError
 from vrtManager.connection import (
     CONN_SOCKET,
     CONN_SSH,
@@ -24,6 +16,14 @@ from vrtManager.connection import (
     wvmConnect,
 )
 from vrtManager.hostdetails import wvmHostDetails
+
+from computes.forms import (
+    SocketComputeForm,
+    SshComputeForm,
+    TcpComputeForm,
+    TlsComputeForm,
+)
+from computes.models import Compute
 
 from . import utils
 
@@ -45,7 +45,8 @@ def overview(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
     status = (
         "true"
-        if connection_manager.host_is_up(compute.type, compute.hostname) is True else "false"
+        if connection_manager.host_is_up(compute.type, compute.hostname) is True
+        else "false"
     )
 
     conn = wvmHostDetails(
@@ -82,9 +83,7 @@ def instances(request, compute_id):
     )
 
     return render(
-        request,
-        "computes/instances.html",
-        {"compute": compute, "instances": instances}
+        request, "computes/instances.html", {"compute": compute, "instances": instances}
     )
 
 
@@ -139,30 +138,9 @@ def compute_graph(request, compute_id):
     :param compute_id:
     :return:
     """
-    compute = get_object_or_404(Compute, pk=compute_id)
-    try:
-        conn = wvmHostDetails(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-        )
-        current_time = timezone.now().strftime("%H:%M:%S")
-        cpu_usage = conn.get_cpu_usage()
-        mem_usage = conn.get_memory_usage()
-        conn.close()
-    except libvirtError:
-        cpu_usage = {"usage": 0}
-        mem_usage = {"usage": 0}
-        current_time = 0
+    comp_mgr = ComputeManager(compute_id)
+    data = comp_mgr.compute_graph()
 
-    data = json.dumps(
-        {
-            "cpudata": cpu_usage["usage"],
-            "memdata": mem_usage,
-            "timeline": current_time,
-        }
-    )
     response = HttpResponse()
     response["Content-Type"] = "text/javascript"
     response.write(data)
@@ -178,31 +156,8 @@ def get_compute_disk_buses(request, compute_id, arch, machine, disk):
     :param disk:
     :return:
     """
-    data = dict()
-    compute = get_object_or_404(Compute, pk=compute_id)
-    try:
-        conn = wvmConnect(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-        )
-
-        disk_device_types = conn.get_disk_device_types(arch, machine)
-
-        if disk in disk_device_types:
-            if disk == "disk":
-                data["bus"] = sorted(disk_device_types)
-            elif disk == "cdrom":
-                data["bus"] = ["ide", "sata", "scsi"]
-            elif disk == "floppy":
-                data["bus"] = ["fdc"]
-            elif disk == "lun":
-                data["bus"] = ["scsi"]
-    except libvirtError:
-        pass
-
-    return HttpResponse(json.dumps(data))
+    comp_mgr = ComputeManager(compute_id)
+    return HttpResponse(comp_mgr.get_disk_buses(arch, machine, disk))
 
 
 def get_compute_machine_types(request, compute_id, arch):
@@ -212,20 +167,8 @@ def get_compute_machine_types(request, compute_id, arch):
     :param arch:
     :return:
     """
-    data = dict()
-    try:
-        compute = get_object_or_404(Compute, pk=compute_id)
-        conn = wvmConnect(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-        )
-        data["machines"] = conn.get_machine_types(arch)
-    except libvirtError:
-        pass
-
-    return HttpResponse(json.dumps(data))
+    comp_mgr = ComputeManager(compute_id)
+    return HttpResponse(comp_mgr.get_machine_types(arch))
 
 
 def get_compute_video_models(request, compute_id, arch, machine):
@@ -236,20 +179,8 @@ def get_compute_video_models(request, compute_id, arch, machine):
     :param machine:
     :return:
     """
-    data = dict()
-    try:
-        compute = get_object_or_404(Compute, pk=compute_id)
-        conn = wvmConnect(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-        )
-        data["videos"] = conn.get_video_models(arch, machine)
-    except libvirtError:
-        pass
-
-    return HttpResponse(json.dumps(data))
+    comp_mgr = ComputeManager(compute_id)
+    return HttpResponse(comp_mgr.get_video_models(arch, machine))
 
 
 def get_dom_capabilities(request, compute_id, arch, machine):
@@ -260,18 +191,88 @@ def get_dom_capabilities(request, compute_id, arch, machine):
     :param machine:
     :return:
     """
-    data = dict()
-    try:
-        compute = get_object_or_404(Compute, pk=compute_id)
-        conn = wvmConnect(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-        )
-        data["videos"] = conn.get_disk_device_types(arch, machine)
-        data["bus"] = conn.get_disk_device_types(arch, machine)
-    except libvirtError:
-        pass
+    comp_mgr = ComputeManager(compute_id)
+    return HttpResponse(comp_mgr.get_dom_capabilities(arch, machine))
 
-    return HttpResponse(json.dumps(data))
+
+class ComputeManager:
+    def __init__(self, compute_id):
+        self.compute = get_object_or_404(Compute, pk=compute_id)
+        self.conn = wvmConnect(
+            self.compute.hostname,
+            self.compute.login,
+            self.compute.password,
+            self.compute.type,
+        )
+
+    def get_video_models(self, arch, machine):
+        data = dict()
+        try:
+            data["videos"] = self.conn.get_video_models(arch, machine)
+        except libvirtError:
+            pass
+
+        return json.dumps(data)
+
+    def get_dom_capabilities(self, arch, machine):
+        data = dict()
+        try:
+            data["videos"] = self.conn.get_disk_device_types(arch, machine)
+            data["bus"] = self.conn.get_disk_device_types(arch, machine)
+        except libvirtError:
+            pass
+
+        return json.dumps(data)
+
+    def get_machine_types(self, arch):
+        data = dict()
+        try:
+            data["machines"] = self.conn.get_machine_types(arch)
+        except libvirtError:
+            pass
+
+        return json.dumps(data)
+
+    def get_disk_buses(self, arch, machine, disk):
+        data = dict()
+        try:
+            disk_device_types = self.conn.get_disk_device_types(arch, machine)
+
+            if disk in disk_device_types:
+                if disk == "disk":
+                    data["bus"] = sorted(disk_device_types)
+                elif disk == "cdrom":
+                    data["bus"] = ["ide", "sata", "scsi"]
+                elif disk == "floppy":
+                    data["bus"] = ["fdc"]
+                elif disk == "lun":
+                    data["bus"] = ["scsi"]
+        except libvirtError:
+            pass
+
+        return json.dumps(data)
+
+    def compute_graph(self):
+        try:
+            conn = wvmHostDetails(
+                self.compute.hostname,
+                self.compute.login,
+                self.compute.password,
+                self.compute.type,
+            )
+            current_time = timezone.now().strftime("%H:%M:%S")
+            cpu_usage = conn.get_cpu_usage()
+            mem_usage = conn.get_memory_usage()
+            conn.close()
+        except libvirtError:
+            cpu_usage = {"usage": 0}
+            mem_usage = {"usage": 0}
+            current_time = 0
+
+        return json.dumps(
+            {
+                "cpudata": cpu_usage["usage"],
+                "memdata": mem_usage,
+                "timeline": current_time,
+            }
+        )

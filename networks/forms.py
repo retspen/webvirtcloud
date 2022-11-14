@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 class AddNetPool(forms.Form):
     name = forms.CharField(
-        error_messages={"required": _("No pool name has been entered")}, 
+        error_messages={"required": _("No pool name has been entered")},
         max_length=20
     )
     subnet = forms.CharField(

@@ -173,8 +173,7 @@ def email_otp(request):
             send_email_with_otp(user, device)
 
         messages.success(
-            request,
-            _("OTP Sent to %(email)s") % {"email": form.cleaned_data["email"]}
+            request, _("OTP Sent to %(email)s") % {"email": form.cleaned_data["email"]}
         )
         return redirect("accounts:login")
 
@@ -195,12 +194,8 @@ def admin_email_otp(request, user_id):
     if user.email != "":
         send_email_with_otp(user, device)
         messages.success(
-            request,
-            _("OTP QR code was emailed to user %(user)s") % {"user": user}
+            request, _("OTP QR code was emailed to user %(user)s") % {"user": user}
         )
     else:
-        messages.error(
-            request,
-            _("User email not set, failed to send QR code")
-        )
+        messages.error(request, _("User email not set, failed to send QR code"))
     return redirect("accounts:account", user.id)

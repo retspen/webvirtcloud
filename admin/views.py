@@ -1,3 +1,5 @@
+from accounts.models import Instance, UserAttributes, UserInstance
+from appsettings.settings import app_settings
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -6,9 +8,6 @@ from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
-
-from accounts.models import UserAttributes, UserInstance, Instance
-from appsettings.settings import app_settings
 from logs.models import Logs
 
 from . import forms
@@ -149,8 +148,7 @@ def user_update_password(request, pk):
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
             messages.success(
-                request,
-                _("Password changed for %(user)s") % {"user": user.username}
+                request, _("Password changed for %(user)s") % {"user": user.username}
             )
             return redirect("admin:user_list")
         else:

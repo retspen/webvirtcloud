@@ -1,14 +1,12 @@
 import json
 import socket
 
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, Http404
-from libvirt import libvirtError
-
 from accounts.models import UserInstance, UserSSHKey
 from computes.models import Compute
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, render
+from libvirt import libvirtError
 from vrtManager.instance import wvmInstance
-
 
 OS_VERSIONS = ["latest", ""]
 OS_UUID = "iid-dswebvirtcloud"
@@ -100,11 +98,7 @@ def get_vdi_url(request, compute_id, vname):
 
     try:
         conn = wvmInstance(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-            vname
+            compute.hostname, compute.login, compute.password, compute.type, vname
         )
 
         fqdn = get_hostname_by_ip(compute.hostname)
