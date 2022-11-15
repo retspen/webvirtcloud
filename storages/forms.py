@@ -38,22 +38,22 @@ class AddStgPool(forms.Form):
     def clean_target(self):
         storage_type = self.cleaned_data["stg_type"]
         target = self.cleaned_data["target"]
-        have_symbol = re.match("^[a-zA-Z0-9/]+$", target)
-        if storage_type == "dir" or storage_type == "netfs":
-            if not have_symbol:
-                raise forms.ValidationError(
-                    _("The target must not contain any special characters")
-                )
-        if storage_type == "dir" or storage_type == "netfs":
-            if not target:
-                raise forms.ValidationError(_("No path has been entered"))
+        have_symbol = re.match("^[^-][a-zA-Z0-9/_-]+$", target) and not re.match(
+            ".*/-", target
+        )
+        if storage_type in ["dir", "netfs"] and not have_symbol:
+            raise forms.ValidationError(
+                _("The target must not contain any special characters")
+            )
+        if storage_type in ["dir", "netfs"] and not target:
+            raise forms.ValidationError(_("No path has been entered"))
         return target
 
     def clean_source(self):
         storage_type = self.cleaned_data["stg_type"]
         source = self.cleaned_data["source"]
         have_symbol = re.match("^[a-zA-Z0-9\/]+$", source)
-        if storage_type == "logical" or storage_type == "netfs":
+        if storage_type in ["logical", "netfs"]:
             if not source:
                 raise forms.ValidationError(_("No device or path has been entered"))
             if not have_symbol:
