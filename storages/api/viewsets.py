@@ -135,10 +135,7 @@ class VolumeViewSet(viewsets.ViewSet):
         )
         state = conn.is_active()
 
-        if state:
-            volume_queryset = conn.get_volume_details(pk)
-        else:
-            volume_queryset = None
+        volume_queryset = conn.get_volume_details(pk) if state else None
         conn.close()
         serializer = VolumeSerializer(
             volume_queryset, many=False, context={"request": request}
