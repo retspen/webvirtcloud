@@ -1,0 +1,32 @@
+@import "dev/scss/bootswatch/zephyr/variables";
+
+// Breadcrumbs
+
+$breadcrumb-padding-y:              .375rem !default;
+$breadcrumb-padding-x:              .75rem !default;
+
+$link-decoration:                   none !default;
+
+// Navbar
+$nav-link-padding-x:                1.5rem;
+
+$navbar-padding-y:                  .7rem;
+
+// Breadcrumbs
+
+$breadcrumb-divider:                quote("|");
+
+
+// List group
+
+$list-group-item-padding-y:         .75rem;
+$list-group-item-padding-x:         1rem;
+
+
+// Cards
+$card-spacer-x:                     1rem;
+$card-cap-padding-y:                .75rem;
+$card-cap-padding-x:                1rem;
+
+
+$secondary:     $gray-400;
