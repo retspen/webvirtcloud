@@ -1,4 +1,4 @@
-Django==3.2.17
+Django==3.2.18
 django_bootstrap5==22.2
 django-login-required-middleware==0.9.0
 django-otp==1.1.4
