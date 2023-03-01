@@ -6,6 +6,12 @@
 
 {% block page_heading %}{% trans "Logs" %}{% endblock page_heading %}
 
+{% block page_heading_extra %}
+    {% include 'search_block.html' %}
+{% endblock page_heading_extra %}
+
+
+
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
@@ -28,7 +34,7 @@
                             <th scope="col">{% trans "Message" %}</th>
                             </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="searchable">
                         {% for log in logs %}
                             <tr>
                                 <td>{{ log.id }}</td>
@@ -47,3 +53,6 @@
     </div>
 </div>
 {% endblock %}
+{% block script %}
+    <script src="/static/js/filter-table.js"></script>
+{% endblock script %}
