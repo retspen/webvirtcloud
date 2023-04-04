@@ -13,6 +13,16 @@
                 {% trans "Manage Snapshots" %}
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#externalSnapshot" type="button" role="tab" aria-controls="externalSnapshot" aria-selected="false">
+                External Snapshot
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#manageExternalSnapshots" type="button" role="tab" aria-controls="manageExternalSnapshots" aria-selected="false">
+                Manage External Snapshots
+            </button>
+        </li>
     </ul>
     <!-- Tab panes -->
     <div class="tab-content">
@@ -29,7 +39,11 @@
                         <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="14">
                         <span class="input-group-text">|</span>
                         <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
-                        <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
+                        {% if external_snapshots|length > 0 %}
+                            <input type="submit" class="btn btn-lg btn-success disabled float-end" name="snapshot" value="{% trans "Take Snapshot" %}">
+                        {% else %}
+                            <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
+                        {% endif %}
                     </div>
             </form>
             <div class="clearfix"></div>
@@ -56,11 +70,11 @@
                                         {% csrf_token %}
                                         <input type="hidden" name="name" value="{{ snap.name }}">
                                         {% if instance.status == 5 %}
-                                            <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
+                                            <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
                                                     <span class="fa fa-download"></span>
                                             </button>
                                         {% else %}
-                                            <button type="button" class="btn btn-sm btn-secondary disabled"
+                                            <button type="button" class="btn btn-sm btn-primary disabled"
                                                     title="{% trans "To restore snapshots you need Power Off the instance." %}">
                                                     <span class="fa fa-download"></span>
                                             </button>
@@ -82,6 +96,87 @@
                 </div>
             {% else %}
                 <p>{% trans "You do not have any snapshots" %}</p>
+            {% endif %}
+        </div>
+        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="externalSnapshot">
+            {% if instance.status != 5 %}
+            <p>You can get external snapshots within this tab.</p>
+            <p class="text-primary">External snapshots are experimental in this stage, use it if you know what you are doing.</p>
+            {% else %}
+                <p>Create an external snapshot</p>
+            {% endif %}
+            <p class="text-danger">Give your External Snapshot a <b>distinctive description</b> so it wouldn't get mixed with other snapshots.</p>
+            <form action="{% url 'instances:create_external_snapshot' instance.id %}" method="post" role="form" aria-label="Create snapshot form">
+                {% csrf_token %}
+                <div class="mb-3" style="white-space:pre-line">
+                    <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="14">
+                    <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
+                    {% if external_snapshots|length > 0 or instance.snapshots|length > 0 %}
+                        <p class="text-danger">WebVirtCloud supports only one External Snapshot at the moment.</p>
+                        <input type="submit" class="btn btn-lg btn-success disabled float-end" name="snapshot" value="{% trans "Take Snapshot" %}">
+                    {% else %}
+                        <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
+                    {% endif %}
+                    
+                </div>
+            </form>
+            <div class="clearfix"></div>
+        </div>
+        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="manageExternalSnapshots">
+            {% if external_snapshots %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <th scope="col">Name</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Description</th>
+                        <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
+                    </thead>
+                    <tbody>
+                        {% for external_snapshot in external_snapshots %}
+                            <tr>
+                            {% for snapshot_cols in external_snapshot %}
+                                <td>{{snapshot_cols}}</td>
+                            {% endfor %}
+                            <td style="width:30px;">
+                                <form action="{% url 'instances:revert_external_snapshot' instance.id %}" method="post" role="form" aria-label="Restore external snapshot form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="name" value="{{ external_snapshot.0 }}">
+                                    <input type="hidden" name="date" value="{{ external_snapshot.1 }}">
+                                    <input type="hidden" name="desc" value="{{ external_snapshot.2 }}">
+                            {% if instance.status == 5 %}
+                                    <button type="submit" class="btn btn-sm btn-primary" name="revert_external_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('You are going to lose your unsaved work by reverting to this snapshot state. Are you sure?')">
+                                            <span class="fa fa-download"></span>
+                                    </button>
+                            {% else %}
+                                    <button type="button" class="btn btn-sm btn-primary disabled"
+                                            title="{% trans "To restore snapshots you need Power Off the instance." %}">
+                                            <span class="fa fa-download"></span>
+                                    </button>
+                            {% endif %}
+                                </form>
+                            </td>
+                            <td style="width:30px;">
+                                <form action="{% url 'instances:delete_external_snapshot' instance.id %}" method="post" role="form" aria-label="Delete external snapshot form">{% csrf_token %}
+                                    <input type="hidden" name="name" value="{{ external_snapshot.0 }}">
+                                    {% if instance.status != 5 %}
+                                    <button type="submit" class="btn btn-sm btn-danger" name="delete_external_snapshot" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('You are about to delete this snapshot and merge it with base image. Are you sure?')">
+                                        {% icon 'trash' %}
+                                    </button>
+                                    {% else %}
+                                    <button type="submit" class="btn btn-sm btn-danger disabled" title="{% trans 'Delete Snapshot' %}">
+                                        {% icon 'trash' %}
+                                    </button>
+                                    {% endif %}
+                                </form>
+                            </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else%}
+                    <p>{% trans "You do not have any snapshots" %}</p>
             {% endif %}
         </div>
     </div>

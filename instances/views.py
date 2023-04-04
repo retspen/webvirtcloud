@@ -146,7 +146,9 @@ def instance(request, pk):
         instance.drbd = drbd_status(request, pk)
         instance.save()
 
-    return render(request, "instance.html", locals())
+    external_snapshots = get_external_snapshots(request,pk)
+
+    return render(request, "instance.html", locals(),)
 
 
 def status(request, pk):
@@ -1014,6 +1016,67 @@ def revert_snapshot(request, pk):
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
+def create_external_snapshot(request, pk):
+    instance = get_instance(request.user, pk)
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        name = request.POST.get("name", "")
+        desc = request.POST.get("description", "")
+        instance.proxy.create_external_snapshot(name, instance, desc=desc)
+        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
+        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
+
+def get_external_snapshots(request, pk):
+    instance = get_instance(request.user, pk)
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        external_snapshots = instance.proxy.get_external_snapshots()
+        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
+        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    return external_snapshots
+
+def revert_external_snapshot(request, pk):
+    instance = get_instance(request.user, pk)
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        name = request.POST.get("name", "")
+        date = request.POST.get("date", "")
+        desc = request.POST.get("desc", "")
+        instance.proxy.revert_external_snapshot(name, instance, date, desc)
+        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
+        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
+
+def delete_external_snapshot(request, pk):
+    instance = get_instance(request.user, pk)
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        name = request.POST.get("name", "")
+        instance.proxy.delete_external_snapshot(name, instance)
+        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
+        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
 
 @superuser_only
 def set_vcpu(request, pk):
