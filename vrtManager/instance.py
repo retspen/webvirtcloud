@@ -23,6 +23,9 @@ try:
         VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY,
         VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
         VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
+        VIR_DOMAIN_BLOCK_COMMIT_DELETE,
+        VIR_DOMAIN_BLOCK_COMMIT_ACTIVE,
+        VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT,
         libvirtError,
     )
     from libvirt_qemu import VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, qemuAgentCommand
@@ -453,6 +456,7 @@ class wvmInstance(wvmConnect):
                 disk_format = used_size = disk_size = None
                 disk_cache = disk_io = disk_discard = disk_zeroes = "default"
                 readonly = shareable = serial = None
+                backing_file = None
 
                 device = disk.xpath("@device")[0]
                 if device == "disk":
@@ -484,6 +488,9 @@ class wvmInstance(wvmConnect):
                         with contextlib.suppress(Exception):
                             disk_zeroes = disk.xpath("driver/@detect_zeroes")[0]
 
+                        with contextlib.suppress(Exception):
+                            backing_file = disk.xpath("backingStore/source/@file")[0]
+
                         readonly = bool(disk.xpath("readonly"))
                         shareable = bool(disk.xpath("shareable"))
                         serial = (
@@ -513,6 +520,7 @@ class wvmInstance(wvmConnect):
                                 "storage": storage,
                                 "path": src_file,
                                 "format": disk_format,
+                                "backing_file": backing_file,
                                 "size": disk_size,
                                 "used": used_size,
                                 "cache": disk_cache,
@@ -1309,21 +1317,15 @@ class wvmInstance(wvmConnect):
         xml += self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         xml += """<active>0</active>
                   </domainsnapshot>"""
-        # 
-        # flag number for libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY
-        # is 16 (0x10; 1 << 4)
-        #
+
         self._snapshotCreateXML(xml, VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY)
 
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        for disks in tree.findall("devices/disk"):
-            if disks.get('device') == "disk":
-                backingStore = disks.find("backingStore")
-                if backingStore is not None:
-                    temp_backing_file = backingStore.find('source').get('file')
-                    vol_base = self.get_volume_by_path(temp_backing_file)
-                    pool = vol_base.storagePoolLookupByVolume()
-                    pool.refresh(0)
+        disk_info = self.get_disk_devices()
+        for disk in disk_info:
+            backing_file = disk["backing_file"]
+            vol_base = self.get_volume_by_path(backing_file)
+            pool = vol_base.storagePoolLookupByVolume()
+            pool.refresh(0)
     
     def get_external_snapshots(self):
         external_snapshots = []
@@ -1337,52 +1339,20 @@ class wvmInstance(wvmConnect):
         return external_snapshots
     
     def delete_external_snapshot(self, name, instance):
-
-        base_xml = ElementTree.fromstring(self._XMLDesc(0))
-        for disk in base_xml.findall('devices/disk'):
-            if disk.get('device') == 'disk':
-                backingStore = disk.find('backingStore')
-                if backingStore is not None:
-                    if backingStore.find('source') is not None:
-                        target_dev = disk.find('target').get('dev')
-                        backing_file = backingStore.find('source').get('file')
-                        source_file = disk.find('source').get('file')
-                        self.instance.blockCommit(target_dev, backing_file, source_file, flags=4|2)
-                        while True:
-                            info = self.instance.blockJobInfo(target_dev, 0)
-                            if info.get('cur') == info.get('end'):
-                                self.instance.blockJobAbort(target_dev,flags=2)
-                                break
-                        
-        snap = self.instance.snapshotLookupByName(name, 0)
-        snapXML = ElementTree.fromstring(snap.getXMLDesc(0))
-        disks = []
-        for disk_backup in snapXML.findall('inactiveDomain/devices/disk'):
-            if disk_backup.get('device') == 'disk':
-                disk_dict = {}
-                if disk_backup.find('source') is not None:
-                    disk_dict['backing_file'] = disk_backup.find('source').get('file')
-                if disk_backup.find('driver') is not None:
-                    disk_dict['driver_name'] = disk_backup.find('driver').get('name')
-                    disk_dict['driver_type'] = disk_backup.find('driver').get('type')
-                if disk_backup.find('target') is not None:
-                    disk_dict['target_dev'] = disk_backup.find('target').get('dev')
-                    disk_dict['target_bus'] = disk_backup.find('target').get('bus')
-                if disk_backup.find('boot') is not None:
-                    disk_dict['boot_order'] = disk_backup.find('boot').get('order')     
-                disks.append(disk_dict)
-
-        for disk in disks:
-            self.instance.updateDeviceFlags("""<disk type='file' device='disk'>
-    <driver name='{}' type='{}'/>
-    <source file='{}'/>
-    <target dev='{}' bus='{}'/>
-    <boot order='{}'/>
-</disk>""".format(disk["driver_name"],disk["driver_type"],disk["backing_file"],disk["target_dev"],disk["target_bus"],disk["boot_order"]))
+        disk_info = self.get_disk_devices()
+        for disk in disk_info:
+            target_dev = disk["dev"]
+            backing_file = disk["backing_file"]
+            source_file = disk["path"]
+            self.instance.blockCommit(target_dev, backing_file, source_file, 
+                                                  flags=VIR_DOMAIN_BLOCK_COMMIT_DELETE|VIR_DOMAIN_BLOCK_COMMIT_ACTIVE)
+            while True:
+                info = self.instance.blockJobInfo(target_dev, 0)
+                if info.get('cur') == info.get('end'):
+                    self.instance.blockJobAbort(target_dev,flags=VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT)
+                    break
 
         snap = self.instance.snapshotLookupByName(name, 0)
-        # flag number for delete snapshot metadata only
-        # is 2 (0x2; 1 << 1)
         snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
     
     def revert_external_snapshot(self, name, instance, date, desc):
@@ -1404,29 +1374,31 @@ class wvmInstance(wvmConnect):
                     disk_dict['boot_order'] = disk_backup.find('boot').get('order')     
                 disks.append(disk_dict)
         
-        # flag number for delete snapshot metadata only
-        # is 2 (0x2; 1 << 1)
         snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
-        base_xml = ElementTree.fromstring(self._XMLDesc(0))
-        for disk in base_xml.findall('devices/disk'):
-            if disk.get('device') == 'disk':
-                backingStore = disk.find('backingStore')
-                if backingStore is not None:
-                    if backingStore.find('source') is not None:
-                        vol_base = self.get_volume_by_path(backingStore.find('source').get('file'))
-                        pool = vol_base.storagePoolLookupByVolume()
-                        pool.refresh(0)
-                        vol_snap = self.get_volume_by_path(disk.find('source').get('file'))
-                        vol_snap.wipe(0)
-                        vol_snap.delete(0)
+        disk_info = self.get_disk_devices()
+        for disk in disk_info:
+            source_file = disk["path"]
+            backing_file = disk["backing_file"]
+            vol_base = self.get_volume_by_path(backing_file)
+            pool = vol_base.storagePoolLookupByVolume()
+            pool.refresh(0)
+            vol_snap = self.get_volume_by_path(source_file)
+            vol_snap.wipe(0)
+            vol_snap.delete(0)
 
         for disk in disks:
-            self.instance.updateDeviceFlags("""<disk type='file' device='disk'>
-    <driver name='{}' type='{}'/>
-    <source file='{}'/>
-    <target dev='{}' bus='{}'/>
-    <boot order='{}'/>
-</disk>""".format(disk["driver_name"],disk["driver_type"],disk["backing_file"],disk["target_dev"],disk["target_bus"],disk["boot_order"]))
+            self.instance.updateDeviceFlags(
+                """<disk type='file' device='disk'>
+                    <driver name='{}' type='{}'/>
+                    <source file='{}'/>
+                    <target dev='{}' bus='{}'/>
+                    <boot order='{}'/>
+                    </disk>""".format(disk["driver_name"],
+                               disk["driver_type"],
+                               disk["backing_file"],
+                               disk["target_dev"],
+                               disk["target_bus"],
+                               disk["boot_order"]))
 
         self.create_external_snapshot(name, instance, date, desc)
 

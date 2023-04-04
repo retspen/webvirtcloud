@@ -1028,8 +1028,8 @@ def create_external_snapshot(request, pk):
         name = request.POST.get("name", "")
         desc = request.POST.get("description", "")
         instance.proxy.create_external_snapshot(name, instance, desc=desc)
-        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
-        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        msg = _("Create external snapshot: %(snap)s") % {"snap": name}
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
 
 def get_external_snapshots(request, pk):
@@ -1042,8 +1042,6 @@ def get_external_snapshots(request, pk):
         "instances.snapshot_instances"
     ):
         external_snapshots = instance.proxy.get_external_snapshots()
-        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
-        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return external_snapshots
 
 def revert_external_snapshot(request, pk):
@@ -1059,8 +1057,8 @@ def revert_external_snapshot(request, pk):
         date = request.POST.get("date", "")
         desc = request.POST.get("desc", "")
         instance.proxy.revert_external_snapshot(name, instance, date, desc)
-        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
-        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        msg = _("Revert external snapshot: %(snap)s") % {"snap": name}
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
 
 def delete_external_snapshot(request, pk):
@@ -1074,8 +1072,8 @@ def delete_external_snapshot(request, pk):
     ):
         name = request.POST.get("name", "")
         instance.proxy.delete_external_snapshot(name, instance)
-        #msg = _("Create snapshot: %(snap)s") % {"snap": name}
-        #addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        msg = _("Delete external snapshot: %(snap)s") % {"snap": name}
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
 
 @superuser_only
