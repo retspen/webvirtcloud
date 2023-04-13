@@ -20,7 +20,9 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM,
+from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
+                     VIR_DOMAIN_UNDEFINE_NVRAM,
+                     VIR_DOMAIN_START_PAUSED,
                      libvirtError)
 from logs.views import addlogmsg
 from vrtManager import util
@@ -145,8 +147,6 @@ def instance(request, pk):
     if app_settings.VM_DRBD_STATUS == "True":
         instance.drbd = drbd_status(request, pk)
         instance.save()
-
-    external_snapshots = get_external_snapshots(request,pk)
 
     return render(request, "instance.html", locals(),)
 
@@ -1016,6 +1016,7 @@ def revert_snapshot(request, pk):
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
+
 def create_external_snapshot(request, pk):
     instance = get_instance(request.user, pk)
     allow_admin_or_not_template = (
@@ -1027,10 +1028,11 @@ def create_external_snapshot(request, pk):
     ):
         name = request.POST.get("name", "")
         desc = request.POST.get("description", "")
-        instance.proxy.create_external_snapshot(name, instance, desc=desc)
+        instance.proxy.create_external_snapshot("s1." + name, instance, desc=desc)
         msg = _("Create external snapshot: %(snap)s") % {"snap": name}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
-    return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
+    return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
+
 
 def get_external_snapshots(request, pk):
     instance = get_instance(request.user, pk)
@@ -1043,6 +1045,7 @@ def get_external_snapshots(request, pk):
     ):
         external_snapshots = instance.proxy.get_external_snapshots()
     return external_snapshots
+
 
 def revert_external_snapshot(request, pk):
     instance = get_instance(request.user, pk)
@@ -1059,10 +1062,12 @@ def revert_external_snapshot(request, pk):
         instance.proxy.revert_external_snapshot(name, instance, date, desc)
         msg = _("Revert external snapshot: %(snap)s") % {"snap": name}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
-    return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
+    return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
+
 
 def delete_external_snapshot(request, pk):
     instance = get_instance(request.user, pk)
+    instance_state = True if instance.proxy.get_status() == 5 else False
     allow_admin_or_not_template = (
         request.user.is_superuser or request.user.is_staff or not instance.is_template
     )
@@ -1071,10 +1076,18 @@ def delete_external_snapshot(request, pk):
         "instances.snapshot_instances"
     ):
         name = request.POST.get("name", "")
-        instance.proxy.delete_external_snapshot(name, instance)
-        msg = _("Delete external snapshot: %(snap)s") % {"snap": name}
-        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
-    return redirect(request.META.get("HTTP_REFERER") + "#manageExternalSnapshots")
+
+        instance.proxy.start(VIR_DOMAIN_START_PAUSED) if instance_state else None
+
+        try:
+            instance.proxy.delete_external_snapshot(name)
+            msg = _("Delete external snapshot: %(snap)s") % {"snap": name}
+            addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        finally:
+            instance.proxy.force_shutdown() if instance_state else None
+
+    return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
+
 
 @superuser_only
 def set_vcpu(request, pk):
