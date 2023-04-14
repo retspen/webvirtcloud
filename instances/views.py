@@ -1056,10 +1056,13 @@ def revert_external_snapshot(request, pk):
     if allow_admin_or_not_template and request.user.has_perm(
         "instances.snapshot_instances"
     ):
+        instance_state = True if instance.proxy.get_status() != 5 else False
         name = request.POST.get("name", "")
         date = request.POST.get("date", "")
         desc = request.POST.get("desc", "")
-        instance.proxy.revert_external_snapshot(name, instance, date, desc)
+        instance.proxy.force_shutdown() if instance_state else None
+        instance.proxy.revert_external_snapshot(name, date, desc)
+        instance.proxy.start() if instance_state else None
         msg = _("Revert external snapshot: %(snap)s") % {"snap": name}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")

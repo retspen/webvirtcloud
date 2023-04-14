@@ -1335,6 +1335,7 @@ class wvmInstance(wvmConnect):
                 info = self.instance.blockJobInfo(target_dev, 0)
                 if info.get('cur') == info.get('end'):
                     self.instance.blockJobAbort(target_dev,flags=VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT)
+                    time.sleep(2)
                     break
             # Check again pool for snapshot delta volume; if it exist, remove it manually
             with contextlib.suppress(libvirtError):
