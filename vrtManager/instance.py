@@ -26,6 +26,7 @@ try:
         VIR_DOMAIN_BLOCK_COMMIT_DELETE,
         VIR_DOMAIN_BLOCK_COMMIT_ACTIVE,
         VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT,
+        VIR_DOMAIN_START_PAUSED,
         libvirtError,
     )
     from libvirt_qemu import VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, qemuAgentCommand
@@ -1298,12 +1299,12 @@ class wvmInstance(wvmConnect):
     def create_external_snapshot(self, name, date=None, desc=None):
         creation_time = time.time()
         state = "shutoff" if self.get_status() == 5 else "running"
+        #<seclabel type='none' model='dac' relabel='no'/>
         xml = """<domainsnapshot>
                      <name>%s</name>
                      <description>%s</description>
                      <state>%s</state>
                      <creationTime>%d</creationTime>
-                     <seclabel type='none' model='dac' relabel='no'/>
                      """ % (
             name,
             desc,
@@ -1349,24 +1350,29 @@ class wvmInstance(wvmConnect):
 
     
     def revert_external_snapshot(self, name, date, desc):
+        pool = None
         snap = self.instance.snapshotLookupByName(name, 0)
         snap_xml = snap.getXMLDesc(0)
         snapXML = ElementTree.fromstring(snap_xml)
         disks = snapXML.findall('inactiveDomain/devices/disk')
         if not disks: disks = snapXML.findall('domain/devices/disk')
-        
+
+        self.start(flags=VIR_DOMAIN_START_PAUSED) if self.get_status() == 5 else None
+
         disk_info = self.get_disk_devices()
         for disk in disk_info:
             vol_snap = self.get_volume_by_path(disk["path"])
             pool = vol_snap.storagePoolLookupByVolume()
             pool.refresh(0)
             vol_snap.delete(0)
+        self.force_shutdown()
 
         snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
         for disk in disks:
             self.instance.updateDeviceFlags(ElementTree.tostring(disk).decode("UTF-8"))
-
+        name = name.replace("s1", "s2")
         self.create_external_snapshot(name, date, desc)
+        pool.refresh() if pool else None
 
     def get_snapshot(self, flag=VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
         snapshots = []
