@@ -68,7 +68,7 @@
             </div>
             <div class="tab-pane tab-pane-bordered" id="powerforce" role="tabpanel" aria-labelledby="powerforce-tab">
                 <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
-                <form action="{% url 'instances:force_off' instance.id %}" method="post" role="form" aria-label="Force to shotdown instance form">
+                <form action="{% url 'instances:force_off' instance.id %}" method="post" role="form" aria-label="Force to shutdown instance form">
                     {% csrf_token %}
                     <input type="submit" name="powerforce" class="btn btn-lg btn-success float-end" value="{% trans "Force Off" %}">
                     <div class="clearfix"></div>
@@ -119,7 +119,7 @@
                         <p>{% trans "Template instance cannot be started." %}</p>
                         <input type="submit" name="poweron" class="btn btn-lg btn-success float-end disabled" value="{% trans "Power On" %}">
                     {% else %}
-                        <input type="submit" name="poweron" class="btn btn-lg btn-success float-end" value="{% trans "Power On" %}">
+                        <input type="submit" name="poweron" class="btn btn-lg btn-success float-end" onclick="showPleaseWaitDialog()" value="{% trans "Power On" %}">
                     {% endif %}
                     <div class="clearfix"></div>
                 </form>
