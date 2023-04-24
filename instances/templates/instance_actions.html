@@ -7,7 +7,7 @@
                 {% icon 'clone' %}
             </a>
         {% else %}
-            <a class="btn btn-sm btn-secondary" href="{% url 'instances:poweron' instance.id %}" title="{% trans "Power On" %}">
+            <a class="btn btn-sm btn-secondary" href="{% url 'instances:poweron' instance.id %}" onclick="showPleaseWaitDialog()" title="{% trans "Power On" %}">
                 {% icon 'play' %}
             </a>
         {% endif %}
@@ -32,7 +32,7 @@
         </button>
     {% endif %}
     {% if instance.proxy.instance.info.0 == 1 %}
-        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power On" %}">{% icon 'play' %}</a>
+        <a class="btn btn-sm btn-secondary disabled" onclick="showPleaseWaitDialog()" title="{% trans "Power On" %}">{% icon 'play' %}</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'instances:suspend' instance.id %}"
             title="{% trans "Suspend" %}">{% icon 'pause' %}</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'instances:poweroff' instance.id %}">{% icon 'power-off' %}</a>

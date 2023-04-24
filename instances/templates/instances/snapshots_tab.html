@@ -5,7 +5,12 @@
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance snapshot menu">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#takesnapshot" type="button" role="tab" aria-controls="takesnapshot" aria-selected="true">
-                {% trans "Take Snapshot" %}
+                {% trans "Take Snapshot - Internal" %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#takeextsnapshot" type="button" role="tab" aria-controls="externalSnapshot" aria-selected="false">
+                {% trans "Take Snapshot - External" %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -29,60 +34,117 @@
                         <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="14">
                         <span class="input-group-text">|</span>
                         <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
-                        <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
+                        {% if instance.external_snapshots|length > 0 %}
+                            <input type="submit" class="btn btn-lg btn-success disabled float-end" name="snapshot" value="{% trans "Take Snapshot" %}">
+                        {% else %}
+                            <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
+                        {% endif %}
                     </div>
             </form>
             <div class="clearfix"></div>
-        </div>
+        </div> <!-- Tab pane - takesnapshot -->
+        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="takeextsnapshot">
+            {% if instance.status != 5 %}
+            <p>{% trans "You can get external snapshots within this tab." %}</p>
+            <p class="text-primary">{% trans "External snapshots are experimental in this stage, use it if you know what you are doing. It may require manual intervention." %}</p>
+            {% else %}
+                <p>{% trans "Create an external snapshot" %}</p>
+            {% endif %}
+            <p class="text-danger">{% trans "Give your External Snapshot a <b>distinctive description</b> so it wouldn't get mixed with other snapshots." %}</p>
+            <form action="{% url 'instances:create_external_snapshot' instance.id %}" method="post" role="form" aria-label="Create snapshot form">
+                {% csrf_token %}
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="14">
+                    <span class="input-group-text">|</span>
+                    <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
+                    {% if instance.external_snapshots|length > 0 or instance.snapshots|length > 0 %}
+                        <input type="submit" class="btn btn-lg btn-success disabled float-end" name="snapshot" value="{% trans "Take Snapshot" %}">
+                    {% else %}
+                        <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
+                    {% endif %}
+                </div>
+                <p class="text-danger">{% trans "WebVirtCloud supports only one external snapshot at the moment." %}</p>
+            </form>
+            <div class="clearfix"></div>
+        </div> <!--tab pane takeextsnapshot-->
         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="managesnapshot">
-            {% if instance.snapshots %}
+            {% if instance.snapshots or instance.external_snapshots %}
                 <p>{% trans "Choose a snapshot for restore/delete" %}</p>
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <th scope="col">{% trans "Date" %}</th>
                             <th scope="col">{% trans "Name" %}</th>
-                            <th scope="col">{% trans "Description" %}</th>
+                            <th scope="col">{% trans "Type - Description" %}</th>
                             <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
                         </thead>
                         <tbody>
-                        {% for snap in instance.snapshots %}
-                            <tr>
-                                <td>{{ snap.date|date:"M d H:i:s" }}</td>
-                                <td><strong>{{ snap.name }}</strong></td>
-                                <td>{{ snap.description }}</td>
-                                <td style="width:30px;">
-                                    <form action="{% url 'instances:revert_snapshot' instance.id %}" method="post" role="form" aria-label="Restore snapshot form">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="name" value="{{ snap.name }}">
-                                        {% if instance.status == 5 %}
-                                            <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
-                                                    <span class="fa fa-download"></span>
-                                            </button>
-                                        {% else %}
-                                            <button type="button" class="btn btn-sm btn-secondary disabled"
-                                                    title="{% trans "To restore snapshots you need Power Off the instance." %}">
-                                                    <span class="fa fa-download"></span>
-                                            </button>
-                                        {% endif %}
-                                    </form>
-                                </td>
-                                <td style="width:30px;">
-                                    <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post" role="form" aria-label="Delete snapshot form">{% csrf_token %}
-                                        <input type="hidden" name="name" value="{{ snap.name }}">
-                                        <button type="submit" class="btn btn-sm btn-danger" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                            {% icon 'trash' %}
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                            {% if instance.snapshots %}
+                                {% for snap in instance.snapshots %}
+                                    <tr>
+                                        <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                        <td><strong>{{ snap.name }}</strong></td>
+                                        <td>({% trans "Internal" %}) - {{ snap.description }}</td>
+                                        <td style="width:30px;">
+                                            <form action="{% url 'instances:revert_snapshot' instance.id %}" method="post" role="form" aria-label="Restore snapshot form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                {% if instance.status == 5 %}
+                                                    <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
+                                                            <span class="fa fa-download"></span>
+                                                    </button>
+                                                {% else %}
+                                                    <button type="button" class="btn btn-sm btn-primary disabled"
+                                                            title="{% trans "To restore snapshots you need Power Off the instance." %}">
+                                                            <span class="fa fa-download"></span>
+                                                    </button>
+                                                {% endif %}
+                                            </form>
+                                        </td>
+                                        <td style="width:30px;">
+                                            <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post" role="form" aria-label="Delete snapshot form">{% csrf_token %}
+                                                <input type="hidden" name="name" value="{{ snap.name }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                    {% icon 'trash' %}
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% elif instance.external_snapshots %}
+                                {% for ext_snap in instance.external_snapshots %}
+                                    <tr>
+                                        <td>{{ ext_snap.date|date:"M d H:i:s" }}</td>
+                                        <td><strong>{{ ext_snap.name }}</strong></td>
+                                        <td>({% trans "External" %}) - {{ ext_snap.description }}</td>
+                                        <td style="width:30px;">
+                                            <form action="{% url 'instances:revert_external_snapshot' instance.id %}" method="post" role="form" aria-label="Restore external snapshot form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="name" value="{{ ext_snap.name }}">
+                                                <input type="hidden" name="date" value="{{ ext_snap.date }}">
+                                                <input type="hidden" name="desc" value="{{ ext_snap.description }}">
+                                                <button type="submit" class="btn btn-sm btn-primary" name="revert_external_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('You are going to lose your unsaved work by reverting to this snapshot state. Are you sure?')">
+                                                        <span class="fa fa-download"></span>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td style="width:30px;">
+                                            <form action="{% url 'instances:delete_external_snapshot' instance.id %}" method="post" role="form" aria-label="Delete external snapshot form">{% csrf_token %}
+                                                <input type="hidden" name="name" value="{{ ext_snap.name }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" name="delete_external_snapshot" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('You are about to delete this snapshot and merge it with base image. Are you sure?')">
+                                                    {% icon 'trash' %}
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
             {% else %}
                 <p>{% trans "You do not have any snapshots" %}</p>
             {% endif %}
-        </div>
-    </div>
-</div>
+        </div> <!--tab pane managesnapshot-->
+    </div> <!-- Tab content-->
+</div> <!-- Tab panel-->

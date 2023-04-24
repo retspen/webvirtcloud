@@ -2,6 +2,7 @@ import contextlib
 import json
 import os.path
 import time
+import subprocess
 
 try:
     from libvirt import (
@@ -18,6 +19,14 @@ try:
         VIR_MIGRATE_POSTCOPY,
         VIR_MIGRATE_UNDEFINE_SOURCE,
         VIR_MIGRATE_UNSAFE,
+        VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY,
+        VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY,
+        VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
+        VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
+        VIR_DOMAIN_BLOCK_COMMIT_DELETE,
+        VIR_DOMAIN_BLOCK_COMMIT_ACTIVE,
+        VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT,
+        VIR_DOMAIN_START_PAUSED,
         libvirtError,
     )
     from libvirt_qemu import VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, qemuAgentCommand
@@ -33,7 +42,6 @@ from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import wvmStorage, wvmStorages
-
 
 class wvmInstances(wvmConnect):
     def get_instance_status(self, name):
@@ -202,8 +210,8 @@ class wvmInstance(wvmConnect):
 
         return info_results
 
-    def start(self):
-        self.instance.create()
+    def start(self, flags=0):
+        self.instance.createWithFlags(flags)
 
     def shutdown(self):
         self.instance.shutdown()
@@ -449,6 +457,7 @@ class wvmInstance(wvmConnect):
                 disk_format = used_size = disk_size = None
                 disk_cache = disk_io = disk_discard = disk_zeroes = "default"
                 readonly = shareable = serial = None
+                backing_file = None
 
                 device = disk.xpath("@device")[0]
                 if device == "disk":
@@ -480,6 +489,9 @@ class wvmInstance(wvmConnect):
                         with contextlib.suppress(Exception):
                             disk_zeroes = disk.xpath("driver/@detect_zeroes")[0]
 
+                        with contextlib.suppress(Exception):
+                            backing_file = disk.xpath("backingStore/source/@file")[0]
+
                         readonly = bool(disk.xpath("readonly"))
                         shareable = bool(disk.xpath("shareable"))
                         serial = (
@@ -509,6 +521,7 @@ class wvmInstance(wvmConnect):
                                 "storage": storage,
                                 "path": src_file,
                                 "format": disk_format,
+                                "backing_file": backing_file,
                                 "size": disk_size,
                                 "used": used_size,
                                 "cache": disk_cache,
@@ -1283,9 +1296,87 @@ class wvmInstance(wvmConnect):
         )
         self._defineXML(xml_temp)
 
-    def get_snapshot(self):
+    def create_external_snapshot(self, name, date=None, desc=None):
+        creation_time = time.time()
+        state = "shutoff" if self.get_status() == 5 else "running"
+        #<seclabel type='none' model='dac' relabel='no'/>
+        xml = """<domainsnapshot>
+                     <name>%s</name>
+                     <description>%s</description>
+                     <state>%s</state>
+                     <creationTime>%d</creationTime>
+                     """ % (
+            name,
+            desc,
+            state,
+            creation_time,
+        )
+
+        self.change_snapshot_xml()
+        xml += self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        xml += """<active>0</active>
+                  </domainsnapshot>"""
+
+        self._snapshotCreateXML(xml, VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY)
+
+    
+    def get_external_snapshots(self):
+        return self.get_snapshot(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL)
+    
+    def delete_external_snapshot(self, name):
+        disk_info = self.get_disk_devices()
+        for disk in disk_info:
+            target_dev = disk["dev"]
+            backing_file = disk["backing_file"]
+            snap_source_file = disk["path"]
+            self.instance.blockCommit(target_dev, backing_file, snap_source_file,
+                                                  flags=VIR_DOMAIN_BLOCK_COMMIT_DELETE|
+                                                  VIR_DOMAIN_BLOCK_COMMIT_ACTIVE)
+            while True:
+                info = self.instance.blockJobInfo(target_dev, 0)
+                if info.get('cur') == info.get('end'):
+                    self.instance.blockJobAbort(target_dev,flags=VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT)
+                    time.sleep(2)
+                    break
+            # Check again pool for snapshot delta volume; if it exist, remove it manually
+            with contextlib.suppress(libvirtError):
+                vol_snap = self.get_volume_by_path(snap_source_file)
+                pool = vol_snap.storagePoolLookupByVolume()
+                pool.refresh(0)
+                vol_snap.delete(0)
+
+        snap = self.instance.snapshotLookupByName(name, 0)
+        snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
+
+    
+    def revert_external_snapshot(self, name, date, desc):
+        pool = None
+        snap = self.instance.snapshotLookupByName(name, 0)
+        snap_xml = snap.getXMLDesc(0)
+        snapXML = ElementTree.fromstring(snap_xml)
+        disks = snapXML.findall('inactiveDomain/devices/disk')
+        if not disks: disks = snapXML.findall('domain/devices/disk')
+
+        self.start(flags=VIR_DOMAIN_START_PAUSED) if self.get_status() == 5 else None
+
+        disk_info = self.get_disk_devices()
+        for disk in disk_info:
+            vol_snap = self.get_volume_by_path(disk["path"])
+            pool = vol_snap.storagePoolLookupByVolume()
+            pool.refresh(0)
+            vol_snap.delete(0)
+        self.force_shutdown()
+
+        snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
+        for disk in disks:
+            self.instance.updateDeviceFlags(ElementTree.tostring(disk).decode("UTF-8"))
+        name = name.replace("s1", "s2")
+        self.create_external_snapshot(name, date, desc)
+        pool.refresh() if pool else None
+
+    def get_snapshot(self, flag=VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
         snapshots = []
-        snapshot_list = self.instance.snapshotListNames(0)
+        snapshot_list = self.instance.snapshotListNames(flag)
         for snapshot in snapshot_list:
             snap = self.instance.snapshotLookupByName(snapshot, 0)
             snap_description = util.get_xml_path(

@@ -20,7 +20,9 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM,
+from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
+                     VIR_DOMAIN_UNDEFINE_NVRAM,
+                     VIR_DOMAIN_START_PAUSED,
                      libvirtError)
 from logs.views import addlogmsg
 from vrtManager import util
@@ -146,7 +148,7 @@ def instance(request, pk):
         instance.drbd = drbd_status(request, pk)
         instance.save()
 
-    return render(request, "instance.html", locals())
+    return render(request, "instance.html", locals(),)
 
 
 def status(request, pk):
@@ -1012,6 +1014,81 @@ def revert_snapshot(request, pk):
         messages.success(request, msg)
         msg = _("Revert snapshot: %(snap)s") % {"snap": snap_name}
         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
+
+
+def create_external_snapshot(request, pk):
+    instance = get_instance(request.user, pk)
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        name = request.POST.get("name", "")
+        desc = request.POST.get("description", "")
+        instance.proxy.create_external_snapshot("s1." + name, instance, desc=desc)
+        msg = _("Create external snapshot: %(snap)s") % {"snap": name}
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
+
+
+def get_external_snapshots(request, pk):
+    instance = get_instance(request.user, pk)
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        external_snapshots = instance.proxy.get_external_snapshots()
+    return external_snapshots
+
+
+def revert_external_snapshot(request, pk):
+    instance = get_instance(request.user, pk)
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        instance_state = True if instance.proxy.get_status() != 5 else False
+        name = request.POST.get("name", "")
+        date = request.POST.get("date", "")
+        desc = request.POST.get("desc", "")
+        instance.proxy.force_shutdown() if instance_state else None
+        instance.proxy.revert_external_snapshot(name, date, desc)
+        instance.proxy.start() if instance_state else None
+        msg = _("Revert external snapshot: %(snap)s") % {"snap": name}
+        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
+
+
+def delete_external_snapshot(request, pk):
+    instance = get_instance(request.user, pk)
+    instance_state = True if instance.proxy.get_status() == 5 else False
+    allow_admin_or_not_template = (
+        request.user.is_superuser or request.user.is_staff or not instance.is_template
+    )
+
+    if allow_admin_or_not_template and request.user.has_perm(
+        "instances.snapshot_instances"
+    ):
+        name = request.POST.get("name", "")
+
+        instance.proxy.start(VIR_DOMAIN_START_PAUSED) if instance_state else None
+
+        try:
+            instance.proxy.delete_external_snapshot(name)
+            msg = _("Delete external snapshot: %(snap)s") % {"snap": name}
+            addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        finally:
+            instance.proxy.force_shutdown() if instance_state else None
+
     return redirect(request.META.get("HTTP_REFERER") + "#managesnapshot")
 
 
