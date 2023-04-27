@@ -25,12 +25,10 @@
         {% endif %}
     {% endfor %}
     <div class="col-lg-12">
-        {% if 'instances.view_instances' in perms %}
-            {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
-                {% include 'allinstances_index_grouped.html' %}
-            {% else %}
-                {% include 'allinstances_index_nongrouped.html' %}
-            {% endif %}
+        {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser or 'instances.view_instances' in perms %}
+            {% include 'allinstances_index_grouped.html' %}
+        {% else %}
+            {% include 'allinstances_index_nongrouped.html' %}
         {% endif %}
     </div>
 {% endblock content %}
@@ -39,8 +37,8 @@
     <script src="{% static 'js/filter-table.js' %}"></script>
     {% if request.user.is_superuser %}
         <script>
-            function goto_compute() {
-                let compute = $("#compute_select").val();
+            function goto_compute(compute) {
+                //let compute = $("#compute_select").val();
                 window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
             }
         </script>
