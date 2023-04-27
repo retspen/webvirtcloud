@@ -5,7 +5,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from django.utils.translation import gettext_lazy as _
+#from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop as _
 from logs.views import addlogmsg
 
 from appsettings.models import AppSettings
@@ -24,7 +25,7 @@ def appsettings(request):
         themes_list = os.listdir(sass_dir.value + "/wvc-themes")
     except FileNotFoundError as err:
         messages.error(request, err)
-        addlogmsg(request.user.username, "-", "", err)
+        addlogmsg(request.user.username, "-", "", err, ip=get_client_ip(request))
 
     # Bootstrap settings related with filesystems, because of that they are excluded from other settings
     appsettings = AppSettings.objects.exclude(
@@ -45,7 +46,7 @@ def appsettings(request):
                 msg = err
                 messages.error(request, msg)
 
-            addlogmsg(request.user.username, "-", "", msg)
+            addlogmsg(request.user.username, "-", "", msg, ip=get_client_ip(request))
             return HttpResponseRedirect(request.get_full_path())
 
         if "BOOTSTRAP_THEME" in request.POST:
@@ -79,7 +80,7 @@ def appsettings(request):
                 msg = err
                 messages.error(request, msg)
 
-            addlogmsg(request.user.username, "-", "", msg)
+            addlogmsg(request.user.username, "-", "", msg, ip=get_client_ip(request))
             return HttpResponseRedirect(request.get_full_path())
 
         for setting in appsettings:
@@ -97,7 +98,15 @@ def appsettings(request):
                     msg = err
                     messages.error(request, msg)
 
-                addlogmsg(request.user.username, "-", "", msg)
+                addlogmsg(request.user.username, "-", "", msg, ip=get_client_ip(request))
                 return HttpResponseRedirect(request.get_full_path())
 
     return render(request, "appsettings.html", locals())
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip

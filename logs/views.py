@@ -7,7 +7,7 @@ from instances.models import Instance
 from logs.models import Logs
 
 
-def addlogmsg(user, host, instance, message):
+def addlogmsg(user, host, instance, message, ip=None):
     """
     :param user:
     :param host:
@@ -15,7 +15,7 @@ def addlogmsg(user, host, instance, message):
     :param message:
     :return:
     """
-    add_log_msg = Logs(user=user, host=host, instance=instance, message=message)
+    add_log_msg = Logs(user=user, host=host, instance=instance, message=message, ip=ip)
     add_log_msg.save()
 
 
@@ -33,6 +33,7 @@ def vm_logs(request, vname):
     for l in logs_:
         log = dict()
         log["user"] = l.user
+        log["ip"] = l.ip
         log["host"] = l.host
         log["instance"] = l.instance
         log["message"] = l.message

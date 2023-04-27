@@ -3,7 +3,8 @@ from computes.models import Compute
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.utils.translation import gettext_lazy as _
+# from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop as _
 from libvirt import libvirtError
 from logs.views import addlogmsg
 from vrtManager import util
@@ -61,11 +62,11 @@ def nwfilters(request, compute_id):
                                 "filter": name
                             }
                             conn.create_nwfilter(xml)
-                            addlogmsg(request.user.username, compute.hostname, "", msg)
+                            addlogmsg(request.user.username, compute.hostname, "", msg, ip=get_client_ip(request))
                         except libvirtError as lib_err:
                             messages.error(request, lib_err)
                             addlogmsg(
-                                request.user.username, compute.hostname, "", lib_err
+                                request.user.username, compute.hostname, "", lib_err, ip=get_client_ip(request)
                             )
 
             if "del_nwfilter" in request.POST:
@@ -98,7 +99,7 @@ def nwfilters(request, compute_id):
                             "NWFilter is in use by %(instance)s. Cannot be deleted."
                         ) % {"instance": inst}
                         messages.error(request, msg)
-                        addlogmsg(request.user.username, compute.hostname, "", msg)
+                        addlogmsg(request.user.username, compute.hostname, "", msg, ip=get_client_ip(request))
                         i_conn.close()
                         break
 
@@ -106,7 +107,7 @@ def nwfilters(request, compute_id):
                 if nwfilter and not in_use:
                     nwfilter.undefine()
                     nwfilters_all.remove(nwfilter_info)
-                    addlogmsg(request.user.username, compute.hostname, "", msg)
+                    addlogmsg(request.user.username, compute.hostname, "", msg, ip=get_client_ip(request))
 
             if "cln_nwfilter" in request.POST:
                 name = request.POST.get("nwfiltername", "")
@@ -119,15 +120,15 @@ def nwfilters(request, compute_id):
                     "name": name,
                     "clone": cln_name,
                 }
-                addlogmsg(request.user.username, compute.hostname, "", msg)
+                addlogmsg(request.user.username, compute.hostname, "", msg, ip=get_client_ip(request))
 
         conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
-        addlogmsg(request.user.username, compute.hostname, "", lib_err)
+        addlogmsg(request.user.username, compute.hostname, "", lib_err, ip=get_client_ip(request))
     except Exception as err:
         messages.error(request, err)
-        addlogmsg(request.user.username, compute.hostname, "", err)
+        addlogmsg(request.user.username, compute.hostname, "", err, ip=get_client_ip(request))
 
     return render(
         request,
@@ -242,3 +243,11 @@ def nwfilter(request, compute_id, nwfltr):
         messages.error(request, error_msg)
 
     return render(request, "nwfilter.html", locals())
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
