@@ -28,6 +28,14 @@ class wvmStorages(wvmConnect):
     def define_storage(self, xml, flag):
         self.wvm.storagePoolDefineXML(xml, flag)
 
+    def get_pool_by_target(self, target):
+        pool_names = self.get_storages()
+        for pool_name in pool_names:
+            stg = wvmStorage(self.host, self.login, self.passwd, self.conn, pool_name)
+            if stg.get_target_path() == target:
+                return self.get_storage(pool_name)
+        return None
+
     def create_storage(self, stg_type, name, source, target):
         xml = f"""<pool type='{stg_type}'>
                  <name>{name}</name>"""

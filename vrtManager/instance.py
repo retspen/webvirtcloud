@@ -2,7 +2,6 @@ import contextlib
 import json
 import os.path
 import time
-import subprocess
 
 try:
     from libvirt import (
@@ -1255,6 +1254,7 @@ class wvmInstance(wvmConnect):
         return iso
 
     def delete_all_disks(self):
+        self.refresh_instance_pools()
         disks = self.get_disk_devices()
         for disk in disks:
             vol = self.get_volume_by_path(disk.get("path"))
@@ -1318,8 +1318,8 @@ class wvmInstance(wvmConnect):
                   </domainsnapshot>"""
 
         self._snapshotCreateXML(xml, VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY)
+        self.refresh_instance_pools()
 
-    
     def get_external_snapshots(self):
         return self.get_snapshot(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL)
     
@@ -1350,29 +1350,23 @@ class wvmInstance(wvmConnect):
 
     
     def revert_external_snapshot(self, name, date, desc):
-        pool = None
         snap = self.instance.snapshotLookupByName(name, 0)
         snap_xml = snap.getXMLDesc(0)
         snapXML = ElementTree.fromstring(snap_xml)
-        disks = snapXML.findall('inactiveDomain/devices/disk')
-        if not disks: disks = snapXML.findall('domain/devices/disk')
 
         self.start(flags=VIR_DOMAIN_START_PAUSED) if self.get_status() == 5 else None
-
-        disk_info = self.get_disk_devices()
-        for disk in disk_info:
-            vol_snap = self.get_volume_by_path(disk["path"])
-            pool = vol_snap.storagePoolLookupByVolume()
-            pool.refresh(0)
-            vol_snap.delete(0)
+        self.delete_all_disks()
+        
         self.force_shutdown()
 
         snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
+
+        disks = snapXML.findall('inactiveDomain/devices/disk')
+        if not disks: disks = snapXML.findall('domain/devices/disk')
         for disk in disks:
             self.instance.updateDeviceFlags(ElementTree.tostring(disk).decode("UTF-8"))
         name = name.replace("s1", "s2")
         self.create_external_snapshot(name, date, desc)
-        pool.refresh() if pool else None
 
     def get_snapshot(self, flag=VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
         snapshots = []
@@ -1412,6 +1406,15 @@ class wvmInstance(wvmConnect):
 
     def get_wvmStorages(self):
         return wvmStorages(self.host, self.login, self.passwd, self.conn)
+
+    def refresh_instance_pools(self):
+        disks = self.get_disk_devices()
+        target_paths = set()
+        for disk in disks:
+            disk_path = disk.get("path")
+            target_paths.add(os.path.dirname(disk_path))
+        for target_path in target_paths:
+            self.get_wvmStorages().get_pool_by_target(target_path).refresh(0)
 
     def fix_mac(self, mac):
         if ":" in mac:
