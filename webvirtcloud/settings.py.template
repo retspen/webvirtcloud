@@ -120,6 +120,8 @@ LOGIN_URL = "/accounts/login/"
 
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
+LOGIN_REDIRECT_URL="/instances/"
+
 LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "UTC"

@@ -39,8 +39,8 @@
     <script src="{% static 'js/filter-table.js' %}"></script>
     {% if request.user.is_superuser %}
         <script>
-            function goto_compute() {
-                let compute = $("#compute_select").val();
+            function goto_compute(compute) {
+                //let compute = $("#compute_select").val();
                 window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
             }
         </script>

@@ -46,11 +46,10 @@
         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="takeextsnapshot">
             {% if instance.status != 5 %}
             <p>{% trans "You can get external snapshots within this tab." %}</p>
-            <p class="text-primary">{% trans "External snapshots are experimental in this stage, use it if you know what you are doing. It may require manual intervention." %}</p>
             {% else %}
                 <p>{% trans "Create an external snapshot" %}</p>
             {% endif %}
-            <p class="text-danger">{% trans "Give your External Snapshot a <b>distinctive description</b> so it wouldn't get mixed with other snapshots." %}</p>
+            <p class="fst-italic">{% trans "External snapshots are experimental in this stage, use it if you know what you are doing. 'Revert Snapshot' may require manual operation with CLI." %}</p>
             <form action="{% url 'instances:create_external_snapshot' instance.id %}" method="post" role="form" aria-label="Create snapshot form">
                 {% csrf_token %}
                 <div class="input-group mb-3">
@@ -63,7 +62,7 @@
                         <input type="submit" class="btn btn-lg btn-success float-end" name="snapshot" value="{% trans "Take Snapshot" %}" onclick="showPleaseWaitDialog();">
                     {% endif %}
                 </div>
-                <p class="text-danger">{% trans "WebVirtCloud supports only one external snapshot at the moment." %}</p>
+                <p class="text-danger font-monospace small">{% trans "WebVirtCloud supports only one external snapshot at the moment." %}</p>
             </form>
             <div class="clearfix"></div>
         </div> <!--tab pane takeextsnapshot-->

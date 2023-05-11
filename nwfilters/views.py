@@ -3,7 +3,7 @@ from computes.models import Compute
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop as _
 from libvirt import libvirtError
 from logs.views import addlogmsg
 from vrtManager import util
