@@ -15,7 +15,7 @@
                 <form method="post" aria-label="Select compute for instance create form">
                     {% csrf_token %}
                     <div class="row">
-                        <table class="table table-hover">
+                        <table class="table">
                             <thead>
                                 <tr style="cursor:default;pointer-events:none">
                                     <th>{% trans "Name" %}</th>
@@ -23,12 +23,13 @@
                                     <th>{% trans "Cpu Usage" %}</th>
                                     <th>{% trans "Memory" %}</th>
                                     <th>{% trans "Mem Usage" %}</th>
+                                    <th>{% trans "Action" %}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for compute in computes %}
                                     {% if compute.status is True %}
-                                        <tr style="cursor:pointer" onclick="goto_compute('{{ compute.id }}')">
+                                        <tr style="text-decoration: none">
                                             <td>{{ compute.name }}</td>
                                             <td>{{ compute.cpu_count }}</td>
                                             <td>
@@ -45,6 +46,11 @@
                                                         aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.ram_usage }}%
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td class="col-1">
+                                                <button class="btn btn-success btn-sm" type="button" onclick="goto_compute('{{ compute.id }}');">
+                                                    {% trans "Choose" %}
+                                                </button>
                                             </td>
                                         </tr>
                                     {% endif %}
