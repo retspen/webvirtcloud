@@ -2,7 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}{% trans "WebVirtCloud" %}  - {% trans "Sign In" %}{% endblock %}
+
+{% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign In" %}{% endblock title %}
 
 {% block style %}
 <link href="{% static "css/signin.css" %}" rel="stylesheet">
@@ -11,19 +12,20 @@
 {% block content %}
 <div class="login-box">
     <div class="page-header">
-        <a class="" href="/"><h1>WebVirtCloud</h1></a>
+        <a href="/"><h1>WebVirtCloud</h1></a>
     </div>
+    <hr>
     <div class="col-12" role="main">
         {% if form.errors %}
-            <div class="alert alert-danger">
-                <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close"></button>
+            <div class="alert alert-danger" role="alert">
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 {% trans "Incorrect username or password." %}
             </div>
         {% endif %}
         <form class="form-signin" method="post" role="form" aria-label="Login form">{% csrf_token %}
             <h2 class="form-signin-heading">{% trans "Sign In" %}</h2>
-            <input type="text" class="form-control" name="username" placeholder="{% trans "User" %}" autocapitalize="none" autocorrect="off" autofocus>
-            <input type="password" class="form-control" name="password" placeholder="{% trans "Password" %}">
+            <input type="text" class="form-control" name="username" placeholder="{% trans 'User' %}" autocapitalize="none" autocorrect="off" autofocus required>
+            <input type="password" class="form-control" name="password" placeholder="{% trans 'Password' %}" required>
             <input type="hidden" name="next" value="{{ next }}">
             <div class="d-grid">
                 <button class="btn btn-lg btn-success" type="submit">{% trans "Sign In" %}</button>
@@ -31,5 +33,4 @@
         </form>
     </div>
 </div>
-
 {% endblock %}
