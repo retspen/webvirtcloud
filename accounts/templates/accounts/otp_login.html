@@ -21,6 +21,7 @@
                 {% bootstrap_form_errors form %}
             </div>
         {% endif %}
+
         <form id="form-signin" class="form-signin" method="post" role="form" aria-label="Login form">{% csrf_token %}
             <h2 class="form-signin-heading">{% trans "Sign In" %}</h2>
             {% bootstrap_field form.username layout='inline' %}
