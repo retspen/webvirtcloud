@@ -12,15 +12,14 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="post" aria-label="Select compute for instance create form">
-                    {% csrf_token %}
+                <form method="post" aria-label="Select compute for instance create form">{% csrf_token %}
                     <div class="row">
                         <table class="table">
                             <thead>
                                 <tr style="cursor:default;pointer-events:none">
                                     <th>{% trans "Name" %}</th>
                                     <th>{% trans "VCPU" %}
-                                    <th>{% trans "Cpu Usage" %}</th>
+                                    <th>{% trans "CPU Usage" %}</th>
                                     <th>{% trans "Memory" %}</th>
                                     <th>{% trans "Mem Usage" %}</th>
                                     <th>{% trans "Action" %}</th>
@@ -29,12 +28,12 @@
                             <tbody>
                                 {% for compute in computes %}
                                     {% if compute.status is True %}
-                                        <tr style="text-decoration: none">
+                                        <tr>
                                             <td>{{ compute.name }}</td>
                                             <td>{{ compute.cpu_count }}</td>
                                             <td>
                                                 <div class="progress">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ compute.cpu_usage }}%"
+                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ compute.cpu_usage }}%"
                                                         aria-valuenow="{{ compute.cpu_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.cpu_usage }}%
                                                     </div>
                                                 </div>
@@ -42,7 +41,7 @@
                                             <td>{{ compute.ram_size|filesizeformat }}</td>
                                             <td>
                                                 <div class="progress">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ compute.ram_usage }}%"
+                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ compute.ram_usage }}%"
                                                         aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.ram_usage }}%
                                                     </div>
                                                 </div>

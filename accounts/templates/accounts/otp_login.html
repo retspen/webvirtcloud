@@ -21,7 +21,8 @@
                 {% bootstrap_form_errors form %}
             </div>
         {% endif %}
-        <form class="form-signin" method="post" role="form" aria-label="Login form">{% csrf_token %}
+
+        <form id="form-signin" class="form-signin" method="post" role="form" aria-label="Login form">{% csrf_token %}
             <h2 class="form-signin-heading">{% trans "Sign In" %}</h2>
             {% bootstrap_field form.username layout='inline' %}
             {% bootstrap_field form.password layout='inline' %}
@@ -29,9 +30,28 @@
             <a href="{% url 'accounts:email_otp' %}" class="float-end">{% trans "I do not have/lost my OTP!" %}</a>
             <br>
             <div class="d-grid">
-                <button class="btn btn-lg btn-success" type="submit">{% trans "Sign In" %}</button>
+                <button id="btn-signin" class="btn btn-lg btn-success" type="submit">{% trans "Sign In" %}</button>
             </div>
         </form>
     </div>
 </div>
 {% endblock content %}
+
+{% block script %}
+<script>
+    $(document).ready(function() {
+        $("#btn-signin").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+            `
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            {% trans "Loading" %}...
+            `
+            );
+            $("#form-signin").submit();
+        });
+});
+</script>
+{% endblock script%}
