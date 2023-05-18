@@ -27,7 +27,7 @@ class wvmHostDetails(wvmConnect):
         else:
             return {"total": None, "usage": None, "percent": None}
 
-    def get_cpu_usage(self):
+    def get_cpu_usage(self, diff=True):
         """
         Function return cpu usage on node.
         """
@@ -43,6 +43,8 @@ class wvmHostDetails(wvmConnect):
             diff_idle = idle - prev_idle
             diff_total = total - prev_total
             diff_usage = (1000 * (diff_total - diff_idle) / diff_total + 5) / 10
+            if not diff:
+                return {"usage": diff_usage}
             prev_total = total
             prev_idle = idle
             if num == 0:

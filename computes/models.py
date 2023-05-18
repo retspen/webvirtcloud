@@ -51,7 +51,7 @@ class Compute(Model):
     
     @cached_property
     def cpu_usage(self):
-        return round(self.proxy.get_cpu_usage().get('usage'))
+        return round(self.proxy.get_cpu_usage(diff=False).get('usage'))
 
     @cached_property
     def ram_size(self):
