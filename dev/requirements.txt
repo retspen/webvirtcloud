@@ -1,8 +1,8 @@
 -r ../conf/requirements.txt
-coverage==7.2.5
-django-debug-toolbar==4.0.0
+coverage==7.2.7
+django-debug-toolbar==4.1.0
 pycodestyle==2.10.0
 pyflakes==3.0.1
 pylint==2.17.4
 yapf==0.33.0
-black==23.3.0
+black==23.7.0
