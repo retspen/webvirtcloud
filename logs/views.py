@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.http import HttpResponse
 
@@ -17,6 +18,8 @@ def addlogmsg(user, host, instance, message):
     """
     add_log_msg = Logs(user=user, host=host, instance=instance, message=message)
     add_log_msg.save()
+    logger = logging.getLogger("")
+    logger.info(user + " " + host+ " " +  instance+ " " +  message)
 
 
 @superuser_only

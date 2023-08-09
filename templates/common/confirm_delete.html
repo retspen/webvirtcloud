@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
-{% load icons %}
+{% load bootstrap_icons %}
 {% load i18n %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -16,9 +16,9 @@
                 {%trans "Are you sure you want to delete" %} "{{ object }}"?
             </div>
             <div class="mb-0 float-end">
-                <a class="btn btn-primary" href="javascript:history.back()">{% icon 'times' %} {% trans "Cancel" %}</a>
+                <a class="btn btn-primary" href="javascript:history.back()">{% bs_icon 'x' %} {% trans "Cancel" %}</a>
                 <button type="submit" class="btn btn-danger">
-                    {% icon 'trash' %} {% trans "Delete" %}
+                    {% bs_icon 'trash' %} {% trans "Delete" %}
                 </button>
             </div>
         </form>

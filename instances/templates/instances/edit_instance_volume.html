@@ -1,7 +1,8 @@
 {% load i18n %}
+{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" title="{% trans "Edit Volume" %}">
-        <i class="fa fa-edit" aria-hidden="true"></i>
+        {% bs_icon 'pencil-square' %}
     </button>
 
     <!-- Modal pool -->

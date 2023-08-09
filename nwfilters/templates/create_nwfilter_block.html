@@ -1,7 +1,8 @@
 {% load i18n %}
+{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     <button type="button" class="btn btn-success btn-header float-end" data-bs-toggle="modal" data-bs-target="#AddNWFilter">
-        <span class="fa fa-plus" aria-hidden="true"></span>
+        <span aria-hidden="true">{% bs_icon 'plus' %} </span>
     </button>
 
     <!-- Modal Secret -->

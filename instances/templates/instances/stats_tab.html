@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load bootstrap_icons %}
 <div class="tab-pane" id="graphics" role="tabpanel" >
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance graphs and logs menu">
@@ -18,7 +19,7 @@
         <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="graphs">
             <div class="mb-1 card border-success">
                 <div class="card-header">
-                    <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "CPU Usage" %}
                     </h5>
                 </div>
@@ -32,7 +33,7 @@
             </div>
             <div class="mb-1 card border-danger">
                 <div class="card-header">
-                    <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "Memory Usage" %}
                     </h5>
                 </div>
@@ -47,7 +48,7 @@
             {% for net in instance.networks %}
             <div class="mb-1 card border-info">
                 <div class="card-header">
-                    <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}
                     </h5>
                 </div>
@@ -63,7 +64,7 @@
             {% for disk in instance.disks %}
             <div class="mb-1 card border-warning">
                 <div class="card-header">
-                    <h5 class="card-title"><i class="fa fa-long-arrow-right"></i>
+                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "Disk I/O device" %}: {{ disk.dev }}
                     </h5>
                 </div>

@@ -23,7 +23,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_bootstrap5",
-    "django_icons",
     "django_otp",
     "django_otp.plugins.otp_totp",
     "drf_yasg",
@@ -42,6 +41,7 @@ INSTALLED_APPS = [
     "logs",
     "qr_code",
     "rest_framework",
+    "django_bootstrap_icons",
 ]
 
 MIDDLEWARE = [
@@ -85,20 +85,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "webvirtcloud.wsgi.application"
-
-
-# Settings for django-icons
-DJANGO_ICONS = {
-
-    'DEFAULTS': {
-        'renderer': 'fontawesome4',
-    },
-
-    'RENDERERS': {
-        'fontawesome4': 'FontAwesome4Renderer',
-        'bootstrap3': 'Bootstrap3Renderer',
-    },
-}
 
 
 # Database
@@ -169,17 +155,31 @@ DJANGO_ICONS = {
 
 
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "mail_admins": {"level": "ERROR", "class": "django.utils.log.AdminEmailHandler"}
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '[%(asctime)s] %(levelname)s: %(message)s'
+        },
     },
-    "loggers": {
-        "django.request": {
-            "handlers": ["mail_admins"],
-            "level": "ERROR",
-            "propagate": True,
-        }
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler'
+            },
+        'default': {
+            'level':'INFO',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': '/srv/webvirtcloud/webvirtcloud.log',
+            'formatter':'standard',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['default'],
+            'level': 'INFO',
+            'propagate': True
+        },
     },
 }
 

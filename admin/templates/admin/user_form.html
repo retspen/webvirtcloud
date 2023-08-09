@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
-{% load icons %}
+{% load bootstrap_icons %}
 {% load i18n %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -16,9 +16,9 @@
             {% bootstrap_form attributes_form layout='horizontal' %}
         </form>
         <div class="float-end">
-            <a class="btn btn-primary" href="javascript:history.back()">{% icon 'times' %} {% trans "Cancel" %}</a>
+            <a class="btn btn-primary" href="javascript:history.back()">{% bs_icon 'x' %} {% trans "Cancel" %}</a>
             <button type="submit" form="create-update" class="btn btn-success">
-                {% icon 'check' %} {% trans "Save" %}
+                {% bs_icon 'check2' %} {% trans "Save" %}
             </button>
         </div>
     </div>

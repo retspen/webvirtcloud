@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
-{% load icons %}
+{% load bootstrap_icons %}
 {% block title %}{% trans "Create new instance" %}{% endblock %}
 
 {% block style %}
@@ -37,7 +37,7 @@
                 <ul class="nav nav-tabs" role="tablist" aria-label="Instance create method">
                      <li class="nav-item" role="presentation">
                         <button class="nav-link float-end" data-bs-toggle="tab" data-bs-target="#" type="button" role="tab" aria-controls="go_compute" onclick="goto_compute()">
-                            <span class="fa fa-arrow-left"></span>
+                            <span>{% bs_icon 'arrow-left'%} </span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -64,7 +64,7 @@
                         {% if not flavors %}
                             <div class="col-lg-12">
                                 <div class="alert alert-warning shadow-sm">
-                                    <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Flavors" %}
+                                    {% bs_icon 'exclamation-triangle'%}  <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Flavors" %}
                                 </div>
                             </div>
                         {% else %}
@@ -173,7 +173,7 @@
                                                                     <label class="col-sm-4 col-form-label">{% trans "Advanced" %}</label>
                                                                     <div class="d-grid col-sm-7">
                                                                         <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#flav-add-collapse" aria-expanded="false" aria-controls="flav-add-collapse">
-                                                                            <span class="fa fa-caret-down"></span>
+                                                                            <span>{% bs_icon 'caret-down'%} </span>
                                                                         </button>
                                                                     </div>        
                                                                 </div>
@@ -303,14 +303,14 @@
                                                 </div>
                                             </div>
                                             <a data-bs-toggle="modal" href="#addVMflavor{{ forloop.counter }}" class="btn btn-sm btn-secondary">
-                                                <span class="fa fa-plus"></span>
+                                                <span >{% bs_icon 'plus'%} </span>
                                             </a>
                                         </td>
                                         <td style="width:5px;">
                                             <form action="{% url 'instances:flavor_delete' flavor.id %}" method="post" role="form" aria-label="Delete flavor form">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-secondary" name="delete_flavor" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                    {% icon 'trash' %}
+                                                    {% bs_icon 'trash' %}
                                                 </button>
                                             </form>
                                         </td>
@@ -428,7 +428,7 @@
                         <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
                         <div class="d-grid col-sm-7">
                             <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#custadvcollapse" aria-expanded="false" aria-controls="custadvcollapse">
-                                <span class="fa fa-caret-down"></span>
+                                <span>{% bs_icon 'caret-down'%} </span>
                             </button>
                         </div>        
                     </div>
@@ -670,7 +670,7 @@
                             <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
                             <div class="d-grid col-sm-7">
                                 <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#tempAdvCollapse" aria-expanded="false" aria-controls="tempAdvCollapse">
-                                    <span class="fa fa-caret-down"></span>
+                                    <span>{% bs_icon 'caret-down'%} </span>
                                 </button>
                             </div>        
                         </div>
@@ -865,7 +865,7 @@
                                     '{% endfor %}' +
                                 '</select>' +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link float-end" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></li>';
+                                '<a class="btn-link float-end" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)">{% bs_icon 'trash'%} </a></li>';
                         selected_list_html += li;
                         counter++;
                     });
@@ -899,7 +899,7 @@
                         let li = '<li><input type="text" class="input-xs" name="mac'+ net_counter +'" maxlength="17" required pattern="[a-zA-Z0-9:]+" onchange="populate_mac(' + net_counter +')">' +
                                 ' eth' + net_counter +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link float-end" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"><i class="fa fa-remove"></i></a></li>';
+                                '<a class="btn-link float-end" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)">{% bs_icon 'trash'%} </a></li>';
                         random_mac(net_counter);
                         selected_list_html += li;
                         net_counter++;

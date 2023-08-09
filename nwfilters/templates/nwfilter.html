@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+{% load bootstrap_icons %}
 
 {% block title %}{% trans "NWFilter" %}: {{ name }}{% endblock %}
 
@@ -11,25 +12,25 @@
         <div class="col-lg-12">
             <ol class="breadcrumb shadow-sm">
                 <li class="breadcrumb-item">
-                    <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
+                    <a href="{% url 'overview' compute.id %}">{% bs_icon 'laptop' %}  {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                    <a href="{% url 'instances' compute.id %}">{% bs_icon 'server' %}  {% trans "Instances" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'storages' compute.id %}"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</a>
+                    <a href="{% url 'storages' compute.id %}">{% bs_icon 'device-hdd' %}  {% trans "Storages" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
+                    <a href="{% url 'networks' compute.id %}">{% bs_icon 'hdd-network' %}  {% trans "Networks" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
+                    <a href="{% url 'interfaces' compute.id %}">{% bs_icon 'wifi' %}  {% trans "Interfaces" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
+                    <a href="{% url 'nwfilters' compute.id %}">{% bs_icon 'filter' %}  {% trans "NWFilters" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'virtsecrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                    <a href="{% url 'virtsecrets' compute.id %}">{% bs_icon 'key' %}  {% trans "Secrets" %}</a>
                 </li>
             </ol>
         </div>
@@ -45,7 +46,7 @@
    <div class="row">
         <div class="d-grid col-lg-12">
             <button class="btn btn-light mb-3"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
-                <span class="fa fa-chevron-down"></span>
+                <span>{% bs_icon 'chevron-down' %} </span>
                 {% trans 'XML' %}
             </button>
             <div class="collapse" id="collapseXML">
@@ -76,7 +77,7 @@
                         {% endfor %}
                     </select>
                     <button type="submit" class="btn btn-success float-end" name="add_nwfilter_ref">
-                        <span class="fa fa-plus" aria-hidden="true"></span>
+                        <span aria-hidden="true">{% bs_icon 'plus' %} </span>
                     </button>
                 </div>
             </form>
@@ -101,7 +102,7 @@
                             <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
                                 <input type="hidden" name="ref" value="{{ ref }}">
                                 <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}');">
-                                    <i class="fa fa-trash"></i>
+                                    {% bs_icon 'trash' %} 
                                 </button>
                             </form>
                         </td>
@@ -141,7 +142,7 @@
                             <input type="hidden" name="direction" value="{{ rule.direction }}">
                             <input type="hidden" name="priority" value="{{ rule.priority }}">
                             <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans 'Delete' %}" onclick="return confirm('{% trans "Are you sure?" %}');">
-                                <i class="fa fa-trash"></i>
+                                {% bs_icon 'trash' %} 
                             </button>
                         </form>
                     </td>

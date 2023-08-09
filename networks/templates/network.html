@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+{% load bootstrap_icons %}
 
 {% block title %}{% trans "Network" %} - {{ pool }}{% endblock %}
 
@@ -11,25 +12,25 @@
         <div class="col-lg-12">
             <ol class="breadcrumb shadow-sm">
                 <li class="breadcrumb-item">
-                    <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
+                    <a href="{% url 'overview' compute.id %}">{% bs_icon 'laptop' %}  {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                    <a href="{% url 'instances' compute.id %}">{% bs_icon 'server' %} {% trans "Instances" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'storages' compute.id %}"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</a>
+                    <a href="{% url 'storages' compute.id %}">{% bs_icon 'device-hdd' %} {% trans "Storages" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
+                    <a href="{% url 'networks' compute.id %}">{% bs_icon 'hdd-network' %}  {% trans "Networks" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
+                    <a href="{% url 'interfaces' compute.id %}">{% bs_icon 'wifi' %} {% trans "Interfaces" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'nwfilters' compute.id %}"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</a>
+                    <a href="{% url 'nwfilters' compute.id %}">{% bs_icon 'filter' %}  {% trans "NWFilters" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'virtsecrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                    <a href="{% url 'virtsecrets' compute.id %}">{% bs_icon 'key' %}  {% trans "Secrets" %}</a>
                 </li>
             </ol>
 
@@ -68,7 +69,7 @@
 
     <div class="d-grid col-lg-12">
         <button class="btn btn-light"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
-            <span class="fa fa-chevron-down"></span>
+            <span>{% bs_icon 'chevron-down' %} </span>
             {% trans 'XML' %}
         </button>
         <div class="collapse" id="collapseXML">
@@ -154,7 +155,7 @@
         
         <div class="d-grid col-12">
             <button class="btn btn-light"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv4fix" aria-expanded="true" aria-controls="collapseXML">
-                <span class="fa fa-chevron-down"></span>
+                <span>{% bs_icon 'chevron-down' %} </span>
                 {% trans 'Show' %}
             </button>
             <div id="collapseipv4fix" class="collapse">
@@ -187,12 +188,12 @@
                                 <button type="submit" class="btn btn-sm btn-primary"
                                         name="modify_fixed_address"
                                         title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                    <i class="fa fa-save"></i>
+                                        {% bs_icon 'save' %} 
                                 </button>
                                 <button type="submit" class="btn btn-sm btn-danger"
                                         name="delete_fixed_address"
                                         title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                    <i class="fa fa-trash"></i>
+                                        {% bs_icon 'trash' %} 
                                 </button>
                             </td>
                         </form>
@@ -264,7 +265,7 @@
     {% if ipv6_fixed_address %}
         <div class="d-grid col-12">
             <button class="btn btn-light" role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv6fix" aria-expanded="true" aria-controls="collapseipv6fix">
-                <span class="fa fa-chevron-down"></span>
+                <span>{% bs_icon 'chevron-down' %} </span>
                 {% trans 'Show' %}
             </button>
             <div id="collapseipv6fix" class="collapse">
@@ -296,12 +297,12 @@
                                     <button type="submit" class="btn btn-sm btn-primary"
                                             name="modify_fixed_address"
                                             title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        <span class="fa fa-save"></span>
+                                        <span>{% bs_icon 'save' %} </span>
                                     </button>
                                     <button type="submit" class="btn btn-sm btn-danger"
                                             name="delete_fixed_address"
                                             title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        <span class="fa fa-trash"></span>
+                                        <span>{% bs_icon 'trash' %} </span>
                                     </button>
                                 </td>
                             </form>
@@ -351,12 +352,12 @@
                             <button type="submit" class="btn btn-sm btn-primary"
                                     name="set_qos" data-bs-toggle="modal"
                                     title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                <i class="fa fa-save"></i>
+                                    {% bs_icon 'save' %} 
                             </button>
                             <button type="submit" class="btn btn-sm btn-danger"
                                     name="unset_qos"
                                     title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                <i class="fa fa-trash"></i>
+                                    {% bs_icon 'trash' %} 
                             </button>
                         </td>
                     </tr>

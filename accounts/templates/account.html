@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% load i18n %}
-{% load icons %}
+{% load bootstrap_icons %}
 {% load qr_code %}
 
 {% block title %}{% trans "User Profile" %} - {{ user }}{% endblock %}
@@ -10,14 +10,14 @@
 {% block page_heading_extra %}
 {% if otp_enabled %}
 <a href="{% url 'accounts:admin_email_otp' user.id %}" class="btn btn-secondary" title="{% trans "Email OTP QR code" %}">
-    {% icon 'qrcode' %}
+    {% bs_icon 'qr-code' %}
 </a>
 {% endif %}
 <a href="{% url 'admin:user_update' user.id %}?next={% url 'accounts:account' user.id %}" class="btn btn-primary" title="{% trans "Edit user" %}">
-    {% icon 'pencil' %}
+    {% bs_icon 'pencil' %}
 </a>
 <a href="{% url 'accounts:user_instance_create' user.id %}" class="btn btn-success" title="{% trans "Create user instance" %}">
-    {% icon 'plus' %}
+    {% bs_icon 'plus' %}
 </a>
 {% endblock page_heading_extra %}
 
@@ -58,12 +58,12 @@
                             <td>{{ inst.is_delete }}</td>
                             <td style="width:5px;">
                                 <a href="{% url 'accounts:user_instance_update' inst.id %}" class="btn btn-sm btn-secondary" title="{% trans "edit" %}">
-                                    {% icon 'pencil' %}
+                                    {% bs_icon 'pencil' %}
                                 </a>
                             </td>
                             <td style="width:5px;">
                                 <a class="btn btn-sm btn-secondary" href="{% url 'accounts:user_instance_delete' inst.id %}" title="{% trans "Delete" %}">
-                                    {% icon 'trash' %}
+                                    {% bs_icon 'trash' %}
                                 </a>
                             </td>
                         </tr>

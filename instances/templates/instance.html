@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% load bootstrap_icons %}
 
 {% block title %}{% trans "Instance" %} - {{ instance.name }}{% endblock %}
 
@@ -33,10 +34,10 @@
                 {% else %}
                     class="badge bg-danger"
                     title="{% trans "Guest Agent Not Enabled & Not Connected" %}"
-                {% endif %}><i class="fa fa-plug"></i></span>
+                {% endif %}>{% bs_icon 'plug' %} </span>
             |
             {% if instance.snapshots %}
-                <i class="fa fa-camera link-primary" title="There are {{ instance.snapshots|length }} snapshot(s)"></i>
+                {% bs_icon 'camera'%} <i title="There are {{ instance.snapshots|length }} snapshot(s)"></i>
             |
             {% endif %}
             {% if instance.cur_vcpu %}
@@ -57,11 +58,11 @@
             {% endfor %}
             {% if instance.guest_agent_ready %}
             <a class="link-secondary" title="{% trans 'Show Instance OS details' %}" onclick="get_osinfo();">
-                <span class="fa fa-info-circle"></span>
+                <span>{% bs_icon 'info-circle'%} </span>
             </a>
             {% endif %}
             <a class="link-secondary" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}">
-                <span class="fa fa-refresh"></span>
+                <span>{% bs_icon 'repeat'%} </span>
             </a>
         </div>
         {% if user_quota_msg %}
@@ -77,45 +78,45 @@
         <ul class="nav nav-pills nav-fill" id="navbtn" role="tablist" aria-label="Instance actions">
             <li class="nav-item" role="presentation">
                 <button class="nav-link action-button active" id="power-tab" aria-controls="power" data-bs-toggle="pill" data-bs-target="#power" type="button" role="tab" aria-selected="true">
-                    <span id="action-block" class="fa fa-power-off fa-2x" aria-hidden="true"></span>
+                    <span id="action-block" aria-hidden="true">{% bs_icon 'power' size='2em'%} </span>
                     {% trans "Power" %}
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link action-button" id="access-tab" aria-controls="access" data-bs-toggle="pill" data-bs-target="#access" type="button" role="tab" aria-selected="false">
-                    <span id="action-block" class="fa fa-lock" aria-hidden="true"></span>
+                    <span id="action-block" aria-hidden="true">{% bs_icon 'lock' size='2em'%} </span>
                     {% trans "Access" %}
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link action-button" id="resize-tab" aria-controls="resize" data-bs-toggle="pill" data-bs-target="#resize" type="button" role="tab" aria-selected="false">
-                    <span id="action-block" class="fa fa-expand" aria-hidden="true"></span>
+                    <span id="action-block" aria-hidden="true">{% bs_icon 'arrows-angle-expand' size='2em'%} </span>
                     {% trans "Resize" %}
                 </button>
             </li>
             {% if allow_admin_or_not_template and 'instances.snapshot_instances' in perms %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link action-button" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">
-                    <span id="action-block" class="fa fa-camera" aria-hidden="true"></span>
+                    <span id="action-block" aria-hidden="true">{% bs_icon 'camera' size='2em'%} </span>
                     {% trans "Snapshot" %}
                 </button>
             </li>
             {% endif %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link action-button" id="settings-tab" aria-controls="settings" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab" aria-selected="false">
-                    <span id="action-block" class="fa fa-cog" aria-hidden="true"></span>
+                    <span id="action-block" aria-hidden="true">{% bs_icon 'gear-wide-connected' size='2em'%} </span>
                     {% trans "Settings" %}
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link action-button" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">
-                    <span id="action-block" class="fa fa-bar-chart" aria-hidden="true"></span>
+                    <span id="action-block" aria-hidden="true">{% bs_icon 'bar-chart-line' size='2em'%} </span>
                     {% trans "Stats" %}
                 </button>
             </li>
                 <li class="nav-item" role="presentation">
                 <button class="nav-link action-button" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">
-                    <span id="action-block" class="fa fa-trash" aria-hidden="true"></span>
+                    <span id="action-block" aria-hidden="true">{% bs_icon 'trash' size='2em'%} </span>
                     {% trans "Destroy" %}
                 </button>
             </li>

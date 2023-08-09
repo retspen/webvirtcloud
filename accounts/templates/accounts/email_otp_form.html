@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
-{% load icons %}
+{% load bootstrap_icons %}
 {% load i18n %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -22,9 +22,9 @@
     </div>
     <div class="card-footer">
         <div class="mb-0 float-end">
-            <a class="btn btn-primary" href="javascript:history.back()">{% icon 'arrow-left' %} {% trans "Cancel" %}</a>
+            <a class="btn btn-primary" href="javascript:history.back()">{% bs_icon 'arrow-left' %} {% trans "Cancel" %}</a>
             <button type="submit" form="create-update" class="btn btn-success">
-                {% icon 'envelope-o' %} {% trans "Send" %}
+                {% bs_icon 'envelope-open' %} {% trans "Send" %}
             </button>
         </div>
     </div>

@@ -1,6 +1,7 @@
 {% load i18n %}
+{% load bootstrap_icons %}
 <a href="#AddInstance" type="button" class="btn btn-success btn-header float-end" data-bs-toggle="modal">
-    <span class="fa fa-plus" aria-hidden="true"></span>
+    <span aria-hidden="true">{% bs_icon 'plus'%} </span>
 </a>
 
 <!-- Modal pool -->
@@ -28,7 +29,7 @@
                             <tbody>
                                 {% for compute in computes %}
                                     {% if compute.status is True %}
-                                        <tr>
+                                        <tr style="text-decoration: none">
                                             <td>{{ compute.name }}</td>
                                             <td>{{ compute.cpu_count }}</td>
                                             <td>

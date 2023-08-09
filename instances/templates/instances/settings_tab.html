@@ -1,6 +1,6 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
-{% load icons %}
+{% load bootstrap_icons %}
 <div class="tab-pane" id="settings" role="tabpanel">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance settings">
@@ -8,7 +8,7 @@
             {% if instance.guest_agent_ready %}
             <li class="nav-item" role="presentation">
                 <button class="px-1 nav-link" data-bs-toggle="tab" id="osinfo-tab" data-bs-target="#osinfo" type="button" role="tab" aria-controls="osinfo" aria-selected="false" onclick="get_osinfo();">
-                    <span class="fa fa-info-circle"></span>
+                    <span>{% bs_icon 'info-circle' %} </span>
                 </button>
             </li>
             {% endif %}
@@ -134,10 +134,10 @@
                         </div>
                         <div>
                             <div class="row mt-4">
-                                <a href="#" id="boot_order_up" class="btn btn-light shadow-sm"><span class="fa fa-arrow-up" title="{% trans 'up: move selected devices' %}"></span></a>
+                                <a href="#" id="boot_order_up" class="btn btn-light shadow-sm"><span title="{% trans 'up: move selected devices' %}">{% bs_icon 'arrow-up' %} </span></a>
                             </div>
                             <div class="row mt-2">
-                                <a href="#" id="boot_order_down" class="btn btn-light shadow-sm"><span class="fa fa-arrow-down" title="{% trans 'down: move selected devices' %}"></span></a>
+                                <a href="#" id="boot_order_down" class="btn btn-light shadow-sm"><span title="{% trans 'down: move selected devices' %}">{% bs_icon 'arrow-down' %} </span></a>
                             </div>
                         </div>
                     </div>
@@ -158,7 +158,7 @@
                                 type="submit" type="button"
                                 title="{% trans 'Add CD-ROM' %}"
                                 {% if instance.status != 5 %} disabled {% endif %}>
-                            <span class="fa fa-plus"></span>
+                            <span>{% bs_icon 'plus' %} </span>
                         </button>
                     </p>
                 </form>
@@ -199,7 +199,7 @@
                                     {% endif %}
                                     {% if instance.status == 5 and allow_admin_or_not_template %}
                                         <a  href="{% url 'instances:detach_cdrom' instance.id cd.dev %}" class="btn btn-sm btn-danger float-end" title="{% trans "Detach CD-ROM (remove device)" %}">
-                                            {% icon 'remove' %}
+                                            {% bs_icon 'dash-circle' %}
                                         </a>
                                     {% endif %}
                                     
@@ -274,7 +274,7 @@
                                                         <strong>IO Mode:</strong> {{ disk.io }} <br/>
                                                         <strong>Discard:</strong> {{ disk.discard }} <br/>
                                                         <strong>Detect Zeroes:</strong> {{ disk.detect_zeroes }}">
-                                    <span class="fa fa-info"></span>
+                                    <span>{% bs_icon 'info' %} </span>
                                 </button>
                                 {{ disk.dev }}
                             </td>
@@ -307,11 +307,11 @@
                                     <input type="hidden" name="name" value="{{ disk.image }}">
                                     {% if instance.status == 5 %}
                                         <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
-                                            {% icon 'eject' %}
+                                            {% bs_icon 'eject' %}
                                         </button>
                                     {% else %}
                                         <button class="btn btn-sm btn-secondary disabled" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
-                                            {% icon 'eject' %}
+                                            {% bs_icon 'eject' %}
                                         </button>
                                     {% endif %}
                                 </form>
@@ -323,11 +323,11 @@
                                     <input type="hidden" name="name" value="{{ disk.image }}">
                                     {% if instance.status == 5 %}
                                         <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete volume?" %}')">
-                                            <i class="fa fa-trash"></i>
+                                            {% bs_icon 'trash' %}
                                         </button>
                                     {% else %}
                                         <button class="btn btn-sm btn-secondary disabled" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
-                                            <i class="fa fa-trash"></i>
+                                            {% bs_icon 'trash' %}
                                         </button>
                                     {% endif %}
                                 </form>
@@ -393,7 +393,7 @@
                                             title="{% trans "Edit NIC" %}" 
                                             data-bs-target="#editInstanceNetwork{{ forloop.counter0 }}"
                                             data-bs-toggle="modal">
-                                            <span class="fa fa-edit" aria-hidden="true"></span>
+                                            <span aria-hidden="true">{% bs_icon 'pencil-square' %} </span>
                                     </button>
 
                                     <div class="modal fade" id="editInstanceNetwork{{ forloop.counter0 }}" role="dialog" aria-labelledby="editInstanceNetworkLabel" aria-hidden="true">
@@ -471,7 +471,7 @@
                                 <form action="{% url 'instances:delete_network' instance.id %}" method="post" name="delete_network" role="form">{% csrf_token %}
                                     <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
                                         onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        <i class="fa fa-trash"></i>
+                                        {% bs_icon 'trash' %} 
                                     </button>
                                 </form>
                             </td>
@@ -547,7 +547,7 @@
                                             <button type="submit" class="btn btn-sm btn-primary"
                                                     name="set_qos" data-bs-toggle="modal"
                                                     title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                <span class="fa fa-save"></span>
+                                                <span>{% bs_icon 'save' %} </span>
                                             </button>
                                     </form>
                                             <form action="{% url 'instances:unset_qos' instance.id %}" method="post" role="form" aria-label="Instance QoS configuration form">
@@ -557,7 +557,7 @@
                                                 <button type="submit" class="btn btn-sm btn-danger"
                                                         name="unset_qos"
                                                         title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                    <i class="fa fa-trash"></i>
+                                                        {% bs_icon 'trash' %} 
                                                 </button>
                                             </form>
                                         </td>
@@ -694,7 +694,7 @@
                             <td><a href="{% url 'accounts:account' userinstance.user.id %}">{{ userinstance.user }}</a></td>
                             <td style="width:30px;">
                                 <a href="{% url 'accounts:user_instance_delete' userinstance.id %}?next={% url 'instances:instance' instance.id %}#users">
-                                    {% icon 'trash' %}
+                                    {% bs_icon 'trash' %}
                                 </a>
                             </td>
                         </tr>
