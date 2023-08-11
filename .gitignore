@@ -16,3 +16,4 @@ webvirtcloud/settings.py
 .coverage
 htmlcov
 *.log
+templates/webvirtcloud.code-workspace

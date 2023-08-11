@@ -8,38 +8,38 @@
             </a>
         {% else %}
             <a class="btn btn-sm btn-secondary" href="{% url 'instances:poweron' instance.id %}" onclick="showPleaseWaitDialog()" title="{% trans "Power On" %}">
-                {% bs_icon 'play' %}
+                {% bs_icon 'play-fill' %}
             </a>
         {% endif %}
-        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}">{% bs_icon 'pause' %}</a>
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}">{% bs_icon 'pause-fill' %}</a>
         <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power Off" %}">{% bs_icon 'power' %}</a>
         <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}">{% bs_icon 'repeat' %}</a>
         <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
-            <span>{% bs_icon 'eye' %}</span>
+            <span>{% bs_icon 'eye-fill' %}</span>
         </button>
     {% endif %}
     {% if instance.proxy.instance.info.0 == 3 %}
         <a class="btn btn-sm btn-secondary" href="{% url 'instances:resume' instance.id %}" title="{% trans "Resume" %}">
-            {% bs_icon 'play' %}
+            {% bs_icon 'play-fill' %}
         </a>
-        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}">{% bs_icon 'pause' %}</a>
+        <a class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}">{% bs_icon 'pause-fill' %}</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'instances:force_off' instance.id %}" title="{% trans "Force Off" %}">
             {% bs_icon 'power' %}
         </a>
         <a class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}">{% bs_icon 'repeat' %}</a>
         <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>
-            <span>{% bs_icon 'eye'%} </span>
+            <span>{% bs_icon 'eye-fill' %}</span>
         </button>
     {% endif %}
     {% if instance.proxy.instance.info.0 == 1 %}
-        <a class="btn btn-sm btn-secondary disabled" onclick="showPleaseWaitDialog()" title="{% trans "Power On" %}">{% bs_icon 'play' %}</a>
+        <a class="btn btn-sm btn-secondary disabled" onclick="showPleaseWaitDialog()" title="{% trans "Power On" %}">{% bs_icon 'play-fill' %}</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'instances:suspend' instance.id %}"
-            title="{% trans "Suspend" %}">{% bs_icon 'pause' %}</a>
+            title="{% trans "Suspend" %}">{% bs_icon 'pause-fill' %}</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'instances:poweroff' instance.id %}">{% bs_icon 'power' %}</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'instances:powercycle' instance.id %}">{% bs_icon 'repeat' %}</a>
         <button class="btn btn-sm btn-secondary" type="button" onclick='open_console("{{ instance.compute.id }}-{{ instance.get_uuid }}")'
             title="{% trans "Console" %}">
-            <span>{% bs_icon 'eye'%} </span>
+            <span>{% bs_icon 'eye-fill' %}</span>
         </button>
     {% endif %}
 </form>

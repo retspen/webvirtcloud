@@ -45,12 +45,12 @@
                         <td class="col-sm-2">
                             <div class="float-end btn-group">
                                 {% if compute.status is True %}
-                                    <a class="btn btn-success" title="{%trans "Overview" %}" href="{% url 'overview' compute.id %}">{% bs_icon 'eye' %}</a>
+                                    <a class="btn btn-success" title="{%trans "Overview" %}" href="{% url 'overview' compute.id %}">{% bs_icon 'eye-fill' %}</a>
                                 {% else %}
                                     <a class="btn btn-light" title="{%trans "Overview" %}">{% bs_icon 'eye' %}</a>
                                 {% endif %}                                    
-                                <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil' %}</a>
-                                <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x' %}</a>
+                                <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil-fill' %}</a>
+                                <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x-circle-fill' %}</a>
                             </div>
                         </td>
                     </tr>

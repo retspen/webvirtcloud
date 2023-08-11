@@ -31,10 +31,10 @@
                             <a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a><br>
                                 <small><em>
                                     {% if instance.userinstance_set.all.count > 0 %}
-                                    {{ instance.userinstance_set.all.0.user }}
-                                    {% if instance.userinstance_set.all.count > 1 %}
-                                    (+{{ instance.userinstance_set.all.count|add:"-1" }})
-                                    {% endif %}
+                                        {{ instance.userinstance_set.all.0.user }}
+                                        {% if instance.userinstance_set.all.count > 1 %}
+                                            (+{{ instance.userinstance_set.all.count|add:"-1" }})
+                                        {% endif %}
                                     {% endif %}
                                 </em></small>
                         </td>

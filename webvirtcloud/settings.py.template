@@ -127,7 +127,7 @@ else:
         Path.joinpath(BASE_DIR, "static"),
     ]
 
-
+BS_ICONS_CACHE = Path.joinpath(BASE_DIR, 'static/icon_cache')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
@@ -138,21 +138,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOCALE_PATHS = [
     "locale/",
 ]
-
-
-# Settings for django-icons
-DJANGO_ICONS = {
-
-    'DEFAULTS': {
-        'renderer': 'fontawesome4',
-    },
-
-    'RENDERERS': {
-        'fontawesome4': 'FontAwesome4Renderer',
-        'bootstrap3': 'Bootstrap3Renderer',
-    },
-}
-
 
 LOGGING = {
     'version': 1,
@@ -170,7 +155,7 @@ LOGGING = {
         'default': {
             'level':'INFO',
             'class':'logging.handlers.RotatingFileHandler',
-            'filename': '/srv/webvirtcloud/webvirtcloud.log',
+            'filename': 'webvirtcloud.log',
             'formatter':'standard',
         },
     },
@@ -180,6 +165,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True
         },
+        'django.request': {
+            "handlers": ["mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        }
     },
 }
 

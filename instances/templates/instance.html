@@ -23,7 +23,8 @@
                 <span class="badge bg-warning">{% trans "Suspend" %}</span>
             {% endif %}
             |
-            <span {%if instance.guest_agent %}
+            <span 
+                {%if instance.guest_agent %}
                     {% if instance.guest_agent_ready %}
                         class="badge bg-success"
                         title="{% trans "Guest Agent Enabled & Connected" %}"
@@ -34,7 +35,8 @@
                 {% else %}
                     class="badge bg-danger"
                     title="{% trans "Guest Agent Not Enabled & Not Connected" %}"
-                {% endif %}>{% bs_icon 'plug' %} </span>
+                {% endif %}>{% bs_icon 'broadcast' size='1em' %}
+            </span>
             |
             {% if instance.snapshots %}
                 {% bs_icon 'camera'%} <i title="There are {{ instance.snapshots|length }} snapshot(s)"></i>
@@ -57,11 +59,11 @@
                {% endfor %}
             {% endfor %}
             {% if instance.guest_agent_ready %}
-            <a class="link-secondary" title="{% trans 'Show Instance OS details' %}" onclick="get_osinfo();">
-                <span>{% bs_icon 'info-circle'%} </span>
+            <a class="link-warning" title="{% trans 'Show Instance OS details' %}" onclick="get_osinfo();">
+                <span>{% bs_icon 'info-circle' %} </span>
             </a>
             {% endif %}
-            <a class="link-secondary" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}">
+            <a class="link-success" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}">
                 <span>{% bs_icon 'repeat'%} </span>
             </a>
         </div>

@@ -16,7 +16,8 @@
             {% bootstrap_form attributes_form layout='horizontal' %}
         </form>
         <div class="float-end">
-            <a class="btn btn-primary" href="javascript:history.back()">{% bs_icon 'x' %} {% trans "Cancel" %}</a>
+            <a class="btn btn-primary" href="javascript:history.back()">
+                {% bs_icon 'x-square-fill' %} {% trans "Cancel" %}</a>
             <button type="submit" form="create-update" class="btn btn-success">
                 {% bs_icon 'check2' %} {% trans "Save" %}
             </button>

@@ -11,7 +11,7 @@
 {% block page_heading_extra %}
 <a href="{% url 'instances:create_instance_select_type' compute.id %}"
     class="btn btn-success btn-header float-end">
-    {% bs_icon 'plus' %}
+    {% bs_icon 'plus-circle-fill' %}
 </a>
 {% if instances %}
     {% include 'search_block.html' %}
@@ -64,7 +64,7 @@
                         <th scope="col">{% trans 'User' %}</th>
                         <th scope="col">{% trans 'Status' %}</th>
                         <th scope="col">{% trans 'VCPU' %}</th>
-                        <th scope="col">{% trans 'Memory' %}</th>
+                        <th scope="col" class="text-end">{% trans 'Memory' %}</th>
                         <th scope="col" data-sortable="false">{% trans 'Actions' %}</th>
                     </tr>
                 </thead>
@@ -87,15 +87,18 @@
                             </em>
                         </td>
                         <td>
-                            {% if instance.proxy.instance.info.0 == 1 %}<span
-                                class="text-success">{% trans "Active" %}</span>{% endif %}
-                            {% if instance.proxy.instance.info.0 == 5 %}<span
-                                class="text-danger">{% trans "Off" %}</span>{% endif %}
-                            {% if instance.proxy.instance.info.0 == 3 %}<span
-                                class="text-warning">{% trans "Suspended" %}</span>{% endif %}
+                            {% if instance.proxy.instance.info.0 == 1 %}
+                                <span class="text-success">{% trans "Active" %}</span>
+                            {% endif %}
+                            {% if instance.proxy.instance.info.0 == 5 %}
+                                <span class="text-danger">{% trans "Off" %}</span>
+                            {% endif %}
+                            {% if instance.proxy.instance.info.0 == 3 %}
+                                <span class="text-warning">{% trans "Suspended" %}</span>
+                            {% endif %}
                         </td>
                         <td>{{ instance.proxy.instance.info.3 }}</td>
-                        <td>{% widthratio instance.proxy.instance.info.1 1024 1 %} MiB</td>
+                        <td><p class="text-end">{% widthratio instance.proxy.instance.info.1 1024 1  %} MiB</p></td>
                         <td class="text-nowrap">
                             {% include 'instance_actions.html' %}
                         </td>
