@@ -45,6 +45,16 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="row">
+                            <label class="col-sm-4 col-form-label">{% trans "Model" %} </label>
+                            <div class="col-sm-6">
+                                <select class="form-select" name="add-net-model">
+                                    {% for model in net_models_host %}
+                                    <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>

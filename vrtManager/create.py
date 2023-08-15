@@ -161,6 +161,7 @@ class wvmCreate(wvmConnect):
         graphics,
         virtio,
         listener_addr,
+        net_model="virtio",
         video="vga",
         console_pass="random",
         mac=None,
@@ -316,7 +317,7 @@ class wvmCreate(wvmConnect):
             if nwfilter:
                 xml += f"""<filterref filter='{nwfilter}'/>"""
             if virtio:
-                xml += """<model type='virtio'/>"""
+                xml += f"""<model type='{net_model}'/>"""
             xml += """</interface>"""
 
         if console_pass == "random":

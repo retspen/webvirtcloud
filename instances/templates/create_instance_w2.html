@@ -169,6 +169,16 @@
                                                                         </select>
                                                                     </div>
                                                                 </div>
+                                                                <div class="row">
+                                                                    <label class="col-sm-4 col-form-label">{% trans "Model" %} </label>
+                                                                    <div class="col-sm-7">
+                                                                        <select class="form-select" name="net_model">
+                                                                            {% for model in net_models_host %}
+                                                                            <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
                                                                  <div class="row">
                                                                     <label class="col-sm-4 col-form-label">{% trans "Advanced" %}</label>
                                                                     <div class="d-grid col-sm-7">
@@ -422,7 +432,16 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <input id="mac" type="hidden" name="mac" value=""/>
+                    </div>
+                    <div class="row">
+                        <label class="col-sm-3 col-form-label">{% trans "Model" %} </label>
+                        <div class="col-sm-7 my-1">
+                            <select class="form-select" name="net_model">
+                                {% for model in net_models_host %}
+                                <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                     <div class="row">
                         <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
@@ -667,6 +686,16 @@
                             </div>
                         </div>
                         <div class="row">
+                            <label class="col-sm-3 col-form-label">{% trans "Model" %} </label>
+                            <div class="col-sm-7 my-1">
+                                <select class="form-select" name="net_model">
+                                    {% for model in net_models_host %}
+                                    <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
                             <div class="d-grid col-sm-7">
                                 <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#tempAdvCollapse" aria-expanded="false" aria-controls="tempAdvCollapse">
@@ -865,7 +894,7 @@
                                     '{% endfor %}' +
                                 '</select>' +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link float-end" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)">{% bs_icon 'trash'%} </a></li>';
+                                '<a class="btn-link float-end" onclick="javascript:$(\'#image-control\').multiselect(\'deselect\', \'' + value + '\', true)"> X </a></li>';
                         selected_list_html += li;
                         counter++;
                     });
@@ -899,7 +928,7 @@
                         let li = '<li><input type="text" class="input-xs" name="mac'+ net_counter +'" maxlength="17" required pattern="[a-zA-Z0-9:]+" onchange="populate_mac(' + net_counter +')">' +
                                 ' eth' + net_counter +
                                 ' -> ' + value + ' ' +
-                                '<a class="btn-link float-end" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)">{% bs_icon 'trash'%} </a></li>';
+                                '<a class="btn-link float-end" onclick="$(\'#network-control\').multiselect(\'deselect\', \'' + value + '\', true)"> X </a></li>';
                         random_mac(net_counter);
                         selected_list_html += li;
                         net_counter++;
