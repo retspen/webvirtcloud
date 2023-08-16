@@ -169,16 +169,6 @@
                                                                         </select>
                                                                     </div>
                                                                 </div>
-                                                                <div class="row">
-                                                                    <label class="col-sm-4 col-form-label">{% trans "Model" %} </label>
-                                                                    <div class="col-sm-7">
-                                                                        <select class="form-select" name="net_model">
-                                                                            {% for model in net_models_host %}
-                                                                            <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
-                                                                            {% endfor %}
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
                                                                  <div class="row">
                                                                     <label class="col-sm-4 col-form-label">{% trans "Advanced" %}</label>
                                                                     <div class="d-grid col-sm-7">
@@ -201,6 +191,16 @@
                                                                                 <option value="">{% trans "None" %}</option>
                                                                                 {% for nwfilter in nwfilters %}
                                                                                     <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                                                                {% endfor %}
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <label class="col-sm-4 col-form-label">{% trans "NIC Type" %} </label>
+                                                                        <div class="col-sm-7">
+                                                                            <select class="form-select" name="net_model">
+                                                                                {% for model in net_models_host %}
+                                                                                <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
                                                                                 {% endfor %}
                                                                             </select>
                                                                         </div>
@@ -434,16 +434,6 @@
                         </div>
                     </div>
                     <div class="row">
-                        <label class="col-sm-3 col-form-label">{% trans "Model" %} </label>
-                        <div class="col-sm-7 my-1">
-                            <select class="form-select" name="net_model">
-                                {% for model in net_models_host %}
-                                <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
                         <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
                         <div class="d-grid col-sm-7">
                             <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#custadvcollapse" aria-expanded="false" aria-controls="custadvcollapse">
@@ -477,6 +467,16 @@
                                     <option value="">{% trans "None" %}</option>
                                     {% for nwfilter in nwfilters %}
                                         <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label">{% trans "NIC Type" %} </label>
+                            <div class="col-sm-7">
+                                <select class="form-select" name="net_model">
+                                    {% for model in net_models_host %}
+                                    <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -686,16 +686,6 @@
                             </div>
                         </div>
                         <div class="row">
-                            <label class="col-sm-3 col-form-label">{% trans "Model" %} </label>
-                            <div class="col-sm-7 my-1">
-                                <select class="form-select" name="net_model">
-                                    {% for model in net_models_host %}
-                                    <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row">
                             <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
                             <div class="d-grid col-sm-7">
                                 <button class="btn btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#tempAdvCollapse" aria-expanded="false" aria-controls="tempAdvCollapse">
@@ -729,6 +719,16 @@
                                         <option value="">{% trans "None" %}</option>
                                         {% for nwfilter in nwfilters %}
                                             <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-sm-3 col-form-label">{% trans "NIC Type" %} </label>
+                                <div class="col-sm-7">
+                                    <select class="form-select" name="net_model">
+                                        {% for model in net_models_host %}
+                                        <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
