@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
-{% load icons %}
+{% load bootstrap_icons %}
 
 {% block title %}{% trans "Overview" %} - {{ compute.name }}{% endblock %}
 
@@ -12,25 +12,25 @@
         <nav aria-label="breadcrumb">
         <ol class="breadcrumb shadow-sm">
             <li class="breadcrumb-item" aria-current="page">
-                <span class="fw-bold">{% icon 'dashboard' %} {% trans "Overview" %}</span>
+                <span class="fw-bold">{% bs_icon 'laptop' %} {% trans "Overview" %}</span>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'instances' compute.id %}">{% icon 'server' %} {% trans "Instances" %}</a>
+                <a href="{% url 'instances' compute.id %}">{% bs_icon 'server' %} {% trans "Instances" %}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'storages' compute.id %}">{% icon 'hdd-o' %} {% trans "Storages" %}</a>
+                <a href="{% url 'storages' compute.id %}">{% bs_icon 'device-hdd' %} {% trans "Storages" %}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'networks' compute.id %}">{% icon 'sitemap' %} {% trans "Networks" %}</a>
+                <a href="{% url 'networks' compute.id %}">{% bs_icon 'hdd-network' %} {% trans "Networks" %}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'interfaces' compute.id %}">{% icon 'wifi' %} {% trans "Interfaces" %}</a>
+                <a href="{% url 'interfaces' compute.id %}">{% bs_icon 'wifi' %} {% trans "Interfaces" %}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'nwfilters' compute.id %}">{% icon 'filter' %} {% trans "NWFilters" %}</a>
+                <a href="{% url 'nwfilters' compute.id %}">{% bs_icon 'filter' %} {% trans "NWFilters" %}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'virtsecrets' compute.id %}">{% icon 'key' %} {% trans "Secrets" %}</a>
+                <a href="{% url 'virtsecrets' compute.id %}">{% bs_icon 'key' %} {% trans "Secrets" %}</a>
             </li>
         </ol>
         </nav>
@@ -96,7 +96,7 @@
             <div class="my-3 card border-success">
                 <div class="card-body">
                     <h5 class="card-title">
-                        <i class="fa fa-long-arrow-right"></i> 
+                        {% bs_icon 'arrow-right' %} 
                         {% trans "CPU Utilization" %}
                     </h5>
                     <canvas id="cpuChart" width="735" height="160"></canvas>
@@ -106,7 +106,7 @@
             <div class="my-3 card border-primary">
                     <div class="card-body">
                         <h5 class="card-title ">
-                            <i class="fa fa-long-arrow-right"></i> {% trans "RAM Utilization" %}
+                            {% bs_icon 'arrow-right'%} {% trans "RAM Utilization" %}
                         </h5>
                         <canvas id="memChart" width="735" height="160"></canvas>
                     </div>

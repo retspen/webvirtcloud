@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load django_bootstrap5 %}
-{% load icons %}
+{% load bootstrap_icons %}
 {% load tags_fingerprint %}
 
 {% block title %}{% trans "Profile" %}: {{ request.user.first_name }} {{ request.user.last_name}}{% endblock %}
@@ -30,12 +30,12 @@
                     {% bootstrap_form profile_form layout='horizontal' %}
                     {% if perms.accounts.change_password %}
                         <a href="{% url 'accounts:change_password' %}" class="btn btn-primary">
-                            {% icon 'lock' %} {% trans "Change Password" %}
+                            {% bs_icon 'lock' %} {% trans "Change Password" %}
                         </a>
                     {% endif %}
                     <div class="mb-0 float-end">
                         <button type="submit" class="btn btn-primary">
-                            {% icon 'pencil' %} {% trans "Update" %}
+                            {% bs_icon 'pencil' %} {% trans "Update" %}
                         </button>
                     </div>
                 </form>
@@ -53,7 +53,7 @@
                             <td>{{ key.keyname }} ({% ssh_to_fingerprint key.keypublic %})</td>
                             <td>
                                 <a href="{% url 'accounts:ssh_key_delete' key.id %}" title="{% trans "Delete" %}" class="btn btn-sm btn-secondary">
-                                    {% icon 'trash' %}
+                                    {% bs_icon 'trash' %}
                                 </a>
                             </td>
                         </tr>
@@ -73,7 +73,7 @@
                     {% bootstrap_form ssh_key_form layout='horizontal' %}
                     <div class="mb-0 float-end">
                         <button type="submit" class="btn btn-primary">
-                            {% icon 'plus' %} {% trans "Add" %}
+                            {% bs_icon 'plus-circle-fill' %} {% trans "Add" %}
                         </button>
                     </div>
                 </form>

@@ -1,11 +1,12 @@
 from admin.decorators import superuser_only
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model, update_session_auth_hash
+from django.contrib.auth import get_user_model, update_session_auth_hash, login as auth_login
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.http import HttpResponseRedirect
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 
@@ -14,7 +15,20 @@ from accounts.models import *
 
 from . import forms
 from .utils import get_user_totp_device, send_email_with_otp
+from django.contrib.auth.views import LoginView
+from logs.views import addlogmsg
 
+class CustomLoginView(LoginView):
+    def form_valid(self, form):
+        username = form.cleaned_data['username']
+        addlogmsg(username, "-", "-", "Logged In")
+        auth_login(self.request, form.get_user())
+        return HttpResponseRedirect(self.get_success_url())
+    
+    def form_invalid(self, form):
+        username = form.cleaned_data['username']
+        addlogmsg(username, "-", "-", "Failed Login Attempt")
+        return self.render_to_response(self.get_context_data(form=form))
 
 def profile(request):
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)

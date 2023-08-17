@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+{% load bootstrap_icons %}
 
 {% block title %}{% trans "NWFilters" %} - {{ compute.name }}{% endblock %}
 
@@ -17,25 +18,25 @@
             <nav aria-label="breadcrumb">
             <ol class="breadcrumb shadow-sm">
                 <li class="breadcrumb-item">
-                    <a href="{% url 'overview' compute.id %}"><i class="fa fa-dashboard"></i> {% trans "Overview" %}</a>
+                    <a href="{% url 'overview' compute.id %}">{% bs_icon 'laptop' %}  {% trans "Overview" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'instances' compute.id %}"><i class="fa fa-server"></i> {% trans "Instances" %}</a>
+                    <a href="{% url 'instances' compute.id %}">{% bs_icon 'server' %}  {% trans "Instances" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'storages' compute.id %}"><i class="fa fa-hdd-o"></i> {% trans "Storages" %}</a>
+                    <a href="{% url 'storages' compute.id %}">{% bs_icon 'device-hdd' %}  {% trans "Storages" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'networks' compute.id %}"><i class="fa fa-sitemap"></i> {% trans "Networks" %}</a>
+                    <a href="{% url 'networks' compute.id %}">{% bs_icon 'hdd-network' %}  {% trans "Networks" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'interfaces' compute.id %}"><i class="fa fa-wifi"></i> {% trans "Interfaces" %}</a>
+                    <a href="{% url 'interfaces' compute.id %}">{% bs_icon 'wifi' %}  {% trans "Interfaces" %}</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <span class="fw-bold"><i class="fa fa-filter"></i> {% trans "NWFilters" %}</span>
+                    <span class="fw-bold">{% bs_icon 'filter' %}  {% trans "NWFilters" %}</span>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'virtsecrets' compute.id %}"><i class="fa fa-key"></i> {% trans "Secrets" %}</a>
+                    <a href="{% url 'virtsecrets' compute.id %}">{% bs_icon 'key' %} {% trans "Secrets" %}</a>
                 </li>
             </ol>
             </nav>
@@ -81,7 +82,7 @@
                                 </div> <!-- /.modal-dialog -->
                             </div> <!-- /.modal -->
                             <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Show{{ forloop.counter }}" title="{% trans "Show" %}">
-                                <i class="fa fa-eye"></i>
+                                {% bs_icon 'eye' %} 
                             </button>
                         </td>
                         <td>
@@ -110,13 +111,13 @@
                                     </div> <!-- /.modal-content -->
                                 </div> <!-- /.modal-dialog -->
                             </div> <!-- /.modal -->
-                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}"><i class="fa fa-files-o"></i></button>
+                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}">{% bs_icon 'files' %} </button>
                         </td>
                         <td>
                             <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
                                 <input type="hidden" name="nwfiltername" value="{{ nwfilter.name }}">
                                 <button type="submit" class="btn btn-sm btn-secondary" name="del_nwfilter" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                    <i class="fa fa-trash"></i>
+                                    {% bs_icon 'trash' %} 
                                 </button>
                             </form>
                         </td>
@@ -129,7 +130,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="alert alert-warning shadow-sm">
-                        <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any NWFilters" %}
+                        {% bs_icon 'exclamation-triangle' %}  <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any NWFilters" %}
                     </div>
                 </div>
             </div>

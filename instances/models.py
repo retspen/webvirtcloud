@@ -252,6 +252,7 @@ class CreateInstance(models.Model):
         error_messages={"required": _("No Network pool has been choosen")},
     )
     nwfilter = models.CharField(max_length=256, blank=True)
+    net_model = models.CharField(max_length=256, blank=True)
     storage = models.CharField(max_length=256, blank=True)
     template = models.CharField(max_length=256, blank=True)
     images = models.CharField(max_length=256, blank=True)

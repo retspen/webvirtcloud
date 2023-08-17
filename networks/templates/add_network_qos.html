@@ -1,7 +1,8 @@
 {% load i18n %}
+{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     <a href="#AddQos{{ id }}" type="button" class="btn btn-sm btn-success float-end" data-bs-toggle="modal" title="add qos">
-        <span class="fa fa-barcode" aria-hidden="true"></span>
+        <span aria-hidden="true">{% bs_icon 'qr-code' %} </span>
     </a>
 
     <!-- Modal pool -->

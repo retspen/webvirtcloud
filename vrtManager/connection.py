@@ -757,7 +757,7 @@ class wvmConnect(object):
         """
         :return: network card models
         """
-        return ["default", "e1000", "virtio"]
+        return ["default", "e1000", "e1000e","rt18139", "virtio"]
 
     def get_image_formats(self):
         """

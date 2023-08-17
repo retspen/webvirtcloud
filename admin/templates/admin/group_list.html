@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
-{% load icons %}
+{% load bootstrap_icons %}
 {% block title %}{% trans "Users" %}{% endblock %}
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
         <a href="{% url 'admin:group_create' %}" class="btn btn-success btn-header float-end">
-            {% icon 'plus' %}
+            {% bs_icon 'plus-circle-fill' %}
         </a>
         {% include 'search_block.html' %}
         <h1 class="page-header">{% trans "Groups" %}</h1>
@@ -17,7 +17,7 @@
     {% if not groups %}
         <div class="col-lg-12">
             <div class="alert alert-warning shadow-sm">
-                {% icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any groups" %}
+                {% bs_icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any groups" %}
             </div>
         </div>
     {% else %}
@@ -38,10 +38,10 @@
                         <td>
                             <div class="float-end btn-group">
                                 <a class="btn btn-primary" href="{% url 'admin:group_update' group.id %}" title="{%trans "Edit" %}">
-                                    {% icon 'pencil' %}
+                                    {% bs_icon 'pencil' %}
                                 </a>
                                 <a class="btn btn-danger" href="{% url 'admin:group_delete' group.id %}" title="{%trans "Delete" %}">
-                                    {% icon 'times' %}
+                                    {% bs_icon 'x' %}
                                 </a>
                             </div>
                         </td>

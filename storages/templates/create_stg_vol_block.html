@@ -1,10 +1,11 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
+{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     {% if state != 0 %}
         {% if pool == "iso" %}
             <a href="#IsoUpload" class="btn btn-success float-end" data-bs-toggle="modal">
-                <span class="fa fa-plus" aria-hidden="true"></span>
+                <span aria-hidden="true">{% bs_icon 'plus-circle-fill' %} </span>
             </a>
 
             <!-- Modal Upload -->
@@ -35,7 +36,7 @@
             </div> <!-- /.modal -->
         {% else %}
             <a href="#AddImage" class="btn btn-success float-end" data-bs-toggle="modal">
-                <span class="fa fa-plus" aria-hidden="true"></span>
+                <span aria-hidden="true">{% bs_icon 'plus-circle-fill' %} </span>
             </a>
 
             <!-- Modal Image -->

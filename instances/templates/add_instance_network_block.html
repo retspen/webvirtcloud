@@ -1,7 +1,8 @@
 {% load i18n %}
+{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     <button type="button" class="btn btn-success float-end" data-bs-toggle="modal" data-bs-target="#addInstanceNetwork">
-        <span class="fa fa-plus" aria-hidden="true"></span>
+        <span aria-hidden="true">{% bs_icon 'plus'%} </span>
     </button>
 
     <!-- Modal pool -->
@@ -40,6 +41,16 @@
                                     <option value="">{% trans "None" %}</option>
                                     {% for nwfilter in nwfilters_host %}
                                         <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label class="col-sm-4 col-form-label">{% trans "NIC Type" %} </label>
+                            <div class="col-sm-6">
+                                <select class="form-select" name="add-net-model">
+                                    {% for model in net_models_host %}
+                                    <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
                                     {% endfor %}
                                 </select>
                             </div>

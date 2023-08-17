@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load django_bootstrap5 %}
+{% load bootstrap_icons %}
 
 {% block title %}{% trans "Logs" %}{% endblock %}
 
@@ -18,7 +19,7 @@
         {% if not logs %}
             <div class="col-lg-12">
                 <div class="alert alert-warning shadow-sm">
-                    <i class="fa fa-exclamation-triangle"></i> <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Logs" %}
+                    {% bs_icon 'exclamation-triangle'%}  <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Logs" %}
                 </div>
             </div>
         {% else %}

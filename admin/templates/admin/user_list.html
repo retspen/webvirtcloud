@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load static %}
 {% load common_tags %}
-{% load icons %}
+{% load bootstrap_icons %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -10,7 +10,7 @@
 
 {% block page_heading_extra %}
 <a href="{% url 'admin:user_create' %}" class="btn btn-success btn-header float-end">
-    {% icon 'plus' %}
+    {% bs_icon 'plus-circle-fill' %}
 </a>
 {% include 'search_block.html' %}
 {% endblock page_heading_extra %}
@@ -20,7 +20,7 @@
     {% if not users %}
         <div class="col-lg-12">
             <div class="alert alert-warning shadow-sm">
-                {% icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any user" %}
+                {% bs_icon 'exclamation-triangle '%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any user" %}
             </div>
         </div>
     {% else %}
@@ -50,19 +50,19 @@
                                 {% trans "Blocked" %}
                             {% endif %}
                         </td>
-                        <td>{% if user.is_staff %}{% icon 'check' %}{% endif %}</td>
-                        <td>{% if user.is_superuser %}{% icon 'check' %}</span>{% endif %}</td>
-                        <td>{% if can_clone %}{% icon 'check' %}{% endif %}</td>
+                        <td>{% if user.is_staff %}{% bs_icon 'check' %}{% endif %}</td>
+                        <td>{% if user.is_superuser %}{% bs_icon 'check' %}</span>{% endif %}</td>
+                        <td>{% if can_clone %}{% bs_icon 'check' %}{% endif %}</td>
                         <td>
                             <div class="float-end btn-group">
-                                <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'accounts:account' user.id %}">{% icon 'eye' %}</a>
-                                <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'admin:user_update' user.id %}">{% icon 'pencil' %}</a>
+                                <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'accounts:account' user.id %}">{% bs_icon 'eye-fill' %}</a>
+                                <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'admin:user_update' user.id %}">{% bs_icon 'pencil-fill' %}</a>
                                 {% if user.is_active %}
-                                    <a class="btn btn-warning" title="{%trans "Block" %}" href="{% url 'admin:user_block' user.id %}">{% icon 'stop' %}</a>
+                                    <a class="btn btn-warning" title="{%trans "Block" %}" href="{% url 'admin:user_block' user.id %}">{% bs_icon 'stop-fill' %}</a>
                                 {% else %}
-                                    <a class="btn btn-success" title="{%trans "Unblock" %}" href="{% url 'admin:user_unblock' user.id %}">{% icon 'play' %}</a>
+                                    <a class="btn btn-success" title="{%trans "Unblock" %}" href="{% url 'admin:user_unblock' user.id %}">{% bs_icon 'play-fill' %}</a>
                                 {% endif %}
-                                <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'admin:user_delete' user.id %}">{% icon 'times' %}</a>
+                                <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'admin:user_delete' user.id %}">{% bs_icon 'x-circle-fill' %}</a>
                             </div>
                         </td>
                     </tr>

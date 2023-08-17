@@ -1,8 +1,9 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
+{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     <button href="#addFlavor" type="button" class="btn btn-success btn-header float-end" data-bs-toggle="modal">
-        <span class="fa fa-plus" aria-hidden="true"></span>
+        <span aria-hidden="true">{% bs_icon 'plus'%} </span>
     </button>
 
     <!-- Modal Flavor -->

@@ -1253,6 +1253,7 @@ def add_network(request, pk):
     mac = request.POST.get("add-net-mac")
     nwfilter = request.POST.get("add-net-nwfilter")
     (source, source_type) = utils.get_network_tuple(request.POST.get("add-net-network"))
+    model = request.POST.get("add-net-model")
 
     if source_type == "iface":
         iface = wvmInterface(
@@ -1264,7 +1265,7 @@ def add_network(request, pk):
         )
         source_type = iface.get_type()
 
-    instance.proxy.add_network(mac, source, source_type, nwfilter=nwfilter)
+    instance.proxy.add_network(mac, source, source_type, model=model, nwfilter=nwfilter)
     msg = _("Add network: %(mac)s") % {"mac": mac}
     addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(request.META.get("HTTP_REFERER") + "#network")
@@ -1690,6 +1691,7 @@ def create_instance(request, compute_id, arch, machine):
         default_bus = app_settings.INSTANCE_VOLUME_DEFAULT_BUS
         networks = sorted(conn.get_networks())
         nwfilters = conn.get_nwfilters()
+        net_models_host = conn.get_network_models()
         storages = sorted(conn.get_storages(only_actives=True))
         default_graphics = app_settings.QEMU_CONSOLE_DEFAULT_TYPE
         default_cdrom = app_settings.INSTANCE_CDROM_ADD
@@ -1866,6 +1868,7 @@ def create_instance(request, compute_id, arch, machine):
                                 virtio=data["virtio"],
                                 listener_addr=data["listener_addr"],
                                 nwfilter=data["nwfilter"],
+                                net_model=data["net_model"],
                                 graphics=data["graphics"],
                                 video=data["video"],
                                 console_pass=data["console_pass"],

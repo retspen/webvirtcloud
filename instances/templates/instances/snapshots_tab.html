@@ -1,5 +1,5 @@
 {% load i18n %}
-{% load icons %}
+{% load bootstrap_icons %}
 <div class="tab-pane" id="snapshots" role="tabpanel">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance snapshot menu">
@@ -90,12 +90,12 @@
                                                 <input type="hidden" name="name" value="{{ snap.name }}">
                                                 {% if instance.status == 5 %}
                                                     <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('Are you sure?')">
-                                                            <span class="fa fa-download"></span>
+                                                            <span>{% bs_icon 'download' %} </span>
                                                     </button>
                                                 {% else %}
                                                     <button type="button" class="btn btn-sm btn-primary disabled"
                                                             title="{% trans "To restore snapshots you need Power Off the instance." %}">
-                                                            <span class="fa fa-download"></span>
+                                                            <span>{% bs_icon 'download' %} </span>
                                                     </button>
                                                 {% endif %}
                                             </form>
@@ -104,7 +104,7 @@
                                             <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post" role="form" aria-label="Delete snapshot form">{% csrf_token %}
                                                 <input type="hidden" name="name" value="{{ snap.name }}">
                                                 <button type="submit" class="btn btn-sm btn-danger" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                    {% icon 'trash' %}
+                                                    {% bs_icon 'trash' %}
                                                 </button>
                                             </form>
                                         </td>
@@ -123,7 +123,7 @@
                                                 <input type="hidden" name="date" value="{{ ext_snap.date }}">
                                                 <input type="hidden" name="desc" value="{{ ext_snap.description }}">
                                                 <button type="submit" class="btn btn-sm btn-primary" name="revert_external_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('You are going to lose your unsaved work by reverting to this snapshot state. Are you sure?')">
-                                                        <span class="fa fa-download"></span>
+                                                        <span>{% bs_icon 'download' %} </span>
                                                 </button>
                                             </form>
                                         </td>
@@ -131,7 +131,7 @@
                                             <form action="{% url 'instances:delete_external_snapshot' instance.id %}" method="post" role="form" aria-label="Delete external snapshot form">{% csrf_token %}
                                                 <input type="hidden" name="name" value="{{ ext_snap.name }}">
                                                 <button type="submit" class="btn btn-sm btn-danger" name="delete_external_snapshot" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('You are about to delete this snapshot and merge it with base image. Are you sure?')">
-                                                    {% icon 'trash' %}
+                                                    {% bs_icon 'trash' %}
                                                 </button>
                                             </form>
                                         </td>

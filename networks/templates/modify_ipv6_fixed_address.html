@@ -1,7 +1,8 @@
 {% load i18n %}
+{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     <a href="#AddFixedNet6" type="button" class="btn btn-success float-end" data-bs-toggle="modal">
-        <span class="fa fa-plus" aria-hidden="true"></span>
+        <span aria-hidden="true">{% bs_icon 'plus' %} </span>
     </a>
 
     <!-- Modal pool -->
