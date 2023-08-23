@@ -3,7 +3,7 @@ language: python
 python:
   - "3.9"
 env:
-  - DJANGO=3.2.15
+  - DJANGO=4.2.4
 install:
   - pip install -r dev/requirements.txt
 script:
