@@ -1368,7 +1368,7 @@ class wvmInstance(wvmConnect):
         name = name.replace("s1", "s2")
         self.create_external_snapshot(name, date, desc)
 
-    def get_snapshot(self, flag=VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
+    def get_snapshot(self, flag=VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL|VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
         snapshots = []
         snapshot_list = self.instance.snapshotListNames(flag)
         for snapshot in snapshot_list:

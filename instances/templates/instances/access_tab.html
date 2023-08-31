@@ -62,12 +62,11 @@
             {% endif %}
             {% if instance.status == 1 %}
             <!-- Split button -->
-            <div class="btn-group float-end">
+            <div class="btn-group float-end" role="group">
                 <button type="button" id="consoleBtnGroup" class="btn btn-lg btn-success"
                     onclick="open_console('lite')">{% trans 'Console' %}</button>
                 <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split"
                     data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <span class="sr-only">{%  trans 'Toggle Dropdown' %}</span>
                 </button>
                 <div class="dropdown-menu">
                     <a class="dropdown-item" href="#"
