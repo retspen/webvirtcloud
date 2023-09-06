@@ -246,6 +246,13 @@ install_webvirtcloud () {
   sed -i "s|^\\(WS_PUBLIC_PORT = \\).*|\\1$novncd_public_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
   sed -i "s|^\\(WS_HOST = \\).*|\\1\'$novncd_host_escape\'|" "$APP_PATH/webvirtcloud/settings.py"
 
+  # set CSRF TRUSTED ORIGINS
+  host_ip="'http://127.0.0.1', "
+  for i in $(hostname -I); do
+    host_ip+="'http://$i', " 
+  done
+  sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" /srv/webvirtcloud/webvirtcloud/settings.py
+
   echo "* Activate virtual environment."
   activate_python_environment
 
@@ -409,6 +416,7 @@ case $distro in
     ;;
 esac
 
+fqdn="localhost"
 setupfqdn=default
 until [[ $setupfqdn == "yes" ]] || [[ $setupfqdn == "no" ]]; do
   echo -n "  Q. Do you want to configure fqdn for Nginx? (y/n) "
@@ -418,9 +426,6 @@ until [[ $setupfqdn == "yes" ]] || [[ $setupfqdn == "no" ]]; do
     [yY] | [yY][Ee][Ss] )
     echo -n "  Q. What is the FQDN of your server? ($(hostname --fqdn)): "
       read -r fqdn
-      if [ -z "$fqdn" ]; then
-      readonly fqdn="$(hostname --fqdn)"
-      fi
       setupfqdn="yes"
       echo "     Setting to $fqdn"
       echo ""
