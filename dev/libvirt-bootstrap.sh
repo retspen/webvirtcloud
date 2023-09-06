@@ -631,6 +631,7 @@ install_ubuntu_post() {
         sed -i 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
         sed -i 's/#listen_tcp/listen_tcp/g' /etc/libvirt/libvirtd.conf
         sed -i 's/#auth_tcp/auth_tcp/g' /etc/libvirt/libvirtd.conf
+        sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' /etc/libvirt/libvirtd.conf
     else
         echoerror "/etc/libvirt/libvirtd.conf not found. Exiting..."
         exit 1
@@ -710,6 +711,7 @@ install_debian_post() {
         sed -i 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
         sed -i 's/#listen_tcp/listen_tcp/g' /etc/libvirt/libvirtd.conf
         sed -i 's/#auth_tcp/auth_tcp/g' /etc/libvirt/libvirtd.conf
+        sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' /etc/libvirt/libvirtd.conf
     else
         echoerror "/etc/libvirt/libvirtd.conf not found. Exiting..."
         exit 1
