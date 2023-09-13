@@ -20,3 +20,4 @@ djangorestframework==3.14.0
 drf-nested-routers==0.93.4
 drf-yasg==1.21.7
 markdown>=3.4.1
+django-auth-ldap==4.5.0

@@ -385,55 +385,73 @@ python manage.py test
 
 ## LDAP Configuration
 
-The example settings are based on an OpenLDAP server with groups defined as "cn" of class "groupOfUniqueNames"
+The config options below can be changed in `webvirtcloud/settings.py` file. Variants for Active Directory and OpenLDAP are shown. This is a minimal config to get LDAP running, for further info read the [django-auth-ldap documentation](https://django-auth-ldap.readthedocs.io).
 
 Enable LDAP
 
 ```bash
-sudo sed -i "s/LDAP_ENABLED = False/LDAP_ENABLED = True/g"" /srv/webvirtcloud/webvirtcloud/settings.py
+sudo sed -i "s~#\"django_auth_ldap.backend.LDAPBackend\",~\"django_auth_ldap.backend.LDAPBackend\",~g" /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
-Set the LDAP server name and root DN
+Set the LDAP server name and bind DN
 
-```bash
-sudo sed -i "s/LDAP_URL = ''/LDAP_URL = 'myldap.server.com'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
-sudo sed -i "s/LDAP_ROOT_DN = ''/LDAP_ROOT_DN = 'dc=server,dc=com'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
+```python
+# Active Directory
+AUTH_LDAP_SERVER_URI = "ldap://example.com"
+AUTH_LDAP_BIND_DN = "username@example.com"
+AUTH_LDAP_BIND_PASSWORD = "password"
+
+# OpenLDAP
+AUTH_LDAP_SERVER_URI = "ldap://example.com"
+AUTH_LDAP_BIND_DN = "CN=username,CN=Users,OU=example,OU=com"
+AUTH_LDAP_BIND_PASSWORD = "password"
 ```
 
-Set the passphrase to decrypt the password
-```bash
-sudo sed -i "s/pass:MYPASSPHRASE/pass:MYTRUEPASSPHRASE/g" /srv/webvirtcloud/webvirtcloud/.dec_ldap_pwd.sh
+Set the user filter and user and group search base and filter
+
+```python
+# Active Directory
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(sAMAccountName=%(user)s)"
+)
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=group)"
+)
+AUTH_LDAP_GROUP_TYPE = NestedActiveDirectoryGroupType()
+
+# OpenLDAP
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(cn=%(user)s)"
+)
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=groupOfUniqueNames)"
+)
+AUTH_LDAP_GROUP_TYPE = GroupOfUniqueNamesType()  # import needs to be changed at the top of settings.py
 ```
 
-Encrypt the password
-```bash
-echo MYPASSWORD | openssl enc -pbkdf2 -salt -pass pass:MYTRUEPASSPHRASE | base64
+Set group which is required to access WebVirtCloud. You may set this to `False` to disable this filter.
+
+```python
+AUTH_LDAP_REQUIRE_GROUP = "CN=WebVirtCloud Access,CN=Users,DC=example,DC=com"
 ```
 
-Set the user that has browse access to LDAP and its password encrypted
+Populate user fields with values from LDAP
 
-```bash
-sudo sed -i "s/LDAP_MASTER_DN = ''/LDAP_MASTER_DN = 'cn=admin,ou=users,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
-sudo sed -i "s/LDAP_MASTER_PW_ENC = ''/LDAP_MASTER_PW_ENC = 'MYPASSWORDENCRYPTED'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
+```python
+AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+    "is_staff": "CN=WebVirtCloud Staff,CN=Users,DC=example,DC=com",
+    "is_superuser": "CN=WebVirtCloud Admins,CN=Users,DC=example,DC=com",
+}
+AUTH_LDAP_USER_ATTR_MAP = {
+    "first_name": "givenName",
+    "last_name": "sn",
+    "email": "mail",
+}
 ```
 
-Set the attribute that will be used to find the username, i usually use the cn
+Now when you login with an LDAP user it will be assigned the rights defined. The user will be authenticated then with LDAP and authorized through the WebVirtCloud permissions.
 
-```bash
-sudo sed -i "s/LDAP_USER_UID_PREFIX = ''/LDAP_USER_UID_PREFIX = 'cn'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
-```
-
-You can now create the filters to retrieve the users for the various group. This will be used during the user creation only
-
-```bash
-sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_ADMINS = ''/LDAP_SEARCH_GROUP_FILTER_ADMINS = 'memberOf=cn=admins,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
-sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_STAFF = ''/LDAP_SEARCH_GROUP_FILTER_STAFF = 'memberOf=cn=staff,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
-sudo sed -i "s/LDAP_SEARCH_GROUP_FILTER_USERS = ''/LDAP_SEARCH_GROUP_FILTER_USERS = 'memberOf=cn=users,dc=kendar,dc=org'/g"" /srv/webvirtcloud/webvirtcloud/settings.py
-```
-
-Now when you login with an LDAP user it will be assigned the rights defined. The user will be authenticated then with ldap and authorized through the WebVirtCloud permissions.
-
-If you'd like to move a user from ldap to WebVirtCloud, just change its password from the UI and (eventually) remove from the group in ldap
+If you'd like to move a user from ldap to WebVirtCloud, just change its password from the UI and (eventually) remove from the group in LDAP.
 
 
 ## REST API / BETA
