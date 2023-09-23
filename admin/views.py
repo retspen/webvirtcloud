@@ -117,7 +117,7 @@ def user_create(request):
 @superuser_only
 def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
-    attributes = UserAttributes.objects.get(user=user)
+    attributes, attributes_created = UserAttributes.objects.get_or_create(user=user)
     user_form = forms.UserForm(request.POST or None, instance=user)
     attributes_form = forms.UserAttributesForm(
         request.POST or None, instance=attributes
