@@ -160,7 +160,7 @@
                                 </div> <!-- /.modal-content -->
                             </div> <!-- /.modal-dialog -->
                         </div> <!-- /.modal -->
-                        {% ifnotequal volume.type "iso" %}
+                        {% if volume.type != "iso" %}
                             <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}">
                                 {% bs_icon 'files' %} 
                             </button>
@@ -168,7 +168,7 @@
                             <button class="btn btn-sm btn-secondary disabled">
                                 {% bs_icon 'files' %} 
                             </button>
-                        {% endifnotequal %}
+                        {% endif %}
                     </td>  
                     <td>  
                         <form action="" method="post" role="form" aria-label="Delete volume form">{% csrf_token %}
