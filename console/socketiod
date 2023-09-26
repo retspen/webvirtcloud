@@ -200,8 +200,13 @@ def disconnect(sid):
     global child_pid
 
     # kill pty process
-    os.kill(child_pid, signal.SIGKILL)
-    os.wait()
+    try:
+        os.kill(child_pid, signal.SIGKILL)
+        os.wait()
+    except ProcessLookupError:
+        pass
+    except ChildProcessError:
+        pass
 
     # reset the variables
     fd = None
