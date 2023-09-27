@@ -176,7 +176,7 @@ def connect(sid, environ):
     if child_pid:
         # already started child process, don't start another
         # write a new line so that when a client refresh the shell prompt is printed
-        fd.write("\n")
+        os.write(fd, str.encode("\n"))
         return
 
     # create child process attached to a pty we can read from and write to
@@ -200,8 +200,13 @@ def disconnect(sid):
     global child_pid
 
     # kill pty process
-    os.kill(child_pid, signal.SIGKILL)
-    os.wait()
+    try:
+        os.kill(child_pid, signal.SIGKILL)
+        os.wait()
+    except ProcessLookupError:
+        pass
+    except ChildProcessError:
+        pass
 
     # reset the variables
     fd = None

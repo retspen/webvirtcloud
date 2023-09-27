@@ -201,7 +201,7 @@ WS_PUBLIC_PATH = "/novncd/"
 WS_CERT = None
 
 SOCKETIO_PORT = 6081
-SOCKETIO_HOST = '0.0.0.0'
+SOCKETIO_HOST = "0.0.0.0"
 
 # Socketio public host
 SOCKETIO_PUBLIC_HOST = None
