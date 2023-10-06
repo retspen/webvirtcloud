@@ -30,6 +30,7 @@
                     <tr>
                         <th span="col">{% trans "Username" %}</th>
                         <th span="col">{% trans "Status" %}</th>
+                        <th span="col">{% trans "Last Login" %}</th>
                         <th span="col">{% trans "Staff" %}</th>
                         <th span="col">{% trans "Superuser" %}</th>
                         <th span="col">{% trans "Can Clone" %}</th>
@@ -50,6 +51,7 @@
                                 {% trans "Blocked" %}
                             {% endif %}
                         </td>
+                        <td>{{ user.last_login }}</td>
                         <td>{% if user.is_staff %}{% bs_icon 'check' %}{% endif %}</td>
                         <td>{% if user.is_superuser %}{% bs_icon 'check' %}</span>{% endif %}</td>
                         <td>{% if can_clone %}{% bs_icon 'check' %}{% endif %}</td>
