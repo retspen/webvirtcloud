@@ -15,6 +15,8 @@ SECRET_KEY = ""
 
 DEBUG = False
 
+MAC_OUI = '52:54:10'
+
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost',]
