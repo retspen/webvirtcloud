@@ -6,6 +6,8 @@ import string
 import libvirt
 import lxml.etree as etree
 
+from django.conf import UserSettingsHolder, settings
+
 
 def is_kvm_available(xml):
     kvm_domains = get_xml_path(xml, "//domain/@type='kvm'")
@@ -15,10 +17,12 @@ def is_kvm_available(xml):
 def randomMAC():
     """Generate a random MAC address."""
     # qemu MAC
-    oui = [0x52, 0x54, 0x00]
-
-    mac = oui + [random.randint(0x00, 0xFF), random.randint(0x00, 0xFF), random.randint(0x00, 0xFF)]
-    return ":".join(map(lambda x: "%02x" % x, mac))
+    mac = settings.MAC_OUI + ":%02x:%02x:%02x" % (
+        random.randint(0x00, 0xFF),
+        random.randint(0x00, 0xFF),
+        random.randint(0x00, 0xFF),
+    )
+    return mac
 
 
 def randomUUID():

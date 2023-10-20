@@ -196,7 +196,7 @@ def get_dhcp_mac_address(vname):
 
 
 def get_random_mac_address():
-    mac = "52:54:00:%02x:%02x:%02x" % (
+    mac = settings.MAC_OUI + ":%02x:%02x:%02x" % (
         random.randint(0x00, 0xFF),
         random.randint(0x00, 0xFF),
         random.randint(0x00, 0xFF),
