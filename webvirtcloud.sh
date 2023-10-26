@@ -174,7 +174,7 @@ configure_nginx () {
   fi
 
   novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-  sed -i "s|\\(server 127.0.0.1:\\).*|\\1$novncd_port_escape;|" "$nginxfile"
+  sed -i "s|server 127.0.0.1:6080;|server 127.0.0.1:$novncd_port_escape;|" "$nginxfile"
 
 }
 
