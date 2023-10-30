@@ -127,11 +127,12 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 if not DEBUG:
-    STATIC_ROOT = Path.joinpath(BASE_DIR, "static")
-else:
-    STATICFILES_DIRS = [
-        Path.joinpath(BASE_DIR, "static"),
-    ]
+    STATIC_ROOT = ""
+
+STATICFILES_DIRS = [
+    Path.joinpath(BASE_DIR, "static"),
+]
+
 
 BS_ICONS_CACHE = Path.joinpath(BASE_DIR, 'static/icon_cache')
 
