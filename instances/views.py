@@ -1692,6 +1692,7 @@ def create_instance(request, compute_id, arch, machine):
         networks = sorted(conn.get_networks())
         nwfilters = conn.get_nwfilters()
         net_models_host = conn.get_network_models()
+        default_nic_type = app_settings.INSTANCE_NIC_DEFAULT_TYPE
         storages = sorted(conn.get_storages(only_actives=True))
         default_graphics = app_settings.QEMU_CONSOLE_DEFAULT_TYPE
         default_cdrom = app_settings.INSTANCE_CDROM_ADD

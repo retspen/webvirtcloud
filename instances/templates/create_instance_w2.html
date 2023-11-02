@@ -200,7 +200,7 @@
                                                                         <div class="col-sm-7">
                                                                             <select class="form-select" name="net_model">
                                                                                 {% for model in net_models_host %}
-                                                                                <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
+                                                                                <option value="{{ model }}" {% if model == default_nic_type %} selected {% endif %}>{{ model }}</option>
                                                                                 {% endfor %}
                                                                             </select>
                                                                         </div>
@@ -476,7 +476,7 @@
                             <div class="col-sm-7">
                                 <select class="form-select" name="net_model">
                                     {% for model in net_models_host %}
-                                    <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
+                                    <option value="{{ model }}" {% if model == default_nic_type %} selected {% endif %}>{{ model }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -728,7 +728,7 @@
                                 <div class="col-sm-7">
                                     <select class="form-select" name="net_model">
                                         {% for model in net_models_host %}
-                                        <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
+                                        <option value="{{ model }}" {% if model == default_nic_type %} selected {% endif %}>{{ model }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
