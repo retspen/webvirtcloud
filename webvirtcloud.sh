@@ -424,9 +424,15 @@ until [[ $setupfqdn == "yes" ]] || [[ $setupfqdn == "no" ]]; do
 
   case $setupfqdn in
     [yY] | [yY][Ee][Ss] )
-    echo -n "  Q. What is the FQDN of your server? ($(hostname --fqdn)): "
-      read -r fqdn
+    fqdn=$(hostname --fqdn)
+    echo -n "  Q. What is the FQDN of your server? ($fqdn): "
+      read -r fqdn_from_user
       setupfqdn="yes"
+
+      if [ ! -z $fqdn_from_user ]; then
+        fqdn=$fqdn_from_user
+      fi
+
       echo "     Setting to $fqdn"
       echo ""
       ;;
