@@ -126,13 +126,11 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-if not DEBUG:
-    STATIC_ROOT = ""
+STATIC_ROOT = "static"
 
 STATICFILES_DIRS = [
-    Path.joinpath(BASE_DIR, "static"),
+    Path.joinpath(BASE_DIR, "webvirtcloud/static"),
 ]
-
 
 BS_ICONS_CACHE = Path.joinpath(BASE_DIR, 'static/icon_cache')
 

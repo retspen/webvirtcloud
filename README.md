@@ -72,7 +72,7 @@ virtualenv -p python3 venv
 source venv/bin/activate
 pip install -r conf/requirements.txt
 python3 manage.py migrate
-python3 manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput --clear --link
 sudo chown -R www-data:www-data /srv/webvirtcloud
 sudo rm /etc/nginx/sites-enabled/default
 ```
@@ -120,7 +120,7 @@ source venv/bin/activate
 pip3 install -r conf/requirements.txt
 cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 python3 manage.py migrate
-python3 manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput --clear --link
 ```
 
 #### Configure the supervisor for CentOS
@@ -359,7 +359,7 @@ source venv/bin/activate
 git pull
 pip3 install -U -r conf/requirements.txt 
 python3 manage.py migrate
-python3 manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput --clear --link
 sudo service supervisor restart
 ```
 
