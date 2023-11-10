@@ -2,7 +2,7 @@ import os
 import random
 import string
 
-from accounts.models import UserInstance
+from accounts.models import UserInstance, UserAttributes
 from appsettings.settings import app_settings
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -26,7 +26,7 @@ def get_clone_free_names(size=10):
 
 
 def check_user_quota(user, instance, cpu, memory, disk_size):
-    ua = user.userattributes
+    ua, attributes_created = UserAttributes.objects.get_or_create(user=user)
     msg = ""
 
     if user.is_superuser:
@@ -196,7 +196,7 @@ def get_dhcp_mac_address(vname):
 
 
 def get_random_mac_address():
-    mac = "52:54:00:%02x:%02x:%02x" % (
+    mac = settings.MAC_OUI + ":%02x:%02x:%02x" % (
         random.randint(0x00, 0xFF),
         random.randint(0x00, 0xFF),
         random.randint(0x00, 0xFF),
