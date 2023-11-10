@@ -1,0 +1,52 @@
+/* set alignment to default */
+svg.bi, svg.mdi {
+    vertical-align: -.125rem;
+}
+svg.mdi {
+    transform:translateY(10%);
+}
+
+svg.bi.bi-valign-default,
+svg.mdi.bi-valign-default {
+    vertical-align: -.125rem;
+}
+
+svg.bi.bi-valign-top,
+svg.mdi.bi-valign-top {
+    vertical-align: top;
+}
+
+svg.bi.bi-valign-middle,
+svg.mdi.bi-valign-middle {
+    vertical-align: middle;
+}
+
+svg.bi.bi-valign-bottom,
+svg.mdi.bi-valign-bottom {
+    vertical-align: bottom;
+}
+
+svg.bi.bi-valign-text-top,
+svg.mdi.bi-valign-text-top {
+    vertical-align: text-top;
+}
+
+
+svg.bi.bi-valign-text-bottom,
+svg.mdi.bi-valign-text-bottom {
+    vertical-align: text-bottom;
+}
+
+/* Material Design Icons have some internal
+   "padding" in the svg, so we need some
+   alignment adjustments of md icons */
+svg.mdi.bi-valign-default,
+svg.mdi.bi-valign-bottom,
+svg.mdi.bi-valign-text-bottom {
+    transform:translateY(10%);
+}
+
+svg.mdi.bi-valign-top,
+svg.mdi.bi-valign-text-top {
+    transform:translateY(-10%);
+}

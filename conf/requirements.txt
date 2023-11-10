@@ -1,9 +1,10 @@
-Django==4.2.6
+Django==4.2.7
 django_bootstrap5==23.3
 django-bootstrap-icons==0.8.6
 django-login-required-middleware==0.9.0
-django-otp==1.2.4
+django-otp==1.3.0
 django-qr-code==3.1.1
+django-auth-ldap==4.5.0
 gunicorn==21.2.0
 libsass==0.22.0
 libvirt-python==9.8.0
@@ -20,4 +21,4 @@ djangorestframework==3.14.0
 drf-nested-routers==0.93.4
 drf-yasg==1.21.7
 markdown>=3.4.1
-django-auth-ldap==4.5.0
+whitenoise==6.6.0

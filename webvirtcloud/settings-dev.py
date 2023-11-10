@@ -1,7 +1,7 @@
 """
 Django dev settings for webvirtcloud project.
 
-HowTo: python3 manage.py runserver 0:8000 --settings=webvirtcloud.settings-dev
+HowTo: python3 manage.py runserver 0:8000 --settings=webvirtcloud.settings-dev --nostatic
 
 """
 
