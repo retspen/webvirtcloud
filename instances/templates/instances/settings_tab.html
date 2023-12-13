@@ -265,15 +265,15 @@
                                         data-trigger="focus"
                                         data-bs-toggle="popover"
                                         data-bs-html="true"
-                                        data-bs-content="<strong>Bus:</strong> {{ disk.bus }} <br/>
-                                                        <strong>Format:</strong> {{ disk.format }} <br/>
-                                                        <strong>Cache:</strong> {{ disk.cache }} <br/>
-                                                        <strong>Serial:</strong> {{ disk.serial }} <br/>
-                                                        <strong>Readonly:</strong> {{ disk.readonly }} <br/>
-                                                        <strong>Shareable:</strong> {{ disk.shareable }}</br>
-                                                        <strong>IO Mode:</strong> {{ disk.io }} <br/>
-                                                        <strong>Discard:</strong> {{ disk.discard }} <br/>
-                                                        <strong>Detect Zeroes:</strong> {{ disk.detect_zeroes }}">
+                                        data-bs-content="<strong>{% trans 'Bus' %}:</strong> {{ disk.bus }} <br/>
+                                                        <strong>{% trans 'Format' %}:</strong> {{ disk.format }} <br/>
+                                                        <strong>{% trans 'Cache' %}:</strong> {{ disk.cache }} <br/>
+                                                        <strong>{% trans 'Serial' %}:</strong> {{ disk.serial }} <br/>
+                                                        <strong>{% trans 'Readonly' %}:</strong> {{ disk.readonly }} <br/>
+                                                        <strong>{% trans 'Shareable' %}:</strong> {{ disk.shareable }}</br>
+                                                        <strong>{% trans 'IO Mode' %}:</strong> {{ disk.io }} <br/>
+                                                        <strong>{% trans 'Discard' %}:</strong> {{ disk.discard }} <br/>
+                                                        <strong>{% trans 'Detect Zeroes' %}:</strong> {{ disk.detect_zeroes }}">
                                     <span>{% bs_icon 'info' %} </span>
                                 </button>
                                 {{ disk.dev }}
