@@ -6,6 +6,7 @@ Django settings for webvirtcloud project.
 import ldap
 import subprocess
 from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType
+from django.utils.translation import gettext_lazy as _
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -213,8 +214,8 @@ SOCKETIO_PUBLIC_PATH = "socket.io/"
 
 # List of console listen addresses
 QEMU_CONSOLE_LISTENER_ADDRESSES = (
-    ("127.0.0.1", "Localhost"),
-    ("0.0.0.0", "All interfaces"),
+    ("127.0.0.1", _("Localhost")),
+    ("0.0.0.0", _("All interfaces")),
 )
 
 # List taken from http://qemu.weilnetz.de/qemu-doc.html#sec_005finvocation

@@ -15,16 +15,17 @@ class FlavorForm(forms.ModelForm):
 
 
 class ConsoleForm(forms.Form):
-    type = forms.ChoiceField()
-    listen_on = forms.ChoiceField()
-    generate_password = forms.BooleanField(required=False)
-    clear_password = forms.BooleanField(required=False)
+    type = forms.ChoiceField(label=_("Type"))
+    listen_on = forms.ChoiceField(label=_("Listen on"))
+    generate_password = forms.BooleanField(label=_("Generate password"), required=False)
+    clear_password = forms.BooleanField(label=_("Clear password"), required=False)
     password = forms.CharField(
+        label=_("Password"),
         widget=forms.PasswordInput(render_value=True),
         required=False
     )
-    clear_keymap = forms.BooleanField(required=False)
-    keymap = forms.ChoiceField(required=False)
+    clear_keymap = forms.BooleanField(label=_("Clear keymap"), required=False)
+    keymap = forms.ChoiceField(label=_("Keymap"), required=False)
 
     def __init__(self, *args, **kwargs):
         super(ConsoleForm, self).__init__(*args, **kwargs)
@@ -32,12 +33,13 @@ class ConsoleForm(forms.Form):
             (c, c)
             for c in AppSettings.objects.get(key="QEMU_CONSOLE_DEFAULT_TYPE").choices_as_list()
         )
-        keymap_choices = [("auto", "Auto")] + list((c, c) for c in QEMU_KEYMAPS)
-        self.fields["type"] = forms.ChoiceField(choices=type_choices)
+        keymap_choices = [("auto", _("Auto"))] + list((c, c) for c in QEMU_KEYMAPS)
+        self.fields["type"] = forms.ChoiceField(label=_("Type"), choices=type_choices)
         self.fields["listen_on"] = forms.ChoiceField(
+            label=_("Listen on"),
             choices=QEMU_CONSOLE_LISTENER_ADDRESSES
         )
-        self.fields["keymap"] = forms.ChoiceField(choices=keymap_choices)
+        self.fields["keymap"] = forms.ChoiceField(label=_("Keymap"), choices=keymap_choices)
 
 
 class NewVMForm(forms.ModelForm):
