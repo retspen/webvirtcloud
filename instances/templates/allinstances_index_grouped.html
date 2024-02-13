@@ -98,7 +98,7 @@ function hide_host_instances(host) {
     var rows = $('table tr');
     host_rows = rows.filter("[host='"+host+"']");
     host_rows.toggle();
-    $("span[id='collapse_host_instances_"+host+"']").toggleClass("bi-chevron-down ").toggleClass("bi-chevron-up");
+    $("span[id='collapse_host_instances_"+host+"']").toggleClass("bi bi-chevron-down ").toggleClass("bi bi-chevron-up");
     $("span[id='inst_count_badge_"+host+"']").toggleClass("d-none");
 }
 </script>

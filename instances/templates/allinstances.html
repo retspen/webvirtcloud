@@ -24,12 +24,10 @@
         {% endif %}
     {% endfor %}
     <div class="col-lg-12">
-        {% if 'instances.view_instances' in perms %}
-            {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
-                {% include 'allinstances_index_grouped.html' %}
-            {% else %}
-                {% include 'allinstances_index_nongrouped.html' %}
-            {% endif %}
+        {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
+            {% include 'allinstances_index_grouped.html' %}
+        {% else %}
+            {% include 'allinstances_index_nongrouped.html' %}
         {% endif %}
     </div>
 {% endblock content %}
