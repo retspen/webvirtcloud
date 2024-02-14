@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-16 07:18+0000\n"
+"POT-Creation-Date: 2024-02-13 15:02+0300\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -24,7 +24,7 @@ msgstr ""
 
 #: accounts/forms.py:25
 msgid "Instance owned by another user"
-msgstr "Diğer kullanının sanal makineleri"
+msgstr "Diğer kullanıcıya ait sanal makineler"
 
 #: accounts/forms.py:49
 msgid "Key name already exist"
@@ -45,7 +45,7 @@ msgstr "E-posta"
 #: accounts/models.py:23
 #, python-format
 msgid "Instance \"%(inst)s\" of user %(user)s"
-msgstr " %(user)s kulanıcısının sanal makinesi \"%(inst)s\""
+msgstr " %(user)s kullanıcısının sanal makinesi \"%(inst)s\""
 
 #: accounts/models.py:34
 msgid "key name"
@@ -110,7 +110,7 @@ msgstr "Yeni sanal makine oluştur"
 #: storages/templates/storages.html:20 templates/navbar.html:14
 #: virtsecrets/templates/secrets.html:26
 msgid "Instances"
-msgstr "Sanallar"
+msgstr "Sanal Makineler"
 
 #: accounts/templates/account.html:33
 msgid "Public Keys"
@@ -139,7 +139,7 @@ msgstr "Boyutlandır"
 
 #: accounts/templates/account.html:47 accounts/templates/account.html:65
 #: accounts/templates/profile.html:55 admin/templates/admin/group_list.html:43
-#: admin/templates/admin/user_list.html:65
+#: admin/templates/admin/user_list.html:67
 #: computes/templates/computes/list.html:53
 #: instances/templates/instances/settings_tab.html:325
 #: instances/templates/instances/settings_tab.html:329
@@ -147,7 +147,6 @@ msgstr "Boyutlandır"
 #: nwfilters/templates/nwfilter.html:104 nwfilters/templates/nwfilter.html:144
 #: nwfilters/templates/nwfilters.html:119 storages/templates/storage.html:64
 #: storages/templates/storage.html:176 templates/common/confirm_delete.html:23
-#: venv/lib/python3.8/site-packages/django/forms/formsets.py:417
 #: virtsecrets/templates/secrets.html:79
 msgid "Delete"
 msgstr "Sil"
@@ -194,7 +193,6 @@ msgstr "İptal"
 #: instances/templates/instances/settings_tab.html:676
 #: instances/templates/instances/settings_tab.html:853
 #: instances/templates/instances/settings_tab.html:855
-#: venv/lib/python3.8/site-packages/django/forms/widgets.py:405
 msgid "Change"
 msgstr "Değiştir"
 
@@ -205,7 +203,7 @@ msgid ""
 "Scan this QR code to get OTP for account '%(user)s'\n"
 msgstr ""
 "\n"
-"'%(user)s' hesabı için bu OTP QR kodunu tarayin\n"
+"'%(user)s' hesabı için bu OTP QR kodunu tarayın\n"
 
 #: accounts/templates/accounts/email/otp.html:8
 msgid "Some e-mail clients does not render SVG, also generating PNG."
@@ -234,7 +232,7 @@ msgstr "WebVirtCloud"
 #, fuzzy
 #| msgid "Sign In"
 msgid "Sign In with OTP"
-msgstr "Oturum Aç"
+msgstr "OTP ile Oturum Aç"
 
 #: accounts/templates/accounts/otp_login.html:26
 #: accounts/templates/accounts/otp_login.html:33
@@ -259,7 +257,7 @@ msgstr "Kullanıcı adı veya parola hatalı."
 #: accounts/templates/login.html:27 admin/templates/admin/logs.html:32
 #: computes/templates/computes/instances.html:64
 #: instances/templates/add_instance_owner_block.html:19
-#: instances/templates/allinstances_index_grouped.html:9
+#: instances/templates/allinstances_index_grouped.html:8
 #: instances/templates/allinstances_index_nongrouped.html:7
 #: instances/templates/instances/stats_tab.html:88
 msgid "User"
@@ -359,7 +357,7 @@ msgstr "OTP %(email)s ye gönderildi"
 
 #: accounts/views.py:199
 msgid "Email OTP"
-msgstr "OTP E-Posta"
+msgstr "OTP E-Postası"
 
 #: accounts/views.py:211
 #, python-format
@@ -392,7 +390,7 @@ msgid ""
 "form</a>."
 msgstr ""
 "Açık parolalar saklanmadığından bu kullanıcının parolasını\n"
-"                görme imkanı yok. Faka parolayı <a href='{}'>bu formu</a> "
+"                görme imkanı yok. Fakat parolayı <a href='{}'>bu formu</a> "
 "kullanarak değiştirebilirsiniz."
 
 #: admin/templates/admin/group_list.html:5 admin/views.py:86
@@ -420,10 +418,10 @@ msgid "Group Name"
 msgstr "Grup Adı"
 
 #: admin/templates/admin/group_list.html:29
-#: admin/templates/admin/user_list.html:36
+#: admin/templates/admin/user_list.html:37
 #: computes/templates/computes/instances.html:68
 #: computes/templates/computes/list.html:30
-#: instances/templates/allinstances_index_grouped.html:16
+#: instances/templates/allinstances_index_grouped.html:15
 #: instances/templates/allinstances_index_nongrouped.html:15
 #: instances/templates/instances/settings_tab.html:355
 #: instances/templates/instances/settings_tab.html:525
@@ -433,7 +431,7 @@ msgid "Actions"
 msgstr "Eylemler"
 
 #: admin/templates/admin/group_list.html:40
-#: admin/templates/admin/user_list.html:59
+#: admin/templates/admin/user_list.html:61
 #: computes/templates/computes/list.html:52 networks/templates/network.html:83
 #: nwfilters/templates/nwfilter.html:60 virtsecrets/templates/secrets.html:76
 msgid "Edit"
@@ -446,7 +444,7 @@ msgstr "Loglar"
 
 #: admin/templates/admin/logs.html:22
 msgid "You don't have any Logs"
-msgstr "Hiç Log kaydınız yok"
+msgstr "Hiç log kaydınız yok"
 
 #: admin/templates/admin/logs.html:31
 #: instances/templates/instances/snapshots_tab.html:75
@@ -483,44 +481,50 @@ msgstr "Kullanıcı Adı"
 #: admin/templates/admin/user_list.html:32
 #: computes/templates/computes/instances.html:65
 #: computes/templates/computes/list.html:28
-#: instances/templates/allinstances_index_grouped.html:10
+#: instances/templates/allinstances_index_grouped.html:9
 #: instances/templates/allinstances_index_nongrouped.html:9
 msgid "Status"
 msgstr "Durum"
 
 #: admin/templates/admin/user_list.html:33
+#, fuzzy
+#| msgid "Login"
+msgid "Last Login"
+msgstr "Son Oturum"
+
+#: admin/templates/admin/user_list.html:34
 msgid "Staff"
 msgstr "Görevli"
 
-#: admin/templates/admin/user_list.html:34
+#: admin/templates/admin/user_list.html:35
 msgid "Superuser"
 msgstr "Süperkullanıcı"
 
-#: admin/templates/admin/user_list.html:35
+#: admin/templates/admin/user_list.html:36
 msgid "Can Clone"
 msgstr "Klonlayabilir"
 
-#: admin/templates/admin/user_list.html:48
+#: admin/templates/admin/user_list.html:49
 #: computes/templates/computes/instances.html:91
-#: instances/templates/allinstances_index_grouped.html:66
+#: instances/templates/allinstances_index_grouped.html:65
 #: instances/templates/allinstances_index_nongrouped.html:44
 #: instances/templates/instance.html:20
 msgid "Active"
 msgstr "Aktif"
 
-#: admin/templates/admin/user_list.html:50
+#: admin/templates/admin/user_list.html:51
 msgid "Blocked"
 msgstr "Engelli"
 
-#: admin/templates/admin/user_list.html:58
+#: admin/templates/admin/user_list.html:60
 msgid "View Profile"
 msgstr "Profil Görüntüle"
 
-#: admin/templates/admin/user_list.html:61
+#: admin/templates/admin/user_list.html:63
 msgid "Block"
 msgstr "Engelle"
 
-#: admin/templates/admin/user_list.html:63
+#: admin/templates/admin/user_list.html:65
 msgid "Unblock"
 msgstr "Engeli Kaldır"
 
@@ -575,7 +579,7 @@ msgstr "Tüm Sanal Makineler Listesi Görünüm Stili"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:14
 msgid "Logs per Page"
-msgstr "Herbir sayfa için Log sayısı"
+msgstr "Her bir sayfa için log sayısı"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:14
 msgid "Pagination for logs"
@@ -631,15 +635,15 @@ msgstr "Disk birimi ön bellek tipi"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:21
 msgid "Disk IO Type"
-msgstr "Disk IO Tipi"
+msgstr "Diskin GÇ Tipi"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:21
 msgid "Volume io modes"
-msgstr "Birim IO modları"
+msgstr "Disk birimi GÇ modları"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:22
 msgid "Disk Detect Zeroes"
-msgstr "Disk Sıfır Yakalama"
+msgstr "Diskte Sıfırların Tespiti"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:22
 msgid "Volume detect zeroes mode"
@@ -647,15 +651,15 @@ msgstr "Disk birimi sıfır yakalama modu"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:23
 msgid "Disk Discard"
-msgstr ""
+msgstr "Diski Discard Et"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:23
 msgid "Volume discard mode"
-msgstr ""
+msgstr "Disk birimi discard modu"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:24
 msgid "Disk Owner UID"
-msgstr "Disk sahip UIDsi"
+msgstr "Disk Sahibinin UIDsi"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:24
 msgid "Owner UID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
@@ -665,7 +669,7 @@ msgstr ""
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:25
 msgid "Disk Owner GID"
-msgstr "Disk sahibi GID"
+msgstr "Disk Sahibinin GID"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:25
 msgid "Owner GID: up to os, 0=root, 107=qemu or libvirt-bin(for ubuntu)"
@@ -723,11 +727,11 @@ msgstr "Klonlanmış sanal makineler için ön ek"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:32
 msgid "VM Clone Auto Name"
-msgstr "VM Klon Otomatik Ad"
+msgstr "VM Klonu Otomatik İsimlendirme"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:32
 msgid "Generated name for cloned instance"
-msgstr "Klonamış Sanal Makine için Oluşturala isim"
+msgstr "Klonlanmış sanal makine için oluşturulan isim"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:33
 msgid "VM Clone Auto Migrate"
@@ -751,7 +755,7 @@ msgstr "Root Erişim Parolasını Göster"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:35
 msgid "Show access root password"
-msgstr "Kök erişim parolasını göster"
+msgstr "Root erişim parolasını göster"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:36
 msgid "Show Access SSH Keys"
@@ -797,25 +801,25 @@ msgstr "Konsol bağlantı noktası"
 #, fuzzy
 #| msgid "Status"
 msgid "VM DRBD Status"
-msgstr "Durum"
+msgstr "VM DRDB Durumu"
 
 #: appsettings/migrations/0006_auto_20220630_0717.py:10
 msgid "Show VM DRBD Status"
-msgstr ""
+msgstr "VM DRDB Durumunu Göster"
 
 #: appsettings/migrations/0008_auto_20220905_1459.py:10
 msgid "VM CD-ROM Device"
-msgstr ""
+msgstr "VM CD-ROM Aygıtı"
 
 #: appsettings/migrations/0008_auto_20220905_1459.py:10
 msgid "Add or not cdrom device while instance creating"
-msgstr ""
+msgstr "Sanal makine oluşturulurken cd-rom hiç ekleme veya bus tipini seç"
 
 #: appsettings/migrations/0008_auto_20220905_1459.py:11
 #, fuzzy
 #| msgid "VM Machine Type"
 msgid "VM Video Type"
-msgstr "VM Makine Tipi"
+msgstr "VM Görüntü Tipi"
 
 #: appsettings/migrations/0008_auto_20220905_1459.py:11
 #, fuzzy
@@ -825,11 +829,23 @@ msgstr "Sanal makineleri klonlayabilir"
 
 #: appsettings/migrations/0008_auto_20220905_1459.py:12
 msgid "VM Input Device"
-msgstr ""
+msgstr "VM Girdi Aygıtı"
 
 #: appsettings/migrations/0008_auto_20220905_1459.py:12
 msgid "Add or not input device with specify its type"
-msgstr ""
+msgstr "Girdi aygıtını belirtilen tipte ekle veya hiç ekleme"
+
+#: appsettings/migrations/0010_auto_20231030_1305.py:10
+#, fuzzy
+#| msgid "Type"
+msgid "VM NIC Type"
+msgstr "VM NIC Tipi"
+
+#: appsettings/migrations/0010_auto_20231030_1305.py:10
+#, fuzzy
+#| msgid "Can clone instances"
+msgid "Change instance default NIC type"
+msgstr "Sanal makinenin varsayılan NIC tipini değiştir"
 
 #: appsettings/models.py:9 computes/models.py:11 instances/models.py:27
 #: interfaces/models.py:8 networks/models.py:8 storages/models.py:8
@@ -989,7 +1005,7 @@ msgstr "Hipervizör üzerinde hiç sanal makine yok"
 #: computes/templates/computes/list.html:27
 #: instances/templates/add_instance_volume.html:45
 #: instances/templates/add_instance_volume.html:47
-#: instances/templates/allinstances_index_grouped.html:8
+#: instances/templates/allinstances_index_grouped.html:7
 #: instances/templates/allinstances_index_nongrouped.html:5
 #: instances/templates/create_inst_block.html:21
 #: instances/templates/create_instance_w2.html:76
@@ -1021,7 +1037,7 @@ msgid "Name"
 msgstr "Ad"
 
 #: computes/templates/computes/instances.html:63
-#: instances/templates/allinstances_index_grouped.html:8
+#: instances/templates/allinstances_index_grouped.html:7
 #: instances/templates/allinstances_index_nongrouped.html:5
 #: instances/templates/instances/settings_tab.html:811
 #: instances/templates/instances/settings_tab.html:834
@@ -1029,7 +1045,7 @@ msgid "Description"
 msgstr "Tanım"
 
 #: computes/templates/computes/instances.html:66
-#: instances/templates/allinstances_index_grouped.html:14
+#: instances/templates/allinstances_index_grouped.html:13
 #: instances/templates/allinstances_index_nongrouped.html:13
 #: instances/templates/create_inst_block.html:22
 #: instances/templates/create_instance_w2.html:77
@@ -1041,7 +1057,7 @@ msgstr "VCPU"
 
 #: computes/templates/computes/instances.html:67
 #: computes/templates/overview.html:80
-#: instances/templates/allinstances_index_grouped.html:15
+#: instances/templates/allinstances_index_grouped.html:14
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_inst_block.html:24
 #: instances/templates/instances/resize_tab.html:12
@@ -1049,14 +1065,14 @@ msgid "Memory"
 msgstr "Bellek"
 
 #: computes/templates/computes/instances.html:94
-#: instances/templates/allinstances_index_grouped.html:67
+#: instances/templates/allinstances_index_grouped.html:66
 #: instances/templates/allinstances_index_nongrouped.html:46
 #: instances/templates/instance.html:17
 msgid "Off"
 msgstr "Kapalı"
 
 #: computes/templates/computes/instances.html:97
-#: instances/templates/allinstances_index_grouped.html:69
+#: instances/templates/allinstances_index_grouped.html:68
 #: instances/templates/allinstances_index_nongrouped.html:48
 msgid "Suspended"
 msgstr "Duraklatılmış"
@@ -1078,7 +1094,7 @@ msgid "Details"
 msgstr "Ayrıntılar"
 
 #: computes/templates/computes/list.html:40
-#: instances/templates/allinstances_index_grouped.html:32
+#: instances/templates/allinstances_index_grouped.html:31
 #: instances/templates/instances/settings_tab.html:906
 msgid "Connected"
 msgstr "Bağlı"
@@ -1217,7 +1233,7 @@ msgstr "Bağlantı Noktası"
 
 #: console/templates/console-spice-full.html:212
 msgid "Show console"
-msgstr "Konsol göster"
+msgstr "Konsolu göster"
 
 #: console/templates/console-spice-full.html:214
 #: interfaces/templates/interface.html:60 networks/templates/network.html:50
@@ -1240,7 +1256,7 @@ msgstr "noVNC bir hatayla karşılaştı"
 #| msgid "You do not have permission to access this page."
 msgid ""
 "User does not have permission to access console or host/instance not exist"
-msgstr "Bu sayfaya erişme izniniz yok."
+msgstr "Bu sayfaya erişim izniniz yok."
 
 #: console/views.py:106
 msgid "Fail to get console. Please check the console configuration of your VM."
@@ -1291,7 +1307,7 @@ msgstr ""
 
 #: instances/models.py:221
 msgid "Live"
-msgstr ""
+msgstr "Canlı"
 
 #: instances/models.py:222
 #, fuzzy
@@ -1301,7 +1317,7 @@ msgstr "XML Düzenle"
 
 #: instances/models.py:223
 msgid "Offline"
-msgstr ""
+msgstr "Çevrimdışı"
 
 #: instances/models.py:224
 #, fuzzy
@@ -1317,11 +1333,11 @@ msgstr "Sıkıştırılmış"
 
 #: instances/models.py:226
 msgid "Post Copy"
-msgstr ""
+msgstr "Kopya Sonrası"
 
 #: instances/models.py:227
 msgid "Unsafe"
-msgstr ""
+msgstr "Güvenli olmayan"
 
 #: instances/models.py:239
 msgid "No Virtual Machine name has been entered"
@@ -1345,7 +1361,7 @@ msgstr "Lütfen HDD ön bellek modunu seçin"
 
 #: instances/models.py:271
 msgid "Please select a graphics type"
-msgstr "Lütfen Grafik tipini seçiniz"
+msgstr "Lütfen grafik tipini seçiniz"
 
 #: instances/models.py:274
 msgid "Please select a video driver"
@@ -1400,7 +1416,7 @@ msgstr "AğFiltresi"
 #: instances/templates/create_instance_w2.html:651
 #: instances/templates/create_instance_w2.html:670
 #: instances/templates/create_instance_w2.html:719
-#: instances/templates/instances/access_tab.html:123
+#: instances/templates/instances/access_tab.html:122
 #: instances/templates/instances/settings_tab.html:191
 #: instances/templates/instances/settings_tab.html:434
 #: instances/templates/instances/stats_tab.html:94
@@ -1520,7 +1536,7 @@ msgstr "Önbellek"
 #: instances/templates/instances/settings_tab.html:789
 #: storages/templates/storage.html:149
 msgid "Metadata"
-msgstr "Metaveri"
+msgstr "Üstveri"
 
 #: instances/templates/add_instance_volume.html:108
 msgid "Select Pool"
@@ -1534,14 +1550,14 @@ msgstr "Birim"
 msgid "Problem occurred with host"
 msgstr "Sunucu ile ilgili bir problem meydana geldi"
 
-#: instances/templates/allinstances_index_grouped.html:12
+#: instances/templates/allinstances_index_grouped.html:11
 #: instances/templates/allinstances_index_nongrouped.html:11
 #, fuzzy
 #| msgid "Disk"
 msgid "Role/Disk"
-msgstr "Disk"
+msgstr "Rol/Disk"
 
-#: instances/templates/allinstances_index_grouped.html:16
+#: instances/templates/allinstances_index_grouped.html:15
 #: instances/templates/create_inst_block.html:25
 msgid "Mem Usage"
 msgstr "Bellek Kullanımı"
@@ -1574,7 +1590,7 @@ msgstr "Yeni sanal makine oluştur"
 
 #: instances/templates/create_instance_w1.html:5
 msgid "Select Type"
-msgstr "Tip seçin"
+msgstr "Tip seç"
 
 #: instances/templates/create_instance_w1.html:8
 #: instances/templates/create_instance_w2.html:12
@@ -1704,7 +1720,7 @@ msgstr "Grafikler"
 #: instances/templates/create_instance_w2.html:497
 #: instances/templates/create_instance_w2.html:749
 msgid "Video"
-msgstr "Video"
+msgstr "Görüntü"
 
 #: instances/templates/create_instance_w2.html:246
 #: instances/templates/create_instance_w2.html:511
@@ -1798,7 +1814,6 @@ msgstr "Metadata öntahsis"
 
 #: instances/templates/create_instance_w2.html:450
 #: instances/templates/create_instance_w2.html:702
-#: venv/lib/python3.8/site-packages/django/db/models/fields/files.py:375
 msgid "Image"
 msgstr "İmaj"
 
@@ -1808,13 +1823,13 @@ msgstr "HDD Önbellek Modu"
 
 #: instances/templates/create_instance_w2.html:641
 msgid "Template Disk"
-msgstr "Şablon Disk"
+msgstr "Şablon Diski"
 
 #: instances/templates/create_instance_w2.html:676
 #, fuzzy
 #| msgid "Network"
 msgid "Network/MAC"
-msgstr "Ağ"
+msgstr "Ağ/MAC"
 
 #: instances/templates/instance.html:23
 #: instances/templates/instance_actions.html:14
@@ -1847,7 +1862,7 @@ msgstr "Disk"
 #, fuzzy
 #| msgid "Remove Instance's data"
 msgid "Show Instance OS details"
-msgstr "Sanal makinenin verisini sil"
+msgstr "Sanal makinenin OS detaylarını göster"
 
 #: instances/templates/instance.html:66
 msgid "Refresh instance info"
@@ -1919,7 +1934,7 @@ msgstr "Yeniden başlat"
 #: instances/templates/instance_actions.html:17
 #: instances/templates/instance_actions.html:30
 msgid "VNC Console"
-msgstr "VNC Konsol"
+msgstr "VNC Konsolu"
 
 #: instances/templates/instance_actions.html:22
 #: instances/templates/instances/power_tab.html:33
@@ -1939,19 +1954,19 @@ msgstr "Zorla Kapat"
 #: instances/templates/instance_actions.html:41
 #: instances/templates/instances/access_tab.html:7
 #: instances/templates/instances/access_tab.html:67
-#: instances/templates/instances/access_tab.html:75
-#: instances/templates/instances/access_tab.html:78
-#: instances/templates/instances/access_tab.html:82
+#: instances/templates/instances/access_tab.html:74
+#: instances/templates/instances/access_tab.html:77
+#: instances/templates/instances/access_tab.html:81
 #: instances/templates/instances/settings_tab.html:29
 msgid "Console"
 msgstr "Konsol"
 
 #: instances/templates/instances/access_tab.html:13
 msgid "Root Password"
-msgstr "Kök Parola"
+msgstr "Root Parolası"
 
 #: instances/templates/instances/access_tab.html:27
-#: instances/templates/instances/access_tab.html:143
+#: instances/templates/instances/access_tab.html:142
 msgid "VDI"
 msgstr "VDI"
 
@@ -1977,48 +1992,44 @@ msgstr "Oturumu Boyutlandır"
 
 #: instances/templates/instances/access_tab.html:60
 msgid "View Clipboard"
-msgstr ""
+msgstr "Panoyu Görüntüle"
 
-#: instances/templates/instances/access_tab.html:70
-msgid "Toggle Dropdown"
-msgstr ""
-
-#: instances/templates/instances/access_tab.html:74
-#: instances/templates/instances/access_tab.html:77
+#: instances/templates/instances/access_tab.html:73
+#: instances/templates/instances/access_tab.html:76
 msgid "Console port"
 msgstr "Konsol bağlantı noktası"
 
-#: instances/templates/instances/access_tab.html:75
+#: instances/templates/instances/access_tab.html:74
 msgid "Lite"
 msgstr "Hafif"
 
-#: instances/templates/instances/access_tab.html:78
+#: instances/templates/instances/access_tab.html:77
 msgid "Full"
 msgstr "Tam"
 
-#: instances/templates/instances/access_tab.html:88
+#: instances/templates/instances/access_tab.html:87
 msgid "You need shut down your instance and enter a new root password."
 msgstr "Sanal makinenizi kapatmalı ve yeni kök parolanızı girmelisiniz."
 
-#: instances/templates/instances/access_tab.html:95
+#: instances/templates/instances/access_tab.html:94
 msgid "Enter Password"
 msgstr "Parola Gir"
 
-#: instances/templates/instances/access_tab.html:100
-#: instances/templates/instances/access_tab.html:103
+#: instances/templates/instances/access_tab.html:99
+#: instances/templates/instances/access_tab.html:102
 msgid "Reset Root Password"
 msgstr "Kök parola sıfırla"
 
-#: instances/templates/instances/access_tab.html:111
+#: instances/templates/instances/access_tab.html:110
 msgid "You need shut down your instance and choose your public key."
 msgstr "Sanal makinenizi kapatmalı ve açık anahtarınızı seçmelisiniz."
 
-#: instances/templates/instances/access_tab.html:130
-#: instances/templates/instances/access_tab.html:132
+#: instances/templates/instances/access_tab.html:129
+#: instances/templates/instances/access_tab.html:131
 msgid "Add Public Key"
 msgstr "Açık Anahtar Ekle"
 
-#: instances/templates/instances/access_tab.html:140
+#: instances/templates/instances/access_tab.html:139
 msgid ""
 "This action opens a remote viewer with a connection to the console of the "
 "instance."
@@ -2026,13 +2037,13 @@ msgstr ""
 "Bu eylem sanal makinenin konsoluna bir bağlantı ile uzak görüntüleyiciyi "
 "açar."
 
-#: instances/templates/instances/access_tab.html:145
+#: instances/templates/instances/access_tab.html:144
 msgid "To download console.vv file for virt-viewer."
 msgstr "virt-viewer için console.vv dosyasını indir."
 
-#: instances/templates/instances/access_tab.html:146
+#: instances/templates/instances/access_tab.html:145
 msgid "Get console.vv"
-msgstr "console.vv dosyası al"
+msgstr "console.vv dosyasını al"
 
 #: instances/templates/instances/destroy_instance_form.html:4
 msgid "Confirm Destroy"
@@ -2100,7 +2111,7 @@ msgstr "Önbellek modu"
 
 #: instances/templates/instances/edit_instance_volume.html:62
 msgid "IO mode"
-msgstr "IO modu"
+msgstr "GÇ modu"
 
 #: instances/templates/instances/edit_instance_volume.html:70
 msgid "Discard mode"
@@ -2116,25 +2127,25 @@ msgstr "Seri Numarası"
 
 #: instances/templates/instances/edit_instance_volume.html:102
 msgid "Storage Format"
-msgstr "Depolama biçemi"
+msgstr "Depolama Biçemi"
 
 #: instances/templates/instances/edit_instance_volume.html:112
 #, fuzzy
 #| msgid "Are you sure to detach volume?"
 msgid "Are you sure to change volume properties?"
-msgstr "Birimi ayırmak istediğinize emin misiniz?"
+msgstr "Birimi özelliklerini değiştirmek istediğinize emin misiniz?"
 
 #: instances/templates/instances/info_tab.html:3
 #, fuzzy
 #| msgid "Guest Agent"
 msgid "Guest Info"
-msgstr "Misafir Aracı"
+msgstr "Konak Bilgisi"
 
 #: instances/templates/instances/info_tab.html:7
 #, fuzzy
 #| msgid "Name"
 msgid "OS Name"
-msgstr "Ad"
+msgstr "OS Adı"
 
 #: instances/templates/instances/info_tab.html:9
 msgid "OS Pretty-Name"
@@ -2148,11 +2159,11 @@ msgstr "Çekirdek Sürümü"
 #, fuzzy
 #| msgid "Version"
 msgid "Kernel Version"
-msgstr "Sürüm"
+msgstr "Çekirdek Versiyonu"
 
 #: instances/templates/instances/info_tab.html:17
 msgid "Timezone / Offset"
-msgstr "Saat Dilimi / Ofset"
+msgstr "Saat Dilimi / Konum"
 
 #: instances/templates/instances/power_tab.html:55
 msgid "This action sends an ACPI shutdown signal to the instance."
@@ -2205,12 +2216,12 @@ msgstr "Mantıksal Sunucu CPUları"
 #: instances/templates/instances/resize_tab.html:95
 #: instances/templates/instances/resize_tab.html:136
 msgid "Current Allocation"
-msgstr "Mevcut Tahsis"
+msgstr "Mevcut Tahsisat"
 
 #: instances/templates/instances/resize_tab.html:44
 #: instances/templates/instances/resize_tab.html:109
 msgid "Maximum Allocation"
-msgstr "Maksimum Tahsis"
+msgstr "Maksimum Tahsisat"
 
 #: instances/templates/instances/resize_tab.html:62
 msgid "Logical Instance Active/Maximum CPUs"
@@ -2269,7 +2280,6 @@ msgid "Migrate"
 msgstr "Taşı"
 
 #: instances/templates/instances/settings_tab.html:62
-#: venv/lib/python3.8/site-packages/click/core.py:1357
 msgid "Options"
 msgstr "Seçenekler"
 
@@ -2440,7 +2450,7 @@ msgstr "Ağ değişikliklerini uygula"
 
 #: instances/templates/instances/settings_tab.html:472
 msgid "Delete Device"
-msgstr "Aygıt Sil"
+msgstr "Aygıtı Sil"
 
 #: instances/templates/instances/settings_tab.html:482
 #: interfaces/templates/create_iface_block.html:73
@@ -2459,7 +2469,7 @@ msgid ""
 "In most configurations, macvtap does not work for host to guest network "
 "communication"
 msgstr ""
-"macvtap bir çok yapılandırmada sunucu ile sanal makine ağı arasındaki "
+"macvtap birçok yapılandırmada sunucu ile sanal makine ağı arasındaki "
 "iletişimde çalışmaz"
 
 #: instances/templates/instances/settings_tab.html:515
@@ -2520,11 +2530,11 @@ msgstr "Canlı olarak taşı"
 
 #: instances/templates/instances/settings_tab.html:610
 msgid "Unsafe migration"
-msgstr "Güvensiz taşıma"
+msgstr "Güvensiz şekilde taşı"
 
 #: instances/templates/instances/settings_tab.html:618
 msgid "Delete original"
-msgstr "Orjinali sil"
+msgstr "Orjinalini sil"
 
 #: instances/templates/instances/settings_tab.html:626
 msgid "Offline migration"
@@ -2532,7 +2542,7 @@ msgstr "Çevrimdışı olarak taşı"
 
 #: instances/templates/instances/settings_tab.html:634
 msgid "Post copy"
-msgstr ""
+msgstr "Kopya sonrası"
 
 #: instances/templates/instances/settings_tab.html:642
 msgid "Forces CPU convergence during live migration"
@@ -2650,25 +2660,24 @@ msgid "Disconnected"
 msgstr "Bağlantı yok"
 
 #: instances/templates/instances/settings_tab.html:911
-#: venv/lib/python3.8/site-packages/django/forms/widgets.py:714
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
 #: instances/templates/instances/settings_tab.html:915
 msgid "Qemu Guest Agent"
-msgstr "Qemu Misafir Aracısı"
+msgstr "Qemu Konak Ajanı"
 
 #: instances/templates/instances/snapshots_tab.html:8
 #, fuzzy
 #| msgid "Take Snapshot"
 msgid "Take Snapshot - Internal"
-msgstr "Anlık Görüntü Oluştur"
+msgstr "Anlık Görüntü Oluştur - Disk içine"
 
 #: instances/templates/instances/snapshots_tab.html:13
 #, fuzzy
 #| msgid "Take Snapshot"
 msgid "Take Snapshot - External"
-msgstr "Anlık Görüntü Oluştur"
+msgstr "Anlık Görüntü Oluştur - Disk dışına"
 
 #: instances/templates/instances/snapshots_tab.html:18
 msgid "Manage Snapshots"
@@ -2689,27 +2698,28 @@ msgstr ""
 #: instances/templates/instances/snapshots_tab.html:27
 msgid ""
 "Live snapshot could cause server timeout and instance might be paused!!!"
-msgstr ""
+msgstr 
+"Canlı anlık görüntü alma işlemi sunucuda süre aşımına yol açabilir ve sanal makine uzun süre duraklayabilir!!!"
 
 #: instances/templates/instances/snapshots_tab.html:29
 #, fuzzy
 #| msgid "Create new instance"
 msgid "Create an internal snapshot"
-msgstr "Yeni sanal makine oluştur"
+msgstr "Yeni disk için snapshot oluştur"
 
 #: instances/templates/instances/snapshots_tab.html:34
 #: instances/templates/instances/snapshots_tab.html:56
 #, fuzzy
 #| msgid "Enter Snapshot Name"
 msgid "Snapshot Name"
-msgstr "Anlık görüntü adı girin"
+msgstr "Anlık Görüntü Adı"
 
 #: instances/templates/instances/snapshots_tab.html:36
 #: instances/templates/instances/snapshots_tab.html:58
 #, fuzzy
 #| msgid "Description"
 msgid "Snapshot Description"
-msgstr "Tanım"
+msgstr "Anlık Görüntü Açıklaması"
 
 #: instances/templates/instances/snapshots_tab.html:38
 #: instances/templates/instances/snapshots_tab.html:40
@@ -2720,37 +2730,38 @@ msgstr "Anlık Görüntü Oluştur"
 
 #: instances/templates/instances/snapshots_tab.html:48
 msgid "You can get external snapshots within this tab."
-msgstr ""
+msgstr "Bu sekmeden harici anlık görüntüleri oluşturabilirsiniz."
 
 #: instances/templates/instances/snapshots_tab.html:50
 msgid "Create an external snapshot"
-msgstr ""
+msgstr "Harici bir anlık görüntü oluştur"
 
 #: instances/templates/instances/snapshots_tab.html:52
 msgid ""
 "External snapshots are experimental in this stage, use it if you know what "
 "you are doing. 'Revert Snapshot' may require manual operation with CLI."
-msgstr ""
+msgstr "Harici anlık görüntüler bu aşamada deneysel düzeydedir. Ne yaptığınızı"
+"biliyorsanız kullanın. 'Anlı görüntüye dön' işlemi komut satırından elle müdahale gerektirebilir."
 
 #: instances/templates/instances/snapshots_tab.html:65
 msgid "WebVirtCloud supports only one external snapshot at the moment."
-msgstr ""
+msgstr "WebVirtCoud halihazırda sadece bir adet harici anlık görüntüyü desteklemektedir."
 
 #: instances/templates/instances/snapshots_tab.html:71
 msgid "Choose a snapshot for restore/delete"
-msgstr "Geri yükleme/Silmek için bir anlık görüntü seçin"
+msgstr "Geri yükleme/Silme için bir anlık görüntü seçin"
 
 #: instances/templates/instances/snapshots_tab.html:77
 #, fuzzy
 #| msgid "Description"
 msgid "Type - Description"
-msgstr "Tanım"
+msgstr "Tip - Açıklama"
 
 #: instances/templates/instances/snapshots_tab.html:86
 #, fuzzy
 #| msgid "Interface"
 msgid "Internal"
-msgstr "Arabirim"
+msgstr "Dahili"
 
 #: instances/templates/instances/snapshots_tab.html:92
 #: instances/templates/instances/snapshots_tab.html:125
@@ -2768,7 +2779,7 @@ msgstr "Anlık Görüntü Sil"
 
 #: instances/templates/instances/snapshots_tab.html:118
 msgid "External"
-msgstr ""
+msgstr "Harici"
 
 #: instances/templates/instances/snapshots_tab.html:145
 msgid "You do not have any snapshots"
@@ -2788,7 +2799,7 @@ msgstr "Bant Genişliği Aygıtı"
 
 #: instances/templates/instances/stats_tab.html:68
 msgid "Disk I/O device"
-msgstr "Disk I/O aygıtı"
+msgstr "Disk G/Ç aygıtı"
 
 #: instances/utils.py:99
 msgid "None available device name"
@@ -2806,7 +2817,7 @@ msgstr "Sanal makine %(hostname)% ya taşındı"
 
 #: instances/views.py:490
 msgid "Reset root password"
-msgstr "Kök parolayı sıfırla"
+msgstr "Root parolasını sıfırla"
 
 #: instances/views.py:498 instances/views.py:533
 msgid "Please shutdown down your instance and then try again"
@@ -2815,7 +2826,7 @@ msgstr "Lütfen sanal makinenizi kapatın ve yeniden deneyin"
 #: instances/views.py:523
 #, python-format
 msgid "Installed new SSH public key %(keyname)s"
-msgstr "Yeni %(keyname)s SSH açık anahtarı kuruldu"
+msgstr "Yeni %(keyname)s SSH açık anahtarı yüklendi"
 
 #: instances/views.py:555
 #, python-format
@@ -2910,7 +2921,7 @@ msgstr "CD-ROM ayır: %(dev)s"
 #: instances/views.py:949
 #, python-format
 msgid "Mount media: %(dev)s"
-msgstr "Medya tak: %(dev)s"
+msgstr "Medyayı tak: %(dev)s"
 
 #: instances/views.py:964
 #, python-format
@@ -3006,13 +3017,13 @@ msgstr "Sanal makineleri klonlayabilir"
 #: instances/views.py:1201
 #, python-format
 msgid "Set Guest Agent: %(status)s"
-msgstr "Misafir Ajanını Ayarla: %(status)s"
+msgstr "Konak Ajanını Ayarla: %(status)s"
 
 #: instances/views.py:1211
 #, fuzzy, python-format
 #| msgid "Set Video Model"
 msgid "Set Video Model: %(model)s"
-msgstr "Video Modeli Ayarla"
+msgstr "Görüntü Modeli Ayarla"
 
 #: instances/views.py:1220
 msgid "Change network"
@@ -3141,61 +3152,61 @@ msgstr "Seçenekleri düzenle"
 msgid "Send console.vv file"
 msgstr "console.vv dosyası gönder"
 
-#: instances/views.py:1634 instances/views.py:1739
+#: instances/views.py:1634 instances/views.py:1740
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/views.py:1721
+#: instances/views.py:1722
 msgid "You haven't defined any storage pools"
 msgstr "Hiç bir depolama havuzu tanımlamadınız"
 
-#: instances/views.py:1723
+#: instances/views.py:1724
 msgid "You haven't defined any network pools"
 msgstr "Hiç bir ağ havuzu tanımlamadınız"
 
-#: instances/views.py:1744
+#: instances/views.py:1745
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
-#: instances/views.py:1751
+#: instances/views.py:1752
 msgid "No Virtual Machine MAC has been entered"
 msgstr "Sanal makine için MAC adresi belirtmediniz"
 
-#: instances/views.py:1786
+#: instances/views.py:1787
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 "İmaj zaten mevcut. Lütfen ya makine adını değişin ya da disk alanlarını "
 "kontrol edin"
 
-#: instances/views.py:1815
+#: instances/views.py:1816
 msgid "First you need to create or select an image"
-msgstr "Ya daha önce oluşturun ya da bir imaj seçin"
+msgstr "Öncelikle bir imaj oluşturun ya da mevcut bir imajı seçin"
 
-#: instances/views.py:1838
+#: instances/views.py:1839
 msgid "Invalid cache mode"
 msgstr "Geçersiz önbellek modu"
 
-#: instances/views.py:1884
+#: instances/views.py:1885
 msgid "Instance is created"
 msgstr "Sanal makine oluşturuldu"
 
-#: instances/views.py:1913
+#: instances/views.py:1914
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:1919
+#: instances/views.py:1920
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:1929
+#: instances/views.py:1930
 msgid "Flavor Updated"
 msgstr "Flavor Güncellendi"
 
-#: instances/views.py:1935
+#: instances/views.py:1936
 msgid "Update Flavor"
 msgstr "Flavor Güncelle"
 
-#: instances/views.py:1944
+#: instances/views.py:1945
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
@@ -3243,26 +3254,26 @@ msgstr "Arabirim 10 karakterden fazla olamaz"
 #, fuzzy
 #| msgid "No username has been entered"
 msgid "No interface name has been entered"
-msgstr "Kullanıcı adı girilmedi"
+msgstr "Arayüz adı girilmedi"
 
 #: interfaces/models.py:12 networks/models.py:12 storages/models.py:12
 #: storages/models.py:46
 #, fuzzy
 #| msgid "Status"
 msgid "status"
-msgstr "Durum"
+msgstr "durum"
 
 #: interfaces/models.py:13 networks/models.py:13
 #, fuzzy
 #| msgid "Device"
 msgid "device"
-msgstr "Aygıt"
+msgstr "aygıt"
 
 #: interfaces/models.py:14 networks/models.py:14
 #, fuzzy
 #| msgid "Forward"
 msgid "forward"
-msgstr "Yönledirme"
+msgstr "yönledirme"
 
 #: interfaces/templates/create_iface_block.html:13
 msgid "Create New Interface"
@@ -3369,7 +3380,7 @@ msgstr "Köprü Aygıtı"
 
 #: interfaces/templates/interface.html:54
 msgid "Boot Mode"
-msgstr "Ön yükleme Modu"
+msgstr "Başlama Modu"
 
 #: interfaces/templates/interface.html:56
 #: interfaces/templates/interface.html:79 networks/templates/network.html:46
@@ -3464,7 +3475,7 @@ msgstr "Havuz köprü adı 20 karakterden fazla olamaz"
 #, fuzzy
 #| msgid "No username has been entered"
 msgid "No network name has been entered"
-msgstr "Kullanıcı adı girilmedi"
+msgstr "Ağ adı adı girilmedi"
 
 #: networks/templates/add_network_qos.html:14
 msgid "Add QoS for Network"
@@ -3520,7 +3531,7 @@ msgstr "BRIDGE"
 
 #: networks/templates/create_net_block.html:32
 msgid "MACVTAP"
-msgstr ""
+msgstr "MACVTAP"
 
 #: networks/templates/create_net_block.html:37
 msgid "IPv4 Subnet pool"
@@ -3617,7 +3628,6 @@ msgid "Show"
 msgstr "Göster"
 
 #: networks/templates/network.html:166 networks/templates/network.html:276
-#: venv/lib/python3.8/site-packages/django/forms/widgets.py:403
 msgid "Clear"
 msgstr "Temizle"
 
@@ -3828,53 +3838,53 @@ msgstr "İmaj adı 120 karakterden fazla olamaz"
 #, fuzzy
 #| msgid "Pool type"
 msgid "type"
-msgstr "Havuz tipi"
+msgstr "tip"
 
 #: storages/models.py:14 storages/models.py:32 storages/models.py:44
 #, fuzzy
 #| msgid "Resize"
 msgid "size"
-msgstr "Boyutlandır"
+msgstr "boyut"
 
 #: storages/models.py:15
 #, fuzzy
 #| msgid "Volumes"
 msgid "volumes"
-msgstr "Birimler"
+msgstr "birimler"
 
 #: storages/models.py:27
 #, fuzzy
 #| msgid "Format"
 msgid "format"
-msgstr "Biçem"
+msgstr "biçem"
 
 #: storages/models.py:31
 #, fuzzy
 #| msgid "Maximum Allocation"
 msgid "allocation"
-msgstr "Maksimum Tahsis"
+msgstr "tahsisat"
 
 #: storages/models.py:43
 #, fuzzy
 #| msgid "State"
 msgid "state"
-msgstr "Durum"
+msgstr "durum"
 
 #: storages/models.py:45
 msgid "free"
-msgstr ""
+msgstr "boş"
 
-#: storages/models.py:47 venv/lib/python3.8/site-packages/click/types.py:815
+#: storages/models.py:47
 #, fuzzy
 #| msgid "Pool path"
 msgid "path"
-msgstr "Havuz yolu"
+msgstr "yol"
 
 #: storages/models.py:49
 #, fuzzy
 #| msgid "Autostart"
 msgid "autostart"
-msgstr "Otomatik başlat"
+msgstr "otomatik başlat"
 
 #: storages/templates/create_stg_block.html:13
 msgid "Create Storage Pool"
@@ -3947,7 +3957,7 @@ msgstr "ISO İmajı Yükle"
 
 #: storages/templates/create_stg_vol_block.html:30
 msgid "Upload"
-msgstr "Yükleme"
+msgstr "Yükle"
 
 #: storages/templates/create_stg_vol_block.html:47
 msgid "Add New Volume"
@@ -4016,7 +4026,7 @@ msgstr "Havuz adı zaten kullanılıyor"
 
 #: storages/views.py:47
 msgid "You need create secret for pool"
-msgstr "Havuz için "
+msgstr "Havuz için bir secret yarat"
 
 #: storages/views.py:55
 msgid "You need input all fields for creating ceph pool"
@@ -4024,11 +4034,11 @@ msgstr "CEPH havuzu oluşturmak için tüm alanların doldurulmasına ihtiyaç v
 
 #: storages/views.py:109
 msgid "Security Issues with file uploading"
-msgstr ""
+msgstr "Dosya yüklenirken bir güvenlik durumu ortaya çıktı"
 
 #: storages/views.py:117
 msgid "File not found. Check the path variable and filename"
-msgstr ""
+msgstr "Dosya bulunamadı. Dosya adı ve yolunu kontrol ediniz"
 
 #: storages/views.py:168
 #, fuzzy, python-format
@@ -4066,7 +4076,7 @@ msgstr "403"
 
 #: templates/403.html:7 templates/404.html:7 templates/500.html:7
 msgid "Oops!"
-msgstr "Amann!"
+msgstr "Dikkat!"
 
 #: templates/403.html:9
 msgid "403 Forbidden"
@@ -4124,1561 +4134,9 @@ msgstr "İşleniyor"
 msgid "Search"
 msgstr "Ara"
 
-#: venv/lib/python3.8/site-packages/click/_termui_impl.py:496
-#, python-brace-format
-msgid "{editor}: Editing failed"
-msgstr "{editor}: Düzenleme başarısız"
-
-#: venv/lib/python3.8/site-packages/click/_termui_impl.py:500
-#, python-brace-format
-msgid "{editor}: Editing failed: {e}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/core.py:1097
-msgid "Aborted!"
-msgstr "İptal edildi!"
-
-#: venv/lib/python3.8/site-packages/click/core.py:1282
-#: venv/lib/python3.8/site-packages/click/decorators.py:495
-#, fuzzy
-#| msgid "ISO image already exist"
-msgid "Show this message and exit."
-msgstr "ISO imajı zaten mevcut"
-
-#: venv/lib/python3.8/site-packages/click/core.py:1313
-#: venv/lib/python3.8/site-packages/click/core.py:1339
-#, python-brace-format
-msgid "(Deprecated) {text}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/core.py:1383
-#, fuzzy, python-brace-format
-#| msgid "expected %s argument(s)"
-msgid "Got unexpected extra argument ({args})"
-msgid_plural "Got unexpected extra arguments ({args})"
-msgstr[0] "beklenen parametre(ler) %s"
-msgstr[1] "beklenen parametre(ler) %s"
-
-#: venv/lib/python3.8/site-packages/click/core.py:1399
-msgid "DeprecationWarning: The command {name!r} is deprecated."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/core.py:1605
-msgid "Commands"
-msgstr "Komutlar"
-
-#: venv/lib/python3.8/site-packages/click/core.py:1637
-msgid "Missing command."
-msgstr "Eksik komut."
-
-#: venv/lib/python3.8/site-packages/click/core.py:1715
-msgid "No such command {name!r}."
-msgstr "{name!r} böyle bir komut yok."
-
-#: venv/lib/python3.8/site-packages/click/core.py:2271
-#, fuzzy
-#| msgid "'%(value)s' value must be an integer."
-msgid "Value must be an iterable."
-msgstr "'%(value)s' değeri bir sayısal değer olmalıdır"
-
-#: venv/lib/python3.8/site-packages/click/core.py:2291
-#, python-brace-format
-msgid "Takes {nargs} values but 1 was given."
-msgid_plural "Takes {nargs} values but {len} were given."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/click/core.py:2734
-#, python-brace-format
-msgid "env var: {var}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/core.py:2764
-msgid "(dynamic)"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/core.py:2777
-#, python-brace-format
-msgid "default: {default}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/core.py:2790
-msgid "required"
-msgstr "gerekli"
-
-#: venv/lib/python3.8/site-packages/click/decorators.py:400
-#, python-format
-msgid "%(prog)s, version %(version)s"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/decorators.py:464
-msgid "Show the version and exit."
-msgstr "Sürümünü göster ve çık."
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:43
-#: venv/lib/python3.8/site-packages/click/exceptions.py:79
-#, fuzzy, python-brace-format
-#| msgid "message"
-msgid "Error: {message}"
-msgstr "mesaj"
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:71
-#, python-brace-format
-msgid "Try '{command} {option}' for help."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:120
-#, fuzzy, python-brace-format
-#| msgid "Enter a valid value."
-msgid "Invalid value: {message}"
-msgstr "Geçerli bir değer girin."
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:122
-#, python-brace-format
-msgid "Invalid value for {param_hint}: {message}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:178
-msgid "Missing argument"
-msgstr "Eksik parametre"
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:180
-#, fuzzy
-#| msgid "Edit options"
-msgid "Missing option"
-msgstr "Seçenekleri düzenle"
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:182
-msgid "Missing parameter"
-msgstr "Eksik parametre"
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:184
-#, python-brace-format
-msgid "Missing {param_type}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:191
-#, python-brace-format
-msgid "Missing parameter: {param_name}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:211
-#, python-brace-format
-msgid "No such option: {name}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:223
-#, python-brace-format
-msgid "Did you mean {possibility}?"
-msgid_plural "(Possible options: {possibilities})"
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:261
-#, fuzzy
-#| msgid "Unknown"
-msgid "unknown error"
-msgstr "Bilinmeyen"
-
-#: venv/lib/python3.8/site-packages/click/exceptions.py:268
-msgid "Could not open file {filename!r}: {message}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/parser.py:231
-msgid "Argument {name!r} takes {nargs} values."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/parser.py:413
-msgid "Option {name!r} does not take a value."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/parser.py:474
-msgid "Option {name!r} requires an argument."
-msgid_plural "Option {name!r} requires {nargs} arguments."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/click/shell_completion.py:316
-msgid "Shell completion is not supported for Bash versions older than 4.4."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/shell_completion.py:322
-msgid "Couldn't detect Bash version, shell completion is not supported."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/termui.py:160
-#, fuzzy
-#| msgid "No configuration"
-msgid "Repeat for confirmation"
-msgstr "Yapılandırma yok"
-
-#: venv/lib/python3.8/site-packages/click/termui.py:176
-msgid "Error: The value you entered was invalid."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/termui.py:178
-#, python-brace-format
-msgid "Error: {e.message}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/termui.py:189
-msgid "Error: The two entered values do not match."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/termui.py:245
-msgid "Error: invalid input"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/termui.py:776
-msgid "Press any key to continue..."
-msgstr "Devam etmek için bir tuşa basın..."
-
-#: venv/lib/python3.8/site-packages/click/types.py:265
-#, python-brace-format
-msgid ""
-"Choose from:\n"
-"\t{choices}"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:297
-#, fuzzy
-#| msgid "Value %(value)r is not a valid choice."
-msgid "{value!r} is not {choice}."
-msgid_plural "{value!r} is not one of {choices}."
-msgstr[0] "%(value)r değeri geçerli bir seçenek değil."
-msgstr[1] "%(value)r değeri geçerli bir seçenek değil."
-
-#: venv/lib/python3.8/site-packages/click/types.py:387
-msgid "{value!r} does not match the format {format}."
-msgid_plural "{value!r} does not match the formats {formats}."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:409
-#, fuzzy
-#| msgid "Value %(value)r is not a valid choice."
-msgid "{value!r} is not a valid {number_type}."
-msgstr "%(value)r değeri geçerli bir seçenek değil."
-
-#: venv/lib/python3.8/site-packages/click/types.py:465
-#, python-brace-format
-msgid "{value} is not in the range {range}."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:606
-#, fuzzy
-#| msgid "Value %(value)r is not a valid choice."
-msgid "{value!r} is not a valid boolean."
-msgstr "%(value)r değeri geçerli bir seçenek değil."
-
-#: venv/lib/python3.8/site-packages/click/types.py:630
-#, fuzzy
-#| msgid "'%(value)s' is not a valid UUID."
-msgid "{value!r} is not a valid UUID."
-msgstr "'%(value)s' geçerli bir UUID değil."
-
-#: venv/lib/python3.8/site-packages/click/types.py:811
-#, fuzzy
-#| msgid "Profile"
-msgid "file"
-msgstr "Profil"
-
-#: venv/lib/python3.8/site-packages/click/types.py:813
-#, fuzzy
-#| msgid "Direction"
-msgid "directory"
-msgstr "Yön"
-
-#: venv/lib/python3.8/site-packages/click/types.py:861
-msgid "{name} {filename!r} does not exist."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:870
-msgid "{name} {filename!r} is a file."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:878
-#, python-brace-format
-msgid "{name} '{filename}' is a directory."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:887
-msgid "{name} {filename!r} is not readable."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:896
-msgid "{name} {filename!r} is not writable."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:905
-msgid "{name} {filename!r} is not executable."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/click/types.py:972
-#, python-brace-format
-msgid "{len_type} values are required, but {len_value} was given."
-msgid_plural "{len_type} values are required, but {len_value} were given."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/contrib/messages/apps.py:7
-msgid "Messages"
-msgstr "Mesajlar"
-
-#: venv/lib/python3.8/site-packages/django/contrib/sitemaps/apps.py:8
-msgid "Site Maps"
-msgstr "Site Haritası"
-
-#: venv/lib/python3.8/site-packages/django/contrib/staticfiles/apps.py:9
-msgid "Static Files"
-msgstr "Statik Dosyalar"
-
-#: venv/lib/python3.8/site-packages/django/contrib/syndication/apps.py:7
-msgid "Syndication"
-msgstr "Sendika"
-
-#. Translators: String used to replace omitted page numbers in elided page
-#. range generated by paginators, e.g. [1, 2, '…', 5, 6, 7, '…', 9, 10].
-#: venv/lib/python3.8/site-packages/django/core/paginator.py:30
-msgid "…"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/core/paginator.py:51
-msgid "That page number is not an integer"
-msgstr "Bu sayfa numarası bir tam sayı değil"
-
-#: venv/lib/python3.8/site-packages/django/core/paginator.py:53
-msgid "That page number is less than 1"
-msgstr "Sayfa numarası 1'den daha küçük"
-
-#: venv/lib/python3.8/site-packages/django/core/paginator.py:58
-msgid "That page contains no results"
-msgstr "Bu sayfada hiç sonuç yok"
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:22
-msgid "Enter a valid value."
-msgstr "Geçerli bir değer girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:93
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:675
-msgid "Enter a valid URL."
-msgstr "Geçerli bir URL girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:150
-msgid "Enter a valid integer."
-msgstr "Geçerli bir tam sayı girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:161
-msgid "Enter a valid email address."
-msgstr "Geçerli bir e-posta adresi girin."
-
-#. Translators: "letters" means latin letters: a-z and A-Z.
-#: venv/lib/python3.8/site-packages/django/core/validators.py:262
-msgid ""
-"Enter a valid “slug” consisting of letters, numbers, underscores or hyphens."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:269
-msgid ""
-"Enter a valid “slug” consisting of Unicode letters, numbers, underscores, or "
-"hyphens."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:278
-#: venv/lib/python3.8/site-packages/django/core/validators.py:288
-#: venv/lib/python3.8/site-packages/django/core/validators.py:311
-msgid "Enter a valid IPv4 address."
-msgstr "Geçerli bir IPv4 adresi girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:296
-#: venv/lib/python3.8/site-packages/django/core/validators.py:312
-msgid "Enter a valid IPv6 address."
-msgstr "Geçerli bir IPv6 adresi girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:306
-#: venv/lib/python3.8/site-packages/django/core/validators.py:310
-msgid "Enter a valid IPv4 or IPv6 address."
-msgstr "Geçerli bir IPv4 veya IPv6 adresi girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:340
-msgid "Enter only digits separated by commas."
-msgstr "Sadece virgüllerle ayrılmış sayılar girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:346
-#, python-format
-msgid "Ensure this value is %(limit_value)s (it is %(show_value)s)."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:379
-#, python-format
-msgid "Ensure this value is less than or equal to %(limit_value)s."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:388
-#, python-format
-msgid "Ensure this value is greater than or equal to %(limit_value)s."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:398
-#, python-format
-msgid ""
-"Ensure this value has at least %(limit_value)d character (it has "
-"%(show_value)d)."
-msgid_plural ""
-"Ensure this value has at least %(limit_value)d characters (it has "
-"%(show_value)d)."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:413
-#, python-format
-msgid ""
-"Ensure this value has at most %(limit_value)d character (it has "
-"%(show_value)d)."
-msgid_plural ""
-"Ensure this value has at most %(limit_value)d characters (it has "
-"%(show_value)d)."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:432
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:292
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:327
-msgid "Enter a number."
-msgstr "Bir sayı girin."
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:434
-#, python-format
-msgid "Ensure that there are no more than %(max)s digit in total."
-msgid_plural "Ensure that there are no more than %(max)s digits in total."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:439
-#, python-format
-msgid "Ensure that there are no more than %(max)s decimal place."
-msgid_plural "Ensure that there are no more than %(max)s decimal places."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:444
-#, python-format
-msgid ""
-"Ensure that there are no more than %(max)s digit before the decimal point."
-msgid_plural ""
-"Ensure that there are no more than %(max)s digits before the decimal point."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:506
-#, python-format
-msgid ""
-"File extension “%(extension)s” is not allowed. Allowed extensions are: "
-"%(allowed_extensions)s."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/core/validators.py:559
-msgid "Null characters are not allowed."
-msgstr "Null karakterlere izin verilmiyor."
-
-#: venv/lib/python3.8/site-packages/django/db/models/base.py:1210
-#: venv/lib/python3.8/site-packages/django/forms/models.py:768
-msgid "and"
-msgstr "ve"
-
-#: venv/lib/python3.8/site-packages/django/db/models/base.py:1212
-#, python-format
-msgid "%(model_name)s with this %(field_labels)s already exists."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:100
-#, python-format
-msgid "Value %(value)r is not a valid choice."
-msgstr "%(value)r değeri geçerli bir seçenek değil."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:101
-msgid "This field cannot be null."
-msgstr "Bu alan null olamaz"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:102
-msgid "This field cannot be blank."
-msgstr "Bu alan boş bırakılamaz."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:103
-#, python-format
-msgid "%(model_name)s with this %(field_label)s already exists."
-msgstr ""
-
-#. Translators: The 'lookup_type' is one of 'date', 'year' or 'month'.
-#. Eg: "Title must be unique for pub_date year"
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:107
-#, python-format
-msgid ""
-"%(field_label)s must be unique for %(date_field_label)s %(lookup_type)s."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:126
-#, python-format
-msgid "Field of type: %(field_type)s"
-msgstr "Alan tipi: %(field_type)s"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:958
-#, fuzzy, python-format
-#| msgid "'%(value)s' value must be either True or False."
-msgid "“%(value)s” value must be either True or False."
-msgstr "'%(value)s' değeri ya True ya da False olmalıdır."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:959
-#, fuzzy, python-format
-#| msgid "'%(value)s' value must be either True or False."
-msgid "“%(value)s” value must be either True, False, or None."
-msgstr "'%(value)s' değeri ya True ya da False olmalıdır."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:961
-msgid "Boolean (Either True or False)"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1002
-#, python-format
-msgid "String (up to %(max_length)s)"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1096
-msgid "Comma-separated integers"
-msgstr "Virgülle ayrılmış tam sayılar"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1145
-#, python-format
-msgid ""
-"“%(value)s” value has an invalid date format. It must be in YYYY-MM-DD "
-"format."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1147
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1290
-#, python-format
-msgid ""
-"“%(value)s” value has the correct format (YYYY-MM-DD) but it is an invalid "
-"date."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1150
-msgid "Date (without time)"
-msgstr "Tarih (zaman yok)"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1288
-#, python-format
-msgid ""
-"“%(value)s” value has an invalid format. It must be in YYYY-MM-DD HH:MM[:ss[."
-"uuuuuu]][TZ] format."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1292
-#, python-format
-msgid ""
-"“%(value)s” value has the correct format (YYYY-MM-DD HH:MM[:ss[.uuuuuu]]"
-"[TZ]) but it is an invalid date/time."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1296
-msgid "Date (with time)"
-msgstr "Tarih (zamanlı)"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1444
-#, fuzzy, python-format
-#| msgid "'%(value)s' value must be a decimal number."
-msgid "“%(value)s” value must be a decimal number."
-msgstr "'%(value)s' değeri bir tam sayı olmalıdır."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1446
-msgid "Decimal number"
-msgstr "Ondalık sayı"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1585
-#, python-format
-msgid ""
-"“%(value)s” value has an invalid format. It must be in [DD] [[HH:]MM:]ss[."
-"uuuuuu] format."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1588
-msgid "Duration"
-msgstr "Süre"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1638
-msgid "Email address"
-msgstr "E-posta adresi"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1661
-msgid "File path"
-msgstr "Dosya yolu"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1727
-#, fuzzy, python-format
-#| msgid "'%(value)s' value must be a float."
-msgid "“%(value)s” value must be a float."
-msgstr "'%(value)s' değeri kayan noktalı bir sayı olmalıdır."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1729
-msgid "Floating point number"
-msgstr "Kayan noktalı sayı"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1767
-#, fuzzy, python-format
-#| msgid "'%(value)s' value must be an integer."
-msgid "“%(value)s” value must be an integer."
-msgstr "'%(value)s' değeri bir sayısal değer olmalıdır"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1769
-msgid "Integer"
-msgstr "Tam sayı"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1852
-msgid "Big (8 byte) integer"
-msgstr "Büyük (8 bayt) sayı"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1867
-msgid "Small integer"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1875
-msgid "IPv4 address"
-msgstr "IPv4 adresi"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1906
-msgid "IP address"
-msgstr "IP Adresi"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1986
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1987
-#, fuzzy, python-format
-#| msgid "'%(value)s' value must be either True or False."
-msgid "“%(value)s” value must be either None, True or False."
-msgstr "'%(value)s' değeri ya True ya da False olmalıdır."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:1989
-msgid "Boolean (Either True, False or None)"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2043
-#, fuzzy
-#| msgid "Positive integer"
-msgid "Positive big integer"
-msgstr "Pozitif sayı"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2056
-msgid "Positive integer"
-msgstr "Pozitif sayı"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2069
-msgid "Positive small integer"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2083
-#, python-format
-msgid "Slug (up to %(max_length)s)"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2115
-msgid "Text"
-msgstr "Metin"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2181
-#, python-format
-msgid ""
-"“%(value)s” value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] "
-"format."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2183
-#, python-format
-msgid ""
-"“%(value)s” value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an "
-"invalid time."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2186
-msgid "Time"
-msgstr "Zaman"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2312
-msgid "URL"
-msgstr "URL"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2334
-msgid "Raw binary data"
-msgstr "Ham ikili veri"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2399
-#, fuzzy, python-format
-#| msgid "'%(value)s' is not a valid UUID."
-msgid "“%(value)s” is not a valid UUID."
-msgstr "'%(value)s' geçerli bir UUID değil."
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/__init__.py:2401
-msgid "Universally unique identifier"
-msgstr "Evrensel eşsiz betimleyici"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/files.py:226
-msgid "File"
-msgstr "Dosya"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/json.py:18
-msgid "A JSON object"
-msgstr "Bir JSON nesnesi"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/json.py:20
-msgid "Value must be valid JSON."
-msgstr "Değer geçerli bir JSON olmalı"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/related.py:790
-#, python-format
-msgid "%(model)s instance with %(field)s %(value)r does not exist."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/related.py:792
-msgid "Foreign Key (type determined by related field)"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/related.py:1045
-msgid "One-to-one relationship"
-msgstr "Bire-bir ilişki"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/related.py:1099
-#, python-format
-msgid "%(from)s-%(to)s relationship"
-msgstr "%(from)s'den %(to)s ye ilişki"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/related.py:1100
-#, python-format
-msgid "%(from)s-%(to)s relationships"
-msgstr "%(from)s'den %(to)s ye ilişkiler"
-
-#: venv/lib/python3.8/site-packages/django/db/models/fields/related.py:1142
-msgid "Many-to-many relationship"
-msgstr "Çoktan-çoğa ilişki"
-
-#. Translators: If found as last label character, these punctuation
-#. characters will prevent the default label_suffix to be appended to the label
-#: venv/lib/python3.8/site-packages/django/forms/boundfield.py:150
-msgid ":?.!"
-msgstr ":?.!"
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:54
-msgid "This field is required."
-msgstr "Bu alan gerekli."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:247
-msgid "Enter a whole number."
-msgstr "Bir tüm sayı girin."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:402
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:1143
-msgid "Enter a valid date."
-msgstr "Geçerli bir tarih girin."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:426
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:1144
-msgid "Enter a valid time."
-msgstr "Geçerli bir zaman girin."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:454
-msgid "Enter a valid date/time."
-msgstr "Geçerli bir tarih/saat girin."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:488
-msgid "Enter a valid duration."
-msgstr "Geçerli bir süre girin."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:489
-#, python-brace-format
-msgid "The number of days must be between {min_days} and {max_days}."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:549
-msgid "No file was submitted. Check the encoding type on the form."
-msgstr "Dosya submit edilmedi. Formdaki encoding tipini kontrol ediniz."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:550
-msgid "No file was submitted."
-msgstr "Gönderilen dosya yok"
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:551
-msgid "The submitted file is empty."
-msgstr "Gönderilen dosya boş"
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:553
-#, python-format
-msgid "Ensure this filename has at most %(max)d character (it has %(length)d)."
-msgid_plural ""
-"Ensure this filename has at most %(max)d characters (it has %(length)d)."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:556
-msgid "Please either submit a file or check the clear checkbox, not both."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:617
-msgid ""
-"Upload a valid image. The file you uploaded was either not an image or a "
-"corrupted image."
-msgstr ""
-"Geçerli bir imaj yükleyin. Yüklediğiniz imaj ya geçersiz ya da bir bozulmuş "
-"imaj"
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:779
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:869
-#: venv/lib/python3.8/site-packages/django/forms/models.py:1309
-#, python-format
-msgid "Select a valid choice. %(value)s is not one of the available choices."
-msgstr ""
-"Geçerli bir seçenek seçin. Seçeneklerden %(value)s tanesi uygun değil. "
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:870
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:985
-#: venv/lib/python3.8/site-packages/django/forms/models.py:1308
-msgid "Enter a list of values."
-msgstr "Bir değer listesi girin."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:986
-msgid "Enter a complete value."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:1202
-msgid "Enter a valid UUID."
-msgstr "Geçerli bir UUID girin."
-
-#: venv/lib/python3.8/site-packages/django/forms/fields.py:1232
-#, fuzzy
-#| msgid "Enter a valid URL."
-msgid "Enter a valid JSON."
-msgstr "Geçerli bir URL girin."
-
-#. Translators: This is the default suffix added to form field labels
-#: venv/lib/python3.8/site-packages/django/forms/forms.py:76
-msgid ":"
-msgstr ":"
-
-#: venv/lib/python3.8/site-packages/django/forms/forms.py:203
-#, python-format
-msgid "(Hidden field %(name)s) %(error)s"
-msgstr "(Gizli alan %(name)s) %(error)s"
-
-#: venv/lib/python3.8/site-packages/django/forms/formsets.py:61
-#, python-format
-msgid ""
-"ManagementForm data is missing or has been tampered with. Missing fields: "
-"%(field_names)s. You may need to file a bug report if the issue persists."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/formsets.py:370
-#, python-format
-msgid "Please submit at most %d form."
-msgid_plural "Please submit at most %d forms."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/forms/formsets.py:377
-#, python-format
-msgid "Please submit at least %d form."
-msgid_plural "Please submit at least %d forms."
-msgstr[0] ""
-msgstr[1] ""
-
-#: venv/lib/python3.8/site-packages/django/forms/formsets.py:405
-#: venv/lib/python3.8/site-packages/django/forms/formsets.py:412
-msgid "Order"
-msgstr "Sıra"
-
-#: venv/lib/python3.8/site-packages/django/forms/models.py:763
-#, python-format
-msgid "Please correct the duplicate data for %(field)s."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/models.py:767
-#, python-format
-msgid "Please correct the duplicate data for %(field)s, which must be unique."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/models.py:773
-#, python-format
-msgid ""
-"Please correct the duplicate data for %(field_name)s which must be unique "
-"for the %(lookup)s in %(date_field)s."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/models.py:782
-msgid "Please correct the duplicate values below."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/models.py:1109
-msgid "The inline value did not match the parent instance."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/models.py:1193
-msgid "Select a valid choice. That choice is not one of the available choices."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/models.py:1311
-#, fuzzy, python-format
-#| msgid "\"%(pk)s\" is not a valid value."
-msgid "“%(pk)s” is not a valid value."
-msgstr "'%(pk)s' bir geçerli değer değil."
-
-#: venv/lib/python3.8/site-packages/django/forms/utils.py:172
-#, python-format
-msgid ""
-"%(datetime)s couldn’t be interpreted in time zone %(current_timezone)s; it "
-"may be ambiguous or it may not exist."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/widgets.py:404
-msgid "Currently"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/forms/widgets.py:715
-msgid "Yes"
-msgstr "Evet"
-
-#: venv/lib/python3.8/site-packages/django/forms/widgets.py:716
-msgid "No"
-msgstr "Hayır"
-
-#. Translators: Please do not add spaces around commas.
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:817
-msgid "yes,no,maybe"
-msgstr "evet,hayır,belki"
-
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:846
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:863
-#, python-format
-msgid "%(size)d byte"
-msgid_plural "%(size)d bytes"
-msgstr[0] "%(size)d byte"
-msgstr[1] "%(size)d byte"
-
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:865
-#, python-format
-msgid "%s KB"
-msgstr "%s KB"
-
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:867
-#, python-format
-msgid "%s MB"
-msgstr "%s MB"
-
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:869
-#, python-format
-msgid "%s GB"
-msgstr "%s GB"
-
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:871
-#, python-format
-msgid "%s TB"
-msgstr "%s TB"
-
-#: venv/lib/python3.8/site-packages/django/template/defaultfilters.py:873
-#, python-format
-msgid "%s PB"
-msgstr "%s PB"
-
-#: venv/lib/python3.8/site-packages/django/utils/dateformat.py:66
-msgid "p.m."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/utils/dateformat.py:67
-msgid "a.m."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/utils/dateformat.py:72
-msgid "PM"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/utils/dateformat.py:73
-msgid "AM"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/utils/dateformat.py:146
-msgid "midnight"
-msgstr "gece yarısı"
-
-#: venv/lib/python3.8/site-packages/django/utils/dateformat.py:148
-msgid "noon"
-msgstr "öğle"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:6
-msgid "Monday"
-msgstr "Pazartesi"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:6
-msgid "Tuesday"
-msgstr "Sal"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:6
-msgid "Wednesday"
-msgstr "Çarşamba"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:6
-msgid "Thursday"
-msgstr "Perşembe"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:6
-msgid "Friday"
-msgstr "Cuma"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:7
-msgid "Saturday"
-msgstr "Cumartesi"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:7
-msgid "Sunday"
-msgstr "Pazar"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:10
-msgid "Mon"
-msgstr "Pzt"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:10
-msgid "Tue"
-msgstr "Sa"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:10
-msgid "Wed"
-msgstr "Çar"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:10
-msgid "Thu"
-msgstr "Per"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:10
-msgid "Fri"
-msgstr "Cu"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:11
-msgid "Sat"
-msgstr "Cmt"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:11
-msgid "Sun"
-msgstr "Pzr"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:14
-msgid "January"
-msgstr "Ocak"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:14
-msgid "February"
-msgstr "Şubak"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:14
-msgid "March"
-msgstr "Mart"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:14
-msgid "April"
-msgstr "Nisan"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:14
-msgid "May"
-msgstr "Mayıs"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:14
-msgid "June"
-msgstr "Haziran"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:15
-msgid "July"
-msgstr "Temmuz"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:15
-msgid "August"
-msgstr "Ağustos"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:15
-msgid "September"
-msgstr "Eylül"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:15
-msgid "October"
-msgstr "Ekim"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:15
-msgid "November"
-msgstr "Kasım"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:16
-msgid "December"
-msgstr "Aralık"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:19
-msgid "jan"
-msgstr "oca"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:19
-msgid "feb"
-msgstr "şub"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:19
-msgid "mar"
-msgstr "mar"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:19
-msgid "apr"
-msgstr "nis"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:19
-msgid "may"
-msgstr "may"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:19
-msgid "jun"
-msgstr "haz"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:20
-msgid "jul"
-msgstr "tem"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:20
-msgid "aug"
-msgstr "ağu"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:20
-msgid "sep"
-msgstr "eyl"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:20
-msgid "oct"
-msgstr "eki"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:20
-msgid "nov"
-msgstr "kas"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:20
-msgid "dec"
-msgstr "ara"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:23
-msgctxt "abbrev. month"
-msgid "Jan."
-msgstr "Oca."
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:24
-msgctxt "abbrev. month"
-msgid "Feb."
-msgstr "Şub."
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:25
-msgctxt "abbrev. month"
-msgid "March"
-msgstr "Mart"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:26
-msgctxt "abbrev. month"
-msgid "April"
-msgstr "Nisan"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:27
-msgctxt "abbrev. month"
-msgid "May"
-msgstr "May"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:28
-msgctxt "abbrev. month"
-msgid "June"
-msgstr "Hazi"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:29
-msgctxt "abbrev. month"
-msgid "July"
-msgstr "Temm"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:30
-msgctxt "abbrev. month"
-msgid "Aug."
-msgstr "Ağu."
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:31
-msgctxt "abbrev. month"
-msgid "Sept."
-msgstr "Eyl."
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:32
-msgctxt "abbrev. month"
-msgid "Oct."
-msgstr "Ekim"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:33
-msgctxt "abbrev. month"
-msgid "Nov."
-msgstr "Kas."
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:34
-msgctxt "abbrev. month"
-msgid "Dec."
-msgstr "Ara."
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:37
-msgctxt "alt. month"
-msgid "January"
-msgstr "Ocak"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:38
-msgctxt "alt. month"
-msgid "February"
-msgstr "Şubat"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:39
-msgctxt "alt. month"
-msgid "March"
-msgstr "Mart"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:40
-msgctxt "alt. month"
-msgid "April"
-msgstr "Nisan"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:41
-msgctxt "alt. month"
-msgid "May"
-msgstr "Mayıs"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:42
-msgctxt "alt. month"
-msgid "June"
-msgstr "Haziran"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:43
-msgctxt "alt. month"
-msgid "July"
-msgstr "Temmuz"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:44
-msgctxt "alt. month"
-msgid "August"
-msgstr "Ağustos"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:45
-msgctxt "alt. month"
-msgid "September"
-msgstr "Eylül"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:46
-msgctxt "alt. month"
-msgid "October"
-msgstr "Ekim"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:47
-msgctxt "alt. month"
-msgid "November"
-msgstr "Kasım"
-
-#: venv/lib/python3.8/site-packages/django/utils/dates.py:48
-msgctxt "alt. month"
-msgid "December"
-msgstr "Aralık"
-
-#: venv/lib/python3.8/site-packages/django/utils/ipv6.py:8
-msgid "This is not a valid IPv6 address."
-msgstr "Bu bir geçerli IPv6 adresi değil."
-
-#: venv/lib/python3.8/site-packages/django/utils/text.py:71
-#, python-format
-msgctxt "String to return when truncating text"
-msgid "%(truncated_text)s…"
-msgstr "%(truncated_text)s..."
-
-#: venv/lib/python3.8/site-packages/django/utils/text.py:240
-msgid "or"
-msgstr "veya"
-
-#. Translators: This string is used as a separator between list elements
-#: venv/lib/python3.8/site-packages/django/utils/text.py:259
-#: venv/lib/python3.8/site-packages/django/utils/timesince.py:94
-msgid ", "
-msgstr ","
-
-#: venv/lib/python3.8/site-packages/django/utils/timesince.py:9
-#, python-format
-msgid "%d year"
-msgid_plural "%d years"
-msgstr[0] "%dyıl"
-msgstr[1] "%d yıl"
-
-#: venv/lib/python3.8/site-packages/django/utils/timesince.py:10
-#, python-format
-msgid "%d month"
-msgid_plural "%d months"
-msgstr[0] "%d ay"
-msgstr[1] "%day"
-
-#: venv/lib/python3.8/site-packages/django/utils/timesince.py:11
-#, python-format
-msgid "%d week"
-msgid_plural "%d weeks"
-msgstr[0] "%dhafta"
-msgstr[1] "%d hafta"
-
-#: venv/lib/python3.8/site-packages/django/utils/timesince.py:12
-#, python-format
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] "%d gün"
-msgstr[1] "%dgün"
-
-#: venv/lib/python3.8/site-packages/django/utils/timesince.py:13
-#, python-format
-msgid "%d hour"
-msgid_plural "%d hours"
-msgstr[0] "%dsaat"
-msgstr[1] "%d saat"
-
-#: venv/lib/python3.8/site-packages/django/utils/timesince.py:14
-#, python-format
-msgid "%d minute"
-msgid_plural "%d minutes"
-msgstr[0] "%d dakika"
-msgstr[1] "%ddakika"
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:110
-msgid "Forbidden"
-msgstr "Yasaklı"
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:111
-msgid "CSRF verification failed. Request aborted."
-msgstr "CSRF doğrulama başarısız. İstek iptal edildi."
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:115
-msgid ""
-"You are seeing this message because this HTTPS site requires a “Referer "
-"header” to be sent by your Web browser, but none was sent. This header is "
-"required for security reasons, to ensure that your browser is not being "
-"hijacked by third parties."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:120
-msgid ""
-"If you have configured your browser to disable “Referer” headers, please re-"
-"enable them, at least for this site, or for HTTPS connections, or for “same-"
-"origin” requests."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:124
-msgid ""
-"If you are using the <meta name=\"referrer\" content=\"no-referrer\"> tag or "
-"including the “Referrer-Policy: no-referrer” header, please remove them. The "
-"CSRF protection requires the “Referer” header to do strict referer checking. "
-"If you’re concerned about privacy, use alternatives like <a rel=\"noreferrer"
-"\" …> for links to third-party sites."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:132
-msgid ""
-"You are seeing this message because this site requires a CSRF cookie when "
-"submitting forms. This cookie is required for security reasons, to ensure "
-"that your browser is not being hijacked by third parties."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:137
-msgid ""
-"If you have configured your browser to disable cookies, please re-enable "
-"them, at least for this site, or for “same-origin” requests."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/csrf.py:142
-msgid "More information is available with DEBUG=True."
-msgstr "Daha fazla bilgi DEBUG=True ile edinilebilir."
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:41
-msgid "No year specified"
-msgstr "Yıl belirtilmedi"
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:61
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:111
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:208
-msgid "Date out of range"
-msgstr "Tarih aralık dışında"
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:90
-msgid "No month specified"
-msgstr "Ay belirtilmedi"
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:142
-msgid "No day specified"
-msgstr "Gün belirtilmedi"
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:188
-msgid "No week specified"
-msgstr "Hafta belirtilmedi"
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:338
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:367
-#, python-format
-msgid "No %(verbose_name_plural)s available"
-msgstr "%(verbose_name_plural)s uygun olmayan"
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:594
-#, python-format
-msgid ""
-"Future %(verbose_name_plural)s not available because %(class_name)s."
-"allow_future is False."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/generic/dates.py:628
-#, python-format
-msgid "Invalid date string “%(datestr)s” given format “%(format)s”"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/generic/detail.py:54
-#, python-format
-msgid "No %(verbose_name)s found matching the query"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/generic/list.py:67
-msgid "Page is not “last”, nor can it be converted to an int."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/generic/list.py:72
-#, python-format
-msgid "Invalid page (%(page_number)s): %(message)s"
-msgstr "Geçersiz sayfa (%(page_number)s): %(message)s"
-
-#: venv/lib/python3.8/site-packages/django/views/generic/list.py:154
-#, python-format
-msgid "Empty list and “%(class_name)s.allow_empty” is False."
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/django/views/static.py:40
-msgid "Directory indexes are not allowed here."
-msgstr "Dizin indekslerine burada izin verilmişyor."
-
-#: venv/lib/python3.8/site-packages/django/views/static.py:42
-#, fuzzy, python-format
-#| msgid "\"%(path)s\" does not exist"
-msgid "“%(path)s” does not exist"
-msgstr "\"%(path)s\" mevcut değil"
-
-#: venv/lib/python3.8/site-packages/django/views/static.py:80
-#, python-format
-msgid "Index of %(directory)s"
-msgstr "%(directory)s indeksi"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:7
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:221
-msgid "The install worked successfully! Congratulations!"
-msgstr "Bu kurulum başarıyla çalıştırıldı! Tebrikler!"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:207
-#, python-format
-msgid ""
-"View <a href=\"https://docs.djangoproject.com/en/%(version)s/releases/\" "
-"target=\"_blank\" rel=\"noopener\">release notes</a> for Django %(version)s"
-msgstr ""
-"Django %(version)s için <a href=\"https://docs.djangoproject.com/en/"
-"%(version)s/releases/\" target=\"_blank\" rel=\"noopener\">sürüm notlarını</"
-"a> görüntüle"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:222
-#, python-format
-msgid ""
-"You are seeing this page because <a href=\"https://docs.djangoproject.com/en/"
-"%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener"
-"\">DEBUG=True</a> is in your settings file and you have not configured any "
-"URLs."
-msgstr ""
-"Ayarlarınızı içeren dosyada <a href=\"https://docs.djangoproject.com/en/"
-"%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener"
-"\">DEBUG=True</a> olduğu için bu sayfayı görüyorsunuz ve hiçbir URL "
-"ayarlamamışsınız."
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:230
-msgid "Django Documentation"
-msgstr "Django Dökümanları"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:231
-#, fuzzy
-#| msgid "Topics, references, &amp; how-to's"
-msgid "Topics, references, &amp; how-to’s"
-msgstr "Başlıklar, referanslar, &amp; Nasıl yapılırlar"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:239
-msgid "Tutorial: A Polling App"
-msgstr "Eğitsel: Bir Yoklama Uygulaması"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:240
-msgid "Get started with Django"
-msgstr "Django ile Tanışın"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:248
-msgid "Django Community"
-msgstr "Django Topluluğu"
-
-#: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:249
-msgid "Connect, get help, or contribute"
-msgstr "Bağlan, yardım al veya katkıda bulun"
-
-#: venv/lib/python3.8/site-packages/django_bootstrap5/components.py:26
-msgid "close"
-msgstr "kapat"
-
-#: venv/lib/python3.8/site-packages/django_icons/renderers/image.py:217
-msgid "Icon of {}"
-msgstr "{} ikonu"
-
-#: venv/lib/python3.8/site-packages/isort/main.py:158
-msgid "show this help message and exit"
-msgstr "bu yardım mesajını göster ve çık"
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/panels/template.py:144
-#, fuzzy
-#| msgid "Template Disk"
-msgid "Template Profiler"
-msgstr "Şablon Disk"
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/panels/template.py:148
-msgid "{} calls in {:.2f} ms"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/panels/template.py:153
-msgid "Template Rendering Time"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:2
-msgid "calls to Template.render()"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:15
-msgid "Stack Level"
-msgstr ""
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:16
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:78
-#, fuzzy
-#| msgid "Template"
-msgid "Template Name"
-msgstr "Şablon"
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:17
-#, fuzzy
-#| msgid "Time"
-msgid "Timeline"
-msgstr "Zaman"
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:18
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:79
-#, fuzzy
-#| msgid "Time"
-msgid "Time (ms)"
-msgstr "Zaman"
-
-#: venv/lib/python3.8/site-packages/template_profiler_panel/templates/template_profiler_panel/template.html:74
-msgid "Summary"
-msgstr ""
-
 #: virtsecrets/templates/create_secret_block.html:13
 msgid "Create New Secret"
-msgstr ""
+msgstr "Yeni Secret Yarat"
 
 #: virtsecrets/templates/create_secret_block.html:19
 msgid "Ephemeral"
@@ -5705,7 +4163,7 @@ msgstr "Veri"
 
 #: virtsecrets/templates/secrets.html:52
 msgid "Hypervisor doesn't have any Secrets"
-msgstr ""
+msgstr "Hipervizörde hiç secret tanımlanmamış"
 
 #: virtsecrets/templates/secrets.html:62
 msgid "Usage Type"
@@ -5713,7 +4171,7 @@ msgstr "Kullanım Tipi"
 
 #: virtsecrets/templates/secrets.html:90
 msgid "Set secret value"
-msgstr ""
+msgstr "Secret değerini ayarla"
 
 #: virtsecrets/templates/secrets.html:96
 msgid "Value"
@@ -5723,6 +4181,784 @@ msgstr "Değer"
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
+
+#, python-brace-format
+#~ msgid "{editor}: Editing failed"
+#~ msgstr "{editor}: Düzenleme başarısız"
+
+#~ msgid "Aborted!"
+#~ msgstr "İptal edildi!"
+
+#, fuzzy
+#~| msgid "ISO image already exist"
+#~ msgid "Show this message and exit."
+#~ msgstr "ISO imajı zaten mevcut"
+
+#, fuzzy, python-brace-format
+#~| msgid "expected %s argument(s)"
+#~ msgid "Got unexpected extra argument ({args})"
+#~ msgid_plural "Got unexpected extra arguments ({args})"
+#~ msgstr[0] "beklenen parametre(ler) %s"
+#~ msgstr[1] "beklenen parametre(ler) %s"
+
+#~ msgid "Commands"
+#~ msgstr "Komutlar"
+
+#~ msgid "Missing command."
+#~ msgstr "Eksik komut."
+
+#~ msgid "No such command {name!r}."
+#~ msgstr "{name!r} böyle bir komut yok."
+
+#, fuzzy
+#~| msgid "'%(value)s' value must be an integer."
+#~ msgid "Value must be an iterable."
+#~ msgstr "'%(value)s' değeri bir sayısal değer olmalıdır"
+
+#~ msgid "required"
+#~ msgstr "gerekli"
+
+#~ msgid "Show the version and exit."
+#~ msgstr "Sürümünü göster ve çık."
+
+#, fuzzy, python-brace-format
+#~| msgid "message"
+#~ msgid "Error: {message}"
+#~ msgstr "mesaj"
+
+#, fuzzy, python-brace-format
+#~| msgid "Enter a valid value."
+#~ msgid "Invalid value: {message}"
+#~ msgstr "Geçerli bir değer girin."
+
+#~ msgid "Missing argument"
+#~ msgstr "Eksik parametre"
+
+#, fuzzy
+#~| msgid "Edit options"
+#~ msgid "Missing option"
+#~ msgstr "Seçenekleri düzenle"
+
+#~ msgid "Missing parameter"
+#~ msgstr "Eksik parametre"
+
+#, fuzzy
+#~| msgid "Unknown"
+#~ msgid "unknown error"
+#~ msgstr "Bilinmeyen"
+
+#, fuzzy
+#~| msgid "No configuration"
+#~ msgid "Repeat for confirmation"
+#~ msgstr "Yapılandırma yok"
+
+#~ msgid "Press any key to continue..."
+#~ msgstr "Devam etmek için bir tuşa basın..."
+
+#, fuzzy
+#~| msgid "Value %(value)r is not a valid choice."
+#~ msgid "{value!r} is not {choice}."
+#~ msgid_plural "{value!r} is not one of {choices}."
+#~ msgstr[0] "%(value)r değeri geçerli bir seçenek değil."
+#~ msgstr[1] "%(value)r değeri geçerli bir seçenek değil."
+
+#, fuzzy
+#~| msgid "Value %(value)r is not a valid choice."
+#~ msgid "{value!r} is not a valid {number_type}."
+#~ msgstr "%(value)r değeri geçerli bir seçenek değil."
+
+#, fuzzy
+#~| msgid "Value %(value)r is not a valid choice."
+#~ msgid "{value!r} is not a valid boolean."
+#~ msgstr "%(value)r değeri geçerli bir seçenek değil."
+
+#, fuzzy
+#~| msgid "'%(value)s' is not a valid UUID."
+#~ msgid "{value!r} is not a valid UUID."
+#~ msgstr "'%(value)s' geçerli bir UUID değil."
+
+#, fuzzy
+#~| msgid "Profile"
+#~ msgid "file"
+#~ msgstr "Profil"
+
+#, fuzzy
+#~| msgid "Direction"
+#~ msgid "directory"
+#~ msgstr "Yön"
+
+#~ msgid "Messages"
+#~ msgstr "Mesajlar"
+
+#~ msgid "Site Maps"
+#~ msgstr "Site Haritası"
+
+#~ msgid "Static Files"
+#~ msgstr "Statik Dosyalar"
+
+#~ msgid "Syndication"
+#~ msgstr "Sendika"
+
+#~ msgid "That page number is not an integer"
+#~ msgstr "Bu sayfa numarası bir tam sayı değil"
+
+#~ msgid "That page number is less than 1"
+#~ msgstr "Sayfa numarası 1'den daha küçük"
+
+#~ msgid "That page contains no results"
+#~ msgstr "Bu sayfada hiç sonuç yok"
+
+#~ msgid "Enter a valid value."
+#~ msgstr "Geçerli bir değer girin."
+
+#~ msgid "Enter a valid URL."
+#~ msgstr "Geçerli bir URL girin."
+
+#~ msgid "Enter a valid integer."
+#~ msgstr "Geçerli bir tam sayı girin."
+
+#~ msgid "Enter a valid email address."
+#~ msgstr "Geçerli bir e-posta adresi girin."
+
+#~ msgid "Enter a valid IPv4 address."
+#~ msgstr "Geçerli bir IPv4 adresi girin."
+
+#~ msgid "Enter a valid IPv6 address."
+#~ msgstr "Geçerli bir IPv6 adresi girin."
+
+#~ msgid "Enter a valid IPv4 or IPv6 address."
+#~ msgstr "Geçerli bir IPv4 veya IPv6 adresi girin."
+
+#~ msgid "Enter only digits separated by commas."
+#~ msgstr "Sadece virgüllerle ayrılmış sayılar girin."
+
+#~ msgid "Enter a number."
+#~ msgstr "Bir sayı girin."
+
+#~ msgid "Null characters are not allowed."
+#~ msgstr "Null karakterlere izin verilmiyor."
+
+#~ msgid "and"
+#~ msgstr "ve"
+
+#, python-format
+#~ msgid "Value %(value)r is not a valid choice."
+#~ msgstr "%(value)r değeri geçerli bir seçenek değil."
+
+#~ msgid "This field cannot be null."
+#~ msgstr "Bu alan null olamaz"
+
+#~ msgid "This field cannot be blank."
+#~ msgstr "Bu alan boş bırakılamaz."
+
+#, python-format
+#~ msgid "Field of type: %(field_type)s"
+#~ msgstr "Alan tipi: %(field_type)s"
+
+#, fuzzy, python-format
+#~| msgid "'%(value)s' value must be either True or False."
+#~ msgid "“%(value)s” value must be either True or False."
+#~ msgstr "'%(value)s' değeri ya True ya da False olmalıdır."
+
+#, fuzzy, python-format
+#~| msgid "'%(value)s' value must be either True or False."
+#~ msgid "“%(value)s” value must be either True, False, or None."
+#~ msgstr "'%(value)s' değeri ya True ya da False olmalıdır."
+
+#~ msgid "Comma-separated integers"
+#~ msgstr "Virgülle ayrılmış tam sayılar"
+
+#~ msgid "Date (without time)"
+#~ msgstr "Tarih (zaman yok)"
+
+#~ msgid "Date (with time)"
+#~ msgstr "Tarih (zamanlı)"
+
+#, fuzzy, python-format
+#~| msgid "'%(value)s' value must be a decimal number."
+#~ msgid "“%(value)s” value must be a decimal number."
+#~ msgstr "'%(value)s' değeri bir tam sayı olmalıdır."
+
+#~ msgid "Decimal number"
+#~ msgstr "Ondalık sayı"
+
+#~ msgid "Duration"
+#~ msgstr "Süre"
+
+#~ msgid "Email address"
+#~ msgstr "E-posta adresi"
+
+#~ msgid "File path"
+#~ msgstr "Dosya yolu"
+
+#, fuzzy, python-format
+#~| msgid "'%(value)s' value must be a float."
+#~ msgid "“%(value)s” value must be a float."
+#~ msgstr "'%(value)s' değeri kayan noktalı bir sayı olmalıdır."
+
+#~ msgid "Floating point number"
+#~ msgstr "Kayan noktalı sayı"
+
+#, fuzzy, python-format
+#~| msgid "'%(value)s' value must be an integer."
+#~ msgid "“%(value)s” value must be an integer."
+#~ msgstr "'%(value)s' değeri bir sayısal değer olmalıdır"
+
+#~ msgid "Integer"
+#~ msgstr "Tam sayı"
+
+#~ msgid "Big (8 byte) integer"
+#~ msgstr "Büyük (8 bayt) sayı"
+
+#~ msgid "IPv4 address"
+#~ msgstr "IPv4 adresi"
+
+#~ msgid "IP address"
+#~ msgstr "IP Adresi"
+
+#, fuzzy, python-format
+#~| msgid "'%(value)s' value must be either True or False."
+#~ msgid "“%(value)s” value must be either None, True or False."
+#~ msgstr "'%(value)s' değeri ya True ya da False olmalıdır."
+
+#, fuzzy
+#~| msgid "Positive integer"
+#~ msgid "Positive big integer"
+#~ msgstr "Pozitif sayı"
+
+#~ msgid "Positive integer"
+#~ msgstr "Pozitif sayı"
+
+#~ msgid "Text"
+#~ msgstr "Metin"
+
+#~ msgid "Time"
+#~ msgstr "Zaman"
+
+#~ msgid "URL"
+#~ msgstr "URL"
+
+#~ msgid "Raw binary data"
+#~ msgstr "Ham ikili veri"
+
+#, fuzzy, python-format
+#~| msgid "'%(value)s' is not a valid UUID."
+#~ msgid "“%(value)s” is not a valid UUID."
+#~ msgstr "'%(value)s' geçerli bir UUID değil."
+
+#~ msgid "Universally unique identifier"
+#~ msgstr "Evrensel eşsiz betimleyici"
+
+#~ msgid "File"
+#~ msgstr "Dosya"
+
+#~ msgid "A JSON object"
+#~ msgstr "Bir JSON nesnesi"
+
+#~ msgid "Value must be valid JSON."
+#~ msgstr "Değer geçerli bir JSON olmalı"
+
+#~ msgid "One-to-one relationship"
+#~ msgstr "Bire-bir ilişki"
+
+#, python-format
+#~ msgid "%(from)s-%(to)s relationship"
+#~ msgstr "%(from)s'den %(to)s ye ilişki"
+
+#, python-format
+#~ msgid "%(from)s-%(to)s relationships"
+#~ msgstr "%(from)s'den %(to)s ye ilişkiler"
+
+#~ msgid "Many-to-many relationship"
+#~ msgstr "Çoktan-çoğa ilişki"
+
+#~ msgid ":?.!"
+#~ msgstr ":?.!"
+
+#~ msgid "This field is required."
+#~ msgstr "Bu alan gerekli."
+
+#~ msgid "Enter a whole number."
+#~ msgstr "Bir tüm sayı girin."
+
+#~ msgid "Enter a valid date."
+#~ msgstr "Geçerli bir tarih girin."
+
+#~ msgid "Enter a valid time."
+#~ msgstr "Geçerli bir zaman girin."
+
+#~ msgid "Enter a valid date/time."
+#~ msgstr "Geçerli bir tarih/saat girin."
+
+#~ msgid "Enter a valid duration."
+#~ msgstr "Geçerli bir süre girin."
+
+#~ msgid "No file was submitted. Check the encoding type on the form."
+#~ msgstr "Dosya submit edilmedi. Formdaki encoding tipini kontrol ediniz."
+
+#~ msgid "No file was submitted."
+#~ msgstr "Gönderilen dosya yok"
+
+#~ msgid "The submitted file is empty."
+#~ msgstr "Gönderilen dosya boş"
+
+#~ msgid ""
+#~ "Upload a valid image. The file you uploaded was either not an image or a "
+#~ "corrupted image."
+#~ msgstr ""
+#~ "Geçerli bir imaj yükleyin. Yüklediğiniz imaj ya geçersiz ya da bir "
+#~ "bozulmuş imaj"
+
+#, python-format
+#~ msgid ""
+#~ "Select a valid choice. %(value)s is not one of the available choices."
+#~ msgstr ""
+#~ "Geçerli bir seçenek seçin. Seçeneklerden %(value)s tanesi uygun değil. "
+
+#~ msgid "Enter a list of values."
+#~ msgstr "Bir değer listesi girin."
+
+#~ msgid "Enter a valid UUID."
+#~ msgstr "Geçerli bir UUID girin."
+
+#, fuzzy
+#~| msgid "Enter a valid URL."
+#~ msgid "Enter a valid JSON."
+#~ msgstr "Geçerli bir URL girin."
+
+#~ msgid ":"
+#~ msgstr ":"
+
+#, python-format
+#~ msgid "(Hidden field %(name)s) %(error)s"
+#~ msgstr "(Gizli alan %(name)s) %(error)s"
+
+#~ msgid "Order"
+#~ msgstr "Sıra"
+
+#, fuzzy, python-format
+#~| msgid "\"%(pk)s\" is not a valid value."
+#~ msgid "“%(pk)s” is not a valid value."
+#~ msgstr "'%(pk)s' bir geçerli değer değil."
+
+#~ msgid "Yes"
+#~ msgstr "Evet"
+
+#~ msgid "No"
+#~ msgstr "Hayır"
+
+#~ msgid "yes,no,maybe"
+#~ msgstr "evet,hayır,belki"
+
+#, python-format
+#~ msgid "%(size)d byte"
+#~ msgid_plural "%(size)d bytes"
+#~ msgstr[0] "%(size)d byte"
+#~ msgstr[1] "%(size)d byte"
+
+#, python-format
+#~ msgid "%s KB"
+#~ msgstr "%s KB"
+
+#, python-format
+#~ msgid "%s MB"
+#~ msgstr "%s MB"
+
+#, python-format
+#~ msgid "%s GB"
+#~ msgstr "%s GB"
+
+#, python-format
+#~ msgid "%s TB"
+#~ msgstr "%s TB"
+
+#, python-format
+#~ msgid "%s PB"
+#~ msgstr "%s PB"
+
+#~ msgid "midnight"
+#~ msgstr "gece yarısı"
+
+#~ msgid "noon"
+#~ msgstr "öğle"
+
+#~ msgid "Monday"
+#~ msgstr "Pazartesi"
+
+#~ msgid "Tuesday"
+#~ msgstr "Sal"
+
+#~ msgid "Wednesday"
+#~ msgstr "Çarşamba"
+
+#~ msgid "Thursday"
+#~ msgstr "Perşembe"
+
+#~ msgid "Friday"
+#~ msgstr "Cuma"
+
+#~ msgid "Saturday"
+#~ msgstr "Cumartesi"
+
+#~ msgid "Sunday"
+#~ msgstr "Pazar"
+
+#~ msgid "Mon"
+#~ msgstr "Pzt"
+
+#~ msgid "Tue"
+#~ msgstr "Sa"
+
+#~ msgid "Wed"
+#~ msgstr "Çar"
+
+#~ msgid "Thu"
+#~ msgstr "Per"
+
+#~ msgid "Fri"
+#~ msgstr "Cu"
+
+#~ msgid "Sat"
+#~ msgstr "Cmt"
+
+#~ msgid "Sun"
+#~ msgstr "Pzr"
+
+#~ msgid "January"
+#~ msgstr "Ocak"
+
+#~ msgid "February"
+#~ msgstr "Şubat"
+
+#~ msgid "March"
+#~ msgstr "Mart"
+
+#~ msgid "April"
+#~ msgstr "Nisan"
+
+#~ msgid "May"
+#~ msgstr "Mayıs"
+
+#~ msgid "June"
+#~ msgstr "Haziran"
+
+#~ msgid "July"
+#~ msgstr "Temmuz"
+
+#~ msgid "August"
+#~ msgstr "Ağustos"
+
+#~ msgid "September"
+#~ msgstr "Eylül"
+
+#~ msgid "October"
+#~ msgstr "Ekim"
+
+#~ msgid "November"
+#~ msgstr "Kasım"
+
+#~ msgid "December"
+#~ msgstr "Aralık"
+
+#~ msgid "jan"
+#~ msgstr "oca"
+
+#~ msgid "feb"
+#~ msgstr "şub"
+
+#~ msgid "mar"
+#~ msgstr "mar"
+
+#~ msgid "apr"
+#~ msgstr "nis"
+
+#~ msgid "may"
+#~ msgstr "may"
+
+#~ msgid "jun"
+#~ msgstr "haz"
+
+#~ msgid "jul"
+#~ msgstr "tem"
+
+#~ msgid "aug"
+#~ msgstr "ağu"
+
+#~ msgid "sep"
+#~ msgstr "eyl"
+
+#~ msgid "oct"
+#~ msgstr "eki"
+
+#~ msgid "nov"
+#~ msgstr "kas"
+
+#~ msgid "dec"
+#~ msgstr "ara"
+
+#~ msgctxt "abbrev. month"
+#~ msgid "Jan."
+#~ msgstr "Oca."
+
+#~ msgctxt "abbrev. month"
+#~ msgid "Feb."
+#~ msgstr "Şub."
+
+#~ msgctxt "abbrev. month"
+#~ msgid "March"
+#~ msgstr "Mart"
+
+#~ msgctxt "abbrev. month"
+#~ msgid "April"
+#~ msgstr "Nisan"
+
+#~ msgctxt "abbrev. month"
+#~ msgid "May"
+#~ msgstr "May"
+
+#~ msgctxt "abbrev. month"
+#~ msgid "June"
+#~ msgstr "Hazi"
+
+#~ msgctxt "abbrev. month"
+#~ msgid "July"
+#~ msgstr "Temm"
+
+#~ msgctxt "abbrev. month"
+#~ msgid "Aug."
+#~ msgstr "Ağu."
+
+#~ msgctxt "abbrev. month"
+#~ msgid "Sept."
+#~ msgstr "Eyl."
+
+#~ msgctxt "abbrev. month"
+#~ msgid "Oct."
+#~ msgstr "Ekim"
+
+#~ msgctxt "abbrev. month"
+#~ msgid "Nov."
+#~ msgstr "Kas."
+
+#~ msgctxt "abbrev. month"
+#~ msgid "Dec."
+#~ msgstr "Ara."
+
+#~ msgctxt "alt. month"
+#~ msgid "January"
+#~ msgstr "Ocak"
+
+#~ msgctxt "alt. month"
+#~ msgid "February"
+#~ msgstr "Şubat"
+
+#~ msgctxt "alt. month"
+#~ msgid "March"
+#~ msgstr "Mart"
+
+#~ msgctxt "alt. month"
+#~ msgid "April"
+#~ msgstr "Nisan"
+
+#~ msgctxt "alt. month"
+#~ msgid "May"
+#~ msgstr "Mayıs"
+
+#~ msgctxt "alt. month"
+#~ msgid "June"
+#~ msgstr "Haziran"
+
+#~ msgctxt "alt. month"
+#~ msgid "July"
+#~ msgstr "Temmuz"
+
+#~ msgctxt "alt. month"
+#~ msgid "August"
+#~ msgstr "Ağustos"
+
+#~ msgctxt "alt. month"
+#~ msgid "September"
+#~ msgstr "Eylül"
+
+#~ msgctxt "alt. month"
+#~ msgid "October"
+#~ msgstr "Ekim"
+
+#~ msgctxt "alt. month"
+#~ msgid "November"
+#~ msgstr "Kasım"
+
+#~ msgctxt "alt. month"
+#~ msgid "December"
+#~ msgstr "Aralık"
+
+#~ msgid "This is not a valid IPv6 address."
+#~ msgstr "Bu bir geçerli IPv6 adresi değil."
+
+#, python-format
+#~ msgctxt "String to return when truncating text"
+#~ msgid "%(truncated_text)s…"
+#~ msgstr "%(truncated_text)s..."
+
+#~ msgid "or"
+#~ msgstr "veya"
+
+#~ msgid ", "
+#~ msgstr ","
+
+#, python-format
+#~ msgid "%d year"
+#~ msgid_plural "%d years"
+#~ msgstr[0] "%dyıl"
+#~ msgstr[1] "%d yıl"
+
+#, python-format
+#~ msgid "%d month"
+#~ msgid_plural "%d months"
+#~ msgstr[0] "%d ay"
+#~ msgstr[1] "%day"
+
+#, python-format
+#~ msgid "%d week"
+#~ msgid_plural "%d weeks"
+#~ msgstr[0] "%dhafta"
+#~ msgstr[1] "%d hafta"
+
+#, python-format
+#~ msgid "%d day"
+#~ msgid_plural "%d days"
+#~ msgstr[0] "%d gün"
+#~ msgstr[1] "%dgün"
+
+#, python-format
+#~ msgid "%d hour"
+#~ msgid_plural "%d hours"
+#~ msgstr[0] "%dsaat"
+#~ msgstr[1] "%d saat"
+
+#, python-format
+#~ msgid "%d minute"
+#~ msgid_plural "%d minutes"
+#~ msgstr[0] "%d dakika"
+#~ msgstr[1] "%ddakika"
+
+#~ msgid "Forbidden"
+#~ msgstr "Yasaklı"
+
+#~ msgid "CSRF verification failed. Request aborted."
+#~ msgstr "CSRF doğrulama başarısız. İstek iptal edildi."
+
+#~ msgid "More information is available with DEBUG=True."
+#~ msgstr "Daha fazla bilgi DEBUG=True ile edinilebilir."
+
+#~ msgid "No year specified"
+#~ msgstr "Yıl belirtilmedi"
+
+#~ msgid "Date out of range"
+#~ msgstr "Tarih aralık dışında"
+
+#~ msgid "No month specified"
+#~ msgstr "Ay belirtilmedi"
+
+#~ msgid "No day specified"
+#~ msgstr "Gün belirtilmedi"
+
+#~ msgid "No week specified"
+#~ msgstr "Hafta belirtilmedi"
+
+#, python-format
+#~ msgid "No %(verbose_name_plural)s available"
+#~ msgstr "%(verbose_name_plural)s uygun olmayan"
+
+#, python-format
+#~ msgid "Invalid page (%(page_number)s): %(message)s"
+#~ msgstr "Geçersiz sayfa (%(page_number)s): %(message)s"
+
+#~ msgid "Directory indexes are not allowed here."
+#~ msgstr "Dizin indekslerine burada izin verilmişyor."
+
+#, fuzzy, python-format
+#~| msgid "\"%(path)s\" does not exist"
+#~ msgid "“%(path)s” does not exist"
+#~ msgstr "\"%(path)s\" mevcut değil"
+
+#, python-format
+#~ msgid "Index of %(directory)s"
+#~ msgstr "%(directory)s indeksi"
+
+#~ msgid "The install worked successfully! Congratulations!"
+#~ msgstr "Bu kurulum başarıyla çalıştırıldı! Tebrikler!"
+
+#, python-format
+#~ msgid ""
+#~ "View <a href=\"https://docs.djangoproject.com/en/%(version)s/releases/\" "
+#~ "target=\"_blank\" rel=\"noopener\">release notes</a> for Django "
+#~ "%(version)s"
+#~ msgstr ""
+#~ "Django %(version)s için <a href=\"https://docs.djangoproject.com/en/"
+#~ "%(version)s/releases/\" target=\"_blank\" rel=\"noopener\">sürüm "
+#~ "notlarını</a> görüntüle"
+
+#, python-format
+#~ msgid ""
+#~ "You are seeing this page because <a href=\"https://docs.djangoproject.com/"
+#~ "en/%(version)s/ref/settings/#debug\" target=\"_blank\" "
+#~ "rel=\"noopener\">DEBUG=True</a> is in your settings file and you have not "
+#~ "configured any URLs."
+#~ msgstr ""
+#~ "Ayarlarınızı içeren dosyada <a href=\"https://docs.djangoproject.com/en/"
+#~ "%(version)s/ref/settings/#debug\" target=\"_blank\" "
+#~ "rel=\"noopener\">DEBUG=True</a> olduğu için bu sayfayı görüyorsunuz ve "
+#~ "hiçbir URL ayarlamamışsınız."
+
+#~ msgid "Django Documentation"
+#~ msgstr "Django Dökümanları"
+
+#, fuzzy
+#~| msgid "Topics, references, &amp; how-to's"
+#~ msgid "Topics, references, &amp; how-to’s"
+#~ msgstr "Başlıklar, referanslar, &amp; Nasıl yapılırlar"
+
+#~ msgid "Tutorial: A Polling App"
+#~ msgstr "Eğitsel: Bir Yoklama Uygulaması"
+
+#~ msgid "Get started with Django"
+#~ msgstr "Django ile Tanışın"
+
+#~ msgid "Django Community"
+#~ msgstr "Django Topluluğu"
+
+#~ msgid "Connect, get help, or contribute"
+#~ msgstr "Bağlan, yardım al veya katkıda bulun"
+
+#~ msgid "close"
+#~ msgstr "kapat"
+
+#~ msgid "Icon of {}"
+#~ msgstr "{} ikonu"
+
+#~ msgid "show this help message and exit"
+#~ msgstr "bu yardım mesajını göster ve çık"
+
+#, fuzzy
+#~| msgid "Template Disk"
+#~ msgid "Template Profiler"
+#~ msgstr "Şablon Disk"
+
+#, fuzzy
+#~| msgid "Template"
+#~ msgid "Template Name"
+#~ msgstr "Şablon"
+
+#, fuzzy
+#~| msgid "Time"
+#~ msgid "Timeline"
+#~ msgstr "Zaman"
+
+#, fuzzy
+#~| msgid "Time"
+#~ msgid "Time (ms)"
+#~ msgstr "Zaman"
 
 #, fuzzy
 #~| msgid "CPU Usage"
@@ -5774,18 +5010,18 @@ msgstr "libvirt Hatası - %(exception)s"
 #, fuzzy
 #~| msgid ""
 #~| "You are seeing this page because <a href=\"https://docs.djangoproject."
-#~| "com/en/%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener"
-#~| "\">DEBUG=True</a> is in your settings file and you have not configured "
-#~| "any URLs."
+#~| "com/en/%(version)s/ref/settings/#debug\" target=\"_blank\" "
+#~| "rel=\"noopener\">DEBUG=True</a> is in your settings file and you have "
+#~| "not configured any URLs."
 #~ msgid ""
 #~ "You're seeing this message because you have <code>DEBUG = True</code> in "
 #~ "your Django settings file and you haven't configured any URLs. Get to "
 #~ "work!"
 #~ msgstr ""
 #~ "Ayarlarınızı içeren dosyada <a href=\"https://docs.djangoproject.com/en/"
-#~ "%(version)s/ref/settings/#debug\" target=\"_blank\" rel=\"noopener"
-#~ "\">DEBUG=True</a> olduğu için bu sayfayı görüyorsunuz ve hiçbir URL "
-#~ "ayarlamamışsınız."
+#~ "%(version)s/ref/settings/#debug\" target=\"_blank\" "
+#~ "rel=\"noopener\">DEBUG=True</a> olduğu için bu sayfayı görüyorsunuz ve "
+#~ "hiçbir URL ayarlamamışsınız."
 
 #~ msgid "\"%(path)s\" does not exist"
 #~ msgstr "\"%(path)s\" mevcut değil"
@@ -5889,9 +5125,6 @@ msgstr "libvirt Hatası - %(exception)s"
 
 #~ msgid "Stop and start network to activate new config"
 #~ msgstr "Yeni yapılandırmayı aktifleştirmek için ağı durdurun ve başlatın"
-
-#~ msgid "Login"
-#~ msgstr "Bağlan"
 
 #~ msgid "Is superuser"
 #~ msgstr "Süperkullanıcı mı"
