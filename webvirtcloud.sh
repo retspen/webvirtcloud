@@ -197,6 +197,7 @@ create_user () {
   fi
 
   usermod -a -G "$nginx_group" "$APP_USER"
+  usermod -a -G libvirt "$nginx_group"
 }
 
 run_as_app_user () {
