@@ -660,7 +660,9 @@
             <div class="clearfix"></div>
         </div>
         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
-            <p>{% trans "If you need to edit XML please Power Off the instance" %}</p>
+            {% if instance.status != 5 %}
+                <p>{% trans "If you need to edit XML please Power Off the instance" %}</p>
+            {% endif %}
             <form action="{% url 'instances:change_xml' instance.id %}" method="post" role="form" aria-label="Edit instance XML form">
                 {% csrf_token %}
                 <div class="col-sm-12" id="xmlheight">
