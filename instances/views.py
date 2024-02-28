@@ -1853,6 +1853,9 @@ def create_instance(request, compute_id, arch, machine):
                                 machine = "q35"
                                 firmware["secure"] = "yes"
 
+                        if data["net_model"] == "default":
+                            data["net_model"] = "virtio"
+
                         uuid = util.randomUUID()
                         try:
                             conn.create_instance(
