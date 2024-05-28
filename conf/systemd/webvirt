@@ -1,2 +1,2 @@
 WEBVIRT_PATH="/srv/webvirtcloud"
-SERVICE_PATH="$WEBVIRT_PATH/venv/bin:/usr/bin"
+PATH="$WEBVIRT_PATH/venv/bin:/usr/bin"
