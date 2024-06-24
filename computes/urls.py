@@ -59,7 +59,7 @@ urlpatterns = [
                 path("nwfilter/<str:nwfltr>/", nwfilter, name="nwfilter"),
                 path("virtsecrets/", secrets, name="virtsecrets"),
                 path(
-                    "archs/<str:arch>/machines/",
+                    "archs/<str:arch>/machines",
                     views.get_compute_machine_types,
                     name="machines",
                 ),
