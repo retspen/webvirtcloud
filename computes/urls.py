@@ -64,12 +64,12 @@ urlpatterns = [
                     name="machines",
                 ),
                 path(
-                    "archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses/",
+                    "archs/<str:arch>/machines/<str:machine>/disks/<str:disk>/buses",
                     views.get_compute_disk_buses,
                     name="buses",
                 ),
                 path(
-                    "archs/<str:arch>/machines/<str:machine>/capabilities/",
+                    "archs/<str:arch>/machines/<str:machine>/capabilities",
                     views.get_dom_capabilities,
                     name="domcaps",
                 ),
