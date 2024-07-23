@@ -1,6 +1,6 @@
-Django==4.2.13
+Django==4.2.14
 django_bootstrap5==24.2
-django-bootstrap-icons==0.8.7
+django-bootstrap-icons==0.9.0
 django-login-required-middleware==0.9.0
 django-otp==1.5.0
 django-qr-code==4.1.0
@@ -11,7 +11,7 @@ drf-yasg==1.21.7
 eventlet==0.36.1
 gunicorn==22.0.0
 libsass==0.23.0
-libvirt-python==10.4.0
+libvirt-python==10.5.0
 lxml==5.2.2
 ldap3==2.9.1
 markdown==3.6
