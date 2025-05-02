@@ -631,7 +631,7 @@ class wvmInstance(wvmConnect):
                 dev_type = dev.get("type")
                 dev_device = dev.get("device")
 
-                if dev_type == "file":
+                if dev_type == "file" or (dev_device == "disk" and dev_type == "network"):
                     dev_target = dev.find("target").get("dev")
 
                 elif dev_type == "network":

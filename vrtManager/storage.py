@@ -34,6 +34,8 @@ class wvmStorages(wvmConnect):
             stg = wvmStorage(self.host, self.login, self.passwd, self.conn, pool_name)
             if stg.get_target_path() == target:
                 return self.get_storage(pool_name)
+            if stg.get_type() == "rbd" and stg.get_source_name() == target:
+                return self.get_storage(pool_name)
         return None
 
     def create_storage(self, stg_type, name, source, target):
