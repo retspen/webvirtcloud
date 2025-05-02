@@ -24,3 +24,4 @@ tzdata
 websockify==0.12.0
 whitenoise==6.9.0
 zipp==3.21.0
+crypt-r==3.13.1

@@ -1,4 +1,4 @@
-import crypt
+import crypt_r
 import json
 import os
 import re
@@ -476,7 +476,7 @@ def set_root_pass(request, pk):
     if request.method == "POST":
         passwd = request.POST.get("passwd", None)
         if passwd:
-            passwd_hash = crypt.crypt(passwd, "$6$kgPoiREy")
+            passwd_hash = crypt_r.crypt(passwd, "$6$kgPoiREy")
             data = {"action": "password", "passwd": passwd_hash, "vname": instance.name}
 
             if instance.proxy.get_status() == 5:
