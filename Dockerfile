@@ -1,4 +1,4 @@
-FROM phusion/baseimage:jammy-1.0.1
+FROM phusion/baseimage:noble-1.0.2
 
 EXPOSE 80
 EXPOSE 6080
