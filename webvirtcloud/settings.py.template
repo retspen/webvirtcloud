@@ -57,7 +57,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    #"django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",
     "login_required.middleware.LoginRequiredMiddleware",
@@ -66,6 +66,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "appsettings.middleware.AppSettingsMiddleware",
     "webvirtcloud.middleware.ExceptionMiddleware",
+    "webvirtcloud.middleware.DisableCSRFMiddleware",
 ]
 
 ROOT_URLCONF = "webvirtcloud.urls"
