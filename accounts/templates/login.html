@@ -37,19 +37,10 @@
 
 {% block script %}
 <script>
-    $(document).ready(function() {
-        $("#btn-signin").click(function() {
-            // disable button
-            $(this).prop("disabled", true);
-            // add spinner to button
-            $(this).html(
-            `
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            {% trans "Loading" %}...
-            `
-            );
-            $("#form-signin").submit();
-        });
-});
+    document.getElementById('form-signin').addEventListener('submit', function() {
+        var btn = document.getElementById('btn-signin');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> {% trans "Loading" %}...';
+    });
 </script>
-{% endblock script%}
+{% endblock script %}
