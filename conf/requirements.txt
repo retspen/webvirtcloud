@@ -20,7 +20,6 @@ paramiko==3.4.0
 python-engineio==4.12.0
 python-socketio==5.13.0
 qrcode==8.2
-rwlock==0.0.7
 tzdata
 websockify==0.13.0
 whitenoise==6.9.0
