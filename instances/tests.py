@@ -180,7 +180,7 @@ class InstancesTestCase(TestCase):
     def test_create_from_xml(self):
         uuid = randomUUID()
         xml = self.xml.replace("test-vm", "test-vm-xml")
-        xml = re.sub("\s?<uuid>.*?</uuid>", f"<uuid>{uuid}</uuid>", xml)
+        xml = re.sub(r"\s?<uuid>.*?</uuid>", f"<uuid>{uuid}</uuid>", xml)
         response = self.client.post(
             reverse("instances:create_instance_select_type", args=[self.compute.id]),
             {

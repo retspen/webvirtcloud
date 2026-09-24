@@ -23,49 +23,49 @@ import socket
 
 # from six.moves import http_cookies as Cookie
 from http import cookies as Cookie
-from webvirtcloud.settings import WS_PORT, WS_HOST, WS_CERT
-from vrtManager.connection import CONN_SSH, CONN_SOCKET
+import argparse
 from console.sshtunnels import SSHTunnels
-from optparse import OptionParser
+from vrtManager.connection import CONN_SOCKET, CONN_SSH
+from webvirtcloud.settings import WS_CERT, WS_HOST, WS_PORT
 
-parser = OptionParser()
 
-parser.add_option(
-    "-v",
-    "--verbose",
-    dest="verbose",
-    action="store_true",
-    help="Verbose mode",
-    default=False,
-)
+def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080, default_cert=WS_CERT or CERT):
+    parser = argparse.ArgumentParser(description="WebVirtCloud noVNC daemon")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Verbose mode",
+        default=False,
+    )
+    parser.add_argument(
+        "-d", "--debug", dest="debug", action="store_true", help="Debug mode", default=False
+    )
+    parser.add_argument(
+        "-H", "--host", dest="host", action="store", help="Listen host", default=default_host
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        dest="port",
+        action="store",
+        type=int,
+        help="Listen port",
+        default=default_port,
+    )
+    parser.add_argument(
+        "-c",
+        "--cert",
+        dest="cert",
+        action="store",
+        help="Certificate file path",
+        default=default_cert,
+    )
+    return parser
 
-parser.add_option(
-    "-d", "--debug", dest="debug", action="store_true", help="Debug mode", default=False
-)
 
-parser.add_option(
-    "-H", "--host", dest="host", action="store", help="Listen host", default=WS_HOST
-)
-
-parser.add_option(
-    "-p",
-    "--port",
-    dest="port",
-    action="store",
-    help="Listen port",
-    default=WS_PORT or 6080,
-)
-
-parser.add_option(
-    "-c",
-    "--cert",
-    dest="cert",
-    action="store",
-    help="Certificate file path",
-    default=WS_CERT or CERT,
-)
-
-(options, args) = parser.parse_args()
+options = get_parser().parse_args()
 
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
 if options.debug:
@@ -184,7 +184,7 @@ class CompatibilityMixIn(object):
             self.msg("Try to open local socket %s" % console_socket)
             tsock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             tsock.connect(console_socket)
-        elif console_socket or re.match("^127\.", console_host):
+        elif console_socket or re.match(r"^127\.", console_host):
             # Need tunnel to physical host
             if conntype != CONN_SSH:
                 self.msg(
