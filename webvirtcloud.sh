@@ -539,8 +539,8 @@ case $distro in
   fi
   ;;
   ubuntu)
-  if [ "$version" == "18.04" ] || [ "$version" == "20.04" ] || [ "$version" == "22.04" ]; then
-    # Install for Ubuntu 18 / 20
+  if [ "$version" == "18.04" ] || [ "$version" == "20.04" ] || [ "$version" == "22.04" ] || [ "$version" == "24.04" ]; then
+    # Install for Ubuntu 18 / 20 / 22 / 24
     tzone=\'$(cat /etc/timezone)\'
 
     echo -n "* Updating installed packages."
