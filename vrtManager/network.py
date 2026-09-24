@@ -7,22 +7,23 @@ from libvirt import (
     VIR_NETWORK_UPDATE_COMMAND_MODIFY, libvirtError)
 from lxml import etree
 from vrtManager import util
+import ipaddress
+
 from vrtManager.connection import wvmConnect
-from vrtManager.IPy import IP
 
 
 def network_size(subnet, dhcp=None):
     """
     Func return gateway, mask and dhcp pool.
     """
-    mask = IP(subnet).strNetmask()
-    addr = IP(subnet)
-    gateway = addr[1].strCompressed()
-    if addr.version() == 4:
-        dhcp_pool = [addr[2].strCompressed(), addr[addr.len() - 2].strCompressed()]
-    if addr.version() == 6:
-        mask = mask.lstrip("/") if "/" in mask else mask
-        dhcp_pool = [IP(addr[0].strCompressed() + hex(256)), IP(addr[0].strCompressed() + hex(512 - 1))]
+    net = ipaddress.ip_network(subnet, strict=False)
+    gateway = str(net.network_address + 1)
+    if net.version == 4:
+        mask = str(net.netmask)
+        dhcp_pool = [str(net.network_address + 2), str(net.broadcast_address - 1)]
+    else:
+        mask = str(net.prefixlen)
+        dhcp_pool = [str(net.network_address + 256), str(net.network_address + 511)]
 
     return (gateway, mask, dhcp_pool) if dhcp else (gateway, mask, None)
 
@@ -168,20 +169,13 @@ class wvmNetwork(wvmConnect):
             netmask_str = ip.get("netmask")
             prefix = ip.get("prefix")
             family = ip.get("family", "ipv4")
-            if prefix:
-                prefix = int(prefix)
-                base = 32 if family == "ipv4" else 128
-                binstr = prefix * "1" + (base - prefix) * "0"
-                netmask_str = str(IP(int(binstr, base=2)))
-
-            if netmask_str:
-                netmask = IP(netmask_str)
-                gateway = IP(address_str)
-                network = IP(gateway.int() & netmask.int())
-                netmask_str = netmask_str if family == "ipv4" else str(prefix)
-                ret = IP(str(network) + "/" + netmask_str)
+            mask = prefix if prefix is not None else netmask_str
+            if address_str and mask:
+                ret = ipaddress.ip_network(f"{address_str}/{mask}", strict=False)
+            elif address_str:
+                ret = ipaddress.ip_address(address_str)
             else:
-                ret = IP(str(address_str))
+                continue
             ip_networks[family] = ret
         return ip_networks
 
@@ -204,7 +198,7 @@ class wvmNetwork(wvmConnect):
             dhcpstart = util.get_xml_path(xml, "/network/ip[@family='ipv6']/dhcp/range[1]/@start")
             dhcpend = util.get_xml_path(xml, "/network/ip[@family='ipv6']/dhcp/range[1]/@end")
 
-        return None if not dhcpstart or not dhcpend else [IP(dhcpstart), IP(dhcpend)]
+        return None if not dhcpstart or not dhcpend else [ipaddress.ip_address(dhcpstart), ipaddress.ip_address(dhcpend)]
 
     def get_dhcp_range_start(self, family="ipv4"):
         dhcp = self.get_dhcp_range(family)
@@ -282,12 +276,12 @@ class wvmNetwork(wvmConnect):
     def modify_fixed_address(self, name, address, mac_duid, family="ipv4"):
         tree = etree.fromstring(self._XMLDesc(0))
         if family == "ipv4":
-            new_xml = '<host mac="{}" {} ip="{}"/>'.format(mac_duid, 'name="' + name + '"' if name else "", IP(address))
+            new_xml = '<host mac="{}" {} ip="{}"/>'.format(mac_duid, 'name="' + name + '"' if name else "", ipaddress.ip_address(address))
             hosts = tree.xpath("./ip[not(@family='ipv6')]/dhcp/host")
             compare_var = "mac"
             parent_index = self.parent_count - 2
         if family == "ipv6":
-            new_xml = '<host id="{}" {} ip="{}"/>'.format(mac_duid, 'name="' + name + '"' if name else "", IP(address))
+            new_xml = '<host id="{}" {} ip="{}"/>'.format(mac_duid, 'name="' + name + '"' if name else "", ipaddress.ip_address(address))
             hosts = tree.xpath("./ip[@family='ipv6']/dhcp/host")
             compare_var = "id"
             parent_index = self.parent_count - 1
