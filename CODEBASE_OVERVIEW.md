@@ -1,169 +1,171 @@
-# WebVirtCloud - Kod Tabanı İnceleme ve Mimari Dokümantasyonu
+# WebVirtCloud - Codebase Overview and Architecture Documentation
 
-Bu doküman, **WebVirtCloud** projesinin mimari yapısını, temel bileşenlerini, veri akışını ve modüller arası ilişkilerini açıklamak amacıyla hazırlanmıştır.
-
----
-
-## 1. Genel Tanım ve Amacı
-
-**WebVirtCloud**, QEMU/KVM tabanlı hipervizörlerin ve bu hipervizörler üzerinde koşan sanal makinelerin (VM/Instance) web tabanlı arayüz ve REST API aracılığıyla yönetilmesini sağlayan açık kaynaklı bir sanallaştırma yönetim platformudur.
-
-Platform, hem sistem yöneticilerine birden fazla fiziksel KVM sunucusunu tek noktadan yönetme imkânı sunar, hem de son kullanıcılara kendilerine atanan sanal makineleri kontrol etme (başlatma, durdurma, yeniden başlatma, konsol erişimi, snapshot alma, kaynak izleme) yetkisi tanır.
+This document describes the architectural design, core components, data flow, and module interactions of the **WebVirtCloud** project.
 
 ---
 
-## 2. Teknoloji Yığını (Tech Stack)
+## 1. Overview & Purpose
 
-| Katman | Teknoloji / Kütüphane | Açıklama |
+**WebVirtCloud** is an open-source virtualization management platform designed to manage QEMU/KVM-based hypervisors and virtual machines (instances) through a modern web UI and REST API.
+
+The platform provides:
+- **For Administrators**: Centralized multi-host hypervisor management, storage pools and volumes, virtual networks, compute nodes, and user quotas.
+- **For End Users**: Self-service virtual machine control (start, stop, reboot, console access, snapshot management, and live resource monitoring) based on delegated permissions.
+
+---
+
+## 2. Technology Stack
+
+| Layer | Technology / Library | Description |
 |---|---|---|
-| **Çalışma Zamanı** | Python >= 3.11 | Modern Python çalışma ortamı |
-| **Web Çatısı** | Django 4.2 LTS | MVC tabanlı ana web altyapısı ve ORM |
-| **API** | Django REST Framework (DRF) + drf-spectacular | RESTful API uçları ve OpenAPI 3.0 / Swagger dokümantasyonu |
-| **Sanallaştırma API** | `libvirt-python` (11.4.0) + `lxml` | Libvirt API çağrıları ve XML domain/storage/network tanımlamaları |
-| **Konsol / VNC** | WebSockify + noVNC | Web tarayıcısı üzerinden HTML5 VNC/SPICE konsol erişimi |
-| **Ön Yüz (Frontend)** | Django Templates, Bootstrap 5, Bootstrap Icons, jQuery | Sunucu taraflı render edilen dinamik kullanıcı arayüzü |
-| **Kimlik & Güvenlik** | Django Auth, `django-otp` (2FA/TOTP), `django-auth-ldap` | Rol bazlı yetkilendirme, 2 faktörlü doğrulama, LDAP/Active Directory desteği |
-| **Web / WSGI Sunucu** | Nginx + Gunicorn + WhiteNoise | Statik dosya dağıtımı ve ters vekil sunucu mimarisi |
-| **Süreç Yöneticisi** | Supervisor / Runit / Systemd | Gunicorn ve novncd arka plan servislerinin yönetimi |
+| **Runtime** | Python >= 3.11 (tested up to 3.12) | Modern Python runtime environment |
+| **Web Framework** | Django 4.2 LTS | Core web framework, ORM, and MVC application foundation |
+| **API** | Django REST Framework (DRF) + `drf-spectacular` | RESTful API endpoints with OpenAPI 3.0 / Swagger & ReDoc documentation |
+| **Virtualization API** | `libvirt-python` + `lxml` | Libvirt API bindings and dynamic domain/storage/network XML generation |
+| **Console / VNC** | WebSockify + noVNC | In-browser HTML5 VNC/SPICE console access via WebSocket |
+| **Frontend** | Django Templates, Bootstrap 5, Bootstrap Icons, jQuery | Server-rendered responsive and dynamic user interface |
+| **Identity & Security** | Django Auth, `django-otp` (2FA/TOTP), `django-auth-ldap` | Role-based authorization, two-factor authentication, and optional LDAP/Active Directory support |
+| **Web / WSGI Server** | Nginx + Gunicorn + WhiteNoise | Static file delivery and reverse proxy architecture |
+| **Process Manager** | Supervisor / Runit / Systemd | Background service management for Gunicorn, novncd, and socketiod |
 
 ---
 
-## 3. Sistem Mimarisi ve Temel Katmanlar
+## 3. System Architecture & Core Layers
 
 ```
                                +-----------------------------+
-                               |     Web Tarayıcısı / İstemci |
+                               |     Web Browser / Client    |
                                +--------------+--------------+
                                               |
-                       HTTP / HTTPS (Port 80/443)   WebSockets (Port 6080)
+                        HTTP / HTTPS (Port 80/443)   WebSockets (Port 6080)
                                               |              |
                                               v              v
 +------------------------------------------------------------------------------------+
 | Nginx Reverse Proxy                                                                |
-|   ├── /static/  --> Statik Dosyalar (WhiteNoise / Nginx)                           |
+|   ├── /static/  --> Static Assets (WhiteNoise / Nginx)                             |
 |   ├── /         --> Gunicorn (Django WSGI Application)                             |
-|   └── :6080     --> WebSockify (novncd arka plan servisi)                         |
+|   └── :6080     --> WebSockify (novncd background service)                         |
 +-------------------------------------+----------------------------------------------+
                                       |
                                       v
 +------------------------------------------------------------------------------------+
-| Django Uygulama Katmanı (WebVirtCloud)                                             |
+| Django Application Layer (WebVirtCloud)                                            |
 |                                                                                    |
-|  [accounts]      Kullanıcılar, Roller, Kotalar, SSH Keyler, 2FA, LDAP             |
-|  [computes]      Hipervizör (Compute Node) bağlantı tanımları                     |
-|  [instances]     Sanal makine modelleri, yaşam döngüsü, migrate, flavor            |
-|  [storages]      Storage havuzları ve disk hacimleri (dir, lvm, rbd/ceph vb.)     |
-|  [networks]      Sanal ağlar (NAT, isolated, bridge vb.)                           |
-|  [interfaces]    Fiziksel / köprü ağ arayüzleri                                    |
-|  [nwfilters]     Ağ filtreleme ve güvenlik duvarı kuralları                        |
-|  [virtsecrets]   Libvirt gizli anahtarları (Ceph auth vb.)                        |
-|  [datasource]    Cloud-init metadata / userdata servisleri                        |
-|  [logs]          Kullanıcı ve sistem işlem denetim kayıtları (audit log)          |
-|  [api/v1]        DRF Nested Routers ile REST API uçları                            |
+|  [accounts]      Users, Roles, Quotas, SSH Keys, 2FA (TOTP), LDAP                  |
+|  [computes]      Hypervisor (Compute Node) connection profiles                     |
+|  [instances]     Virtual machine models, lifecycle, live migration, flavors        |
+|  [storages]      Storage pools and volumes (dir, lvm, rbd/ceph, nfs, etc.)         |
+|  [networks]      Virtual networks (NAT, isolated, bridge, routed)                  |
+|  [interfaces]    Physical and bridged host network interfaces                      |
+|  [nwfilters]     Network filtering and firewall rules (anti-spoofing)              |
+|  [virtsecrets]   Libvirt secrets management (Ceph auth, etc.)                      |
+|  [datasource]    Cloud-init metadata and userdata HTTP endpoints                   |
+|  [logs]          User and system audit trail logging                               |
+|  [api/v1]        DRF Nested Routers exposing full REST API                         |
 +-------------------------------------+----------------------------------------------+
                                       |
                                       v
 +------------------------------------------------------------------------------------+
-| vrtManager Katmanı (Libvirt Abstraction Engine)                                    |
-|   ├── connection.py  --> TCP, SSH, TLS veya yerel Socket ile Libvirt bağlantısı    |
-|   ├── instance.py    --> XML Domain üretimi, CPU/RAM/Disk/Snapshot/Metrics         |
-|   ├── storage.py     --> Storage pool & volume XML yönetimi                        |
-|   ├── network.py     --> Network XML konfigürasyonu ve IP yönetimi                 |
-|   └── hostdetails.py --> Node info, bellek ve CPU kullanım metrikleri             |
+| vrtManager Layer (Libvirt Abstraction Engine)                                      |
+|   ├── connection.py  --> TCP, SSH, TLS, or local socket libvirt connection pooling  |
+|   ├── instance.py    --> XML domain generation, CPU/RAM/Disk/Snapshots/Metrics     |
+|   ├── storage.py     --> Storage pool & volume XML management                      |
+|   ├── network.py     --> Network XML configuration & IP allocation                 |
+|   └── hostdetails.py --> Node info, memory, and CPU utilization metrics            |
 +-------------------------------------+----------------------------------------------+
                                       |
-                       Libvirt Protokolü (TCP/SSH/TLS/Socket)
+                       Libvirt Protocol (TCP/SSH/TLS/Socket)
                                       |
                                       v
 +------------------------------------------------------------------------------------+
-| KVM / QEMU Hipervizör Sunucuları                                                   |
+| KVM / QEMU Hypervisor Hosts                                                        |
 |   ├── libvirtd / virtqemud                                                         |
-|   ├── QEMU Guest Domainleri (VMs) + QEMU Guest Agent                               |
-|   └── Storage & Network Altyapısı (ZFS, LVM, Ceph RBD, Linux Bridge, OVS)          |
+|   ├── QEMU Guest Domains (VMs) + QEMU Guest Agent                                  |
+|   └── Storage & Network Infrastructure (ZFS, LVM, Ceph RBD, Linux Bridge, OVS)     |
 +------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 4. Modüller ve Dizin Yapısı Analizi
+## 4. Module & Directory Structure Analysis
 
-### 4.1. `vrtManager/` (Çekirdek Libvirt Motoru)
-Projenin en kritik Python paketidir. Django modelleri veritabanında hipervizörlerin durumlarını statik tutmak yerine, libvirt ile doğrudan canlı haberleşir.
-- **`connection.py`**: Farklı bağlantı tipleri (`CONN_TCP`, `CONN_SSH`, `CONN_TLS`, `CONN_SOCKET`) üzerinden libvirt bağlantı havuzunu (`connection_manager`) yönetir. Eşzamanlı erişimler için `ReadWriteLock` kullanır.
-- **`instance.py`**: `wvmInstance` sınıfı aracılığıyla sanal makinelerin başlatılması, kapatılması, duraklatılması, yeniden başlatılması, CPU/RAM boyutlandırması, disk ekleme/çıkarma, XML düzenleme, snapshot işlemleri ve anlık donanım istatistiklerini (vCPU, ağ I/O, disk I/O) çeker.
-- **`create.py`**: XML şablonlarını dinamik üreterek yeni sanal makineler oluşturan motor.
-- **`storage.py` & `network.py`**: Depolama havuzları (dir, lvm, iscsi, rbd/ceph) ve libvirt sanal ağlarının yönetimini üstlenir.
-- **`hostdetails.py`**: Hipervizörün toplam bellek, CPU kullanımı ve donanım mimarisi bilgilerini sağlar.
+### 4.1. `vrtManager/` (Core Libvirt Abstraction Engine)
+The most critical Python package in the project. Instead of persisting hypervisor and VM runtime states statically in a database, WebVirtCloud queries libvirt live in real time.
+- **`connection.py`**: Manages the libvirt connection pool (`connection_manager`) supporting multiple protocols (`CONN_TCP`, `CONN_SSH`, `CONN_TLS`, `CONN_SOCKET`). Uses a reentrant `ReadWriteLock` for thread-safe concurrent access.
+- **`instance.py`**: Encapsulates VM lifecycle operations via the `wvmInstance` class (start, shutdown, force off, suspend, resume, dynamic CPU/RAM allocation, disk hotplug/unplug, XML modification, snapshots, and real-time vCPU, network I/O, and disk I/O metrics).
+- **`create.py`**: Dynamically compiles XML definitions to provision new virtual machines.
+- **`storage.py` & `network.py`**: Handles storage pools (directory, LVM, iSCSI, Ceph RBD) and virtual network configurations.
+- **`hostdetails.py`**: Queries host capabilities, hardware architecture, total/available memory, and CPU utilization.
 
-### 4.2. `computes/` (Hipervizör Yönetimi)
-- Hipervizör ana makine (host) kayıtlarını barındırır (`hostname`, `login`, `password`, `type`).
-- Canlı bağlantı nesnesini `connection_manager` üzerinden lazy olarak temin eder (`cached_property`).
-- REST API üzerinden mimarileri (`archs`), işlemci ve bellek durumlarını dışa aktarır.
+### 4.2. `computes/` (Hypervisor Management)
+- Manages hypervisor host records (`hostname`, `login`, `password`, `type`).
+- Provides lazy connection retrieval via `cached_property` using `connection_manager`.
+- Exposes host architectures (`archs`), processor topology, and memory state via REST API endpoints.
 
-### 4.3. `instances/` (Sanal Makine Yönetimi)
-- **`Instance` Modeli**: Sanal makinenin `compute` ilişkisini, benzersiz `uuid` değerini ve `name` bilgisini saklar. Dinamik tüm durumlar (durum, bellek, vcpu, diskler, ağ kartları vb.) `vrtManager.instance.wvmInstance` vekili (proxy) üzerinden okunur.
-- **`Flavor` Modeli**: AWS EC2 veya OpenStack benzeri hazır boyut şablonlarını (vcpu, ram, disk) tanımlar.
-- **`MigrateInstance`**: Sanal makinelerin canlı (live), çevrimdışı (offline), sıkıştırmalı (compressed) veya güvensiz (unsafe) yöntemlerle başka bir compute host'a taşınmasını sağlar.
-- **`views.py`**: VM oluşturma sihirbazı, düzenleme, klonlama, snapshot ve güç kontrollerini içerir.
+### 4.3. `instances/` (Virtual Machine Management)
+- **`Instance` Model**: Stores the relational link between a VM and its `compute` node, unique `uuid`, and `name`. Runtime state (power state, memory, vCPUs, disks, network interfaces) is dynamically resolved through the `vrtManager.instance.wvmInstance` proxy.
+- **`Flavor` Model**: Predefined sizing templates (vCPU, RAM, disk) similar to AWS EC2 or OpenStack flavors.
+- **`MigrateInstance`**: Implements VM live migration, offline migration, compressed transfer, or unsafe tunneling to another compute host.
+- **`views.py`**: Provides VM provisioning wizards, configuration editors, cloning, snapshot management, and power controls.
 
-### 4.4. `accounts/` (Kullanıcılar, İzinler ve Kotalar)
-- Standart Django `User` modeline ek olarak:
-  - **`UserInstance`**: Kullanıcıya belirli bir VM üzerinde okuma, değiştirme (`is_change`), silme (`is_delete`) ve konsol açma (`is_vnc`) yetkilerini delege eder.
-  - **`UserAttributes`**: Kullanıcı bazında kota belirler (Maksimum VM adedi, maksimum vCPU, maksimum RAM ve maksimum disk boyutu).
-  - **`UserSSHKey`**: Kullanıcının VM'lere otomatik enjekte edilecek açık anahtarlarını depolar.
-  - İki faktörlü kimlik doğrulama (TOTP/QR) ve opsiyonel LDAP/AD senkronizasyonunu yönetir.
+### 4.4. `accounts/` (Users, Permissions & Quotas)
+- Extends standard Django `User` model with granular virtualization delegation:
+  - **`UserInstance`**: Delegates granular permissions for a specific VM to a user (read, modify `is_change`, delete `is_delete`, console `is_vnc`).
+  - **`UserAttributes`**: Sets per-user resource quotas (maximum instances, maximum vCPUs, maximum RAM, and maximum storage capacity).
+  - **`UserSSHKey`**: Stores public SSH keys that can be injected automatically into new VMs via Cloud-Init.
+  - Supports Two-Factor Authentication (TOTP / QR code) and optional enterprise LDAP/Active Directory synchronization.
 
-### 4.5. `console/` (Uzak Konsol Erişimi)
-- **`novncd`**: Python tabanlı WebSockify uygulamasını çalıştırarak tarayıcıdaki noVNC istemcisi ile KVM üzerindeki VNC/SPICE portu arasında WebSocket köprüsü kurar.
-- **`sshtunnels.py`**: Compute host uzak bir sunucuda ise ve doğrudan VNC portu dışarıya açık değilse, güvenli SSH tüneli açarak konsol bağlantısını yerel sokete yönlendirir.
+### 4.5. `console/` (Remote Console Access)
+- **`novncd`**: Python-based WebSockify daemon bridging browser-based noVNC clients to the hypervisor's VNC/SPICE TCP ports via WebSockets.
+- **`sshtunnels.py`**: If the hypervisor is remote and VNC ports are not publicly exposed, establishes an on-demand encrypted SSH tunnel to forward console traffic safely.
 
-### 4.6. `datasource/` (Cloud-Init Desteği)
-- Cloud-init uyumlu bir HTTP metadata/userdata sunucusudur.
-- VM ilk açıldığında `http://<webvirtcloud>/datasource/` adresine istek atar.
-- İstemci IP'sinden hostname ve VM adı çözülerek, VM sahibine ait SSH açık anahtarları `user-data` şablonu halinde VM'e teslim edilir. Böylece şifresiz SSH erişimi otomatik ayarlanır.
+### 4.6. `datasource/` (Cloud-Init Support)
+- Implements a Cloud-Init compatible HTTP metadata and userdata service.
+- When a VM boots for the first time, it contacts `http://<webvirtcloud>/datasource/`.
+- Resolves the VM identity based on the client IP address and delivers the owner's SSH public keys as a formatted `user-data` payload, enabling automated passwordless SSH provisioning.
 
 ### 4.7. `storages/`, `networks/`, `interfaces/`, `nwfilters/`, `virtsecrets/`
-- **`storages`**: Dizin, LVM, NFS, iSCSI ve Ceph RBD depolama havuzları oluşturma, ISO yükleme, disk hacmi (volume) klonlama ve silme.
-- **`networks`**: NAT, Routed, Bridge ve Isolated sanal ağ oluşturma, DHCP havuzu ve statik IP/MAC eşleme.
-- **`interfaces`**: Fiziksel host ağ arayüzlerini ve köprüleri (bridges) listeleme ve yönetme.
-- **`nwfilters`**: MAC/IP sahteciliğini önleyen (anti-spoofing) ve paket filtreleyen kuralları yönetme.
-- **`virtsecrets`**: Özellikle Ceph kimlik doğrulaması için gereken Libvirt secret tanımlarını yönetme.
+- **`storages`**: Storage pool management (dir, LVM, NFS, iSCSI, Ceph RBD), ISO image uploads, volume cloning, and disk resizing.
+- **`networks`**: Virtual network creation (NAT, Routed, Bridge, Isolated), DHCP address pools, and static IP/MAC bindings.
+- **`interfaces`**: Host physical network interfaces, bonding, and Linux bridge management.
+- **`nwfilters`**: Anti-spoofing firewall and packet filtering rules at the hypervisor level.
+- **`virtsecrets`**: Libvirt secrets management (e.g., Ceph authentication keys).
 
-### 4.8. `logs/` & `appsettings/` & `admin/`
-- **`logs`**: Hangi kullanıcının hangi instance üzerinde ne zaman ne işlem yaptığını (güç açma, kapatma, disk ekleme vb.) kaydeden denetim günlüğü.
-- **`appsettings`**: Veritabanı üzerinde dinamik olarak uygulama parametrelerini (site başlığı, izinler vb.) saklar ve context processor ile arayüze taşır.
-- **`admin`**: Kullanıcı, grup ve genel sistem yönetim paneli.
-
----
-
-## 5. REST API Mimarisi (`/api/v1/`)
-
-Django REST Framework (`drf-nested-routers`) kullanılarak hiyerarşik bir kaynak yapısı kurgulanmıştır:
-
-- `/api/v1/computes/` : Hipervizör listesi ve yönetimi
-  - `/api/v1/computes/{id}/instances/` : İlgili hipervizördeki sanal makineler
-  - `/api/v1/computes/{id}/instances/create/{arch}/{machine}/` : Yeni sanal makine oluşturma
-  - `/api/v1/computes/{id}/networks/` : Sanal ağlar
-  - `/api/v1/computes/{id}/interfaces/` : Ağ arayüzleri
-  - `/api/v1/computes/{id}/storages/` : Depolama havuzları
-    - `/api/v1/computes/{id}/storages/{id}/volumes/` : Depolama birimleri (diskler)
-  - `/api/v1/computes/{id}/archs/` : Desteklenen mimariler
-- `/api/v1/instances/` : Genel sanal makine listesi
-- `/api/v1/flavor/` : Boyut şablonları
-- `/api/v1/migrate/` : Sanal makine taşıma operasyonları
-- `/swagger/` & `/redoc/` : Canlı API dokümantasyonu
+### 4.8. `logs/`, `appsettings/`, and `admin/`
+- **`logs`**: Comprehensive audit trail recording user and system actions (power on, shutdown, disk attachment, user modification).
+- **`appsettings`**: Dynamic configuration stored in the database (custom titles, permissions, UI options) exposed globally via Django context processors.
+- **`admin`**: Administrative control panel for user, group, and system-level management.
 
 ---
 
-## 6. Dağıtım ve Servis Yaşam Döngüsü
+## 5. REST API Architecture (`/api/v1/`)
 
-1. **Gunicorn**: WSGI uygulaması olarak `webvirtcloud.wsgi:application` çalışır (Port: Nginx unix socket veya 8000).
-2. **novncd**: Arka planda çalışarak VNC/SPICE portlarını `6080` portundan WebSocket'e çevirir.
-3. **Nginx**: 80/443 portlarından dış dünyayı karşılar, statik dosyaları sunar, dinamik istekleri Gunicorn'a, VNC WebSocket trafiğini ise `novncd` servisine iletir.
-4. **Supervisor / Runit**: Docker ortamında (`Dockerfile`) Phusion BaseImage tabanlı runit kullanılırken, standart Linux sunucularında Supervisor veya Systemd servisleri kullanılır.
+Built on Django REST Framework with `drf-nested-routers`, providing a structured hierarchical API:
+
+- `/api/v1/computes/` : List and manage hypervisors
+  - `/api/v1/computes/{id}/instances/` : VMs running on a specific hypervisor
+  - `/api/v1/computes/{id}/instances/create/{arch}/{machine}/` : VM creation endpoint
+  - `/api/v1/computes/{id}/networks/` : Virtual networks on the hypervisor
+  - `/api/v1/computes/{id}/interfaces/` : Host network interfaces
+  - `/api/v1/computes/{id}/storages/` : Storage pools
+    - `/api/v1/computes/{id}/storages/{id}/volumes/` : Storage volumes (disks)
+  - `/api/v1/computes/{id}/archs/` : Supported architectures and machine types
+- `/api/v1/instances/` : Global virtual machine list
+- `/api/v1/flavor/` : Sizing templates (flavors)
+- `/api/v1/migrate/` : VM migration operations
+- `/swagger/` & `/redoc/` : Live OpenAPI 3.0 documentation (powered by `drf-spectacular`)
 
 ---
 
-## 7. Özet Değerlendirme
+## 6. Deployment & Service Lifecycle
 
-WebVirtCloud, **Django ORM**'in gücünü doğrudan **libvirt C API binding'leri** ile hibrit şekilde birleştiren, veritabanında sadece temel ilişkileri tutup asıl durum ve metrikleri gerçek zamanlı olarak doğrudan sanallaştırma katmanından okuyan esnek ve hafif bir yönetim panelidir.
+1. **Gunicorn**: WSGI application server running `webvirtcloud.wsgi:application` (binds to a Unix socket or port 8000).
+2. **novncd**: Background WebSockify daemon translating VNC/SPICE TCP ports to WebSockets on port 6080.
+3. **Nginx**: Front-facing reverse proxy handling ports 80/443, serving static assets directly, proxying dynamic web requests to Gunicorn, and routing WebSocket console traffic to `novncd`.
+4. **Supervisor / Runit / Systemd**: Process supervision managing Gunicorn and novncd daemon lifecycles with automatic restarts.
+
+---
+
+## 7. Architecture Highlights
+
+WebVirtCloud leverages a hybrid pattern: it combines the relational strengths of the **Django ORM** for persistent entities (users, compute host credentials, quotas, and permission delegations) with direct, real-time **libvirt C API bindings** for dynamic virtualization state (VM statuses, resource allocation, storage metrics, and live hardware statistics). This design ensures that the web console always reflects the true hypervisor state without risk of database desynchronization.
