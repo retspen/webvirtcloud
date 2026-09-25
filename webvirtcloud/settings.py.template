@@ -3,6 +3,7 @@ Django settings for webvirtcloud project.
 
 """
 
+import os
 import subprocess
 try:
     import ldap
@@ -24,7 +25,12 @@ MAC_OUI = '52:54:10'
 
 ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost',]
+CSRF_TRUSTED_ORIGINS = ["http://localhost", "http://127.0.0.1", "http://localhost:8000", "http://127.0.0.1:8000"]
+if extra_origins := os.getenv("CSRF_TRUSTED_ORIGINS"):
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in extra_origins.split(",") if origin.strip()])
+
+# Honor X-Forwarded-Proto header for request.is_secure() when behind a reverse proxy (Nginx, Traefik, etc.)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 INSTALLED_APPS = [
