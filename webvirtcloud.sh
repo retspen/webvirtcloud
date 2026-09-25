@@ -243,7 +243,7 @@ activate_python_environment () {
     fi
     # Create a virtual environment
     echo "* Creating virtual environment in $APP_PATH/venv"
-    virtualenv -p "$PYTHON" venv
+    virtualenv -p "$PYTHON" --system-site-packages venv
     # shellcheck disable=SC1091
     source venv/bin/activate
 }
@@ -584,7 +584,7 @@ case $distro in
     log "yum -y install wget epel-release supervisor"
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel libvirt-devel glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openldap-devel"
+    PACKAGES="git python3-virtualenv python3-devel libvirt-devel python3-libvirt python3-ldap glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openldap-devel cyrus-sasl-devel openssl-devel"
     install_packages
 
     set_hosts

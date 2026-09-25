@@ -94,11 +94,11 @@ Done!!
 
 Go to http://serverip and you should see the login screen.
 
-### Install WebVirtCloud panel (RHEL Based OS 8/9/10)
+### Install WebVirtCloud panel (RHEL Based OS 8/9/10 / Rocky Linux / AlmaLinux)
 
 ```bash
-sudo yum -y install epel-release
-sudo yum -y install python3-virtualenv python3-devel libvirt-devel glibc gcc nginx supervisor python3-lxml git python3-libguestfs iproute-tc cyrus-sasl-md5 python3-libguestfs libsasl2-dev libldap2-dev libssl-dev
+sudo dnf -y install epel-release
+sudo dnf -y install python3-devel libvirt-devel python3-libvirt python3-ldap python3-lxml cyrus-sasl-devel openldap-devel openssl-devel glibc gcc nginx supervisor git python3-libguestfs iproute-tc cyrus-sasl-md5
 ```
 
 #### Creating directories and cloning repository
@@ -109,18 +109,62 @@ sudo git clone https://github.com/retspen/webvirtcloud && cd webvirtcloud
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
 # now put secret key to webvirtcloud/settings.py
 # create secret key manually or use that command
-sudo sed -r "s/SECRET_KEY = ''/SECRET_KEY = '"`python3 /srv/webvirtcloud/conf/runit/secret_generator.py`"'/" -i /srv/webvirtcloud/webvirtcloud/settings.py
+sudo sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3 /srv/webvirtcloud/conf/runit/secret_generator.py)'"/' /srv/webvirtcloud/webvirtcloud/settings.py
 ```
 
 #### Start installation webvirtcloud
 
 ```bash
-virtualenv-3 venv
+python3 -m venv --system-site-packages venv
 source venv/bin/activate
 pip3 install -r conf/requirements.txt
 cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 python3 manage.py migrate
 python3 manage.py collectstatic --noinput
+```
+
+### Local Development Setup (Rocky Linux / RHEL / Fedora / Ubuntu)
+
+For developers working locally on WebVirtCloud without running full production services:
+
+#### Rocky Linux / RHEL / Fedora:
+```bash
+# 1. Install system prerequisites and precompiled bindings
+sudo dnf -y install python3-devel libvirt-devel python3-libvirt python3-ldap python3-lxml gcc git
+
+# 2. Create virtual environment with system site packages (enables zero-compilation install)
+python3 -m venv --system-site-packages .venv
+source .venv/bin/activate
+
+# 3. Install Python dependencies
+pip install -r conf/requirements.txt
+pip install -r dev/requirements.txt
+
+# 4. Initialize configuration and run local dev server
+cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3 conf/runit/secret_generator.py)'"/' webvirtcloud/settings.py
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+```
+
+#### Ubuntu / Debian:
+```bash
+# 1. Install system prerequisites
+sudo apt-get update && sudo apt-get -y install git python3-venv python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libldap2-dev libsasl2-dev gcc pkg-config
+
+# 2. Create virtual environment
+python3 -m venv --system-site-packages .venv
+source .venv/bin/activate
+
+# 3. Install Python dependencies
+pip install -r conf/requirements.txt
+pip install -r dev/requirements.txt
+
+# 4. Initialize configuration and run local dev server
+cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3 conf/runit/secret_generator.py)'"/' webvirtcloud/settings.py
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
 ```
 
 #### Configure the supervisor for RHEL Based OS
