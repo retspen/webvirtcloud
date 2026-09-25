@@ -32,11 +32,15 @@ WebVirtCloud is a virtualization web interface for admins and users. It can dele
 
 ## Quick Install with Installer (Beta)
 
-Install an OS and run specified commands. Installer supported OSes: Ubuntu 20.04/22.04, Debian 10/11, Rocky/Alma/OEL/RHEL 10.
+Install an OS and run specified commands. Installer supported OSes: Ubuntu 20.04/22.04/24.04, Debian 10/11/12, Rocky/Alma/OEL/RHEL 10.
 It can be installed on a virtual machine, physical host or on a KVM host.
 
 ```bash
-wget https://raw.githubusercontent.com/retspen/webvirtcloud/master/install.sh
+# Using curl:
+curl -fsSL -O https://raw.githubusercontent.com/retspen/webvirtcloud/master/install.sh
+# Or using wget:
+# wget https://raw.githubusercontent.com/retspen/webvirtcloud/master/install.sh
+
 chmod 744 install.sh
 # run with sudo or root user
 ./install.sh
@@ -48,16 +52,14 @@ chmod 744 install.sh
 
 You should generate SECRET_KEY after cloning repository. Then put it into webvirtcloud/settings.py.
 
-```python3
-import random, string
-haystack = string.ascii_letters + string.digits + string.punctuation
-print(''.join([random.SystemRandom().choice(haystack) for _ in range(50)]))
+```bash
+python3 -c 'import secrets; print(secrets.token_urlsafe(50))'
 ```
 
 ### Install WebVirtCloud panel (Ubuntu 18.04+ LTS)
 
 ```bash
-sudo apt-get -y install git virtualenv python3-virtualenv python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs libsasl2-dev libldap2-dev libssl-dev
+sudo apt-get -y install git python3-venv python3-virtualenv python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs libsasl2-dev libldap2-dev libssl-dev
 git clone https://github.com/retspen/webvirtcloud
 cd webvirtcloud
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
