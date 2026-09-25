@@ -30,6 +30,12 @@ urlpatterns = [
     ),
     path("ssh_key/create/", views.ssh_key_create, name="ssh_key_create"),
     path("ssh_key/<int:pk>/delete/", views.ssh_key_delete, name="ssh_key_delete"),
+    path("email_otp/", views.email_otp, name="email_otp"),
+    path(
+        "admin_email_otp/<int:user_id>/",
+        views.admin_email_otp,
+        name="admin_email_otp",
+    ),
 ]
 
 if settings.OTP_ENABLED:
@@ -41,12 +47,6 @@ if settings.OTP_ENABLED:
                 authentication_form=OTPAuthenticationForm,
             ),
             name="login",
-        ),
-        path("email_otp/", views.email_otp, name="email_otp"),
-        path(
-            "admin_email_otp/<int:user_id>/",
-            views.admin_email_otp,
-            name="admin_email_otp",
         ),
     ]
 else:

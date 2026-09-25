@@ -27,18 +27,20 @@ RUN apt-get update -qqy \
 	libsasl2-modules \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY . /srv/webvirtcloud
-RUN chown -R www-data:www-data /srv/webvirtcloud
-
 # Setup webvirtcloud
 WORKDIR /srv/webvirtcloud
+
+# Install Python dependencies first to leverage Docker layer caching
+COPY conf/requirements.txt conf/requirements.txt
 RUN python3 -m venv venv && \
 	. venv/bin/activate && \
 	pip3 install -U pip && \
 	pip3 install wheel && \
 	pip3 install -r conf/requirements.txt && \
-	pip3 cache purge && \
-	chown -R www-data:www-data /srv/webvirtcloud
+	pip3 cache purge
+
+# Copy application source
+COPY . /srv/webvirtcloud
 
 RUN . venv/bin/activate && \
 	python3 manage.py makemigrations && \

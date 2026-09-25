@@ -7,12 +7,12 @@ django-qr-code==4.2.0
 django-auth-ldap==5.2.0
 djangorestframework==3.16.0
 drf-nested-routers==0.94.2
-drf-yasg==1.21.10
+drf-spectacular[sidecar]==0.28.0
 eventlet==0.40.1
 gunicorn==23.0.0
 libsass==0.23.0
-libvirt-python==11.4.0
-lxml==6.0.0
+libvirt-python>=11.0.0
+lxml>=5.2.0
 ldap3==2.9.1
 markdown==3.8.2
 paramiko==3.4.0
@@ -20,9 +20,8 @@ paramiko==3.4.0
 python-engineio==4.12.0
 python-socketio==5.13.0
 qrcode==8.2
-rwlock==0.0.7
 tzdata
 websockify==0.13.0
 whitenoise==6.9.0
 zipp==3.23.0
-crypt-r==3.13.1
+crypt-r>=3.13.0; python_version >= "3.13"

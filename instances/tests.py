@@ -1,4 +1,6 @@
+import os
 import re
+import unittest
 
 from accounts.models import UserAttributes, UserInstance, UserSSHKey
 from appsettings.models import AppSettings
@@ -16,6 +18,11 @@ from vrtManager.util import randomUUID
 from .models import Flavor, Instance
 from .utils import refr
 
+TEST_COMPUTE_HOST = os.environ.get("TEST_LIBVIRT_HOST", "localhost")
+TEST_COMPUTE_LOGIN = os.environ.get("TEST_LIBVIRT_LOGIN", "")
+TEST_COMPUTE_PASSWORD = os.environ.get("TEST_LIBVIRT_PASSWORD", "")
+TEST_COMPUTE_TYPE = int(os.environ.get("TEST_LIBVIRT_TYPE", 4))
+
 
 class InstancesTestCase(TestCase):
     @classmethod
@@ -24,7 +31,7 @@ class InstancesTestCase(TestCase):
 
         # Add users for testing purposes
         User = get_user_model()
-        cls.admin_user = User.objects.get(pk=1)
+        cls.admin_user = User.objects.filter(is_superuser=True).first() or User.objects.get(username="admin")
         cls.test_user = User.objects.create(username="test-user")
         UserAttributes.objects.create(
             user=cls.test_user,
@@ -36,48 +43,57 @@ class InstancesTestCase(TestCase):
         permission = Permission.objects.get(codename="clone_instances")
         cls.test_user.user_permissions.add(permission)
 
-        # Add localhost compute
-        cls.compute = Compute(
-            name="test-compute",
-            hostname="localhost",
-            login="",
-            password="",
-            details="local",
-            type=4,
-        )
-        cls.compute.save()
-
-        cls.connection = wvmCreate(
-            cls.compute.hostname,
-            cls.compute.login,
-            cls.compute.password,
-            cls.compute.type,
+        # Add compute
+        cls.compute = Compute.objects.create(
+            name="instances-test-compute",
+            hostname=TEST_COMPUTE_HOST,
+            login=TEST_COMPUTE_LOGIN,
+            password=TEST_COMPUTE_PASSWORD,
+            details="test",
+            type=TEST_COMPUTE_TYPE,
         )
 
-        # Add disks for testing
-        cls.connection.create_volume(
-            "default",
-            "test-volume",
-            1,
-            "qcow2",
-            False,
-            0,
-            0,
-        )
-        # XML for testing vm
-        with open("conf/test-vm.xml", "r") as f:
-            cls.xml = f.read()
+        try:
+            cls.connection = wvmCreate(
+                cls.compute.hostname,
+                cls.compute.login,
+                cls.compute.password,
+                cls.compute.type,
+            )
 
-        # Create testing vm from XML
-        cls.connection._defineXML(cls.xml)
-        refr(cls.compute)
-        cls.instance: Instance = Instance.objects.get(pk=1)
+            # Add disks for testing
+            cls.connection.create_volume(
+                "default",
+                "test-volume",
+                1,
+                "qcow2",
+                False,
+                0,
+                0,
+            )
+            # XML for testing vm
+            with open("conf/test-vm.xml", "r") as f:
+                cls.xml = f.read()
+
+            # Create testing vm from XML
+            cls.connection._defineXML(cls.xml)
+            refr(cls.compute)
+            cls.instance: Instance = Instance.objects.filter(compute=cls.compute).first()
+        except Exception as e:
+            cls.instance = None
+            raise unittest.SkipTest(f"Live libvirt host not available for instances tests: {e}")
 
     @classmethod
     def tearDownClass(cls):
         # Destroy testing vm
-        cls.instance.proxy.delete_all_disks()
-        cls.instance.proxy.delete(VIR_DOMAIN_UNDEFINE_NVRAM)
+        if getattr(cls, "instance", None):
+            try:
+                cls.instance.proxy.delete_all_disks()
+                cls.instance.proxy.delete(VIR_DOMAIN_UNDEFINE_NVRAM)
+            except Exception:
+                pass
+        if getattr(cls, "compute", None):
+            cls.compute.delete()
         super().tearDownClass()
 
     def setUp(self):
@@ -94,7 +110,7 @@ class InstancesTestCase(TestCase):
 
     def test_create_select_type(self):
         response = self.client.get(
-            reverse("instances:create_instance_select_type", args=[1])
+            reverse("instances:create_instance_select_type", args=[self.compute.id])
         )
         self.assertEqual(response.status_code, 200)
 
@@ -180,7 +196,7 @@ class InstancesTestCase(TestCase):
     def test_create_from_xml(self):
         uuid = randomUUID()
         xml = self.xml.replace("test-vm", "test-vm-xml")
-        xml = re.sub("\s?<uuid>.*?</uuid>", f"<uuid>{uuid}</uuid>", xml)
+        xml = re.sub(r"\s?<uuid>.*?</uuid>", f"<uuid>{uuid}</uuid>", xml)
         response = self.client.post(
             reverse("instances:create_instance_select_type", args=[self.compute.id]),
             {

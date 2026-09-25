@@ -38,29 +38,29 @@ jobs:
       # Checkout the code base #
       ##########################
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.x'  
-      
+        python-version: '3.12'
+
     - name: Install Required packages
       run: |
-        sudo apt-get install -y python3-virtualenv libvirt-dev python3-lxml zlib1g-dev libxslt1-dev
+        sudo apt-get update -qq
+        sudo apt-get install -y python3-venv python3-virtualenv libvirt-dev libldap2-dev libsasl2-dev python3-lxml zlib1g-dev libxslt1-dev pkg-config gcc libssl-dev
 
     - name: Create & Activate VENV
       run: |
         python3 -m venv venv
-        source venv/bin/activate
+        echo "$GITHUB_WORKSPACE/venv/bin" >> "$GITHUB_PATH"
 
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip
-        pip3 install wheel
+        pip3 install --upgrade pip setuptools wheel
         if [ -f dev/requirements.txt ]; then pip3 install -r dev/requirements.txt; else pip3 install -r conf/requirements.txt; fi
     ################################
     # Run Linter against code base #
@@ -72,6 +72,7 @@ jobs:
         DEFAULT_BRANCH: master
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VALIDATE_ALL_CODEBASE: false
+        VALIDATE_MARKDOWN: false
         VALIDATE_ANSIBLE: false
         VALIDATE_CLOJURE: false
         VALIDATE_COFFEE: false

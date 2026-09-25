@@ -16,10 +16,10 @@ def addlogmsg(user, host, instance, message):
     :param message:
     :return:
     """
-    add_log_msg = Logs(user=user, host=host, instance=instance, message=message)
+    add_log_msg = Logs(user=user, host=host, instance=instance, message=str(message))
     add_log_msg.save()
     logger = logging.getLogger("")
-    logger.info(user + " " + host+ " " +  instance+ " " +  message)
+    logger.info(f"{user} {host} {instance} {message}")
 
 
 @superuser_only

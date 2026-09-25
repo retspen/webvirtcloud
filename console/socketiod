@@ -39,42 +39,43 @@ import libvirt
 from http import cookies as Cookie
 from webvirtcloud.settings import SOCKETIO_PORT, SOCKETIO_HOST
 from vrtManager.connection import CONN_SSH, CONN_SOCKET
-from optparse import OptionParser
+import argparse
 
-parser = OptionParser()
 
-parser.add_option(
-    "-v",
-    "--verbose",
-    dest="verbose",
-    action="store_true",
-    help="Verbose mode",
-    default=False,
-)
+def get_parser(default_host=SOCKETIO_HOST, default_port=SOCKETIO_PORT or 6081):
+    parser = argparse.ArgumentParser(description="WebVirtCloud Socket.IO daemon")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Verbose mode",
+        default=False,
+    )
+    parser.add_argument(
+        "-d", "--debug", dest="debug", action="store_true", help="Debug mode", default=False
+    )
+    parser.add_argument(
+        "-H",
+        "--host",
+        dest="host",
+        action="store",
+        help="Listen host",
+        default=default_host,
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        dest="port",
+        action="store",
+        type=int,
+        help="Listen port",
+        default=default_port,
+    )
+    return parser
 
-parser.add_option(
-    "-d", "--debug", dest="debug", action="store_true", help="Debug mode", default=False
-)
 
-parser.add_option(
-    "-H",
-    "--host",
-    dest="host",
-    action="store",
-    help="Listen host",
-    default=SOCKETIO_HOST,
-)
-
-parser.add_option(
-    "-p",
-    "--port",
-    dest="port",
-    action="store",
-    help="Listen port",
-    default=SOCKETIO_PORT or 6081,
-)
-
-(options, args) = parser.parse_args()
+options = get_parser().parse_args()
 
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
 if options.debug:

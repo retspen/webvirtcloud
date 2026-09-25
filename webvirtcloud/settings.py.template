@@ -3,9 +3,14 @@ Django settings for webvirtcloud project.
 
 """
 
-import ldap
+import os
 import subprocess
-from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType
+try:
+    import ldap
+    from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType
+    HAS_LDAP = True
+except ImportError:
+    HAS_LDAP = False
 from django.utils.translation import gettext_lazy as _
 from pathlib import Path
 
@@ -20,7 +25,12 @@ MAC_OUI = '52:54:10'
 
 ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost',]
+CSRF_TRUSTED_ORIGINS = ["http://localhost", "http://127.0.0.1", "http://localhost:8000", "http://127.0.0.1:8000"]
+if extra_origins := os.getenv("CSRF_TRUSTED_ORIGINS"):
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in extra_origins.split(",") if origin.strip()])
+
+# Honor X-Forwarded-Proto header for request.is_secure() when behind a reverse proxy (Nginx, Traefik, etc.)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 INSTALLED_APPS = [
@@ -33,7 +43,8 @@ INSTALLED_APPS = [
     "django_bootstrap_icons",
     "django_otp",
     "django_otp.plugins.otp_totp",
-    "drf_yasg",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "accounts",
     "admin",
     "appsettings",
@@ -269,6 +280,21 @@ OTP_ENABLED = False
 
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:login", "accounts:email_otp"]
 
+# REST Framework & OpenAPI (drf-spectacular)
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Webvirtcloud REST-API",
+    "DESCRIPTION": "Webvirtcloud REST API",
+    "VERSION": "v1",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+}
+
 # EMAIL Config
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -282,23 +308,24 @@ EMAIL_HOST_PASSWORD = ''
 # LDAP Config
 #
 
-AUTH_LDAP_SERVER_URI = "ldap://example.com"
-AUTH_LDAP_BIND_DN = "username@example.com"
-AUTH_LDAP_BIND_PASSWORD = "password"
-AUTH_LDAP_USER_SEARCH = LDAPSearch(
-    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(sAMAccountName=%(user)s)"
-)
-AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=group)"
-)
-AUTH_LDAP_GROUP_TYPE = NestedActiveDirectoryGroupType()
-AUTH_LDAP_REQUIRE_GROUP = "CN=WebVirtCloud Access,CN=Users,DC=example,DC=com"
-AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-    "is_staff": "CN=WebVirtCloud Staff,CN=Users,DC=example,DC=com",
-    "is_superuser": "CN=WebVirtCloud Admins,CN=Users,DC=example,DC=com",
-}
-AUTH_LDAP_USER_ATTR_MAP = {
-    "first_name": "givenName",
-    "last_name": "sn",
-    "email": "mail",
-}
+if HAS_LDAP:
+    AUTH_LDAP_SERVER_URI = "ldap://example.com"
+    AUTH_LDAP_BIND_DN = "username@example.com"
+    AUTH_LDAP_BIND_PASSWORD = "password"
+    AUTH_LDAP_USER_SEARCH = LDAPSearch(
+        "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(sAMAccountName=%(user)s)"
+    )
+    AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+        "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=group)"
+    )
+    AUTH_LDAP_GROUP_TYPE = NestedActiveDirectoryGroupType()
+    AUTH_LDAP_REQUIRE_GROUP = "CN=WebVirtCloud Access,CN=Users,DC=example,DC=com"
+    AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+        "is_staff": "CN=WebVirtCloud Staff,CN=Users,DC=example,DC=com",
+        "is_superuser": "CN=WebVirtCloud Admins,CN=Users,DC=example,DC=com",
+    }
+    AUTH_LDAP_USER_ATTR_MAP = {
+        "first_name": "givenName",
+        "last_name": "sn",
+        "email": "mail",
+    }

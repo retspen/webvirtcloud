@@ -7,7 +7,7 @@ env:
 install:
   - pip install -r dev/requirements.txt
 script:
-  - pep8 --exclude=IPy.py --ignore=E501 vrtManager accounts admin appsettings \
+  - pep8 --ignore=E501 vrtManager accounts admin appsettings \
                                         computesconsole create datasource instances \
                                         interfaceslogs networks nwfilters storages \
                                         virtsecrets

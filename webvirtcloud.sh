@@ -67,7 +67,7 @@ fi
 clear
 
 readonly APP_USER="wvcuser"
-readonly APP_REPO_URL="https://github.com/retspen/webvirtcloud.git"
+readonly APP_REPO_URL="${APP_REPO_URL:-https://github.com/retspen/webvirtcloud.git}"
 readonly APP_NAME="webvirtcloud"
 readonly APP_PATH="/srv/$APP_NAME"
 
@@ -89,11 +89,24 @@ progress () {
   echo ""
 }
 
+# shellcheck disable=SC2294
 log () {
   if [ -n "$verbose" ]; then
     eval "$@" |& tee -a /var/log/webvirtcloud-install.log
   else
     eval "$@" |& tee -a /var/log/webvirtcloud-install.log >/dev/null 2>&1
+  fi
+}
+
+get_timezone () {
+  if [ -f /etc/timezone ]; then
+    cat /etc/timezone
+  elif command -v timedatectl >/dev/null 2>&1 && timedatectl 2>/dev/null | grep -q "Time zone"; then
+    timedatectl | grep "Time zone" | awk '{print $3}'
+  elif [ -L /etc/localtime ]; then
+    readlink /etc/localtime | sed -n 's#.*/zoneinfo/##p'
+  else
+    echo "UTC"
   fi
 }
 
@@ -236,23 +249,21 @@ check_python () {
 
 activate_python_environment () {
     cd "$APP_PATH" || exit
-    # Check if virtualenv is installed
-    if ! "$PYTHON" -c 'import virtualenv' >/dev/null 2>&1; then
-      echo "Virtualenv is not installed. Please install virtualenv and try again."
+    echo "* Creating virtual environment in $APP_PATH/venv"
+    if "$PYTHON" -m venv --help >/dev/null 2>&1; then
+      "$PYTHON" -m venv --system-site-packages venv
+    elif command -v virtualenv >/dev/null 2>&1; then
+      virtualenv -p "$PYTHON" --system-site-packages venv
+    else
+      echo "Neither python3 -m venv nor virtualenv is installed. Please install python3-venv or virtualenv."
       exit 1
     fi
-    # Create a virtual environment
-    echo "* Creating virtual environment in $APP_PATH/venv"
-    virtualenv -p "$PYTHON" venv
     # shellcheck disable=SC1091
     source venv/bin/activate
 }
 
 generate_secret_key() {
-  "$PYTHON" - <<END
-import random
-print(''.join(random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))
-END
+  "$PYTHON" -c 'import secrets; print(secrets.token_urlsafe(50))'
 }
 
 
@@ -285,7 +296,7 @@ install_webvirtcloud () {
   for i in $(hostname -I); do
     host_ip+="'http://$i', " 
   done
-  sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" /srv/webvirtcloud/webvirtcloud/settings.py
+  sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" "$APP_PATH/webvirtcloud/settings.py"
 
   echo "* Checking up Python3 version."
   check_python
@@ -297,21 +308,14 @@ install_webvirtcloud () {
   pip3 install -U pip
   pip3 install -r conf/requirements.txt -q
 
-  
-
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 
-  
   echo "* Django Migrate."
   log "$PYTHON $APP_PATH/manage.py migrate"
-  $PYTHON $APP_PATH/manage.py makemigrations
-  $PYTHON $APP_PATH/manage.py migrate
-  
-  
+
   echo "* Django Collect Static"
   log "$PYTHON $APP_PATH/manage.py collectstatic --noinput"
-  $PYTHON $APP_PATH/manage.py collectstatic --noinput
-  
+
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 }
 
@@ -360,19 +364,23 @@ restart_nginx () {
 }
 
 
-if [[ -f /etc/lsb-release || -f /etc/debian_version ]]; then
-  distro="$(lsb_release -is)"
-  version="$(lsb_release -rs)"
-  codename="$(lsb_release -cs)"
-elif [ -f /etc/os-release ]; then
+if [ -f /etc/os-release ]; then
   # shellcheck disable=SC1091
   distro="$(source /etc/os-release && echo "$ID")"
   # shellcheck disable=SC1091
   version="$(source /etc/os-release && echo "$VERSION_ID")"
-  #Order is important here.  If /etc/os-release and /etc/centos-release exist, we're on centos 7.
-  #If only /etc/centos-release exist, we're on centos6(or earlier).  Centos-release is less parsable,
-  #so lets assume that it's version 6 (Plus, who would be doing a new install of anything on centos5 at this point..)
-  #/etc/os-release properly detects fedora
+  # shellcheck disable=SC1091
+  codename="$(source /etc/os-release && echo "${VERSION_CODENAME:-$UBUNTU_CODENAME}")"
+elif [[ -f /etc/lsb-release || -f /etc/debian_version ]]; then
+  if command -v lsb_release >/dev/null 2>&1; then
+    distro="$(lsb_release -is)"
+    version="$(lsb_release -rs)"
+    codename="$(lsb_release -cs)"
+  elif [ -f /etc/debian_version ]; then
+    distro="debian"
+    version="$(cat /etc/debian_version)"
+    codename=""
+  fi
 elif [ -f /etc/centos-release ]; then
   distro="centos"
   version="8"
@@ -395,7 +403,7 @@ case $distro in
     distro=ubuntu
     nginx_group=www-data
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    supervisor_service=supervisord
+    supervisor_service=supervisor
     supervisor_conf_path=/etc/supervisor/conf.d
     supervisor_file_name=webvirtcloud.conf
     ;;
@@ -466,7 +474,7 @@ until [[ $setupfqdn == "yes" ]] || [[ $setupfqdn == "no" ]]; do
       read -r fqdn_from_user
       setupfqdn="yes"
 
-      if [ ! -z $fqdn_from_user ]; then
+      if [ -n "$fqdn_from_user" ]; then
         fqdn=$fqdn_from_user
       fi
 
@@ -510,16 +518,17 @@ echo "distro: ${distro}"
 echo "========="
 case $distro in
   debian)
-  if [[ "$version" -ge 9 ]]; then
-    # Install for Debian 9.x / 10.x / 12.x
-    tzone=\'$(cat /etc/timezone)\'
+  debian_major="${version%%.*}"
+  if [[ -n "$debian_major" && "$debian_major" -ge 9 ]]; then
+    # Install for Debian 9.x / 10.x / 11.x / 12.x
+    tzone=\'$(get_timezone)\'
 
     echo -n "* Updating installed packages."
     log "apt-get update && apt-get -y upgrade" & pid=$!
     progress
 
     echo "*  Installing OS requirements."
-    PACKAGES="git virtualenv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev libsasl2-dev libldap2-dev nginx smbios-utils libsasl2-modules gcc pkg-config python3-guestfs uuid"
+    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev libsasl2-dev libldap2-dev nginx supervisor smbios-utils libsasl2-modules gcc pkg-config python3-guestfs uuid"
     
     install_packages
     
@@ -531,24 +540,26 @@ case $distro in
     configure_nginx
 
     echo "* Configuring Supervisor."
-    log "pip install supervisor "
     configure_supervisor
 
     restart_supervisor
     restart_nginx
+  else
+    echo "Unsupported Debian version. Version found: $version"
+    exit 1
   fi
   ;;
   ubuntu)
-  if [ "$version" == "18.04" ] || [ "$version" == "20.04" ] || [ "$version" == "22.04" ] || [ "$version" == "24.04" ]; then
+  if [[ "$version" =~ ^(18|20|22|24) ]]; then
     # Install for Ubuntu 18 / 20 / 22 / 24
-    tzone=\'$(cat /etc/timezone)\'
+    tzone=\'$(get_timezone)\'
 
     echo -n "* Updating installed packages."
     log "apt-get update && apt-get -y upgrade" & pid=$!
     progress
 
     echo "*  Installing OS requirements."
-    PACKAGES="git virtualenv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev libsasl2-dev libldap2-dev nginx libsasl2-modules gcc pkg-config python3-guestfs"
+    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev libsasl2-dev libldap2-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs"
     install_packages
 
     set_hosts
@@ -559,12 +570,13 @@ case $distro in
     configure_nginx
 
     echo "* Configuring Supervisor."
-    log "pip install supervisor "
     configure_supervisor
 
     restart_supervisor
     restart_nginx
-
+  else
+    echo "Unsupported Ubuntu version. Version found: $version"
+    exit 1
   fi  
   ;;
   centos)
@@ -584,7 +596,7 @@ case $distro in
     log "yum -y install wget epel-release supervisor"
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel libvirt-devel glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openldap-devel"
+    PACKAGES="git python3-virtualenv python3-devel libvirt-devel python3-libvirt python3-ldap glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openldap-devel cyrus-sasl-devel openssl-devel"
     install_packages
 
     set_hosts
@@ -680,7 +692,9 @@ echo "  ***Open http://$fqdn to login to webvirtcloud.***"
 echo ""
 echo ""
 echo "* Cleaning up..."
-rm -f webvirtcloud.sh
-rm -f install.sh
+if [ ! -d .git ]; then
+  rm -f webvirtcloud.sh
+  rm -f install.sh
+fi
 echo "* Finished!"
 sleep 1
