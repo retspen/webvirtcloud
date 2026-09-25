@@ -1,0 +1,28 @@
+services:
+  webvirtcloud:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: webvirtcloud:latest
+    container_name: webvirtcloud
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "6080:6080"
+    environment:
+      # Optional: custom Django secret key. If unset, automatically generated at first launch.
+      # - SECRET_KEY=your-custom-secret-key-here
+      # Optional: comma-separated trusted CSRF origins (e.g. http://wvc.example.com,https://wvc.example.com)
+      # - CSRF_TRUSTED_ORIGINS=http://localhost,http://127.0.0.1
+      - TZ=UTC
+    volumes:
+      # Persistent SQLite database and runtime data
+      - webvirtcloud-data:/srv/webvirtcloud/data
+      # Persistent SSH keys for compute node authentication
+      - webvirtcloud-ssh:/var/www/.ssh
+
+volumes:
+  webvirtcloud-data:
+    driver: local
+  webvirtcloud-ssh:
+    driver: local

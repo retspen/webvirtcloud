@@ -38,6 +38,21 @@ chmod 744 install.sh
 ./install.sh
 ```
 
+## Docker Deployment (Docker Compose)
+
+Run WebVirtCloud in a container with persistent volumes for data and SSH keys:
+
+```bash
+# 1. Clone repository:
+git clone https://github.com/retspen/webvirtcloud
+cd webvirtcloud
+
+# 2. Start services:
+docker compose up -d
+```
+
+Access the panel at `http://<server-ip>` and noVNC console at port `6080`.
+
 ## Manual Installation
 
 ### Generate secret key

@@ -21,6 +21,7 @@
 **/*.log
 **/console/cert.pem*
 **/dhcpd.*
+webvirtcloud/settings.py
 
 # IDEs and OS
 **/.idea
