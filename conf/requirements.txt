@@ -11,8 +11,8 @@ drf-spectacular[sidecar]==0.28.0
 eventlet==0.40.1
 gunicorn==23.0.0
 libsass==0.23.0
-libvirt-python>=11.0.0
-lxml>=5.2.0
+libvirt-python>=9.0.0
+lxml>=4.9.0
 ldap3==2.9.1
 markdown==3.8.2
 paramiko==3.4.0

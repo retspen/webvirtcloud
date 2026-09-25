@@ -285,8 +285,12 @@ generate_secret_key() {
 install_webvirtcloud () {
   create_user
  
-  echo "* Cloning $APP_NAME from github to the web directory."
-  log "git clone $APP_REPO_URL $APP_PATH"
+  if [ ! -d "$APP_PATH/.git" ]; then
+    echo "* Cloning $APP_NAME from github to the web directory."
+    log "git clone $APP_REPO_URL $APP_PATH"
+  else
+    echo "* $APP_NAME already present in $APP_PATH."
+  fi
 
   echo "* Configuring settings.py file."
   cp "$APP_PATH/webvirtcloud/settings.py.template" "$APP_PATH/webvirtcloud/settings.py"
@@ -308,9 +312,11 @@ install_webvirtcloud () {
 
   # set CSRF TRUSTED ORIGINS
   host_ip="'http://127.0.0.1', "
-  for i in $(hostname -I); do
-    host_ip+="'http://$i', " 
-  done
+  if command -v hostname >/dev/null 2>&1; then
+    for i in $(hostname -I 2>/dev/null); do
+      host_ip+="'http://$i', " 
+    done
+  fi
   sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" "$APP_PATH/webvirtcloud/settings.py"
 
   echo "* Checking up Python3 version."
@@ -359,7 +365,9 @@ set_selinux () {
 
 set_hosts () {
   echo "* Setting up hosts file."
-  echo >> /etc/hosts "127.0.0.1 $(hostname) $fqdn"
+  local hname
+  hname="$(hostname 2>/dev/null || uname -n)"
+  echo >> /etc/hosts "127.0.0.1 $hname $fqdn"
 }
 
 restart_supervisor () {
@@ -734,8 +742,23 @@ case $distro in
     progress
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml openldap2-devel cyrus-sasl-devel libopenssl-devel libxslt-devel libxml2-devel gcc pkg-config nginx"
+    # On SUSE, install Python 3.11 stack to satisfy Python >= 3.10 requirement along with native libvirt and ldap bindings
+    if zypper se -s python311-devel >/dev/null 2>&1; then
+      PACKAGES="git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml python311-ldap libvirt-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx"
+    else
+      PACKAGES="git hostname python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml openldap2-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx"
+    fi
     install_packages
+
+    # Ensure python3 and pip3 point to python 3.11+ if installed
+    if command -v python3.11 >/dev/null 2>&1; then
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 2>/dev/null || true
+      ln -sf /usr/bin/python3.11 /usr/bin/python3
+      if command -v pip3.11 >/dev/null 2>&1; then
+        update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 1 2>/dev/null || true
+        ln -sf /usr/bin/pip3.11 /usr/bin/pip3
+      fi
+    fi
 
     set_hosts
 
