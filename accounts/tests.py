@@ -6,9 +6,7 @@ from django.contrib.auth.models import Permission
 from django.shortcuts import reverse
 from django.test import Client, TestCase
 from instances.models import Instance
-from instances.utils import refr
-from libvirt import VIR_DOMAIN_UNDEFINE_NVRAM
-from vrtManager.create import wvmCreate
+
 
 from accounts.forms import UserInstanceForm, UserSSHKeyForm
 from accounts.models import UserInstance, UserSSHKey
@@ -25,49 +23,26 @@ class AccountsTestCase(TestCase):
         cls.admin_user = User.objects.get(pk=1)
         cls.test_user = User.objects.create_user(username="test", password="test")
 
-        # Add localhost compute
-        cls.compute = Compute(
-            name="test-compute",
+        # Add compute
+        cls.compute = Compute.objects.create(
+            name="accounts-test-compute",
             hostname="localhost",
             login="",
             password="",
             details="local",
             type=4,
         )
-        cls.compute.save()
-
-        cls.connection = wvmCreate(
-            cls.compute.hostname,
-            cls.compute.login,
-            cls.compute.password,
-            cls.compute.type,
+        cls.instance = Instance.objects.create(
+            compute=cls.compute,
+            name="test-vm",
         )
-
-        # Add disks for testing
-        cls.connection.create_volume(
-            "default",
-            "test-volume",
-            1,
-            "qcow2",
-            False,
-            0,
-            0,
-        )
-
-        # XML for testing vm
-        with open("conf/test-vm.xml", "r") as f:
-            cls.xml = f.read()
-
-        # Create testing vm from XML
-        cls.connection._defineXML(cls.xml)
-        refr(cls.compute)
-        cls.instance = Instance.objects.get(pk=1)
 
     @classmethod
     def tearDownClass(cls):
-        # Destroy testing vm
-        cls.instance.proxy.delete_all_disks()
-        cls.instance.proxy.delete(VIR_DOMAIN_UNDEFINE_NVRAM)
+        if getattr(cls, "instance", None):
+            cls.instance.delete()
+        if getattr(cls, "compute", None):
+            cls.compute.delete()
         super().tearDownClass()
 
     def setUp(self):
@@ -99,7 +74,7 @@ class AccountsTestCase(TestCase):
         response = client.post(
             reverse("accounts:login"), {"username": "test", "password": "test"}
         )
-        self.assertRedirects(response, reverse("accounts:profile"))
+        self.assertRedirects(response, settings.LOGIN_REDIRECT_URL)
 
         response = client.get(reverse("accounts:logout"))
         self.assertRedirects(response, reverse("accounts:login"))
@@ -156,7 +131,9 @@ class AccountsTestCase(TestCase):
             response, reverse("accounts:account", args=[self.test_user.id])
         )
 
-        user_instance: UserInstance = UserInstance.objects.get(pk=1)
+        user_instance: UserInstance = UserInstance.objects.get(
+            user=self.test_user, instance=self.instance
+        )
         self.assertEqual(user_instance.user, self.test_user)
         self.assertEqual(user_instance.instance, self.instance)
         self.assertEqual(user_instance.is_change, False)
@@ -183,7 +160,9 @@ class AccountsTestCase(TestCase):
             response, reverse("accounts:account", args=[self.test_user.id])
         )
 
-        user_instance: UserInstance = UserInstance.objects.get(pk=1)
+        user_instance = UserInstance.objects.get(
+            user=self.test_user, instance=self.instance
+        )
         self.assertEqual(user_instance.user, self.test_user)
         self.assertEqual(user_instance.instance, self.instance)
         self.assertEqual(user_instance.is_change, True)
@@ -250,14 +229,14 @@ class AccountsTestCase(TestCase):
         )
         self.assertRedirects(response, reverse("accounts:profile"))
 
-        key = UserSSHKey.objects.get(pk=1)
+        key = UserSSHKey.objects.get(keyname="keyname")
         self.assertEqual(key.keyname, "keyname")
         self.assertEqual(key.keypublic, self.rsa_key)
 
-        response = self.client.get(reverse("accounts:ssh_key_delete", args=[1]))
+        response = self.client.get(reverse("accounts:ssh_key_delete", args=[key.id]))
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.post(reverse("accounts:ssh_key_delete", args=[1]))
+        response = self.client.post(reverse("accounts:ssh_key_delete", args=[key.id]))
         self.assertRedirects(response, reverse("accounts:profile"))
 
     def test_validate_ssh_key(self):

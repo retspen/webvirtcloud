@@ -140,7 +140,7 @@ def network(request, compute_id, pool):
         xml = conn._XMLDesc(0)
     except libvirtError as lib_err:
         messages.error(request, lib_err)
-        return HttpResponseRedirect(reverse("networks", args=compute_id))
+        return HttpResponseRedirect(reverse("networks", args=[compute_id]))
 
     if request.method == "POST":
         if "start" in request.POST:
