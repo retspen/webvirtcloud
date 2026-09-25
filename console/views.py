@@ -1,23 +1,21 @@
+# pylint: disable=no-name-in-module,no-member
 import re
-
-from vrtManager.util import randomUUID
-
-from django.http.response import HttpResponseServerError
-from django.shortcuts import render
-from django.utils.translation import gettext_lazy as _
-from libvirt import libvirtError
 
 from accounts.models import UserInstance
 from appsettings.settings import app_settings
+from django.http.response import HttpResponseServerError
+from django.shortcuts import render
+from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
+from libvirt import libvirtError
 from vrtManager.instance import wvmInstance
 from webvirtcloud.settings import (
+    SOCKETIO_PUBLIC_HOST,
+    SOCKETIO_PUBLIC_PATH,
+    SOCKETIO_PUBLIC_PORT,
     WS_PUBLIC_HOST,
     WS_PUBLIC_PATH,
     WS_PUBLIC_PORT,
-    SOCKETIO_PUBLIC_HOST,
-    SOCKETIO_PUBLIC_PORT,
-    SOCKETIO_PUBLIC_PATH,
 )
 
 
