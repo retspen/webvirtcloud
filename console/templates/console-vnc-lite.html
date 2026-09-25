@@ -194,7 +194,15 @@
     if (port) {
         url += ':' + port;
     }
-    url += '/' + path;
+    if (path) {
+        url += path.startsWith('/') ? path : ('/' + path);
+    } else {
+        url += '/';
+    }
+    const token = readQueryVariable('token', '{{ token }}');
+    if (token) {
+        url += (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
+    }
 
     // Creating a new RFB object will start a new connection
     rfb = new RFB(document.getElementById('noVNC_container'), url,

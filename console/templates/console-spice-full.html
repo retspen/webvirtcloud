@@ -61,8 +61,8 @@
             sc.stop();
         }
 
-        // uri = scheme + host + ":" + port;
-        uri = scheme + "{{ ws_host }}:{{ ws_port }}{{ ws_path }}";
+        var path = '{{ ws_path }}';
+        uri = scheme + "{{ ws_host }}:{{ ws_port }}" + (path ? (path[0] == '/' ? path : ('/' + path)) : '/');
 
         document.getElementById('connectButton').innerHTML = "Stop";
         document.getElementById('connectButton').onclick = disconnect;

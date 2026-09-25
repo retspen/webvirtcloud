@@ -1,38 +1,30 @@
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/retspen/webvirtcloud)
 
 # WebVirtCloud
-###### Python >=3.11 & Django 4.2 LTS
+###### Python >=3.10 & Django 4.2 LTS (tested on Python 3.10 – 3.12)
+
+## Description
+
+WebVirtCloud is a virtualization web interface for administrators and users. It allows delegating virtual machines to users with role-based permissions. A built-in noVNC / SPICE console presents a full graphical interface to the guest domain. KVM is currently the supported hypervisor.
 
 ## Features
 * QEMU/KVM Hypervisor Management
 * QEMU/KVM Instance Management - Create, Delete, Update
-* Hypervisor & Instance web based stats
-* Manage Multiple QEMU/KVM Hypervisor
-* Manage Hypervisor Datastore pools
-* Manage Hypervisor Networks
-* Instance Console Access with Browsers
-* Libvirt API based web management UI
-* User Based Authorization and Authentication
-* User can add SSH public key to root in Instance (Tested only Ubuntu)
-* User can change root password in Instance (Tested only Ubuntu)
+* Hypervisor & Instance web-based real-time stats
+* Manage Multiple QEMU/KVM Hypervisors
+* Manage Hypervisor Datastore pools and storage volumes
+* Manage Hypervisor Networks and interfaces
+* Instance Console Access with Web Browsers (noVNC & SPICE)
+* Libvirt API-based web management UI
+* User-based Authorization, Authentication, and 2FA (OTP)
+* User can add SSH public key to root in Instance
+* User can change root password in Instance
 * Supports cloud-init datasource interface
-
-### Warning!!!
-
-How to update <code>gstfsd</code> daemon on hypervisor:
-
-```bash
-wget -O - https://bit.ly/2NAaWXG | sudo tee -a /usr/local/bin/gstfsd
-sudo service supervisor restart
-```
-
-## Description
-
-WebVirtCloud is a virtualization web interface for admins and users. It can delegate Virtual Machine's to users. A noVNC viewer presents a full graphical console to the guest domain.  KVM is currently the only hypervisor supported.
+* REST API with OpenAPI 3.0 (Swagger & ReDoc) documentation
 
 ## Quick Install with Installer (Beta)
 
-Install an OS and run specified commands. Installer supported OSes: Ubuntu 20.04/22.04/24.04, Debian 10/11/12, Rocky/Alma/OEL/RHEL 10.
+Install an OS and run specified commands. Installer supported OSes: Ubuntu 20.04/22.04/24.04, Debian 10/11/12, Rocky/Alma/OEL/RHEL 9/10, openSUSE Leap 15.x / Tumbleweed, and SLES 15.
 It can be installed on a virtual machine, physical host or on a KVM host.
 
 ```bash
@@ -46,6 +38,21 @@ chmod 744 install.sh
 ./install.sh
 ```
 
+## Docker Deployment (Docker Compose)
+
+Run WebVirtCloud in a container with persistent volumes for data and SSH keys:
+
+```bash
+# 1. Clone repository:
+git clone https://github.com/retspen/webvirtcloud
+cd webvirtcloud
+
+# 2. Start services:
+docker compose up -d
+```
+
+Access the panel at `http://<server-ip>` and noVNC console at port `6080`.
+
 ## Manual Installation
 
 ### Generate secret key
@@ -56,80 +63,147 @@ You should generate SECRET_KEY after cloning repository. Then put it into webvir
 python3 -c 'import secrets; print(secrets.token_urlsafe(50))'
 ```
 
-### Install WebVirtCloud panel (Ubuntu 18.04+ LTS)
+### Ubuntu 20.04 / 22.04 / 24.04 LTS & Debian 11 / 12
 
 ```bash
-sudo apt-get -y install git python3-venv python3-virtualenv python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs libsasl2-dev libldap2-dev libssl-dev
-git clone https://github.com/retspen/webvirtcloud
-cd webvirtcloud
-cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-# now put secret key to webvirtcloud/settings.py
-sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
-sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d
-cd ..
-sudo mv webvirtcloud /srv
-sudo chown -R www-data:www-data /srv/webvirtcloud
+# 1. Install system prerequisites
+sudo apt-get update && sudo apt-get -y install git python3-venv python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs libsasl2-dev libldap2-dev libssl-dev
+
+# 2. Clone repository to /srv/webvirtcloud
+sudo git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
 cd /srv/webvirtcloud
-virtualenv -p python3 venv
-source venv/bin/activate
-pip install -r conf/requirements.txt
-python3 manage.py migrate
-python3 manage.py collectstatic --noinput
-sudo chown -R www-data:www-data /srv/webvirtcloud
-sudo rm /etc/nginx/sites-enabled/default
-```
 
-Restart services for running WebVirtCloud:
-
-```bash
-sudo service nginx restart
-sudo service supervisor restart
-```
-
-Setup libvirt and KVM on server
-
-```bash
-wget -O - https://bit.ly/36baWUu | sudo sh
-```
-
-Done!!
-
-Go to http://serverip and you should see the login screen.
-
-### Install WebVirtCloud panel (RHEL Based OS 8/9/10 / Rocky Linux / AlmaLinux)
-
-```bash
-sudo dnf -y install epel-release
-sudo dnf -y install python3-devel libvirt-devel python3-libvirt python3-ldap python3-lxml cyrus-sasl-devel openldap-devel openssl-devel glibc gcc nginx supervisor git python3-libguestfs iproute-tc cyrus-sasl-md5
-```
-
-#### Creating directories and cloning repository
-
-```bash
-sudo mkdir /srv && cd /srv
-sudo git clone https://github.com/retspen/webvirtcloud && cd webvirtcloud
+# 3. Configure settings
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-# now put secret key to webvirtcloud/settings.py
-# create secret key manually or use that command
-sudo sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3 /srv/webvirtcloud/conf/runit/secret_generator.py)'"/' /srv/webvirtcloud/webvirtcloud/settings.py
-```
+SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')
+sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"${SECRET_KEY}\"|" webvirtcloud/settings.py
 
-#### Start installation webvirtcloud
+# 4. Deploy service configurations
+sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d/
+sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+sudo rm -f /etc/nginx/sites-enabled/default
 
-```bash
+# 5. Create virtual environment and install dependencies
 python3 -m venv --system-site-packages venv
 source venv/bin/activate
-pip3 install -r conf/requirements.txt
-cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+pip install -r conf/requirements.txt
+
+# 6. Database migrations and static files
 python3 manage.py migrate
 python3 manage.py collectstatic --noinput
+
+# 7. Set permissions and start services
+sudo chown -R www-data:www-data /srv/webvirtcloud
+sudo systemctl restart nginx supervisor
 ```
 
-### Local Development Setup (Rocky Linux / RHEL / Fedora / Ubuntu)
+---
+
+### RHEL 8 / 9 / 10 / Rocky Linux / AlmaLinux
+
+```bash
+# 1. Install EPEL and system prerequisites
+sudo dnf -y install epel-release
+sudo dnf -y install git python3-devel libvirt-devel python3-libvirt python3-ldap python3-lxml cyrus-sasl-devel cyrus-sasl-md5 openldap-devel openssl-devel glibc gcc nginx supervisor python3-libguestfs iproute-tc
+
+# 2. Clone repository to /srv/webvirtcloud
+sudo git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
+cd /srv/webvirtcloud
+
+# 3. Configure settings
+cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+SECRET_KEY=$(python3 conf/runit/secret_generator.py)
+sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"${SECRET_KEY}\"|" webvirtcloud/settings.py
+
+# 4. Create virtual environment and install dependencies
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+pip install -r conf/requirements.txt
+
+# 5. Database migrations and static files
+python3 manage.py migrate
+python3 manage.py collectstatic --noinput
+
+# 6. Configure Supervisor
+sudo tee /etc/supervisord.d/webvirtcloud.ini > /dev/null << 'EOF'
+[program:webvirtcloud]
+command=/srv/webvirtcloud/venv/bin/gunicorn webvirtcloud.wsgi:application -c /srv/webvirtcloud/gunicorn.conf.py
+directory=/srv/webvirtcloud
+user=nginx
+autostart=true
+autorestart=true
+redirect_stderr=true
+
+[program:novncd]
+command=/srv/webvirtcloud/venv/bin/python3 /srv/webvirtcloud/console/novncd
+directory=/srv/webvirtcloud
+user=nginx
+autostart=true
+autorestart=true
+redirect_stderr=true
+EOF
+
+# 7. Configure Nginx
+sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+# Ensure the default server block in /etc/nginx/nginx.conf does not conflict with webvirtcloud.conf
+
+# 8. Set permissions, SELinux, and Firewall
+sudo chown -R nginx:nginx /srv/webvirtcloud
+sudo semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)" 2>/dev/null || true
+sudo restorecon -R /srv/webvirtcloud 2>/dev/null || true
+sudo setsebool -P httpd_can_network_connect on 2>/dev/null || true
+
+sudo firewall-cmd --add-service=http --permanent 2>/dev/null || true
+sudo firewall-cmd --add-port=6080/tcp --permanent 2>/dev/null || true
+sudo firewall-cmd --reload 2>/dev/null || true
+
+# 9. Start and enable services
+sudo systemctl enable --now nginx supervisord
+sudo systemctl restart nginx supervisord
+```
+
+---
+
+### openSUSE Leap 15.x / Tumbleweed / SLES 15
+
+```bash
+# 1. Install system prerequisites (Python 3.11 stack and C bindings)
+sudo zypper --non-interactive install -y git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml python311-ldap libvirt-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx
+
+# 2. Clone repository to /srv/webvirtcloud
+sudo git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
+cd /srv/webvirtcloud
+
+# 3. Configure settings
+cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+SECRET_KEY=$(python3.11 conf/runit/secret_generator.py)
+sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"${SECRET_KEY}\"|" webvirtcloud/settings.py
+
+# 4. Create virtual environment and install dependencies
+python3.11 -m venv --system-site-packages venv
+source venv/bin/activate
+pip install -r conf/requirements.txt
+
+# 5. Database migrations and static files
+python3 manage.py migrate
+python3 manage.py collectstatic --noinput
+
+# 6. Configure Nginx and Supervisor
+sudo cp conf/nginx/suse_nginx.conf /etc/nginx/vhosts.d/webvirtcloud.conf 2>/dev/null || sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+sudo chown -R nginx:nginx /srv/webvirtcloud
+
+# 7. Start services
+sudo systemctl enable --now nginx
+sudo systemctl restart nginx
+```
+
+---
+
+## Local Development Setup
 
 For developers working locally on WebVirtCloud without running full production services:
 
-#### Rocky Linux / RHEL / Fedora:
+### Rocky Linux / RHEL / Fedora
 ```bash
 # 1. Install system prerequisites and precompiled bindings
 sudo dnf -y install python3-devel libvirt-devel python3-libvirt python3-ldap python3-lxml gcc git
@@ -149,7 +223,7 @@ python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
 
-#### Ubuntu / Debian:
+### Ubuntu / Debian
 ```bash
 # 1. Install system prerequisites
 sudo apt-get update && sudo apt-get -y install git python3-venv python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libldap2-dev libsasl2-dev gcc pkg-config
@@ -169,231 +243,128 @@ python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
 
-#### Configure the supervisor for RHEL Based OS
-
-Add the following after the [include] line (after **files = ...** actually):
+### openSUSE Leap 15.x / Tumbleweed / SLES 15
 ```bash
-sudo vim /etc/supervisord.conf
+# 1. Install system prerequisites
+sudo zypper --non-interactive install -y git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml python311-ldap libvirt-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config
 
-[program:webvirtcloud]
-command=/srv/webvirtcloud/venv/bin/gunicorn webvirtcloud.wsgi:application -c /srv/webvirtcloud/gunicorn.conf.py
-directory=/srv/webvirtcloud
-user=nginx
-autostart=true
-autorestart=true
-redirect_stderr=true
+# 2. Create virtual environment with system site packages
+python3.11 -m venv --system-site-packages .venv
+source .venv/bin/activate
 
-[program:novncd]
-command=/srv/webvirtcloud/venv/bin/python3 /srv/webvirtcloud/console/novncd
-directory=/srv/webvirtcloud
-user=nginx
-autostart=true
-autorestart=true
-redirect_stderr=true
+# 3. Install Python dependencies
+pip install -r conf/requirements.txt
+pip install -r dev/requirements.txt
+
+# 4. Initialize configuration and run local dev server
+cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3.11 conf/runit/secret_generator.py)'"/' webvirtcloud/settings.py
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
 ```
 
-#### Edit the nginx.conf file
+## Compute Node (Hypervisor) Setup
 
-You will need to edit the main nginx.conf file as the one that comes from the rpm's will not work. Comment the following lines:
+To configure a physical server or virtual machine as a KVM compute node to be managed by WebVirtCloud:
 
-```bash
-#    server {
-#        listen       80 default_server;
-#        listen       [::]:80 default_server;
-#        server_name  _;
-#        root         /usr/share/nginx/html;
-#
-#        # Load configuration files for the default server block.
-#        include /etc/nginx/default.d/*.conf;
-#
-#        location / {
-#        }
-#
-#        error_page 404 /404.html;
-#            location = /40x.html {
-#        }
-#
-#        error_page 500 502 503 504 /50x.html;
-#            location = /50x.html {
-#        }
-#    }
-}
-```
+### 1. Install KVM and Libvirt via Bootstrap Script
 
-Also make sure file in **/etc/nginx/conf.d/webvirtcloud.conf** has the proper paths:
+WebVirtCloud includes an automated bootstrap script supporting Ubuntu 20.04/22.04/24.04, Debian 10/11/12, RHEL/Rocky/Alma 8/9/10, openSUSE Leap 15.x / Tumbleweed, and SLES 15:
 
 ```bash
-upstream gunicorn_server {
-    #server unix:/srv/webvirtcloud/venv/wvcloud.socket fail_timeout=0;
-    server 127.0.0.1:8000 fail_timeout=0;
-}
-server {
-    listen 80;
+# Run bootstrap script directly via curl:
+curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/dev/libvirt-bootstrap.sh | sudo sh
 
-    server_name servername.domain.com;
-    access_log /var/log/nginx/webvirtcloud-access_log; 
-
-    location /static/ {
-        root /srv/webvirtcloud;
-        expires max;
-    }
-
-    location / {
-        proxy_pass http://gunicorn_server;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-for $proxy_add_x_forwarded_for;
-        proxy_set_header Host $host:$server_port;
-        proxy_set_header X-Forwarded-Proto $remote_addr;
-        proxy_connect_timeout 1800;
-        proxy_read_timeout 1800;
-        proxy_send_timeout 1800;
-        client_max_body_size 1024M;
-    }
-}
+# Or run locally from a cloned repository:
+sudo ./dev/libvirt-bootstrap.sh
 ```
 
-Change permissions so nginx can read the webvirtcloud folder:
+### 2. Configure SSH Connection Between Panel and Compute Node
+
+On the WebVirtCloud panel host, generate an SSH key for the web service user (`www-data` on Debian/Ubuntu, `nginx` on RHEL/openSUSE):
 
 ```bash
-sudo chown -R nginx:nginx /srv/webvirtcloud
-```
-
-Change permission for selinux:
-
-```bash
-sudo semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)"
-sudo setsebool -P httpd_can_network_connect on -P
-```
-
-Add required user to the kvm group(if you not install with root):
-
-```bash
-sudo usermod -G kvm -a <username>
-```
-
-Allow http ports on firewall:
-
-```bash
-sudo firewall-cmd --add-service=http
-sudo firewall-cmd --add-service=http --permanent
-sudo firewall-cmd --add-port=6080/tcp
-sudo firewall-cmd --add-port=6080/tcp --permanent
-```
-
-Let's restart nginx and the supervisord services:
-
-```bash
-sudo systemctl restart nginx && systemctl restart supervisord
-```
-
-And finally, check everything is running:
-
-```bash
-sudo supervisorctl status
-gstfsd             RUNNING   pid 24662, uptime 6:01:40
-novncd             RUNNING   pid 24661, uptime 6:01:40
-webvirtcloud       RUNNING   pid 24660, uptime 6:01:40
-```
-
-#### Apache mod_wsgi configuration
-
-```bash
-WSGIDaemonProcess webvirtcloud threads=2 maximum-requests=1000 display-name=webvirtcloud
-WSGIScriptAlias / /srv/webvirtcloud/webvirtcloud/wsgi_custom.py
-```
-
-#### Install final required packages for libvirtd and others on Host Server
-
-```bash
-wget -O - https://clck.ru/9V9fH | sudo sh
-```
-
-Done!!
-
-Go to http://serverip and you should see the login screen.
-
-### Alternative running novncd via runit(Debian)
-
-Alternative to running nonvcd via supervisor is runit.
-
-On Debian systems install runit and configure novncd service:
-
-```bash
-apt install runit runit-systemd
-mkdir /etc/service/novncd/
-ln -s /srv/webvirtcloud/conf/runit/novncd.sh /etc/service/novncd/run
-systemctl start runit.service
-```
-
-### Default credentials
-
-```html
-login: admin
-password: admin
-```
-
-### Configuring Compute SSH connection
-
-This is a short example of configuring cloud and compute side of the ssh connection.
-
-On the webvirtcloud machine you need to generate ssh keys and optionally disable StrictHostKeyChecking.
-
-```bash
-chown www-data -R ~www-data
-sudo -u www-data ssh-keygen
-cat > ~www-data/.ssh/config << EOF
+# Generate key (Debian/Ubuntu example using www-data):
+sudo -u www-data ssh-keygen -t ed25519
+sudo -u www-data tee ~www-data/.ssh/config > /dev/null << 'EOF'
 Host *
-StrictHostKeyChecking no
+  StrictHostKeyChecking no
 EOF
-chown www-data -R ~www-data/.ssh/config
+sudo chmod 600 ~www-data/.ssh/config
+
+# Copy public key to the compute node root user:
+sudo -u www-data ssh-copy-id root@<compute-node-ip>
 ```
 
-You need to put cloud public key into authorized keys on the compute node. Simpliest way of doing this is to use ssh tool from the webvirtcloud server.
+### 3. Install or Update `gstfsd` Daemon
+
+The `gstfsd` daemon provides guest filesystem inspection and stats on hypervisors:
 
 ```bash
-sudo -u www-data ssh-copy-id root@compute1
+curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd | sudo tee /usr/local/bin/gstfsd > /dev/null
+sudo chmod +x /usr/local/bin/gstfsd
+sudo systemctl restart supervisor 2>/dev/null || sudo systemctl restart supervisord
 ```
 
-### Host SMBIOS information is not available
+### 4. Troubleshooting: Host SMBIOS Warning
 
-If you see warning
+If you see the warning `Unsupported configuration: Host SMBIOS information is not available`, install `dmidecode` and restart libvirt:
 
 ```bash
-Unsupported configuration: Host SMBIOS information is not available
+# Debian / Ubuntu:
+sudo apt-get install -y dmidecode && sudo systemctl restart libvirtd
+
+# RHEL / Rocky / AlmaLinux:
+sudo dnf install -y dmidecode && sudo systemctl restart libvirtd
+
+# openSUSE / SLES:
+sudo zypper install -y dmidecode && sudo systemctl restart libvirtd
 ```
 
-Then you need to install `dmidecode` package on your host using your package manager and restart libvirt daemon.
+> **Security Notice (Compute Node Firewall):**
+> Libvirt compute nodes listen on VNC/SPICE ports (`5900`–`65535`) to allow WebVirtCloud to proxy graphical consoles. Ensure your firewall (`ufw`, `firewalld`, or `iptables`) restricts these ports to accept connections **only** from the WebVirtCloud panel IP, and never exposes them directly to public networks.
 
-Debian/Ubuntu like:
+---
+
+## Configuration & Operational Notes
+
+### Default Credentials
+
+After initial installation, sign in to the web panel at `http://<server-ip>`:
+
+```text
+Username: admin
+Password: admin
+```
+> **Security Notice:** Change the default administrator password immediately after first login.
+
+### Alternative: Running novncd via runit (Debian)
+
+As an alternative to Supervisor, Debian systems can manage `novncd` via `runit`:
 
 ```bash
-sudo apt-get install dmidecode
-sudo service libvirt-bin restart
+sudo apt install -y runit runit-systemd
+sudo mkdir -p /etc/service/novncd/
+sudo ln -s /srv/webvirtcloud/conf/runit/novncd.sh /etc/service/novncd/run
+sudo systemctl start runit.service
 ```
 
-Arch Linux
+### Cloud-Init Datasource
 
-```bash
-sudo pacman -S dmidecode
-systemctl restart libvirtd
-```
+WebVirtCloud can serve cloud-init metadata (root SSH keys and hostname) to guest instances:
 
-### Cloud-init
-
-Currently supports only root ssh authorized keys and hostname. Example configuration of the cloud-init client follows.
-
-```bash
+```yaml
 datasource:
   OpenStack:
-      metadata_urls: [ "http://webvirtcloud.domain.com/datasource" ]
+    metadata_urls: [ "http://webvirtcloud.domain.com/datasource" ]
 ```
 
-### Reverse-Proxy
+### Reverse-Proxy & Port Forwarding
 
-Edit WS_PUBLIC_PORT at settings.py file to expose redirect to 80 or 443. Default: 6080
+If WebVirtCloud runs behind a reverse proxy terminating SSL or forwarding port 80/443, configure `WS_PUBLIC_PORT` in `webvirtcloud/settings.py` (default: 6080):
 
-```bash
-WS_PUBLIC_PORT = 80
+```python
+WS_PUBLIC_PORT = 80  # or 443
 ```
 
 ## How To Update
@@ -414,25 +385,33 @@ sudo service supervisor restart
 > 1. In `INSTALLED_APPS`, replace `'drf_yasg'` with `'drf_spectacular'` and `'drf_spectacular_sidecar'`.
 > 2. Ensure the `REST_FRAMEWORK` and `SPECTACULAR_SETTINGS` configuration blocks are present (see `webvirtcloud/settings.py.template`).
 
-### Running tests
+## Running Tests
 
-Server on which tests will be performed must have libvirt up and running.
-It must not contain vms.
-It must have `default` storage which not contain any disk images.
-It must have `default` network which must be on.
-Setup venv
+WebVirtCloud includes unit tests for both Django models/views and the `vrtManager` libvirt abstraction layer. The test suite uses isolated mock drivers by default and does not require a live KVM hypervisor.
 
+### 1. Setup Virtual Environment
 ```bash
-python -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r conf/requirements.txt
+pip install -r dev/requirements.txt
 ```
 
-Run tests
-
+### 2. Run Test Suite
 ```bash
+# Run Django test suite (accounts, admin, instances, logs, etc.):
 python manage.py test
+
+# Run vrtManager unit tests:
+python -m unittest discover -s vrtManager -p "test_*.py"
 ```
+
+> **Live Hypervisor Testing (Optional):**
+> To run tests against a live libvirt host instead of standalone mocks, set the `WEBVIRTCLOUD_TEST_LIBVIRT_URI` environment variable before running tests:
+> ```bash
+> export WEBVIRTCLOUD_TEST_LIBVIRT_URI="qemu+ssh://root@compute1/system"
+> python manage.py test
+> ```
 
 ## LDAP Configuration
 
@@ -505,26 +484,29 @@ Now when you login with an LDAP user it will be assigned the rights defined. The
 If you'd like to move a user from ldap to WebVirtCloud, just change its password from the UI and (eventually) remove from the group in LDAP.
 
 
-## REST API / BETA
-Webvirtcloud provides a REST API for programmatic access.
-To access API methods open your browser and check them with Swagger interface
-```bash
-http://<webvirtloud-address:port>/swagger
-```
-```bash
-http://<webvirtloud-address:port>/redoc
-```
+## REST API (OpenAPI 3.0)
+
+WebVirtCloud provides a REST API powered by Django REST Framework and documented via `drf-spectacular`.
+
+You can access the interactive API documentation and schema endpoints in your browser:
+
+* **Swagger UI:** `http://<webvirtcloud-address:port>/swagger/`
+* **ReDoc UI:** `http://<webvirtcloud-address:port>/redoc/`
+* **OpenAPI 3.0 Schema:** `http://<webvirtcloud-address:port>/api/schema/` (download schema in JSON or YAML format)
 
 ## Screenshots
 
-Instance Detail:
-<img src="doc/images/instance.PNG" width="96%" align="center"/>
-Instance List:</br>
-<img src="doc/images/grouped.PNG" width="43%"/>
-<img src="doc/images/nongrouped.PNG" width="53%"/>
-Other: </br>
-<img src="doc/images/hosts.PNG" width="47%"/>
-<img src="doc/images/log.PNG" width="49%"/>
+| Instance Detail |
+|:---:|
+| ![Instance Detail](doc/images/instance.PNG) |
+
+| Grouped Instances | Non-Grouped Instances |
+|:---:|:---:|
+| ![Grouped Instances](doc/images/grouped.PNG) | ![Non-Grouped Instances](doc/images/nongrouped.PNG) |
+
+| Compute Hosts | Activity Log |
+|:---:|:---:|
+| ![Compute Hosts](doc/images/hosts.PNG) | ![Activity Log](doc/images/log.PNG) |
 
 ## License
 

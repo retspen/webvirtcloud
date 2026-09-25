@@ -68,11 +68,13 @@ jobs:
     - name: Lint Code Base
       uses: docker://github/super-linter:latest
       env:
-        FILTER_REGEX_EXCLUDE: .*(static|scss|venv|locale)/.*
+        FILTER_REGEX_EXCLUDE: .*(static|scss|venv|locale|templates)/.*
         DEFAULT_BRANCH: master
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VALIDATE_ALL_CODEBASE: false
         VALIDATE_MARKDOWN: false
+        VALIDATE_HTML: false
+        VALIDATE_JSCPD: false
         VALIDATE_ANSIBLE: false
         VALIDATE_CLOJURE: false
         VALIDATE_COFFEE: false

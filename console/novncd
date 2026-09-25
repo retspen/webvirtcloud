@@ -143,6 +143,7 @@ class CompatibilityMixIn(object):
         # NoVNC uses it's own convention that forward token
         # from the request to a cookie header, we should check
         # also for this behavior
+        token = None
         hcookie = self.headers.get("cookie")
 
         if hcookie:
@@ -158,6 +159,22 @@ class CompatibilityMixIn(object):
                 else:
                     if "token" in cookie:
                         token = cookie["token"].value
+
+        # Fallback to query parameter if token not found in cookie
+        if not token and hasattr(self, "path"):
+            from urllib.parse import parse_qs, urlparse
+
+            try:
+                parsed_url = urlparse(self.path)
+                query_params = parse_qs(parsed_url.query)
+                if "token" in query_params:
+                    token = query_params["token"][0]
+            except Exception:
+                pass
+
+        if not token:
+            self.msg("No console token provided in cookie or query parameters")
+            return
 
         (
             connhost,

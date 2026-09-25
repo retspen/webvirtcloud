@@ -71,7 +71,7 @@ readonly APP_REPO_URL="${APP_REPO_URL:-https://github.com/retspen/webvirtcloud.g
 readonly APP_NAME="webvirtcloud"
 readonly APP_PATH="/srv/$APP_NAME"
 
-readonly PYTHON="python3"
+PYTHON="python3"
 
 progress () {
   spin[0]="-"
@@ -160,6 +160,16 @@ install_packages () {
         fi
       done
       ;;
+    suse)
+      for p in $PACKAGES; do
+        if rpm -q "$p" >/dev/null 2>&1; then
+          echo "  * $p already installed"
+        else
+          echo "  * Installing $p"
+          log "zypper --non-interactive install -y $p"
+        fi
+      done
+      ;;
   esac
 }
 
@@ -206,12 +216,17 @@ create_user () {
   if [ "$distro" == "ubuntu" ] || [ "$distro" == "debian" ] ||
     [[ "$distro" == "uos" && "$codename" == "eagle" ]]; then
     adduser --quiet --disabled-password --gecos '""' "$APP_USER"
+  elif [ "$distro" == "suse" ]; then
+    useradd -m -s /bin/bash "$APP_USER" 2>/dev/null || adduser "$APP_USER"
   else
-    adduser "$APP_USER"
+    useradd -m -s /bin/bash "$APP_USER" 2>/dev/null || adduser "$APP_USER"
   fi
 
-  usermod -a -G "$nginx_group" "$APP_USER"
-  usermod -a -G libvirt "$nginx_group"
+  usermod -a -G "$nginx_group" "$APP_USER" 2>/dev/null || true
+  usermod -a -G libvirt "$nginx_group" 2>/dev/null || true
+  usermod -a -G kvm "$nginx_group" 2>/dev/null || true
+  usermod -a -G libvirt "$APP_USER" 2>/dev/null || true
+  usermod -a -G kvm "$APP_USER" 2>/dev/null || true
 }
 
 run_as_app_user () {
@@ -223,26 +238,26 @@ run_as_app_user () {
 }
 
 check_python () {
+  # dynamically find python >= 3.10 if default python3 is older
+  for py_bin in python3.11 python3.12 python3.13 python3.10 python3; do
+    if command -v "$py_bin" >/dev/null 2>&1; then
+      if "$py_bin" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
+        PYTHON="$py_bin"
+        break
+      fi
+    fi
+  done
+
   # check if python3 is installed.
   if ! hash "$PYTHON" 2>/dev/null; then
     echo "Python3 is not installed. Please install Python3 and try again."
     exit 1
   fi
 
-  # check if python3 version is grater than 3.10 amd set it as default
+  # check if python3 version is greater than 3.10
   if ! "$PYTHON" -c 'import sys; assert sys.version_info >= (3, 10)' >/dev/null 2>&1; then
     echo "Your Python version is less than 3.10. This script requires Python 3.10 or greater."
-    echo "Please install Python 3.10 or greater and set it as the default version."
-    echo "Use update-alternatives command to set default python version to latest."
-    echo "For example: sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1"
-    echo "Then run this script again."
-    echo "Do not forget to install pip3 and python3-devel for python3.10 or later."
-    exit 1
-  fi
-
-  # check if pip3 is installed
-  if ! hash pip3 2>/dev/null; then
-    echo "pip3 is not installed. Please install pip3 and try again."
+    echo "Please install Python 3.10 or greater (such as python311) and try again."
     exit 1
   fi
 }
@@ -270,8 +285,12 @@ generate_secret_key() {
 install_webvirtcloud () {
   create_user
  
-  echo "* Cloning $APP_NAME from github to the web directory."
-  log "git clone $APP_REPO_URL $APP_PATH"
+  if [ ! -d "$APP_PATH/.git" ]; then
+    echo "* Cloning $APP_NAME from github to the web directory."
+    log "git clone $APP_REPO_URL $APP_PATH"
+  else
+    echo "* $APP_NAME already present in $APP_PATH."
+  fi
 
   echo "* Configuring settings.py file."
   cp "$APP_PATH/webvirtcloud/settings.py.template" "$APP_PATH/webvirtcloud/settings.py"
@@ -293,9 +312,11 @@ install_webvirtcloud () {
 
   # set CSRF TRUSTED ORIGINS
   host_ip="'http://127.0.0.1', "
-  for i in $(hostname -I); do
-    host_ip+="'http://$i', " 
-  done
+  if command -v hostname >/dev/null 2>&1; then
+    for i in $(hostname -I 2>/dev/null); do
+      host_ip+="'http://$i', " 
+    done
+  fi
   sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" "$APP_PATH/webvirtcloud/settings.py"
 
   echo "* Checking up Python3 version."
@@ -344,7 +365,11 @@ set_selinux () {
 
 set_hosts () {
   echo "* Setting up hosts file."
-  echo >> /etc/hosts "127.0.0.1 $(hostname) $fqdn"
+  local hname
+  hname="$(hostname 2>/dev/null || uname -n)"
+  if ! grep -q "$fqdn" /etc/hosts 2>/dev/null; then
+    echo >> /etc/hosts "127.0.0.1 $hname $fqdn"
+  fi
 }
 
 restart_supervisor () {
@@ -371,6 +396,8 @@ if [ -f /etc/os-release ]; then
   version="$(source /etc/os-release && echo "$VERSION_ID")"
   # shellcheck disable=SC1091
   codename="$(source /etc/os-release && echo "${VERSION_CODENAME:-$UBUNTU_CODENAME}")"
+  # shellcheck disable=SC1091
+  id_like="$(source /etc/os-release && echo "${ID_LIKE:-}")"
 elif [[ -f /etc/lsb-release || -f /etc/debian_version ]]; then
   if command -v lsb_release >/dev/null 2>&1; then
     distro="$(lsb_release -is)"
@@ -384,6 +411,11 @@ elif [[ -f /etc/lsb-release || -f /etc/debian_version ]]; then
 elif [ -f /etc/centos-release ]; then
   distro="centos"
   version="8"
+elif [ -f /etc/SuSE-release ]; then
+  distro="suse"
+  version="15"
+  codename=""
+  id_like="suse"
 else
   distro="unsupported"
 fi
@@ -394,7 +426,7 @@ echo '
 '
 
 echo "" 
-echo "  Welcome to Webvirtcloud Installer for RHEL Based OSes, Debian and Ubuntu!"
+echo "  Welcome to Webvirtcloud Installer for RHEL Based OSes, Debian, Ubuntu, and SUSE!"
 echo ""
 shopt -s nocasematch
 case $distro in
@@ -419,6 +451,15 @@ case $distro in
   *centos*|*redhat*|*ol*|*rhel*|*rocky*|*Rocky*|*alma*)
     echo "  The installer has detected $distro version $version."
     distro=centos
+    nginx_group=nginx
+    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
+    supervisor_service=supervisord
+    supervisor_conf_path=/etc/supervisord.d
+    supervisor_file_name=webvirtcloud.ini
+    ;;
+  *opensuse*|*sles*|*sled*|*suse*)
+    echo "  The installer has detected $distro version $version."
+    distro=suse
     nginx_group=nginx
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
     supervisor_service=supervisord
@@ -456,8 +497,18 @@ case $distro in
     supervisor_file_name=webvirtcloud.ini
     ;;
   *)
-    echo "  The installer was unable to determine your OS. Exiting for safety."
-    exit 1
+    if [[ "$id_like" =~ suse ]]; then
+      echo "  The installer has detected $distro (SUSE family) version $version."
+      distro=suse
+      nginx_group=nginx
+      nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
+      supervisor_service=supervisord
+      supervisor_conf_path=/etc/supervisord.d
+      supervisor_file_name=webvirtcloud.ini
+    else
+      echo "  The installer was unable to determine your OS. Exiting for safety."
+      exit 1
+    fi
     ;;
 esac
 
@@ -684,6 +735,85 @@ case $distro in
     restart_nginx
   fi
   ;;
+  suse)
+    # Install for openSUSE Leap 15.x / Tumbleweed / SLES 15
+    tzone=\'$(get_timezone)\'
+
+    echo -n "* Updating installed packages."
+    log "zypper --non-interactive refresh" & pid=$!
+    progress
+
+    echo "* Installing OS requirements."
+    # On SUSE, install Python 3.11 stack to satisfy Python >= 3.10 requirement along with native libvirt and ldap bindings
+    if zypper se -s python311-devel >/dev/null 2>&1; then
+      PACKAGES="git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml python311-ldap libvirt-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx"
+    else
+      PACKAGES="git hostname python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml openldap2-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx"
+    fi
+    install_packages
+
+    set_hosts
+
+    # Supervisor on SUSE (available as python3-supervisor, supervisor, or via pip)
+    if ! command -v supervisord >/dev/null 2>&1; then
+      if zypper --non-interactive install -y python3-supervisor >/dev/null 2>&1; then
+        echo "  * python3-supervisor installed via zypper"
+      elif zypper --non-interactive install -y supervisor >/dev/null 2>&1; then
+        echo "  * supervisor installed via zypper"
+      else
+        echo "  * Installing supervisor via pip3"
+        log "pip3 install supervisor"
+      fi
+    fi
+
+    # Ensure /etc/supervisord.d directory exists and is included in supervisord.conf
+    mkdir -p /etc/supervisord.d
+    if [ ! -f /etc/supervisord.conf ] && [ ! -f /etc/supervisor/supervisord.conf ]; then
+      if command -v echo_supervisord_conf >/dev/null 2>&1; then
+        echo_supervisord_conf > /etc/supervisord.conf
+        echo -e "\n[include]\nfiles = /etc/supervisord.d/*.ini\n" >> /etc/supervisord.conf
+      fi
+    elif [ -f /etc/supervisord.conf ] && ! grep -q "/etc/supervisord.d" /etc/supervisord.conf; then
+      echo -e "\n[include]\nfiles = /etc/supervisord.d/*.ini\n" >> /etc/supervisord.conf
+    fi
+
+    # Ensure systemd service for supervisord exists if installed via pip
+    if [ ! -f /usr/lib/systemd/system/supervisord.service ] && [ ! -f /etc/systemd/system/supervisord.service ]; then
+      supervisord_bin="$(command -v supervisord 2>/dev/null || echo "/usr/local/bin/supervisord")"
+      supervisorctl_bin="$(command -v supervisorctl 2>/dev/null || echo "/usr/local/bin/supervisorctl")"
+      cat > /etc/systemd/system/supervisord.service <<SVCEOF
+[Unit]
+Description=Process Monitoring and Control Daemon
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=${supervisord_bin} -c /etc/supervisord.conf
+ExecStop=${supervisorctl_bin} shutdown
+ExecReload=${supervisorctl_bin} reload
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target
+SVCEOF
+      systemctl daemon-reload >/dev/null 2>&1 || true
+    fi
+
+    install_webvirtcloud
+
+    echo "* Configuring Nginx."
+    configure_nginx
+
+    echo "* Configuring Supervisor."
+    configure_supervisor
+
+    set_firewall
+
+    restart_supervisor
+    restart_nginx
+    ;;
 esac
 
 

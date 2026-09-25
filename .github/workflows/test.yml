@@ -1,0 +1,66 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'conf/requirements.txt'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libvirt-dev \
+            libldap2-dev \
+            libsasl2-dev \
+            python3-lxml \
+            zlib1g-dev \
+            libxslt1-dev \
+            pkg-config \
+            gcc \
+            libssl-dev \
+            libxml2-dev
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r conf/requirements.txt
+          if [ -f dev/requirements.txt ]; then pip install -r dev/requirements.txt; fi
+
+      - name: Configure WebVirtCloud Settings
+        run: |
+          cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+          SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')
+          sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"${SECRET_KEY}\"|" webvirtcloud/settings.py
+
+      - name: Run Django Migrations
+        run: |
+          python manage.py migrate --noinput
+
+      - name: Run Django Test Suite
+        run: |
+          python manage.py test
+
+      - name: Run vrtManager Unit Tests
+        run: |
+          python -m unittest discover -s vrtManager -p "test_*.py"
