@@ -170,21 +170,17 @@ sudo systemctl restart nginx supervisord
 # 1. Install system prerequisites (Python 3.11 stack and C bindings)
 sudo zypper --non-interactive install -y git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml python311-ldap libvirt-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx
 
-# Ensure python3 points to Python 3.11
-sudo ln -sf /usr/bin/python3.11 /usr/bin/python3
-sudo ln -sf /usr/bin/pip3.11 /usr/bin/pip3
-
 # 2. Clone repository to /srv/webvirtcloud
 sudo git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
 cd /srv/webvirtcloud
 
 # 3. Configure settings
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-SECRET_KEY=$(python3 conf/runit/secret_generator.py)
+SECRET_KEY=$(python3.11 conf/runit/secret_generator.py)
 sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"${SECRET_KEY}\"|" webvirtcloud/settings.py
 
 # 4. Create virtual environment and install dependencies
-python3 -m venv --system-site-packages venv
+python3.11 -m venv --system-site-packages venv
 source venv/bin/activate
 pip install -r conf/requirements.txt
 
@@ -251,10 +247,9 @@ python manage.py runserver 0.0.0.0:8000
 ```bash
 # 1. Install system prerequisites
 sudo zypper --non-interactive install -y git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml python311-ldap libvirt-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config
-sudo ln -sf /usr/bin/python3.11 /usr/bin/python3
 
 # 2. Create virtual environment with system site packages
-python3 -m venv --system-site-packages .venv
+python3.11 -m venv --system-site-packages .venv
 source .venv/bin/activate
 
 # 3. Install Python dependencies
@@ -263,7 +258,7 @@ pip install -r dev/requirements.txt
 
 # 4. Initialize configuration and run local dev server
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3 conf/runit/secret_generator.py)'"/' webvirtcloud/settings.py
+sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3.11 conf/runit/secret_generator.py)'"/' webvirtcloud/settings.py
 python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
@@ -325,6 +320,9 @@ sudo dnf install -y dmidecode && sudo systemctl restart libvirtd
 # openSUSE / SLES:
 sudo zypper install -y dmidecode && sudo systemctl restart libvirtd
 ```
+
+> **Security Notice (Compute Node Firewall):**
+> Libvirt compute nodes listen on VNC/SPICE ports (`5900`–`65535`) to allow WebVirtCloud to proxy graphical consoles. Ensure your firewall (`ufw`, `firewalld`, or `iptables`) restricts these ports to accept connections **only** from the WebVirtCloud panel IP, and never exposes them directly to public networks.
 
 ---
 

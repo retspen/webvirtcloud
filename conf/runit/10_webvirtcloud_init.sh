@@ -11,22 +11,13 @@ if [ ! -f "$APP_DIR/webvirtcloud/settings.py" ]; then
     cp "$APP_DIR/webvirtcloud/settings.py.template" "$APP_DIR/webvirtcloud/settings.py"
 fi
 
-# Set SECRET_KEY if placeholder exists
-if grep -q 'SECRET_KEY = ""' "$APP_DIR/webvirtcloud/settings.py" || grep -q "SECRET_KEY = ''" "$APP_DIR/webvirtcloud/settings.py"; then
-    KEY="${SECRET_KEY:-$("$APP_DIR/venv/bin/python3" -c 'import secrets; print(secrets.token_urlsafe(50))')}"
-    sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"${KEY}\"|" "$APP_DIR/webvirtcloud/settings.py"
-fi
-
-# Configure CSRF_TRUSTED_ORIGINS if environment variable is set
-if [ -n "$CSRF_TRUSTED_ORIGINS" ]; then
-    echo "* Setting CSRF_TRUSTED_ORIGINS from environment..."
-    origins=""
-    IFS=',' read -ra ADDR <<< "$CSRF_TRUSTED_ORIGINS"
-    for o in "${ADDR[@]}"; do
-        clean_o=$(echo "$o" | xargs)
-        [ -n "$clean_o" ] && origins="${origins}'${clean_o}', "
-    done
-    sed -i "s|^CSRF_TRUSTED_ORIGINS = .*|CSRF_TRUSTED_ORIGINS = [ ${origins} ]|" "$APP_DIR/webvirtcloud/settings.py"
+# Ensure SECRET_KEY is persisted across container restarts if not supplied via environment
+if [ -z "$SECRET_KEY" ]; then
+    if [ ! -s "$DATA_DIR/secret_key" ]; then
+        echo "* Generating fresh random SECRET_KEY..."
+        "$APP_DIR/venv/bin/python3" -c 'import secrets; print(secrets.token_urlsafe(50))' > "$DATA_DIR/secret_key"
+        chmod 600 "$DATA_DIR/secret_key"
+    fi
 fi
 
 # Persist SQLite database in DATA_DIR

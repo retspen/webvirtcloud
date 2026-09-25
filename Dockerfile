@@ -42,15 +42,11 @@ RUN python3 -m venv --system-site-packages venv && \
 # Copy application source
 COPY . /srv/webvirtcloud
 
-# Setup build-time settings, run collectstatic, and set permissions
+# Run collectstatic with temporary dummy key, then remove temporary settings file
 RUN . venv/bin/activate && \
-	if [ ! -f webvirtcloud/settings.py ]; then \
-		cp webvirtcloud/settings.py.template webvirtcloud/settings.py && \
-		python3 -c 'import secrets; print(secrets.token_urlsafe(50))' > /tmp/secret_key && \
-		sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"$(cat /tmp/secret_key)\"|" webvirtcloud/settings.py && \
-		rm -f /tmp/secret_key; \
-	fi && \
-	python3 manage.py collectstatic --noinput && \
+	cp webvirtcloud/settings.py.template webvirtcloud/settings.py && \
+	SECRET_KEY="build-dummy-key-only-for-collectstatic" python3 manage.py collectstatic --noinput && \
+	rm -f webvirtcloud/settings.py && \
 	chown -R www-data:www-data /srv/webvirtcloud
 
 # Setup Nginx

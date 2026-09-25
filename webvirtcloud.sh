@@ -71,7 +71,7 @@ readonly APP_REPO_URL="${APP_REPO_URL:-https://github.com/retspen/webvirtcloud.g
 readonly APP_NAME="webvirtcloud"
 readonly APP_PATH="/srv/$APP_NAME"
 
-readonly PYTHON="python3"
+PYTHON="python3"
 
 progress () {
   spin[0]="-"
@@ -238,26 +238,26 @@ run_as_app_user () {
 }
 
 check_python () {
+  # dynamically find python >= 3.10 if default python3 is older
+  for py_bin in python3.11 python3.12 python3.13 python3.10 python3; do
+    if command -v "$py_bin" >/dev/null 2>&1; then
+      if "$py_bin" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
+        PYTHON="$py_bin"
+        break
+      fi
+    fi
+  done
+
   # check if python3 is installed.
   if ! hash "$PYTHON" 2>/dev/null; then
     echo "Python3 is not installed. Please install Python3 and try again."
     exit 1
   fi
 
-  # check if python3 version is grater than 3.10 amd set it as default
+  # check if python3 version is greater than 3.10
   if ! "$PYTHON" -c 'import sys; assert sys.version_info >= (3, 10)' >/dev/null 2>&1; then
     echo "Your Python version is less than 3.10. This script requires Python 3.10 or greater."
-    echo "Please install Python 3.10 or greater and set it as the default version."
-    echo "Use update-alternatives command to set default python version to latest."
-    echo "For example: sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1"
-    echo "Then run this script again."
-    echo "Do not forget to install pip3 and python3-devel for python3.10 or later."
-    exit 1
-  fi
-
-  # check if pip3 is installed
-  if ! hash pip3 2>/dev/null; then
-    echo "pip3 is not installed. Please install pip3 and try again."
+    echo "Please install Python 3.10 or greater (such as python311) and try again."
     exit 1
   fi
 }
@@ -367,7 +367,9 @@ set_hosts () {
   echo "* Setting up hosts file."
   local hname
   hname="$(hostname 2>/dev/null || uname -n)"
-  echo >> /etc/hosts "127.0.0.1 $hname $fqdn"
+  if ! grep -q "$fqdn" /etc/hosts 2>/dev/null; then
+    echo >> /etc/hosts "127.0.0.1 $hname $fqdn"
+  fi
 }
 
 restart_supervisor () {
@@ -749,16 +751,6 @@ case $distro in
       PACKAGES="git hostname python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml openldap2-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx"
     fi
     install_packages
-
-    # Ensure python3 and pip3 point to python 3.11+ if installed
-    if command -v python3.11 >/dev/null 2>&1; then
-      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 2>/dev/null || true
-      ln -sf /usr/bin/python3.11 /usr/bin/python3
-      if command -v pip3.11 >/dev/null 2>&1; then
-        update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 1 2>/dev/null || true
-        ln -sf /usr/bin/pip3.11 /usr/bin/pip3
-      fi
-    fi
 
     set_hosts
 

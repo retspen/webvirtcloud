@@ -17,7 +17,14 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = ""
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY:
+    secret_file = BASE_DIR / "data" / "secret_key"
+    if secret_file.exists():
+        try:
+            SECRET_KEY = secret_file.read_text().strip()
+        except Exception:
+            pass
 
 DEBUG = False
 
