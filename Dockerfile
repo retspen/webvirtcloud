@@ -8,6 +8,7 @@ CMD ["/sbin/my_init"]
 
 RUN echo 'APT::Get::Clean=always;' >> /etc/apt/apt.conf.d/99AutomaticClean
 
+# hadolint ignore=DL3008
 RUN apt-get update -qqy \
     && DEBIAN_FRONTEND=noninteractive apt-get -qyy install \
 	--no-install-recommends \
@@ -33,16 +34,17 @@ WORKDIR /srv/webvirtcloud
 
 # Install Python dependencies first with system-site-packages to leverage prebuilt bindings
 COPY conf/requirements.txt conf/requirements.txt
+# hadolint ignore=DL3013,DL3042,SC1091
 RUN python3 -m venv --system-site-packages venv && \
 	. venv/bin/activate && \
-	pip3 install -U pip wheel && \
-	pip3 install -r conf/requirements.txt && \
-	pip3 cache purge
+	pip3 install --no-cache-dir -U pip wheel && \
+	pip3 install --no-cache-dir -r conf/requirements.txt
 
 # Copy application source
 COPY . /srv/webvirtcloud
 
 # Run collectstatic with temporary dummy key, then remove temporary settings file
+# hadolint ignore=SC1091
 RUN . venv/bin/activate && \
 	cp webvirtcloud/settings.py.template webvirtcloud/settings.py && \
 	SECRET_KEY="build-dummy-key-only-for-collectstatic" python3 manage.py collectstatic --noinput && \
