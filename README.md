@@ -390,7 +390,7 @@ pip install -r dev/requirements.txt
 python manage.py test
 
 # Run vrtManager unit tests:
-python -m unittest discover -s vrtManager/tests
+python -m unittest discover -s vrtManager -p "test_*.py"
 ```
 
 > **Live Hypervisor Testing (Optional):**
