@@ -2,11 +2,15 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
-# Mock django if not installed so tests can run in minimal/standalone environments
-if "django" not in sys.modules:
+try:
+    from django.conf import settings
+    if not settings.configured:
+        settings.configure(MAC_OUI="52:54:10")
+except ImportError:
     django_mock = MagicMock()
+    django_mock.conf.settings.MAC_OUI = "52:54:10"
     sys.modules["django"] = django_mock
-    sys.modules["django.conf"] = django_mock
+    sys.modules["django.conf"] = django_mock.conf
 
 from vrtManager.network import network_size, wvmNetwork
 

@@ -24,27 +24,27 @@ class AdminTestCase(TestCase):
         self.assertRedirects(response, reverse("admin:group_list"))
 
         group = Group.objects.get(name="Test Group")
-        self.assertEqual(group.id, 1)
+        group_id = group.id
 
-        response = self.client.get(reverse("admin:group_update", args=[1]))
+        response = self.client.get(reverse("admin:group_update", args=[group_id]))
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            reverse("admin:group_update", args=[1]), {"name": "Updated Group Test"}
+            reverse("admin:group_update", args=[group_id]), {"name": "Updated Group Test"}
         )
         self.assertRedirects(response, reverse("admin:group_list"))
 
-        group = Group.objects.get(id=1)
+        group = Group.objects.get(id=group_id)
         self.assertEqual(group.name, "Updated Group Test")
 
-        response = self.client.get(reverse("admin:group_delete", args=[1]))
+        response = self.client.get(reverse("admin:group_delete", args=[group_id]))
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.post(reverse("admin:group_delete", args=[1]))
+        response = self.client.post(reverse("admin:group_delete", args=[group_id]))
         self.assertRedirects(response, reverse("admin:group_list"))
 
         with self.assertRaises(ObjectDoesNotExist):
-            Group.objects.get(id=1)
+            Group.objects.get(id=group_id)
 
     def test_user_list(self):
         response = self.client.get(reverse("admin:user_list"))
@@ -68,20 +68,20 @@ class AdminTestCase(TestCase):
         self.assertRedirects(response, reverse("admin:user_list"))
 
         user = User.objects.get(username="test")
-        self.assertEqual(user.id, 2)
+        user_id = user.id
 
-        ua: UserAttributes = UserAttributes.objects.get(id=2)
-        self.assertEqual(ua.user_id, 2)
+        ua: UserAttributes = UserAttributes.objects.get(user_id=user_id)
+        self.assertEqual(ua.user_id, user_id)
         self.assertEqual(ua.max_instances, 1)
         self.assertEqual(ua.max_cpus, 1)
         self.assertEqual(ua.max_memory, 1024)
         self.assertEqual(ua.max_disk_size, 4)
 
-        response = self.client.get(reverse("admin:user_update", args=[2]))
+        response = self.client.get(reverse("admin:user_update", args=[user_id]))
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            reverse("admin:user_update", args=[2]),
+            reverse("admin:user_update", args=[user_id]),
             {
                 "username": "utest",
                 "max_instances": 2,
@@ -92,32 +92,32 @@ class AdminTestCase(TestCase):
         )
         self.assertRedirects(response, reverse("admin:user_list"))
 
-        user = User.objects.get(id=2)
+        user = User.objects.get(id=user_id)
         self.assertEqual(user.username, "utest")
 
-        ua: UserAttributes = UserAttributes.objects.get(id=2)
-        self.assertEqual(ua.user_id, 2)
+        ua = UserAttributes.objects.get(user_id=user_id)
+        self.assertEqual(ua.user_id, user_id)
         self.assertEqual(ua.max_instances, 2)
         self.assertEqual(ua.max_cpus, 2)
         self.assertEqual(ua.max_memory, 2048)
         self.assertEqual(ua.max_disk_size, 8)
 
-        response = self.client.get(reverse("admin:user_block", args=[2]))
-        user = User.objects.get(id=2)
+        response = self.client.get(reverse("admin:user_block", args=[user_id]))
+        user = User.objects.get(id=user_id)
         self.assertFalse(user.is_active)
 
-        response = self.client.get(reverse("admin:user_unblock", args=[2]))
-        user = User.objects.get(id=2)
+        response = self.client.get(reverse("admin:user_unblock", args=[user_id]))
+        user = User.objects.get(id=user_id)
         self.assertTrue(user.is_active)
 
-        response = self.client.get(reverse("admin:user_delete", args=[2]))
+        response = self.client.get(reverse("admin:user_delete", args=[user_id]))
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.post(reverse("admin:user_delete", args=[2]))
+        response = self.client.post(reverse("admin:user_delete", args=[user_id]))
         self.assertRedirects(response, reverse("admin:user_list"))
 
         with self.assertRaises(ObjectDoesNotExist):
-            User.objects.get(id=2)
+            User.objects.get(id=user_id)
 
     def test_logs(self):
         response = self.client.get(reverse("admin:logs"))
