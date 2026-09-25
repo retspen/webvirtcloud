@@ -33,7 +33,8 @@ INSTALLED_APPS = [
     "django_bootstrap_icons",
     "django_otp",
     "django_otp.plugins.otp_totp",
-    "drf_yasg",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "accounts",
     "admin",
     "appsettings",
@@ -268,6 +269,21 @@ SHOW_PROFILE_EDIT_PASSWORD = True
 OTP_ENABLED = False
 
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:login", "accounts:email_otp"]
+
+# REST Framework & OpenAPI (drf-spectacular)
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Webvirtcloud REST-API",
+    "DESCRIPTION": "Webvirtcloud REST API",
+    "VERSION": "v1",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+}
 
 # EMAIL Config
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

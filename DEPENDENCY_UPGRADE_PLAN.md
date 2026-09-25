@@ -23,8 +23,8 @@ Bu doküman, WebVirtCloud projesinde yer alan eski, desteği kesilmiş veya yeni
 |---|---|---|---|
 | **`Django`** | `4.2.23` (LTS) | `5.1.x` / `5.2` (LTS) | Django 4.2 LTS desteği Nisan 2026'da sona ermektedir. Django 5.x LTS'e yükseltme yapılarak performans kazanımları (asenkron ORM geliştirmeleri, yeni form alanları) elde edilmelidir. |
 | **`django-login-required-middleware`** | `0.9.0` (2017) | **Kaldırılacak** (Native) | Paket 2017'den beri güncellenmemiştir. **Django 5.1 ile birlikte Django artık yerleşik `django.contrib.auth.middleware.LoginRequiredMiddleware` sunmaktadır.** Harici paket tamamen devreden çıkarılabilir. |
-| **`drf-yasg`** | `1.21.10` | `drf-spectacular` | `drf-yasg` fiilen terk edilmiştir, yalnızca eski Swagger 2.0 standardını destekler ve Django 5+ ile uyumsuzluk uyarıları verir. DRF'in resmi olarak önerdiği modern OpenAPI 3.0 standardı olan **`drf-spectacular`**'a geçilmelidir. |
-| **`IPy.py`** (`vrtManager/IPy.py`) | Vendored 1.01 (2011) | Python Standard `ipaddress` | Projede yer alan 1600 satırlık harici `IPy.py` dosyası yerine, Python 3.3+'dan beri yerleşik olan standart `ipaddress` modülü kullanılmalıdır. |
+| **`drf-yasg`** | `1.21.10` | `drf-spectacular` ✅ | Terk edilmiş Swagger 2.0 kütüphanesi yerine modern OpenAPI 3.0 standardı olan **`drf-spectacular`** (sidecar ile offline/air-gapped destekli) kuruldu. |
+| **`IPy.py`** (`vrtManager/IPy.py`) | Vendored 1.01 (2011) | Python Standard `ipaddress` ✅ | 1650+ satırlık eski harici kod silindi, standart `ipaddress` modülüne geçildi ve 15 adet unit test eklendi. |
 
 ---
 

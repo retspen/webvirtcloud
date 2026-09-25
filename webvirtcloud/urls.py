@@ -1,25 +1,24 @@
 from django.conf import settings
 from django.urls import include, path, re_path
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 from appsettings.views import appsettings
 from console.views import console
 from instances.views import index
 
+# Fallback for existing installations where REST_FRAMEWORK.DEFAULT_SCHEMA_CLASS is not configured in settings.py
+user_rf = getattr(settings, "REST_FRAMEWORK", None)
+if not user_rf or "DEFAULT_SCHEMA_CLASS" not in user_rf:
+    try:
+        from rest_framework.settings import api_settings
+        from drf_spectacular.openapi import AutoSchema
 
-schema_view = get_schema_view(
-   openapi.Info(
-      title="Webvirtcloud REST-API",
-      default_version='v1',
-      description="Webvirtcloud REST API",
-      terms_of_service="https://www.google.com/policies/terms/",
-      contact=openapi.Contact(email="catborise@gmail.com"),
-      license=openapi.License(name="BSD License"),
-   ),
-   public=True,
-   permission_classes=(permissions.AllowAny,),
-)
+        api_settings.DEFAULT_SCHEMA_CLASS = AutoSchema
+    except (ImportError, AttributeError):
+        pass
 
 urlpatterns = [
     path("", index, name="index"),
@@ -34,9 +33,10 @@ urlpatterns = [
     path("logs/", include("logs.urls")),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api/v1/', include("webvirtcloud.urls-api")),
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    re_path(r"^swagger\.(?P<format>json|yaml)$", SpectacularAPIView.as_view(), name="schema-json"),
+    path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="schema-swagger-ui"),
+    path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="schema-redoc"),
 ]
 
 if settings.DEBUG:

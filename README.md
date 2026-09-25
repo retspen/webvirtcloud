@@ -363,6 +363,11 @@ python3 manage.py collectstatic --noinput
 sudo service supervisor restart
 ```
 
+> **Note on Settings Upgrade:**
+> When upgrading from earlier versions using `drf-yasg`, update your `webvirtcloud/settings.py`:
+> 1. In `INSTALLED_APPS`, replace `'drf_yasg'` with `'drf_spectacular'` and `'drf_spectacular_sidecar'`.
+> 2. Ensure the `REST_FRAMEWORK` and `SPECTACULAR_SETTINGS` configuration blocks are present (see `webvirtcloud/settings.py.template`).
+
 ### Running tests
 
 Server on which tests will be performed must have libvirt up and running.

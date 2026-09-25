@@ -18,7 +18,7 @@ Platform, hem sistem yöneticilerine birden fazla fiziksel KVM sunucusunu tek no
 |---|---|---|
 | **Çalışma Zamanı** | Python >= 3.11 | Modern Python çalışma ortamı |
 | **Web Çatısı** | Django 4.2 LTS | MVC tabanlı ana web altyapısı ve ORM |
-| **API** | Django REST Framework (DRF) + drf-yasg | RESTful API uçları ve Swagger/OpenAPI dokümantasyonu |
+| **API** | Django REST Framework (DRF) + drf-spectacular | RESTful API uçları ve OpenAPI 3.0 / Swagger dokümantasyonu |
 | **Sanallaştırma API** | `libvirt-python` (11.4.0) + `lxml` | Libvirt API çağrıları ve XML domain/storage/network tanımlamaları |
 | **Konsol / VNC** | WebSockify + noVNC | Web tarayıcısı üzerinden HTML5 VNC/SPICE konsol erişimi |
 | **Ön Yüz (Frontend)** | Django Templates, Bootstrap 5, Bootstrap Icons, jQuery | Sunucu taraflı render edilen dinamik kullanıcı arayüzü |
