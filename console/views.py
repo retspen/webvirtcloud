@@ -86,6 +86,9 @@ def console(request):
     if ":" in ws_host:
         ws_host = re.sub(":[0-9]+", "", ws_host)
 
+    if ws_path:
+        ws_path = ws_path.strip("/") + "/" if ws_path.strip("/") else ""
+
     if console_type == "vnc" or console_type == "spice":
         console_page = "console-" + console_type + "-" + view_type + ".html"
         response = render(request, console_page, locals())

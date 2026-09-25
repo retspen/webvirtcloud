@@ -20,6 +20,17 @@ if [ -z "$SECRET_KEY" ]; then
     fi
 fi
 
+# Apply optional WebSocket configuration from environment
+if [ -n "$WS_PUBLIC_PORT" ]; then
+    sed -i "s|^WS_PUBLIC_PORT = .*|WS_PUBLIC_PORT = $WS_PUBLIC_PORT|" "$APP_DIR/webvirtcloud/settings.py"
+fi
+if [ -n "$WS_PUBLIC_HOST" ]; then
+    sed -i "s|^WS_PUBLIC_HOST = .*|WS_PUBLIC_HOST = \"$WS_PUBLIC_HOST\"|" "$APP_DIR/webvirtcloud/settings.py"
+fi
+if [ -n "$WS_PUBLIC_PATH" ]; then
+    sed -i "s|^WS_PUBLIC_PATH = .*|WS_PUBLIC_PATH = \"$WS_PUBLIC_PATH\"|" "$APP_DIR/webvirtcloud/settings.py"
+fi
+
 # Persist SQLite database in DATA_DIR
 if [ ! -f "$DATA_DIR/db.sqlite3" ] && [ -f "$APP_DIR/db.sqlite3" ] && [ ! -L "$APP_DIR/db.sqlite3" ]; then
     mv "$APP_DIR/db.sqlite3" "$DATA_DIR/db.sqlite3"

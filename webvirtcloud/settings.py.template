@@ -213,7 +213,7 @@ WS_PUBLIC_PORT = 6080
 WS_PUBLIC_HOST = None
 
 # Websock public path
-WS_PUBLIC_PATH = "/novncd/"
+WS_PUBLIC_PATH = "novncd/"
 
 # Websock Certificate for SSL
 WS_CERT = None
