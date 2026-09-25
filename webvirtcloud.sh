@@ -89,6 +89,7 @@ progress () {
   echo ""
 }
 
+# shellcheck disable=SC2294
 log () {
   if [ -n "$verbose" ]; then
     eval "$@" |& tee -a /var/log/webvirtcloud-install.log
@@ -473,7 +474,7 @@ until [[ $setupfqdn == "yes" ]] || [[ $setupfqdn == "no" ]]; do
       read -r fqdn_from_user
       setupfqdn="yes"
 
-      if [ ! -z $fqdn_from_user ]; then
+      if [ -n "$fqdn_from_user" ]; then
         fqdn=$fqdn_from_user
       fi
 
