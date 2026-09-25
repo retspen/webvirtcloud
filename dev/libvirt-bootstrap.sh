@@ -160,11 +160,11 @@ __gather_linux_system_info() {
             # Let's convert CamelCase to Camel Case
             DISTRO_NAME=$(__camelcase_split "$DISTRO_NAME")
         fi
-        if [ "${DISTRO_NAME}" = "openSUSE project" ]; then
+        if [ "${DISTRO_NAME}" = "openSUSE project" ] || [ "${DISTRO_NAME}" = "openSUSE" ] || [ "${DISTRO_NAME}" = "opensuse" ]; then
             # lsb_release -si returns "openSUSE project" on openSUSE 12.3
             DISTRO_NAME="opensuse"
         fi
-        if [ "${DISTRO_NAME}" = "SUSE LINUX" ]; then
+        if [ "${DISTRO_NAME}" = "SUSE LINUX" ] || [ "${DISTRO_NAME}" = "SLES" ] || [ "${DISTRO_NAME}" = "sles" ]; then
             # lsb_release -si returns "SUSE LINUX" on SLES 11 SP3
             DISTRO_NAME="suse"
         fi
@@ -223,8 +223,8 @@ __gather_linux_system_info() {
                 done < /etc/"${rsource}"
                 ;;
             os                 )
-                nn=$(grep '^ID=' /etc/os-release | sed -e 's/^ID=\(.*\)$/\1/g')
-                rv=$(grep '^VERSION_ID=' /etc/os-release | sed -e 's/^VERSION_ID=\(.*\)$/\1/g')
+                nn=$(grep '^ID=' /etc/os-release | sed -e 's/^ID=\(.*\)$/\1/g' | tr -d '"'\'')
+                rv=$(grep '^VERSION_ID=' /etc/os-release | sed -e 's/^VERSION_ID=\(.*\)$/\1/g' | tr -d '"'\'')
                 [ "${rv}x" != "x" ] && v=$(__parse_version_string "$rv") || v=""
                 case $(echo "${nn}" | tr '[:upper:]' '[:lower:]') in
                     arch        )
@@ -241,6 +241,12 @@ __gather_linux_system_info() {
                         else
                             echowarn "Unable to parse the Debian Version"
                         fi
+                        ;;
+                    opensuse*   )
+                        n="opensuse"
+                        ;;
+                    sles*|sled*|suse* )
+                        n="suse"
                         ;;
                     *           )
                         n=${nn}
@@ -305,10 +311,8 @@ __check_end_of_life_versions() {
             ;;
 
         opensuse)
-            # openSUSE versions not supported
-            #
-            #  <= 12.1
-            if { [ "$DISTRO_MAJOR_VERSION" -eq 12 ] && [ "$DISTRO_MINOR_VERSION" -eq 1 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 12 ]; then
+            # openSUSE: allow Leap 15.x and Tumbleweed
+            if [ -n "$DISTRO_MAJOR_VERSION" ] && [ "$DISTRO_MAJOR_VERSION" -lt 12 ]; then
                 echoerror "End of life distributions are not supported."
                 echoerror "Please consider upgrading to the next stable. See:"
                 echoerror "    http://en.opensuse.org/Lifetime"
@@ -317,16 +321,19 @@ __check_end_of_life_versions() {
             ;;
 
         suse)
-            # SuSE versions not supported
-            #
-            # < 11 SP2
-            SUSE_PATCHLEVEL=$(awk '/PATCHLEVEL/ {print $3}' /etc/SuSE-release )
-            if [ "x${SUSE_PATCHLEVEL}" = "x" ]; then
-                SUSE_PATCHLEVEL="00"
-            fi
-            if { [ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$SUSE_PATCHLEVEL" -lt 02 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 11 ]; then
-                echoerror "Versions lower than SuSE 11 SP2 are not supported."
-                echoerror "Please consider upgrading to the next stable"
+            # SLES / SLED
+            if [ -f /etc/SuSE-release ]; then
+                SUSE_PATCHLEVEL=$(awk '/PATCHLEVEL/ {print $3}' /etc/SuSE-release )
+                if [ "x${SUSE_PATCHLEVEL}" = "x" ]; then
+                    SUSE_PATCHLEVEL="00"
+                fi
+                if { [ "$DISTRO_MAJOR_VERSION" -eq 11 ] && [ "$SUSE_PATCHLEVEL" -lt 02 ]; } || [ "$DISTRO_MAJOR_VERSION" -lt 11 ]; then
+                    echoerror "Versions lower than SuSE 11 SP2 are not supported."
+                    echoerror "Please consider upgrading to the next stable"
+                    exit 1
+                fi
+            elif [ -n "$DISTRO_MAJOR_VERSION" ] && [ "$DISTRO_MAJOR_VERSION" -lt 12 ]; then
+                echoerror "Versions lower than SUSE 12 are not supported."
                 exit 1
             fi
             ;;
@@ -546,57 +553,62 @@ daemons_running_fedora() {
 #   Opensuse Install Functions
 #
 install_opensuse() {
-    zypper -n install -l kvm libvirt bridge-utils python3-libguestfs supervisor || return 1
+    zypper -n install -l qemu-kvm libvirt libvirt-daemon-qemu libvirt-client bridge-utils python3-libguestfs supervisor || \
+    zypper -n install -l kvm libvirt bridge-utils python3-libguestfs python3-supervisor || \
+    zypper -n install -l kvm libvirt bridge-utils python3-libguestfs || return 1
     return 0
 }
 
 install_opensuse_post() {
     if [ -f /etc/sysconfig/libvirtd ]; then
         sed -i 's/#LIBVIRTD_ARGS/LIBVIRTD_ARGS/g' /etc/sysconfig/libvirtd
-    else
-        echoerror "/etc/sysconfig/libvirtd not found. Exiting..."
-        exit 1
     fi
     if [ -f /etc/libvirt/libvirtd.conf ]; then
         sed -i 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
         sed -i 's/#listen_tcp/listen_tcp/g' /etc/libvirt/libvirtd.conf
         sed -i 's/#auth_tcp/auth_tcp/g' /etc/libvirt/libvirtd.conf
-    else
-        echoerror "/etc/libvirt/libvirtd.conf not found. Exiting..."
-        exit 1
+        sed -i 's/#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/g' /etc/libvirt/libvirtd.conf
+        sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' /etc/libvirt/libvirtd.conf
+        sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' /etc/libvirt/libvirtd.conf
+    fi
+    if [ -f /etc/libvirt/virtqemud.conf ]; then
+        sed -i 's/#listen_tls/listen_tls/g' /etc/libvirt/virtqemud.conf
+        sed -i 's/#listen_tcp/listen_tcp/g' /etc/libvirt/virtqemud.conf
+        sed -i 's/#auth_tcp/auth_tcp/g' /etc/libvirt/virtqemud.conf
+        sed -i 's/#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/g' /etc/libvirt/virtqemud.conf
+        sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' /etc/libvirt/virtqemud.conf
+        sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' /etc/libvirt/virtqemud.conf
     fi
     if [ -f /etc/libvirt/qemu.conf ]; then
         sed -i 's/#[ ]*vnc_listen.*/vnc_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
         sed -i 's/#[ ]*spice_listen.*/spice_listen = "0.0.0.0"/g' /etc/libvirt/qemu.conf
-    else
-        echoerror "/etc/libvirt/qemu.conf not found. Exiting..."
-        exit 1
     fi
-    if [ -f /etc/supervisord.conf ]; then
-        curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd > /usr/local/bin/gstfsd
-        chmod +x /usr/local/bin/gstfsd
-        curl https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf > /etc/supervisor.d/gstfsd.ini
-    else
-        echoerror "Supervisor not found. Exiting..."
-        exit 1
+    mkdir -p /etc/supervisord.d /etc/supervisor/conf.d
+    if [ -f /etc/supervisord.conf ] || [ -f /etc/supervisor/supervisord.conf ]; then
+        curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd > /usr/local/bin/gstfsd 2>/dev/null || true
+        chmod +x /usr/local/bin/gstfsd 2>/dev/null || true
+        curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/supervisor/gstfsd.conf > /etc/supervisord.d/gstfsd.ini 2>/dev/null || true
     fi
     return 0
 }
 
 daemons_running_opensuse() {
-    if [ -f /usr/lib/systemd/system/libvirtd.service ]; then
-        systemctl stop libvirtd.service > /dev/null 2>&1
-        systemctl start libvirtd.service
-    fi
-    if [ -f /usr/lib/systemd/system/libvirt-guests.service ]; then
-        systemctl stop libvirt-guests.service > /dev/null 2>&1
-        systemctl start libvirt-guests.service
-    fi
-    if [ -f /usr/lib/systemd/system/supervisord.service ]; then
-        systemctl stop supervisord.service > /dev/null 2>&1
-        systemctl start supervisord.service
-    fi
+    systemctl enable --now libvirtd.service 2>/dev/null || systemctl enable --now virtqemud.service 2>/dev/null || true
+    systemctl enable --now libvirt-guests.service 2>/dev/null || true
+    systemctl enable --now supervisord.service 2>/dev/null || systemctl enable --now supervisor.service 2>/dev/null || true
     return 0
+}
+
+install_suse() {
+    install_opensuse "$@"
+}
+
+install_suse_post() {
+    install_opensuse_post "$@"
+}
+
+daemons_running_suse() {
+    daemons_running_opensuse "$@"
 }
 #
 #   Ended openSUSE Install Functions

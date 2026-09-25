@@ -169,3 +169,16 @@ Built on Django REST Framework with `drf-nested-routers`, providing a structured
 ## 7. Architecture Highlights
 
 WebVirtCloud leverages a hybrid pattern: it combines the relational strengths of the **Django ORM** for persistent entities (users, compute host credentials, quotas, and permission delegations) with direct, real-time **libvirt C API bindings** for dynamic virtualization state (VM statuses, resource allocation, storage metrics, and live hardware statistics). This design ensures that the web console always reflects the true hypervisor state without risk of database desynchronization.
+
+---
+
+## 8. Supported Distributions & Platform Matrix
+
+WebVirtCloud installer and runtime dependencies support modern enterprise Linux distributions:
+
+| Distribution Family | Target Versions | Package Manager | Init / Supervisor |
+|---|---|---|---|
+| **Ubuntu** | 20.04, 22.04 LTS, 24.04 LTS | `apt` | Systemd / Supervisor |
+| **Debian** | 10, 11, 12 (Bookworm) | `apt` | Systemd / Supervisor / Runit |
+| **RHEL / Rocky / Alma** | 9.x, 10.x | `dnf` | Systemd / Supervisord |
+| **openSUSE / SLES** | openSUSE Leap 15.x, Tumbleweed, SLES 15 | `zypper` | Systemd / Supervisord |

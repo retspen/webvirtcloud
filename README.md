@@ -32,7 +32,7 @@ WebVirtCloud is a virtualization web interface for admins and users. It can dele
 
 ## Quick Install with Installer (Beta)
 
-Install an OS and run specified commands. Installer supported OSes: Ubuntu 20.04/22.04/24.04, Debian 10/11/12, Rocky/Alma/OEL/RHEL 10.
+Install an OS and run specified commands. Installer supported OSes: Ubuntu 20.04/22.04/24.04, Debian 10/11/12, Rocky/Alma/OEL/RHEL 9/10, openSUSE Leap 15.x / Tumbleweed, and SLES 15.
 It can be installed on a virtual machine, physical host or on a KVM host.
 
 ```bash
@@ -155,6 +155,26 @@ python manage.py runserver 0.0.0.0:8000
 sudo apt-get update && sudo apt-get -y install git python3-venv python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libldap2-dev libsasl2-dev gcc pkg-config
 
 # 2. Create virtual environment
+python3 -m venv --system-site-packages .venv
+source .venv/bin/activate
+
+# 3. Install Python dependencies
+pip install -r conf/requirements.txt
+pip install -r dev/requirements.txt
+
+# 4. Initialize configuration and run local dev server
+cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+sed -i -E 's/SECRET_KEY = .*/SECRET_KEY = "'$(python3 conf/runit/secret_generator.py)'"/' webvirtcloud/settings.py
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+```
+
+#### openSUSE Leap 15.x / Tumbleweed / SLES 15:
+```bash
+# 1. Install system prerequisites
+sudo zypper --non-interactive install -y git python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml openldap2-devel cyrus-sasl-devel libopenssl-devel libxslt-devel libxml2-devel gcc pkg-config
+
+# 2. Create virtual environment with system site packages
 python3 -m venv --system-site-packages .venv
 source .venv/bin/activate
 
