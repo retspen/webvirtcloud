@@ -29,6 +29,8 @@ from django.contrib.auth.views import LoginView
 from logs.views import addlogmsg
 
 class CustomLoginView(LoginView):
+    redirect_authenticated_user = True
+
     def form_valid(self, form):
         username = form.cleaned_data['username']
         addlogmsg(username, "-", "-", "Logged In")

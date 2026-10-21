@@ -55,6 +55,11 @@ class PageTests(TestCase):
             self.assertEqual(response.status_code, 200)
             checked.append("network")
             yield "network", html.fromstring(response.content)
+        # a signed-in user is sent on from the login page
+        response = self.client_class().get(reverse("accounts:login"))
+        self.assertEqual(response.status_code, 200)
+        checked.append("accounts:login")
+        yield "accounts:login", html.fromstring(response.content)
         self.assertTrue({"index", "overview", "instances:instance", "nwfilter"} <= set(checked), checked)
         self.assertIn("instances:create_instance", checked)
 

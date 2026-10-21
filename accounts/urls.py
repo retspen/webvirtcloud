@@ -45,6 +45,7 @@ if settings.OTP_ENABLED:
             LoginView.as_view(
                 template_name="accounts/otp_login.html",
                 authentication_form=SingleDeviceOTPForm,
+                redirect_authenticated_user=True,
             ),
             name="login",
         ),

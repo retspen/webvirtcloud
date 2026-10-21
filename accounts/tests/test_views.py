@@ -79,6 +79,14 @@ class AccountsTestCase(TestCase):
         response = client.post(reverse("accounts:logout"))
         self.assertRedirects(response, reverse("accounts:login"))
 
+    def test_a_signed_in_user_is_sent_on_from_the_login_page(self):
+        self.client.force_login(self.test_user)
+        login = reverse("accounts:login")
+        response = self.client.get(f"{login}?next={reverse('computes')}")
+        self.assertRedirects(response, reverse("computes"), fetch_redirect_response=False)
+        response = self.client.get(f"{login}?next=https://example.com/")
+        self.assertRedirects(response, settings.LOGIN_REDIRECT_URL, fetch_redirect_response=False)
+
     def test_change_password(self):
         self.client.force_login(self.test_user)
 

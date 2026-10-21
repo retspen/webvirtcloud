@@ -141,3 +141,9 @@ class OTPLoginHTTPTestCase(TestCase):
         device = TOTPDevice.objects.create(user=self.user, confirmed=True)
         response = self._post(otp_token=wrong_token(device))
         self.assertEqual(response.status_code, 200)
+
+    def test_a_signed_in_user_is_sent_on_from_the_login_page(self):
+        from django.urls import reverse
+        self.client.force_login(self.user)
+        response = self.client.get(f"{reverse('accounts:login')}?next={reverse('computes')}")
+        self.assertRedirects(response, reverse("computes"), fetch_redirect_response=False)
