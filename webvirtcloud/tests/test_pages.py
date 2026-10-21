@@ -1,6 +1,4 @@
-"""Every HTML page a superuser can open has unique element IDs: a repeated
-ID makes getElementById, labels and Bootstrap targets reach the first one
-only. Pages are rendered on libvirt's test driver."""
+"""Every HTML page a superuser can open, rendered on libvirt's test driver."""
 
 from collections import Counter
 from unittest.mock import patch
@@ -23,8 +21,9 @@ def named_urls(patterns, prefix="", keys=()):
             yield prefix + p.name, keys + tuple(p.pattern.regex.groupindex)
 
 
-class UniqueIdTests(TestCase):
-    def test_no_page_repeats_an_id(self):
+class PageTests(TestCase):
+    def pages(self):
+        """(URL name, parsed page) for every HTML page; asserts the main ones are among them."""
         conn = libvirt.open("test:///default")
         self.addCleanup(conn.close)
         compute = Compute.objects.create(name="testdrv", hostname="localhost", login="", password="", type=4)
@@ -49,8 +48,25 @@ class UniqueIdTests(TestCase):
                 if response.status_code != 200 or not response["Content-Type"].startswith("text/html"):
                     continue
                 checked.append(name)
-                ids = Counter(html.fromstring(response.content).xpath("//@id"))
-                with self.subTest(page=name):
-                    self.assertEqual({i: n for i, n in ids.items() if n > 1}, {})
+                yield name, html.fromstring(response.content)
+            # its pool key names a network, not the storage pool above
+            response = self.client.get(reverse("network", kwargs={"compute_id": compute.id, "pool": "default"}))
+            self.assertEqual(response.status_code, 200)
+            checked.append("network")
+            yield "network", html.fromstring(response.content)
         self.assertTrue({"index", "overview", "instances:instance", "nwfilter"} <= set(checked), checked)
         self.assertIn("instances:create_instance", checked)
+
+    def test_no_page_repeats_an_id(self):
+        # a repeated ID makes getElementById, labels and Bootstrap targets reach the first one only
+        for name, page in self.pages():
+            ids = Counter(page.xpath("//@id"))
+            with self.subTest(page=name):
+                self.assertEqual({i: n for i, n in ids.items() if n > 1}, {})
+
+    def test_every_table_scrolls_in_its_own_box(self):
+        # a wide table scrolls inside .table-responsive instead of widening the page on a phone
+        for name, page in self.pages():
+            bare = [t.get("class") for t in page.xpath("//table[not(parent::div[contains(@class, 'table-responsive')])]")]
+            with self.subTest(page=name):
+                self.assertEqual(bare, [])

@@ -74,28 +74,30 @@
         <div class="col-sm-12">
             <h5>{% trans 'Slaves' %}</h5>
             {% if itype == 'bridge' %}
-            <table class="table table-bordered">
-                <thead>
-                <tr>
-                    <th scope="col">{% trans 'MAC' %}</th>
-                    <th scope="col">{% trans 'Name' %}</th>
-                    <th scope="col">{% trans 'Type' %}</th>
-                    <th scope="col">{% trans 'Speed' %}</th>
-                    <th scope="col">{% trans 'State' %}</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for iface in slave_ifaces %}
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
                     <tr>
-                        <td>{{ iface.mac }}</td>
-                        <td>{{ iface.name }}</td>
-                        <td>{{ iface.type }}</td>
-                        <td>{{ iface.speed }}</td>
-                        <td>{{ iface.state }}</td>
+                        <th scope="col">{% trans 'MAC' %}</th>
+                        <th scope="col">{% trans 'Name' %}</th>
+                        <th scope="col">{% trans 'Type' %}</th>
+                        <th scope="col">{% trans 'Speed' %}</th>
+                        <th scope="col">{% trans 'State' %}</th>
                     </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    {% for iface in slave_ifaces %}
+                        <tr>
+                            <td>{{ iface.mac }}</td>
+                            <td>{{ iface.name }}</td>
+                            <td>{{ iface.type }}</td>
+                            <td>{{ iface.speed }}</td>
+                            <td>{{ iface.state }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% endif %}
         </div>
     </div>

@@ -87,73 +87,77 @@
 
      <div class="row">
         <div class="col-12 col-sm-12">
-            <table class="table table-hover mb-3">
+            <div class="table-responsive">
+                <table class="table table-hover mb-3">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">{% trans "Reference" %}</th>
+                            <th scope="col">{% trans "Action" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                     {% for ref in refs %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ ref }}</td>
+                            <td style="width:30px;">
+                                <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
+                                    <input type="hidden" name="ref" value="{{ ref }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}');">
+                                        {% bs_icon 'trash' %}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    {% include 'add_nwf_rule.html' %}
+    <h5 class="page-header">{% trans "Rules" %}</h5>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">{% trans "Reference" %}</th>
-                        <th scope="col">{% trans "Action" %}</th>
+                        <th scope="col">{% trans "Rule" %}</th>
+                        <th scope="col" class="text-nowrap">{% trans "Action Type" %}</th>
+                        <th scope="col">{% trans "Direction" %}</th>
+                        <th scope="col">{% trans "Priority" %}</th>
+                        <th scope="col">{% trans "Statematch" %}</th>
+                        <th scope="col">{% trans "Directives" %}</th>
+                        <th scope="col" style="width:30px;">{% trans "Action" %}</th>
                     </tr>
                 </thead>
                 <tbody>
-                 {% for ref in refs %}
+                {% for rule in rules %}
                     <tr>
                         <th scope="row">{{ forloop.counter }}</th>
-                        <td>{{ ref }}</td>
-                        <td style="width:30px;">
-                            <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
-                                <input type="hidden" name="ref" value="{{ ref }}">
-                                <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}');">
+                        <td>{{ rule.action }}</td>
+                        <td>{{ rule.direction }}</td>
+                        <td>{{ rule.priority }}</td>
+                        <td>{{ rule.statematch }}</td>
+                        <td>{{ rule.directives }}</td>
+                        <td>
+                            <form action="" method="post" role="form" aria-label="Delete NWFilter rule">{% csrf_token %}
+                                <input type="hidden" name="action" value="{{ rule.action }}">
+                                <input type="hidden" name="direction" value="{{ rule.direction }}">
+                                <input type="hidden" name="priority" value="{{ rule.priority }}">
+                                <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans 'Delete' %}" onclick="return confirm('{% trans "Are you sure?" %}');">
                                     {% bs_icon 'trash' %} 
                                 </button>
                             </form>
                         </td>
                     </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+                    {% endfor %}
+                    </tbody>
+                </table>
         </div>
-    </div>
-    
-    
-    {% include 'add_nwf_rule.html' %} 
-    <h5 class="page-header">{% trans "Rules" %}</h5>
-
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th scope="col">{% trans "Rule" %}</th>
-                    <th scope="col" class="text-nowrap">{% trans "Action Type" %}</th>
-                    <th scope="col">{% trans "Direction" %}</th>
-                    <th scope="col">{% trans "Priority" %}</th>
-                    <th scope="col">{% trans "Statematch" %}</th>
-                    <th scope="col">{% trans "Directives" %}</th>
-                    <th scope="col" style="width:30px;">{% trans "Action" %}</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for rule in rules %}
-                <tr>
-                    <th scope="row">{{ forloop.counter }}</th>
-                    <td>{{ rule.action }}</td>
-                    <td>{{ rule.direction }}</td>
-                    <td>{{ rule.priority }}</td>
-                    <td>{{ rule.statematch }}</td>
-                    <td>{{ rule.directives }}</td>
-                    <td>
-                        <form action="" method="post" role="form" aria-label="Delete NWFilter rule">{% csrf_token %}
-                            <input type="hidden" name="action" value="{{ rule.action }}">
-                            <input type="hidden" name="direction" value="{{ rule.direction }}">
-                            <input type="hidden" name="priority" value="{{ rule.priority }}">
-                            <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans 'Delete' %}" onclick="return confirm('{% trans "Are you sure?" %}');">
-                                {% bs_icon 'trash' %} 
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
 {% endblock %}
 
 {% block script %}

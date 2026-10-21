@@ -1,97 +1,99 @@
 {% load i18n %}
 {% load bootstrap_icons %}
-<table class="table table-hover sortable-theme-bootstrap" data-sortable>
-    <thead>
-        <tr>
-            <th scope="col" data-sortable="false"><a class="link-primary" href="#" id="hide-all-instances" onclick="hide_all_host_instances()">#</a></th>
-            <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
-            <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
-            <th scope="col">{% trans "Status" %}</th>
-	    {% if app_settings.VM_DRBD_STATUS == 'True' %}
-	    <th scope="col">{% trans "Role/Disk" %}</th>
-	    {% endif %}
-            <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
-            <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
-            <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
-        </tr>
-    </thead>
-    {% for compute in computes %}
-        <tbody class="searchable">
-            {% if compute.instance_set.count > 0 %}
-                <tr class="table-secondary fw-bold border-bottom border-dark">
-                    <td>
-                        <span id="collapse_host_instances_{{ compute.id }}" onclick="hide_host_instances('{{ compute.id }}');" class="bi bi-chevron-up" ></span>
-                    </td>
-                    <td>
-                        <a class="link-dark" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
-                        <span id="inst_count_badge_{{ compute.id }}" class="badge bg-secondary d-none">{{ compute.instance_set.count }}</span>
-                    </td>
-                    <td class="d-none d-sm-table-cell"></td>
-                    <td>
-                        {% if compute.status is True %}
-                            <span class="badge bg-success-subtle text-success-emphasis">{% trans "Connected" %}</span>
-                        {% else %}
-                            <span class="badge bg-danger-subtle text-danger-emphasis">{% trans "Not Connected" %}</span>
-                        {% endif %}
-                    </td>
-                    {% if app_settings.VM_DRBD_STATUS == 'True' %}
+<div class="table-responsive">
+    <table class="table table-hover sortable-theme-bootstrap" data-sortable>
+        <thead>
+            <tr>
+                <th scope="col" data-sortable="false"><a class="link-primary" href="#" id="hide-all-instances" onclick="hide_all_host_instances()">#</a></th>
+                <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
+                <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
+                <th scope="col">{% trans "Status" %}</th>
+                {% if app_settings.VM_DRBD_STATUS == 'True' %}
+                <th scope="col">{% trans "Role/Disk" %}</th>
+                {% endif %}
+                <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
+                <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
+                <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
+            </tr>
+        </thead>
+        {% for compute in computes %}
+            <tbody class="searchable">
+                {% if compute.instance_set.count > 0 %}
+                    <tr class="table-secondary fw-bold border-bottom border-dark">
+                        <td>
+                            <span id="collapse_host_instances_{{ compute.id }}" onclick="hide_host_instances('{{ compute.id }}');" class="bi bi-chevron-up" ></span>
+                        </td>
+                        <td>
+                            <a class="link-dark" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
+                            <span id="inst_count_badge_{{ compute.id }}" class="badge bg-secondary d-none">{{ compute.instance_set.count }}</span>
+                        </td>
                         <td class="d-none d-sm-table-cell"></td>
-                    {% endif %}
-                    {% if compute.status is True %}
-                    <td class="d-none d-sm-table-cell text-center">{{ compute.cpu_count }}</td>
-                    <td class="d-none d-sm-table-cell text-right">{{ compute.ram_size|filesizeformat }}</td>
-                    <td>
-                        <div class="progress">
-                            <div class="progress-bar bg-success" role="progressbar" aria-label="{% trans "Mem Usage" %}" style="width: {{ compute.ram_usage }}%"
-                                aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.ram_usage }}%
-                            </div>
-                        </div>
-                    </td>
-                    {% else %}
-                    <td class="d-none d-sm-table-cell"></td>
-                    <td class="d-none d-sm-table-cell"></td>
-                    <td></td>
-                    {% endif %}
-                </tr>
-                {% for instance in compute.instance_set.all %}
-                    <tr host="{{ compute.id }}">
-                        <td class="text-right">{{ forloop.counter }} </td>
                         <td>
-                            <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
-                            <br>
-                            {% if instance.info %}<p class="m-0 small fst-italic">{{ instance.title }}</p>{% endif %}
-                        </td>
-                        <td>
-                            <em>
-                                {% if instance.userinstance_set.all.count > 0 %}
-                                {{ instance.userinstance_set.all.0.user }}
-                                {% if instance.userinstance_set.all.count > 1 %}
-                                (+{{ instance.userinstance_set.all.count|add:"-1" }})
-                                {% endif %}
-                                {% endif %}
-                            </em>
-                        </td>
-                        <td>
-                            {% include 'instance_state.html' %}
+                            {% if compute.status is True %}
+                                <span class="badge bg-success-subtle text-success-emphasis">{% trans "Connected" %}</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger-emphasis">{% trans "Not Connected" %}</span>
+                            {% endif %}
                         </td>
                         {% if app_settings.VM_DRBD_STATUS == 'True' %}
-                        <td>
-                            {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="badge bg-success-subtle text-success-emphasis">{% else %}<span class="badge bg-danger-subtle text-danger-emphasis">{% endif %}{{ instance.drbd }}</span>
-                        </td>
+                            <td class="d-none d-sm-table-cell"></td>
                         {% endif %}
-                        <td>{{ instance.info.3 }}</td>
-                        <td>{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
-                        <td class="text-nowrap">
-                            {% include 'instance_actions.html' %}
+                        {% if compute.status is True %}
+                        <td class="d-none d-sm-table-cell text-center">{{ compute.cpu_count }}</td>
+                        <td class="d-none d-sm-table-cell text-right">{{ compute.ram_size|filesizeformat }}</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" role="progressbar" aria-label="{% trans "Mem Usage" %}" style="width: {{ compute.ram_usage }}%"
+                                    aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.ram_usage }}%
+                                </div>
+                            </div>
                         </td>
+                        {% else %}
+                        <td class="d-none d-sm-table-cell"></td>
+                        <td class="d-none d-sm-table-cell"></td>
+                        <td></td>
+                        {% endif %}
                     </tr>
-                {% endfor %}
-            {% endif %}
-        </tbody>
-    {% empty %}
-        <tbody></tbody>{# sortable.js needs a table body #}
-    {% endfor %}
-</table>
+                    {% for instance in compute.instance_set.all %}
+                        <tr host="{{ compute.id }}">
+                            <td class="text-right">{{ forloop.counter }} </td>
+                            <td>
+                                <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
+                                <br>
+                                {% if instance.info %}<p class="m-0 small fst-italic">{{ instance.title }}</p>{% endif %}
+                            </td>
+                            <td>
+                                <em>
+                                    {% if instance.userinstance_set.all.count > 0 %}
+                                    {{ instance.userinstance_set.all.0.user }}
+                                    {% if instance.userinstance_set.all.count > 1 %}
+                                    (+{{ instance.userinstance_set.all.count|add:"-1" }})
+                                    {% endif %}
+                                    {% endif %}
+                                </em>
+                            </td>
+                            <td>
+                                {% include 'instance_state.html' %}
+                            </td>
+                            {% if app_settings.VM_DRBD_STATUS == 'True' %}
+                            <td>
+                                {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="badge bg-success-subtle text-success-emphasis">{% else %}<span class="badge bg-danger-subtle text-danger-emphasis">{% endif %}{{ instance.drbd }}</span>
+                            </td>
+                            {% endif %}
+                            <td>{{ instance.info.3 }}</td>
+                            <td>{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
+                            <td class="text-nowrap">
+                                {% include 'instance_actions.html' %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        {% empty %}
+            <tbody></tbody>{# sortable.js needs a table body #}
+        {% endfor %}
+    </table>
+</div>
 
 {% block script %}
 <script>

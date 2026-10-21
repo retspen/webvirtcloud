@@ -167,40 +167,42 @@
                     </div>
                 </div>
 
-                <table id="ipv4_table" class="table table-hover">
-                    <thead>
-                    <tr>
-                        <th scope="col">{% trans "MAC" %}</th>
-                        <th scope="col">{% trans "Address" %}</th>
-                        <th scope="col">{% trans "Name" %}</th>
-                        <th scope="col">{% trans "Actions" %}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for fix4 in ipv4_fixed_address %}
-                        <tr>  
-                        <form method="post" role="form" aria-label="IPv4 edit/delete form">{% csrf_token %}
-                            <td><input class="form-control" value="{{ fix4.mac }}" name="mac" readonly/></td>
-                            <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
-                            <td><input class="form-control" value="{{ fix4.name }}" name="name" /></td>
-                            <td class="text-nowrap">
-                                <input hidden name="family" value="ipv4"/>
-                                <button type="submit" class="btn btn-sm btn-primary"
-                                        name="modify_fixed_address"
-                                        title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        {% bs_icon 'save' %} 
-                                </button>
-                                <button type="submit" class="btn btn-sm btn-danger"
-                                        name="delete_fixed_address"
-                                        title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        {% bs_icon 'trash' %} 
-                                </button>
-                            </td>
-                        </form>
+                <div class="table-responsive">
+                    <table id="ipv4_table" class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th scope="col">{% trans "MAC" %}</th>
+                            <th scope="col">{% trans "Address" %}</th>
+                            <th scope="col">{% trans "Name" %}</th>
+                            <th scope="col">{% trans "Actions" %}</th>
                         </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {% for fix4 in ipv4_fixed_address %}
+                            <tr>
+                            <form method="post" role="form" aria-label="IPv4 edit/delete form">{% csrf_token %}
+                                <td><input class="form-control" value="{{ fix4.mac }}" name="mac" readonly/></td>
+                                <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
+                                <td><input class="form-control" value="{{ fix4.name }}" name="name" /></td>
+                                <td class="text-nowrap">
+                                    <input hidden name="family" value="ipv4"/>
+                                    <button type="submit" class="btn btn-sm btn-primary"
+                                            name="modify_fixed_address"
+                                            title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            {% bs_icon 'save' %}
+                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                            name="delete_fixed_address"
+                                            title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            {% bs_icon 'trash' %}
+                                    </button>
+                                </td>
+                            </form>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div> 
         </div>
     {% endif %}
@@ -276,40 +278,42 @@
                         <button type="button" class="btn btn-secondary" id="filter_clear_ipv6">{% trans 'Clear' %}</button>
                     </div>
                 </div>
-                <table id="ipv6_table" class="table table-hover">
-                    <thead>
-                    <tr>
-                        <th scope="col">{% trans "ID" %}</th>
-                        <th scope="col">{% trans "Address" %}</th>
-                        <th scope="col">{% trans "Name" %}</th>
-                        <th scope="col">{% trans "Actions" %}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for fix6 in ipv6_fixed_address %}
+                <div class="table-responsive">
+                    <table id="ipv6_table" class="table table-hover">
+                        <thead>
                         <tr>
-                            <form method="post" role="form" aria-label="IP v6 edit/delete form">{% csrf_token %}
-                                <td><input class="form-control" value="{{ fix6.id }}" name="id" readonly/></td>
-                                <td><input class="form-control" value="{{ fix6.ip }}" name="address" /></td>
-                                <td><input class="form-control" value="{{ fix6.name }}" name="name" /></td>
-                                <td class="text-nowrap">
-                                    <input hidden name="family" value="ipv6"/>
-                                    <button type="submit" class="btn btn-sm btn-primary"
-                                            name="modify_fixed_address"
-                                            title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        <span>{% bs_icon 'save' %} </span>
-                                    </button>
-                                    <button type="submit" class="btn btn-sm btn-danger"
-                                            name="delete_fixed_address"
-                                            title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        <span>{% bs_icon 'trash' %} </span>
-                                    </button>
-                                </td>
-                            </form>
+                            <th scope="col">{% trans "ID" %}</th>
+                            <th scope="col">{% trans "Address" %}</th>
+                            <th scope="col">{% trans "Name" %}</th>
+                            <th scope="col">{% trans "Actions" %}</th>
                         </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {% for fix6 in ipv6_fixed_address %}
+                            <tr>
+                                <form method="post" role="form" aria-label="IP v6 edit/delete form">{% csrf_token %}
+                                    <td><input class="form-control" value="{{ fix6.id }}" name="id" readonly/></td>
+                                    <td><input class="form-control" value="{{ fix6.ip }}" name="address" /></td>
+                                    <td><input class="form-control" value="{{ fix6.name }}" name="name" /></td>
+                                    <td class="text-nowrap">
+                                        <input hidden name="family" value="ipv6"/>
+                                        <button type="submit" class="btn btn-sm btn-primary"
+                                                name="modify_fixed_address"
+                                                title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            <span>{% bs_icon 'save' %} </span>
+                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                name="delete_fixed_address"
+                                                title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            <span>{% bs_icon 'trash' %} </span>
+                                        </button>
+                                    </td>
+                                </form>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     {% endif %}
@@ -323,48 +327,50 @@
         <h5 class="page-header">{% trans "QoS Configuration" %}</h5>
 
         <div class="col-sm-12">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th scope="col">{% trans "Direction" %}</th>
-                        <th scope="col">{% trans "Average" %}</th>
-                        <th scope="col">{% trans "Peak" %}</th>
-                        <th scope="col">{% trans "Burst" %}</th>
-                        <th scope="col">{% trans "Actions" %}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for q, att in qos.items %}
-                <form method="post" role="form" aria-label="QoS configuration form">{% csrf_token %}
-                    <tr>
-                        <td><label class="col-form-label">{{ q | capfirst }}</label></td>
-                        <td><input id="qos_average" class="form-control" name="qos_average"
-                                    value="{{ att.average|default:'' }}"/>
-                        </td>
-                        <td><input id="qos_peak" class="form-control" name="qos_peak"
-                                    value="{{ att.peak|default:'' }}"/>
-                        </td>
-                        <td><input id="qos_burst" class="form-control" name="qos_burst"
-                                    value="{{ att.burst|default:'' }}"/>
-                        </td>
-                        <td class="text-nowrap">
-                            <input name="qos_direction" value="{{ q }}" hidden/>
-                            <button type="submit" class="btn btn-sm btn-primary"
-                                    name="set_qos" data-bs-toggle="modal"
-                                    title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                    {% bs_icon 'save' %} 
-                            </button>
-                            <button type="submit" class="btn btn-sm btn-danger"
-                                    name="unset_qos"
-                                    title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                    {% bs_icon 'trash' %} 
-                            </button>
-                        </td>
-                    </tr>
-                </form>
-                {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">{% trans "Direction" %}</th>
+                            <th scope="col">{% trans "Average" %}</th>
+                            <th scope="col">{% trans "Peak" %}</th>
+                            <th scope="col">{% trans "Burst" %}</th>
+                            <th scope="col">{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for q, att in qos.items %}
+                    <form method="post" role="form" aria-label="QoS configuration form">{% csrf_token %}
+                        <tr>
+                            <td><label class="col-form-label">{{ q | capfirst }}</label></td>
+                            <td><input id="qos_average" class="form-control" name="qos_average"
+                                        value="{{ att.average|default:'' }}"/>
+                            </td>
+                            <td><input id="qos_peak" class="form-control" name="qos_peak"
+                                        value="{{ att.peak|default:'' }}"/>
+                            </td>
+                            <td><input id="qos_burst" class="form-control" name="qos_burst"
+                                        value="{{ att.burst|default:'' }}"/>
+                            </td>
+                            <td class="text-nowrap">
+                                <input name="qos_direction" value="{{ q }}" hidden/>
+                                <button type="submit" class="btn btn-sm btn-primary"
+                                        name="set_qos" data-bs-toggle="modal"
+                                        title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        {% bs_icon 'save' %}
+                                </button>
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        name="unset_qos"
+                                        title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        {% bs_icon 'trash' %}
+                                </button>
+                            </td>
+                        </tr>
+                    </form>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     {% endif %}
 {% endblock %}

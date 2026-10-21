@@ -1,57 +1,59 @@
 {% load i18n %}
-<table class="table table-hover sortable-theme-bootstrap" data-sortable>
-    <thead>
-        <tr>
-            <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
-            {% if request.user.is_superuser %}
-                <th scope="col">{% trans 'Host' %}<br>{% trans 'User' %}</th>
-            {% endif %}
-            <th scope="col">{% trans 'Status' %}</th>
-	    {% if app_settings.VM_DRBD_STATUS == 'True' %}
-	    <th scope="col">{% trans 'Role/Disk' %}</th>
-	    {% endif %}
-            <th scope="col">{% trans 'VCPU' %}</th>
-            <th scope="col">{% trans 'Memory' %}</th>
-            <th scope="col" data-sortable="false">{% trans 'Actions' %}</th>
-        </tr>
-    </thead>
-    <tbody class="searchable">
-        {% for instance in instances  %}
-                <tr>
-                    <td>
-                        <a class="link-primary" href="{% url 'instances:instance' instance.id %}">
-                            {{ instance.name }}
-                        </a>
-                        <br>
-                        {% if instance.info %}<p class="m-0 small font-italic">{{ instance.title }}</p>{% endif %}
-                    </td>
-                    {% if request.user.is_superuser %}
+<div class="table-responsive">
+    <table class="table table-hover sortable-theme-bootstrap" data-sortable>
+        <thead>
+            <tr>
+                <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
+                {% if request.user.is_superuser %}
+                    <th scope="col">{% trans 'Host' %}<br>{% trans 'User' %}</th>
+                {% endif %}
+                <th scope="col">{% trans 'Status' %}</th>
+                {% if app_settings.VM_DRBD_STATUS == 'True' %}
+                <th scope="col">{% trans 'Role/Disk' %}</th>
+                {% endif %}
+                <th scope="col">{% trans 'VCPU' %}</th>
+                <th scope="col">{% trans 'Memory' %}</th>
+                <th scope="col" data-sortable="false">{% trans 'Actions' %}</th>
+            </tr>
+        </thead>
+        <tbody class="searchable">
+            {% for instance in instances  %}
+                    <tr>
                         <td>
-                            <a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a><br>
-                                <small><em>
-                                    {% if instance.userinstance_set.all.count > 0 %}
-                                        {{ instance.userinstance_set.all.0.user }}
-                                        {% if instance.userinstance_set.all.count > 1 %}
-                                            (+{{ instance.userinstance_set.all.count|add:"-1" }})
-                                        {% endif %}
-                                    {% endif %}
-                                </em></small>
+                            <a class="link-primary" href="{% url 'instances:instance' instance.id %}">
+                                {{ instance.name }}
+                            </a>
+                            <br>
+                            {% if instance.info %}<p class="m-0 small font-italic">{{ instance.title }}</p>{% endif %}
                         </td>
-                    {% endif %}
-                    <td>
-                        {% include 'instance_state.html' %}
-                    </td>
-		    {% if app_settings.VM_DRBD_STATUS == 'True' %}
-		    <td>
-			    {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="badge bg-success-subtle text-success-emphasis">{% else %}<span class="badge bg-danger-subtle text-danger-emphasis">{% endif %}{{ instance.drbd }}</span>
-		    </td>
-		    {% endif %}
-                    <td>{{ instance.info.3 }}</td>
-                    <td>{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
-                    <td class="text-nowrap">
-                        {% include 'instance_actions.html' %}
-                    </td>
-                </tr>
-        {% endfor %}
-    </tbody>
-</table>
+                        {% if request.user.is_superuser %}
+                            <td>
+                                <a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a><br>
+                                    <small><em>
+                                        {% if instance.userinstance_set.all.count > 0 %}
+                                            {{ instance.userinstance_set.all.0.user }}
+                                            {% if instance.userinstance_set.all.count > 1 %}
+                                                (+{{ instance.userinstance_set.all.count|add:"-1" }})
+                                            {% endif %}
+                                        {% endif %}
+                                    </em></small>
+                            </td>
+                        {% endif %}
+                        <td>
+                            {% include 'instance_state.html' %}
+                        </td>
+                        {% if app_settings.VM_DRBD_STATUS == 'True' %}
+                        <td>
+                                {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="badge bg-success-subtle text-success-emphasis">{% else %}<span class="badge bg-danger-subtle text-danger-emphasis">{% endif %}{{ instance.drbd }}</span>
+                        </td>
+                        {% endif %}
+                        <td>{{ instance.info.3 }}</td>
+                        <td>{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
+                        <td class="text-nowrap">
+                            {% include 'instance_actions.html' %}
+                        </td>
+                    </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
