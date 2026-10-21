@@ -312,11 +312,11 @@
                                         <input type="hidden" name="storage" value="{{ disk.storage }}">
                                         <input type="hidden" name="name" value="{{ disk.image }}">
                                         {% if instance.status == 5 %}
-                                            <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
+                                            <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}" title="{% trans "Detach" %}" data-confirm="{% blocktrans with dev=disk.dev %}Detach {{ dev }}? Its file is kept.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                                 {% bs_icon 'eject' %}
                                             </button>
                                         {% else %}
-                                            <button class="btn btn-sm btn-secondary disabled" disabled value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
+                                            <button class="btn btn-sm btn-secondary disabled" disabled value="{{ disk.dev }}" title="{% trans "Detach" %}">
                                                 {% bs_icon 'eject' %}
                                             </button>
                                         {% endif %}
@@ -328,11 +328,11 @@
                                         <input type="hidden" name="storage" value="{{ disk.storage }}">
                                         <input type="hidden" name="name" value="{{ disk.image }}">
                                         {% if instance.status == 5 %}
-                                            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete volume?" %}')">
+                                            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Delete" %}" data-confirm="{% blocktrans with dev=disk.dev %}Delete {{ dev }}? It is detached and its file and data are removed.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                                 {% bs_icon 'trash' %}
                                             </button>
                                         {% else %}
-                                            <button class="btn btn-sm btn-secondary disabled" disabled title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
+                                            <button class="btn btn-sm btn-secondary disabled" disabled title="{% trans "Delete" %}">
                                                 {% bs_icon 'trash' %}
                                             </button>
                                         {% endif %}
@@ -478,7 +478,7 @@
                                 <td>
                                     <form action="{% url 'instances:delete_network' instance.id %}" method="post" name="delete_network" role="form">{% csrf_token %}
                                         <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
-                                            onclick="return confirm('{% trans "Are you sure?" %}')">
+ data-confirm="{% blocktrans with mac=network.mac %}Remove network card {{ mac }}? A running VM loses its connection through it at once.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                             {% bs_icon 'trash' %}
                                         </button>
                                     </form>
@@ -556,7 +556,7 @@
                                                 <input name="net-mac" value="{{ q }}" hidden/>
                                                 <button type="submit" class="btn btn-sm btn-primary"
                                                         name="set_qos" data-bs-toggle="modal"
-                                                        title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                        title="{% trans "Edit QoS" %}">
                                                     <span>{% bs_icon 'save' %} </span>
                                                 </button>
                                         </form>
@@ -566,7 +566,7 @@
                                                     <input name="net-mac" value="{{ q }}" hidden/>
                                                     <button type="submit" class="btn btn-sm btn-danger"
                                                             name="unset_qos"
-                                                            title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                            title="{% trans "Delete QoS" %}" data-confirm="{% blocktrans with direction=att.direction mac=q %}Remove the {{ direction }} limit of {{ mac }}? A running VM keeps it until it is powered off and on.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                                             {% bs_icon 'trash' %}
                                                     </button>
                                                 </form>

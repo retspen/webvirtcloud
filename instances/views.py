@@ -1685,10 +1685,7 @@ def set_qos(request, pk):
     else:
         messages.success(
             request,
-            _(
-                "%(qos_dir)s QoS is set. Network XML is changed. \
-                Stop and start network to activate new config."
-            )
+            _("%(qos_dir)s QoS is set. A running VM gets it after it is powered off and on.")
             % {"qos_dir": qos_dir.capitalize()},
         )
 
@@ -1714,10 +1711,7 @@ def unset_qos(request, pk):
     else:
         messages.success(
             request,
-            _(
-                "%(qos_dir)s QoS is deleted. Network XML is changed. \
-                Stop and start network to activate new config."
-            )
+            _("%(qos_dir)s QoS is deleted. A running VM keeps the old limit until it is powered off and on.")
             % {"qos_dir": qos_dir.capitalize()},
         )
     return _back(request, pk, "network")

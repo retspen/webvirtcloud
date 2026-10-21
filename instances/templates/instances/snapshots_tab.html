@@ -107,7 +107,7 @@
                                             {% csrf_token %}{% submission_key %}
                                             <input type="hidden" name="name" value="{{ snap.name }}">
                                             {% if instance.status == 5 %}
-                                                <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')" {% if busy or held %}disabled{% endif %}>
+                                                <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" data-confirm="{% blocktrans with name=snap.name %}Revert to snapshot {{ name }}? Disk changes made since it are lost.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)" {% if busy or held %}disabled{% endif %}>
                                                         <span>{% bs_icon 'download' %} </span>
                                                 </button>
                                             {% else %}
@@ -121,7 +121,7 @@
                                     <td style="width:30px;">
                                         <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post" role="form" aria-label="Delete snapshot form">{% csrf_token %}
                                             <input type="hidden" name="name" value="{{ snap.name }}">
-                                            <button type="submit" class="btn btn-sm btn-danger" title="{% trans 'Delete Snapshot' %}" onclick="return confirm('{% trans "Are you sure?" %}')" {% if busy or held %}disabled{% endif %}>
+                                            <button type="submit" class="btn btn-sm btn-danger" title="{% trans 'Delete Snapshot' %}" data-confirm="{% blocktrans with name=snap.name %}Delete snapshot {{ name }}? The VM's current disks are not changed.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)" {% if busy or held %}disabled{% endif %}>
                                                 {% bs_icon 'trash' %}
                                             </button>
                                         </form>

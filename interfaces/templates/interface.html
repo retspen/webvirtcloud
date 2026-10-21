@@ -63,9 +63,9 @@
                     <form action="" method="post" role="form" aria-label="Interface start/stop/delete form">{% csrf_token %}
                         {% if state == 0 %}
                             <input type="submit" class="btn btn-sm btn-primary" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" data-confirm="{% blocktrans with name=iface %}Delete interface {{ name }}? Its definition is removed from the host.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" data-confirm="{% blocktrans with name=iface %}Stop interface {{ name }}? The host and its VMs lose their connections through it at once; if you reach the host through it, you lose the host.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% endif %}
                     </form>
                     {% endif %}

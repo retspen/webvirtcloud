@@ -323,7 +323,7 @@
                                         <td style="width:5px;">
                                             <form action="{% url 'instances:flavor_delete' flavor.id %}" method="post" role="form" aria-label="Delete flavor form">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-secondary" name="delete_flavor" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                <button type="submit" class="btn btn-sm btn-secondary" name="delete_flavor" title="{% trans "Delete" %}" data-confirm="{% blocktrans with name=flavor.label %}Delete flavor {{ name }}? Only the size template goes; VMs made from it keep their size.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                                     {% bs_icon 'trash' %}
                                                 </button>
                                             </form>

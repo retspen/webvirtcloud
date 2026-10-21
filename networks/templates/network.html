@@ -49,9 +49,9 @@
                     <form action="" method="post" role="form" aria-label="Network start/stop/delete form">{% csrf_token %}
                         {% if state == 0 %}
                             <input type="submit" class="btn btn-sm btn-success" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" data-confirm="{% blocktrans with name=pool %}Delete network {{ name }}? VMs that use it no longer start.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" data-confirm="{% blocktrans with name=pool %}Stop network {{ name }}? Running VMs on it lose their connection through it at once.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% endif %}
                     </form>
                 </dd>
@@ -61,7 +61,7 @@
                         {% if autostart == 0 %}
                             <input type="submit" class="btn btn-sm btn-success" name="set_autostart" value="{% trans "Enable" %}">
                         {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart" onclick="return confirm('{% trans "Are you sure?" %}')" value="{% trans "Disable" %}">
+                            <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart" data-confirm="{% blocktrans with name=pool %}Disable autostart of network {{ name }}? After the host restarts it stays stopped, and VMs that use it do not start.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)" value="{% trans "Disable" %}">
                         {% endif %}
                     </form>
                 </dd>
@@ -136,7 +136,7 @@
                                value="Apply"
                                name="modify_dhcp_range"
                                title="{% trans "Edit DHCP Range" %}"
-                               onclick="return confirm('{% trans "Are you sure?" %}')"/>
+/>
                     </dd>
                     <input hidden name="family" value="ipv4"/>
                 </form>
@@ -190,12 +190,12 @@
                                     <input hidden name="family" value="ipv4"/>
                                     <button type="submit" class="btn btn-sm btn-primary"
                                             name="modify_fixed_address"
-                                            title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            title="{% trans "Edit entry" %}">
                                             {% bs_icon 'save' %}
                                     </button>
                                     <button type="submit" class="btn btn-sm btn-danger"
                                             name="delete_fixed_address"
-                                            title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                            title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with mac=fix4.mac %}Delete the fixed address of {{ mac }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                             {% bs_icon 'trash' %}
                                     </button>
                                 </td>
@@ -251,7 +251,7 @@
                             value="Apply"
                             name="modify_dhcp_range"
                             title="{% trans "Edit DHCP Range" %}" 
-                            onclick="return confirm('{% trans "Are you sure?" %}')"/>
+/>
                     </dd>
                     <input hidden name="family" value="ipv6"/>
                 </form>
@@ -301,12 +301,12 @@
                                         <input hidden name="family" value="ipv6"/>
                                         <button type="submit" class="btn btn-sm btn-primary"
                                                 name="modify_fixed_address"
-                                                title="{% trans "Edit entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                title="{% trans "Edit entry" %}">
                                             <span>{% bs_icon 'save' %} </span>
                                         </button>
                                         <button type="submit" class="btn btn-sm btn-danger"
                                                 name="delete_fixed_address"
-                                                title="{% trans "Delete entry" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                                title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with id=fix6.id %}Delete the fixed address of {{ id }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                             <span>{% bs_icon 'trash' %} </span>
                                         </button>
                                     </td>
@@ -358,12 +358,12 @@
                                 <input name="qos_direction" value="{{ q }}" hidden/>
                                 <button type="submit" class="btn btn-sm btn-primary"
                                         name="set_qos" data-bs-toggle="modal"
-                                        title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        title="{% trans "Edit QoS" %}">
                                         {% bs_icon 'save' %}
                                 </button>
                                 <button type="submit" class="btn btn-sm btn-danger"
                                         name="unset_qos"
-                                        title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                                        title="{% trans "Delete QoS" %}" data-confirm="{% blocktrans with direction=q name=pool %}Remove the {{ direction }} limit of network {{ name }}? It stays in force until the network is stopped and started.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                         {% bs_icon 'trash' %}
                                 </button>
                             </td>

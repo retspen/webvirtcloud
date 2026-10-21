@@ -59,24 +59,27 @@
                 <dd class="col-6">{{ used|filesizeformat }}</dd>
                 <dt class="col-6">{% trans "State" %}</dt>
                 <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Storage start/stop form" class="confirm-form">{% csrf_token %}
+                    <form action="" method="post" role="form" aria-label="Storage start/stop form">{% csrf_token %}
                         {% if state == 0 %}
                             <input type="submit" class="btn btn-sm btn-secondary" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}">
+                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}"
+                                   data-confirm="{% blocktrans with name=pool %}Delete pool {{ name }}? Only its definition goes; its volumes and their files stay.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}">
+                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}"
+                                   data-confirm="{% blocktrans with name=pool %}Stop pool {{ name }}? Its files stay, but until it is started again its volumes cannot be managed and VMs with disks in it may not start.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% endif %}
                     </form>
                 </dd>
                 <dt class="col-6">{% trans "Autostart" %}</dt>
                 <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form" class="confirm-form">{% csrf_token %}
+                    <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form">{% csrf_token %}
                     {% if autostart == 0 %}
                         <input type="submit" class="btn btn-sm btn-secondary" name="set_autostart"
                                 value="{% trans "Enable" %}">
                         {% else %}
                         <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart"
-                                value="{% trans "Disable" %}">
+                                value="{% trans "Disable" %}"
+                                data-confirm="{% blocktrans with name=pool %}Disable autostart of pool {{ name }}? After the host restarts it stays stopped.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                     {% endif %}
                 </form>
                 </dd>
@@ -172,9 +175,10 @@
                             {% endif %}
                         </td>
                         <td>
-                            <form action="" method="post" role="form" aria-label="Delete volume form" class="confirm-form">{% csrf_token %}
+                            <form action="" method="post" role="form" aria-label="Delete volume form">{% csrf_token %}
                                 <input type="hidden" name="volname" value="{{ volume.name }}">
-                                <button type="submit" class="btn btn-sm btn-secondary" name="del_volume" title="{% trans "Delete" %}">
+                                <button type="submit" class="btn btn-sm btn-secondary" name="del_volume" title="{% trans "Delete" %}"
+                                        data-confirm="{% blocktrans with name=volume.name %}Delete volume {{ name }}? Its file and data are removed; a volume a VM uses is not deleted.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                     {% bs_icon 'trash' %}
                                 </button>
                             </form>
@@ -221,12 +225,6 @@
         });
 
         $(document).ready(function() {
-            $('.confirm-form').on('submit', function(e) {
-                if (!confirm('{% trans "Are you sure?"|escapejs %}')) {
-                    e.preventDefault();
-                }
-            });
-
             var pendingUpload = null;
             var uploadInProgress = false;
             // the browser sends the file: leaving the page stops the upload
