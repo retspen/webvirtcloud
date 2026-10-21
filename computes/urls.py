@@ -85,11 +85,6 @@ urlpatterns = [
                     views.get_compute_disk_buses,
                     name="buses",
                 ),
-                path(
-                    "archs/<str:arch>/machines/<str:machine>/capabilities",
-                    views.get_dom_capabilities,
-                    name="domcaps",
-                ),
             ]
         ),
     ),

@@ -87,10 +87,9 @@ class JsonEndpointContentTypeTestCase(TestCase):
             reverse("compute_graph", args=[self.compute.id]),
             reverse("machines", args=[self.compute.id, "x86_64"]),
             reverse("buses", args=[self.compute.id, "x86_64", "q35", "disk"]),
-            reverse("domcaps", args=[self.compute.id, "x86_64", "q35"]),
         ]
         with patch("computes.views.ComputeManager") as mock_mgr:
-            for method in ("compute_graph", "get_machine_types", "get_disk_buses", "get_dom_capabilities"):
+            for method in ("compute_graph", "get_machine_types", "get_disk_buses"):
                 getattr(mock_mgr.return_value, method).return_value = "{}"
             for url in urls:
                 with self.subTest(url=url):

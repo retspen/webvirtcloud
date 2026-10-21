@@ -167,18 +167,6 @@ def get_compute_machine_types(request, compute_id, arch):
     return HttpResponse(comp_mgr.get_machine_types(arch), content_type="application/json")
 
 
-def get_dom_capabilities(request, compute_id, arch, machine):
-    """
-    :param request:
-    :param compute_id:
-    :param arch:
-    :param machine:
-    :return:
-    """
-    comp_mgr = ComputeManager(compute_id)
-    return HttpResponse(comp_mgr.get_dom_capabilities(arch, machine), content_type="application/json")
-
-
 class ComputeManager:
     def __init__(self, compute_id):
         self.compute = get_object_or_404(Compute, pk=compute_id)
@@ -188,16 +176,6 @@ class ComputeManager:
             self.compute.password,
             self.compute.type,
         )
-
-    def get_dom_capabilities(self, arch, machine):
-        data = dict()
-        try:
-            data["videos"] = self.conn.get_disk_device_types(arch, machine)
-            data["bus"] = self.conn.get_disk_device_types(arch, machine)
-        except libvirtError:
-            pass
-
-        return json.dumps(data)
 
     def get_machine_types(self, arch):
         data = dict()

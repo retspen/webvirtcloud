@@ -186,15 +186,6 @@ class ComputesTestCase(TestCase):
             response = self.client.get(reverse("buses", args=[self.compute.id, "x86_64", "q35", "disk"]))
         self.assertEqual(json.loads(response.content), {"bus": ["sata", "scsi", "virtio"]})
 
-    def test_dom_capabilities(self):
-        self._require_live_compute()
-        response = self.client.get(
-            reverse(
-                "domcaps", kwargs={"compute_id": self.compute.id, "arch": "x86_64", "machine": "pc"}
-            )
-        )
-        self.assertEqual(response.status_code, 200)
-
 
 class ComputeConcurrencyTestCase(TransactionTestCase):
     def test_concurrent_refresh_instance_database(self):
