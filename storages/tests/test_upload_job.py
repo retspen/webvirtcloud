@@ -644,6 +644,13 @@ class UploadViewTests(LocalPool, UploadTestCase):
         response = self.post()
         self.assertEqual((response.status_code, response.json()["error"]), (400, "ISO image already exists"))
 
+    def test_an_unexpected_failure_is_logged(self):
+        with patch("storages.views.write_chunk", side_effect=OSError("disk gone")), \
+             self.assertLogs("storages.views", "ERROR") as logs:
+            response = self.post()
+        self.assertEqual((response.status_code, response.json()["error"]), (500, "disk gone"))
+        self.assertIn("OSError: disk gone", logs.output[0])
+
     def test_a_busy_session_is_retried(self):
         self.post(0, total=2, size="6")
         claims.admit({f"upload:{self.job().pk}": Claim.EXCLUSIVE}, holder="192.0.2.30:1:1")

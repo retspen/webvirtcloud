@@ -1,3 +1,5 @@
+import logging
+
 from admin.decorators import superuser_only
 from appsettings.settings import app_settings
 from computes.models import Compute
@@ -49,6 +51,7 @@ def _handle_iso_upload(request, conn, compute, pool):
     except (ValueError, jobs.SubmissionConflict, OperationError) as e:
         return JsonResponse({"error": str(e)}, status=400)
     except Exception as e:
+        logging.getLogger(__name__).exception("ISO upload chunk failed")
         return JsonResponse({"error": str(e)}, status=500)
     return JsonResponse({"success": True, "job": str(op.pk)})
 
