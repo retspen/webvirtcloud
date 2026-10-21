@@ -10,7 +10,7 @@ import time
 
 from django.contrib.auth import get_user_model
 from django.db import connections
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, tag
 
 from operations import claims, jobs
 from operations.models import Claim, Operation, WorkerLease
@@ -49,6 +49,7 @@ def _submit(user_pk, results):
     os._exit(0)
 
 
+@tag("processes")  # run outside the --parallel pool (webvirtcloud/test_runner.py)
 class ProcessTestCase(TransactionTestCase):
     def setUp(self):
         self.ctx = multiprocessing.get_context("fork")

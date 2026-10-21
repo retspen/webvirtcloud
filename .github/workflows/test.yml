@@ -95,6 +95,11 @@ jobs:
           coverage run manage.py test
           coverage report --skip-covered
 
+      # The project test runner (webvirtcloud/test_runner.py) on one leg
+      - name: Run Test Suite In Parallel
+        if: matrix.python-version == '3.13' && matrix.database == 'sqlite'
+        run: python manage.py test --parallel
+
       # The per-file report of one leg, to see what a change left untested
       - name: Store Coverage Report
         if: always() && matrix.python-version == '3.12' && matrix.database == 'sqlite'

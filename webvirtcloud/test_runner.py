@@ -1,23 +1,18 @@
 """manage.py test --parallel on the SQLite database in WAL mode."""
 
-import multiprocessing
-
-from django.test.runner import DiscoverRunner, ParallelTestSuite
-
-
-def _init_worker(*args, **kwargs):
-    # Pool processes are daemonic, and a daemonic process may have no
-    # children; the operations process tests start workers of their own.
-    multiprocessing.current_process().daemon = False
-    ParallelTestSuite.init_worker(*args, **kwargs)
-
-
-class _ParallelTestSuite(ParallelTestSuite):
-    init_worker = _init_worker
+from django.test.runner import DiscoverRunner
 
 
 class TestRunner(DiscoverRunner):
-    parallel_test_suite = _ParallelTestSuite
+    def build_suite(self, *args, **kwargs):
+        suite = super().build_suite(*args, **kwargs)
+        if not isinstance(suite, self.parallel_test_suite):
+            return suite
+        # Pool workers are daemonic and may start no processes: the test
+        # cases tagged "processes" run in this process after the pool.
+        serial = [case for case in suite.subsuites if "processes" in getattr(next(iter(case)), "tags", ())]
+        suite.subsuites = [case for case in suite.subsuites if case not in serial]
+        return self.test_suite([suite, *serial])
 
     def setup_databases(self, **kwargs):
         # Django clones a SQLite test database by copying its main file, but
@@ -32,6 +27,8 @@ class TestRunner(DiscoverRunner):
             if connection.vendor == "sqlite":
                 with connection.cursor() as cursor:
                     cursor.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    if cursor.fetchone()[0]:
+                        raise RuntimeError("The test database's WAL could not be written back before cloning")
             for index in range(parallel):
                 connection.creation.clone_test_db(
                     suffix=str(index + 1), verbosity=self.verbosity, keepdb=self.keepdb
