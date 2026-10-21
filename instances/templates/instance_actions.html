@@ -39,7 +39,9 @@
     {% elif "force_off" in actions %}
         <form action="{% url 'instances:force_off' instance.id %}" method="post" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Force Off" %}">{% bs_icon 'power' %}</button>
+            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Force Off" %}"
+                    data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}"
+                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'power' %}</button>
         </form>
     {% else %}
         <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power Off" %}" disabled>{% bs_icon 'power' %}</button>
@@ -48,7 +50,9 @@
     {% if "powercycle" in actions %}
         <form action="{% url 'instances:powercycle' instance.id %}" method="post" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Power Cycle" %}">{% bs_icon 'repeat' %}</button>
+            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Power Cycle" %}"
+                    data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}"
+                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'repeat' %}</button>
         </form>
     {% else %}
         <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}" disabled>{% bs_icon 'repeat' %}</button>

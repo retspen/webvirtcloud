@@ -13,6 +13,7 @@ from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
 from instances.states import allowed_actions
+from lxml import html
 
 LABELS = {0: "No state", 1: "Active", 2: "Blocked", 3: "Suspended", 4: "Shutting down", 5: "Off", 6: "Crashed", 7: "PM suspended"}
 # actions offered per state, for a superuser
@@ -88,6 +89,18 @@ class StateTests(TestCase):
             for state, vm in self.vms.items():
                 with self.subTest(url=url, state=state):
                     self.assertEqual(self.offered(page, vm), ACTIONS[state])
+
+    def test_forced_power_actions_in_the_lists_ask_first(self):
+        # one click in a list row would cut the VM off as a power failure does
+        for url in (reverse("instances:index"), reverse("instances", args=[self.compute.id])):
+            page = html.fromstring(self.get(self.admin, url))
+            for state, vm in self.vms.items():
+                for action in {"force_off", "powercycle"} & ACTIONS[state]:
+                    button = page.xpath(f"//form[@action='{reverse(f'instances:{action}', args=[vm.id])}']//button")[0]
+                    with self.subTest(url=url, vm=vm.name, action=action):
+                        self.assertEqual(button.get("onclick"), "return confirm(this.dataset.confirm)")
+                        self.assertIn(vm.name, button.get("data-confirm"))
+                        self.assertIn("power cut", button.get("data-confirm"))
 
     def test_owner_is_not_offered_suspend_or_resume(self):
         # both views are for superusers only; a VM an administrator suspended
