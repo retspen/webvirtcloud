@@ -1,6 +1,7 @@
 """Real processes: a worker killed at each point is recovered by the next;
 one worker per host; concurrent admissions and submissions never double up."""
 
+import faulthandler
 import multiprocessing
 import os
 import shutil
@@ -19,6 +20,7 @@ from operations.tests import fakes, proc_kinds  # noqa: F401
 
 def _worker(data):
     connections.close_all()
+    faulthandler.register(signal.SIGUSR1, all_threads=True)  # tearDown asks a stuck worker where it is
     from operations.worker import Worker
     os._exit(Worker(tick=0.05, heartbeat_every=0.2, grace=1, data=data).run())
 
@@ -60,6 +62,8 @@ class ProcessTestCase(TransactionTestCase):
     def tearDown(self):
         for p in self.children:
             if p.is_alive():
+                os.kill(p.pid, signal.SIGUSR1)  # its threads' stacks go to stderr
+                p.join(1)
                 p.kill()
             p.join(10)
         shutil.rmtree(self.dir, ignore_errors=True)
