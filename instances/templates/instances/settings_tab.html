@@ -239,7 +239,7 @@
                     </div>
                 </div>
                 {% empty %}
-                <div class="offset-3 col-sm-6">
+                <div class="offset-sm-3 col-sm-6">
                     <div class="bg-warning rounded shadow-sm">{% trans 'There is not any CD-ROM device.' %}</div>
                 </div>
                 {% endfor %}
@@ -607,7 +607,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-6 offset-3">
+                    <div class="col-sm-6 offset-sm-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% if instance.status != 5 %}checked{% else %}disabled{% endif %}>
                             <label class="form-check-label" for="vm_live_migrate">{% trans "Live migration" %}</label>
@@ -615,7 +615,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-6 offset-3">
+                    <div class="col-sm-6 offset-sm-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="unsafe_migrate" value="true" id="vm_unsafe_migrate">
                             <label class="form-check-label" for="vm_unsafe_migrate">{% trans "Unsafe migration" %}</label>
@@ -623,7 +623,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-6 offset-3">
+                    <div class="col-sm-6 offset-sm-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% if instance.status == 5 %}checked{% else %}disabled{% endif %}>
                             <label class="form-check-label" for="offline_migrate">{% trans "Offline migration" %}</label>
@@ -631,7 +631,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-6 offset-3">
+                    <div class="col-sm-6 offset-sm-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="autoconverge" value="true" id="autoconverge" {% if instance.status != 1 %}disabled{% else %}checked{% endif %}>
                             <label class="form-check-label" for="autoconverge" title="{% trans 'Forces CPU convergence during live migration' %}">{% trans "Auto converge" %}</label>
@@ -639,7 +639,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-6 offset-3">
+                    <div class="col-sm-6 offset-sm-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="compress" value="true" id="compress" {% if instance.status != 1 %}disabled{% endif %}>
                             <label class="form-check-label" for="compress" title="{% trans 'Compress instance memory for fast migration' %}">{% trans "Compressed" %}</label>
@@ -756,7 +756,7 @@
                     {% for network in instance.config_networks %}
                     <div class="mb-3">
                         <div class="row">
-                            <label class="col-sm-2 col-form-label offset-1">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
+                            <label class="col-sm-2 col-form-label offset-sm-1">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
                             <div class="col-sm-6">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
@@ -778,7 +778,7 @@
                     <label>{% trans "Storage devices" %}:</label>
                     {% for disk in instance.config_disks %}
                         <div class="row">
-                            <label class="col-sm-2 col-form-label offset-1">{{ disk.dev }} ({{ disk.storage }})</label>
+                            <label class="col-sm-2 col-form-label offset-sm-1">{{ disk.dev }} ({{ disk.storage }})</label>
                             <div class="col-sm-6">
                             <div class="input-group mb-3">
                                     <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
@@ -847,7 +847,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="d-grid offset-3 col-sm-6">
+                    <div class="d-grid offset-sm-3 col-sm-6">
                     {% if instance.status == 5 %}
                         <button type="submit" class="btn btn-success" name="change_options">{% trans "Change" %}</button>
                     {% else %}

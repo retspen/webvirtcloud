@@ -38,33 +38,35 @@
     </div>
 
     <div class="row">
-        <dl class="ms-3 row">
-            <dt class="col-6">{% trans "Network name" %}</dt>
-            <dd class="col-6">{{ pool }}</dd>
-            <dt class="col-6">{% trans "Device" %}</dt>
-            <dd class="col-6">{{ device }}</dd>
-            <dt class="col-6">{% trans "State" %}</dt>
-            <dd class="col-6">
-                <form action="" method="post" role="form" aria-label="Network start/stop/delete form">{% csrf_token %}
-                    {% if state == 0 %}
-                        <input type="submit" class="btn btn-sm btn-success" name="start" value="{% trans "Start" %}">
-                        <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                    {% else %}
-                        <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                    {% endif %}
-                </form>
-            </dd>
-            <dt class="col-6">{% trans "Autostart" %}</dt>
-            <dd class="col-6">
-                <form action="" method="post" role="form" aria-label="Network enable/disable autostart form">{% csrf_token %}
-                    {% if autostart == 0 %}
-                        <input type="submit" class="btn btn-sm btn-success" name="set_autostart" value="{% trans "Enable" %}">
-                    {% else %}
-                        <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart" onclick="return confirm('{% trans "Are you sure?" %}')" value="{% trans "Disable" %}">
-                    {% endif %}
-                </form>
-            </dd>
-        </dl>
+        <div class="col-12">
+            <dl class="ms-3 row">
+                <dt class="col-6">{% trans "Network name" %}</dt>
+                <dd class="col-6">{{ pool }}</dd>
+                <dt class="col-6">{% trans "Device" %}</dt>
+                <dd class="col-6">{{ device }}</dd>
+                <dt class="col-6">{% trans "State" %}</dt>
+                <dd class="col-6">
+                    <form action="" method="post" role="form" aria-label="Network start/stop/delete form">{% csrf_token %}
+                        {% if state == 0 %}
+                            <input type="submit" class="btn btn-sm btn-success" name="start" value="{% trans "Start" %}">
+                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                        {% else %}
+                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
+                        {% endif %}
+                    </form>
+                </dd>
+                <dt class="col-6">{% trans "Autostart" %}</dt>
+                <dd class="col-6">
+                    <form action="" method="post" role="form" aria-label="Network enable/disable autostart form">{% csrf_token %}
+                        {% if autostart == 0 %}
+                            <input type="submit" class="btn btn-sm btn-success" name="set_autostart" value="{% trans "Enable" %}">
+                        {% else %}
+                            <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart" onclick="return confirm('{% trans "Are you sure?" %}')" value="{% trans "Disable" %}">
+                        {% endif %}
+                    </form>
+                </dd>
+            </dl>
+        </div>
     </div>
 
     <div class="d-grid col-lg-12">

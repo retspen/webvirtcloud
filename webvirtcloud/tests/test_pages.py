@@ -1,5 +1,6 @@
 """Every HTML page a superuser can open, rendered on libvirt's test driver."""
 
+import re
 from collections import Counter
 from unittest.mock import patch
 
@@ -70,3 +71,14 @@ class PageTests(TestCase):
             bare = [t.get("class") for t in page.xpath("//table[not(parent::div[contains(@class, 'table-responsive')])]")]
             with self.subTest(page=name):
                 self.assertEqual(bare, [])
+
+    def test_grid_columns_fit_a_phone(self):
+        # below a column's breakpoint it is full width, so an offset without one
+        # pushes it past the screen; a row needs columns inside, not another row
+        row = "contains(concat(' ', normalize-space(@class), ' '), ' row ')"
+        for name, page in self.pages():
+            offsets = [cls for cls in page.xpath("//@class")
+                       if re.search(r"\boffset-\d+\b", cls) and not re.search(r"\bcol-\d+\b", cls)]
+            with self.subTest(page=name):
+                self.assertEqual(offsets, [])
+                self.assertEqual(page.xpath(f"//*[{row}]/*[{row}]/@class"), [])
