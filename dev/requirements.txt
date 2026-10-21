@@ -7,3 +7,5 @@ django-debug-toolbar==8.0.0
 django-debug-toolbar-template-profiler==2.1.0
 pip-audit==2.10.1
 ruff==0.17.0
+# tracebacks of failures in manage.py test --parallel
+tblib==3.2.2

@@ -178,6 +178,9 @@ LOGIN_URL = "/accounts/login/"
 if sys.argv[1:2] == ["test"]:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
+# --parallel on SQLite (WAL) and with the process tests
+TEST_RUNNER = "webvirtcloud.test_runner.TestRunner"
+
 # Failed logins (django-axes): a user is locked for the address the logins
 # come from. The limit and the lock time are on the Settings page
 # (LOGIN_FAILURE_LIMIT, LOGIN_LOCKOUT_MINUTES); unlock with
