@@ -109,6 +109,20 @@ class ConsoleViewsTestCase(TestCase):
         self.assertEqual(response.context["ws_port"], 5900)
 
     @patch("console.views.wvmInstance")
+    def test_the_lite_console_switches_scaling_from_its_menu(self, mock_wvm):
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_websocket_port.return_value = None
+        self.client.force_login(self.admin_user)
+        for query, pressed in (("", "false"), ("&scale=true", "true")):
+            with self.subTest(query=query):
+                page = html.fromstring(self.client.get(reverse("console") + f"?token={self.token}&view=lite{query}").content)
+                switch = page.xpath("//*[@id='scale_button']//a")[0]
+                self.assertEqual(switch.get("aria-pressed"), pressed)
+                self.assertEqual("active" in switch.get("class").split(), pressed == "true")
+        page = html.fromstring(self.client.get(reverse("console") + f"?token={self.token}&view=full").content)
+        self.assertEqual(page.xpath("//*[@id='scale_button']"), [])  # noVNC's own settings scale the full view
+
+    @patch("console.views.wvmInstance")
     def test_console_unsupported_graphics_type(self, mock_wvm):
         # Only VNC is supported; a VM defined elsewhere may use another type.
         mock_conn = MagicMock()

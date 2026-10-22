@@ -222,6 +222,13 @@
     bindKeyAction('machineRebootButton', machineReboot);
     bindKeyAction('machineResetButton', machineReset);
     bindKeyAction('fullscreen_button', fullscreen);
+    // fit the remote screen to the window, or show it 1:1 with scrollbars
+    bindKeyAction('scale_button', () => {
+        rfb.scaleViewport = !rfb.scaleViewport;
+        const link = document.querySelector('#scale_button a');
+        link.classList.toggle('active', rfb.scaleViewport);
+        link.setAttribute('aria-pressed', rfb.scaleViewport);
+    });
 
     bindKeyAction('ctrlaltdel', sendCtrlAltDel);
     bindKeyAction('ctrlaltbackspace', () => sendKeyCombo([
@@ -316,6 +323,12 @@
     rfb.clipViewport = {{ clip_viewport|yesno:"true,false" }};
 
 </script>
+{% endblock %}
+
+{% block navbarmenu %}
+<li class="nav-item" id="scale_button">
+    <a class="nav-link{% if scale %} active{% endif %}" href="#" role="button" aria-pressed="{{ scale|yesno:"true,false" }}">{% trans "Scale" %}</a>
+</li>
 {% endblock %}
 
 {% block content %}
