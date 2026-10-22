@@ -93,6 +93,7 @@ def ssh_key_delete(request, pk):
         {
             "object": ssh_key,
             "title": _("Delete SSH key"),
+            "consequence": _("VMs that already have it keep it; VMs created from now on do not get it."),
         },
     )
 
@@ -200,7 +201,8 @@ def user_instance_delete(request, pk):
     return render(
         request,
         "common/confirm_delete.html",
-        {"object": user_instance},
+        {"object": user_instance,
+         "consequence": _("The user loses access to this VM; the VM itself is not changed.")},
     )
 
 

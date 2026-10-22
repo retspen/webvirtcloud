@@ -13,7 +13,7 @@
         <form method="post">
             {% csrf_token %}
             <div class="alert alert-warning">
-                {%trans "Are you sure you want to delete" %} "{{ object }}"?
+                {% blocktrans %}Delete "{{ object }}"?{% endblocktrans %} {{ consequence }}
             </div>
             <div class="mb-0 float-end">
                 <a class="btn btn-primary" href="javascript:history.back()">

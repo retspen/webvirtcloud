@@ -76,7 +76,7 @@ def group_delete(request, pk):
     return render(
         request,
         "common/confirm_delete.html",
-        {"object": group},
+        {"object": group, "consequence": _("Its members stay but lose the permissions it gave them.")},
     )
 
 
@@ -182,7 +182,8 @@ def user_delete(request, pk):
     return render(
         request,
         "common/confirm_delete.html",
-        {"object": user},
+        {"object": user,
+         "consequence": _("Their access to VMs, SSH keys and settings go; the VMs themselves stay.")},
     )
 
 
@@ -237,7 +238,8 @@ def tombstone_delete(request, pk):
     return render(
         request,
         "common/confirm_delete.html",
-        {"object": tombstone},
+        {"object": tombstone,
+         "consequence": _("Its owners no longer get the VM back if its UUID shows up again.")},
     )
 
 

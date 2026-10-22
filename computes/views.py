@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 from libvirt import libvirtError
 from operations import claims
@@ -127,7 +128,9 @@ def compute_delete(request, compute_id):
     return render(
         request,
         "common/confirm_delete.html",
-        {"object": compute},
+        {"object": compute,
+         "consequence": _("Its VMs keep running on the host, but the panel forgets them and who owns them; "
+                          "added again, the host's VMs come back without owners.")},
     )
 
 

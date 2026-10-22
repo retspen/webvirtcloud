@@ -2202,5 +2202,5 @@ def flavor_delete(request, pk):
     return render(
         request,
         "common/confirm_delete.html",
-        {"object": flavor},
+        {"object": flavor, "consequence": _("Only the size template goes; VMs made from it keep their size.")},
     )
