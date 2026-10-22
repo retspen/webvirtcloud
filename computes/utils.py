@@ -62,6 +62,19 @@ def _move_ownership(source, target):
         target.save(update_fields=["is_template"])
 
 
+def forget(inst):
+    """Remove an instance whose VM its compute no longer lists, or whose
+    compute is deleted. Its ownership goes to the same UUID on another
+    compute (an out-of-band move) or is kept in a tombstone in case the VM
+    comes back."""
+    elsewhere = Instance.objects.filter(uuid=inst.uuid).exclude(compute_id=inst.compute_id).first()
+    if elsewhere:
+        _move_ownership(inst, elsewhere)
+    else:
+        _bury(inst)
+    inst.delete()
+
+
 def _bury(inst):
     owners = [
         {"user": ui.user_id, "is_change": ui.is_change, "is_delete": ui.is_delete, "is_vnc": ui.is_vnc}
@@ -165,17 +178,10 @@ def refresh_instance_database(compute):
                             inst.name = new_name
                             inst.save(update_fields=["name"])
 
-                # 2. Instances gone from this compute. Their ownership goes to the
-                #    same UUID on another compute (an out-of-band move) or is kept
-                #    in a tombstone in case the VM comes back.
+                # 2. Instances gone from this compute
                 for inst in db_instances:
                     if inst.uuid not in host_domains:
-                        elsewhere = Instance.objects.filter(uuid=inst.uuid).exclude(compute=compute).first()
-                        if elsewhere:
-                            _move_ownership(inst, elsewhere)
-                        else:
-                            _bury(inst)
-                        inst.delete()
+                        forget(inst)
 
                 # 3. Instances created out-of-band. A UUID that also exists on another
                 #    compute is a copy and gets no owners; otherwise a tombstone's

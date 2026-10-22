@@ -8,8 +8,12 @@ from computes.models import Compute
 from computes.utils import refresh_instance_database
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 from instances.models import Instance, InstanceTombstone
+from operations import claims
+from operations.models import Claim
+from rest_framework.test import APIClient
 
 UUID = "44444444-4444-4444-4444-444444444444"
 
@@ -111,3 +115,52 @@ class OwnershipTestCase(TestCase):
         refresh_instance_database(self.host_a)
 
         self.assertEqual(self.ownership(self.host_a), (True, []))
+
+    # a deleted compute's VMs keep running on the host: their owners wait in
+    # tombstones as for a VM that disappeared, or follow a VM already on another compute
+    def delete(self, compute):
+        admin = get_user_model().objects.create_superuser("cd-admin", "cd@example.com", "pw")
+        self.client.force_login(admin)
+        self.client.post(reverse("compute_delete", args=[compute.id]))
+        self.assertFalse(Compute.objects.filter(pk=compute.pk).exists())
+
+    def test_a_host_added_again_gets_its_vms_back_with_their_owners(self):
+        self.owned_vm(self.host_a)
+        self.delete(self.host_a)
+        self.assertEqual(InstanceTombstone.objects.get().owners[0]["user"], self.owner.id)
+
+        again = self.compute("host-a-again")
+        self.on(again, [("vm", UUID)])
+        refresh_instance_database(again)
+        self.assertEqual(self.ownership(again), (True, [(self.owner, True, False, True)]))
+
+    def test_a_vm_already_on_another_compute_keeps_its_owners_there(self):
+        self.owned_vm(self.host_a)
+        self.on(self.host_b, [("vm", UUID)])
+        refresh_instance_database(self.host_b)  # listed on B too: a copy for now
+        self.delete(self.host_a)
+        self.assertEqual(self.ownership(self.host_b), (True, [(self.owner, True, False, True)]))
+        self.assertFalse(InstanceTombstone.objects.exists())
+
+    def test_the_api_delete_keeps_the_owners_too(self):
+        self.owned_vm(self.host_a)
+        api = APIClient()
+        api.force_login(get_user_model().objects.create_superuser("cd-api", "cda@example.com", "pw"))
+        self.assertEqual(api.delete(reverse("compute-detail", args=[self.host_a.id])).status_code, 204)
+        self.assertEqual(InstanceTombstone.objects.get().owners[0]["user"], self.owner.id)
+
+    def test_a_compute_in_use_is_not_deleted(self):
+        # a reconcile, VM operation or job holds it: the delete waits for none of them
+        vm = self.owned_vm(self.host_a)
+        claims.admit({claims.compute_key(self.host_a.id): Claim.SHARED}, holder="192.0.2.30:1:1")
+        admin = get_user_model().objects.create_superuser("cd-busy", "cdb@example.com", "pw")
+        self.client.force_login(admin)
+        api = APIClient()
+        api.force_login(admin)
+        url = reverse("compute_delete", args=[self.host_a.id])
+        self.assertRedirects(self.client.post(url, HTTP_REFERER=f"http://testserver{url}"), url,
+                             fetch_redirect_response=False)
+        self.assertEqual(api.delete(reverse("compute-detail", args=[self.host_a.id])).status_code, 409)
+        self.assertTrue(Compute.objects.filter(pk=self.host_a.pk).exists())
+        self.assertEqual(list(vm.userinstance_set.values_list("user", flat=True)), [self.owner.id])
+        self.assertFalse(InstanceTombstone.objects.exists())

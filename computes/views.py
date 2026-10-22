@@ -1,6 +1,7 @@
 import json
 
 from admin.decorators import superuser_only
+from django.conf import settings
 from django.core import signing
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -129,8 +130,9 @@ def compute_delete(request, compute_id):
         request,
         "common/confirm_delete.html",
         {"object": compute,
-         "consequence": _("Its VMs keep running on the host, but the panel forgets them and who owns them; "
-                          "added again, the host's VMs come back without owners.")},
+         "consequence": _("Its VMs keep running on the host and leave the panel; their owners are kept for "
+                          "%(days)s days on the Removed VMs page and come back if the host is added again.")
+                        % {"days": getattr(settings, "INSTANCE_OWNERSHIP_RETENTION_DAYS", 30)}},
     )
 
 

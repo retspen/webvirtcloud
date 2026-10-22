@@ -19,7 +19,7 @@ class DeletePageTests(TestCase):
         compute = Compute.objects.create(name="del-host", hostname="192.0.2.9", login="u", password="p", type=1)
         vm = Instance.objects.create(compute=compute, name="del-vm", uuid="d0000000-0000-4000-8000-000000000001")
         pages = {
-            reverse("compute_delete", args=[compute.id]): "the panel forgets them and who owns them",
+            reverse("compute_delete", args=[compute.id]): "their owners are kept for 30 days on the Removed VMs page",
             reverse("admin:user_delete", args=[user.id]): "the VMs themselves stay",
             reverse("admin:group_delete", args=[Group.objects.create(name="del-group").id]): "lose the permissions",
             reverse("admin:tombstone_delete", args=[InstanceTombstone.objects.create(uuid=vm.uuid, name="gone").id]):

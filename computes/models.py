@@ -1,5 +1,6 @@
 from ipaddress import ip_address
 
+from django.db import transaction
 from django.db.models import CharField, IntegerField, Model
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -88,3 +89,17 @@ class Compute(Model):
 
     def __str__(self):
         return self.name
+
+    def delete(self, *args, **kwargs):
+        """Its VMs keep running on the host: their owners wait in tombstones,
+        or follow a VM already listed on another compute. The compute is held
+        exclusive, so no reconcile, VM operation or job on it runs meanwhile
+        (Busy if one does); its row is locked before its VMs', as the
+        reconcile does."""
+        from computes.utils import forget, libvirt_compute_lock
+
+        with libvirt_compute_lock(self), transaction.atomic():
+            Compute.objects.select_for_update().filter(pk=self.pk).first()
+            for inst in self.instance_set.select_for_update():
+                forget(inst)
+            return super().delete(*args, **kwargs)

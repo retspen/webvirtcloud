@@ -303,7 +303,9 @@ class LocalUploadTests(LocalPool, UploadTestCase):
 
     def test_ending_without_the_compute(self):
         op = self.send(0, b"aaa")
-        self.compute.delete()
+        with self.assertRaises(claims.Busy):  # the upload holds the compute
+            self.compute.delete()
+        Compute.objects.filter(pk=self.compute.pk).delete()  # the row gone without Compute.delete()
         op = jobs.cancel(op.pk, self.admin)
         self.assertEqual((op.state, op.error), (Operation.FAILED, "The compute was deleted"))
 

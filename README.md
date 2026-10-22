@@ -578,7 +578,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 - The admin's first-login password change survives losing `data/admin_password` (migration `accounts.0007`); run `migrate` as a user who can read that file.
 - "VM Clone Auto Migrate" is removed; a clone stays on its source host.
 - A template VM is changed or deleted only by superusers and staff owners with the matching permission; other owners can still view, open the console and clone it. Power cycle no longer starts a template.
-- A VM that vanishes from its compute keeps its owners for `INSTANCE_OWNERSHIP_RETENTION_DAYS` (30) in case the same UUID comes back; superusers list and remove these records on the "Removed VMs" admin page.
+- A VM that vanishes from its compute, or whose compute is deleted, keeps its owners for `INSTANCE_OWNERSHIP_RETENTION_DAYS` (30) in case the same UUID comes back; superusers list and remove these records on the "Removed VMs" admin page.
 - The log rotates (10 MB × 5) in `data/webvirtcloud.log`.
 - A disk can be grown while its VM runs or is paused, not only when it is shut off. A disk on an LVM pool cannot be grown (libvirt cannot resize its volumes): the resize says so instead of failing, and the VM's other disks still grow.
 - Enabling vCPU hot plug keeps the VM's current vCPU count (it enabled all of them up to the maximum).
