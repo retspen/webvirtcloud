@@ -955,6 +955,17 @@ class wvmConnect(object):
             instances.append(name)
         return instances
 
+    def domains_using(self, match, running_only=False):
+        """Names of the domains with a definition, parsed, that match(tree)
+        holds for: the live and the persistent one of each domain, or with
+        running_only the live one of each running domain."""
+        listing = libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE if running_only else 0
+        flags = (0,) if running_only else (0, libvirt.VIR_DOMAIN_XML_INACTIVE)
+        return sorted(
+            dom.name() for dom in self.wvm.listAllDomains(listing)
+            if any(match(etree.fromstring(dom.XMLDesc(f))) for f in flags)
+        )
+
     def paths_in_use(self, skip_uuid=None, own=()):
         """Paths (names for network disks) a domain uses as a disk or a
         backing file of one, or as a file of its snapshots (overlays, memory,

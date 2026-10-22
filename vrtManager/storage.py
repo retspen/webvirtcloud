@@ -155,9 +155,27 @@ class wvmStorage(wvmConnect):
         return self.pool.create(0)
 
     def stop(self):
+        """Refused while it holds a disk of a running VM, named by the pool
+        or by a volume's path: that VM would lose the disk."""
+        name = self.pool.name()
+        paths = {vol.path() for vol in self.pool.listAllVolumes()}
+        vms = self.domains_using(
+            lambda domain: domain.xpath("devices/disk/source[@pool=$name]", name=name)
+            or paths.intersection(self._source_paths(domain)),
+            running_only=True,
+        )
+        if vms:
+            raise util.OperationError(f"Pool {name} holds disks of the running VMs {', '.join(vms)}; "
+                                      "shut them down first")
         return self.pool.destroy()
 
     def delete(self):
+        """Refused while a VM's definition names it for a disk: that VM would
+        no longer start. A disk given by its file path does not need it."""
+        name = self.pool.name()
+        if vms := self.domains_using(lambda domain: domain.xpath("devices/disk/source[@pool=$name]", name=name)):
+            raise util.OperationError(f"VMs {', '.join(vms)} have disks in pool {name} by its name and would no "
+                                      "longer start; detach those disks first")
         self.pool.undefine()
 
     def get_autostart(self):

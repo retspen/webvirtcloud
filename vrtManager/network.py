@@ -161,10 +161,25 @@ class wvmNetwork(wvmConnect):
     def start(self):
         self.net.create()
 
+    def _vms_on_it(self, running_only):
+        name = self.net.name()
+        return self.domains_using(
+            lambda domain: domain.xpath("devices/interface[@type='network']/source[@network=$name]", name=name),
+            running_only,
+        )
+
     def stop(self):
+        """Refused while a running VM is on it: that VM would be cut off."""
+        if vms := self._vms_on_it(running_only=True):
+            raise util.OperationError(f"Network {self.net.name()} is in use by the running VMs {', '.join(vms)}; "
+                                      "shut them down or remove their network cards first")
         self.net.destroy()
 
     def delete(self):
+        """Refused while a VM's definition names it: that VM would no longer start."""
+        if vms := self._vms_on_it(running_only=False):
+            raise util.OperationError(f"VMs {', '.join(vms)} use network {self.net.name()} and would no longer "
+                                      "start; remove their network cards first")
         self.net.undefine()
 
     def update(self, command, section, xml, parentIndex, flags=0):

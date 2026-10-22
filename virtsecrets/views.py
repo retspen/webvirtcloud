@@ -11,6 +11,7 @@ from libvirt import (
     VIR_SECRET_USAGE_TYPE_VOLUME,
     libvirtError,
 )
+from vrtManager.util import OperationError
 from vrtManager.virtsecrets import wvmSecrets
 
 from virtsecrets.forms import AddSecret
@@ -68,7 +69,10 @@ def secrets(request, compute_id):
                         messages.error(request, msg_err.as_text())
             if "delete" in request.POST:
                 uuid = request.POST.get("uuid", "")
-                conn.delete_secret(uuid)
+                try:
+                    conn.delete_secret(uuid)
+                except OperationError as err:  # a VM disk or a pool needs it
+                    messages.error(request, str(err))
                 return HttpResponseRedirect(request.get_full_path())
             if "set_value" in request.POST:
                 uuid = request.POST.get("uuid", "")

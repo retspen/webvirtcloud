@@ -185,10 +185,17 @@ def storage(request, compute_id, pool):
             conn.start()
             return HttpResponseRedirect(request.get_full_path())
         if "stop" in request.POST:
-            conn.stop()
+            try:
+                conn.stop()
+            except OperationError as err:  # a running VM's disk is in it
+                messages.error(request, str(err))
             return HttpResponseRedirect(request.get_full_path())
         if "delete" in request.POST:
-            conn.delete()
+            try:
+                conn.delete()
+            except OperationError as err:  # a VM names it for a disk
+                messages.error(request, str(err))
+                return HttpResponseRedirect(request.get_full_path())
             return HttpResponseRedirect(reverse("storages", args=[compute_id]))
         if "set_autostart" in request.POST:
             conn.set_autostart(1)
