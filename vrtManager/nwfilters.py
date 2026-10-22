@@ -37,14 +37,11 @@ class wvmNWFilter(wvmConnect):
     def get_name(self):
         return self.nwfilter.name()
 
-    def delete(self):
-        self.nwfilter.undefine()
-
     def get_xml(self):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        uuid = tree.find("uuid")
-        tree.remove(uuid)
-        return ElementTree.tostring(tree).decode()
+        """With the UUID: defined again with it, libvirt changes the filter in
+        place, also while a VM uses it. It refuses XML it cannot parse or
+        apply to the running VMs' interfaces."""
+        return self._XMLDesc(0)
 
     def get_filter_refs(self):
         tree = ElementTree.fromstring(self._XMLDesc(0))

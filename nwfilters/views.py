@@ -180,12 +180,7 @@ def nwfilter(request, compute_id, nwfltr):
                 new_xml = request.POST.get("edit_xml", "")
 
                 if new_xml:
-                    nwfilter.delete()
-                    try:
-                        conn.create_nwfilter(new_xml)
-                    except libvirtError as lib_err:
-                        conn.create_nwfilter(xml)
-                        raise util.OperationError(lib_err)
+                    conn.create_nwfilter(new_xml)
 
             if "del_nwfilter_rule" in request.POST:
                 action = request.POST.get("action", "")
@@ -193,46 +188,26 @@ def nwfilter(request, compute_id, nwfltr):
                 priority = request.POST.get("priority", "")
 
                 new_xml = nwfilter.delete_rule(action, direction, priority)
-                nwfilter.delete()
-                try:
-                    conn.create_nwfilter(new_xml)
-                except libvirtError as lib_err:
-                    conn.create_nwfilter(xml)
-                    raise util.OperationError(lib_err)
+                conn.create_nwfilter(new_xml)
 
             if "del_nwfilter_ref" in request.POST:
                 ref_name = request.POST.get("ref")
                 new_xml = nwfilter.delete_ref(ref_name)
-                nwfilter.delete()
-                try:
-                    conn.create_nwfilter(new_xml)
-                except libvirtError as lib_err:
-                    conn.create_nwfilter(xml)
-                    raise util.OperationError(lib_err)
+                conn.create_nwfilter(new_xml)
 
             if "add_nwfilter_rule" in request.POST:
                 rule_xml = request.POST.get("nwfilterrule_xml", "")
                 if not rule_xml:
                     return HttpResponseRedirect(request.get_full_path())
                 new_xml = nwfilter.add_rule(rule_xml)
-                nwfilter.delete()
-                try:
-                    conn.create_nwfilter(new_xml)
-                except libvirtError as lib_err:
-                    conn.create_nwfilter(xml)
-                    raise util.OperationError(lib_err)
+                conn.create_nwfilter(new_xml)
 
             if "add_nwfilter_ref" in request.POST:
                 ref_name = request.POST.get("nwfilters_select", "")
                 if not ref_name:
                     return HttpResponseRedirect(request.get_full_path())
                 new_xml = nwfilter.add_ref(ref_name)
-                nwfilter.delete()
-                try:
-                    conn.create_nwfilter(new_xml)
-                except libvirtError as lib_err:
-                    conn.create_nwfilter(xml)
-                    raise util.OperationError(lib_err)
+                conn.create_nwfilter(new_xml)
 
             return HttpResponseRedirect(request.get_full_path())
         conn.close()
