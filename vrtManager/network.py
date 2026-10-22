@@ -267,15 +267,17 @@ class wvmNetwork(wvmConnect):
                 return result
 
     def modify_dhcp_range(self, range_start, range_end, family="ipv4"):
-        if not self.is_active():
-            tree = etree.fromstring(self._XMLDesc(0))
-            if family == "ipv4":
-                dhcp_range = tree.xpath("./ip[not(@family='ipv6')]/dhcp/range")
-            if family == "ipv6":
-                dhcp_range = tree.xpath("./ip[@family='ipv6']/dhcp/range")
-            dhcp_range[0].set("start", range_start)
-            dhcp_range[0].set("end", range_end)
-            self.wvm.networkDefineXML(etree.tostring(tree).decode())
+        """Refused while the network runs: the running network would keep the old range."""
+        if self.is_active():
+            raise util.OperationError(f"Stop network {self.net.name()} to change its DHCP range")
+        tree = etree.fromstring(self._XMLDesc(0))
+        ip = {"ipv4": "ip[not(@family='ipv6')]", "ipv6": "ip[@family='ipv6']"}.get(family)
+        dhcp_range = tree.xpath(f"{ip}/dhcp/range") if ip else []
+        if not dhcp_range:
+            raise util.OperationError(f"Network {self.net.name()} has no {family} DHCP range")
+        dhcp_range[0].set("start", range_start)
+        dhcp_range[0].set("end", range_end)
+        self.wvm.networkDefineXML(etree.tostring(tree).decode())
 
     def delete_fixed_address(self, ip, family="ipv4"):
         tree = etree.fromstring(self._XMLDesc(0))
