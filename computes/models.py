@@ -96,9 +96,10 @@ class Compute(Model):
         exclusive, so no reconcile, VM operation or job on it runs meanwhile
         (Busy if one does); its row is locked before its VMs', as the
         reconcile does."""
-        from computes.utils import forget, libvirt_compute_lock
+        from computes.utils import forget, libvirt_compute_lock, lock_ownership
 
         with libvirt_compute_lock(self), transaction.atomic():
+            lock_ownership()
             Compute.objects.select_for_update().filter(pk=self.pk).first()
             for inst in self.instance_set.select_for_update():
                 forget(inst)

@@ -5,7 +5,7 @@ from datetime import timedelta
 from accounts.models import UserInstance
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 from computes.models import Compute
 from instances.models import Instance, InstanceTombstone
@@ -44,6 +44,19 @@ def libvirt_instance_lock(instance):
         claims.instance_key(instance.uuid): Claim.EXCLUSIVE,
     }):
         yield
+
+
+# pg_advisory_xact_lock key of the ownership step ("wvc_own")
+OWNERSHIP_LOCK = 0x7776635F6F776E
+
+
+def lock_ownership():
+    """Hold the ownership step of every compute until this transaction ends:
+    a bury and a restore of the same UUID on two computes must not see each
+    other's work half done. SQLite's IMMEDIATE transactions already do this."""
+    if connection.vendor == "postgresql":
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(%s)", [OWNERSHIP_LOCK])
 
 
 def _log(inst, what):
@@ -170,6 +183,7 @@ def refresh_instance_database(compute):
                     return
 
             with transaction.atomic():
+                lock_ownership()
                 # the compute may have been deleted while libvirt was asked
                 comp_locked = Compute.objects.select_for_update().filter(pk=compute_pk).first()
                 if not comp_locked:
