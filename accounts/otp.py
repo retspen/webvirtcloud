@@ -10,6 +10,8 @@ django-otp does not check for confirmed status or ownership-by-type) is
 ignored.
 """
 
+from django.contrib.auth.signals import user_login_failed
+from django.core.exceptions import ValidationError
 from django_otp.forms import OTPAuthenticationForm
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
@@ -33,4 +35,9 @@ class SingleDeviceOTPForm(OTPAuthenticationForm):
     def clean_otp(self, user):
         if user is not None and self._confirmed_totp(user) is None:
             return  # no confirmed device: the password is the only factor
-        return super().clean_otp(user)
+        try:
+            return super().clean_otp(user)
+        except ValidationError:
+            # a wrong code is a failed login: counted by django-axes and logged
+            user_login_failed.send(sender=__name__, credentials={"username": user.get_username()}, request=self.request)
+            raise

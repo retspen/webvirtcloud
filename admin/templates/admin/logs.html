@@ -33,6 +33,8 @@
                             <th scope="col">{% trans "Host" %}</th>
                             <th scope="col">{% trans "Instance" %}</th>
                             <th scope="col">{% trans "Message" %}</th>
+                            <th scope="col">{% trans "Result" %}</th>
+                            <th scope="col">{% trans "IP" %}</th>
                             </tr>
                     </thead>
                     <tbody class="searchable">
@@ -44,6 +46,8 @@
                                 <td>{{ log.host }}</td>
                                 <td>{{ log.instance }}</td>
                                 <td>{{ log.message }}</td>
+                                <td>{% if log.success is None %}{% trans "Unknown" %}{% elif log.success %}{% trans "Done" %}{% else %}{% trans "Failed" %}{% endif %}</td>
+                                <td>{{ log.ip|default:"" }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

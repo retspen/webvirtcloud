@@ -207,10 +207,8 @@ def user_unblock(request, pk):
 
 @superuser_only
 def logs(request):
-    l = Logs.objects.order_by("-date")
-    paginator = Paginator(l, int(app_settings.LOGS_PER_PAGE))
-    page = request.GET.get("page", 1)
-    logs = paginator.page(page)
+    paginator = Paginator(Logs.objects.order_by("-date", "-id"), int(app_settings.LOGS_PER_PAGE))
+    logs = paginator.get_page(request.GET.get("page"))
     return render(request, "admin/logs.html", {"logs": logs})
 
 

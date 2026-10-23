@@ -2,6 +2,7 @@ from admin.permissions import IsSuperUser
 from computes.models import Compute
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
+from logs.audit import audit, changed_fields, snapshot
 from rest_framework import viewsets
 from rest_framework.response import Response
 from vrtManager.create import wvmCreate
@@ -18,6 +19,25 @@ class ComputeViewSet(viewsets.ModelViewSet):
     lookup_value_converter = "int"
     serializer_class = ComputeSerializer
     permission_classes = [IsSuperUser]
+
+    def perform_create(self, serializer):
+        data = serializer.validated_data
+        with audit(self.request, data["name"], f"Compute {data['name']} ({data['hostname']})", "add"):
+            serializer.save()
+
+    def perform_update(self, serializer):
+        compute = serializer.instance
+        subject = f"Compute {compute.name} ({compute.hostname})"
+        before = snapshot(compute)
+        with audit(self.request, compute, subject, "change") as entry:
+            serializer.save()
+            fields = changed_fields(before, snapshot(compute))
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
+
+    def perform_destroy(self, instance):
+        with audit(self.request, instance, f"Compute {instance.name} ({instance.hostname})", "delete"):
+            instance.delete()
 
 
 class ComputeArchitecturesView(viewsets.ViewSet):

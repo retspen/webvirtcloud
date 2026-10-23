@@ -4,6 +4,7 @@ from django.http import JsonResponse
 
 from admin.decorators import superuser_only
 from instances.models import Instance
+from logs.audit import write
 from logs.models import Logs
 
 
@@ -15,8 +16,7 @@ def addlogmsg(user, host, instance, message):
     :param message:
     :return:
     """
-    add_log_msg = Logs(user=user, host=host, instance=instance, message=str(message))
-    add_log_msg.save()
+    write(user, host, instance, str(message))
     logger = logging.getLogger("")
     logger.info(f"{user} {host} {instance} {message}")
 

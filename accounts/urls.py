@@ -4,7 +4,6 @@ from django.urls import path
 
 from . import views
 from .otp import SingleDeviceOTPForm
-from .views import CustomLoginView
 
 app_name = "accounts"
 
@@ -52,5 +51,5 @@ if settings.OTP_ENABLED:
     ]
 else:
     urlpatterns += (
-        path("login/", CustomLoginView.as_view(template_name="login.html"), name="login"),
+        path("login/", LoginView.as_view(template_name="login.html", redirect_authenticated_user=True), name="login"),
     )

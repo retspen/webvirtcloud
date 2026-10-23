@@ -17,6 +17,7 @@ from logs.models import Logs
 class MissingFieldTestCase(TestCase):
     def setUp(self):
         self.client.force_login(get_user_model().objects.create_superuser("mf", "mf@example.com", "pw"))
+        Logs.objects.all().delete()  # the login's row
         self.compute = Compute.objects.create(name="mf-c", hostname="127.0.0.1", login="", password="", type=4)
         self.instance = Instance.objects.create(
             compute=self.compute, name="mf-vm", uuid="11111111-2222-3333-4444-555555555555"

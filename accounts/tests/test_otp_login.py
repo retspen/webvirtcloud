@@ -142,6 +142,31 @@ class OTPLoginHTTPTestCase(TestCase):
         response = self._post(otp_token=wrong_token(device))
         self.assertEqual(response.status_code, 200)
 
+    def messages(self):
+        from logs.models import Logs
+        return list(Logs.objects.order_by("id").values_list("message", flat=True))
+
+    def test_a_wrong_otp_code_is_a_failed_login(self):
+        from axes.models import AccessAttempt
+        device = TOTPDevice.objects.create(user=self.user, confirmed=True)
+        self._post(otp_token=wrong_token(device))
+        self.assertEqual(self.messages(), ["Login failed"])
+        self.assertEqual(AccessAttempt.objects.get(username="bob").failures_since_start, 1)
+
+    def test_wrong_otp_codes_reach_the_lockout(self):
+        from appsettings.models import AppSettings
+        AppSettings.objects.filter(key="LOGIN_FAILURE_LIMIT").update(value="3")
+        device = TOTPDevice.objects.create(user=self.user, confirmed=True)
+        self._post(otp_token=wrong_token(device))
+        self._post(otp_token=wrong_token(device))
+        self.assertEqual(self._post(otp_token=wrong_token(device)).status_code, 429)
+        self.assertEqual(self.messages(), ["Login failed", "Login failed", "Locked out", "Login failed"])
+
+    def test_a_right_code_logs_in(self):
+        device = TOTPDevice.objects.create(user=self.user, confirmed=True)
+        self._post(otp_token=token_for(device))
+        self.assertEqual(self.messages(), ["Login"])
+
     def test_a_signed_in_user_is_sent_on_from_the_login_page(self):
         from django.urls import reverse
         self.client.force_login(self.user)

@@ -9,6 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 from computes.models import Compute
 from instances.models import Instance, InstanceTombstone
+from logs.audit import write
 from operations import claims
 from operations.models import Claim
 
@@ -45,6 +46,10 @@ def libvirt_instance_lock(instance):
         yield
 
 
+def _log(inst, what):
+    write("-", inst.compute.name, "", f"VM {inst.name} ({inst.uuid}): {what}", True)
+
+
 def _move_ownership(source, target):
     """Give target the owners and template flag of source; a user's rights are merged."""
     for ui in UserInstance.objects.filter(instance=source):
@@ -70,6 +75,7 @@ def forget(inst):
     elsewhere = Instance.objects.filter(uuid=inst.uuid).exclude(compute_id=inst.compute_id).first()
     if elsewhere:
         _move_ownership(inst, elsewhere)
+        _log(inst, f"owners moved to {elsewhere.compute.name}")
     else:
         _bury(inst)
     inst.delete()
@@ -82,7 +88,9 @@ def _bury(inst):
     ]
     if owners or inst.is_template:
         InstanceTombstone.objects.create(uuid=inst.uuid, name=inst.name, is_template=inst.is_template, owners=owners)
-        logger.info("Instance %s (%s) disappeared; ownership kept", inst.name, inst.uuid)
+        _log(inst, "owners kept on the Removed VMs page")
+    else:
+        _log(inst, "left the panel (no owners)")
 
 
 def _restore(inst):
@@ -103,7 +111,7 @@ def _restore(inst):
         inst.is_template = True
         inst.save(update_fields=["is_template"])
     InstanceTombstone.objects.filter(uuid=inst.uuid).delete()
-    logger.info("Instance %s (%s) is back; ownership restored", inst.name, inst.uuid)
+    _log(inst, "owners restored")
 
 
 def refresh_instance_database(compute):
@@ -187,7 +195,10 @@ def refresh_instance_database(compute):
                 #    compute is a copy and gets no owners; otherwise a tombstone's
                 #    ownership is restored.
                 retention = getattr(settings, "INSTANCE_OWNERSHIP_RETENTION_DAYS", 30)
-                InstanceTombstone.objects.filter(removed__lt=timezone.now() - timedelta(days=retention)).delete()
+                expired = InstanceTombstone.objects.filter(removed__lt=timezone.now() - timedelta(days=retention))
+                for t in expired:
+                    write("-", "-", "", f"VM {t.name} ({t.uuid}): removed record expired", True)
+                expired.delete()
                 for uuid, name in host_domains.items():
                     if uuid not in db_uuids:
                         inst, created = Instance.objects.get_or_create(

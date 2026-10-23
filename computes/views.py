@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 from libvirt import libvirtError
+from logs.audit import audit, changed_fields, snapshot
 from operations import claims
 from vrtManager.connection import wvmConnect
 from vrtManager.hostdetails import wvmHostDetails
@@ -92,7 +93,9 @@ def instances(request, compute_id):
 def compute_create(request, FormClass):
     form = FormClass(request.POST or None)
     if form.is_valid():
-        form.save()
+        compute = form.instance
+        with audit(request, compute, f"Compute {compute.name} ({compute.hostname})", "add"):
+            form.save()
         return redirect(reverse("computes"))
 
     return render(request, "computes/form.html", {"form": form})
@@ -111,9 +114,15 @@ def compute_update(request, compute_id):
     elif compute.type == 4:
         FormClass = SocketComputeForm
 
+    subject = f"Compute {compute.name} ({compute.hostname})"
+    before = snapshot(compute)
     form = FormClass(request.POST or None, instance=compute)
     if form.is_valid():
-        form.save()
+        with audit(request, compute, subject, "change") as entry:
+            form.save()
+            fields = changed_fields(before, snapshot(compute))
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
         return redirect(reverse("computes"))
 
     return render(request, "computes/form.html", {"form": form})
@@ -123,7 +132,8 @@ def compute_update(request, compute_id):
 def compute_delete(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
     if request.method == "POST":
-        compute.delete()
+        with audit(request, compute, f"Compute {compute.name} ({compute.hostname})", "delete"):
+            compute.delete()
         return redirect("computes")
 
     return render(

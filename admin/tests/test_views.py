@@ -4,11 +4,13 @@ from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
 
 from accounts.models import UserAttributes
+from logs.models import Logs
 
 
 class AdminTestCase(TestCase):
     def setUp(self):
         self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        Logs.objects.all().delete()  # the login's row
 
     def test_group_list(self):
         response = self.client.get(reverse("admin:group_list"))
@@ -134,3 +136,29 @@ class AdminTestCase(TestCase):
     def test_logs(self):
         response = self.client.get(reverse("admin:logs"))
         self.assertEqual(response.status_code, 200)
+
+    def test_logs_show_result_and_ip(self):
+        Logs.objects.create(message="first", success=True, ip="192.0.2.7")
+        Logs.objects.create(message="second", success=False)
+        Logs.objects.create(message="third")
+        response = self.client.get(reverse("admin:logs"))
+        self.assertContains(response, "Done")
+        self.assertContains(response, "Failed")
+        self.assertContains(response, "Unknown")
+        self.assertContains(response, "192.0.2.7")
+
+    def test_logs_order_ties_by_id(self):
+        first = Logs.objects.create(message="first")
+        second = Logs.objects.create(message="second")
+        Logs.objects.filter(id__in=[first.id, second.id]).update(date=first.date)
+        response = self.client.get(reverse("admin:logs"))
+        self.assertEqual([log.id for log in response.context["logs"]], [second.id, first.id])
+
+    def test_logs_bad_page_numbers(self):
+        Logs.objects.create(message="entry")
+        response = self.client.get(reverse("admin:logs"), {"page": "abc"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["logs"].number, 1)
+        response = self.client.get(reverse("admin:logs"), {"page": "999"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["logs"].number, response.context["logs"].paginator.num_pages)

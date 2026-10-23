@@ -90,12 +90,26 @@ class CancelFinishResolveTestCase(TransactionTestCase):
         self.assertFalse(Claim.objects.exists())
         self.assertEqual(list(Logs.objects.values_list("message", flat=True)), ["No-op cancelled"])
 
-    def test_the_log_entry_is_written_inside_the_finishing_transaction(self):
+    def test_a_failing_log_entry_does_not_undo_the_finish(self):
         op = jobs.submit("test.noop", self.user, {}, KEY)
-        with patch.object(fakes.NoopKind, "log_entry", side_effect=RuntimeError("x")), self.assertRaises(RuntimeError):
-            jobs.finish(op, Outcome(Operation.SUCCEEDED))
-        self.assertEqual(Operation.objects.get(pk=op.pk).state, Operation.QUEUED)  # rolled back
-        self.assertTrue(Claim.objects.exists())
+        with patch.object(fakes.NoopKind, "log_entry", side_effect=RuntimeError("x")), \
+                self.assertLogs("logs.audit", "ERROR"):
+            self.assertTrue(jobs.finish(op, Outcome(Operation.SUCCEEDED)))
+        self.assertEqual(Operation.objects.get(pk=op.pk).state, Operation.SUCCEEDED)
+        self.assertFalse(Claim.objects.exists())
+        self.assertFalse(Logs.objects.exists())
+
+    def test_job_rows_carry_the_result(self):
+        for key, state, success in (("key-00000002", Operation.SUCCEEDED, True), ("key-00000003", Operation.FAILED, False)):
+            jobs.finish(jobs.submit("test.noop", self.user, {}, key), Outcome(state))
+            self.assertIs(Logs.objects.latest("pk").success, success)
+        jobs.cancel(jobs.submit("test.noop", self.user, {}, "key-00000004").pk, self.user)
+        self.assertIsNone(Logs.objects.latest("pk").success)
+        op = jobs.submit("test.noop", self.user, {}, "key-00000005")
+        jobs.finish(op, Outcome(Operation.UNCERTAIN))
+        self.assertIsNone(Logs.objects.latest("pk").success)
+        jobs.resolve(op.pk, self.admin, Operation.FAILED, "checked")
+        self.assertIs(Logs.objects.latest("pk").success, False)
 
     def test_cancel_decides_from_the_current_state(self):
         op = jobs.submit("test.scripted", self.user, {}, KEY)
@@ -176,7 +190,7 @@ class CancelFinishResolveTestCase(TransactionTestCase):
         jobs.finish(op, Outcome(Operation.FAILED, error="qemu+tcp://admin:s3cret@192.0.2.5/system failed"))
         op.refresh_from_db()
         self.assertNotIn("s3cret", op.error)
-        self.assertLessEqual(len(Logs.objects.get().user), 50)
+        self.assertLessEqual(len(Logs.objects.get().user), 150)
 
     def test_an_uncertain_job_keeps_its_claims_until_resolved(self):
         op = jobs.submit("test.noop", self.user, {}, KEY)

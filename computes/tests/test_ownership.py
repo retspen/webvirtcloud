@@ -11,6 +11,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from instances.models import Instance, InstanceTombstone
+from logs.models import Logs
 from operations import claims
 from operations.models import Claim
 from rest_framework.test import APIClient
@@ -54,6 +55,9 @@ class OwnershipTestCase(TestCase):
         vm = Instance.objects.get(compute=compute, uuid=UUID)
         return vm.is_template, [(ui.user, ui.is_change, ui.is_delete, ui.is_vnc) for ui in vm.userinstance_set.all()]
 
+    def rows(self):
+        return list(Logs.objects.order_by("id").values_list("user", "host", "message"))
+
     def test_vm_that_disappears_and_returns_keeps_its_owners(self):
         self.owned_vm(self.host_a)
         refresh_instance_database(self.host_a)  # undefined for a while
@@ -64,6 +68,15 @@ class OwnershipTestCase(TestCase):
 
         self.assertEqual(self.ownership(self.host_a), (True, [(self.owner, True, False, True)]))
         self.assertFalse(InstanceTombstone.objects.exists())
+        self.assertEqual(self.rows(), [
+            ("-", "host-a", f"VM vm ({UUID}): owners kept on the Removed VMs page"),
+            ("-", "host-a", f"VM vm ({UUID}): owners restored"),
+        ])
+
+    def test_an_ownerless_vm_leaves_a_row(self):
+        Instance.objects.create(compute=self.host_a, name="vm", uuid=UUID)
+        refresh_instance_database(self.host_a)
+        self.assertEqual(self.rows(), [("-", "host-a", f"VM vm ({UUID}): left the panel (no owners)")])
 
     def test_move_seen_on_the_new_host_first(self):
         self.owned_vm(self.host_a)
@@ -75,6 +88,7 @@ class OwnershipTestCase(TestCase):
 
         self.assertEqual(self.ownership(self.host_b), (True, [(self.owner, True, False, True)]))
         self.assertFalse(Instance.objects.filter(compute=self.host_a).exists())
+        self.assertEqual(self.rows(), [("-", "host-a", f"VM vm ({UUID}): owners moved to host-b")])
 
     def test_move_seen_on_the_old_host_first(self):
         self.owned_vm(self.host_a)
@@ -105,6 +119,7 @@ class OwnershipTestCase(TestCase):
 
         self.assertEqual(self.ownership(self.host_a), (False, []))
         self.assertFalse(InstanceTombstone.objects.exists())
+        self.assertIn(("-", "-", f"VM vm ({UUID}): removed record expired"), self.rows())
 
     def test_deleted_users_are_skipped(self):
         self.owned_vm(self.host_a)
@@ -128,6 +143,11 @@ class OwnershipTestCase(TestCase):
         self.owned_vm(self.host_a)
         self.delete(self.host_a)
         self.assertEqual(InstanceTombstone.objects.get().owners[0]["user"], self.owner.id)
+        self.assertEqual(self.rows(), [
+            ("cd-admin", "-", "Login"),
+            ("-", "host-a", f"VM vm ({UUID}): owners kept on the Removed VMs page"),
+            ("cd-admin", "host-a", "Compute host-a (host-a.example): delete"),
+        ])
 
         again = self.compute("host-a-again")
         self.on(again, [("vm", UUID)])

@@ -583,6 +583,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 - A disk can be grown while its VM runs or is paused, not only when it is shut off. A disk on an LVM pool cannot be grown (libvirt cannot resize its volumes): the resize says so instead of failing, and the VM's other disks still grow.
 - Enabling vCPU hot plug keeps the VM's current vCPU count (it enabled all of them up to the maximum).
 - A host's CPU graph shows the average since its previous point (normally 5 s) instead of a 1 s sample taken while a worker waits.
+- The Logs page records who added, changed or deleted a compute, and every login, failed login, lockout and logout, with the address it came from and whether it worked (Result: Done, Failed, Unknown for older rows); a compute's VMs leaving the panel get a row each. Other admin and host changes follow.
 - The CPU usage in the new-VM dialog is the current load (over 1 s), read when the dialog opens; it was the average since the host booted.
 - A VM's stats are polled every 5 s like the host graph, the first point as soon as the tab opens; each point is the average since the previous one, disk rates in MB/s (they were MiB/s labelled Mb/s); a counter the host does not report shows a gap instead of 0.
 - An ISO uploads to an SSH compute about 3.5 times faster (SFTP writes no longer wait for each 32 KiB); a failed write still fails the upload.

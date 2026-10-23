@@ -14,7 +14,7 @@ from django.db.models import F, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from logs.models import Logs
+from logs.audit import write
 from vrtManager.util import OperationError
 
 from . import claims, utils
@@ -195,8 +195,8 @@ def cancel(op_id, user):
         if op.state == Operation.QUEUED:
             Operation.objects.filter(pk=op.pk).update(state=Operation.CANCELLED, finished_at=timezone.now())
             Claim.objects.filter(operation=op).delete()
-            if (entry := get_kind(op.kind).log_entry(op, Operation.CANCELLED)) is not None:
-                _log(op.username, *entry)
+            if (entry := _entry(op, Operation.CANCELLED)) is not None:
+                _log(op.username, *entry, None)
         elif op.state == Operation.RUNNING:
             if not get_kind(op.kind).cancellable:
                 raise OperationError("This job cannot be cancelled once it has started")
@@ -210,15 +210,22 @@ def cancel(op_id, user):
     return op
 
 
-def _log(user, host, instance, message):
-    Logs.objects.create(user=str(user)[:50], host=str(host)[:50], instance=str(instance)[:50],
-                        message=utils.safe_text(message)[:255])
+def _entry(op, state):
+    """The kind's log entry; one that cannot be computed is logged and skipped, so it never undoes the job."""
+    try:
+        return get_kind(op.kind).log_entry(op, state)
+    except Exception:
+        logging.getLogger("logs.audit").exception("log entry of job %s not computed", op.pk)
+        return None
+
+
+def _log(user, host, instance, message, success):
+    write(str(user), str(host), str(instance), utils.safe_text(message), success)
 
 
 def finish(op, outcome, *, worker=None):
     """Terminal state, claims and history together, once. With a worker,
     only while it holds the lease and owns the job. Uncertain keeps the claims."""
-    kind = get_kind(op.kind)
     error = utils.safe_text(outcome.error)
     with fenced(worker.identity) if worker is not None else transaction.atomic():
         q = Operation.objects.filter(pk=op.pk, state__in=Operation.ACTIVE)
@@ -233,8 +240,8 @@ def finish(op, outcome, *, worker=None):
             return False
         if outcome.state != Operation.UNCERTAIN:
             Claim.objects.filter(operation=op).delete()
-        if (entry := kind.log_entry(op, outcome.state)) is not None:
-            _log(op.username, *entry)
+        if (entry := _entry(op, outcome.state)) is not None:
+            _log(op.username, *entry, {Operation.SUCCEEDED: True, Operation.FAILED: False}.get(outcome.state))
     logger.info("job %s %s: %s", op.pk, op.kind, outcome.state)
     op.refresh_from_db()
     return True
@@ -256,9 +263,10 @@ def resolve(op_id, user, outcome_state, note):
                                                   resolution_note=note, resolved_by=user, resolved_at=timezone.now())
         Claim.objects.filter(operation=op).delete()
         # the host and VM columns of the kind's own entries, so the VM's log shows it
-        entry = get_kind(op.kind).log_entry(op, outcome_state)
+        entry = _entry(op, outcome_state)
         host, instance = entry[:2] if entry is not None else ("-", op.resource_label)
-        _log(user.username, host, instance, f"Job {op.pk} resolved as {outcome_state}: {note}")
+        _log(user.username, host, instance, f"Job {op.pk} resolved as {outcome_state}: {note}",
+             outcome_state == Operation.SUCCEEDED)
     op.refresh_from_db()
     return op
 

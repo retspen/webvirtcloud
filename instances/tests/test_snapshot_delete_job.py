@@ -39,6 +39,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
                                                 uuid="11111111-2222-3333-4444-555555555555")
         self.admin = get_user_model().objects.create_superuser("job_admin", "a@example.com", "pw")
         self.client.force_login(self.admin)
+        Logs.objects.all().delete()  # the login's row
         patcher = patch("instances.jobs.wvmInstance", return_value=proxy())
         self.wvm = patcher.start()
         self.addCleanup(patcher.stop)
