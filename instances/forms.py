@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES, QEMU_KEYMAPS
 
 from .models import CreateInstance, Flavor
+from .utils import nic_macs
 
 
 class FlavorForm(forms.ModelForm):
@@ -82,3 +83,12 @@ class NewVMForm(forms.ModelForm):
                 )
             )
         return name
+
+    def clean(self):
+        # one MAC per NIC at most, each a MAC address, as the job checks
+        cleaned = super().clean()
+        try:
+            nic_macs(cleaned.get("mac") or "", cleaned.get("networks") or "")
+        except ValueError as err:
+            self.add_error("mac", str(err))
+        return cleaned

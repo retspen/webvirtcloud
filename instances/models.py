@@ -1,4 +1,5 @@
 from computes.models import Compute
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -349,12 +350,12 @@ class CreateInstance(models.Model):
     )
     firmware = models.CharField(max_length=64)
     vcpu = models.IntegerField(
-        error_messages={"required": _("No VCPU has been entered")}
+        error_messages={"required": _("No VCPU has been entered")}, validators=[MinValueValidator(1)]
     )
     vcpu_mode = models.CharField(max_length=20, blank=True)
     disk = models.IntegerField(blank=True)
     memory = models.IntegerField(
-        error_messages={"required": _("No RAM size has been entered")}
+        error_messages={"required": _("No RAM size has been entered")}, validators=[MinValueValidator(1)]
     )
     networks = models.CharField(
         max_length=256,
@@ -368,7 +369,7 @@ class CreateInstance(models.Model):
     cache_mode = models.CharField(
         max_length=16, error_messages={"required": _("Please select HDD cache mode")}
     )
-    hdd_size = models.IntegerField(blank=True)
+    hdd_size = models.IntegerField(blank=True, validators=[MinValueValidator(1)])
     meta_prealloc = models.BooleanField(default=False, blank=True)
     virtio = models.BooleanField(default=True)
     qemu_ga = models.BooleanField(default=False)

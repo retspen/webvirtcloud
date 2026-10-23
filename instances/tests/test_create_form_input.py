@@ -81,6 +81,22 @@ class CreateFormInputTests(TestCase):
         self.assertTrue(any("Choose one disk source" in str(m) for m in response.context["messages"]))
         self.assertFalse(Operation.objects.exists())
 
+    def test_impossible_sizes_are_refused_beside_their_fields(self):
+        _, response = render_create_page(self, valid(vcpu="0", memory="-1", hdd_size="0", storage="default-pool"))
+        self.assertEqual(response.status_code, 200)
+        page = html.fromstring(response.content)
+        for field in ("vm_vcpu", "vm_memory", "vm_hdd_size"):
+            with self.subTest(field=field):
+                self.assertIn("greater than or equal to 1", page.get_element_by_id(f"{field}_error").text_content())
+        self.assertFalse(Operation.objects.exists())
+
+    def test_a_bad_mac_is_refused_by_the_form(self):
+        _, response = render_create_page(self, valid(hdd_size="10", storage="default-pool",
+                                                     networks="default,isolated", mac="52:54:00:00:00:01,aa:"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Invalid MAC address", " ".join(response.context["vm_form"].errors.get("mac", [])))
+        self.assertFalse(Operation.objects.exists())
+
     def test_only_the_chosen_disk_source_is_enabled(self):
         for posted, chosen in (("template", "template"), ("existing", "existing"), ("nonsense", "new")):
             with self.subTest(posted=posted):

@@ -55,6 +55,16 @@ class CreateJobTestCase(TransactionTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Operation.objects.exists())
 
+    def test_impossible_sizes_are_refused_by_the_api(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        for field, value in (("vcpu", 0), ("memory", -512), ("hdd_size", 0)):
+            with self.subTest(field=field):
+                response = self.client.post(url, {**BODY, field: value, "submission_key": f"key-min-{field}"},
+                                            content_type="application/json")
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(field, response.json())
+        self.assertFalse(Operation.objects.exists())
+
     def test_a_resubmitted_key_with_other_fields_is_a_conflict(self):
         url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
         self.client.post(url, BODY, content_type="application/json")
