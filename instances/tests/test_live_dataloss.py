@@ -529,7 +529,9 @@ class LiveDataLossTestCase(TestCase):
         before = (self.disk_sources(dom), self.disk_sources(dom, libvirt.VIR_DOMAIN_XML_INACTIVE))
         response = self.post("add_new_vol", inst, {"storage": livetest.POOL, "name": P + "sata-new", "format": "qcow2",
                                                    "size": "1", "bus": "sata", "cache": "default"})
-        self.assertEqual(response.status_code, 500)
+        # libvirt refuses it: the form goes back to the VM page with the reason
+        self.assertRedirects(response, reverse("instances:instance", args=[inst.id]), fetch_redirect_response=False)
+        self.assertTrue(any("libvirt Error" in str(m) for m in get_messages(response.wsgi_request)))
         self.assertEqual((self.disk_sources(dom), self.disk_sources(dom, libvirt.VIR_DOMAIN_XML_INACTIVE)), before)
         # the new volume stays in the pool: it is never deleted unasked
         self.assertIn(P + "sata-new.qcow2", self.conn.storagePoolLookupByName(livetest.POOL).listVolumes())

@@ -472,8 +472,12 @@ class NvramCopyTestCase(unittest.TestCase):
         self.shared.start()
 
     def test_the_copy_is_deleted_when_the_definition_fails(self):
-        self.host.defineXML = mock.MagicMock(side_effect=libvirt.libvirtError("define failed"))
-        with self.assertRaisesRegex(libvirt.libvirtError, "define failed"):
+        # the raised error is this one: its message can be another libvirt
+        # error the thread recorded (a closed connection of an earlier live test)
+        error = libvirt.libvirtError("define failed")
+        self.host.defineXML = mock.MagicMock(side_effect=error)
+        with self.assertRaises(libvirt.libvirtError) as raised:
             self.move()
+        self.assertIs(raised.exception, error)
         self.dest_pool.storageVolLookupByName.assert_called_once_with("vm_VARS.fd")
         self.dest_pool.storageVolLookupByName.return_value.delete.assert_called_once_with(0)
