@@ -1,3 +1,4 @@
+from appsettings.models import AppSettings
 from appsettings.settings import app_settings
 from computes.models import Compute
 from django.conf import settings
@@ -293,3 +294,20 @@ class AccountsTestCase(TestCase):
             }
         )
         self.assertFalse(form.is_valid())
+
+
+class SingleOwnerEditTests(TestCase):
+    """With one owner per VM, the owner's own rights can still be changed."""
+
+    def test_the_only_owner_is_edited(self):
+        AppSettings.objects.filter(key="ALLOW_INSTANCE_MULTIPLE_OWNER").update(value="False")
+        admin = get_user_model().objects.create_superuser("audit-admin", "audit@example.com", "pw")
+        bob = get_user_model().objects.create_user("bob")
+        compute = Compute.objects.create(name="c1", hostname="127.0.0.1", login="", password="", type=4)
+        vm = Instance.objects.create(compute=compute, name="vm", uuid="99999999-9999-9999-9999-999999999999")
+        ui = UserInstance.objects.create(user=bob, instance=vm)
+        self.client.force_login(admin)
+        response = self.client.post(reverse("accounts:user_instance_update", args=[ui.pk]), {"is_vnc": "on"})
+        self.assertRedirects(response, reverse("accounts:account", args=[bob.pk]), fetch_redirect_response=False)
+        ui.refresh_from_db()
+        self.assertTrue(ui.is_vnc)

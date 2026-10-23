@@ -20,7 +20,8 @@ class UserInstanceForm(ModelForm):
     def clean_instance(self):
         instance = self.cleaned_data["instance"]
         if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False":
-            exists = UserInstance.objects.filter(instance=instance)
+            # the ownership being edited is not another owner
+            exists = UserInstance.objects.filter(instance=instance).exclude(pk=self.instance.pk)
             if exists:
                 raise ValidationError(_("Instance owned by another user"))
 
