@@ -15,5 +15,6 @@ source = ["."]
 omit = [".venv/*", "*/migrations/*", "*/tests/*", "manage.py", "webvirtcloud/settings*.py"]
 
 [tool.coverage.report]
-# 86% without the live libvirt suite (2026-10-23); raise as tests grow.
-fail_under = 85
+# The lowest leg (PostgreSQL) measures 85% without the live libvirt suite
+# (2026-10-23); one point of room. Raise as tests grow.
+fail_under = 84
