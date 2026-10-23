@@ -167,6 +167,12 @@ class OTPLoginHTTPTestCase(TestCase):
         self._post(otp_token=token_for(device))
         self.assertEqual(self.messages(), ["Login"])
 
+    def test_an_oversized_username_is_refused_by_the_form(self):
+        response = self._post(username="x" * 300, otp_token="")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("username", response.context["form"].errors)
+        self.assertEqual(self.messages(), [])
+
     def test_a_signed_in_user_is_sent_on_from_the_login_page(self):
         from django.urls import reverse
         self.client.force_login(self.user)

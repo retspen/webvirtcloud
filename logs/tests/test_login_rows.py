@@ -58,9 +58,13 @@ class LoginRowInputTests(TestCase):
     def login(self, username):
         return self.client.post(reverse("accounts:login"), {"username": username, "password": "wrong"})
 
-    def test_an_oversized_username_is_cut_to_the_field(self):
-        self.assertEqual(self.login("x" * 300).status_code, 200)
-        self.assertEqual(rows(), [("x" * 150, "-", "Login failed", False, "127.0.0.1")])
+    def test_an_oversized_username_is_refused_by_the_form(self):
+        # longer than the username field: no login attempt, so nothing for
+        # django-axes to store (its 255-character column refused it on PostgreSQL)
+        response = self.login("x" * 300)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("username", response.context["form"].errors)
+        self.assertFalse(Logs.objects.exists())
 
     def test_a_crlf_username_stays_in_its_row(self):
         forged = "bob\r\nadmin - Login"

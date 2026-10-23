@@ -15,8 +15,10 @@ from django.core.exceptions import ValidationError
 from django_otp.forms import OTPAuthenticationForm
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from accounts.forms import BoundedUsernameMixin
 
-class SingleDeviceOTPForm(OTPAuthenticationForm):
+
+class SingleDeviceOTPForm(BoundedUsernameMixin, OTPAuthenticationForm):
     def _confirmed_totp(self, user, for_verify=False):
         """The user's oldest confirmed TOTP device, or None. With for_verify
         the row is locked (select_for_update) so the token's replay and

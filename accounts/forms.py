@@ -1,5 +1,7 @@
 from appsettings.settings import app_settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import AuthenticationForm
+from django.core.validators import MaxLengthValidator
 from django.forms import EmailField, Form, ModelForm, ValidationError
 from django.utils.translation import gettext_lazy as _
 
@@ -74,3 +76,18 @@ class UserSSHKeyForm(ModelForm):
 
 class EmailOTPForm(Form):
     email = EmailField(label=_("Email"))
+
+
+class BoundedUsernameMixin:
+    """Django's login form gives the username its max_length after the field
+    is built, so a longer one is not refused and reaches authentication;
+    django-axes then cannot store it (PostgreSQL refuses it: 500)."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        username = self.fields["username"]
+        username.validators.append(MaxLengthValidator(username.max_length))
+
+
+class LoginForm(BoundedUsernameMixin, AuthenticationForm):
+    pass
