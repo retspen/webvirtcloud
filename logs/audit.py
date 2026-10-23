@@ -24,7 +24,7 @@ def write(user, host, instance, message, success=None, ip=None):
     except Exception as e:
         try:
             line = f"audit row not saved ({e!r}): {user} {host} {instance} success={success} ip={ip} {message}"
-            logger.warning(line.replace("\n", "\\n"))
+            logger.warning(line.replace("\r", "\\r").replace("\n", "\\n"))
         except Exception:
             pass
 
