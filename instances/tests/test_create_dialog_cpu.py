@@ -22,9 +22,9 @@ function element() {
             setAttribute: (k, v) => { attrs[k] = String(v); }, removeAttribute: (k) => { delete attrs[k]; }};
 }
 const cells = URLS.map((url) => {
-    const bar = element(), label = element();
-    return {dataset: {url}, bar, label,
-            querySelector: (sel) => (sel === ".progress-bar" ? bar : label)};
+    const meter = element(), bar = element(), label = element();
+    return {dataset: {url}, meter, bar, label,
+            querySelector: (sel) => ({".progress": meter, ".progress-bar": bar})[sel] || label};
 });
 const handlers = {}, requests = [];
 const dialog = {addEventListener: (name, fn) => { handlers[name] = fn; }, querySelectorAll: () => cells};
@@ -39,7 +39,7 @@ const page = {
     window: {location: {}},
 };
 vm.runInNewContext(SCRIPT, vm.createContext(page));
-const state = () => cells.map((c) => [c.bar.style.width, c.bar.attrs["aria-valuenow"] || null, c.label.textContent]);
+const state = () => cells.map((c) => [c.bar.style.width, c.meter.attrs["aria-valuenow"] || null, c.label.textContent]);
 const answer = (i, data) => { const r = requests[i]; data === null ? r.err() : r.ok(data); r.end(); };
 const out = {};
 handlers["show.bs.modal"]();
@@ -88,7 +88,7 @@ class CreateDialogCpuTestCase(TestCase):
 
     def test_the_page_carries_the_statistics_urls_and_reads_no_cpu_usage(self):
         page = self.page()
-        urls = html.fromstring(page).xpath("//td[@class='cpu-usage']/@data-url")
+        urls = html.fromstring(page).xpath("//*[contains(@class, 'cpu-usage ')]/@data-url")
         self.assertEqual(urls, [reverse("compute_graph", args=[c.id]) for c in self.computes])
         self.details.return_value.get_cpu_usage.assert_not_called()
 

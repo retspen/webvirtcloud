@@ -43,10 +43,6 @@
     <script src="{% static 'js/filter-table.js' %}"></script>
     {% if request.user.is_superuser %}
         <script>
-            function goto_compute(compute) {
-                window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
-            }
-
             // The new-VM dialog's CPU bars: each compute's load over one second,
             // read when the dialog opens, two computes at a time (each read holds
             // a worker for that second). Answers of an earlier opening are ignored.
@@ -54,12 +50,12 @@
             let cpuOpening = 0, cpuQueue = [], cpuReading = 0;
 
             function setCpuUsage(cell, percent, text) {
-                const bar = cell.querySelector(".progress-bar");
-                bar.style.width = (percent || 0) + "%";
+                const meter = cell.querySelector(".progress");
+                cell.querySelector(".progress-bar").style.width = (percent || 0) + "%";
                 if (percent === null) {
-                    bar.removeAttribute("aria-valuenow");
+                    meter.removeAttribute("aria-valuenow");
                 } else {
-                    bar.setAttribute("aria-valuenow", percent);
+                    meter.setAttribute("aria-valuenow", percent);
                 }
                 cell.querySelector(".cpu-usage-value").textContent = text;
             }

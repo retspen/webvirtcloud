@@ -1,0 +1,19 @@
+{% load i18n %}
+{# The steps of creating a VM; step is the current one (1-3), a done step links back to it. #}
+<nav aria-label="{% trans "Create a VM" %}">
+    <ol class="create-steps list-unstyled d-flex flex-wrap gap-2 small mb-3">
+        {% if step == 1 %}
+        <li class="fw-semibold" aria-current="step">1. {% trans "Host" %}</li>
+        {% else %}
+        <li><a class="text-decoration-underline" href="{% url 'instances:index' %}">1. {% trans "Host" %}</a>: {{ compute.name }}</li>
+        {% endif %}
+        {% if step == 2 %}
+        <li class="fw-semibold" aria-current="step">2. {% trans "Machine" %}</li>
+        {% elif step == 3 %}
+        <li><a class="text-decoration-underline" href="{% url 'instances:create_instance_select_type' compute.id %}">2. {% trans "Machine" %}</a>: {{ arch }}, {{ machine }}</li>
+        {% else %}
+        <li class="text-body-secondary">2. {% trans "Machine" %}</li>
+        {% endif %}
+        <li{% if step == 3 %} class="fw-semibold" aria-current="step"{% else %} class="text-body-secondary"{% endif %}>3. {% trans "Details" %}</li>
+    </ol>
+</nav>

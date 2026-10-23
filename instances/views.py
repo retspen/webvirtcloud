@@ -1995,24 +1995,17 @@ def create_instance_select_type(request, compute_id):
     return render(request, "create_instance_w1.html", locals())
 
 
-def create_forms(flavors, defaults, mac):
-    """One unbound NewVMForm per create form of the page, keyed by its
-    form_id, each with that form's defaults."""
-    forms = {
-        "custom": NewVMForm(initial={**defaults, "vcpu": 1, "memory": 512}),
-        "template": NewVMForm(initial={**defaults, "vcpu": 1, "memory": 512, "mac": mac}),
-    }
-    for flavor in flavors:
-        forms[f"flavor{flavor.id}"] = NewVMForm(initial={
-            **defaults, "vcpu": flavor.vcpu, "memory": flavor.memory, "hdd_size": flavor.disk,
-            "mac": mac,
-        })
-    return forms
+# the create form's disk sources: (value, title, help)
+DISK_SOURCES = [
+    ("new", _("New disk"), _("An empty disk of the size you set")),
+    ("existing", _("Existing volumes"), _("Volumes already in a pool")),
+    ("template", _("Clone from template"), _("A copy of a template volume")),
+]
 
 
-def submitted_custom_lists(post):
-    """The custom form's image pool, disks and networks as submitted, for the
-    page to rebuild them."""
+def refused_lists(post):
+    """The volume pool, volumes and networks of a refused create form as
+    submitted, for the page to rebuild them."""
     images = post["images"].split(",") if post.get("images") else []
     networks = post["networks"].split(",") if post.get("networks") else []
     macs = post.get("mac", "").split(",")
@@ -2044,8 +2037,13 @@ def create_instance(request, compute_id, arch, machine):
     compute = get_object_or_404(Compute, pk=compute_id)
     flavors = Flavor.objects.filter().order_by("id")
     appsettings = AppSettings.objects.all()
-    vm_forms = {}
-    submitted_form = ""
+    vm_form = None
+    flavor_form = FlavorForm()
+    refused = False
+    disk_sources = DISK_SOURCES
+    disk_source = request.POST.get("disk_source", "new")
+    if disk_source not in [value for value, _title, _help in DISK_SOURCES]:
+        disk_source = "new"
 
     try:
         conn = wvmCreate(
@@ -2070,7 +2068,6 @@ def create_instance(request, compute_id, arch, machine):
         default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
         default_scsi_disk_model = app_settings.INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
         listener_addr = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
-        mac_auto = util.randomMAC()
         disk_devices = conn.get_disk_device_types(arch, machine)
         disk_buses = conn.get_disk_bus_types(arch, machine)
         cdrom_buses = [bus for bus in disk_buses if bus in CDROM_BUSES]
@@ -2099,38 +2096,26 @@ def create_instance(request, compute_id, arch, machine):
             firmwares.append(label)
         firmwares = list(set(firmwares))
 
-        flavor_form = FlavorForm()
+        if not storages:
+            raise util.OperationError(_("You haven't defined any storage pools"))
+        if not networks:
+            raise util.OperationError(_("You haven't defined any network pools"))
 
-        vm_forms = create_forms(flavors, mac=mac_auto, defaults={
-            "firmware": default_firmware, "vcpu_mode": default_cpu_mode, "cache_mode": default_cache,
-            "net_model": default_nic_type, "listener_addr": "0.0.0.0", "add_cdrom": default_cdrom,
-            "add_input": default_input_device_bus, "video": default_video, "qemu_ga": True,
-            "virtio": bool(virtio_support),
+        vm_form = NewVMForm(initial={
+            "vcpu": 1, "memory": 512, "firmware": default_firmware, "vcpu_mode": default_cpu_mode,
+            "cache_mode": default_cache, "net_model": default_nic_type, "listener_addr": "0.0.0.0",
+            "add_cdrom": default_cdrom, "add_input": default_input_device_bus, "video": default_video,
+            "qemu_ga": True, "virtio": bool(virtio_support),
         })
 
         if conn:
-            if not storages:
-                raise util.OperationError(_("You haven't defined any storage pools"))
-            if not networks:
-                raise util.OperationError(_("You haven't defined any network pools"))
-
             if request.method == "POST":
                 if "create" in request.POST:
-                    form = NewVMForm(request.POST)
-                    # the submitted form comes back bound if the page shows it again;
-                    # a stale form_id (a flavor deleted since) has no form for its errors
-                    form_id = request.POST.get("form_id", "")
-                    if form_id in vm_forms:
-                        vm_forms[form_id] = form
-                        submitted_form = form_id
-                    else:
-                        for name, errors in form.errors.items():
-                            for error in errors:
-                                messages.error(request, f"{form[name].label}: {error}" if name in form.fields else error)
+                    # the submitted form comes back bound if the page shows it again
+                    form = vm_form = NewVMForm(request.POST)
+                    refused = True
                     if form.is_valid():
                         data = form.cleaned_data
-                        if data["hdd_size"] and not data["mac"]:
-                            raise util.OperationError(_("No Virtual Machine MAC has been entered"))
                         images = data["images"].split(",") if data["images"] else []
                         raw = {**data, "compute": compute.id, "arch": arch, "machine": machine,
                                "devices": [[request.POST.get(f"device{i}", ""), request.POST.get(f"bus{i}", "")]
@@ -2156,10 +2141,10 @@ def create_instance(request, compute_id, arch, machine):
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
-    custom_form, template_form = vm_forms.get("custom"), vm_forms.get("template")
-    custom_lists = submitted_custom_lists(request.POST) if submitted_form == "custom" else None
-    flavor_forms = [(flavor, f"flavor{flavor.id}", vm_forms[f"flavor{flavor.id}"])
-                    for flavor in flavors if f"flavor{flavor.id}" in vm_forms]
+    if refused:
+        submitted_lists = refused_lists(request.POST)
+        if disk_source == "template":
+            template_restore = {"pool": request.POST.get("template_pool", ""), "template": request.POST.get("template", "")}
     return render(request, "create_instance_w2.html", locals())
 
 

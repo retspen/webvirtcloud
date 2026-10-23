@@ -640,8 +640,11 @@ class CreateInstance(Kind):
             raise util.OperationError(_("A virtual machine with this name already exists"))
         if Instance.objects.filter(name__exact=data["name"]):
             raise util.OperationError(_("There is an instance with same name. Remove it and try again!"))
-        if not (data["hdd_size"] or data["template"] or data["images"]):
+        sources = [source for source in ("hdd_size", "template", "images") if data[source]]
+        if not sources:
             raise util.OperationError(_("First you need to create or select an image"))
+        if len(sources) > 1:
+            raise util.OperationError(_("Choose one disk source: a new disk, existing volumes or a template"))
         if not data["hdd_size"] and data["template"] and conn.get_volume_path(data["name"] + ".img", data["storage"]):
             raise util.OperationError(_("Image has already exist. Please check volumes or change instance name"))
         if data["cache_mode"] not in conn.get_cache_modes():

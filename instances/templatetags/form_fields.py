@@ -20,11 +20,12 @@ def invalid(field):
 
 
 @register.simple_tag
-def error_attrs(field, input_id):
-    """aria-invalid and aria-describedby for a refused field."""
-    if not _errors(field):
-        return ""
-    return format_html(' aria-invalid="true" aria-describedby="{}_error"', input_id)
+def error_attrs(field, input_id, help_id=""):
+    """aria-invalid and aria-describedby for a refused field; with help_id,
+    the field is described by its help text too, refused or not."""
+    described = " ".join(filter(None, [help_id, f"{input_id}_error" if _errors(field) else ""]))
+    invalid = format_html(' aria-invalid="true"') if _errors(field) else ""
+    return format_html('{} aria-describedby="{}"', invalid, described) if described else ""
 
 
 @register.simple_tag

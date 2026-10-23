@@ -4,8 +4,8 @@
 {% load operations %}
 {% load django_bootstrap5 %}
 {% load form_fields %}
-{% block body_attrs %} data-error-focus="manual" data-submitted-form="{{ submitted_form }}"{% endblock %}
 {% load bootstrap_icons %}
+{% block body_attrs %} data-error-focus="manual"{% if refused %} data-refused="1"{% endif %}{% endblock %}
 {% block title %}{% trans "Create new instance" %}{% endblock %}
 
 {% block style %}
@@ -13,6 +13,13 @@
     <style>
         /* the chosen images and networks are listed below the pickers, not in them */
         #image-control + .ts-wrapper .ts-control > .item, #network-control + .ts-wrapper .ts-control > .item { display: none; }
+        .create-vm { max-width: 56rem; }
+        .source-option { cursor: pointer; }
+        /* the chosen card by its border only: the Bootswatch dark themes keep light "subtle" backgrounds */
+        .source-option:has(input:checked) { border-color: var(--bs-primary) !important; box-shadow: inset 0 0 0 1px var(--bs-primary); }
+        .source-option:has(input:focus-visible) { outline: 2px solid var(--bs-primary); outline-offset: 2px; }
+        .row-list { list-style: none; padding-left: 0; }
+        .row-list li { overflow-wrap: anywhere; }
     </style>
 {% endblock %}
 
@@ -22,907 +29,459 @@
 
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
+    <div class="create-vm mx-auto">
+        {% include "create_steps.html" with step=3 %}
 
+        {% if vm_form %}
+        <form method="post" id="create-vm-form" aria-label="{% trans "Create virtual machine" %}"
+              {% if template_restore %}data-template-pool="{{ template_restore.pool }}" data-template="{{ template_restore.template }}"{% endif %}>
+            {% csrf_token %}{% submission_key %}
+            {% if submitted_lists %}{{ submitted_lists|json_script:"submitted-lists" }}{% endif %}
+            {% include "instances/form_errors.html" with form=vm_form %}
 
-    <div class="row">
-        <div class="col-lg-12">
-            <div role="tabpanel">
-            <!-- Nav tabs -->
-                <ul class="nav nav-tabs" role="tablist" aria-label="Instance create method">
-                     <li class="nav-item" role="presentation">
-                        <button class="nav-link float-end" data-bs-toggle="tab" data-bs-target="#" type="button" role="tab" aria-controls="go_compute" title="{% trans "Back" %}" onclick="goto_compute()">
-                            <span>{% bs_icon 'arrow-left'%} </span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#flavor" type="button" role="tab" aria-controls="flavor" aria-selected="true">
-                            {% trans "Flavor" %}
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#addCustom" type="button" role="tab" aria-controls="addCustom" aria-selected="false">
-                            {% trans "Custom" %}
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#add-from-temp" type="button" role="tab" aria-controls="add-from-temp" aria-selected="false">
-                            {% trans "Template" %}
-                        </button>
-                    </li>
-                </ul>
-                <!-- Tab panes -->
-                <div class="tab-content">
-                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="flavor">
-                        {% include 'create_flav_block.html' %}
-                        <h3 class="page-header">{% trans "Create from flavor" %}</h3>
-                        {% if not flavors %}
-                            <div class="col-lg-12">
-                                <div class="alert alert-warning shadow-sm">
-                                    {% bs_icon 'exclamation-triangle'%}  <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Flavors" %}
-                                </div>
-                            </div>
+            <section class="card mb-3" aria-labelledby="size-heading">
+                <div class="card-body">
+                    <h2 class="h5 card-title" id="size-heading">{% trans "Name and size" %}</h2>
+                    <div class="mb-3">
+                        <label for="vm_name" class="form-label">{% trans "Name" %}</label>
+                        <input id="vm_name" type="text" class="form-control{{ vm_form.name|invalid }}" name="name"
+                               value="{{ vm_form.name.value|default_if_none:"" }}" maxlength="64" required pattern="[a-zA-Z0-9._\-]+"
+                               autocomplete="off" spellcheck="false"{% error_attrs vm_form.name "vm_name" "vm_name_help" %}>
+                        <div id="vm_name_help" class="form-text">{% trans "Letters, digits, dot, dash and underscore." %}</div>
+                        {% field_error vm_form.name "vm_name" %}
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="form-label mb-0" id="presets-label">{% trans "Presets" %}</span>
+                            <button type="button" class="btn btn-link btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#flavors-dialog">
+                                {% trans "Manage flavors" %}
+                            </button>
+                        </div>
+                        {% if flavors %}
+                        <div class="d-flex flex-wrap gap-2" role="group" aria-labelledby="presets-label" aria-describedby="presets_help">
+                            {% for flavor in flavors %}
+                            <button type="button" class="btn btn-sm border text-body focus-ring preset" aria-pressed="false"
+                                    data-label="{{ flavor.label }}" data-vcpu="{{ flavor.vcpu }}" data-memory="{{ flavor.memory }}" data-disk="{{ flavor.disk }}">
+                                <strong>{{ flavor.label }}</strong> · {{ flavor.vcpu }} vCPU · {{ flavor.memory }} MiB · {{ flavor.disk }} GiB
+                            </button>
+                            {% endfor %}
+                        </div>
+                        <div id="presets_help" class="form-text">{% trans "A preset fills vCPUs, memory and a new disk of its size." %}</div>
                         {% else %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                <thead>
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">{% trans "Name" %}</th>
-                                    <th scope="col">{% trans "VCPU" %}</th>
-                                    <th scope="col">{% trans "RAM" %}</th>
-                                    <th scope="col">{% trans "HDD" %}</th>
-                                    <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {% for flavor, form_id, vm_form in flavor_forms %}
-                                    <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ flavor.label }}</td>
-                                        <td>{{ flavor.vcpu }}</td>
-                                        <td>{{ flavor.memory }} {% trans "MB" %}</td>
-                                        <td>{{ flavor.disk }} {% trans "GB" %}</td>
-                                        <td style="width:5px;">
-                                            <div class="modal fade" id="addVMflavor{{ flavor.id }}" data-form-id="{{ form_id }}" tabindex="-1" role="dialog" aria-labelledby="addVMFlavorLabel" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">{% trans "Create Virtual Machine" %} ({{ flavor.label }})</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <form method="post" role="form" aria-label="Create instance from flavor form">{% csrf_token %}{% submission_key %}
-                                                            <input type="hidden" name="form_id" value="{{ form_id }}">
-                                                            <div class="modal-body">
-                                                                {% if submitted_form == form_id %}<div class="modal-messages">{% bootstrap_messages %}</div>{% endif %}
-                                                                {% include "instances/form_errors.html" with form=vm_form %}
-                                                                <div class="row">
-                                                                    <label for="{{ form_id }}_name" class="col-sm-4 col-form-label">{% trans "Name" %}</label>
-                                                                    <div class="col-sm-7">
-                                                                        <input id="{{ form_id }}_name" type="text" class="form-control{{ vm_form.name|invalid }}" name="name" value="{{ vm_form.name.value|default_if_none:"" }}"
-                                                                               placeholder="{% trans "Name" %}" maxlength="64" required
-                                                                               pattern="[a-zA-Z0-9\.\-_]+"{% error_attrs vm_form.name form_id|add:"_name" %}>
-                                                                               {% field_error vm_form.name form_id|add:"_name" %}
-                                                                        <input type="hidden" name="vcpu" value="{{ vm_form.vcpu.value|default_if_none:"" }}">
-                                                                        <input type="hidden" name="memory" value="{{ vm_form.memory.value|default_if_none:"" }}">
-                                                                        <input type="hidden" name="hdd_size" value="{{ vm_form.hdd_size.value|default_if_none:"" }}">
-                                                                    </div>
-                                                                </div>
-                                                                {% if firmwares %}
-                                                                <div class="row">
-                                                                    <label for="{{ form_id }}_firmware" class="col-sm-4 col-form-label">{% trans "Firmware" %}</label>
-                                                                    <div class="col-sm-7">
-                                                                        <select id="{{ form_id }}_firmware" class="form-select{{ vm_form.firmware|invalid }}" name="firmware"
-                                                                                {% error_attrs vm_form.firmware form_id|add:"_firmware" %}>
-                                                                            {% for frm in firmwares %}
-                                                                            <option value="{{ frm }}" {% if frm == vm_form.firmware.value %}selected{% endif %}>{{ frm }}</option>
-                                                                            {% endfor %}
-                                                                        </select>
-                                                                        {% field_error vm_form.firmware form_id|add:"_firmware" %}
-                                                                    </div>
-                                                                </div>
-                                                                {% endif %}
-                                                                {% if dom_caps.cpu_modes %}
-                                                                <div class="row">
-                                                                    <label for="{{ form_id }}_vcpu_mode" class="col-sm-4 col-form-label">{% trans "VCPU Config" %}</label>
-                                                                    <div class="col-sm-7">
-                                                                        <select id="{{ form_id }}_vcpu_mode" class="form-select{{ vm_form.vcpu_mode|invalid }}" name="vcpu_mode"
-                                                                                {% error_attrs vm_form.vcpu_mode form_id|add:"_vcpu_mode" %}>
-                                                                            <option value=""> {% trans 'no-mode' %}</option>
-                                                                            {% for mode in dom_caps.cpu_modes %}
-                                                                                {% if mode == 'custom' %}
-                                                                                    <optgroup label="Custom CPU Models">
-                                                                                        {% for model in dom_caps.cpu_custom_models %}
-                                                                                        <option value="{{ model }}" {% if model == vm_form.vcpu_mode.value %}selected{% endif %}> {% trans model %}</option>
-                                                                                        {% endfor %}
-                                                                                    </optgroup>
-                                                                                {% else %}
-                                                                                    <option value="{{ mode }}" {% if mode == vm_form.vcpu_mode.value %}selected {% endif %}>
-                                                                                        {% trans mode %}
-                                                                                    </option>
-                                                                                {% endif %}
-                                                                            {% endfor %}
-                                                                        </select>
-                                                                        {% field_error vm_form.vcpu_mode form_id|add:"_vcpu_mode" %}
-                                                                    </div>
-                                                                </div>
-                                                                {% endif %}
-                                                                <div class="row">
-                                                                    <label for="{{ form_id }}_storage" class="col-sm-4 col-form-label">{% trans "Storage" %}</label>
-                                                                    <div class="col-sm-7">
-                                                                        <select id="{{ form_id }}_storage" class="form-select{{ vm_form.storage|invalid }}" name="storage"
-                                                                                {% error_attrs vm_form.storage form_id|add:"_storage" %}>
-                                                                            {% if storages %}
-                                                                                {% for storage in storages %}
-                                                                                    <option value="{{ storage }}" {% if storage == vm_form.storage.value %}selected{% endif %}>{{ storage }}</option>
-                                                                                {% endfor %}
-                                                                            {% else %}
-                                                                                <option value="">{% trans "None" %}</option>
-                                                                            {% endif %}
-                                                                        </select>
-                                                                        {% field_error vm_form.storage form_id|add:"_storage" %}
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row">
-                                                                    <label for="{{ form_id }}_networks" class="col-sm-4 col-form-label">{% trans "Network" %}</label>
-                                                                    <div class="col-sm-7">
-                                                                        <select id="{{ form_id }}_networks" class="form-select{{ vm_form.networks|invalid }}" name="networks"
-                                                                                {% error_attrs vm_form.networks form_id|add:"_networks" %}>
-                                                                            {% for network in networks %}
-                                                                                <option value="{{ network }}" {% if network == vm_form.networks.value %}selected{% endif %}>{{ network }}</option>
-                                                                            {% endfor %}
-                                                                        </select>
-                                                                        {% field_error vm_form.networks form_id|add:"_networks" %}
-                                                                    </div>
-                                                                </div>
-                                                                 <div class="row">
-                                                                    <label class="col-sm-4 col-form-label">{% trans "Advanced" %}</label>
-                                                                    <div class="d-grid col-sm-7">
-                                                                        <button class="btn btn-outline-light" type="button" title="{% trans "Advanced" %}" data-bs-toggle="collapse" data-bs-target="#flav-add-collapse-{{ flavor.id }}" aria-expanded="false" aria-controls="flav-add-collapse-{{ flavor.id }}">
-                                                                            <span>{% bs_icon 'caret-down'%} </span>
-                                                                        </button>
-                                                                    </div>        
-                                                                </div>
-                                                                <div class="collapse" id="flav-add-collapse-{{ flavor.id }}">
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_mac" class="col-sm-4 col-form-label">{% trans "MAC" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <input id="{{ form_id }}_mac" type="text" class="form-control{{ vm_form.mac|invalid }}" name="mac"
-                                                                                  value="{{ vm_form.mac.value|default_if_none:"" }}" maxlength="17" required pattern="[a-zA-Z0-9:]+"
-                                                                                  {% error_attrs vm_form.mac form_id|add:"_mac" %}>
-                                                                            {% field_error vm_form.mac form_id|add:"_mac" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_nwfilter" class="col-sm-4 col-form-label">{% trans "NWFilter" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <select id="{{ form_id }}_nwfilter" class="form-select{{ vm_form.nwfilter|invalid }}" name="nwfilter"
-                                                                                    {% error_attrs vm_form.nwfilter form_id|add:"_nwfilter" %}>
-                                                                                <option value="">{% trans "None" %}</option>
-                                                                                {% for nwfilter in nwfilters %}
-                                                                                    <option value="{{ nwfilter }}" {% if nwfilter == vm_form.nwfilter.value %}selected{% endif %}>{{ nwfilter }}</option>
-                                                                                {% endfor %}
-                                                                            </select>
-                                                                            {% field_error vm_form.nwfilter form_id|add:"_nwfilter" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_net_model" class="col-sm-4 col-form-label">{% trans "NIC Type" %} </label>
-                                                                        <div class="col-sm-7">
-                                                                            <select id="{{ form_id }}_net_model" class="form-select{{ vm_form.net_model|invalid }}" name="net_model"
-                                                                                    {% error_attrs vm_form.net_model form_id|add:"_net_model" %}>
-                                                                                {% for model in net_models_host %}
-                                                                                <option value="{{ model }}" {% if model == vm_form.net_model.value %} selected {% endif %}>{{ model }}</option>
-                                                                                {% endfor %}
-                                                                            </select>
-                                                                            {% field_error vm_form.net_model form_id|add:"_net_model" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_cache_mode" class="col-sm-4 col-form-label">{% trans "HDD cache mode" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <select id="{{ form_id }}_cache_mode" class="form-select{{ vm_form.cache_mode|invalid }}" name="cache_mode"
-                                                                                    {% error_attrs vm_form.cache_mode form_id|add:"_cache_mode" %}>
-                                                                                {% for mode, name in cache_modes %}
-                                                                                    <option value="{{ mode }}" {% if mode == vm_form.cache_mode.value %}selected {% endif %}>
-                                                                                    {% trans name %}</option>
-                                                                                {% endfor %}
-                                                                            </select>
-                                                                            {% field_error vm_form.cache_mode form_id|add:"_cache_mode" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_video" class="col-sm-4 col-form-label">{% trans "Video" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <select id="{{ form_id }}_video" class="form-select{{ vm_form.video|invalid }}" name="video"
-                                                                                    {% error_attrs vm_form.video form_id|add:"_video" %}>
-                                                                                {% if not videos %}
-                                                                                    <option value="vga">vga</option>
-                                                                                    <option value="cirrus">cirrus</option>
-                                                                                {% endif %}
-                                                                                {% for video in videos %}
-                                                                                    <option value="{{ video }}" {% if video == vm_form.video.value %}selected{% endif %}>{{ video }}</option>
-                                                                                {% endfor %}
-                                                                            </select>
-                                                                            {% field_error vm_form.video form_id|add:"_video" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_listener_addr" class="col-sm-4 col-form-label">{% trans "Console Access" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <select id="{{ form_id }}_listener_addr" class="form-select{{ vm_form.listener_addr|invalid }}" name="listener_addr"
-                                                                                    {% error_attrs vm_form.listener_addr form_id|add:"_listener_addr" %}>
-                                                                                {% for addr, label in listener_addr %}
-                                                                                    <option value="{{ addr }}" {% if addr == vm_form.listener_addr.value %} selected {% endif %}>{{ label }}</option>
-                                                                                {% endfor %}
-                                                                            </select>
-                                                                            {% field_error vm_form.listener_addr form_id|add:"_listener_addr" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_add_cdrom" class="col-sm-4 col-form-label">{% trans "Add CD-Rom" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <select id="{{ form_id }}_add_cdrom" class="form-select{{ vm_form.add_cdrom|invalid }}" name="add_cdrom"
-                                                                                    {% error_attrs vm_form.add_cdrom form_id|add:"_add_cdrom" %}>
-                                                                                <option value="None" {% if vm_form.add_cdrom.value == "None" %}selected{% endif %}>--{% trans "False" %}--</option>
-                                                                                {% for bus in cdrom_buses %}
-                                                                                    <option value="{{ bus }}" {% if bus == vm_form.add_cdrom.value %}selected {% endif %}>
-                                                                                        {% trans bus %}
-                                                                                    </option>
-                                                                                {% endfor %}
-                                                                            </select>
-                                                                            {% field_error vm_form.add_cdrom form_id|add:"_add_cdrom" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_add_input" class="col-sm-4 col-form-label">{% trans "Add Input Device" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <select id="{{ form_id }}_add_input" class="form-select{{ vm_form.add_input|invalid }}" name="add_input"
-                                                                                    {% error_attrs vm_form.add_input form_id|add:"_add_input" %}>
-                                                                                <option value="None" {% if vm_form.add_input.value == "None" %}selected{% endif %}>--{% trans "False" %}--</option>
-                                                                                {% for bus in input_device_buses %}
-                                                                                    <option value="{{ bus }}" {% if bus == vm_form.add_input.value %}selected{% endif %}>
-                                                                                        {% trans bus %}
-                                                                                    </option>
-                                                                                {% endfor %}
-                                                                            </select>
-                                                                            {% field_error vm_form.add_input form_id|add:"_add_input" %}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_qemu_ga" class="col-sm-4 col-form-label">{% trans "Guest Agent" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <input id="{{ form_id }}_qemu_ga" type="checkbox" name="qemu_ga" value="true"{% if vm_form.qemu_ga.value %} checked{% endif %}>
-                                                                        </div>
-                                                                    </div>
-                                                                    {% if virtio_support %}
-                                                                    <div class="row">
-                                                                        <label for="{{ form_id }}_virtio" class="col-sm-4 col-form-label">{% trans "VirtIO" %}</label>
-                                                                        <div class="col-sm-7">
-                                                                            <input id="{{ form_id }}_virtio" type="checkbox" name="virtio" value="{{ virtio_support }}"{% if vm_form.virtio.value %} checked{% endif %}>
-                                                                        </div>
-                                                                    </div>
-                                                                    {% endif %}
-                                                                </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                                            {% if storages %}
-                                                                <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
-                                                            {% else %}
-                                                                <button class="btn btn-primary disabled">{% trans "Create" %}</button>
-                                                            {% endif %}
-                                                        </div>
-                                                            </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <a data-bs-toggle="modal" href="#addVMflavor{{ flavor.id }}" class="btn btn-sm btn-secondary" title="{% trans "Create Virtual Machine" %}">
-                                                <span >{% bs_icon 'plus'%} </span>
-                                            </a>
-                                        </td>
-                                        <td style="width:5px;">
-                                            <form action="{% url 'instances:flavor_delete' flavor.id %}" method="post" role="form" aria-label="Delete flavor form">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-secondary" name="delete_flavor" title="{% trans "Delete" %}" data-confirm="{% blocktrans with name=flavor.label %}Delete flavor {{ name }}? Only the size template goes; VMs made from it keep their size.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                                    {% bs_icon 'trash' %}
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
+                        <p class="form-text mb-0">{% trans "No flavors yet." %}</p>
+                        {% endif %}
+                        <div id="preset-status" class="visually-hidden" role="status"></div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label for="vm_vcpu" class="form-label">{% trans "vCPUs" %}</label>
+                            <input id="vm_vcpu" type="number" min="1" inputmode="numeric" class="form-control{{ vm_form.vcpu|invalid }}" name="vcpu"
+                                   value="{{ vm_form.vcpu.value|default_if_none:"" }}" required{% error_attrs vm_form.vcpu "vm_vcpu" %}>
+                            {% field_error vm_form.vcpu "vm_vcpu" %}
+                        </div>
+                        <div class="col-6">
+                            <label for="vm_memory" class="form-label">{% trans "Memory (MiB)" %}</label>
+                            <input id="vm_memory" type="number" min="1" inputmode="numeric" class="form-control{{ vm_form.memory|invalid }}" name="memory"
+                                   value="{{ vm_form.memory.value|default_if_none:"" }}" required{% error_attrs vm_form.memory "vm_memory" %}>
+                            {% field_error vm_form.memory "vm_memory" %}
+                        </div>
+                        {% if firmwares %}
+                        <div class="col-md-6">
+                            <label for="vm_firmware" class="form-label">{% trans "Firmware" %}</label>
+                            <select id="vm_firmware" class="form-select{{ vm_form.firmware|invalid }}" name="firmware"{% error_attrs vm_form.firmware "vm_firmware" %}>
+                                {% for frm in firmwares %}
+                                <option value="{{ frm }}"{% if frm == vm_form.firmware.value %} selected{% endif %}>{{ frm }}</option>
                                 {% endfor %}
-                                </tbody>
-                            </table>
+                            </select>
+                            {% field_error vm_form.firmware "vm_firmware" %}
                         </div>
                         {% endif %}
-                        <div class="clearfix"></div>
-                    </div>
-
-            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addCustom" data-form-id="custom">
-                <div>
-                    <form method="post" role="form" aria-label="Create custom instance form">{% csrf_token %}{% submission_key %}
-                        <input type="hidden" name="form_id" value="custom">
-                        {% if custom_lists %}{{ custom_lists|json_script:"custom-lists" }}{% endif %}
-                    {% include "instances/form_errors.html" with form=custom_form %}
-                    <div class="row">
-                        <label for="custom_name" class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                        <div class="col-sm-7">
-                            <input id="custom_name" type="text" class="form-control{{ custom_form.name|invalid }}" name="name"
-                                  value="{{ custom_form.name.value|default_if_none:"" }}" placeholder="{% trans "Name" %}" maxlength="64" required pattern="[a-zA-Z0-9\.\-_]+"
-                                  {% error_attrs custom_form.name "custom_name" %}>
-                            {% field_error custom_form.name "custom_name" %}
-                        </div>
-                    </div>
-                    {% if firmwares %}
-                        <div class="row">
-                            <label for="select_firmware" class="col-sm-3 col-form-label">{% trans "Firmware" %}</label>
-                            <div class="col-sm-7">
-                                <select class="form-select{{ custom_form.firmware|invalid }}" id="select_firmware" name="firmware"
-                                        {% error_attrs custom_form.firmware "select_firmware" %}>
-                                    {% for frm in firmwares %}
-                                    <option value="{{ frm }}" {% if frm == custom_form.firmware.value %}selected{% endif %}>{{ frm }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% field_error custom_form.firmware "select_firmware" %}
-                            </div>
-                        </div>
-                    {% endif %}
-                    <div class="row">
-                        <label for="custom_vcpu" class="col-sm-3 col-form-label">{% trans "VCPU" %}</label>
-                        <div class="col-sm-7">
-                            <input id="custom_vcpu" type="text" class="form-control{{ custom_form.vcpu|invalid }}" name="vcpu"
-                                  value="{{ custom_form.vcpu.value|default_if_none:"" }}" maxlength="2" required pattern="[0-9]"
-                                  {% error_attrs custom_form.vcpu "custom_vcpu" %}>
-                            {% field_error custom_form.vcpu "custom_vcpu" %}
-                        </div>
-                    </div>
-                    {% if dom_caps.cpu_modes %}
-                     <div class="row">
-                        <label for="custom_vcpu_mode" class="col-sm-3 col-form-label">{% trans "VCPU Config" %}</label>
-                        <div class="col-sm-7">
-                            <select id="custom_vcpu_mode" class="form-select{{ custom_form.vcpu_mode|invalid }}" name="vcpu_mode"
-                                    {% error_attrs custom_form.vcpu_mode "custom_vcpu_mode" %}>
-                                <option value=""> {% trans 'no-mode' %}</option>
+                        {% if dom_caps.cpu_modes %}
+                        <div class="col-md-6">
+                            <label for="vm_vcpu_mode" class="form-label">{% trans "CPU mode" %}</label>
+                            <select id="vm_vcpu_mode" class="form-select{{ vm_form.vcpu_mode|invalid }}" name="vcpu_mode"{% error_attrs vm_form.vcpu_mode "vm_vcpu_mode" %}>
+                                <option value="">{% trans 'no-mode' %}</option>
                                 {% for mode in dom_caps.cpu_modes %}
                                     {% if mode == 'custom' %}
-                                        <optgroup label="Custom CPU Models">
+                                        <optgroup label="{% trans "Custom CPU Models" %}">
                                             {% for model in dom_caps.cpu_custom_models %}
-                                            <option value="{{ model }}" {% if model == custom_form.vcpu_mode.value %}selected{% endif %}> {% trans model %}</option>
+                                            <option value="{{ model }}"{% if model == vm_form.vcpu_mode.value %} selected{% endif %}>{{ model }}</option>
                                             {% endfor %}
                                         </optgroup>
                                     {% else %}
-                                        <option value="{{ mode }}" {% if mode == custom_form.vcpu_mode.value %}selected {% endif %}>
-                                            {% trans mode %}
-                                        </option>
+                                        <option value="{{ mode }}"{% if mode == vm_form.vcpu_mode.value %} selected{% endif %}>{% trans mode %}</option>
                                     {% endif %}
                                 {% endfor %}
                             </select>
-                            {% field_error custom_form.vcpu_mode "custom_vcpu_mode" %}
+                            {% field_error vm_form.vcpu_mode "vm_vcpu_mode" %}
                         </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
-                    <div class="row">
-                        <label for="custom_memory" class="col-sm-3 col-form-label">{% trans "RAM" %}</label>
-                        <div class="col-sm-7">
-                            <input id="custom_memory" type="text" class="form-control{{ custom_form.memory|invalid }}" name="memory"
-                                  value="{{ custom_form.memory.value|default_if_none:"" }}" maxlength="5" required pattern="[0-9]+"
-                                  {% error_attrs custom_form.memory "custom_memory" %}>
-                            {% field_error custom_form.memory "custom_memory" %}
-                        </div>
-                        <label class="col-sm-1 col-form-label">{% trans "MB" %}</label>
-                    </div>
-                    <div id="disk_list_div" class="row d-none">
-                        <label class="col-sm-3 col-form-label" id="added_disks">{% trans "Added Disks" %}</label>
-                        <div class="col-sm-7">
-                         <ul id="img-list" class="row">
-                              <!-- populated from javascript -->
-                          </ul>
-                          <template id="disk-row">
-                              <li><span class="row-label"></span> -
-                                  <select class="image-format disk-device" aria-label="{% trans "Device" %}">
-                                      {% for dev in disk_devices %}<option value="{{ dev }}">{% trans dev %}</option>{% endfor %}
-                                  </select>
-                                  <select class="image-format disk-bus" aria-label="{% trans "Bus" %}">
-                                      {% for bus in disk_buses %}<option value="{{ bus }}"{% if bus == default_bus %} selected{% endif %}>{% trans bus %}</option>{% endfor %}
-                                  </select>
-                                  -> <span class="row-item"></span>
-                                  <button type="button" class="btn btn-link float-end row-remove" aria-label="{% trans "Remove" %}">X</button>
-                              </li>
-                          </template>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <label for="storage-control" class="col-sm-3 col-form-label">{% trans "HDD" %}</label>
-                        <input id="images" name="images" type="hidden" value=""/>
-                        <div class="col-sm-3">
-                            <select class="form-select" id="storage-control" name="storage-control" onchange="get_cust_vols({{ compute_id }}, value);">
-                                {% if storages %}
-                                    <option value disabled selected>{% trans "Select pool" %}...</option>
-                                    {% for storage in storages %}
-                                        <option value="{{ storage }}" >{{ storage }}</option>
-                                    {% endfor %}
-                                {% else %}
-                                    <option value="">{% trans "None" %}</option>
-                                {% endif %}
-                            </select>
-                        </div>
-                        <div class="col-sm-4">
-                            <select class="form-select" id="image-control" name="image-control" multiple="multiple" aria-label="{% trans "Images" %}">
-                                <!-- populated from javascript -->
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <label for="network-control" class="col-sm-3 col-form-label">{% trans "Network" %}</label>
-                        <div class="col-sm-7">
-                            <ul id="net-list">
-                                <!-- populated from javascript -->
-                            </ul>
-                            <template id="network-row">
-                                <li><input type="text" class="input-xs" maxlength="17" required pattern="[a-zA-Z0-9:]+" aria-label="{% trans "MAC address" %}">
-                                    <span class="row-label"></span> -> <span class="row-item"></span>
-                                    <button type="button" class="btn btn-link float-end row-remove" aria-label="{% trans "Remove" %}">X</button>
-                                </li>
-                            </template>
-                            <input id="networks" type="hidden" name="networks" value=""/>
-                            <input id="custom_mac" type="hidden" name="mac" value=""/>
-                            <select class="form-select" id="network-control" name="network-control" multiple="multiple" aria-label="{% trans "Networks" %}">
-                                {% for network in networks %}
-                                    <option value="{{ network }}">{{ network }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
-                        <div class="d-grid col-sm-7">
-                            <button class="btn btn-outline-light" type="button" title="{% trans "Advanced" %}" data-bs-toggle="collapse" data-bs-target="#custadvcollapse" aria-expanded="false" aria-controls="custadvcollapse">
-                                <span>{% bs_icon 'caret-down'%} </span>
-                            </button>
-                        </div>        
-                    </div>
-                    <div class="collapse" id="custadvcollapse">
-                        <div class="row meta-prealloc">
-                            <label for="custom_meta_prealloc" class="col-sm-3 col-form-label">{% trans "Disk Metadata" %}</label>
-                            <div class="col-sm-7">
-                                <input id="custom_meta_prealloc" type="checkbox" name="meta_prealloc" title="{% trans "Metadata preallocation" %}" value="true"{% if custom_form.meta_prealloc.value %} checked{% endif %}>
+                </div>
+            </section>
+
+            <section class="card mb-3" aria-labelledby="disk-heading">
+                <div class="card-body">
+                    <h2 class="h5 card-title" id="disk-heading">{% trans "Disk" %}</h2>
+                    <fieldset class="mb-3">
+                        <legend class="form-label fs-6">{% trans "Disk source" %}</legend>
+                        <div class="row g-2">
+                            {% for value, title, help in disk_sources %}
+                            <div class="col-md-4">
+                                <label class="source-option border rounded p-2 h-100 d-flex gap-2">
+                                    <input class="form-check-input flex-shrink-0 mt-1" type="radio" name="disk_source" value="{{ value }}"{% if value == disk_source %} checked{% endif %}>
+                                    <span><span class="d-block fw-semibold">{{ title }}</span><span class="d-block small text-body-secondary">{{ help }}</span></span>
+                                </label>
                             </div>
-                            <label class="col-lg-1 col-form-label">{% trans "Image" %}</label>
+                            {% endfor %}
                         </div>
-                        <div class="row">
-                            <label for="cache_mode" class="col-sm-3 col-form-label">{% trans "HDD Cache Mode" %}</label>
-                            <div class="col-sm-7">
-                                <select class="form-select{{ custom_form.cache_mode|invalid }}" id="cache_mode" name="cache_mode"
-                                        {% error_attrs custom_form.cache_mode "cache_mode" %}>
-                                    {% for mode, name in cache_modes %}
-                                        <option value="{{ mode }}" {% if mode == custom_form.cache_mode.value %}selected {% endif %}>
-                                            {% trans name %}</option>
+                    </fieldset>
+
+                    <fieldset id="source-new" class="disk-source"{% if disk_source != "new" %} hidden disabled{% endif %}>
+                        <legend class="visually-hidden">{% trans "New disk" %}</legend>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="new_storage" class="form-label">{% trans "Storage pool" %}</label>
+                                <select id="new_storage" class="form-select{{ vm_form.storage|invalid }}" name="storage"{% error_attrs vm_form.storage "new_storage" %}>
+                                    {% for storage in storages %}
+                                    <option value="{{ storage }}"{% if storage == vm_form.storage.value %} selected{% endif %}>{{ storage }}</option>
                                     {% endfor %}
                                 </select>
-                                {% field_error custom_form.cache_mode "cache_mode" %}
+                                {% field_error vm_form.storage "new_storage" %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vm_hdd_size" class="form-label">{% trans "Size (GiB)" %}</label>
+                                <input id="vm_hdd_size" type="number" min="1" inputmode="numeric" class="form-control{{ vm_form.hdd_size|invalid }}" name="hdd_size"
+                                       value="{{ vm_form.hdd_size.value|default_if_none:"" }}" required{% error_attrs vm_form.hdd_size "vm_hdd_size" %}>
+                                {% field_error vm_form.hdd_size "vm_hdd_size" %}
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input id="new_meta_prealloc" class="form-check-input" type="checkbox" name="meta_prealloc" value="true"{% if vm_form.meta_prealloc.value %} checked{% endif %}>
+                                    <label for="new_meta_prealloc" class="form-check-label">{% trans "Preallocate metadata (qcow2)" %}</label>
+                                </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <label for="custom_nwfilter" class="col-sm-3 col-form-label">{% trans "NWFilter" %}</label>
-                            <div class="col-sm-7">
-                                <select id="custom_nwfilter" class="form-select{{ custom_form.nwfilter|invalid }}" name="nwfilter"
-                                        {% error_attrs custom_form.nwfilter "custom_nwfilter" %}>
+                    </fieldset>
+
+                    <fieldset id="source-existing" class="disk-source"{% if disk_source != "existing" %} hidden disabled{% endif %}>
+                        <legend class="visually-hidden">{% trans "Existing volumes" %}</legend>
+                        <input id="images" name="images" type="hidden" value="">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="storage-control" class="form-label">{% trans "Storage pool" %}</label>
+                                <select class="form-select" id="storage-control" name="storage-control">
+                                    <option value disabled selected>{% trans "Select pool" %}...</option>
+                                    {% for storage in storages %}<option value="{{ storage }}">{{ storage }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="image-control" class="form-label">{% trans "Volumes" %}</label>
+                                <select class="form-select{{ vm_form.images|invalid }}" id="image-control" multiple aria-label="{% trans "Volumes" %}"{% error_attrs vm_form.images "image-control" %}></select>
+                                {% field_error vm_form.images "image-control" %}
+                            </div>
+                        </div>
+                        <ul id="img-list" class="row-list mt-2 mb-0" aria-label="{% trans "Chosen volumes" %}"></ul>
+                        <template id="disk-row">
+                            <li class="d-flex flex-wrap align-items-center gap-2 py-1">
+                                <span class="row-label font-monospace"></span>
+                                <select class="form-select form-select-sm w-auto disk-device" aria-label="{% trans "Device" %}">
+                                    {% for dev in disk_devices %}<option value="{{ dev }}">{% trans dev %}</option>{% endfor %}
+                                </select>
+                                <select class="form-select form-select-sm w-auto disk-bus" aria-label="{% trans "Bus" %}">
+                                    {% for bus in disk_buses %}<option value="{{ bus }}"{% if bus == default_bus %} selected{% endif %}>{% trans bus %}</option>{% endfor %}
+                                </select>
+                                <span class="row-item"></span>
+                                <button type="button" class="btn btn-sm btn-link ms-auto row-remove" aria-label="{% trans "Remove" %}">{% bs_icon 'x-lg' %}</button>
+                            </li>
+                        </template>
+                    </fieldset>
+
+                    <fieldset id="source-template" class="disk-source"{% if disk_source != "template" %} hidden disabled{% endif %}>
+                        <legend class="visually-hidden">{% trans "Clone from template" %}</legend>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="template_pool" class="form-label">{% trans "Template pool" %}</label>
+                                <select class="form-select" id="template_pool" name="template_pool">
+                                    <option value disabled selected>{% trans "Select pool" %}...</option>
+                                    {% for storage in storages %}<option value="{{ storage }}">{{ storage }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="template" class="form-label">{% trans "Template volume" %}</label>
+                                <select id="template" class="form-select{{ vm_form.template|invalid }}" name="template" required{% error_attrs vm_form.template "template" %}></select>
+                                {% field_error vm_form.template "template" %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="template_storage" class="form-label">{% trans "Copy into pool" %}</label>
+                                <select id="template_storage" class="form-select{{ vm_form.storage|invalid }}" name="storage"{% error_attrs vm_form.storage "template_storage" %}>
+                                    {% for storage in storages %}
+                                    <option value="{{ storage }}"{% if storage == vm_form.storage.value %} selected{% endif %}>{{ storage }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% field_error vm_form.storage "template_storage" %}
+                            </div>
+                            <div class="col-md-6 align-self-end">
+                                <div class="form-check">
+                                    <input id="template_meta_prealloc" class="form-check-input" type="checkbox" name="meta_prealloc" value="true"{% if vm_form.meta_prealloc.value %} checked{% endif %}>
+                                    <label for="template_meta_prealloc" class="form-check-label">{% trans "Preallocate metadata (qcow2)" %}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+            </section>
+
+            <section class="card mb-3" aria-labelledby="network-heading">
+                <div class="card-body">
+                    <h2 class="h5 card-title" id="network-heading">{% trans "Networks" %}</h2>
+                    <label for="network-control" class="form-label">{% trans "Add networks" %}</label>
+                    <select class="form-select{{ vm_form.networks|invalid }}" id="network-control" multiple aria-label="{% trans "Networks" %}"{% error_attrs vm_form.networks "network-control" %}>
+                        {% for network in networks %}<option value="{{ network }}">{{ network }}</option>{% endfor %}
+                    </select>
+                    {% field_error vm_form.networks "network-control" %}
+                    <input id="networks" type="hidden" name="networks" value="">
+                    <input id="vm_mac" type="hidden" name="mac" value="">
+                    <ul id="net-list" class="row-list mt-2 mb-0" aria-label="{% trans "Network interfaces" %}"></ul>
+                    <template id="network-row">
+                        <li class="d-flex flex-wrap align-items-center gap-2 py-1">
+                            <span class="row-label font-monospace"></span>
+                            <span class="row-item"></span>
+                            <input type="text" class="form-control form-control-sm w-auto font-monospace" maxlength="17" size="17" required
+                                   autocomplete="off" autocapitalize="none" spellcheck="false"
+                                   pattern="[a-fA-F0-9:]+" aria-label="{% trans "MAC address" %}">
+                            <button type="button" class="btn btn-sm btn-link ms-auto row-remove" aria-label="{% trans "Remove" %}">{% bs_icon 'x-lg' %}</button>
+                        </li>
+                    </template>
+                    {% field_error vm_form.mac "vm_mac" %}
+                </div>
+            </section>
+
+            <section class="card mb-3" aria-labelledby="advanced-heading">
+                <div class="card-body">
+                    <h2 class="h5 card-title mb-0" id="advanced-heading">
+                        <button class="btn p-0 border-0 text-body fw-medium w-100 text-start focus-ring disclosure" type="button" data-bs-toggle="collapse" data-bs-target="#advanced"
+                                aria-expanded="false" aria-controls="advanced">
+                            {% bs_icon 'chevron-down' %} {% trans "Advanced" %}
+                        </button>
+                    </h2>
+                    <div class="collapse" id="advanced">
+                        <div class="row g-3 pt-3">
+                            <div class="col-md-6">
+                                <label for="vm_cache_mode" class="form-label">{% trans "Disk cache mode" %}</label>
+                                <select id="vm_cache_mode" class="form-select{{ vm_form.cache_mode|invalid }}" name="cache_mode"{% error_attrs vm_form.cache_mode "vm_cache_mode" %}>
+                                    {% for mode, name in cache_modes %}
+                                    <option value="{{ mode }}"{% if mode == vm_form.cache_mode.value %} selected{% endif %}>{% trans name %}</option>
+                                    {% endfor %}
+                                </select>
+                                {% field_error vm_form.cache_mode "vm_cache_mode" %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vm_net_model" class="form-label">{% trans "NIC type" %}</label>
+                                <select id="vm_net_model" class="form-select{{ vm_form.net_model|invalid }}" name="net_model"{% error_attrs vm_form.net_model "vm_net_model" %}>
+                                    {% for model in net_models_host %}
+                                    <option value="{{ model }}"{% if model == vm_form.net_model.value %} selected{% endif %}>{{ model }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% field_error vm_form.net_model "vm_net_model" %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vm_nwfilter" class="form-label">{% trans "Network filter" %}</label>
+                                <select id="vm_nwfilter" class="form-select{{ vm_form.nwfilter|invalid }}" name="nwfilter"{% error_attrs vm_form.nwfilter "vm_nwfilter" %}>
                                     <option value="">{% trans "None" %}</option>
                                     {% for nwfilter in nwfilters %}
-                                        <option value="{{ nwfilter }}" {% if nwfilter == custom_form.nwfilter.value %}selected{% endif %}>{{ nwfilter }}</option>
+                                    <option value="{{ nwfilter }}"{% if nwfilter == vm_form.nwfilter.value %} selected{% endif %}>{{ nwfilter }}</option>
                                     {% endfor %}
                                 </select>
-                                {% field_error custom_form.nwfilter "custom_nwfilter" %}
+                                {% field_error vm_form.nwfilter "vm_nwfilter" %}
                             </div>
-                        </div>
-                        <div class="row">
-                            <label for="custom_net_model" class="col-sm-3 col-form-label">{% trans "NIC Type" %} </label>
-                            <div class="col-sm-7">
-                                <select id="custom_net_model" class="form-select{{ custom_form.net_model|invalid }}" name="net_model"
-                                        {% error_attrs custom_form.net_model "custom_net_model" %}>
-                                    {% for model in net_models_host %}
-                                    <option value="{{ model }}" {% if model == custom_form.net_model.value %} selected {% endif %}>{{ model }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% field_error custom_form.net_model "custom_net_model" %}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="custom_video" class="col-sm-3 col-form-label">{% trans "Video" %}</label>
-                            <div class="col-sm-7">
-                                <select id="custom_video" class="form-select{{ custom_form.video|invalid }}" name="video"
-                                        {% error_attrs custom_form.video "custom_video" %}>
-                                    {% if not videos %}
-                                        <option value="vga">vga</option>
-                                        <option value="cirrus">cirrus</option>
-                                    {% endif %}
+                            <div class="col-md-6">
+                                <label for="vm_video" class="form-label">{% trans "Video" %}</label>
+                                <select id="vm_video" class="form-select{{ vm_form.video|invalid }}" name="video"{% error_attrs vm_form.video "vm_video" %}>
+                                    {% if not videos %}<option value="vga">vga</option><option value="cirrus">cirrus</option>{% endif %}
                                     {% for video in videos %}
-                                        <option value="{{ video }}" {% if video == custom_form.video.value %}selected{% endif %}>{{ video }}</option>
+                                    <option value="{{ video }}"{% if video == vm_form.video.value %} selected{% endif %}>{{ video }}</option>
                                     {% endfor %}
                                 </select>
-                                {% field_error custom_form.video "custom_video" %}
+                                {% field_error vm_form.video "vm_video" %}
                             </div>
-                        </div>
-                        <div class="row">
-                            <label for="custom_listener_addr" class="col-sm-3 col-form-label">{% trans "Console Access" %}</label>
-                            <div class="col-sm-7">
-                                <select id="custom_listener_addr" class="form-select{{ custom_form.listener_addr|invalid }}" name="listener_addr"
-                                        {% error_attrs custom_form.listener_addr "custom_listener_addr" %}>
+                            <div class="col-md-6">
+                                <label for="vm_listener_addr" class="form-label">{% trans "Console access" %}</label>
+                                <select id="vm_listener_addr" class="form-select{{ vm_form.listener_addr|invalid }}" name="listener_addr"{% error_attrs vm_form.listener_addr "vm_listener_addr" %}>
                                     {% for addr, label in listener_addr %}
-                                        <option value="{{ addr }}" {% if addr == custom_form.listener_addr.value %} selected {% endif %}>{{ label }}</option>
+                                    <option value="{{ addr }}"{% if addr == vm_form.listener_addr.value %} selected{% endif %}>{{ label }}</option>
                                     {% endfor %}
                                 </select>
-                                {% field_error custom_form.listener_addr "custom_listener_addr" %}
+                                {% field_error vm_form.listener_addr "vm_listener_addr" %}
                             </div>
-                        </div>
-                        <div class="row">
-                            <label for="add_cdrom" class="col-sm-3 col-form-label">{% trans "Add CD-Rom" %}</label>
-                            <div class="col-sm-7">
-                                <select class="form-select{{ custom_form.add_cdrom|invalid }}" id="add_cdrom" name="add_cdrom"
-                                        {% error_attrs custom_form.add_cdrom "add_cdrom" %}>
-                                    <option value="None" {% if custom_form.add_cdrom.value == "None" %}selected{% endif %} >--{% trans "False" %}--</option>
+                            <div class="col-md-6">
+                                <label for="vm_add_cdrom" class="form-label">{% trans "CD-ROM" %}</label>
+                                <select id="vm_add_cdrom" class="form-select{{ vm_form.add_cdrom|invalid }}" name="add_cdrom"{% error_attrs vm_form.add_cdrom "vm_add_cdrom" %}>
+                                    <option value="None"{% if vm_form.add_cdrom.value == "None" %} selected{% endif %}>{% trans "None" %}</option>
                                     {% for bus in cdrom_buses %}
-                                        <option value="{{ bus }}" {% if bus == custom_form.add_cdrom.value %}selected {% endif %}>
-                                            {% trans bus %}
-                                        </option>
+                                    <option value="{{ bus }}"{% if bus == vm_form.add_cdrom.value %} selected{% endif %}>{% trans bus %}</option>
                                     {% endfor %}
                                 </select>
-                                {% field_error custom_form.add_cdrom "add_cdrom" %}
+                                {% field_error vm_form.add_cdrom "vm_add_cdrom" %}
                             </div>
-                        </div>
-                        <div class="row">
-                            <label for="add_input" class="col-sm-3 col-form-label">{% trans "Add Input Device" %}</label>
-                            <div class="col-sm-7">
-                                <select class="form-select{{ custom_form.add_input|invalid }}" id="add_input" name="add_input"
-                                        {% error_attrs custom_form.add_input "add_input" %}>
-                                    <option value="None" {% if custom_form.add_input.value == "None" %}selected{% endif %}>--{% trans "False" %}--</option>
+                            <div class="col-md-6">
+                                <label for="vm_add_input" class="form-label">{% trans "Input device" %}</label>
+                                <select id="vm_add_input" class="form-select{{ vm_form.add_input|invalid }}" name="add_input"{% error_attrs vm_form.add_input "vm_add_input" %}>
+                                    <option value="None"{% if vm_form.add_input.value == "None" %} selected{% endif %}>{% trans "None" %}</option>
                                     {% for bus in input_device_buses %}
-                                        <option value="{{ bus }}" {% if bus == custom_form.add_input.value %}selected{% endif %}>
-                                            {% trans bus %}
-                                        </option>
+                                    <option value="{{ bus }}"{% if bus == vm_form.add_input.value %} selected{% endif %}>{% trans bus %}</option>
                                     {% endfor %}
                                 </select>
-                                {% field_error custom_form.add_input "add_input" %}
+                                {% field_error vm_form.add_input "vm_add_input" %}
                             </div>
-                        </div>
-                        <div class="row">
-                            <label for="custom_qemu_ga" class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
-                            <div class="col-sm-6">
-                                <input id="custom_qemu_ga" type="checkbox" name="qemu_ga" value="true"{% if custom_form.qemu_ga.value %} checked{% endif %}>
+                            <div class="col-md-6 d-flex flex-column justify-content-end">
+                                <div class="form-check">
+                                    <input id="vm_qemu_ga" class="form-check-input" type="checkbox" name="qemu_ga" value="true"{% if vm_form.qemu_ga.value %} checked{% endif %}>
+                                    <label for="vm_qemu_ga" class="form-check-label">{% trans "Guest agent" %}</label>
+                                </div>
+                                {% if virtio_support %}
+                                <div class="form-check">
+                                    <input id="vm_virtio" class="form-check-input" type="checkbox" name="virtio" value="{{ virtio_support }}"{% if vm_form.virtio.value %} checked{% endif %}>
+                                    <label for="vm_virtio" class="form-check-label">{% trans "VirtIO devices" %}</label>
+                                </div>
+                                {% endif %}
                             </div>
-                        </div>
-                        {% if virtio_support %}
-                        <div class="row">
-                            <label for="custom_virtio" class="col-sm-3 col-form-label">{% trans "VirtIO" %}</label>
-                            <div class="col-sm-6">
-                                <input id="custom_virtio" type="checkbox" name="virtio" value="{{ virtio_support }}"{% if custom_form.virtio.value %} checked{% endif %}>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="row">
-                        <div class="d-grid col-sm-7 offset-sm-3">
-                        {% if storages %}
-                            <button type="submit" class="btn btn-primary" name="create" formnovalidate value="1">
-                                {% trans "Create" %}
-                            </button>
-                        {% else %}
-                            <button class="btn btn-primary disabled">
-                                {% trans "Create" %}
-                            </button>
-                        {% endif %}
                         </div>
                     </div>
-                </form>
                 </div>
-                <div class="clearfix"></div>
-            </div>
+            </section>
 
-            <div role="tabpanel" class="tab-pane tab-pane-bordered" id="add-from-temp" data-form-id="template">
-                <div>
-                    <form method="post" role="form" aria-label="Create instance from template form"
-                          {% if submitted_form == "template" %}
-                          data-template-pool="{{ request.POST.template_pool }}"
-                          data-template="{{ template_form.template.value|default_if_none:"" }}"
-                          data-storage="{{ template_form.storage.value|default_if_none:"" }}"
-                          {% endif %}>{% csrf_token %}{% submission_key %}
-                        <input type="hidden" name="form_id" value="template">
-                    {% include "instances/form_errors.html" with form=template_form %}
-                        <div class="row">
-                            <label for="template_name" class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                            <div class="col-sm-7">
-                                <input id="template_name" type="text" class="form-control{{ template_form.name|invalid }}" name="name"
-                                      value="{{ template_form.name.value|default_if_none:"" }}" placeholder="{% trans "Name" %}" maxlength="64" required pattern="[a-zA-Z0-9\.\-_]+"
-                                      {% error_attrs template_form.name "template_name" %}>
-                                {% field_error template_form.name "template_name" %}
-                            </div>
-                        </div>
-                        {% if firmwares %}
-                            <div class="row">
-                                <label for="template_firmware" class="col-sm-3 col-form-label">{% trans "Firmware" %}</label>
-                                <div class="col-sm-7">
-                                    <select id="template_firmware" class="form-select{{ template_form.firmware|invalid }}" name="firmware"
-                                            {% error_attrs template_form.firmware "template_firmware" %}>
-                                        {% for frm in firmwares %}
-                                        <option value="{{ frm }}" {% if frm == template_form.firmware.value %}selected{% endif %}>{{ frm }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.firmware "template_firmware" %}
-                                </div>
-                            </div>
-                        {% endif %}
-                        <div class="row">
-                            <label for="template_vcpu" class="col-sm-3 col-form-label">{% trans "VCPU" %}</label>
-                            <div class="col-sm-7">
-                                <input id="template_vcpu" type="text" class="form-control{{ template_form.vcpu|invalid }}" name="vcpu"
-                                      value="{{ template_form.vcpu.value|default_if_none:"" }}" maxlength="2" required pattern="[0-9]"
-                                      {% error_attrs template_form.vcpu "template_vcpu" %}>
-                                {% field_error template_form.vcpu "template_vcpu" %}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="template_vcpu_mode" class="col-sm-3 col-form-label">{% trans "VCPU Config" %}</label>
-                            <div class="col-sm-7">
-                                <select id="template_vcpu_mode" class="form-select{{ template_form.vcpu_mode|invalid }}" name="vcpu_mode"
-                                        {% error_attrs template_form.vcpu_mode "template_vcpu_mode" %}>
-                                    <option value=""> {% trans 'no-mode' %}</option>
-                                    {% for mode in dom_caps.cpu_modes %}
-                                        {% if mode == 'custom' %}
-                                            <optgroup label="Custom CPU Models">
-                                                {% for model in dom_caps.cpu_custom_models %}
-                                                <option value="{{ model }}" {% if model == template_form.vcpu_mode.value %}selected{% endif %}> {% trans model %}</option>
-                                                {% endfor %}
-                                            </optgroup>
-                                        {% else %}
-                                            <option value="{{ mode }}" {% if mode == template_form.vcpu_mode.value %}selected{% endif %}>
-                                                {% trans mode %}
-                                            </option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
-                                {% field_error template_form.vcpu_mode "template_vcpu_mode" %}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="template_memory" class="col-sm-3 col-form-label">{% trans "RAM" %}</label>
-                            <div class="col-sm-7">
-                                <input id="template_memory" type="text" class="form-control{{ template_form.memory|invalid }}" name="memory"
-                                      value="{{ template_form.memory.value|default_if_none:"" }}" maxlength="5" required pattern="[0-9]+"
-                                      {% error_attrs template_form.memory "template_memory" %}>
-                                {% field_error template_form.memory "template_memory" %}
-                            </div>
-                            <label class="col-sm-1 col-form-label">{% trans "MB" %}</label>
-                        </div>
-                        <div class="row">
-                            <label for="template_disk" class="col-sm-3 col-form-label">{% trans "Template Disk" %}</label>
-                            <div class="col-sm-3">
-                                <select class="form-select" id="template_disk" name="template_pool" onchange="get_template_vols({{ compute_id }}, value);">
-                                    {% if storages %}
-                                        <option value disabled selected>{% trans "Select pool" %}...</option>
-                                        {% for storage in storages %}
-                                            <option value="{{ storage }}" >{{ storage }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="">{% trans "None" %}</option>
-                                    {% endif %}
-                                </select>
-                            </div>
-                            <div class="col-sm-4">
-                                <select class="form-select{{ template_form.template|invalid }}" id="template" name="template" disabled aria-label="{% trans "Template" %}"
-                                        {% error_attrs template_form.template "template" %}>
-                                    <!-- populated from javascript -->
-                                </select>
-                                {% field_error template_form.template "template" %}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="storage" class="col-sm-3 col-form-label">{% trans "Storage" %}</label>
-                            <div class="col-sm-7">
-                                <select class="form-select{{ template_form.storage|invalid }}" id="storage" name="storage" disabled
-                                        {% error_attrs template_form.storage "storage" %}>
-                                    {% if storages %}
-                                        {% for storage in storages %}
-                                            <option value="{{ storage }}" {% if storage == template_form.storage.value %}selected{% endif %}>{{ storage }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="">{% trans "None" %}</option>
-                                    {% endif %}
-                                </select>
-                                {% field_error template_form.storage "storage" %}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="template_networks" class="col-sm-3 col-form-label">{% trans "Network/MAC" %}</label>
-                            <div class="col-sm-3">
-                                <select id="template_networks" class="form-select{{ template_form.networks|invalid }}" name="networks"
-                                        {% error_attrs template_form.networks "template_networks" %}>
-                                    {% for network in networks %}
-                                        <option value="{{ network }}" {% if network == template_form.networks.value %}selected{% endif %}>{{ network }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% field_error template_form.networks "template_networks" %}
-                            </div>
-                            <div class="col-sm-4">
-                                <input id="template_mac" aria-label="{% trans "MAC" %}" type="text" class="form-control{{ template_form.mac|invalid }}" name="mac"
-                                      value="{{ template_form.mac.value|default_if_none:"" }}" maxlength="17" required pattern="[a-zA-Z0-9:]+"
-                                      {% error_attrs template_form.mac "template_mac" %}>
-                                {% field_error template_form.mac "template_mac" %}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label class="col-sm-3 col-form-label">{% trans "Advanced" %}</label>
-                            <div class="d-grid col-sm-7">
-                                <button class="btn btn-outline-light" type="button" title="{% trans "Advanced" %}" data-bs-toggle="collapse" data-bs-target="#tempAdvCollapse" aria-expanded="false" aria-controls="tempAdvCollapse">
-                                    <span>{% bs_icon 'caret-down'%} </span>
-                                </button>
-                            </div>        
-                        </div>
-                        <div class="collapse" id="tempAdvCollapse">
-                            <div class="row meta-prealloc">
-                                <label for="template_meta_prealloc" class="col-sm-3 col-form-label">{% trans "Disk Metadata" %}</label>
-                                <div class="col-sm-7">
-                                    <input id="template_meta_prealloc" type="checkbox" name="meta_prealloc" title="{% trans "Metadata preallocation" %}" value="true"{% if template_form.meta_prealloc.value %} checked{% endif %}>
-                                </div>
-                                <label class="col-lg-1 col-form-label">{% trans "Image" %}</label>
-                            </div>
-                            <div class="row">
-                                <label for="template_cache_mode" class="col-sm-3 col-form-label">{% trans "HDD cache mode" %}</label>
-                                <div class="col-sm-7">
-                                    <select id="template_cache_mode" class="form-select{{ template_form.cache_mode|invalid }}" name="cache_mode"
-                                            {% error_attrs template_form.cache_mode "template_cache_mode" %}>
-                                        {% for mode, name in cache_modes %}
-                                            <option value="{{ mode }}" {% if mode == template_form.cache_mode.value %}selected{% endif %}>
-                                            {% trans name %}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.cache_mode "template_cache_mode" %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label for="template_nwfilter" class="col-sm-3 col-form-label">{% trans "NWFilter" %}</label>
-                                <div class="col-sm-7">
-                                    <select id="template_nwfilter" class="form-select{{ template_form.nwfilter|invalid }}" name="nwfilter"
-                                            {% error_attrs template_form.nwfilter "template_nwfilter" %}>
-                                        <option value="">{% trans "None" %}</option>
-                                        {% for nwfilter in nwfilters %}
-                                            <option value="{{ nwfilter }}" {% if nwfilter == template_form.nwfilter.value %}selected{% endif %}>{{ nwfilter }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.nwfilter "template_nwfilter" %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label for="template_net_model" class="col-sm-3 col-form-label">{% trans "NIC Type" %} </label>
-                                <div class="col-sm-7">
-                                    <select id="template_net_model" class="form-select{{ template_form.net_model|invalid }}" name="net_model"
-                                            {% error_attrs template_form.net_model "template_net_model" %}>
-                                        {% for model in net_models_host %}
-                                        <option value="{{ model }}" {% if model == template_form.net_model.value %} selected {% endif %}>{{ model }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.net_model "template_net_model" %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label for="template_video" class="col-sm-3 col-form-label">{% trans "Video" %}</label>
-                                <div class="col-sm-7">
-                                    <select id="template_video" class="form-select{{ template_form.video|invalid }}" name="video"
-                                            {% error_attrs template_form.video "template_video" %}>
-                                        {% if not videos %}
-                                            <option value="vga">vga</option>
-                                            <option value="cirrus">cirrus</option>
-                                        {% endif %}
-                                        {% for video in videos %}
-                                            <option value="{{ video }}" {% if video == template_form.video.value %}selected{% endif %}>{{ video }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.video "template_video" %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label for="template_listener_addr" class="col-sm-3 col-form-label">{% trans "Console Access" %}</label>
-                                <div class="col-sm-7">
-                                    <select id="template_listener_addr" class="form-select{{ template_form.listener_addr|invalid }}" name="listener_addr"
-                                            {% error_attrs template_form.listener_addr "template_listener_addr" %}>
-                                        {% for addr, label in listener_addr %}
-                                            <option value="{{ addr }}" {% if addr == template_form.listener_addr.value %} selected {% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.listener_addr "template_listener_addr" %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label for="template_add_cdrom" class="col-sm-3 col-form-label">{% trans "Add CD-Rom" %}</label>
-                                <div class="col-sm-7">
-                                    <select id="template_add_cdrom" class="form-select{{ template_form.add_cdrom|invalid }}" name="add_cdrom"
-                                            {% error_attrs template_form.add_cdrom "template_add_cdrom" %}>
-                                        <option value="None" {% if template_form.add_cdrom.value == "None" %}selected{% endif %}>--{% trans "False" %}--</option>
-                                        {% for bus in cdrom_buses %}
-                                            <option value="{{ bus }}" {% if bus == template_form.add_cdrom.value %}selected {% endif %}>
-                                                {% trans bus %}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.add_cdrom "template_add_cdrom" %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label for="template_add_input" class="col-sm-3 col-form-label">{% trans "Add Input Device" %}</label>
-                                <div class="col-sm-7">
-                                    <select id="template_add_input" class="form-select{{ template_form.add_input|invalid }}" name="add_input"
-                                            {% error_attrs template_form.add_input "template_add_input" %}>
-                                        <option value="None" {% if template_form.add_input.value == "None" %}selected{% endif %}>--{% trans "False" %}--</option>
-                                        {% for bus in input_device_buses %}
-                                            <option value="{{ bus }}" {% if bus == template_form.add_input.value %}selected{% endif %}>
-                                                {% trans bus %}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                    {% field_error template_form.add_input "template_add_input" %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label for="template_qemu_ga" class="col-sm-3 col-form-label">{% trans "Guest Agent" %}</label>
-                                <div class="col-sm-6">
-                                    <input id="template_qemu_ga" type="checkbox" name="qemu_ga" value="true"{% if template_form.qemu_ga.value %} checked{% endif %}>
-                                </div>
-                            </div>
-                            {% if virtio_support %}
-                            <div class="row">
-                                <label for="template_virtio" class="col-sm-3 col-form-label">{% trans "VirtIO" %}</label>
-                                <div class="col-sm-6">
-                                    <input id="template_virtio" type="checkbox" name="virtio" value="{{ virtio_support }}"{% if template_form.virtio.value %} checked{% endif %}>
-                                </div>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="row">
-                            <div class="d-grid col-sm-7 offset-sm-3">
-                            {% if storages %}
-                                <button type="submit" class="btn btn-primary" name="create" value="1" formnovalidate>
-                                    {% trans "Create" %}
-                                </button>
-                            {% else %}
-                                <button class="btn btn-primary disabled">
-                                    {% trans "Create" %}
-                                </button>
-                            {% endif %}
-                            </div>
-                        </div>
+            <div class="d-flex flex-wrap gap-2 justify-content-end mb-4">
+                <a class="btn btn-link" href="{% url 'instances' compute.id %}">{% trans "Cancel" %}</a>
+                <button type="submit" class="btn btn-primary" name="create" value="1" formnovalidate>{% trans "Create VM" %}</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="modal fade" id="flavors-dialog" tabindex="-1" aria-labelledby="flavors-dialog-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="flavors-dialog-title">{% trans "Flavors" %}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body">
+                    {% if flavors %}
+                    <ul class="list-group mb-3">
+                        {% for flavor in flavors %}
+                        <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                            <span><strong>{{ flavor.label }}</strong> · {{ flavor.vcpu }} vCPU · {{ flavor.memory }} MiB · {{ flavor.disk }} GiB</span>
+                            <form class="ms-auto" action="{% url 'instances:flavor_delete' flavor.id %}" method="post">{% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-secondary"
+                                        data-confirm="{% blocktrans with name=flavor.label %}Delete flavor {{ name }}? Only the size template goes; VMs made from it keep their size.{% endblocktrans %}"
+                                        onclick="return confirm(this.dataset.confirm)">{% trans "Delete" %}</button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    <h3 class="h6">{% trans "Add flavor" %}</h3>
+                    <form method="post" action="{% url 'instances:flavor_create' %}">{% csrf_token %}
+                        {% bootstrap_form flavor_form %}
+                        <button type="submit" class="btn btn-primary">{% trans "Add" %}</button>
                     </form>
                 </div>
-                <div class="clearfix"></div>
             </div>
-        </div><!-- /Tab panes -->
-    </div>
         </div>
     </div>
-
 {% endblock %}
+
 {% block script %}
 <script src="{% static 'js/tom-select.complete.min.js' %}"></script>
 <script>
-    var images_control, networks_control;
+    const COMPUTE = {{ compute_id }};
+    let images_control, networks_control;
 
-    $(document).ready(function () {
+    // the volume and network pickers: each chosen item is a row below its picker
+    function make_pickers() {
         images_control = new TomSelect('#image-control', {
             plugins: ['checkbox_options'],
-            placeholder: 'Add image...',
+            placeholder: '{{ _("Add volume")|escapejs }}',
             hidePlaceholder: false,
             onItemAdd: function (value) { if (!row_for("#img-list", value)) add_disk_row(value); },
             onItemRemove: function (value) { remove_row("#img-list", value); },
         });
         networks_control = new TomSelect('#network-control', {
             plugins: ['checkbox_options'],
-            placeholder: 'Add network',
+            placeholder: '{{ _("Add network")|escapejs }}',
             hidePlaceholder: false,
             onItemAdd: function (value) { if (!row_for("#net-list", value)) add_network_row(value, ""); },
             onItemRemove: function (value) { remove_row("#net-list", value); },
         });
+    }
+
+    $(document).ready(function () {
+        if (!document.querySelector("#create-vm-form")) return;
+        make_pickers();
+        document.querySelectorAll('input[name="disk_source"]').forEach(function (radio) {
+            radio.addEventListener("change", function () {
+                show_source(this.value);
+                if (this.value !== "new") clear_presets();  // its size is not sent
+            });
+        });
+        show_source(document.querySelector('input[name="disk_source"]:checked').value);
+        document.querySelectorAll(".preset").forEach(function (button) {
+            button.addEventListener("click", function () { apply_preset(button); });
+        });
+        ["#vm_vcpu", "#vm_memory", "#vm_hdd_size"].forEach(function (sel) {
+            document.querySelector(sel).addEventListener("input", clear_presets);
+        });
+        document.querySelector("#storage-control").addEventListener("change", function () { load_volumes(this.value); });
+        document.querySelector("#template_pool").addEventListener("change", function () { template_pool_chosen(this.value); });
+        if (document.body.dataset.refused) restore_submitted();
+        else add_first_network();
     });
 
-    // The custom form's disk and network rows: one per chosen image or
-    // network, cloned from the page's row templates. The fields the server
-    // reads are derived from them in sync_custom_lists.
+    // a new VM starts with one interface: on "default" if the host has it
+    function add_first_network() {
+        const names = Object.keys(networks_control.options);
+        if (names.length) networks_control.addItem(names.includes("default") ? "default" : names[0]);
+    }
+
+    // Only the chosen disk source's fields are shown and sent: the others
+    // are disabled, so the browser neither submits nor validates them.
+    function show_source(source) {
+        document.querySelectorAll(".disk-source").forEach(function (fieldset) {
+            const on = fieldset.id === "source-" + source;
+            fieldset.hidden = !on;
+            fieldset.disabled = !on;
+        });
+        images_control[source === "existing" ? "enable" : "disable"]();
+    }
+
+    // A preset fills the size fields and picks a new disk; editing one of
+    // them afterwards leaves no preset marked as applied.
+    function apply_preset(button) {
+        document.querySelector("#vm_vcpu").value = button.dataset.vcpu;
+        document.querySelector("#vm_memory").value = button.dataset.memory;
+        document.querySelector("#vm_hdd_size").value = button.dataset.disk;
+        document.querySelector('input[name="disk_source"][value="new"]').checked = true;
+        show_source("new");
+        clear_presets();
+        button.setAttribute("aria-pressed", "true");
+        button.classList.replace("text-body", "btn-primary");
+        document.querySelector("#preset-status").textContent =
+            `${button.dataset.label}: ${button.dataset.vcpu} vCPU, ${button.dataset.memory} MiB, new ${button.dataset.disk} GiB disk`;
+    }
+
+    function clear_presets() {
+        document.querySelectorAll(".preset").forEach(function (b) {
+            b.setAttribute("aria-pressed", "false");
+            b.classList.replace("btn-primary", "text-body");
+        });
+    }
+
+    // Disk and network rows: one per chosen volume or network, cloned from
+    // the page's row templates; the fields the server reads are derived
+    // from them in sync_lists.
     function new_row(list, template, item) {
         const row = document.getElementById(template).content.firstElementChild.cloneNode(true);
         row.dataset.item = item;
@@ -935,10 +494,10 @@
         const row = new_row("#img-list", "disk-row", volume);
         const bus = row.querySelector(".disk-bus");
         row.querySelector(".disk-device").addEventListener("change", function () {
-            get_disk_bus_choices({{ compute_id }}, bus, this.value);
+            load_buses(bus, this.value);
         });
         row.querySelector(".row-remove").addEventListener("click", function () { images_control.removeItem(volume); });
-        sync_custom_lists();
+        sync_lists();
         return row;
     }
 
@@ -947,10 +506,10 @@
         const row = new_row("#net-list", "network-row", network);
         const input = row.querySelector("input");
         input.value = mac;
-        input.addEventListener("input", sync_custom_lists);
+        input.addEventListener("input", sync_lists);
         row.querySelector(".row-remove").addEventListener("click", function () { networks_control.removeItem(network); });
         if (!mac) random_mac(input);
-        sync_custom_lists();
+        sync_lists();
         return row;
     }
 
@@ -960,12 +519,12 @@
 
     function remove_row(list, item) {
         row_for(list, item)?.remove();
-        sync_custom_lists();
+        sync_lists();
     }
 
-    // images, networks and their MACs in row order; device<i> and bus<i>
-    // belong to the i-th image
-    function sync_custom_lists() {
+    // volumes, networks and their MACs in row order; device<i> and bus<i>
+    // belong to the i-th volume
+    function sync_lists() {
         const disks = [...document.querySelector("#img-list").children];
         const nics = [...document.querySelector("#net-list").children];
         disks.forEach(function (row, i) {
@@ -978,106 +537,44 @@
         });
         document.querySelector("#images").value = disks.map(row => row.dataset.item).join(",");
         document.querySelector("#networks").value = nics.map(row => row.dataset.item).join(",");
-        document.querySelector("#custom_mac").value = nics.map(row => row.querySelector("input").value).join(",");
-        document.querySelector("#disk_list_div").classList.toggle("d-none", disks.length === 0);
+        document.querySelector("#vm_mac").value = nics.map(row => row.querySelector("input").value).join(",");
     }
 
     // a MAC typed while the request was out stays
     function random_mac(input) {
         $.getJSON("{% url 'instances:random_mac_address' %}", function (data) {
             if (!input.value) input.value = data['mac'];
-            sync_custom_lists();
+            sync_lists();
         });
     }
 
-    function get_cust_vols(compute_id, pool) {
-        get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
-        return $.getJSON(get_vol_url, function (data) {
+    function volumes_url(pool) {
+        return "/computes/" + COMPUTE + "/storage/" + encodeURIComponent(pool) + "/volumes";
+    }
+
+    function load_volumes(pool) {
+        return $.getJSON(volumes_url(pool), function (data) {
             images_control.clearOptions();
-            $.each(data['vols'], function(i, item) {
-                images_control.addOption({value: item, text: item});
-            });
+            data['vols'].forEach(item => images_control.addOption({value: item, text: item}));
         });
     }
 
-    function get_template_vols(compute_id, pool) {
-        get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
-        const loading = $.getJSON(get_vol_url, function (data) {
-            $("#template").find('option').remove();
-            $.each(data['vols'], function(i, item) {
-                $("#template").append($("<option>").val(item).text(item));
-            });
-        });
-        $("#template").removeAttr("disabled");
-        $("#storage").val(pool).change();
-        $("#storage").removeAttr("disabled");
-        return loading;
+    // the copy goes into the template's pool unless the user picks another
+    function template_pool_chosen(pool) {
+        select_value(document.querySelector("#template_storage"), pool);
+        return load_templates(pool);
     }
 
-    // A refused create form comes back open: its tab, or its flavor's dialog,
-    // marked data-form-id. Then the focus goes to its error, once the dialog
-    // is shown or the template form has its volumes back.
-    function reopen_submitted_form() {
-        const holder = document.querySelector(`[data-form-id="${document.body.dataset.submittedForm}"]`);
-        if (!holder) {
-            focusFirstError();
-            return;
-        }
-        open_sections_with_errors(holder);
-        if (holder.classList.contains("modal")) {
-            holder.addEventListener("shown.bs.modal", focusFirstError, {once: true});
-            bootstrap.Modal.getOrCreateInstance(holder).show();
-        } else {
-            bootstrap.Tab.getOrCreateInstance(document.querySelector(`[data-bs-target="#${holder.id}"]`)).show();
-            $.when(restore_template_volumes(), restore_custom_lists()).then(focusFirstError);
-        }
-    }
-
-    // an "Advanced" section that holds a refused field
-    function open_sections_with_errors(holder) {
-        holder.querySelectorAll(".collapse").forEach(function (section) {
-            if (section.querySelector(".is-invalid")) {
-                bootstrap.Collapse.getOrCreateInstance(section, {toggle: false}).show();
-            }
+    function load_templates(pool) {
+        return $.getJSON(volumes_url(pool), function (data) {
+            document.querySelector("#template").replaceChildren(...data['vols'].map(item => new Option(item, item)));
         });
     }
 
-    // the template form's pool, template and storage, the template list
-    // loaded for the pool first, as when the user picks it
-    function restore_template_volumes() {
-        const form = document.querySelector("form[data-template-pool]");
-        if (!form || !form.dataset.templatePool) return $.when();
-        $("#template_disk").val(form.dataset.templatePool);
-        return get_template_vols({{ compute_id }}, form.dataset.templatePool).then(function () {
-            $("#template").val(form.dataset.template);
-            $("#storage").val(form.dataset.storage);
-        });
-    }
-
-    // The custom form's lists as submitted: its pool's volumes loaded first,
-    // then each disk's bus once the bus list for its device is loaded
-    function restore_custom_lists() {
-        const element = document.getElementById("custom-lists");
-        if (!element) return $.when();
-        const lists = JSON.parse(element.textContent);
-        lists.networks.forEach(function (nic) {
-            networks_control.addOption({value: nic.name, text: nic.name});
-            add_network_row(nic.name, nic.mac);
-            networks_control.addItem(nic.name, true);
-        });
-        if (!lists.pool) return $.when();
-        select_value(document.querySelector("#storage-control"), lists.pool);
-        return get_cust_vols({{ compute_id }}, lists.pool).then(function () {
-            return $.when(...lists.disks.map(function (disk) {
-                images_control.addOption({value: disk.volume, text: disk.volume});
-                const row = add_disk_row(disk.volume);
-                images_control.addItem(disk.volume, true);
-                const bus = row.querySelector(".disk-bus");
-                select_value(row.querySelector(".disk-device"), disk.device);
-                return get_disk_bus_choices({{ compute_id }}, bus, disk.device).then(function () {
-                    select_value(bus, disk.bus);
-                });
-            }));
+    function load_buses(bus_select, disk_type) {
+        const url = "/computes/" + COMPUTE + "/archs/{{ arch|escapejs }}/machines/{{ machine|escapejs }}/disks/" + disk_type + "/buses";
+        return $.getJSON(url, function (data) {
+            bus_select.replaceChildren(...data['bus'].map(item => new Option(item, item)));
         });
     }
 
@@ -1086,27 +583,42 @@
         if (![...select.options].some(option => option.value === value)) select.add(new Option(value, value));
         select.value = value;
     }
-    $(reopen_submitted_form);
 
-    function get_disk_bus_choices(compute_id, bus_select, disk_type){
-        // the page's own architecture and machine type, from its URL
-        let arch = "{{ arch|escapejs }}";
-        let machine = "{{ machine|escapejs }}";
-        get_diskBus_url = "/computes/" + compute_id + "/archs/" + arch + "/machines/" + machine + "/disks/" + disk_type + "/buses";
-        return $.getJSON(get_diskBus_url, function (data) {
-            $(bus_select).find('option').remove();
-            $.each(data['bus'], function(i, item) {
-                $(bus_select).append($("<option>").val(item).text(item));
-            });
+    // A refused form comes back as it was sent: its networks, volumes and
+    // template loaded first, any Advanced field with an error shown, then
+    // the focus on the first error.
+    function restore_submitted() {
+        const form = document.querySelector("#create-vm-form");
+        const element = document.getElementById("submitted-lists");
+        const lists = element ? JSON.parse(element.textContent) : {networks: [], disks: [], pool: ""};
+        lists.networks.forEach(function (nic) {
+            networks_control.addOption({value: nic.name, text: nic.name});
+            add_network_row(nic.name, nic.mac);
+            networks_control.addItem(nic.name, true);
         });
+        const loads = [];
+        if (lists.pool) {
+            select_value(document.querySelector("#storage-control"), lists.pool);
+            loads.push(load_volumes(lists.pool).then(function () {
+                return $.when(...lists.disks.map(function (disk) {
+                    images_control.addOption({value: disk.volume, text: disk.volume});
+                    const row = add_disk_row(disk.volume);
+                    images_control.addItem(disk.volume, true);
+                    const bus = row.querySelector(".disk-bus");
+                    select_value(row.querySelector(".disk-device"), disk.device);
+                    return load_buses(bus, disk.device).then(() => select_value(bus, disk.bus));
+                }));
+            }));
+        }
+        if (form.dataset.templatePool) {
+            select_value(document.querySelector("#template_pool"), form.dataset.templatePool);
+            loads.push(load_templates(form.dataset.templatePool).then(function () {
+                select_value(document.querySelector("#template"), form.dataset.template);
+            }));
+        }
+        const advanced = document.querySelector("#advanced");
+        if (advanced.querySelector(".is-invalid")) bootstrap.Collapse.getOrCreateInstance(advanced, {toggle: false}).show();
+        $.when(...loads).then(focusFirstError);
     }
 </script>
-{% if request.user.is_superuser %}
-    <script>
-        function goto_compute() {
-            let compute = {{ compute.id }};
-            window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
-        }
-    </script>
-{% endif %}
 {% endblock %}

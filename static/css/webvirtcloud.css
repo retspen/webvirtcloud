@@ -26,6 +26,25 @@ body {
     left: 0;
 }
 
+/* Tom Select's control keeps the text colour of the select it replaces:
+   its own stylesheet fixes one, unreadable on some Bootswatch themes */
+.ts-wrapper.form-select .ts-control,
+.ts-wrapper.form-select .ts-control input {
+  color: inherit;
+}
+
+/* a disclosure's chevron points up while its section is open */
+.disclosure[aria-expanded="true"] .bi-chevron-down {
+  transform: rotate(180deg);
+}
+
+/* the steps of creating a VM: the separator is drawn, not a list item */
+.create-steps li + li::before {
+  content: "›";
+  margin-right: 0.5rem;
+  color: var(--bs-secondary-color);
+}
+
 .xmlheight {
     height: 364px;
 }

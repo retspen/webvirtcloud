@@ -1,5 +1,5 @@
-"""A refused VM create form comes back bound and open, with what was
-entered; the other create forms keep their own defaults."""
+"""A refused VM create form comes back bound, with what was entered and the
+disk source that was chosen; flavors are presets, not forms."""
 
 import json
 import uuid
@@ -23,179 +23,182 @@ def valid(**fields):
 
 
 class CreateFormInputTests(TestCase):
-    def setUp(self):
-        self.flavor = Flavor.objects.create(label="wvc-test", memory=512, vcpu=1, disk=10)
-
-    def test_each_create_form_has_its_own_unbound_form(self):
+    def test_the_page_has_one_unbound_form(self):
         _, response = render_create_page(self)
-        forms = response.context["vm_forms"]
-        self.assertEqual(set(forms), {"custom", "template"} | {f"flavor{f.id}" for f in Flavor.objects.all()})
-        self.assertFalse(any(form.is_bound for form in forms.values()))
-        self.assertEqual(response.context["submitted_form"], "")
+        self.assertFalse(response.context["vm_form"].is_bound)
+        self.assertFalse(response.context["refused"])
+        page = html.fromstring(response.content)
+        self.assertEqual(len(page.xpath("//form[.//button[@name='create']]")), 1)
 
     def test_the_refused_form_comes_back_bound(self):
-        _, response = render_create_page(self, valid(form_id="custom", name="bad name!", vcpu="2"))
-        self.assertEqual(response.context["submitted_form"], "custom")
-        self.assertTrue(response.context["custom_form"].is_bound)
-        self.assertFalse(response.context["template_form"].is_bound)
-        self.assertIn("name", response.context["custom_form"].errors)
+        _, response = render_create_page(self, valid(name="bad name!", vcpu="2"))
+        self.assertTrue(response.context["refused"])
+        self.assertTrue(response.context["vm_form"].is_bound)
+        self.assertIn("name", response.context["vm_form"].errors)
 
     def test_a_refusal_after_validation_keeps_the_form(self):
         for refusal in (claims.Busy("compute 1"), jobs.SubmissionConflict("already submitted"),
                         util.OperationError("A virtual machine with this name already exists")):
             with self.subTest(refusal=type(refusal).__name__), \
                  patch("instances.views.jobs.submit", side_effect=refusal):
-                _, response = render_create_page(self, valid(form_id="template"))
+                _, response = render_create_page(self, valid(disk_source="template"))
                 self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.context["submitted_form"], "template")
-                self.assertTrue(response.context["template_form"].is_bound)
+                self.assertEqual(response.context["disk_source"], "template")
+                self.assertTrue(response.context["vm_form"].is_bound)
                 self.assertTrue(list(response.context["messages"]))
-        # the view's own refusal: a new disk needs a MAC
-        _, response = render_create_page(self, valid(form_id="template", hdd_size="10", mac=""))
-        self.assertEqual(response.context["submitted_form"], "template")
-        self.assertTrue(response.context["template_form"].is_bound)
 
-    def test_a_stale_form_id_is_no_form(self):
-        _, response = render_create_page(self, valid(form_id="flavor999", name="bad name!"))
-        self.assertEqual(response.context["submitted_form"], "")
-        # no form shows the error: it goes to the messages
-        self.assertTrue(any("special characters" in str(m) for m in response.context["messages"]))
+    def test_a_new_disk_without_a_mac_is_queued(self):
+        # as for the other sources, libvirt gives the interface its MAC
+        _, response = render_create_page(self, valid(hdd_size="10", storage="default-pool", mac=""))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Operation.objects.get().kind, "instance.create")
 
-    def test_a_valid_post_with_a_stale_form_id_still_queues_the_job(self):
+    def test_no_form_without_a_storage_pool(self):
+        with patch("vrtManager.connection.wvmConnect.get_storages", return_value=[]):
+            _, response = render_create_page(self)
+        self.assertIsNone(response.context["vm_form"])
+        self.assertEqual(html.fromstring(response.content).xpath("//button[@name='create']"), [])
+        self.assertTrue(any("storage pools" in str(m) for m in response.context["messages"]))
+
+    def test_a_host_that_cannot_be_read_is_a_message(self):
+        import libvirt
+        with patch("instances.views.wvmCreate", side_effect=libvirt.libvirtError("unreachable")):
+            _, response = render_create_page(self)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any("unreachable" in str(m) for m in response.context["messages"]))
+
+    def test_a_valid_post_queues_the_job(self):
         compute, response = render_create_page(self, valid(
-            form_id="flavor999", hdd_size="10", storage="default-pool", mac="52:54:00:00:00:01"))
+            disk_source="new", hdd_size="10", storage="default-pool", mac="52:54:00:00:00:01"))
         self.assertRedirects(response, reverse("instances", args=[compute.id]), fetch_redirect_response=False)
         self.assertEqual(Operation.objects.get().kind, "instance.create")
 
+    def test_two_disk_sources_are_refused(self):
+        # the page sends only the chosen source; a crafted request with two queues nothing
+        _, response = render_create_page(self, valid(
+            hdd_size="10", template="base.img", storage="default-pool", mac="52:54:00:00:00:01"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any("Choose one disk source" in str(m) for m in response.context["messages"]))
+        self.assertFalse(Operation.objects.exists())
+
+    def test_only_the_chosen_disk_source_is_enabled(self):
+        for posted, chosen in (("template", "template"), ("existing", "existing"), ("nonsense", "new")):
+            with self.subTest(posted=posted):
+                _, response = render_create_page(self, valid(name="bad name!", disk_source=posted))
+                page = html.fromstring(response.content)
+                self.assertEqual(page.xpath("//input[@name='disk_source'][@checked]/@value"), [chosen])
+                for source in ("new", "existing", "template"):
+                    fieldset = page.get_element_by_id(f"source-{source}")
+                    off = source != chosen
+                    self.assertEqual((fieldset.get("disabled") is not None, fieldset.get("hidden") is not None),
+                                     (off, off), source)
+
 
 class CreateFormValuesTests(TestCase):
-    """The custom and template forms render their own form's values and errors."""
-
-    def setUp(self):
-        Flavor.objects.create(label="wvc-test", memory=512, vcpu=1, disk=10)
+    """The form renders the submitted values and errors."""
 
     def page(self, **fields):
         _, response = render_create_page(self, valid(**fields))
         self.assertEqual(response.status_code, 200)
         return html.fromstring(response.content)
 
-    def summary(self, page, form_label):
-        return " ".join(page.xpath(f"//form[@aria-label='{form_label}']//*[contains(@class, 'form-errors')]//text()"))
+    def summary(self, page):
+        return " ".join(page.xpath("//form[@id='create-vm-form']//*[contains(@class, 'form-errors')]//text()"))
 
-    def test_the_custom_form_keeps_what_was_submitted(self):
-        page = self.page(form_id="custom", name="bad name!", vcpu="3", memory="2048", cache_mode="writeback")
-        self.assertEqual(page.get_element_by_id("custom_name").get("value"), "bad name!")
-        self.assertEqual(page.get_element_by_id("custom_vcpu").get("value"), "3")
-        self.assertEqual(page.get_element_by_id("custom_memory").get("value"), "2048")
-        self.assertEqual(page.xpath("//select[@id='cache_mode']/option[@selected]/@value"), ["writeback"])
-        self.assertIsNone(page.get_element_by_id("custom_qemu_ga").get("checked"))  # not submitted: unchecked
-        # the template form keeps its defaults
-        self.assertEqual(page.get_element_by_id("template_vcpu").get("value"), "1")
-        self.assertIsNotNone(page.get_element_by_id("template_qemu_ga").get("checked"))
+    def test_the_form_keeps_what_was_submitted(self):
+        page = self.page(name="bad name!", vcpu="3", memory="2048", cache_mode="writeback")
+        self.assertEqual(page.get_element_by_id("vm_name").get("value"), "bad name!")
+        self.assertEqual(page.get_element_by_id("vm_vcpu").get("value"), "3")
+        self.assertEqual(page.get_element_by_id("vm_memory").get("value"), "2048")
+        self.assertEqual(page.xpath("//select[@id='vm_cache_mode']/option[@selected]/@value"), ["writeback"])
+        self.assertIsNone(page.get_element_by_id("vm_qemu_ga").get("checked"))  # not submitted: unchecked
+
+    def test_a_new_form_has_its_defaults(self):
+        _, response = render_create_page(self)
+        page = html.fromstring(response.content)
+        self.assertEqual(page.get_element_by_id("vm_vcpu").get("value"), "1")
+        self.assertIsNotNone(page.get_element_by_id("vm_qemu_ga").get("checked"))
 
     def test_a_blank_number_stays_blank(self):
-        page = self.page(form_id="custom", vcpu="")
-        self.assertEqual(page.get_element_by_id("custom_vcpu").get("value"), "")
-        self.assertTrue(page.get_element_by_id("custom_vcpu_error").text_content().strip())
+        page = self.page(vcpu="")
+        self.assertEqual(page.get_element_by_id("vm_vcpu").get("value"), "")
+        self.assertTrue(page.get_element_by_id("vm_vcpu_error").text_content().strip())
 
     def test_the_name_is_escaped(self):
-        page = self.page(form_id="custom", name='<b>x</b>"')
-        self.assertEqual(page.get_element_by_id("custom_name").get("value"), '<b>x</b>"')
-        self.assertEqual(page.xpath("//form[@aria-label='Create custom instance form']//b"), [])
+        page = self.page(name='<b>x</b>"')
+        self.assertEqual(page.get_element_by_id("vm_name").get("value"), '<b>x</b>"')
+        self.assertEqual(page.xpath("//form[@id='create-vm-form']//b"), [])
 
     def test_the_error_sits_beside_its_field(self):
-        page = self.page(form_id="custom", name="bad name!")
-        field = page.get_element_by_id("custom_name")
+        page = self.page(name="bad name!")
+        field = page.get_element_by_id("vm_name")
         self.assertIn("is-invalid", field.get("class").split())
-        self.assertEqual((field.get("aria-invalid"), field.get("aria-describedby")), ("true", "custom_name_error"))
-        self.assertIn("special characters", page.get_element_by_id("custom_name_error").text_content())
-        # and in the summary at the top of its form
-        self.assertIn("Name: The name of the virtual machine", self.summary(page, "Create custom instance form"))
+        self.assertEqual(field.get("aria-invalid"), "true")
+        # described by its help and its error, in one attribute
+        self.assertEqual(field.get("aria-describedby").split(), ["vm_name_help", "vm_name_error"])
+        self.assertIn("special characters", page.get_element_by_id("vm_name_error").text_content())
+        # and in the summary at the top of the form
+        self.assertIn("Name: The name of the virtual machine", self.summary(page))
 
-    def test_the_template_form_keeps_its_pool_template_and_storage(self):
-        page = self.page(form_id="template", name="bad name!", template_pool="default-pool",
+    def test_the_template_source_keeps_its_pool_template_and_storage(self):
+        page = self.page(name="bad name!", disk_source="template", template_pool="default-pool",
                          template="base.img", storage="default-pool")
-        form = page.xpath("//form[@aria-label='Create instance from template form']")[0]
-        self.assertEqual((form.get("data-template-pool"), form.get("data-template"), form.get("data-storage")),
-                         ("default-pool", "base.img", "default-pool"))
-        self.assertEqual(page.get_element_by_id("template_disk").get("name"), "template_pool")
+        form = page.get_element_by_id("create-vm-form")
+        self.assertEqual((form.get("data-template-pool"), form.get("data-template")), ("default-pool", "base.img"))
+        self.assertEqual(page.xpath("//select[@id='template_storage']/option[@selected]/@value"), ["default-pool"])
 
     def test_an_error_of_a_field_the_form_hides_is_in_its_summary(self):
-        # the custom form's networks are a hidden input behind a picker
-        page = self.page(form_id="custom", networks="")
-        self.assertIn("Networks: This field is required.", self.summary(page, "Create custom instance form"))
-
-    def test_each_form_sends_its_own_form_id(self):
-        page = self.page(form_id="custom", name="bad name!")
-        for label, form_id in (("Create custom instance form", "custom"), ("Create instance from template form", "template")):
-            with self.subTest(form=form_id):
-                form = page.xpath(f"//form[@aria-label='{label}']")[0]
-                self.assertEqual(form.xpath(".//input[@name='form_id']/@value"), [form_id])
+        # the networks are a hidden input behind a picker
+        page = self.page(networks="")
+        self.assertIn("Networks: This field is required.", self.summary(page))
 
     def test_a_firmware_error_without_a_firmware_choice_is_in_the_summary(self):
         # an architecture with no firmware label renders no firmware select
         with patch("vrtManager.connection.wvmConnect.label_for_firmware_path", return_value=None):
-            fields = valid(form_id="custom")
+            fields = valid()
             del fields["firmware"]
             _, response = render_create_page(self, fields)
         page = html.fromstring(response.content)
         self.assertEqual(page.xpath("//select[@name='firmware']"), [])
-        self.assertIn("Firmware: This field is required.", self.summary(page, "Create custom instance form"))
+        self.assertIn("Firmware: This field is required.", self.summary(page))
 
 
-class FlavorFormTests(TestCase):
-    """Each flavor's modal form renders its own form; the refused one comes back."""
+class FlavorPresetTests(TestCase):
+    """Flavors are presets of the one form; they are managed outside it."""
 
     def setUp(self):
-        self.first = Flavor.objects.create(label="wvc-test-1", memory=512, vcpu=1, disk=10)
-        self.second = Flavor.objects.create(label="wvc-test-2", memory=1024, vcpu=2, disk=20)
+        self.flavor = Flavor.objects.create(label="wvc-test", memory=512, vcpu=1, disk=10)
 
-    def page(self, **fields):
-        _, response = render_create_page(self, valid(**fields))
-        self.assertEqual(response.status_code, 200)
-        return html.fromstring(response.content)
+    def test_a_flavor_is_a_preset_button(self):
+        _, response = render_create_page(self)
+        page = html.fromstring(response.content)
+        [preset] = page.xpath(f"//button[contains(@class, 'preset')][@data-label='{self.flavor.label}']")
+        self.assertEqual((preset.get("data-vcpu"), preset.get("data-memory"), preset.get("data-disk")), ("1", "512", "10"))
+        self.assertEqual((preset.get("type"), preset.get("aria-pressed")), ("button", "false"))
 
-    def test_only_the_refused_flavor_comes_back(self):
-        page = self.page(form_id=f"flavor{self.second.id}", name="bad name!", vcpu="2", memory="1024", hdd_size="20")
-        self.assertEqual(page.get_element_by_id(f"flavor{self.second.id}_name").get("value"), "bad name!")
-        self.assertEqual(page.get_element_by_id(f"flavor{self.first.id}_name").get("value"), "")
-        self.assertTrue(page.get_element_by_id(f"flavor{self.first.id}_mac").get("value"))
-
-    def test_a_flavor_field_points_at_its_error(self):
-        page = self.page(form_id=f"flavor{self.second.id}", name="bad name!", vcpu="2", memory="1024", hdd_size="20")
-        field = page.get_element_by_id(f"flavor{self.second.id}_name")
-        error = page.get_element_by_id(field.get("aria-describedby"))
-        self.assertIn("special characters", error.text_content())
-
-    def test_a_reopened_flavor_holds_the_message(self):
-        with patch("instances.views.jobs.submit",
-                   side_effect=util.OperationError("A virtual machine with this name already exists")):
-            page = self.page(form_id=f"flavor{self.second.id}", vcpu="2", memory="1024", hdd_size="20",
-                             storage="default-pool", mac="52:54:00:00:00:01")
-        messages = page.xpath(f"//*[@id='addVMflavor{self.second.id}']//*[contains(@class, 'modal-messages')]")
-        self.assertIn("A virtual machine with this name already exists", messages[0].text_content())
-
-    def test_the_flavor_form_sends_one_cache_mode(self):
-        page = self.page(form_id="custom", name="bad name!")
-        form = page.get_element_by_id(f"addVMflavor{self.first.id}").xpath(".//form")[0]
-        self.assertEqual(len(form.xpath(".//*[@name='cache_mode']")), 1)
-        self.assertEqual(form.xpath(".//input[@name='form_id']/@value"), [f"flavor{self.first.id}"])
+    def test_the_flavor_dialog_sits_outside_the_form(self):
+        _, response = render_create_page(self)
+        page = html.fromstring(response.content)
+        self.assertEqual(page.xpath("//form[@id='create-vm-form']//*[@id='flavors-dialog']"), [])
+        actions = page.get_element_by_id("flavors-dialog").xpath(".//form/@action")
+        self.assertIn(reverse("instances:flavor_delete", args=[self.flavor.id]), actions)
+        self.assertEqual(actions[-1], reverse("instances:flavor_create"))
 
 
-class CustomListsTests(TestCase):
-    """The custom form's disks and networks come back with a refusal."""
+class SubmittedListsTests(TestCase):
+    """The volumes and networks of a refused form come back with it."""
 
-    def custom_lists(self, response):
-        """The custom form's disks and networks the page restores, or None."""
-        element = html.fromstring(response.content).get_element_by_id("custom-lists", None)
+    def lists(self, response):
+        """The volumes and networks the page restores, or None."""
+        element = html.fromstring(response.content).get_element_by_id("submitted-lists", None)
         return None if element is None else json.loads(element.text)
 
-    def test_a_refused_custom_form_sends_back_its_lists(self):
+    def test_a_refused_form_sends_back_its_lists(self):
         _, response = render_create_page(self, valid(
-            form_id="custom", name="bad name!", **{"storage-control": "default"}, images="a.qcow2,b.qcow2",
+            name="bad name!", disk_source="existing", **{"storage-control": "default"}, images="a.qcow2,b.qcow2",
             device0="cdrom", bus0="sata", device1="disk", bus1="virtio",
             networks="default,isolated", mac="52:54:00:00:00:01"))
-        self.assertEqual(self.custom_lists(response), {
+        self.assertEqual(self.lists(response), {
             "pool": "default",
             "disks": [{"volume": "a.qcow2", "device": "cdrom", "bus": "sata"},
                       {"volume": "b.qcow2", "device": "disk", "bus": "virtio"}],
@@ -204,12 +207,10 @@ class CustomListsTests(TestCase):
 
     def test_a_hostile_volume_name_round_trips_through_the_lists(self):
         name = "x'\"><img src=x>"
-        _, response = render_create_page(self, valid(form_id="custom", name="bad name!", images=name))
-        self.assertEqual(self.custom_lists(response)["disks"][0]["volume"], name)
+        _, response = render_create_page(self, valid(name="bad name!", disk_source="existing", images=name))
+        self.assertEqual(self.lists(response)["disks"][0]["volume"], name)
         self.assertNotIn(b"<img src=x>", response.content)
 
-    def test_only_a_refused_custom_form_sends_lists(self):
+    def test_only_a_refused_form_sends_lists(self):
         _, response = render_create_page(self)
-        self.assertIsNone(self.custom_lists(response))
-        _, response = render_create_page(self, valid(form_id="template", name="bad name!", images="a.qcow2"))
-        self.assertIsNone(self.custom_lists(response))
+        self.assertIsNone(self.lists(response))

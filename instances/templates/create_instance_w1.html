@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+{% load bootstrap_icons %}
 
-{% block title %}{% trans "Create new instance" %} - {% trans "Select Type" %}{% endblock %}
+{% block title %}{% trans "Create new instance" %} - {% trans "Machine" %}{% endblock %}
+
+{% block style %}
+    <style>.create-vm { max-width: 56rem; }</style>
+{% endblock %}
 
 {% block page_heading%}
 {% blocktrans with host=compute.name %}New instance on {{ host }} {% endblocktrans %}
@@ -10,108 +15,88 @@
 
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
+    <div class="create-vm mx-auto">
+        {% include "create_steps.html" with step=2 %}
 
-    {% if form.errors %}
-    {% for field in form %}
-        {% for error in field.errors %}
-            <div class="alert alert-danger">
-                <strong>{{ field.label }}:</strong> <span>{{ error|escape }}</span>
-            </div>
-        {% endfor %}
-    {% endfor %}
-    {% for error in form.non_field_errors %}
-        <div class="alert alert-danger">
-            <strong>{{ error|escape }}</strong>
-        </div>
-    {% endfor %}
-    {% endif %}
-
-    <div class="row">
-        <div class="col-lg-12">
-            <div role="tabpanel">
-            <!-- Nav tabs -->
-                <ul class="nav nav-tabs" role="tablist" aria-label="Instance create method">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#select_architecture" type="button" role="tab" aria-controls="select_architecture" aria-selected="true">
-                            {% trans "Architecture" %}
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#addFromXML" type="button" role="tab" aria-controls="addFromXML" aria-selected="false">
-                            {% trans "XML" %}
-                        </button>
-                    </li>
-                </ul>
-                <!-- Tab panes -->
-                <div class="tab-content">
-                    <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="select_architecture">    
-                        <form method="post" role="form" aria-label="Select instance architecture form">{% csrf_token %}
-                            <div class="row">
-                                <label class="col-sm-3 col-form-label" for="select_archs">{% trans "Architecture" %}</label>
-                                <div class="col-sm-6">
-                                    <select class="form-select" id="select_archs" name="archs" onchange="get_machine_types({{ compute_id }}, value);">
-                                        {% for hpv in hypervisors %}
-                                        <option value="{{ hpv }}" {% if hpv == default_arch %}selected{% endif %}>{{ hpv }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label class="col-sm-3 col-form-label" for="select_chipset">{% trans "Chipset" %}</label>
-                                <div class="col-sm-6">
-                                    <select class="form-select" id="select_chipset" name="chipset">
-                                    <!-- fill with script -->
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="d-grid col-sm-6 offset-sm-3 mt-3">
-                                <button class="btn btn-primary" type="button" name="create_instance" onclick="goto_create()">
-                                        {% trans "Next" %}
-                                </button>
-                                </div>
-                            </div>
-                        </form>
-                        <div class="clearfix"></div>
+        <section class="card mb-3" aria-labelledby="machine-heading">
+            <div class="card-body">
+                <h2 class="h5 card-title" id="machine-heading">{% trans "Machine" %}</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="select_archs">{% trans "Architecture" %}</label>
+                        <select class="form-select" id="select_archs" name="archs">
+                            {% for hpv in hypervisors %}
+                            <option value="{{ hpv }}"{% if hpv == default_arch %} selected{% endif %}>{{ hpv }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div role="tabpanel" class="tab-pane tab-pane-bordered" id="addFromXML">
-                        <div>
-                            <form method="post" role="form" aria-label="Create instance with XML form">{% csrf_token %}
-                                <div class="col-sm-12 xmlheight">
-                                     <input type="hidden" name="dom_xml"/>
-                                    <textarea id="editor"></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary float-end" name="create_xml" onclick="showPleaseWaitDialog()">
-                                    {% trans "Create" %}
-                                </button>
-                            </form>
-                        </div>
-                        <div class="clearfix"></div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="select_chipset">{% trans "Machine type" %}</label>
+                        <select class="form-select" id="select_chipset" name="chipset" aria-describedby="chipset_help"></select>
+                        <div id="chipset_help" class="form-text">{% trans "The host's machine types for this architecture." %}</div>
                     </div>
                 </div>
             </div>
+        </section>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-end mb-4">
+            <a class="btn btn-link" href="{% url 'instances' compute.id %}">{% trans "Cancel" %}</a>
+            <button class="btn btn-primary" type="button" id="next" disabled>{% trans "Next" %}</button>
         </div>
+
+        <section class="card mb-3" aria-labelledby="xml-heading">
+            <div class="card-body">
+                <h2 class="h5 card-title mb-0" id="xml-heading">
+                    <button class="btn p-0 border-0 text-body fw-medium w-100 text-start focus-ring disclosure" type="button" data-bs-toggle="collapse" data-bs-target="#from-xml"
+                            aria-expanded="false" aria-controls="from-xml">
+                        {% bs_icon 'chevron-down' %} {% trans "Or define it from XML" %}
+                    </button>
+                </h2>
+                <div class="collapse" id="from-xml">
+                    <form method="post" class="pt-3" aria-label="{% trans "Create instance from XML" %}">{% csrf_token %}
+                        <input type="hidden" name="dom_xml">
+                        <div class="xmlheight mb-3"><textarea id="editor" aria-label="{% trans "Domain XML" %}"></textarea></div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary" name="create_xml" onclick="showPleaseWaitDialog()">
+                                {% trans "Create VM" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
     </div>
 {% endblock %}
 {% block script %}
 <script>
-    $(document).ready(function () {
-        let arch = $("#select_archs").val();
-        get_machine_types({{ compute_id }}, arch);
-    });
-
-    function get_machine_types(compute_id, arch) {
-        get_machine_type_url = "/computes/" + compute_id + "/archs/" + arch + "/machines";
-        $.getJSON(get_machine_type_url, function (data) {
-            $("#select_chipset").find('option').remove();
-            $("#select_archs").val(arch);
-            $.each(data['machines'], function(i, item) {
-                $("#select_chipset").append(
-                    $("<option>").val(item).text(item).prop("selected", item == '{{ default_machine }}')
-                );
-            });
+    // the machine types of the chosen architecture, the default one selected
+    function load_machines(arch) {
+        const next = document.querySelector("#next");
+        next.disabled = true;
+        $.getJSON("/computes/{{ compute_id }}/archs/" + encodeURIComponent(arch) + "/machines", function (data) {
+            document.querySelector("#select_chipset").replaceChildren(...data['machines'].map(
+                item => new Option(item, item, false, item === "{{ default_machine|escapejs }}")));
+            next.disabled = !data['machines'].length;
         });
     }
+
+    // placeholders, not "x86_64"/"pc": an architecture such as ppc64 contains "pc"
+    function create_url(arch, machine) {
+        return "{% url 'instances:create_instance' compute.id '__arch__' '__machine__' %}"
+            .replace("__arch__", encodeURIComponent(arch)).replace("__machine__", encodeURIComponent(machine));
+    }
+
+    function goto_create() {
+        window.location.href = create_url(document.querySelector("#select_archs").value,
+                                          document.querySelector("#select_chipset").value);
+    }
+
+    $(document).ready(function () {
+        const archs = document.querySelector("#select_archs");
+        archs.addEventListener("change", () => load_machines(archs.value));
+        document.querySelector("#next").addEventListener("click", goto_create);
+        load_machines(archs.value);
+    });
 </script>
 
 <script src="{% static "js/ace/ace.js" %}"></script>
@@ -123,21 +108,7 @@
     editor.getSession().on("change",function () {
         input.val(editor.getSession().getValue());
     })
+    // the editor measures itself when its section is shown
+    document.querySelector("#from-xml").addEventListener("shown.bs.collapse", () => editor.resize());
 </script>
-{% if request.user.is_superuser %}
-    <script>
-        function goto_create() {
-            let compute = '{{ compute.id }}';
-            let arch = $("#select_archs").val();
-            let machine = $("#select_chipset").val();
-            //create_machine_url = "/computes/" + compute + "/create/archs/" + arch + "/machines/" + machine;
-            // placeholders, not "x86_64"/"pc": an arch such as ppc64 contains "pc"
-            url = "{% url 'instances:create_instance' compute.id '__arch__' '__machine__' %}"
-                .replace("__arch__", encodeURIComponent(arch))
-                .replace("__machine__", encodeURIComponent(machine));
-            window.location.href = url;//create_machine_url;
-        }
-
-    </script>
-{% endif %}
 {% endblock %}
