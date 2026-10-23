@@ -16,6 +16,7 @@ from django.utils.translation import gettext_lazy as _
 from libvirt import VIR_ERR_NO_STORAGE_VOL, libvirtError
 
 from computes.models import Compute
+from logs.audit import audit
 from operations import claims, jobs
 from operations.models import Claim, Operation
 from vrtManager.connection import CONN_SSH, CONN_SOCKET, CONN_TCP, CONN_TLS
@@ -502,10 +503,14 @@ def write_chunk(user, conn, compute, pool, upload_id, raw, chunk_index, chunk, r
     key) and commit it on the job; the last chunk renames the image."""
     kind = jobs.get_kind("volume.upload")
     raw = {**raw, "compute": compute.pk, "pool": pool}
-    if chunk_index == 0:
+    if chunk_index == 0 and request is not None:
+        name = os.path.basename(str(raw["name"])).strip()
+        with audit(request, compute, f"Storage pool {pool}", f"upload volume {name}") as entry:
+            op = jobs.submit(kind.name, user, raw, upload_id)
+            entry.skip = True  # the job writes its row when it ends
+        jobs.remember_job(request, op)
+    elif chunk_index == 0:
         op = jobs.submit(kind.name, user, raw, upload_id)
-        if request is not None:
-            jobs.remember_job(request, op)
     else:
         op = Operation.objects.filter(user=user, submission_key=upload_id).first()
         if op is None:

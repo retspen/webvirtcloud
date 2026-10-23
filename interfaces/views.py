@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from computes.models import Compute
 from interfaces.forms import AddInterface
+from logs.audit import audit
 from vrtManager.interface import wvmInterface, wvmInterfaces
 from admin.decorators import superuser_only
 
@@ -57,20 +58,21 @@ def interfaces(request, compute_id):
                 form = AddInterface(request.POST, netdevs=netdevs)
                 if form.is_valid():
                     data = form.cleaned_data
-                    conn.create_iface(
-                        data["name"],
-                        data["itype"],
-                        data["start_mode"],
-                        data["netdev"],
-                        data["ipv4_type"],
-                        data["ipv4_addr"],
-                        data["ipv4_gw"],
-                        data["ipv6_type"],
-                        data["ipv6_addr"],
-                        data["ipv6_gw"],
-                        data["stp"],
-                        data["delay"],
-                    )
+                    with audit(request, compute, f"Interface {data['name']}", "add"):
+                        conn.create_iface(
+                            data["name"],
+                            data["itype"],
+                            data["start_mode"],
+                            data["netdev"],
+                            data["ipv4_type"],
+                            data["ipv4_addr"],
+                            data["ipv4_gw"],
+                            data["ipv6_type"],
+                            data["ipv6_addr"],
+                            data["ipv6_gw"],
+                            data["stp"],
+                            data["delay"],
+                        )
                     return HttpResponseRedirect(request.get_full_path())
                 else:
                     for msg_err in form.errors.values():
@@ -117,13 +119,16 @@ def interface(request, compute_id, iface):
         # the page says why nothing is done on a host that cannot change interfaces
         if request.method == "POST" and changeable:
             if "stop" in request.POST:
-                conn.stop_iface()
+                with audit(request, compute, f"Interface {iface}", "stop"):
+                    conn.stop_iface()
                 return HttpResponseRedirect(request.get_full_path())
             if "start" in request.POST:
-                conn.start_iface()
+                with audit(request, compute, f"Interface {iface}", "start"):
+                    conn.start_iface()
                 return HttpResponseRedirect(request.get_full_path())
             if "delete" in request.POST:
-                conn.delete_iface()
+                with audit(request, compute, f"Interface {iface}", "delete"):
+                    conn.delete_iface()
                 return HttpResponseRedirect(reverse("interfaces", args=[compute_id]))
         conn.close()
     except libvirtError as lib_err:

@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
+from logs.audit import audit
 from vrtManager.network import network_size, wvmNetwork, wvmNetworks
 
 from networks.forms import AddNetPool
@@ -60,21 +61,22 @@ def networks(request, compute_id):
                             data["subnet6"], data["dhcp6"]
                         )
                     if not errors:
-                        conn.create_network(
-                            data["name"],
-                            data["forward"],
-                            ipv4,
-                            gateway4,
-                            netmask4,
-                            dhcp4,
-                            ipv6,
-                            gateway6,
-                            prefix6,
-                            dhcp6,
-                            data["bridge_name"],
-                            data["openvswitch"],
-                            data["fixed"],
-                        )
+                        with audit(request, compute, f"Network {data['name']}", "add"):
+                            conn.create_network(
+                                data["name"],
+                                data["forward"],
+                                ipv4,
+                                gateway4,
+                                netmask4,
+                                dhcp4,
+                                ipv6,
+                                gateway6,
+                                prefix6,
+                                dhcp6,
+                                data["bridge_name"],
+                                data["openvswitch"],
+                                data["fixed"],
+                            )
                         return HttpResponseRedirect(
                             reverse("network", args=[compute_id, data["name"]])
                         )
@@ -137,33 +139,39 @@ def network(request, compute_id, pool):
         return HttpResponseRedirect(reverse("networks", args=[compute_id]))
 
     if request.method == "POST":
+        subject = f"Network {pool}"
         if "start" in request.POST:
             try:
-                conn.start()
+                with audit(request, compute, subject, "start"):
+                    conn.start()
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "stop" in request.POST:
             try:
-                conn.stop()
+                with audit(request, compute, subject, "stop"):
+                    conn.stop()
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "delete" in request.POST:
             try:
-                conn.delete()
+                with audit(request, compute, subject, "delete"):
+                    conn.delete()
                 return HttpResponseRedirect(reverse("networks", args=[compute_id]))
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "set_autostart" in request.POST:
             try:
-                conn.set_autostart(1)
+                with audit(request, compute, subject, "autostart on"):
+                    conn.set_autostart(1)
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "unset_autostart" in request.POST:
             try:
-                conn.set_autostart(0)
+                with audit(request, compute, subject, "autostart off"):
+                    conn.set_autostart(0)
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
@@ -178,7 +186,8 @@ def network(request, compute_id, pool):
                 mac_duid = request.POST.get("id", "")
 
             try:
-                ret_val = conn.modify_fixed_address(name, address, mac_duid, family)
+                with audit(request, compute, subject, f"set fixed address {address}"):
+                    conn.modify_fixed_address(name, address, mac_duid, family)
                 messages.success(
                     request,
                     _("Fixed address operation completed for %(family)s")
@@ -192,7 +201,8 @@ def network(request, compute_id, pool):
         if "delete_fixed_address" in request.POST:
             ip = request.POST.get("address", "")
             family = request.POST.get("family", "ipv4")
-            conn.delete_fixed_address(ip, family)
+            with audit(request, compute, subject, f"delete fixed address {ip}"):
+                conn.delete_fixed_address(ip, family)
             messages.success(
                 request,
                 _("%(family)s Fixed Address is Deleted.") % {"family": family.upper()},
@@ -203,7 +213,8 @@ def network(request, compute_id, pool):
             range_end = request.POST.get("range_end", "")
             family = request.POST.get("family", "ipv4")
             try:
-                conn.modify_dhcp_range(range_start, range_end, family)
+                with audit(request, compute, subject, f"set DHCP range {family.upper()}"):
+                    conn.modify_dhcp_range(range_start, range_end, family)
                 messages.success(
                     request,
                     _("%(family)s DHCP Range is Changed.") % {"family": family.upper()},
@@ -214,7 +225,8 @@ def network(request, compute_id, pool):
         if "edit_network" in request.POST:
             edit_xml = request.POST.get("edit_xml", "")
             if edit_xml:
-                conn.edit_network(edit_xml)
+                with audit(request, compute, subject, "change XML"):
+                    conn.edit_network(edit_xml)
                 if conn.is_active():
                     messages.success(
                         request,
@@ -233,7 +245,8 @@ def network(request, compute_id, pool):
             burst = request.POST.get("qos_burst") or 0
 
             try:
-                conn.set_qos(qos_dir, average, peak, burst)
+                with audit(request, compute, subject, f"set QoS {qos_dir}"):
+                    conn.set_qos(qos_dir, average, peak, burst)
                 if conn.is_active():
                     messages.success(
                         request,
@@ -253,7 +266,8 @@ def network(request, compute_id, pool):
         if "unset_qos" in request.POST:
             qos_dir = request.POST.get("qos_direction", "")
             try:
-                conn.unset_qos(qos_dir)
+                with audit(request, compute, subject, f"unset QoS {qos_dir}"):
+                    conn.unset_qos(qos_dir)
             except ValueError as err:
                 messages.error(request, err)
                 return HttpResponseRedirect(request.get_full_path())

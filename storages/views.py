@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from operations import claims, jobs
 from operations.utils import busy_message
+from logs.audit import audit
 
 from vrtManager.util import OperationError
 from vrtManager.storage import wvmStorage, wvmStorages
@@ -97,31 +98,32 @@ def storages(request, compute_id):
                             messages.error(request, msg)
                             errors = True
                     if not errors:
-                        if data["stg_type"] == "rbd":
-                            conn.create_storage_ceph(
-                                data["stg_type"],
-                                data["name"],
-                                data["ceph_pool"],
-                                data["ceph_host"],
-                                data["ceph_user"],
-                                data["secret"],
-                            )
-                        elif data["stg_type"] == "netfs":
-                            conn.create_storage_netfs(
-                                data["stg_type"],
-                                data["name"],
-                                data["netfs_host"],
-                                data["source"],
-                                data["source_format"],
-                                data["target"],
-                            )
-                        else:
-                            conn.create_storage(
-                                data["stg_type"],
-                                data["name"],
-                                data["source"],
-                                data["target"],
-                            )
+                        with audit(request, compute, f"Storage pool {data['name']}", "add"):
+                            if data["stg_type"] == "rbd":
+                                conn.create_storage_ceph(
+                                    data["stg_type"],
+                                    data["name"],
+                                    data["ceph_pool"],
+                                    data["ceph_host"],
+                                    data["ceph_user"],
+                                    data["secret"],
+                                )
+                            elif data["stg_type"] == "netfs":
+                                conn.create_storage_netfs(
+                                    data["stg_type"],
+                                    data["name"],
+                                    data["netfs_host"],
+                                    data["source"],
+                                    data["source_format"],
+                                    data["target"],
+                                )
+                            else:
+                                conn.create_storage(
+                                    data["stg_type"],
+                                    data["name"],
+                                    data["source"],
+                                    data["target"],
+                                )
                         return HttpResponseRedirect(
                             reverse("storage", args=[compute_id, data["name"]])
                         )
@@ -181,33 +183,39 @@ def storage(request, compute_id, pool):
         volumes = None
 
     if request.method == "POST":
+        subject = f"Storage pool {pool}"
         if "start" in request.POST:
-            conn.start()
+            with audit(request, compute, subject, "start"):
+                conn.start()
             return HttpResponseRedirect(request.get_full_path())
         if "stop" in request.POST:
             try:
-                conn.stop()
+                with audit(request, compute, subject, "stop"):
+                    conn.stop()
             except OperationError as err:  # a running VM's disk is in it
                 messages.error(request, str(err))
             return HttpResponseRedirect(request.get_full_path())
         if "delete" in request.POST:
             try:
-                conn.delete()
+                with audit(request, compute, subject, "delete"):
+                    conn.delete()
             except OperationError as err:  # a VM names it for a disk
                 messages.error(request, str(err))
                 return HttpResponseRedirect(request.get_full_path())
             return HttpResponseRedirect(reverse("storages", args=[compute_id]))
         if "set_autostart" in request.POST:
-            conn.set_autostart(1)
+            with audit(request, compute, subject, "autostart on"):
+                conn.set_autostart(1)
             return HttpResponseRedirect(request.get_full_path())
         if "unset_autostart" in request.POST:
-            conn.set_autostart(0)
+            with audit(request, compute, subject, "autostart off"):
+                conn.set_autostart(0)
             return HttpResponseRedirect(request.get_full_path())
         if "del_volume" in request.POST:
             volname = request.POST.get("volname", "")
             try:
                 # no VM operation attaches it between the check and the delete
-                with libvirt_compute_lock(compute):
+                with audit(request, compute, subject, f"delete volume {volname}"), libvirt_compute_lock(compute):
                     conn.del_volume(volname)
             except OperationError as err:
                 messages.error(request, str(err))
@@ -222,9 +230,13 @@ def storage(request, compute_id, pool):
         if "cln_volume" in request.POST:
             form = CloneImage(request.POST)
             if form.is_valid():
+                data = form.cleaned_data
                 try:
-                    op = jobs.submit("volume.clone", request.user, {"compute": compute.id, "pool": pool,
-                                     **form.cleaned_data}, request.POST.get("submission_key", ""))
+                    with audit(request, compute, f"Storage pool {pool}",
+                               f"clone volume {data['image']} as {data['name']}") as entry:
+                        op = jobs.submit("volume.clone", request.user, {"compute": compute.id, "pool": pool, **data},
+                                         request.POST.get("submission_key", ""))
+                        entry.skip = True  # the job writes its row when it ends
                 except claims.Busy as busy:
                     messages.error(request, busy_message(busy, request.user))
                 except (jobs.SubmissionConflict, libvirtError) as err:
@@ -267,14 +279,16 @@ def create_volume(request, compute_id, pool):
         disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
         disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
 
-        name = conn.create_volume(
-            data["name"],
-            data["size"],
-            data["format"],
-            meta_prealloc,
-            disk_owner_uid,
-            disk_owner_gid,
-        )
+        with audit(request, compute, f"Storage pool {pool}", f"add volume {data['name']}") as entry:
+            name = conn.create_volume(
+                data["name"],
+                data["size"],
+                data["format"],
+                meta_prealloc,
+                disk_owner_uid,
+                disk_owner_gid,
+            )
+            entry.action = f"add volume {name}"
         messages.success(
             request, _("Image file %(name)s is created successfully") % {"name": name}
         )

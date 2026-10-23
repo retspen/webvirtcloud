@@ -11,6 +11,7 @@ from libvirt import (
     VIR_SECRET_USAGE_TYPE_VOLUME,
     libvirtError,
 )
+from logs.audit import audit
 from vrtManager.util import OperationError
 from vrtManager.virtsecrets import wvmSecrets
 
@@ -57,12 +58,13 @@ def secrets(request, compute_id):
                 form = AddSecret(request.POST)
                 if form.is_valid():
                     data = form.cleaned_data
-                    conn.create_secret(
-                        data["ephemeral"],
-                        data["private"],
-                        data["usage_type"],
-                        data["data"],
-                    )
+                    with audit(request, compute, f"Secret {data['usage_type']} {data['data']}", "add"):
+                        conn.create_secret(
+                            data["ephemeral"],
+                            data["private"],
+                            data["usage_type"],
+                            data["data"],
+                        )
                     return HttpResponseRedirect(request.get_full_path())
                 else:
                     for msg_err in form.errors.values():
@@ -70,7 +72,8 @@ def secrets(request, compute_id):
             if "delete" in request.POST:
                 uuid = request.POST.get("uuid", "")
                 try:
-                    conn.delete_secret(uuid)
+                    with audit(request, compute, f"Secret {uuid}", "delete"):
+                        conn.delete_secret(uuid)
                 except OperationError as err:  # a VM disk or a pool needs it
                     messages.error(request, str(err))
                 return HttpResponseRedirect(request.get_full_path())
@@ -78,7 +81,8 @@ def secrets(request, compute_id):
                 uuid = request.POST.get("uuid", "")
                 value = request.POST.get("value", "")
                 try:
-                    conn.set_secret_value(uuid, value)
+                    with audit(request, compute, f"Secret {uuid}", "set value"):
+                        conn.set_secret_value(uuid, value)
                 except Exception as err:
                     messages.error(request, err)
                 return HttpResponseRedirect(request.get_full_path())

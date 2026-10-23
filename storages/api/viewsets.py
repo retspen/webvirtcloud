@@ -4,6 +4,7 @@ from computes.models import Compute
 from computes.utils import libvirt_compute_lock
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, inline_serializer
+from logs.audit import audit, failed
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -69,7 +70,8 @@ class StorageViewSet(viewsets.ViewSet):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
-        ret = conn.start()
+        with audit(request, compute, f"Storage pool {pk}", "start"):
+            ret = conn.start()
         conn.close()
         return Response({"status": "Pool start command send: " + str(ret)})
 
@@ -81,7 +83,8 @@ class StorageViewSet(viewsets.ViewSet):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
-        ret = conn.stop()
+        with audit(request, compute, f"Storage pool {pk}", "stop"):
+            ret = conn.stop()
         conn.close()
         return Response({"status": "Pool stop command send: " + str(ret)})
 
@@ -170,20 +173,24 @@ class VolumeViewSet(viewsets.ViewSet):
 
         serializer = VolumeSerializer(data=request.data)
         if serializer.is_valid():
+            subject, action = f"Storage pool {storage_pk}", f"add volume {serializer.validated_data['name']}"
             state = conn.is_active()
             if state:
                 conn.refresh()
-                ret = conn.create_volume(
-                    serializer.validated_data["name"],
-                    serializer.validated_data["size"],
-                    serializer.validated_data["type"],
-                    serializer.validated_data["meta_prealloc"],
-                    int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
-                    int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
-                )
+                with audit(request, compute, subject, action) as entry:
+                    ret = conn.create_volume(
+                        serializer.validated_data["name"],
+                        serializer.validated_data["size"],
+                        serializer.validated_data["type"],
+                        serializer.validated_data["meta_prealloc"],
+                        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
+                        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
+                    )
+                    entry.action = f"add volume {ret}"
                 conn.close()
                 return Response({"status": "Volume: " + ret + " is created"})
             else:
+                failed(request, compute, subject, action, "pool is not active")
                 return Response({"status": "Pool is not active"}, status=status.HTTP_409_CONFLICT)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -196,11 +203,13 @@ class VolumeViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
 
+        subject, action = f"Storage pool {storage_pk}", f"delete volume {pk}"
         if conn.is_active():
             # no VM operation attaches it between the check and the delete
-            with libvirt_compute_lock(compute):
+            with audit(request, compute, subject, action), libvirt_compute_lock(compute):
                 conn.del_volume(pk)
             conn.close()
             return Response({"status": "Volume: " + pk + " is deleted"})
         else:
+            failed(request, compute, subject, action, "pool is not active")
             return Response({"status": "Pool is not active"}, status=status.HTTP_409_CONFLICT)
