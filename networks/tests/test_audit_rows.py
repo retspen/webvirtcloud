@@ -81,6 +81,13 @@ class NetworkRowTests(TestCase):
         self.assertIn(error, [str(m) for m in get_messages(response.wsgi_request)])
         self.assertEqual(rows(), [(f"Network lab: stop: {error}", False)])
 
+    def test_a_refused_network_delete(self):
+        error = "Requested operation is not valid: network is in use"
+        with patch("vrtManager.network.wvmNetwork.delete", side_effect=libvirt.libvirtError(error)):
+            response = self.post({"delete": ""})
+        self.assertIn(error, [str(m) for m in get_messages(response.wsgi_request)])
+        self.assertEqual(rows(), [(f"Network lab: delete: {error}", False)])
+
     def test_network_create(self):
         url = reverse("networks", args=[self.compute.id])
         self.client.post(url, {"create": "", "name": "audit-net", "forward": "nat", "subnet": "198.51.100.0/24",

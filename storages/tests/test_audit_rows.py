@@ -4,9 +4,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import RequestFactory, TransactionTestCase
+from django.test import TransactionTestCase
 from django.urls import reverse
 
 from computes.models import Compute
@@ -79,24 +78,17 @@ class CloneRowTests(TransactionTestCase):
     def test_a_busy_pool_refuses_the_clone(self):
         self.stg.get_volumes.return_value = ["base.qcow2"]
         claims.admit({claims.pool_key(self.compute.pk, "default"): Claim.EXCLUSIVE}, holder="192.0.2.30:1:1")
-        self.client.post(self.url, {"cln_volume": "1", "image": "base.qcow2", "name": "copy",
-                                    "submission_key": "key-vol00005"})
-        [(message, success)] = rows()
-        self.assertFalse(success)
-        self.assertTrue(message.startswith("Storage pool default: clone volume base.qcow2 as copy: "), message)
+        response = self.client.post(self.url, {"cln_volume": "1", "image": "base.qcow2", "name": "copy",
+                                               "submission_key": "key-vol00005"}, follow=True)
+        [shown] = [str(m) for m in response.context["messages"]]
+        self.assertFalse(Operation.objects.exists())
+        self.assertEqual(rows(), [(f"Storage pool default: clone volume base.qcow2 as copy: {shown}", False)])
 
 
 class UploadRowTests(upload_tests.LocalPool, upload_tests.UploadTestCase):
-    def request(self):
-        request = RequestFactory().post("/")
-        request.user = self.admin
-        SessionMiddleware(lambda r: None).process_request(request)
-        return request
-
     def chunk(self, index, data, name=" disk.iso", total=2, size=6):
-        return write_chunk(self.admin, self.conn, self.compute, "default", upload_tests.KEY,
-                           {"name": name, "size": size, "chunks": total}, index, SimpleUploadedFile("chunk", data),
-                           request=self.request())
+        return write_chunk(self.request(), self.conn, self.compute, "default", upload_tests.KEY,
+                           {"name": name, "size": size, "chunks": total}, index, SimpleUploadedFile("chunk", data))
 
     def test_an_upload_writes_one_row(self):
         self.chunk(0, b"abc")
@@ -106,6 +98,12 @@ class UploadRowTests(upload_tests.LocalPool, upload_tests.UploadTestCase):
         self.chunk(1, b"def")  # the answer to the last chunk was lost
         self.assertEqual(rows(), [("Storage pool default: upload volume disk.iso", True)])
         self.assertEqual(Logs.objects.get().host, "up-c")
+
+    def test_a_failing_later_chunk_writes_no_submit_row(self):
+        self.chunk(0, b"abc")
+        with self.assertRaises(ValueError):
+            self.chunk(1, b"def", name="other.iso")  # the session's parameters changed
+        self.assertEqual(rows(), [])
 
     def test_a_refused_upload_is_a_failed_row(self):
         open(self.path(), "wb").close()
@@ -156,6 +154,14 @@ class PoolAndVolumeRowTests(TransactionTestCase):
         response = self.client.post(self.url, {"stop": "1"}, follow=True)
         self.assertIn(reason, [str(m) for m in response.context["messages"]])
         self.assertEqual(rows(), [(f"Storage pool default: stop: {reason}", False)])
+
+    def test_a_refused_pool_delete(self):
+        from vrtManager.util import OperationError
+
+        reason = "Pool default holds disks of the VMs web-1"
+        self.pool.delete.side_effect = OperationError(reason)
+        self.client.post(self.url, {"delete": "1"})
+        self.assertEqual(rows(), [(f"Storage pool default: delete: {reason}", False)])
 
     def test_pool_create_and_a_duplicate_name(self):
         url = reverse("storages", args=[self.compute.pk])

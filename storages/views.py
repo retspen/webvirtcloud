@@ -40,9 +40,9 @@ def _handle_iso_upload(request, conn, compute, pool):
         return JsonResponse({"error": _("Invalid file size.")}, status=400)
 
     try:
-        op = write_chunk(request.user, conn, compute, pool, request.POST.get("upload_id", ""),
+        op = write_chunk(request, conn, compute, pool, request.POST.get("upload_id", ""),
                          {"name": request.POST.get("file_name", ""), "size": file_size, "chunks": total_chunks},
-                         chunk_index, file_chunk, request=request)
+                         chunk_index, file_chunk)
     except claims.Busy as busy:
         if busy.blocker is not None:  # another job holds the pool or the name
             return JsonResponse({"error": busy_message(busy, request.user)}, status=400)

@@ -65,6 +65,8 @@ class UserRowTests(TestCase):
         carol = User.objects.get(username="carol")
         Logs.objects.all().delete()
         self.client.post(reverse("admin:user_block", args=[carol.pk]))
+        self.client.post(reverse("admin:user_block", args=[carol.pk]))  # already blocked: nothing changes
+        self.client.post(reverse("admin:user_unblock", args=[carol.pk]))
         self.client.post(reverse("admin:user_unblock", args=[carol.pk]))
         self.client.post(reverse("admin:user_update_password", args=[carol.pk]),
                          {"password1": "New-carol-pass-1", "password2": "New-carol-pass-1"})

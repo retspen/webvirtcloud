@@ -498,21 +498,19 @@ def end(op, state, error=""):
         pass
 
 
-def write_chunk(user, conn, compute, pool, upload_id, raw, chunk_index, chunk, request=None):
+def write_chunk(request, conn, compute, pool, upload_id, raw, chunk_index, chunk):
     """Write chunk chunk_index of the upload upload_id (the job's submission
     key) and commit it on the job; the last chunk renames the image."""
     kind = jobs.get_kind("volume.upload")
     raw = {**raw, "compute": compute.pk, "pool": pool}
-    if chunk_index == 0 and request is not None:
+    if chunk_index == 0:
         name = os.path.basename(str(raw["name"])).strip()
         with audit(request, compute, f"Storage pool {pool}", f"upload volume {name}") as entry:
-            op = jobs.submit(kind.name, user, raw, upload_id)
+            op = jobs.submit(kind.name, request.user, raw, upload_id)
             entry.skip = True  # the job writes its row when it ends
         jobs.remember_job(request, op)
-    elif chunk_index == 0:
-        op = jobs.submit(kind.name, user, raw, upload_id)
     else:
-        op = Operation.objects.filter(user=user, submission_key=upload_id).first()
+        op = Operation.objects.filter(user=request.user, submission_key=upload_id).first()
         if op is None:
             raise ValueError(_("Upload session not found or expired"))
         if op.kind != kind.name or op.params != kind.normalize(raw):

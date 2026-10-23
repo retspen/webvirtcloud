@@ -11,7 +11,8 @@ from unittest.mock import MagicMock, patch
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.contrib.sessions.middleware import SessionMiddleware
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 from libvirt import VIR_ERR_NO_STORAGE_VOL, VIR_ERR_SYSTEM_ERROR, libvirtError
@@ -50,8 +51,15 @@ class UploadTestCase(TestCase):
 
         return patch.object(target_class, "write", cancelled)
 
+    def request(self, user=None):
+        """A chunk request of user (the admin), with the session remember_job writes to."""
+        request = RequestFactory().post("/")
+        request.user = user or self.admin
+        SessionMiddleware(lambda r: None).process_request(request)
+        return request
+
     def send(self, index, data, total=3, size=9, name="disk.iso", key=KEY, user=None):
-        return write_chunk(user or self.admin, self.conn, self.compute, "default", key,
+        return write_chunk(self.request(user), self.conn, self.compute, "default", key,
                            {"name": name, "size": size, "chunks": total}, index, SimpleUploadedFile("chunk", data))
 
     def job(self):
@@ -170,7 +178,7 @@ class LocalUploadTests(LocalPool, UploadTestCase):
 
         chunk.chunks = interrupted
         with self.assertRaises(OSError):
-            write_chunk(self.admin, self.conn, self.compute, "default", KEY,
+            write_chunk(self.request(), self.conn, self.compute, "default", KEY,
                         {"name": "disk.iso", "size": 9, "chunks": 3}, 0, chunk)
         op = self.job()
         self.assertEqual((op.intent, op.progress_done), ({"chunk": 0, "created": True}, None))

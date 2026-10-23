@@ -215,7 +215,8 @@ def user_delete(request, pk):
 @superuser_only
 def user_block(request, pk):
     user: User = get_object_or_404(User, pk=pk)
-    with audit(request, None, f"User {user.username}", "block"):
+    with audit(request, None, f"User {user.username}", "block") as entry:
+        entry.skip = not user.is_active  # already blocked
         user.is_active = False
         user.save()
     return redirect("admin:user_list")
@@ -225,7 +226,8 @@ def user_block(request, pk):
 @superuser_only
 def user_unblock(request, pk):
     user: User = get_object_or_404(User, pk=pk)
-    with audit(request, None, f"User {user.username}", "unblock"):
+    with audit(request, None, f"User {user.username}", "unblock") as entry:
+        entry.skip = user.is_active  # not blocked
         user.is_active = True
         user.save()
     return redirect("admin:user_list")
