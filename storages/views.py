@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from operations import claims, jobs
 from operations.utils import busy_message
-from logs.audit import audit
+from logs.audit import audit, failed
 
 from vrtManager.util import OperationError
 from vrtManager.storage import wvmStorage, wvmStorages
@@ -80,9 +80,10 @@ def storages(request, compute_id):
                 form = AddStgPool(request.POST)
                 if form.is_valid():
                     data = form.cleaned_data
-                    if data["name"] in storages:
+                    if data["name"] in [stg["name"] for stg in storages]:
                         msg = _("Pool name already use")
                         messages.error(request, msg)
+                        failed(request, compute, f"Storage pool {data['name']}", "add", "name already in use")
                         errors = True
                     if data["stg_type"] == "rbd":
                         if not data["secret"]:

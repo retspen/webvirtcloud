@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
-from logs.audit import audit
+from logs.audit import audit, failed
 from vrtManager.network import network_size, wvmNetwork, wvmNetworks
 
 from networks.forms import AddNetPool
@@ -40,9 +40,10 @@ def networks(request, compute_id):
                 form = AddNetPool(request.POST)
                 if form.is_valid():
                     data = form.cleaned_data
-                    if data["name"] in networks:
+                    if data["name"] in [net["name"] for net in networks]:
                         msg = _("Network pool name already in use")
                         messages.error(request, msg)
+                        failed(request, compute, f"Network {data['name']}", "add", "name already in use")
                         errors = True
                     if (
                         data["forward"] in ["bridge", "macvtap"]

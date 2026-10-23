@@ -86,8 +86,6 @@ class NetworkRowTests(TestCase):
         self.client.post(url, {"create": "", "name": "audit-net", "forward": "nat", "subnet": "198.51.100.0/24",
                                "dhcp4": "on"})
         self.client.post(url, {"create": "", "name": "bad name!", "forward": "nat"})  # invalid form
-        self.client.post(url, {"create": "", "name": "lab", "forward": "nat", "subnet": "203.0.113.0/24"})
-        [first, second] = rows()
-        self.assertEqual(first, ("Network audit-net: add", True))
-        self.assertFalse(second[1])
-        self.assertTrue(second[0].startswith("Network lab: add: "), second[0])
+        response = self.client.post(url, {"create": "", "name": "lab", "forward": "nat", "subnet": "203.0.113.0/24"})
+        self.assertIn("Network pool name already in use", [str(m) for m in get_messages(response.wsgi_request)])
+        self.assertEqual(rows(), [("Network audit-net: add", True), ("Network lab: add: name already in use", False)])
