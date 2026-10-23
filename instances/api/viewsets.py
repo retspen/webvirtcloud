@@ -16,6 +16,7 @@ from instances.views import (
     suspend,
 )
 from drf_spectacular.utils import extend_schema
+from logs.audit import audit, changed_fields, snapshot
 from operations import jobs
 from operations.api.serializers import OperationSerializer
 from rest_framework import permissions, status, viewsets
@@ -209,6 +210,23 @@ class FlavorViewSet(viewsets.ModelViewSet):
         if self.action in ["list", "retrieve"]:
             return [permissions.IsAuthenticated()]
         return [IsSuperUser()]
+
+    def perform_create(self, serializer):
+        with audit(self.request, None, f"Flavor {serializer.validated_data['label']}", "add"):
+            serializer.save()
+
+    def perform_update(self, serializer):
+        flavor = serializer.instance
+        subject, before = f"Flavor {flavor.label}", snapshot(flavor)
+        with audit(self.request, None, subject, "change") as entry:
+            serializer.save()
+            fields = changed_fields(before, snapshot(flavor))
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
+
+    def perform_destroy(self, instance):
+        with audit(self.request, None, f"Flavor {instance.label}", "delete"):
+            instance.delete()
 
 
 class CreateInstanceViewSet(viewsets.ViewSet):

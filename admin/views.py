@@ -8,15 +8,22 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 from instances.models import InstanceTombstone
+from logs.audit import audit, changed_fields, snapshot
 from logs.models import Logs
 
 from . import forms
 from .decorators import superuser_only
+
+
+def group_snapshot(group):
+    """snapshot() of a group with its members, which are a reverse relation snapshot() does not see."""
+    return snapshot(group) | {"users": frozenset(group.user_set.values_list("pk", flat=True))}
 
 
 @superuser_only
@@ -35,7 +42,8 @@ def group_list(request):
 def group_create(request):
     form = forms.GroupForm(request.POST or None)
     if form.is_valid():
-        form.save()
+        with audit(request, None, f"Group {form.cleaned_data['name']}", "add"):
+            form.save()
         return redirect("admin:group_list")
 
     return render(
@@ -51,9 +59,14 @@ def group_create(request):
 @superuser_only
 def group_update(request, pk):
     group = get_object_or_404(Group, pk=pk)
+    subject, before = f"Group {group.name}", group_snapshot(group)
     form = forms.GroupForm(request.POST or None, instance=group)
     if form.is_valid():
-        form.save()
+        with audit(request, None, subject, "change") as entry:
+            form.save()
+            fields = changed_fields(before, group_snapshot(group))
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
         return redirect("admin:group_list")
 
     return render(
@@ -70,7 +83,8 @@ def group_update(request, pk):
 def group_delete(request, pk):
     group = get_object_or_404(Group, pk=pk)
     if request.method == "POST":
-        group.delete()
+        with audit(request, None, f"Group {group.name}", "delete"):
+            group.delete()
         return redirect("admin:group_list")
 
     return render(
@@ -98,11 +112,12 @@ def user_create(request):
     user_form = forms.UserCreateForm(request.POST or None)
     attributes_form = forms.UserAttributesForm(request.POST or None)
     if user_form.is_valid() and attributes_form.is_valid():
-        user = user_form.save()
-        attributes = attributes_form.save(commit=False)
-        attributes.user = user
-        attributes.save()
-        add_default_instances(user)
+        with audit(request, None, f"User {user_form.cleaned_data['username']}", "add"), transaction.atomic():
+            user = user_form.save()
+            attributes = attributes_form.save(commit=False)
+            attributes.user = user
+            attributes.save()
+            add_default_instances(user)
         return redirect("admin:user_list")
 
     return render(
@@ -120,13 +135,20 @@ def user_create(request):
 def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
     attributes, attributes_created = UserAttributes.objects.get_or_create(user=user)
+    subject = f"User {user.username}"
+    before, before_attributes = snapshot(user), snapshot(attributes)
     user_form = forms.UserForm(request.POST or None, instance=user)
     attributes_form = forms.UserAttributesForm(
         request.POST or None, instance=attributes
     )
     if user_form.is_valid() and attributes_form.is_valid():
-        user_form.save()
-        attributes_form.save()
+        with audit(request, None, subject, "change") as entry:
+            user_form.save()
+            attributes_form.save()
+            fields = set(changed_fields(before, snapshot(user))) | set(changed_fields(before_attributes, snapshot(attributes)))
+            fields = sorted(fields - {"password", "last_login"})
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
         next_url = request.GET.get("next")
         if next_url and url_has_allowed_host_and_scheme(
             url=next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
@@ -151,7 +173,8 @@ def user_update_password(request, pk):
     if request.method == "POST":
         form = AdminPasswordChangeForm(user, request.POST)
         if form.is_valid():
-            user = form.save()
+            with audit(request, None, f"User {user.username}", "set password"):
+                user = form.save()
             update_session_auth_hash(request, user)  # Important!
             messages.success(
                 request, _("Password changed for %(user)s") % {"user": user.username}
@@ -176,7 +199,8 @@ def user_update_password(request, pk):
 def user_delete(request, pk):
     user = get_object_or_404(User, pk=pk)
     if request.method == "POST":
-        user.delete()
+        with audit(request, None, f"User {user.username}", "delete"):
+            user.delete()
         return redirect("admin:user_list")
 
     return render(
@@ -191,8 +215,9 @@ def user_delete(request, pk):
 @superuser_only
 def user_block(request, pk):
     user: User = get_object_or_404(User, pk=pk)
-    user.is_active = False
-    user.save()
+    with audit(request, None, f"User {user.username}", "block"):
+        user.is_active = False
+        user.save()
     return redirect("admin:user_list")
 
 
@@ -200,8 +225,9 @@ def user_block(request, pk):
 @superuser_only
 def user_unblock(request, pk):
     user: User = get_object_or_404(User, pk=pk)
-    user.is_active = True
-    user.save()
+    with audit(request, None, f"User {user.username}", "unblock"):
+        user.is_active = True
+        user.save()
     return redirect("admin:user_list")
 
 
@@ -230,7 +256,8 @@ def tombstone_list(request):
 def tombstone_delete(request, pk):
     tombstone = get_object_or_404(InstanceTombstone, pk=pk)
     if request.method == "POST":
-        tombstone.delete()
+        with audit(request, None, f"Removed VM {tombstone.name} ({tombstone.uuid})", "delete"):
+            tombstone.delete()
         return redirect("admin:tombstone_list")
 
     return render(

@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.translation import gettext_noop as _
-from logs.views import addlogmsg
+from logs.audit import audit
 from operations.utils import BOUNDS
 
 from appsettings.models import AppSettings
@@ -36,11 +36,12 @@ def appsettings(request):
             if theme not in themes_list:
                 messages.error(request, _("Unknown theme: %(theme)s") % {"theme": theme})
                 return HttpResponseRedirect(request.get_full_path())
-            bootstrap_theme.value = theme
-            bootstrap_theme.save()
+            if theme != bootstrap_theme.value:
+                with audit(request, None, "Setting Theme", f"change to {theme}"):
+                    bootstrap_theme.value = theme
+                    bootstrap_theme.save()
             msg = _("Theme is changed. Now: %(theme)s") % {"theme": theme}
             messages.success(request, msg)
-            addlogmsg(request.user.username, "-", "", msg)
             return HttpResponseRedirect(request.get_full_path())
 
         for setting in appsettings:
@@ -52,9 +53,12 @@ def appsettings(request):
                         messages.error(request, _("%(setting)s must be a whole number between %(low)s and %(high)s")
                                        % {"setting": setting.name, "low": low, "high": high})
                         return HttpResponseRedirect(request.get_full_path())
+                value = request.POST.get(setting.key, "")
                 try:
-                    setting.value = request.POST.get(setting.key, "")
-                    setting.save()
+                    if value != setting.value:
+                        with audit(request, None, f"Setting {setting.name}", f"change to {value}"):
+                            setting.value = value
+                            setting.save()
 
                     msg = _("%(setting)s is changed. Now: %(value)s") % {
                         "setting": setting.name,
@@ -64,8 +68,6 @@ def appsettings(request):
                 except Exception as err:
                     msg = err
                     messages.error(request, msg)
-
-                addlogmsg(request.user.username, "-", "", msg)
                 return HttpResponseRedirect(request.get_full_path())
 
     return render(request, "appsettings.html", locals())

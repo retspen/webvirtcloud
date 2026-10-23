@@ -19,6 +19,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.apps import admin_password_path
 from instances.models import Instance
+from logs.audit import audit, changed_fields, failed, snapshot
 
 from accounts.forms import EmailOTPForm, ProfileForm, UserSSHKeyForm
 from accounts.models import User, UserAttributes, UserInstance, UserSSHKey
@@ -29,11 +30,16 @@ from .utils import get_existing_totp_device, get_user_totp_device, send_email_wi
 
 def profile(request):
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    before = snapshot(request.user)
     profile_form = ProfileForm(request.POST or None, instance=request.user)
     ssh_key_form = UserSSHKeyForm()
 
     if profile_form.is_valid():
-        profile_form.save()
+        with audit(request, None, f"User {request.user.username}", "change") as entry:
+            profile_form.save()
+            fields = changed_fields(before, snapshot(request.user))
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
         messages.success(request, _("Profile updated"))
         return redirect("accounts:profile")
 
@@ -51,7 +57,8 @@ def profile(request):
 def ssh_key_create(request):
     key_form = UserSSHKeyForm(request.POST or None, user=request.user)
     if key_form.is_valid():
-        key_form.save()
+        with audit(request, None, f"SSH key {key_form.cleaned_data['keyname']}", "add"):
+            key_form.save()
         messages.success(request, _("SSH key added"))
         return redirect("accounts:profile")
 
@@ -68,7 +75,8 @@ def ssh_key_create(request):
 def ssh_key_delete(request, pk):
     ssh_key = get_object_or_404(UserSSHKey, pk=pk, user=request.user)
     if request.method == "POST":
-        ssh_key.delete()
+        with audit(request, None, f"SSH key {ssh_key.keyname}", "delete"):
+            ssh_key.delete()
         messages.success(request, _("SSH key deleted"))
         return redirect("accounts:profile")
 
@@ -113,7 +121,7 @@ def change_password(request):
     form = PasswordChangeForm(request.user, request.POST or None)
 
     if form.is_valid():
-        with transaction.atomic():
+        with audit(request, None, f"User {request.user.username}", "change password"), transaction.atomic():
             user = form.save()
             UserAttributes.objects.filter(user=user).update(must_change_password=False)
         update_session_auth_hash(request, user)
@@ -137,7 +145,10 @@ def user_instance_create(request, user_id):
 
     form = forms.UserInstanceForm(request.POST or None, initial={"user": user})
     if form.is_valid():
-        form.save()
+        instance = form.cleaned_data["instance"]
+        subject = f"VM {instance.name} owner {form.cleaned_data['user'].username}"
+        with audit(request, instance.compute, subject, "add", instance=instance.name):
+            form.save()
         return redirect(reverse("accounts:account", args=[user.id]))
 
     return render(
@@ -153,9 +164,15 @@ def user_instance_create(request, user_id):
 @superuser_only
 def user_instance_update(request, pk):
     user_instance = get_object_or_404(UserInstance, pk=pk)
+    instance, before = user_instance.instance, snapshot(user_instance)
     form = forms.UserInstanceForm(request.POST or None, instance=user_instance)
     if form.is_valid():
-        form.save()
+        subject = f"VM {instance.name} owner {user_instance.user.username}"
+        with audit(request, instance.compute, subject, "change", instance=instance.name) as entry:
+            form.save()
+            fields = changed_fields(before, snapshot(user_instance))
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
         return redirect(reverse("accounts:account", args=[user_instance.user.id]))
 
     return render(
@@ -172,8 +189,10 @@ def user_instance_update(request, pk):
 def user_instance_delete(request, pk):
     user_instance = get_object_or_404(UserInstance, pk=pk)
     if request.method == "POST":
-        user = user_instance.user
-        user_instance.delete()
+        user, instance = user_instance.user, user_instance.instance
+        with audit(request, instance.compute, f"VM {instance.name} owner {user.username}", "remove",
+                   instance=instance.name):
+            user_instance.delete()
         next_url = request.GET.get("next", None)
         if next_url and url_has_allowed_host_and_scheme(
             url=next_url,
@@ -238,12 +257,14 @@ def email_otp(request):
 @superuser_only
 def admin_email_otp(request, user_id):
     user = get_object_or_404(get_user_model(), pk=user_id)
-    device = get_user_totp_device(user)
+    subject = f"User {user.username}"
     if user.email != "":
-        send_email_with_otp(user, device)
+        with audit(request, None, subject, "mail OTP QR code"):
+            send_email_with_otp(user, get_user_totp_device(user))
         messages.success(
             request, _("OTP QR code was emailed to user %(user)s") % {"user": user}
         )
     else:
+        failed(request, None, subject, "mail OTP QR code", "no email address")
         messages.error(request, _("User email not set, failed to send QR code"))
     return redirect("accounts:account", user.id)

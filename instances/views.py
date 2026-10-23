@@ -36,6 +36,8 @@ from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
                      VIR_DOMAIN_UNDEFINE_NVRAM,
                      VIR_ERR_NO_SUPPORT,
                      libvirtError)
+from logs.audit import audit, changed_fields, failed
+from logs.audit import snapshot as audit_snapshot
 from logs.views import addlogmsg
 from operations import claims, jobs
 from operations.utils import busy_message, summary
@@ -1731,15 +1733,16 @@ def add_owner(request, pk):
     if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False":
         check_inst = UserInstance.objects.filter(instance=instance).count()
 
+    subject = f"VM {instance.name} owner {user.username}"
     if check_inst > 0:
+        failed(request, instance.compute, subject, "add", "only one owner is allowed", instance=instance.name)
         messages.error(
             request, _("Only one owner is allowed and the one already added")
         )
     else:
-        if UserInstance.objects.get_or_create(instance=instance, user=user)[1]:
-            msg = _("Add owner: %(user)s") % {"user": user}
-            addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
-        else:
+        with audit(request, instance.compute, subject, "add", instance=instance.name) as entry:
+            entry.skip = not UserInstance.objects.get_or_create(instance=instance, user=user)[1]
+        if entry.skip:
             messages.warning(request, _("%(user)s is already an owner") % {"user": user})
     return _back(request, pk, "users")
 
@@ -1752,9 +1755,9 @@ def del_owner(request, pk):
     if not userinstance_id.isdigit():
         raise Http404
     userinstance = get_object_or_404(UserInstance, pk=userinstance_id, instance=instance)
-    userinstance.delete()
-    msg = _("Delete owner: %(userinstance_id)s ") % {"userinstance_id": userinstance_id}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit(request, instance.compute, f"VM {instance.name} owner {userinstance.user.username}", "remove",
+               instance=instance.name):
+        userinstance.delete()
     return _back(request, pk, "users")
 
 
@@ -2164,7 +2167,8 @@ def create_instance(request, compute_id, arch, machine):
 def flavor_create(request):
     form = FlavorForm(request.POST or None)
     if form.is_valid():
-        form.save()
+        with audit(request, None, f"Flavor {form.cleaned_data['label']}", "add"):
+            form.save()
         messages.success(request, _("Flavor Created"))
         return get_safe_redirect(request, default=reverse("instances:index"))
 
@@ -2178,9 +2182,14 @@ def flavor_create(request):
 @superuser_only
 def flavor_update(request, pk):
     flavor = get_object_or_404(Flavor, pk=pk)
+    subject, before = f"Flavor {flavor.label}", audit_snapshot(flavor)
     form = FlavorForm(request.POST or None, instance=flavor)
     if form.is_valid():
-        form.save()
+        with audit(request, None, subject, "change") as entry:
+            form.save()
+            fields = changed_fields(before, audit_snapshot(flavor))
+            entry.action = "change " + ", ".join(fields)
+            entry.skip = not fields
         messages.success(request, _("Flavor Updated"))
         return get_safe_redirect(request, default=reverse("instances:index"))
 
@@ -2195,7 +2204,8 @@ def flavor_update(request, pk):
 def flavor_delete(request, pk):
     flavor = get_object_or_404(Flavor, pk=pk)
     if request.method == "POST":
-        flavor.delete()
+        with audit(request, None, f"Flavor {flavor.label}", "delete"):
+            flavor.delete()
         messages.success(request, _("Flavor Deleted"))
         return get_safe_redirect(request, default=reverse("instances:index"))
 
