@@ -171,6 +171,13 @@ class FindTests(unittest.TestCase):
         result = self.find(addresses.Target(c, None))
         self.assertEqual((result["checked"], result["no_agent"]), (2, 1))
 
+    def test_a_paused_vm_with_an_agent_is_an_agent_not_read(self):
+        # a paused guest cannot answer its agent: not "checked and empty"
+        paused = FakeDomain({ARP: {"e": iface(MAC1, (0, "192.0.2.10", 24))}}, state=3)
+        result = self.find(addresses.Target(compute("c1", paused), None))
+        self.assertEqual((result["checked"], result["no_agent"], result["unread"]), (1, 0, 1))
+        self.assertEqual([m["sources"] for m in result["matches"]], [["ARP"]])
+
     def test_a_hung_agent_does_not_hold_the_answer(self):
         hung = threading.Event()
         try:

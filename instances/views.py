@@ -195,7 +195,7 @@ def vm_report(request):
              f"VMs listed: {len(rows)}",
              f"Running VMs read: {result['checked']}",
              f"Without a connected guest agent (a static address on them cannot be seen): {result['no_agent']}",
-             f"Guest agents not read (no answer in time, or an error): {result['unread']}"]
+             f"Guest agents not read (a paused VM, no answer in time, or an error): {result['unread']}"]
     if result["hosts_down"]:
         notes.append("Hosts not reached: " + ", ".join(result["hosts_down"]))
     if result["hosts_unfinished"]:

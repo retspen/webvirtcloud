@@ -152,14 +152,14 @@ def _read_host(target, network, everything, mac):
     """The cheap first phase on one compute: leases and ARP of each running
     VM in scope (with everything, the shut-off ones are listed too). Returns
     the VMs' records, the observations, the (domain, vm, MACs) whose agent is
-    to be asked, the number of running VMs read and of those without a
-    connected agent; None when the compute cannot be reached (connecting may
+    to be asked, the number of running VMs read, of those without a
+    connected agent, and of paused ones whose agent cannot answer; None when the compute cannot be reached (connecting may
     take the connect timeout, so this too runs on the compute's thread). A
     VM that stops or leaves meanwhile is skipped. With a mac, only the VMs
     with a NIC of that MAC, and only that NIC's addresses."""
     if target.compute.status is not True:
         return None
-    records, found, agents, checked, no_agent = [], [], [], 0, 0
+    records, found, agents, checked, no_agent, paused = [], [], [], 0, 0, 0
     listing = 0 if everything else VIR_CONNECT_LIST_DOMAINS_ACTIVE
     for dom in target.compute.connection.listAllDomains(listing):
         try:
@@ -187,9 +187,11 @@ def _read_host(target, network, everything, mac):
             found += _matching(dom, vm, source, macs, network) or []
         if not agent_connected(xml):
             no_agent += 1
-        elif state == VIR_DOMAIN_RUNNING:  # a paused guest cannot answer
+        elif state == VIR_DOMAIN_RUNNING:
             agents.append((dom, vm, macs))
-    return records, found, agents, checked, no_agent
+        else:
+            paused += 1
+    return records, found, agents, checked, no_agent, paused
 def _rows(observations):
     """One row per VM, MAC and address with its sources; sorted by address.
     A VM is its compute and UUID: one UUID may be defined on two hosts."""
@@ -236,11 +238,12 @@ def _survey(targets, network, deadline, everything, with_os=False, mac=None):
                 if read_host is None:
                     hosts_down.append(hosts[done].name)
                     continue
-                host_records, found, agents, host_checked, host_no_agent = read_host
+                host_records, found, agents, host_checked, host_no_agent, host_paused = read_host
                 records += host_records
                 observations += found
                 checked += host_checked
                 no_agent += host_no_agent
+                unread += host_paused  # a paused guest cannot answer its agent
                 # the OS on its own thread: a hung OS read keeps the addresses read
                 for dom, vm, macs in agents:
                     agent_reads.append(pool.submit(_counted, _matching, dom, vm,
