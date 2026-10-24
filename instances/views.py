@@ -1975,22 +1975,24 @@ def create_instance_select_type(request, compute_id):
     default_machine = app_settings.INSTANCE_MACHINE_DEFAULT_TYPE
     default_arch = app_settings.INSTANCE_ARCH_DEFAULT_TYPE
 
-    if request.method == "POST":
-        if "create_xml" in request.POST:
-            xml = request.POST.get("dom_xml", "")
-            try:
-                name = util.get_xml_path(xml, "/domain/name")
-            except util.etree.Error:
-                name = None
+    # a refused definition comes back in the editor, its reason beside it
+    xml_error = None
+    if request.method == "POST" and "create_xml" in request.POST:
+        xml = request.POST.get("dom_xml", "")
+        try:
+            name = util.get_xml_path(xml, "/domain/name")
             if name in instances:
-                error_msg = _("A virtual machine with this name already exists")
-                messages.error(request, error_msg)
+                xml_error = _("A virtual machine with this name already exists")
             else:
                 with libvirt_compute_lock(compute):
                     conn._defineXML(xml)
                     utils.refr(compute)
                     instance = compute.instance_set.get(name=name)
                 return redirect(reverse("instances:instance", args=[instance.id]))
+        except util.etree.Error as err:
+            xml_error = _("The XML is not well-formed: %(error)s") % {"error": err}
+        except libvirtError as err:
+            xml_error = _("libvirt Error - %(exception)s") % {"exception": error_text(request, err)}
 
     return render(request, "create_instance_w1.html", locals())
 

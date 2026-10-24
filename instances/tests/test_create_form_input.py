@@ -5,6 +5,9 @@ import json
 import uuid
 from unittest.mock import patch
 
+import libvirt
+from computes.models import Compute
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Flavor
@@ -262,3 +265,32 @@ class SubmittedListsTests(TestCase):
     def test_only_a_refused_form_sends_lists(self):
         _, response = render_create_page(self)
         self.assertIsNone(self.lists(response))
+
+
+class XmlRefusalTests(TestCase):
+    """A refused XML definition comes back in its open editor, its reason
+    beside it."""
+
+    def post(self, xml):
+        conn = libvirt.open("test:///default")
+        self.addCleanup(conn.close)
+        compute, _ = Compute.objects.get_or_create(name="testdrv", hostname="localhost", login="", password="", type=4)
+        self.client.force_login(get_user_model().objects.create_superuser("xml", "xml@example.com", "pw"))
+        with patch("vrtManager.connection.connection_manager.get_connection", return_value=conn):
+            response = self.client.post(reverse("instances:create_instance_select_type", args=[compute.id]),
+                                        {"create_xml": "", "dom_xml": xml})
+        self.assertEqual(response.status_code, 200)
+        page = html.fromstring(response.content)
+        self.assertIn("show", page.get_element_by_id("from-xml").classes)
+        self.assertEqual(page.xpath("//*[@id='editor']/text()"), [xml])
+        self.assertEqual(page.xpath("//input[@name='dom_xml']/@value"), [xml])
+        return page.xpath("//*[@id='from-xml']//*[contains(@class, 'form-errors')]")[0].text_content()
+
+    def test_a_taken_name(self):
+        self.assertIn("already exists", self.post("<domain type='test'><name>test</name></domain>"))
+
+    def test_malformed_xml(self):
+        self.assertIn("not well-formed", self.post("<domain type='test'><name>new</name>"))
+
+    def test_a_definition_libvirt_refuses(self):
+        self.assertIn("libvirt", self.post("<domain type='nope'><name>new</name><memory>1024</memory></domain>"))
