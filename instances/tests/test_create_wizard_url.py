@@ -1,6 +1,7 @@
 """The create wizard's first page sends the browser to the next page for the
 chosen architecture and machine type; the URL is built from placeholders."""
 
+import json
 import re
 import subprocess
 import shutil
@@ -51,3 +52,20 @@ class CreateWizardUrlTests(TestCase):
             out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
             with self.subTest(machines=machines):
                 self.assertEqual(out.stdout.strip(), str(disabled).lower(), out.stderr)
+
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_a_newer_architecture_aborts_the_older_load(self):
+        compute = Compute.objects.create(name="cw3", hostname="10.0.0.8", login="u", password="p", type=1)
+        request = RequestFactory().get("/")
+        request.user = get_user_model().objects.create_superuser("cw3-admin", "cw3@example.com", "pw")
+        page = render_to_string("create_instance_w1.html", {"compute": compute, "compute_id": compute.id}, request=request)
+        function = re.search(r"function load_machines\(arch\) \{.*?\n    \}", page, re.S).group(0)
+        js = ("const next = {}, select = {children: ['pc'], replaceChildren(...items) { this.children = items; }};"
+              "const document = {querySelector: sel => sel === '#next' ? next : select};"
+              "const Option = function (text) { this.text = text; }; const requests = [];"
+              "const $ = {getJSON: (url, fill) => { const r = {fill, abort() { r.aborted = true; }}; requests.push(r); return r; }};"
+              f"{function} load_machines('x86_64'); const loading = select.children; load_machines('aarch64');"
+              "requests[1].fill({machines: ['virt']});"
+              "console.log(JSON.stringify({loading, aborted: requests.map(r => !!r.aborted), filled: select.children.map(o => o.text)}));")
+        out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
+        self.assertEqual(json.loads(out.stdout), {"loading": [], "aborted": [True, False], "filled": ["virt"]}, out.stderr)

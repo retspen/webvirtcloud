@@ -530,9 +530,17 @@
         return "/computes/" + COMPUTE + "/storage/" + encodeURIComponent(pool) + "/volumes";
     }
 
+    // A dependent list is empty while it loads, and a newer load aborts the
+    // older one: an answer for the previous choice never fills it.
+    function load_list(list, url, fill) {
+        if (list.request) list.request.abort();
+        list.request = $.getJSON(url, fill);
+        return list.request;
+    }
+
     function load_volumes(pool) {
-        return $.getJSON(volumes_url(pool), function (data) {
-            images_control.clearOptions();
+        images_control.clearOptions();  // keeps the chosen volumes
+        return load_list(images_control, volumes_url(pool), function (data) {
             data['vols'].forEach(item => images_control.addOption({value: item, text: item}));
         });
     }
@@ -544,14 +552,17 @@
     }
 
     function load_templates(pool) {
-        return $.getJSON(volumes_url(pool), function (data) {
-            document.querySelector("#template").replaceChildren(...data['vols'].map(item => new Option(item, item)));
+        const list = document.querySelector("#template");
+        list.replaceChildren();
+        return load_list(list, volumes_url(pool), function (data) {
+            list.replaceChildren(...data['vols'].map(item => new Option(item, item)));
         });
     }
 
     function load_buses(bus_select, disk_type) {
         const url = "/computes/" + COMPUTE + "/archs/{{ arch|escapejs }}/machines/{{ machine|escapejs }}/disks/" + disk_type + "/buses";
-        return $.getJSON(url, function (data) {
+        bus_select.replaceChildren();
+        return load_list(bus_select, url, function (data) {
             bus_select.replaceChildren(...data['bus'].map(item => new Option(item, item)));
         });
     }

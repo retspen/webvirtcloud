@@ -70,12 +70,15 @@
 {% endblock %}
 {% block script %}
 <script>
-    // the machine types of the chosen architecture, the default one selected
+    // the machine types of the chosen architecture, the default one selected;
+    // the list is empty while it loads, and a newer load aborts the older one
     function load_machines(arch) {
-        const next = document.querySelector("#next");
+        const next = document.querySelector("#next"), list = document.querySelector("#select_chipset");
         next.disabled = true;
-        $.getJSON("/computes/{{ compute_id }}/archs/" + encodeURIComponent(arch) + "/machines", function (data) {
-            document.querySelector("#select_chipset").replaceChildren(...data['machines'].map(
+        list.replaceChildren();
+        if (list.request) list.request.abort();
+        list.request = $.getJSON("/computes/{{ compute_id }}/archs/" + encodeURIComponent(arch) + "/machines", function (data) {
+            list.replaceChildren(...data['machines'].map(
                 item => new Option(item, item, false, item === "{{ default_machine|escapejs }}")));
             next.disabled = !data['machines'].length;
         });

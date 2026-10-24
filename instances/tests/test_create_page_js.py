@@ -85,8 +85,22 @@ class CreatePageScriptTests(TestCase):
     def test_the_disk_bus_list_is_asked_for_the_page_architecture_and_machine(self):
         compute, page = self.page()
         out = node(f"const COMPUTE = {compute.id}; let asked; const $ = {{getJSON: url => {{ asked = url; }}}};"
-                   + functions(page, "load_buses") + "load_buses({}, 'cdrom'); console.log(JSON.stringify(asked));")
+                   + functions(page, "load_list", "load_buses")
+                   + "load_buses({replaceChildren() {}}, 'cdrom'); console.log(JSON.stringify(asked));")
         self.assertEqual(out, reverse("buses", args=[compute.id, "i686", "pc", "cdrom"]))
+
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_a_list_is_empty_while_it_loads_and_a_newer_load_aborts_the_older(self):
+        compute, page = self.page()
+        out = node(f"const COMPUTE = {compute.id}; const requests = [];"
+                   "const $ = {getJSON: (url, fill) => { const r = {fill, abort() { r.aborted = true; }}; requests.push(r); return r; }};"
+                   "const Option = function (text) { this.text = text; };"
+                   "const bus = {children: ['ide'], replaceChildren(...items) { this.children = items; }};"
+                   + functions(page, "load_list", "load_buses")
+                   + "load_buses(bus, 'disk'); const loading = bus.children; load_buses(bus, 'cdrom');"
+                   "requests[1].fill({bus: ['sata']});"
+                   "console.log(JSON.stringify({loading, aborted: requests.map(r => !!r.aborted), filled: bus.children.map(o => o.text)}));")
+        self.assertEqual(out, {"loading": [], "aborted": [True, False], "filled": ["sata"]})
 
     def test_the_form_has_one_mac_field(self):
         _, page = self.page()
