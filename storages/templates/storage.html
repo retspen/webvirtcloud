@@ -4,9 +4,6 @@
 {% load static %}
 {% load bootstrap_icons %}
 {% block title %}{{ compute }} - {% trans "Storage" %}: {{ pool }}{% endblock %}
-{% block style %}
-    <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}"/>
-{% endblock %}
 
 {% block page_heading %}{{ compute }} - {% trans "Storage" %}: {{ pool }}{% endblock page_heading %}
 
@@ -95,15 +92,15 @@
         </div>
         {% if volumes  %}
             <div class="table-responsive">
-                <table class="table table-hover sortable-theme-bootstrap" data-sortable>
+                <table class="table table-hover" data-sortable>
                     <thead>
                     <tr>
-                        <th scope="col">#</th>
+                        <th scope="col" data-sort-method="number">#</th>
                         <th scope="col">{% trans "Name" %}</th>
-                        <th scope="col">{% trans "Allocated" %}</th>
-                        <th scope="col">{% trans "Size" %}</th>
+                        <th scope="col" data-sort-method="number">{% trans "Allocated" %}</th>
+                        <th scope="col" data-sort-method="number">{% trans "Size" %}</th>
                         <th scope="col">{% trans "Format" %}</th>
-                        <th scope="colgroup" data-sortable="false" colspan="2">{% trans "Action" %}</th>
+                        <th scope="colgroup" data-sort-method="none" colspan="2">{% trans "Action" %}</th>
                     </tr>
                     </thead>
                     <tbody class="searchable">
@@ -111,8 +108,8 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>{{ volume.name|truncatechars:55 }}</td>
-                        <td>{{ volume.allocation|filesizeformat }}</td>
-                        <td>{{ volume.size|filesizeformat }}</td>
+                        <td data-sort="{{ volume.allocation }}">{{ volume.allocation|filesizeformat }}</td>
+                        <td data-sort="{{ volume.size }}">{{ volume.size|filesizeformat }}</td>
                         <td>{{ volume.type }}</td>
                         <td>
                             <!-- Modal Clone -->
@@ -201,7 +198,6 @@
 {% block script %}
     <script src="{% static 'js/poll.js' %}"></script>
     {% job_panel_script job_resource %}
-    <script src="{% static 'js/sortable.min.js' %}"></script>
     <script src="{% static 'js/filter-table.js' %}"></script>
     <script>
         $('.format-convert').hide();

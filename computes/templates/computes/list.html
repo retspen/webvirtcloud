@@ -22,13 +22,13 @@
     {% else %}
         <div class="col-lg-12">
             <div class="table-responsive">
-                <table class="table table-striped table-hover sortable-theme-bootstrap" data-sortable>
+                <table class="table table-striped table-hover" data-sortable>
                     <thead>
                         <tr>
                             <th span="col" class="col-sm-3">{% trans "Name" %}</th>
                             <th span="col" class="col-sm-2">{% trans "Status" %}</th>
                             <th span="col" class="col-sm-5">{% trans "Details" %}</th>
-                            <th span="col" class="col-sm-2 text-center">{% trans "Actions" %}</th>
+                            <th span="col" class="col-sm-2 text-center" data-sort-method="none">{% trans "Actions" %}</th>
                         </tr>
                     </thead>
                     <tbody class="searchable">
@@ -67,6 +67,5 @@
 {% endblock content %}
 
 {% block script %}
-<script src="{% static 'js/sortable.min.js' %}"></script>
 <script src="{% static 'js/filter-table.js' %}"></script>
 {% endblock script %}

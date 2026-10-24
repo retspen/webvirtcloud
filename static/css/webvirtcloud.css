@@ -53,6 +53,27 @@ body {
     height: 350px;
 }
 
+/* headers of sortable tables (static/js/sort_tables.js): the sorted one shows
+   its direction, up for ascending */
+th[role=columnheader]:not([data-sort-method="none"]) {
+    cursor: pointer;
+    user-select: none;
+}
+
+th[aria-sort]:not([data-sort-method="none"])::after {
+    content: "";
+    display: inline-block;
+    margin-left: 0.4em;
+    vertical-align: middle;
+    border: 0.3em solid transparent;
+    border-top-color: currentColor;
+}
+
+th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
+    border-top-color: transparent;
+    border-bottom-color: currentColor;
+}
+
 .host-collapsed tr[host] {
     display: none;
 }

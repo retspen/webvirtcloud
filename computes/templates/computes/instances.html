@@ -4,9 +4,6 @@
 {% load operations %}
 {% load bootstrap_icons %}
 {% block title %}{% trans "Instances" %} - {{ compute.name }}{% endblock %}
-{% block style %}
-<link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}" />
-{% endblock %}
 {% block page_heading %}{{ compute.name }} - {% trans "Instances" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
@@ -67,15 +64,15 @@
         </div>
         {% else %}
             <div class="table-responsive">
-                <table class="table table-hover sortable-theme-bootstrap" data-sortable>
+                <table class="table table-hover" data-sortable>
                     <thead>
                         <tr>
                             <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
                             <th scope="col">{% trans 'User' %}</th>
                             <th scope="col">{% trans 'Status' %}</th>
-                            <th scope="col">{% trans 'VCPU' %}</th>
-                            <th scope="col" class="text-end">{% trans 'Memory' %}</th>
-                            <th scope="col" data-sortable="false">{% trans 'Actions' %}</th>
+                            <th scope="col" data-sort-method="number">{% trans 'VCPU' %}</th>
+                            <th scope="col" class="text-end" data-sort-method="number">{% trans 'Memory' %}</th>
+                            <th scope="col" data-sort-method="none">{% trans 'Actions' %}</th>
                         </tr>
                     </thead>
                     <tbody class="searchable">
@@ -99,8 +96,8 @@
                             <td>
                                 {% include 'instance_state.html' %}
                             </td>
-                            <td>{{ instance.info.3 }}</td>
-                            <td><p class="text-end">{% if instance.info %}{% widthratio instance.info.1 1024 1  %} MiB{% endif %}</p></td>
+                            <td data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
+                            <td data-sort="{{ instance.info.1 }}"><p class="text-end">{% if instance.info %}{% widthratio instance.info.1 1024 1  %} MiB{% endif %}</p></td>
                             <td class="text-nowrap">
                                 {% include 'instance_actions.html' %}
                             </td>
@@ -116,6 +113,5 @@
 {% block script %}
 <script src="{% static 'js/poll.js' %}"></script>
 {% job_panel_script job_resource %}
-<script src="{% static "js/sortable.min.js" %}"></script>
 <script src="{% static 'js/filter-table.js' %}"></script>
 {% endblock %}

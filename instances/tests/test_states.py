@@ -127,6 +127,10 @@ class StateTests(TestCase):
         self.assertEqual(options, ["All states", *LABELS.values(), "Unknown"])
         marks = page.xpath("//tbody[@data-host='st']//tr//@data-state")
         self.assertEqual(marks, list(LABELS.values()))
+        # the host row stays on top of its VMs; memory and vCPUs sort as numbers
+        rows = page.xpath("//tbody[@data-host='st']/tr")
+        self.assertEqual(rows[0].get("data-sort-method"), "none")
+        self.assertEqual([r.xpath("td[@data-sort]/@data-sort") for r in rows[1:2]], [["2", "2097152"]])
 
 
 class DetailStateTests(TestCase):

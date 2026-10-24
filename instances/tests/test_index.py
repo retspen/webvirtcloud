@@ -2,13 +2,11 @@
 
 from unittest.mock import PropertyMock, patch
 
-from appsettings.models import AppSettings
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
-from lxml import html
 
 
 class InstancesIndexTests(TestCase):
@@ -44,10 +42,3 @@ class InstancesIndexTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "test4")
         self.assertEqual(list(response.context["computes"][0].instance_set.all()), [])
-
-    def test_the_grouped_list_without_computes_has_a_table_body(self):
-        # sortable.js reads the first tbody's rows: without one it throws and leaves the table unsortable
-        AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
-        self.client.force_login(get_user_model().objects.create_superuser("grouped-admin", "g@example.com", "pw"))
-        page = html.fromstring(self.client.get(reverse("instances:index")).content)
-        self.assertEqual(len(page.xpath("//table[@data-sortable]/tbody")), 1)

@@ -1,25 +1,25 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 <div class="table-responsive">
-    <table class="table table-hover sortable-theme-bootstrap" data-sortable>
+    <table class="table table-hover" data-sortable>
         <thead>
             <tr>
-                <th scope="col" data-sortable="false"><a class="link-primary" href="#" id="hide-all-instances" onclick="hide_all_host_instances()">#</a></th>
+                <th scope="col" data-sort-method="none"><a class="link-primary" href="#" id="hide-all-instances" onclick="hide_all_host_instances()">#</a></th>
                 <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
                 <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
                 <th scope="col">{% trans "Status" %}</th>
                 {% if app_settings.VM_DRBD_STATUS == 'True' %}
                 <th scope="col">{% trans "Role/Disk" %}</th>
                 {% endif %}
-                <th scope="col" class="d-none d-sm-table-cell">{% trans "VCPU" %}</th>
-                <th scope="col" class="d-none d-sm-table-cell">{% trans "Memory" %}</th>
-                <th scope="col" style="width:200px;" data-sortable="false">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
+                <th scope="col" class="d-none d-sm-table-cell" data-sort-method="number">{% trans "VCPU" %}</th>
+                <th scope="col" class="d-none d-sm-table-cell" data-sort-method="number">{% trans "Memory" %}</th>
+                <th scope="col" style="width:200px;" data-sort-method="none">{% trans "Actions" %} & {% trans "Mem Usage" %}</th>
             </tr>
         </thead>
         {% for compute in computes %}
             <tbody class="searchable" data-host="{{ compute.name }}">
                 {% if compute.instance_set.count > 0 %}
-                    <tr class="table-secondary fw-bold border-bottom border-dark">
+                    <tr class="table-secondary fw-bold border-bottom border-dark" data-sort-method="none">
                         <td>
                             <span id="collapse_host_instances_{{ compute.id }}" onclick="hide_host_instances('{{ compute.id }}');" class="bi bi-chevron-up" ></span>
                         </td>
@@ -56,7 +56,7 @@
                     </tr>
                     {% for instance in compute.instance_set.all %}
                         <tr host="{{ compute.id }}">
-                            <td class="text-right">{{ forloop.counter }} </td>
+                            <td></td>
                             <td>
                                 <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
                                 <br>
@@ -80,8 +80,8 @@
                                 {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="badge bg-success-subtle text-success-emphasis">{% else %}<span class="badge bg-danger-subtle text-danger-emphasis">{% endif %}{{ instance.drbd }}</span>
                             </td>
                             {% endif %}
-                            <td>{{ instance.info.3 }}</td>
-                            <td>{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
+                            <td data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
+                            <td data-sort="{{ instance.info.2 }}">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
                             <td class="text-nowrap">
                                 {% include 'instance_actions.html' %}
                             </td>
@@ -89,8 +89,6 @@
                     {% endfor %}
                 {% endif %}
             </tbody>
-        {% empty %}
-            <tbody></tbody>{# sortable.js needs a table body #}
         {% endfor %}
     </table>
 </div>

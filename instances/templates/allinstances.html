@@ -2,9 +2,6 @@
 {% load i18n %}
 {% load static %}
 {% block title %}{% trans "Instances" %}{% endblock %}
-{% block style %}
-    <link rel="stylesheet" href="{% static 'css/sortable-theme-bootstrap.css' %}" />
-{% endblock %}
 {% block page_heading %}{% trans "Instances" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
@@ -47,7 +44,6 @@
     </div>
 {% endblock content %}
 {% block script %}
-    <script src="{% static 'js/sortable.min.js' %}"></script>
     <script src="{% static 'js/instance_filter.js' %}"></script>
     {% if request.user.is_superuser %}
         <script>
