@@ -658,13 +658,12 @@
             {% if instance.status != 5 %}
                 <p>{% trans "If you need to edit XML please Power Off the instance" %}</p>
             {% endif %}
-            <form action="{% url 'instances:change_xml' instance.id %}" method="post" role="form" aria-label="Edit instance XML form">
+            <form action="{% url 'instances:change_xml' instance.id %}" method="post" role="form" aria-label="Edit instance XML form" id="xml-form">
                 {% csrf_token %}
                 <div class="col-sm-12 xmlheight">
                     <textarea id="editor">{{ instance.inst_xml }}</textarea>
                 </div>
                 {% if instance.status == 5 %}
-                    <input type="hidden" name="inst_xml">
                     <button type="submit" class="btn btn-lg btn-success float-end" name="change_xml">
                         {% trans "Change" %}
                     </button>
@@ -675,6 +674,28 @@
                 {% endif %}
             </form>
             <div class="clearfix"></div>
+            {% if instance.status == 5 %}
+                <div class="modal fade" id="xml-review" tabindex="-1" aria-labelledby="xml-review-title" aria-hidden="true"
+                     data-failed="{% trans "The XML could not be checked. Try again." %}">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="xml-review-title">{% trans "Review the XML change" %}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-danger d-none" role="alert" id="xml-review-error"></div>
+                                <p class="d-none" id="xml-review-same">{% trans "The XML is the same as the VM's definition; there is nothing to save." %}</p>
+                                <pre class="d-none mb-0" id="xml-review-diff"></pre>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="button" class="btn btn-success" id="xml-review-save">{% trans "Save" %}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         </div>
         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="users">
             <div>

@@ -57,7 +57,7 @@ class ErrorHandlingTestCase(TestCase):
 
     def test_redirects_without_or_with_a_foreign_referer_go_to_the_vm_page(self):
         names = back_views()
-        self.assertGreaterEqual(len(names), 30)
+        self.assertGreaterEqual(len(names), 29)
         for name in names:
             for referer in (None, EXTERNAL):
                 with self.subTest(view=name, referer=referer), patch("instances.models.wvmInstance"), \

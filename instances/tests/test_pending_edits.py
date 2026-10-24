@@ -106,6 +106,13 @@ class PendingEditsTestCase(TestCase):
                 (form,) = doc.xpath("//form[@action=$a]", a=reverse(f"instances:{action}", args=[self.instance.id]))
                 self.assertTrue(all(b.get("disabled") is not None for b in form.xpath(".//button")))
 
+    def test_the_xml_editor_reviews_a_change_only_while_the_vm_is_off(self):
+        # static/js/xml_editor.js opens the review dialog on Change
+        doc = self.page(status=5)
+        self.assertEqual(len(doc.xpath("//form[@id='xml-form']//button[@type='submit']")), 1)
+        self.assertEqual(len(doc.xpath("//div[@id='xml-review']//button[@id='xml-review-save']")), 1)
+        self.assertEqual(self.page().xpath("//div[@id='xml-review']"), [])
+
     def test_the_boot_video_and_console_forms_show_the_pending_definition(self):
         cd = {"dev": "sda", "image": "pending.iso", "storage": "default", "path": "/pool/pending.iso", "bus": "sata"}
         with patch("instances.models.Instance.config_networks", new_callable=PropertyMock, return_value=[]):

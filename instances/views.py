@@ -2,6 +2,7 @@ try:
     import crypt_r as crypt
 except ImportError:
     import crypt
+import difflib
 import functools
 import json
 import os
@@ -1454,16 +1455,35 @@ def set_bootorder(request, pk):
 @superuser_only
 @serialize_instance_mutation
 def change_xml(request, pk):
+    """
+    The XML editor's dialog: without confirm, the lines the edited XML changes
+    in the definition, to review; with confirm, the edited XML is defined.
+    Only over the definition the editor was opened with (base), so a change
+    made since is not overwritten; a form posts its line breaks as CRLF. A refusal comes back to the dialog and the
+    edited XML stays in the editor.
+    """
     instance = get_instance(request.user, pk)
     new_xml = request.POST.get("inst_xml", "")
     # The editor is filled while the VM is shut off; once it runs, the posted
     # XML would overwrite changes made since.
-    if new_xml and instance.proxy.get_status() != 5:
-        messages.error(request, _("Power off the instance to change its XML"))
-    elif new_xml:
+    if instance.proxy.get_status() != 5:
+        return JsonResponse({"error": _("Power off the instance to change its XML")}, status=409)
+    if not new_xml.strip():
+        return JsonResponse({"error": _("The XML is empty")}, status=400)
+    current = instance.inst_xml
+    if request.POST.get("base", "").replace("\r\n", "\n") != current:
+        return JsonResponse({"error": _("The definition has changed since the editor was opened. "
+                                         "Reload the page to edit the current one.")}, status=409)
+    if "confirm" not in request.POST:
+        diff = difflib.unified_diff(current.splitlines(), new_xml.splitlines(), "current", "new", lineterm="")
+        return JsonResponse({"diff": list(diff)})
+    try:
         with audit_vm(request, instance, "change XML"):
             instance.proxy._defineXML(new_xml)
-    return _back(request, pk, "xmledit")
+    except libvirtError as err:
+        return JsonResponse({"error": error_text(request, err)}, status=400)
+    messages.success(request, _("The XML definition was saved."))
+    return JsonResponse({"saved": True})
 
 
 @require_POST
