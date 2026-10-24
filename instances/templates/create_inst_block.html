@@ -15,37 +15,35 @@
                 {% include "create_steps.html" with step=1 %}
                 <div class="text-body-secondary mb-3">{% trans "Choose the host the VM runs on." %}</div>
                 <div class="list-group">
-                    {% for compute in computes %}
-                        {% if compute.status is True %}
-                        <a class="list-group-item list-group-item-action py-3" href="{% url 'instances:create_instance_select_type' compute.id %}">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-12 col-md-3 fw-semibold">{{ compute.name }}</div>
-                                <div class="col-6 col-md-4">
-                                    <div class="small text-body-secondary">{% trans "CPU" %} · {{ compute.cpu_count }} vCPU</div>
-                                    <div class="cpu-usage d-flex align-items-center gap-2" data-url="{% url 'compute_graph' compute.id %}">
-                                        <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}CPU usage of {{ name }}{% endblocktrans %}"
-                                             aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar" style="width: 0%"></div>
-                                        </div>
-                                        <small class="cpu-usage-value"></small>
+                    {% for compute in reachable_computes %}
+                    <a class="list-group-item list-group-item-action py-3" href="{% url 'instances:create_instance_select_type' compute.id %}">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-3 fw-semibold">{{ compute.name }}</div>
+                            <div class="col-6 col-md-4">
+                                <div class="small text-body-secondary">{% trans "CPU" %} · {{ compute.cpu_count }} vCPU</div>
+                                <div class="cpu-usage d-flex align-items-center gap-2" data-url="{% url 'compute_graph' compute.id %}">
+                                    <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}CPU usage of {{ name }}{% endblocktrans %}"
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: 0%"></div>
                                     </div>
+                                    <small class="cpu-usage-value"></small>
                                 </div>
-                                <div class="col-6 col-md-4">
-                                    <div class="small text-body-secondary">{% trans "Memory" %} · {{ compute.ram_size|filesizeformat }}</div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}Memory usage of {{ name }}{% endblocktrans %}"
-                                             aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar" style="width: {{ compute.ram_usage }}%"></div>
-                                        </div>
-                                        <small>{{ compute.ram_usage }}%</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-1 d-none d-md-block text-end" aria-hidden="true">{% bs_icon 'chevron-right' %}</div>
                             </div>
-                        </a>
-                        {% endif %}
+                            <div class="col-6 col-md-4">
+                                <div class="small text-body-secondary">{% trans "Memory" %} · {{ compute.ram_size|filesizeformat }}</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}Memory usage of {{ name }}{% endblocktrans %}"
+                                         aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: {{ compute.ram_usage }}%"></div>
+                                    </div>
+                                    <small>{{ compute.ram_usage }}%</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-none d-md-block text-end" aria-hidden="true">{% bs_icon 'chevron-right' %}</div>
+                        </div>
+                    </a>
                     {% empty %}
-                        <p>{% trans "No compute is reachable." %}</p>
+                    <p>{% trans "No compute is reachable." %}</p>
                     {% endfor %}
                 </div>
             </div>

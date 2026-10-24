@@ -85,7 +85,8 @@ def index(request):
     return render(
         request,
         "allinstances.html",
-        {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down},
+        {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
+         "reachable_computes": [c for c in computes if c.status is True]},
     )
 
 

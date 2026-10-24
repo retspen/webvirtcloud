@@ -112,3 +112,34 @@ class CreateDialogCpuTestCase(TestCase):
         # the earlier opening's answer (99) is ignored; a failed read is a dash
         self.assertEqual(result["final"], [["42%", "42", "42%"], ["0%", None, "—"], ["0%", None, "…"]])
         self.assertEqual(result["all"], urls[:2] + urls + urls)
+
+
+class CreateDialogHostsTestCase(TestCase):
+    """The dialog lists the reachable computes; without one it says so."""
+
+    def setUp(self):
+        self.client.force_login(get_user_model().objects.create_superuser("cd-admin", "cd@example.com", "pw"))
+        for i in (1, 2):
+            Compute.objects.create(name=f"cd{i}", hostname=f"192.0.2.{i}", login="u", password="p", type=1)
+        for name, value in (("cpu_count", 1), ("ram_size", 1024), ("ram_usage", 0)):
+            p = patch.object(Compute, name, new_callable=PropertyMock, return_value=value)
+            p.start()
+            self.addCleanup(p.stop)
+        p = patch("instances.views.utils.refr")
+        p.start()
+        self.addCleanup(p.stop)
+
+    def dialog(self, reachable):
+        with patch.object(Compute, "status", property(lambda compute: compute.name in reachable)):
+            response = self.client.get(reverse("instances:index"))
+        return html.fromstring(response.content).get_element_by_id("AddInstance")
+
+    def test_only_reachable_computes_are_listed(self):
+        dialog = self.dialog({"cd2"})
+        self.assertEqual([e.text for e in dialog.xpath(".//a/div/div[1]")], ["cd2"])
+        self.assertNotIn("No compute is reachable.", dialog.text_content())
+
+    def test_no_reachable_compute_is_said(self):
+        dialog = self.dialog(set())
+        self.assertEqual(dialog.xpath(".//a"), [])
+        self.assertIn("No compute is reachable.", dialog.text_content())
