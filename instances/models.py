@@ -6,12 +6,11 @@ from django.utils.translation import gettext_lazy as _
 from libvirt import (
     VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
     VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
-    VIR_DOMAIN_XML_SECURE,
     libvirtError,
 )
 from operations import claims
 from operations.models import Claim
-from vrtManager.instance import wvmInstance
+from vrtManager.instance import PERSISTENT_XML, wvmInstance
 from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES
 
 
@@ -291,7 +290,8 @@ class Instance(models.Model):
 
     @cached_property
     def inst_xml(self):
-        return self.proxy._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        # the definition for the next start, which is the current one while the VM is off
+        return self.proxy._XMLDesc(PERSISTENT_XML)
 
     @cached_property
     def has_managed_save_image(self):

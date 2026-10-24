@@ -96,22 +96,25 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//select[@name='cur_vcpu']/option[@selected]/@value"), ["3"])
 
     def test_buttons_shown_as_disabled_cannot_submit(self):
-        # running: the CPU, options, video and XML forms wait for a shutdown
+        # running: the CPU, options and video forms wait for a shutdown
         doc = self.page(live=[disk("vda", "default", "")], config=[disk("vda", "default", "")])
         shown = doc.xpath("//button[contains(concat(' ', @class, ' '), ' disabled ')]")
         self.assertGreater(len(shown), 5)
         self.assertEqual([b for b in shown if b.get("disabled") is None], [])
-        for action in ("resizevm_cpu", "change_options", "set_video_model", "change_xml", "detach_vol", "delete_vol"):
+        for action in ("resizevm_cpu", "change_options", "set_video_model", "detach_vol", "delete_vol"):
             with self.subTest(action):
                 (form,) = doc.xpath("//form[@action=$a]", a=reverse(f"instances:{action}", args=[self.instance.id]))
                 self.assertTrue(all(b.get("disabled") is not None for b in form.xpath(".//button")))
 
-    def test_the_xml_editor_reviews_a_change_only_while_the_vm_is_off(self):
-        # static/js/xml_editor.js opens the review dialog on Change
-        doc = self.page(status=5)
-        self.assertEqual(len(doc.xpath("//form[@id='xml-form']//button[@type='submit']")), 1)
-        self.assertEqual(len(doc.xpath("//div[@id='xml-review']//button[@id='xml-review-save']")), 1)
-        self.assertEqual(self.page().xpath("//div[@id='xml-review']"), [])
+    def test_the_xml_editor_shows_the_definition_for_the_next_start(self):
+        # static/js/xml_editor.js opens the review dialog on Change, also while the VM runs
+        for status in (5, 1):
+            with self.subTest(status=status):
+                doc = self.page(status=status)
+                (button,) = doc.xpath("//form[@id='xml-form']//button[@type='submit']")
+                self.assertIsNone(button.get("disabled"))
+                self.assertEqual(len(doc.xpath("//div[@id='xml-review']//button[@id='xml-review-save']")), 1)
+                self.assertEqual(bool(doc.xpath("//p[@id='xml-next-start']")), status != 5)
 
     def test_the_boot_video_and_console_forms_show_the_pending_definition(self):
         cd = {"dev": "sda", "image": "pending.iso", "storage": "default", "path": "/pool/pending.iso", "bus": "sata"}

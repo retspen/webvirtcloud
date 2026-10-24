@@ -1457,17 +1457,14 @@ def set_bootorder(request, pk):
 def change_xml(request, pk):
     """
     The XML editor's dialog: without confirm, the lines the edited XML changes
-    in the definition, to review; with confirm, the edited XML is defined.
+    in the persistent definition, to review; with confirm, the edited XML is
+    defined. A running VM uses it at its next start.
     Only over the definition the editor was opened with (base), so a change
     made since is not overwritten; a form posts its line breaks as CRLF. A refusal comes back to the dialog and the
     edited XML stays in the editor.
     """
     instance = get_instance(request.user, pk)
     new_xml = request.POST.get("inst_xml", "")
-    # The editor is filled while the VM is shut off; once it runs, the posted
-    # XML would overwrite changes made since.
-    if instance.proxy.get_status() != 5:
-        return JsonResponse({"error": _("Power off the instance to change its XML")}, status=409)
     if not new_xml.strip():
         return JsonResponse({"error": _("The XML is empty")}, status=400)
     current = instance.inst_xml
@@ -1482,7 +1479,10 @@ def change_xml(request, pk):
             instance.proxy._defineXML(new_xml)
     except libvirtError as err:
         return JsonResponse({"error": error_text(request, err)}, status=400)
-    messages.success(request, _("The XML definition was saved."))
+    if instance.proxy.get_status() == 5:
+        messages.success(request, _("The XML definition was saved."))
+    else:
+        messages.success(request, _("The XML definition was saved; the VM uses it from its next start."))
     return JsonResponse({"saved": True})
 
 

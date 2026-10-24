@@ -10,9 +10,6 @@
     editor.getSession().setMode("ace/mode/xml");
     var base = editor.getValue(); // the definition the editor opened with
     var dialog = document.getElementById("xml-review");
-    if (!dialog) {
-        return; // a running VM's editor only shows its XML
-    }
     var modal = bootstrap.Modal.getOrCreateInstance(dialog);
     var error = document.getElementById("xml-review-error");
     var same = document.getElementById("xml-review-same");

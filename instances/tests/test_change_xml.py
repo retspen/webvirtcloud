@@ -7,15 +7,18 @@ from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
 from libvirt import libvirtError
+from vrtManager.instance import PERSISTENT_XML
 from logs.models import Logs
 
 CURRENT = "<domain>\n  <name>xml-vm</name>\n  <memory>1024</memory>\n</domain>"
+LIVE = "<domain id='3'>\n  <name>xml-vm</name>\n  <memory>512</memory>\n</domain>"
 EDITED = "<domain>\n  <name>xml-vm</name>\n  <memory>2048</memory>\n</domain>"
 
 
 class ChangeXmlTestCase(TestCase):
     """The XML editor shows what a change does before it is saved, and saves
-    only over the definition it was opened with."""
+    only over the definition it was opened with: the persistent one, which a
+    running VM uses at its next start."""
 
     def setUp(self):
         self.client.force_login(get_user_model().objects.create_superuser("xml_admin", "x@example.com", "pw"))
@@ -28,7 +31,7 @@ class ChangeXmlTestCase(TestCase):
             data["confirm"] = "1"
         with patch("instances.models.wvmInstance") as wvm:
             wvm.return_value.get_status.return_value = status
-            wvm.return_value._XMLDesc.return_value = CURRENT
+            wvm.return_value._XMLDesc.side_effect = lambda flags: CURRENT if flags == PERSISTENT_XML else LIVE
             wvm.return_value._defineXML.side_effect = define_error
             response = self.client.post(reverse("instances:change_xml", args=[self.instance.id]), data)
         return response, wvm.return_value._defineXML
@@ -67,13 +70,12 @@ class ChangeXmlTestCase(TestCase):
         row = Logs.objects.get(instance_uuid=self.instance.uuid)
         self.assertEqual((row.message, row.success), ("VM xml-vm: change XML: unsupported configuration: bad memory", False))
 
-    def test_running_or_paused_vm_is_refused(self):
+    def test_a_running_or_paused_vm_gets_the_definition_for_its_next_start(self):
         for status in (1, 3):
             with self.subTest(status=status):
                 response, define = self.post(status, confirm=True)
-                define.assert_not_called()
-                self.assertEqual(response.status_code, 409)
-                self.assertIn("Power off", response.json()["error"])
+                define.assert_called_once_with(EDITED)
+                self.assertIn("next start", " ".join(str(m) for m in get_messages(response.wsgi_request)))
 
     def test_the_line_breaks_a_form_posts_are_the_same_definition(self):
         response, _ = self.post(base=CURRENT.replace("\n", "\r\n"))
