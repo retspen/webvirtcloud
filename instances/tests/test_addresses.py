@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 from instances import addresses
 from libvirt import (
+    VIR_CONNECT_LIST_DOMAINS_ACTIVE,
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT,
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE,
@@ -27,18 +28,20 @@ def iface(mac, *addrs):
     return {"hwaddr": mac, "addrs": [{"type": t, "addr": a, "prefix": p} for t, a, p in addrs]}
 
 
-def domain_xml(*macs, agent=None):
+def domain_xml(*macs, agent=None, osinfo=None):
     nics = "".join(f"<interface type='bridge'><mac address='{mac}'/></interface>" for mac in macs)
     channel = ("<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0' "
                f"state='{agent}'/></channel>") if agent else ""
-    return f"<domain><devices>{nics}{channel}</devices></domain>"
+    metadata = ("<metadata><libosinfo:libosinfo xmlns:libosinfo='http://libosinfo.org/xmlns/libvirt/domain/1.0'>"
+                f"<libosinfo:os id='{osinfo}'/></libosinfo:libosinfo></metadata>") if osinfo else ""
+    return f"<domain>{metadata}<devices>{nics}{channel}</devices></domain>"
 
 
 class FakeDomain:
     """answers: source -> dict, an exception to raise, or an Event to wait on (a hung agent)."""
 
-    def __init__(self, answers, uuid="uuid-a", name="vm-a", xml=None, state=1):
-        self.answers, self.uuid, self.vname, self.state_ = answers, uuid, name, state
+    def __init__(self, answers, uuid="uuid-a", name="vm-a", xml=None, state=1, os=None):
+        self.answers, self.uuid, self.vname, self.state_, self.os = answers, uuid, name, state, os
         self.xml = xml or domain_xml(MAC1, agent="connected")
 
     def interfaceAddresses(self, source):
@@ -59,12 +62,29 @@ class FakeDomain:
     def state(self):
         return [self.state_, 0]
 
+    def isActive(self):
+        return self.state_ != 5
+
+    def info(self):
+        return [self.state_, 2097152, 1048576, 2, 0]  # max memory, memory (KiB), vCPUs
+
+    def guestInfo(self, types=0, flags=0):
+        if isinstance(self.os, threading.Event):
+            self.os.wait()
+            return {}
+        if self.os is None:
+            raise libvirtError("no guest agent")
+        return self.os
+
     def XMLDesc(self, flags=0):
         return self.xml
 
 
 def compute(name, *domains, pk=1, down=False):
-    connection = SimpleNamespace(listAllDomains=lambda flags=0: list(domains))
+    def listing(flags=0):
+        return [d for d in domains if flags != VIR_CONNECT_LIST_DOMAINS_ACTIVE or d.state_ != 5]
+
+    connection = SimpleNamespace(listAllDomains=listing)
     return SimpleNamespace(id=pk, name=name, status=not down or Exception("unreachable"), connection=connection)
 
 
@@ -233,3 +253,54 @@ class FindTests(unittest.TestCase):
         result = self.find(addresses.Target(compute("c1", vm("same", MAC1, "192.0.2.10")), None),
                            addresses.Target(compute("c2", vm("same", MAC2, "192.0.2.10"), pk=2), None))
         self.assertEqual([(m["compute_id"], m["conflict"]) for m in result["matches"]], [(1, True), (2, True)])
+
+
+class InventoryTests(unittest.TestCase):
+    """Every VM of the targets, one row each, for the report."""
+
+    def test_every_vm_comes_with_its_addresses_and_os(self):
+        running = FakeDomain({ARP: {"e": iface(MAC1, (0, "192.0.2.10", 24))},
+                              AGENT: {"eth0": iface(MAC1, (0, "192.0.2.10", 24), (1, "2001:db8::10", 64))}},
+                             uuid="a", name="web", os={"os.id": "almalinux", "os.pretty-name": "AlmaLinux 10.0"})
+        off = FakeDomain({}, uuid="b", name="win", state=5,
+                         xml=domain_xml(MAC2, osinfo="http://microsoft.com/win/2k22"))
+        result = addresses.inventory([addresses.Target(compute("c1", running, off), None)])
+        web, win = result["vms"]
+        self.assertEqual((web["name"], web["state"], web["vcpus"], web["memory"]), ("web", 1, 2, 1024))
+        self.assertEqual((web["os"], web["os_family"]), ("AlmaLinux 10.0", "Linux"))
+        self.assertEqual(web["macs"], [MAC1])
+        self.assertEqual(web["addresses"], [("192.0.2.10", ["ARP", "agent"]), ("2001:db8::10", ["agent"])])
+        self.assertEqual((win["name"], win["state"], win["addresses"]), ("win", 5, []))
+        self.assertEqual((win["os"], win["os_family"]), ("win 2k22", "Windows"))
+
+    def test_an_os_without_an_agent_or_metadata_is_unknown(self):
+        dom = vm("a", MAC1, "192.0.2.10", agent=None)
+        (row,) = addresses.inventory([addresses.Target(compute("c1", dom), None)])["vms"]
+        self.assertEqual((row["os"], row["os_family"]), ("", ""))
+
+    def test_an_agent_that_reports_no_os_falls_back_to_the_metadata(self):
+        dom = FakeDomain({}, xml=domain_xml(MAC1, agent="connected", osinfo="http://almalinux.org/almalinux/9"))
+        (row,) = addresses.inventory([addresses.Target(compute("c1", dom), None)])["vms"]
+        self.assertEqual((row["os"], row["os_family"]), ("almalinux 9", "Linux"))
+
+    def test_a_down_host_and_a_late_agent_are_counted(self):
+        hung = threading.Event()
+        try:
+            stuck = FakeDomain({AGENT: hung}, uuid="hung", xml=domain_xml(MAC2, agent="connected"))
+            result = addresses.inventory([addresses.Target(compute("c1", stuck), None),
+                                          addresses.Target(compute("c2", pk=2, down=True), None)], deadline=0.3)
+            self.assertEqual((result["hosts_down"], result["unread"]), (["c2"], 1))
+            self.assertEqual([row["name"] for row in result["vms"]], ["vm-a"])
+        finally:
+            hung.set()
+
+    def test_an_os_read_that_hangs_keeps_the_addresses_read(self):
+        hung = threading.Event()
+        try:
+            dom = FakeDomain({AGENT: {"eth0": iface(MAC1, (0, "192.0.2.10", 24))}}, os=hung)
+            result = addresses.inventory([addresses.Target(compute("c1", dom), None)], deadline=0.3)
+            (row,) = result["vms"]
+            self.assertEqual(row["addresses"], [("192.0.2.10", ["agent"])])
+            self.assertEqual(result["unread"], 0)
+        finally:
+            hung.set()

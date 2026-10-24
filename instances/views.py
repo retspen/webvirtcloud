@@ -11,6 +11,7 @@ import socket
 import subprocess
 import time
 from bisect import insort
+from ipaddress import ip_address
 
 from accounts.models import UserInstance, UserSSHKey
 from admin.decorators import superuser_only
@@ -52,10 +53,10 @@ from vrtManager.util import randomPasswd
 
 from instances.models import Instance
 
-from . import addresses, utils
+from . import addresses, report, utils
 from .forms import ConsoleForm, FlavorForm, NewVMForm
 from .models import Flavor
-from .states import STATES, UNKNOWN
+from .states import STATES, UNKNOWN, state_label
 
 # the VM page waits this long (seconds) for the compute's drbdadm status
 DRBD_STATUS_TIMEOUT = 10
@@ -93,6 +94,24 @@ def index(request):
     )
 
 
+def _address_scope(user):
+    """What the address search and the VM report read for the user: whether
+    the user sees hosts, the registered VMs by (compute id, UUID), and the
+    targets. Administrators read every compute, VMs the panel has not
+    registered included; other users only their own VMs. A VM is its compute
+    and UUID: one UUID may be defined on two hosts."""
+    show_hosts = user.is_superuser or user.has_perm("instances.view_instances")
+    if show_hosts:
+        known = {(inst.compute_id, inst.uuid): inst for inst in Instance.objects.all()}
+        return show_hosts, known, [addresses.Target(compute, None) for compute in Compute.objects.all()]
+    known = {(inst.compute_id, inst.uuid): inst for inst in
+             Instance.objects.filter(userinstance__user=user).select_related("compute")}
+    scopes = {}
+    for inst in known.values():
+        scopes.setdefault(inst.compute_id, addresses.Target(inst.compute, set())).uuids.add(inst.uuid)
+    return show_hosts, known, list(scopes.values())
+
+
 def find_address(request):
     """
     The running VMs using an IP address or an address in a network
@@ -105,18 +124,7 @@ def find_address(request):
         network = addresses.parse_query(request.GET.get("q", ""))
     except ValueError:
         return JsonResponse({"error": _("Enter an IP address or a network such as 192.0.2.0/24.")}, status=400)
-    show_hosts = request.user.is_superuser or request.user.has_perm("instances.view_instances")
-    # a VM is its compute and UUID: one UUID may be defined on two hosts
-    if show_hosts:
-        known = {(inst.compute_id, inst.uuid): inst for inst in Instance.objects.all()}
-        targets = [addresses.Target(compute, None) for compute in Compute.objects.all()]
-    else:
-        known = {(inst.compute_id, inst.uuid): inst for inst in
-                 Instance.objects.filter(userinstance__user=request.user).select_related("compute")}
-        scopes = {}
-        for inst in known.values():
-            scopes.setdefault(inst.compute_id, addresses.Target(inst.compute, set())).uuids.add(inst.uuid)
-        targets = list(scopes.values())
+    show_hosts, known, targets = _address_scope(request.user)
     try:
         result = addresses.find(targets, network)
     except addresses.Busy:
@@ -140,6 +148,57 @@ def find_address(request):
     else:
         coverage["some_unchecked"] = bool(result["hosts_down"] or result["hosts_unfinished"])
     return JsonResponse({"matches": matches, "coverage": coverage, "read_at": timezone.now().isoformat()})
+
+
+@superuser_only
+def vm_report(request):
+    """
+    Every VM on every compute (shut-off ones and those the panel has not
+    registered too), with its state, host, OS, size, addresses and owners,
+    as an Excel workbook; a second sheet says what could not be read
+    (instances/addresses.py inventory). Linked from the Administration menu.
+    """
+    known, targets = _address_scope(request.user)[1:]
+    try:
+        result = addresses.inventory(targets)
+    except addresses.Busy:
+        messages.error(request, _("Too many searches are still running; try again shortly."))
+        return redirect("instances:index")
+
+    hosts = {target.compute.id: target.compute.name for target in targets}
+    owners = {}
+    for owner in UserInstance.objects.select_related("user", "instance"):
+        owners.setdefault((owner.instance.compute_id, owner.instance.uuid), []).append(owner.user.username)
+    header = ["VM", "State", "Host", "OS", "OS family", "vCPUs", "Memory (MiB)", "IP addresses",
+              "Address sources", "MAC addresses", "Owners", "In the panel"]
+    rows = []
+    for vm in result["vms"]:
+        key = (vm["compute_id"], vm["uuid"])
+        # a link-local address (fe80::) is not one to report: every NIC has its own
+        reported = [(address, sources) for address, sources in vm["addresses"]
+                    if not ip_address(address).is_link_local]
+        found = {source for _address, sources in reported for source in sources}
+        row = {"VM": vm["name"], "State": str(state_label(vm["state"])[0]), "Host": hosts[vm["compute_id"]],
+               "OS": vm["os"], "OS family": vm["os_family"], "vCPUs": vm["vcpus"], "Memory (MiB)": vm["memory"],
+               "IP addresses": ", ".join(address for address, _sources in reported),
+               "Address sources": ", ".join(s for s in addresses.SOURCES.values() if s in found),
+               "MAC addresses": ", ".join(vm["macs"]), "Owners": ", ".join(sorted(owners.get(key, []))),
+               "In the panel": "yes" if key in known else "no"}
+        rows.append(list(row.values()))
+
+    notes = [f"Created: {timezone.localtime():%Y-%m-%d %H:%M}",
+             f"VMs listed: {len(rows)}",
+             f"Running VMs read: {result['checked']}",
+             f"Without a connected guest agent (a static address on them cannot be seen): {result['no_agent']}",
+             f"Guest agents not read (no answer in time, or an error): {result['unread']}"]
+    if result["hosts_down"]:
+        notes.append("Hosts not reached: " + ", ".join(result["hosts_down"]))
+    if result["hosts_unfinished"]:
+        notes.append("Hosts not finished in time: " + ", ".join(result["hosts_unfinished"]))
+    response = HttpResponse(report.workbook("VMs", header, rows, "Coverage", notes),
+                            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="vms-{timezone.localtime():%Y%m%d-%H%M}.xlsx"'
+    return response
 
 
 def instance(request, pk):

@@ -14,6 +14,7 @@ drf-spectacular[sidecar]==0.30.0
 gunicorn==26.2.0
 libvirt-python>=9.0.0
 lxml>=6.1
+openpyxl==3.1.5
 paramiko==5.0.0
 psycopg[binary]==3.3.6
 python-engineio==4.14.0

@@ -33,6 +33,7 @@
             <a class="dropdown-item {% view_active request 'admin:group_list' %}" href="{% url 'admin:group_list' %}">{% bs_icon 'people-fill' %} {% trans "Groups" %}</a>
             <a class="dropdown-item {% view_active request 'admin:logs' %}" href="{% url 'admin:logs' %}">{% bs_icon 'card-list' %} {% trans "Logs" %}</a>
             <a class="dropdown-item {% view_active request 'admin:tombstone_list' %}" href="{% url 'admin:tombstone_list' %}">{% bs_icon 'trash' %} {% trans "Removed VMs" %}</a>
+            <a class="dropdown-item" href="{% url 'instances:vm_report' %}">{% bs_icon 'download' %} {% trans "VM report (.xlsx)" %}</a>
             <a class="dropdown-item {% view_active request 'appsettings' %}" href="{% url 'appsettings' %}">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</a>
           </div>
         </li>
