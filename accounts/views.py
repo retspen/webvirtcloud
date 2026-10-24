@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.core.cache import cache
 from django.http import Http404
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import never_cache
@@ -65,6 +66,10 @@ def api_token_create(request):
     a session that passed the login, and its OTP when OTP is on."""
     form = ApiTokenForm(request.POST)
     if not form.is_valid():
+        return render(request, "common/form.html", {"form": form, "title": _("Create an API token")})
+    ApiToken.objects.filter(user=request.user, expiry__lt=timezone.now()).delete()
+    if ApiToken.objects.filter(user=request.user).count() >= ApiToken.LIMIT:
+        form.add_error(None, _("A user has at most %(limit)s API tokens: delete one first.") % {"limit": ApiToken.LIMIT})
         return render(request, "common/form.html", {"form": form, "title": _("Create an API token")})
     name, days = form.cleaned_data["name"], form.cleaned_data["days"]
     with audit(request, None, f"API token {name}", "add"):

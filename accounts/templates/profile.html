@@ -96,6 +96,7 @@
                         <th scope="col">{% trans "Starts with" %}</th>
                         <th scope="col">{% trans "Created" %}</th>
                         <th scope="col">{% trans "Expires" %}</th>
+                        <th scope="col">{% trans "Last used" %}</th>
                         <th scope="col"></th>
                     </tr>
                 </thead>
@@ -106,6 +107,7 @@
                         <td><code>{{ token.token_key }}</code></td>
                         <td>{{ token.created|date:"Y-m-d H:i" }}</td>
                         <td>{% if token.expiry %}{{ token.expiry|date:"Y-m-d H:i" }}{% else %}{% trans "never" %}{% endif %}</td>
+                        <td>{% if token.last_used %}{{ token.last_used|date:"Y-m-d H:i" }}{% else %}{% trans "never" %}{% endif %}</td>
                         <td class="text-end">
                             <a href="{% url 'accounts:api_token_delete' token.token_key %}" title="{% trans "Delete" %}" class="btn btn-sm btn-secondary">
                                 {% bs_icon 'trash' %}

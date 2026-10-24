@@ -3,6 +3,7 @@ passed the login (and its OTP), and scripts use them on the REST API."""
 
 import re
 from datetime import timedelta
+from unittest.mock import patch
 
 from accounts.models import ApiToken
 from django.contrib.auth import get_user_model
@@ -98,3 +99,33 @@ class ApiTokenTests(TestCase):
         # would reference auth_user unseen, and PostgreSQL could not empty
         # auth_user between tests
         self.assertNotIn("knox_authtoken", connection.introspection.table_names())
+    def test_a_token_shows_when_it_was_last_used(self):
+        token = self.make()
+        self.assertIsNone(ApiToken.objects.get().last_used)
+        self.api(token)
+        first = ApiToken.objects.get().last_used
+        self.assertAlmostEqual(first, timezone.now(), delta=timedelta(seconds=5))
+        # within a minute a request writes nothing
+        self.api(token)
+        self.assertEqual(ApiToken.objects.get().last_used, first)
+        later = timezone.now() + timedelta(minutes=2)
+        with patch("accounts.auth.timezone.now", return_value=later):
+            self.api(token)
+        self.assertEqual(ApiToken.objects.get().last_used, later)
+        self.client.force_login(self.user)
+        self.assertIn("Last used", self.client.get(reverse("accounts:profile")).content.decode())
+
+    def test_a_user_has_at_most_ten_tokens(self):
+        for number in range(10):
+            self.make(name=f"t{number}")
+        response = self.client.post(reverse("accounts:api_token_create"), {"name": "one more", "days": "30"})
+        self.assertEqual(ApiToken.objects.filter(user=self.user).count(), 10)
+        self.assertNotRegex(response.content.decode(), r"wvc_[0-9a-f]{64}")
+        self.assertIn("at most 10", response.content.decode())
+
+    def test_expired_tokens_do_not_count_toward_the_limit(self):
+        for number in range(10):
+            self.make(name=f"t{number}")
+        ApiToken.objects.filter(name="t0").update(expiry=timezone.now() - timedelta(days=1))
+        self.make(name="new")
+        self.assertEqual(sorted(ApiToken.objects.values_list("name", flat=True))[:2], ["new", "t1"])

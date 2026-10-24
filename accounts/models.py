@@ -87,7 +87,10 @@ class PermissionSet(models.Model):
 class ApiToken(AbstractAuthToken):
     """A token for the REST API, kept as a digest (django-rest-knox); the
     name says what uses it."""
+    LIMIT = 10  # per user, expired ones not counted
+
     name = models.CharField(_("name"), max_length=64)
+    last_used = models.DateTimeField(_("last used"), null=True, blank=True)
 
     class Meta:
         ordering = ["-created"]

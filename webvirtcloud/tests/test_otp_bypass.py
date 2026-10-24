@@ -17,7 +17,7 @@ class BasicAuthDisabledTestCase(TestCase):
         # A token is no other door: it is made in a session that passed the
         # login and its OTP (accounts.views.api_token_create)
         classes = [f"{c.__module__}.{c.__name__}" for c in api_settings.DEFAULT_AUTHENTICATION_CLASSES]
-        self.assertEqual(classes, ["knox.auth.TokenAuthentication",
+        self.assertEqual(classes, ["accounts.auth.TokenAuthentication",
                                    "rest_framework.authentication.SessionAuthentication"])
 
     def test_api_rejects_http_basic_credentials(self):

@@ -368,7 +368,7 @@ REST_FRAMEWORK = {
     # tokens are made in a session. The token class comes first, so a refused
     # request gets 401 with its challenge, not 403.
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "knox.auth.TokenAuthentication",
+        "accounts.auth.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     # A view that forgets its own permission_classes is not public.
