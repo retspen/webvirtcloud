@@ -114,19 +114,24 @@ def _address_scope(user):
 
 def find_address(request):
     """
-    The running VMs using an IP address or an address in a network
+    The running VMs using an IP address or an address in a network, or the
+    VMs with a NIC of a MAC address, shut-off ones too
     (instances/addresses.py), as JSON for the Instances page's dialog.
     Administrators search every compute, VMs the panel has not registered
     included, and see the hosts; other users only their own VMs, without
     hosts or host errors.
     """
-    try:
-        network = addresses.parse_query(request.GET.get("q", ""))
-    except ValueError:
-        return JsonResponse({"error": _("Enter an IP address or a network such as 192.0.2.0/24.")}, status=400)
+    query = request.GET.get("q", "")
+    mac = addresses.parse_mac(query)
+    if mac is None:
+        try:
+            network = addresses.parse_query(query)
+        except ValueError:
+            return JsonResponse({"error": _("Enter an IP address, a network such as 192.0.2.0/24, or a MAC address.")},
+                                status=400)
     show_hosts, known, targets = _address_scope(request.user)
     try:
-        result = addresses.find(targets, network)
+        result = addresses.find_mac(targets, mac) if mac else addresses.find(targets, network)
     except addresses.Busy:
         return JsonResponse({"error": _("Too many searches are still running; try again shortly.")}, status=409)
 

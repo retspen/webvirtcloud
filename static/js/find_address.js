@@ -9,6 +9,7 @@
     var coverage = document.getElementById("find-address-coverage");
     var button = form.querySelector("button[type=submit]");
     var text = dialog.dataset;
+    var MAC = /^[0-9a-f]{2}([:-]?)[0-9a-f]{2}(\1[0-9a-f]{2}){4}$/i;  // as instances/addresses.py reads one
 
     function cell(row, content) {
         var td = document.createElement("td");
@@ -59,7 +60,7 @@
         var matches = answer.matches || [];
         matches.forEach(function (match) {
             var row = body.insertRow();
-            var address = cell(row, match.address);
+            var address = cell(row, match.address || "\u2014");  // a NIC without an address
             if (match.conflict) {
                 var badge = document.createElement("span");
                 badge.className = "badge bg-warning-subtle text-warning-emphasis ms-1";
@@ -76,7 +77,8 @@
         table.classList.toggle("d-none", matches.length === 0);
         if (answer.coverage) {
             var readAt = text.readAt.replace("%(time)s", new Date(answer.read_at).toLocaleTimeString());
-            coverage.textContent = (matches.length ? "" : text.none + " ") + coverageText(answer.coverage) + " " + readAt;
+            var none = MAC.test(form.elements.q.value.trim()) ? text.noneMac : text.none;
+            coverage.textContent = (matches.length ? "" : none + " ") + coverageText(answer.coverage) + " " + readAt;
         } else {
             coverage.textContent = "";
         }
@@ -85,7 +87,7 @@
     // an address typed in the list's search box is what the dialog looks for
     dialog.addEventListener("show.bs.modal", function () {
         var typed = document.getElementById("filter").value.trim();
-        if (/^[0-9a-fA-F:.]+(\/[0-9]+)?$/.test(typed) && /[.:]/.test(typed)) {
+        if (MAC.test(typed) || (/^[0-9a-fA-F:.]+(\/[0-9]+)?$/.test(typed) && /[.:]/.test(typed))) {
             form.elements.q.value = typed;
         }
     });

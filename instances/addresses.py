@@ -6,6 +6,7 @@ guest agent. An address counts only on one of the VM's own NICs (by MAC), so
 interfaces inside the guest such as docker0 never match.
 """
 
+import re
 import threading
 import time
 from concurrent import futures
@@ -56,6 +57,18 @@ class Target:
 def parse_query(text):
     """An address as a one-address network, or a network; ValueError otherwise."""
     return ip_network(text.strip(), strict=False)
+
+
+MAC = re.compile(r"[0-9a-f]{2}([:-]?)[0-9a-f]{2}(\1[0-9a-f]{2}){4}")
+
+
+def parse_mac(text):
+    """A MAC address (aa:bb:..., aa-bb-..., aabb...) in lower-case colon form; None otherwise."""
+    text = text.strip().lower()
+    if not MAC.fullmatch(text):
+        return None
+    digits = text.replace(":", "").replace("-", "")
+    return ":".join(digits[i:i + 2] for i in range(0, 12, 2))
 
 
 def nic_macs(xml):
@@ -135,14 +148,15 @@ def _read_os(dom):
     return info.get("os.pretty-name") or info.get("os.name") or info["os.id"], os_family(info["os.id"])
 
 
-def _read_host(target, network, everything):
+def _read_host(target, network, everything, mac):
     """The cheap first phase on one compute: leases and ARP of each running
     VM in scope (with everything, the shut-off ones are listed too). Returns
     the VMs' records, the observations, the (domain, vm, MACs) whose agent is
     to be asked, the number of running VMs read and of those without a
     connected agent; None when the compute cannot be reached (connecting may
     take the connect timeout, so this too runs on the compute's thread). A
-    VM that stops or leaves meanwhile is skipped."""
+    VM that stops or leaves meanwhile is skipped. With a mac, only the VMs
+    with a NIC of that MAC, and only that NIC's addresses."""
     if target.compute.status is not True:
         return None
     records, found, agents, checked, no_agent = [], [], [], 0, 0
@@ -159,6 +173,10 @@ def _read_host(target, network, everything):
         except libvirtError:
             continue
         macs = nic_macs(xml)
+        if mac:
+            if mac not in macs:
+                continue
+            macs = {mac}
         os, family = defined_os(xml)
         records.append({"vm": vm, "state": state, "vcpus": vcpus, "memory": memory // 1024,
                         "macs": sorted(macs), "os": os, "os_family": family})
@@ -189,7 +207,7 @@ def _rows(observations):
     return rows
 
 
-def _survey(targets, network, deadline, everything):
+def _survey(targets, network, deadline, everything, with_os=False, mac=None):
     """
     Read the targets by the deadline (seconds): first each compute's VMs,
     leases and ARP, then each VM's guest agent on its own thread, so a hung
@@ -205,7 +223,7 @@ def _survey(targets, network, deadline, everything):
     checked = no_agent = unread = 0
     pool = futures.ThreadPoolExecutor(max_workers=MAX_WORKERS)
     try:
-        hosts = {pool.submit(_counted, _read_host, target, network, everything): target.compute
+        hosts = {pool.submit(_counted, _read_host, target, network, everything, mac): target.compute
                  for target in targets}
         waiting = set(hosts)
         try:
@@ -227,7 +245,7 @@ def _survey(targets, network, deadline, everything):
                 for dom, vm, macs in agents:
                     agent_reads.append(pool.submit(_counted, _matching, dom, vm,
                                                    VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT, macs, network))
-                    if everything:
+                    if with_os:
                         os_reads[pool.submit(_counted, _read_os, dom)] = vm
         except futures.TimeoutError:
             pass
@@ -255,10 +273,29 @@ def find(targets, network, deadline=5.0):
     return {"matches": _rows(observations), **counts}
 
 
+def find_mac(targets, mac, deadline=5.0):
+    """The VMs of the targets with a NIC of the MAC, shut-off ones too, one
+    row per VM and address of that NIC (one row without an address if it
+    has none). One MAC on more than one VM is a conflict."""
+    records, observations, _, counts = _survey(targets, None, deadline, everything=True, mac=mac)
+    found = {}
+    for row in _rows(observations):
+        if not ip_address(row["address"]).is_link_local:  # made from the MAC: not a finding
+            found.setdefault((row["compute_id"], row["uuid"]), []).append(row)
+    conflict = len({record["vm"][:2] for record in records}) > 1
+    matches = []
+    for record in sorted(records, key=lambda record: (record["vm"][2], record["vm"][0])):
+        compute_id, uuid, name = record["vm"]
+        rows = found.get((compute_id, uuid)) or [
+            {"compute_id": compute_id, "uuid": uuid, "name": name, "mac": mac, "address": "", "sources": []}]
+        matches += [{**row, "conflict": conflict} for row in rows]
+    return {"matches": matches, **counts}
+
+
 def inventory(targets, deadline=20.0):
     """Every VM of the targets, shut-off ones too, with its addresses and OS
     (the agent's, else the definition's libosinfo id), sorted by name."""
-    records, observations, systems, counts = _survey(targets, None, deadline, everything=True)
+    records, observations, systems, counts = _survey(targets, None, deadline, everything=True, with_os=True)
     addresses = {}
     for row in _rows(observations):
         vm = (row["compute_id"], row["uuid"], row["name"])

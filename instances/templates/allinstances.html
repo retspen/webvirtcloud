@@ -50,6 +50,7 @@
     <div class="modal fade" id="find-address" tabindex="-1" aria-labelledby="find-address-title" aria-hidden="true"
          data-url="{% url 'instances:find_address' %}" data-failed="{% trans "The search did not go through. Try again." %}"
          data-none="{% trans "No running VM reports this address." %}"
+         data-none-mac="{% trans "No VM has a network card with this MAC address." %}"
          data-unregistered="{% trans "(not registered in the panel)" %}" data-conflict="{% trans "possible conflict" %}"
          data-checked="{% trans "Running VMs checked: %(n)s." %}"
          data-no-agent="{% trans "%(n)s had no connected guest agent; a static address on them cannot be seen." %}"
@@ -61,14 +62,14 @@
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title h5" id="find-address-title">{% trans "Find the VMs using an IP address" %}</h2>
+                    <h2 class="modal-title h5" id="find-address-title">{% trans "Find the VMs using an IP or MAC address" %}</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
                 <div class="modal-body">
                     <form id="find-address-form" class="d-flex gap-2 mb-3">
-                        <label class="visually-hidden" for="find-address-q">{% trans "IP address or network" %}</label>
+                        <label class="visually-hidden" for="find-address-q">{% trans "IP address, network or MAC address" %}</label>
                         <input type="text" class="form-control" name="q" id="find-address-q" required
-                               placeholder="192.0.2.10 {% trans "or" %} 192.0.2.0/24">
+                               placeholder="192.0.2.10, 192.0.2.0/24 {% trans "or" %} 52:54:00:12:34:56">
                         <button type="submit" class="btn btn-primary">{% trans "Find" %}</button>
                     </form>
                     <div class="alert alert-danger d-none" role="alert" id="find-address-error"></div>

@@ -102,6 +102,14 @@ class ReadAndMatchTests(unittest.TestCase):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 addresses.parse_query(text)
 
+    def test_a_mac_is_read_in_its_usual_spellings(self):
+        for text in ("52:54:00:AA:bb:01", " 52-54-00-aa-bb-01 ", "525400aabb01"):
+            with self.subTest(text=text):
+                self.assertEqual(addresses.parse_mac(text), "52:54:00:aa:bb:01")
+        for text in ("", "52:54:00:aa:bb", "192.0.2.1", "fe80::1", "52:54:00:aa:bb:zz"):
+            with self.subTest(text=text):
+                self.assertIsNone(addresses.parse_mac(text))
+
     def test_the_nics_and_the_agent_come_from_the_definition(self):
         xml = domain_xml(MAC1, MAC2.upper(), agent="connected")
         self.assertEqual(addresses.nic_macs(xml), {MAC1, MAC2})
@@ -304,3 +312,32 @@ class InventoryTests(unittest.TestCase):
             self.assertEqual(result["unread"], 0)
         finally:
             hung.set()
+
+
+class FindMacTests(unittest.TestCase):
+    """A MAC finds the VMs with a NIC of that MAC, shut-off ones too, with that NIC's addresses."""
+
+    def test_a_running_vm_comes_with_the_nics_addresses(self):
+        # the NIC's link-local address comes from its MAC: not a finding
+        dom = FakeDomain({ARP: {"e": iface(MAC1, (0, "192.0.2.10", 24))},
+                          AGENT: {"eth0": iface(MAC1, (0, "192.0.2.10", 24), (1, "fe80::5054:ff:fe00:1", 64)),
+                                  "eth1": iface(MAC2, (0, "198.51.100.2", 24))}},
+                         xml=domain_xml(MAC1, MAC2, agent="connected"))
+        result = addresses.find_mac([addresses.Target(compute("c1", dom), None)], MAC1)
+        self.assertEqual([(m["mac"], m["address"], m["sources"]) for m in result["matches"]],
+                         [(MAC1, "192.0.2.10", ["ARP", "agent"])])
+
+    def test_a_shut_off_vm_is_found_by_its_definition(self):
+        off = FakeDomain({}, uuid="off", name="vm-off", state=5, xml=domain_xml(MAC2))
+        (match,) = addresses.find_mac([addresses.Target(compute("c1", off), None)], MAC2)["matches"]
+        self.assertEqual((match["name"], match["address"], match["sources"], match["conflict"]), ("vm-off", "", [], False))
+
+    def test_one_mac_on_two_vms_is_a_conflict(self):
+        c = compute("c1", vm("a", MAC1, "192.0.2.10"), FakeDomain({}, uuid="b", name="vm-b", state=5, xml=domain_xml(MAC1)))
+        matches = addresses.find_mac([addresses.Target(c, None)], MAC1)["matches"]
+        self.assertEqual(sorted((m["uuid"], m["conflict"]) for m in matches), [("a", True), ("b", True)])
+
+    def test_only_vms_with_the_mac_are_read(self):
+        other = FakeDomain({AGENT: libvirtError("must not be asked")}, uuid="other", xml=domain_xml(MAC2, agent="connected"))
+        result = addresses.find_mac([addresses.Target(compute("c1", vm("a", MAC1, "192.0.2.10"), other), None)], MAC1)
+        self.assertEqual(([m["uuid"] for m in result["matches"]], result["unread"]), (["a"], 0))

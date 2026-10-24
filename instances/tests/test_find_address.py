@@ -82,12 +82,23 @@ class FindAddressTests(TestCase):
         self.assertEqual([m["url"] for m in response.json()["matches"]],
                          [reverse("instances:instance", args=[i.id]) + "#network" for i in (self.a, twin)])
 
+    def test_a_mac_is_looked_up_by_its_nics(self):
+        self.client.force_login(self.admin)
+        answer = {"matches": [{**row(UUID_A, "vm-a", self.c1.id), "address": "", "sources": []}],
+                  "checked": 1, "no_agent": 0, "unread": 0, "hosts_down": [], "hosts_unfinished": []}
+        with patch("instances.addresses.find_mac", return_value=answer) as find_mac, \
+                patch("instances.addresses.find") as find:
+            response = self.client.get(reverse("instances:find_address"), {"q": "52-54-00-00-00-01"})
+        self.assertEqual(find_mac.call_args.args[1], "52:54:00:00:00:01")
+        find.assert_not_called()
+        self.assertEqual([(m["vm"], m["address"]) for m in response.json()["matches"]], [("vm-a", "")])
+
     def test_a_bad_query_is_refused_without_libvirt(self):
         for q in ("", "abc", "192.0.2.300"):
             with self.subTest(q=q):
                 response, find = self.search(self.admin, q=q)
                 self.assertEqual(response.status_code, 400)
-                self.assertIn("192.0.2.0/24", response.json()["error"])
+                self.assertIn("MAC", response.json()["error"])
                 find.assert_not_called()
 
     def test_too_many_searches_answer_409(self):
