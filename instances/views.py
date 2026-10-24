@@ -431,8 +431,14 @@ def get_instance(user, pk, perm_type="view"):
     return instance
 
 
+def from_script(request):
+    """A form a page's script sends and answers itself: the create page's
+    flavor forms (it swaps in the reply), the XML editor's dialog (JSON)."""
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
 def _busy(request, pk, busy):
-    if hasattr(request, "accepted_renderer"):
+    if hasattr(request, "accepted_renderer") or from_script(request):
         blocker = busy.blocker
         return JsonResponse({"detail": busy_message(busy, request.user),
                              "operation": summary(blocker, request.user) if blocker else None}, status=409)
@@ -441,7 +447,7 @@ def _busy(request, pk, busy):
 
 
 def _moved(request, pk):
-    if hasattr(request, "accepted_renderer"):
+    if hasattr(request, "accepted_renderer") or from_script(request):
         return JsonResponse({"detail": "The VM was moved meanwhile; try again."}, status=409)
     messages.error(request, _("The VM was moved meanwhile; try again."))
     return get_safe_redirect(request, default=reverse("instances:instance", args=[pk]))
@@ -1460,13 +1466,21 @@ def change_xml(request, pk):
     in the persistent definition, to review; with confirm, the edited XML is
     defined. A running VM uses it at its next start.
     Only over the definition the editor was opened with (base), so a change
-    made since is not overwritten; a form posts its line breaks as CRLF. A refusal comes back to the dialog and the
-    edited XML stays in the editor.
+    made since is not overwritten, and only with the VM's UUID, by which
+    libvirt finds the VM to define. A form posts its line breaks as CRLF. A
+    refusal comes back to the dialog and the edited XML stays in the editor.
     """
     instance = get_instance(request.user, pk)
-    new_xml = request.POST.get("inst_xml", "")
+    new_xml = request.POST.get("inst_xml", "").replace("\r\n", "\n")
     if not new_xml.strip():
         return JsonResponse({"error": _("The XML is empty")}, status=400)
+    try:
+        uuid = util.get_xml_path(new_xml, "/domain/uuid")
+    except util.etree.Error as err:
+        return JsonResponse({"error": _("The XML is not well-formed: %(error)s") % {"error": err}}, status=400)
+    if (uuid or "").strip().lower() != instance.uuid:
+        return JsonResponse({"error": _("The XML must keep the VM's UUID %(uuid)s.") % {"uuid": instance.uuid}},
+                            status=400)
     current = instance.inst_xml
     if request.POST.get("base", "").replace("\r\n", "\n") != current:
         return JsonResponse({"error": _("The definition has changed since the editor was opened. "
@@ -1474,17 +1488,17 @@ def change_xml(request, pk):
     if "confirm" not in request.POST:
         diff = difflib.unified_diff(current.splitlines(), new_xml.splitlines(), "current", "new", lineterm="")
         return JsonResponse({"diff": list(diff)})
+    shut_off = instance.proxy.get_status() == 5
     try:
         with audit_vm(request, instance, "change XML"):
             instance.proxy._defineXML(new_xml)
     except libvirtError as err:
         return JsonResponse({"error": error_text(request, err)}, status=400)
-    if instance.proxy.get_status() == 5:
+    if shut_off:
         messages.success(request, _("The XML definition was saved."))
     else:
         messages.success(request, _("The XML definition was saved; the VM uses it from its next start."))
     return JsonResponse({"saved": True})
-
 
 @require_POST
 @superuser_only
@@ -2101,11 +2115,6 @@ def create_instance(request, compute_id, arch, machine):
     return render(request, "create_instance_w2.html", locals())
 
 
-def from_create_page(request):
-    """A flavor form sent from the create page's script, which swaps in the reply."""
-    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
-
-
 def flavors_reply(request, flavor_form):
     return render(request, "create_flavors_reply.html",
                   {"flavors": Flavor.objects.order_by("id"), "flavor_form": flavor_form})
@@ -2117,11 +2126,11 @@ def flavor_create(request):
     if form.is_valid():
         with audit(request, None, f"Flavor {form.cleaned_data['label']}", "add"):
             form.save()
-        if from_create_page(request):
+        if from_script(request):
             return flavors_reply(request, FlavorForm())
         messages.success(request, _("Flavor Created"))
         return get_safe_redirect(request, default=reverse("instances:index"))
-    if from_create_page(request):
+    if from_script(request):
         return flavors_reply(request, form)
 
     return render(
@@ -2158,7 +2167,7 @@ def flavor_delete(request, pk):
     if request.method == "POST":
         with audit(request, None, f"Flavor {flavor.label}", "delete"):
             flavor.delete()
-        if from_create_page(request):
+        if from_script(request):
             return flavors_reply(request, FlavorForm())
         messages.success(request, _("Flavor Deleted"))
         return get_safe_redirect(request, default=reverse("instances:index"))

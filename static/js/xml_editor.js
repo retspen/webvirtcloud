@@ -17,7 +17,8 @@
     var save = document.getElementById("xml-review-save");
     var reviewed = ""; // Save defines the XML the dialog shows, not later edits
 
-    // null after a redirect (the VM is busy or moved): the page says why
+    // The answer: diff, saved, or error (detail when the VM is busy or moved).
+    // Any other failure, such as a redirect, keeps the edit and says so.
     function post(xml, confirm) {
         var data = new FormData(form);
         data.set("inst_xml", xml);
@@ -25,12 +26,12 @@
         if (confirm) {
             data.set("confirm", "1");
         }
-        return fetch(form.action, {method: "POST", body: data, redirect: "manual"}).then(function (response) {
-            if (response.type === "opaqueredirect") {
-                location.reload();
-                return null;
-            }
+        return fetch(form.action, {
+            method: "POST", body: data, redirect: "manual", headers: {"X-Requested-With": "XMLHttpRequest"},
+        }).then(function (response) {
             return response.json();
+        }).then(function (answer) {
+            return {diff: answer.diff, saved: answer.saved, error: answer.error || answer.detail};
         }).catch(function () {
             return {error: dialog.dataset.failed};
         });
@@ -56,23 +57,26 @@
 
     form.addEventListener("submit", function (event) {
         event.preventDefault();
-        reviewed = editor.getValue();
-        post(reviewed, false).then(function (answer) {
-            if (answer) {
-                show(answer);
-                modal.show();
-            }
+        var xml = editor.getValue();
+        // the last answer shown is the one Save sends, whatever order answers come in
+        post(xml, false).then(function (answer) {
+            reviewed = xml;
+            show(answer);
+            modal.show();
         });
     });
 
     save.addEventListener("click", function () {
         save.disabled = true;
         post(reviewed, true).then(function (answer) {
-            if (answer && answer.saved) {
+            if (answer.saved) {
                 location.hash = "xmledit";
                 location.reload();
-            } else if (answer) {
-                show({error: answer.error, diff: []});
+            } else {
+                // the diff stays, and Save can be tried again
+                error.textContent = answer.error;
+                error.classList.remove("d-none");
+                save.disabled = false;
             }
         });
     });

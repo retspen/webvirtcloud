@@ -9,10 +9,12 @@ from instances.models import Instance
 from libvirt import libvirtError
 from vrtManager.instance import PERSISTENT_XML
 from logs.models import Logs
+from operations import claims
 
-CURRENT = "<domain>\n  <name>xml-vm</name>\n  <memory>1024</memory>\n</domain>"
-LIVE = "<domain id='3'>\n  <name>xml-vm</name>\n  <memory>512</memory>\n</domain>"
-EDITED = "<domain>\n  <name>xml-vm</name>\n  <memory>2048</memory>\n</domain>"
+UUID = "11111111-2222-3333-4444-888888888888"
+CURRENT = f"<domain>\n  <name>xml-vm</name>\n  <uuid>{UUID}</uuid>\n  <memory>1024</memory>\n</domain>"
+LIVE = f"<domain id='3'>\n  <name>xml-vm</name>\n  <uuid>{UUID}</uuid>\n  <memory>512</memory>\n</domain>"
+EDITED = CURRENT.replace("1024", "2048")
 
 
 class ChangeXmlTestCase(TestCase):
@@ -23,7 +25,7 @@ class ChangeXmlTestCase(TestCase):
     def setUp(self):
         self.client.force_login(get_user_model().objects.create_superuser("xml_admin", "x@example.com", "pw"))
         compute = Compute.objects.create(name="xml-compute", hostname="127.0.0.1", login="", password="", type=4)
-        self.instance = Instance.objects.create(compute=compute, name="xml-vm", uuid="11111111-2222-3333-4444-888888888888")
+        self.instance = Instance.objects.create(compute=compute, name="xml-vm", uuid=UUID)
 
     def post(self, status=5, xml=EDITED, base=CURRENT, confirm=False, define_error=None):
         data = {"inst_xml": xml, "base": base}
@@ -85,3 +87,38 @@ class ChangeXmlTestCase(TestCase):
         response, define = self.post(xml="  ", confirm=True)
         define.assert_not_called()
         self.assertEqual(response.status_code, 400)
+
+    def test_a_busy_vm_answers_the_dialog_so_the_edit_stays(self):
+        # the dialog's script sends X-Requested-With; a page form gets the redirect
+        with patch("instances.views.libvirt_instance_lock", side_effect=claims.Busy("instance:xml-vm")), \
+                patch("instances.models.wvmInstance") as wvm:
+            url = reverse("instances:change_xml", args=[self.instance.id])
+            data = {"inst_xml": EDITED, "base": CURRENT, "confirm": "1"}
+            response = self.client.post(url, data, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+            self.assertEqual(response.status_code, 409)
+            self.assertIn("try again", response.json()["detail"])
+            self.assertEqual(list(get_messages(response.wsgi_request)), [])
+            self.assertEqual(self.client.post(url, data).status_code, 302)
+        wvm.return_value._defineXML.assert_not_called()
+
+    def test_the_xml_must_keep_the_vms_uuid(self):
+        # libvirt finds the VM to define by the XML's UUID: another VM's would
+        # overwrite that VM, a new or missing one would add a VM
+        other = CURRENT.replace(UUID, "99999999-2222-3333-4444-888888888888")
+        for xml in (other, CURRENT.replace(f"  <uuid>{UUID}</uuid>\n", "")):
+            for confirm in (False, True):
+                with self.subTest(xml=xml, confirm=confirm):
+                    response, define = self.post(xml=xml, confirm=confirm)
+                    define.assert_not_called()
+                    self.assertEqual(response.status_code, 400)
+                    self.assertIn(UUID, response.json()["error"])
+
+    def test_a_malformed_xml_is_refused_with_the_parser_error(self):
+        response, define = self.post(xml="<domain><name>xml-vm</domain>", confirm=True)
+        define.assert_not_called()
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("not well-formed", response.json()["error"])
+
+    def test_the_edited_xml_is_defined_with_the_line_breaks_libvirt_gave(self):
+        _, define = self.post(xml=EDITED.replace("\n", "\r\n"), confirm=True)
+        define.assert_called_once_with(EDITED)
