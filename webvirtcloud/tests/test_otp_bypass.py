@@ -12,11 +12,13 @@ from rest_framework.settings import api_settings
 
 
 class BasicAuthDisabledTestCase(TestCase):
-    def test_session_is_the_only_default_authentication(self):
-        # exactly SessionAuthentication: not Basic (a password-only door) and
-        # not Token/JWT either, which would be another password-free door
-        names = [c.__name__ for c in api_settings.DEFAULT_AUTHENTICATION_CLASSES]
-        self.assertEqual(names, ["SessionAuthentication"])
+    def test_a_token_or_a_session_are_the_only_default_authentication(self):
+        # exactly knox's tokens and sessions: not Basic (a password-only door).
+        # A token is no other door: it is made in a session that passed the
+        # login and its OTP (accounts.views.api_token_create)
+        classes = [f"{c.__module__}.{c.__name__}" for c in api_settings.DEFAULT_AUTHENTICATION_CLASSES]
+        self.assertEqual(classes, ["knox.auth.TokenAuthentication",
+                                   "rest_framework.authentication.SessionAuthentication"])
 
     def test_api_rejects_http_basic_credentials(self):
         User = get_user_model()

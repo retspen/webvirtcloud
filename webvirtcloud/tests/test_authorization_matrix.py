@@ -38,6 +38,7 @@ ALLOWED_FOR_ANY_USER = {
     "accounts:profile": "the user's own profile",
     "accounts:change_password": "the user's own password; new users get the permission by default",
     "accounts:ssh_key_create": "the user's own SSH keys",
+    "accounts:api_token_create": "the user's own API tokens",
     "set_language": "UI language switch",
     "console": "renders an error without a valid token; access is checked per VM",
     "ds_openstack_index": "cloud-init datasource, fetched by VMs",

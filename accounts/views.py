@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import timedelta
 
 from admin.decorators import superuser_only
 from django.conf import settings
@@ -15,14 +16,15 @@ from django.core.cache import cache
 from django.http import Http404
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from accounts.apps import admin_password_path
 from instances.models import Instance
 from logs.audit import audit, audit_vm, changed_fields, failed, snapshot
 
-from accounts.forms import EmailOTPForm, ProfileForm, UserSSHKeyForm
-from accounts.models import User, UserAttributes, UserInstance, UserSSHKey
+from accounts.forms import ApiTokenForm, EmailOTPForm, ProfileForm, UserSSHKeyForm
+from accounts.models import ApiToken, User, UserAttributes, UserInstance, UserSSHKey
 
 from . import forms
 from .utils import get_existing_totp_device, get_user_totp_device, send_email_with_otp
@@ -50,6 +52,41 @@ def profile(request):
             "publickeys": publickeys,
             "profile_form": profile_form,
             "ssh_key_form": ssh_key_form,
+            "api_tokens": ApiToken.objects.filter(user=request.user),
+            "api_token_form": ApiTokenForm(),
+        },
+    )
+
+
+@require_POST
+@never_cache
+def api_token_create(request):
+    """A REST API token, shown once: only its digest is kept. It is made in
+    a session that passed the login, and its OTP when OTP is on."""
+    form = ApiTokenForm(request.POST)
+    if not form.is_valid():
+        return render(request, "common/form.html", {"form": form, "title": _("Create an API token")})
+    name, days = form.cleaned_data["name"], form.cleaned_data["days"]
+    with audit(request, None, f"API token {name}", "add"):
+        _token, key = ApiToken.objects.create(request.user, expiry=timedelta(days=days) if days else None, name=name)
+    return render(request, "api_token_created.html", {"name": name, "key": key})
+
+
+def api_token_delete(request, token_key):
+    token = get_object_or_404(ApiToken, token_key=token_key, user=request.user)
+    if request.method == "POST":
+        with audit(request, None, f"API token {token.name}", "delete"):
+            token.delete()
+        messages.success(request, _("API token deleted"))
+        return redirect(reverse("accounts:profile") + "#apitokens")
+
+    return render(
+        request,
+        "common/confirm_delete.html",
+        {
+            "object": token.name,
+            "title": _("Delete API token"),
+            "consequence": _("Scripts and tools that use it can no longer reach the API."),
         },
     )
 

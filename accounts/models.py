@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
+from knox.models import AbstractAuthToken
 
 
 class UserInstanceManager(models.Manager):
@@ -81,3 +82,12 @@ class PermissionSet(models.Model):
         permissions = (("change_password", _("Can change password")),)
 
         managed = False
+
+
+class ApiToken(AbstractAuthToken):
+    """A token for the REST API, kept as a digest (django-rest-knox); the
+    name says what uses it."""
+    name = models.CharField(_("name"), max_length=64)
+
+    class Meta:
+        ordering = ["-created"]

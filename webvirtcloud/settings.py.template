@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "logs",
     "operations",
     "rest_framework",
+    "knox",
     "axes",
 ]
 
@@ -362,9 +363,12 @@ OTP_ENABLED = False
 # REST Framework & OpenAPI (drf-spectacular)
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Session only: a password alone (HTTP Basic) must not reach the API, as it
-    # would skip the OTP second factor the login form enforces.
+    # An API token, or a session: a password alone (HTTP Basic) must not reach
+    # the API, as it would skip the OTP second factor the login form enforces;
+    # tokens are made in a session. The token class comes first, so a refused
+    # request gets 401 with its challenge, not 403.
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "knox.auth.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     # A view that forgets its own permission_classes is not public.
@@ -372,6 +376,11 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+# API tokens (django-rest-knox): kept as SHA-512 digests, sent as
+# "Authorization: Token wvc_..."; made and deleted on the profile page
+KNOX_TOKEN_MODEL = "accounts.ApiToken"
+REST_KNOX = {"TOKEN_PREFIX": "wvc_"}
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Webvirtcloud REST-API",

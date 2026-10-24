@@ -26,7 +26,7 @@ class SchemaPermissionTestCase(TestCase):
     def test_schema_requires_login(self):
         client = APIClient()
         for url in SCHEMA_URLS:
-            self.assertEqual(client.get(url).status_code, 403, url)
+            self.assertEqual(client.get(url).status_code, 401, url)
 
     def test_any_user_may_read_the_schema(self):
         user = get_user_model().objects.create_user("schema_reader", password="pw")
@@ -41,4 +41,4 @@ class SchemaPermissionTestCase(TestCase):
                 return Response({})
 
         response = Probe.as_view()(APIRequestFactory().get("/probe/"))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)

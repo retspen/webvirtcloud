@@ -30,6 +30,8 @@ urlpatterns = [
     ),
     path("ssh_key/create/", views.ssh_key_create, name="ssh_key_create"),
     path("ssh_key/<int:pk>/delete/", views.ssh_key_delete, name="ssh_key_delete"),
+    path("api_token/create/", views.api_token_create, name="api_token_create"),
+    path("api_token/<str:token_key>/delete/", views.api_token_delete, name="api_token_delete"),
     path("email_otp/", views.email_otp, name="email_otp"),
     path(
         "admin_email_otp/<int:user_id>/",

@@ -2,7 +2,7 @@ from appsettings.settings import app_settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.validators import MaxLengthValidator
-from django.forms import EmailField, Form, ModelForm, ValidationError
+from django.forms import CharField, EmailField, Form, ModelForm, TypedChoiceField, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from .models import UserInstance, UserSSHKey
@@ -72,6 +72,14 @@ class UserSSHKeyForm(ModelForm):
     class Meta:
         model = UserSSHKey
         fields = ("keyname", "keypublic")
+
+
+class ApiTokenForm(Form):
+    name = CharField(label=_("Name"), max_length=64, help_text=_("What uses it, such as a script or a host"))
+    days = TypedChoiceField(
+        label=_("Expires"), coerce=int, empty_value=None, required=False, initial=90,
+        choices=[(30, _("in 30 days")), (90, _("in 90 days")), (365, _("in a year")), ("", _("never"))],
+    )
 
 
 class EmailOTPForm(Form):

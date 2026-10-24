@@ -9,6 +9,7 @@ requests>=2.33.0
 urllib3>=2.8.0
 django-axes==8.3.1
 djangorestframework==3.18.3
+django-rest-knox==5.1.0
 drf-nested-routers==0.95.3
 drf-spectacular[sidecar]==0.30.0
 gunicorn==26.2.0

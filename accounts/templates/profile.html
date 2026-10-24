@@ -20,6 +20,11 @@
             {% trans "SSH Keys" %}
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#apitokens" type="button" role="tab" aria-controls="apitokens" aria-selected="false">
+            {% trans "API Tokens" %}
+        </button>
+    </li>
 </ul>
 <div class="tab-content">
     <div class="tab-pane tab-pane-bordered active" id="editprofile">
@@ -80,5 +85,63 @@
             </div>
         </div>
     </div>
+    <div class="tab-pane tab-pane-bordered fade" id="apitokens">
+        <p class="text-body-secondary">{% blocktrans %}A token lets a script or a tool use the REST API as you, without your password or OTP: send it as <code>Authorization: Token &lt;token&gt;</code>. A password change does not delete tokens: delete a token you no longer use, or one that may have leaked.{% endblocktrans %}</p>
+        {% if api_tokens %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "Name" %}</th>
+                        <th scope="col">{% trans "Starts with" %}</th>
+                        <th scope="col">{% trans "Created" %}</th>
+                        <th scope="col">{% trans "Expires" %}</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for token in api_tokens %}
+                    <tr>
+                        <td>{{ token.name }}</td>
+                        <td><code>{{ token.token_key }}</code></td>
+                        <td>{{ token.created|date:"Y-m-d H:i" }}</td>
+                        <td>{% if token.expiry %}{{ token.expiry|date:"Y-m-d H:i" }}{% else %}{% trans "never" %}{% endif %}</td>
+                        <td class="text-end">
+                            <a href="{% url 'accounts:api_token_delete' token.token_key %}" title="{% trans "Delete" %}" class="btn btn-sm btn-secondary">
+                                {% bs_icon 'trash' %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        <div class="card">
+            <div class="card-header">
+                {% trans "Create an API token" %}
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'accounts:api_token_create' %}" role="form" aria-label="{% trans "Create an API token" %}">
+                    {% csrf_token %}
+                    {% bootstrap_form api_token_form layout='horizontal' %}
+                    <div class="mb-0 float-end">
+                        <button type="submit" class="btn btn-primary">
+                            {% bs_icon 'plus-circle-fill' %} {% trans "Create" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+{% block script %}
+<script>
+    // a link to a tab (#apitokens) opens it
+    var linked = location.hash.length > 1 && document.querySelector('[data-bs-target="#' + CSS.escape(location.hash.slice(1)) + '"]');
+    if (linked) {
+        bootstrap.Tab.getOrCreateInstance(linked).show();
+    }
+</script>
 {% endblock %}

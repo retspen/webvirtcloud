@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "API token created" %}{% endblock %}
+{% block page_heading %}{% trans "API token created" %}: {{ name }}{% endblock page_heading %}
+
+{% block content %}
+<div class="alert alert-warning" role="alert">
+    {% trans "Copy the token now: it is not shown again. Anyone who has it can use the REST API as you." %}
+</div>
+<label class="form-label" for="api-token">{% trans "Token" %}</label>
+<input type="text" class="form-control font-monospace mb-3" id="api-token" value="{{ key }}" readonly>
+<p>{% trans "Use it like this:" %}</p>
+<pre class="bg-body-tertiary p-2 text-break" style="white-space: pre-wrap"><code>curl -H "Authorization: Token {{ key }}" {{ request.scheme }}://{{ request.get_host }}{% url 'instance-list' %}</code></pre>
+<a class="btn btn-primary" href="{% url 'accounts:profile' %}#apitokens">{% trans "Back to the profile" %}</a>
+{% endblock content %}
