@@ -29,6 +29,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.db.models import prefetch_related_objects
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext_noop as _
 from django.views.decorators.http import require_POST
 from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
@@ -51,7 +52,7 @@ from vrtManager.util import randomPasswd
 
 from instances.models import Instance
 
-from . import utils
+from . import addresses, utils
 from .forms import ConsoleForm, FlavorForm, NewVMForm
 from .models import Flavor
 from .states import STATES, UNKNOWN
@@ -90,6 +91,55 @@ def index(request):
          "reachable_computes": [c for c in computes if c.status is True],
          "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]]},
     )
+
+
+def find_address(request):
+    """
+    The running VMs using an IP address or an address in a network
+    (instances/addresses.py), as JSON for the Instances page's dialog.
+    Administrators search every compute, VMs the panel has not registered
+    included, and see the hosts; other users only their own VMs, without
+    hosts or host errors.
+    """
+    try:
+        network = addresses.parse_query(request.GET.get("q", ""))
+    except ValueError:
+        return JsonResponse({"error": _("Enter an IP address or a network such as 192.0.2.0/24.")}, status=400)
+    show_hosts = request.user.is_superuser or request.user.has_perm("instances.view_instances")
+    # a VM is its compute and UUID: one UUID may be defined on two hosts
+    if show_hosts:
+        known = {(inst.compute_id, inst.uuid): inst for inst in Instance.objects.all()}
+        targets = [addresses.Target(compute, None) for compute in Compute.objects.all()]
+    else:
+        known = {(inst.compute_id, inst.uuid): inst for inst in
+                 Instance.objects.filter(userinstance__user=request.user).select_related("compute")}
+        scopes = {}
+        for inst in known.values():
+            scopes.setdefault(inst.compute_id, addresses.Target(inst.compute, set())).uuids.add(inst.uuid)
+        targets = list(scopes.values())
+    try:
+        result = addresses.find(targets, network)
+    except addresses.Busy:
+        return JsonResponse({"error": _("Too many searches are still running; try again shortly.")}, status=409)
+
+    hosts = {target.compute.id: target.compute.name for target in targets}
+    matches = []
+    for match in result["matches"]:
+        inst = known.get((match["compute_id"], match["uuid"]))
+        if inst is None and not show_hosts:
+            continue
+        row = {key: match[key] for key in ("address", "mac", "sources", "conflict")}
+        row.update(vm=inst.name if inst else match["name"], registered=inst is not None,
+                   url=reverse("instances:instance", args=[inst.id]) + "#network" if inst else None)
+        if show_hosts:
+            row["host"] = hosts[match["compute_id"]]
+        matches.append(row)
+    coverage = {key: result[key] for key in ("checked", "no_agent", "unread")}
+    if show_hosts:
+        coverage.update(hosts_down=result["hosts_down"], hosts_unfinished=result["hosts_unfinished"])
+    else:
+        coverage["some_unchecked"] = bool(result["hosts_down"] or result["hosts_unfinished"])
+    return JsonResponse({"matches": matches, "coverage": coverage, "read_at": timezone.now().isoformat()})
 
 
 def instance(request, pk):

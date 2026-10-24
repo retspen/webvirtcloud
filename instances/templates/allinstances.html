@@ -8,14 +8,19 @@
 {% if request.user.is_superuser %}
     {% include 'create_inst_block.html' %}
 {% endif %}
-    {% include 'search_block.html' %}
+    {# the list's filters (state, text) and the address search, as one control #}
     <div class="float-end search">
-        <select id="state-filter" class="form-select" aria-label="{% trans 'State' %}">
-            <option value="">{% trans 'All states' %}</option>
-            {% for state in states %}
-                <option>{{ state }}</option>
-            {% endfor %}
-        </select>
+        <div class="input-group">
+            <select id="state-filter" class="form-select flex-grow-0 w-auto" aria-label="{% trans 'State' %}">
+                <option value="">{% trans 'All states' %}</option>
+                {% for state in states %}
+                    <option>{{ state }}</option>
+                {% endfor %}
+            </select>
+            <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
+            <button type="button" class="btn btn-outline-secondary" id="find-address-open"
+                    data-bs-toggle="modal" data-bs-target="#find-address">{% trans "Find IP" %}</button>
+        </div>
     </div>
 {% endblock page_heading_extra %}
 
@@ -42,9 +47,54 @@
             {% include 'allinstances_index_nongrouped.html' %}
         {% endif %}
     </div>
+    <div class="modal fade" id="find-address" tabindex="-1" aria-labelledby="find-address-title" aria-hidden="true"
+         data-url="{% url 'instances:find_address' %}" data-failed="{% trans "The search did not go through. Try again." %}"
+         data-none="{% trans "No running VM reports this address." %}"
+         data-unregistered="{% trans "(not registered in the panel)" %}" data-conflict="{% trans "possible conflict" %}"
+         data-checked="{% trans "Running VMs checked: %(n)s." %}"
+         data-no-agent="{% trans "%(n)s had no connected guest agent; a static address on them cannot be seen." %}"
+         data-unread="{% trans "Guest agents not read (no answer in time, or an error): %(n)s." %}"
+         data-hosts-down="{% trans "Not reached: %(hosts)s." %}"
+         data-hosts-unfinished="{% trans "Not finished in time: %(hosts)s." %}"
+         data-read-at="{% trans "Read at %(time)s." %}"
+         data-some-unchecked="{% trans "Some of your VMs could not be checked." %}">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="find-address-title">{% trans "Find the VMs using an IP address" %}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="find-address-form" class="d-flex gap-2 mb-3">
+                        <label class="visually-hidden" for="find-address-q">{% trans "IP address or network" %}</label>
+                        <input type="text" class="form-control" name="q" id="find-address-q" required
+                               placeholder="192.0.2.10 {% trans "or" %} 192.0.2.0/24">
+                        <button type="submit" class="btn btn-primary">{% trans "Find" %}</button>
+                    </form>
+                    <div class="alert alert-danger d-none" role="alert" id="find-address-error"></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm d-none" id="find-address-results">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{% trans "Address" %}</th>
+                                    <th scope="col">{% trans "VM" %}</th>
+                                    <th scope="col">{% trans "MAC" %}</th>
+                                    <th scope="col">{% trans "Source" %}</th>
+                                    {% if show_hosts %}<th scope="col">{% trans "Host" %}</th>{% endif %}
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <p class="small text-body-secondary mb-0" id="find-address-coverage"></p>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock content %}
 {% block script %}
     <script src="{% static 'js/instance_filter.js' %}"></script>
+    <script src="{% static 'js/find_address.js' %}"></script>
     {% if request.user.is_superuser %}
         <script>
             // The new-VM dialog's CPU bars: each compute's load over one second,

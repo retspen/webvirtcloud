@@ -31,6 +31,7 @@ from instances.models import Instance
 ALLOWED_FOR_ANY_USER = {
     "index": "landing page",
     "instances:index": "lists only the user's own instances",
+    "instances:find_address": "searches only the user's own instances",
     "accounts:login": "login page",
     "accounts:email_otp": "part of the login flow (its own issues are tracked separately)",
     "accounts:logout": "logout",

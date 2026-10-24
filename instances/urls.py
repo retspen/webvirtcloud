@@ -6,6 +6,7 @@ app_name = "instances"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("find_address/", views.find_address, name="find_address"),
     path("flavor/create/", views.flavor_create, name="flavor_create"),
     path("flavor/<int:pk>/update/", views.flavor_update, name="flavor_update"),
     path("flavor/<int:pk>/delete/", views.flavor_delete, name="flavor_delete"),
