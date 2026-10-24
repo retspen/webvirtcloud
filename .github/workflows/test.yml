@@ -120,8 +120,10 @@ jobs:
       - name: Deployment Checks
         run: python manage.py check --deploy --fail-level ERROR
 
-      - name: Audit Installed Packages
-        run: pip-audit
+      # What installations get, resolved for this Python; not the CI tools
+      # (their fixes can need a newer Python than the leg's, as filelock's did)
+      - name: Audit Shipped Packages
+        run: pip-audit -r conf/requirements.txt -r conf/requirements-ldap.txt
 
   docker:
     name: Docker Image
