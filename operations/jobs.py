@@ -262,9 +262,10 @@ def resolve(op_id, user, outcome_state, note):
         Operation.objects.filter(pk=op.pk).update(state=outcome_state, resolution=outcome_state,
                                                   resolution_note=note, resolved_by=user, resolved_at=timezone.now())
         Claim.objects.filter(operation=op).delete()
-        # the host, VM and UUID columns of the kind's own entries, so the VM's log shows it
+        # the host, VM and UUID columns of the kind's own entries, so the VM's log shows it;
+        # a kind without entries (a migration) still names its VM by the UUID in its intent
         entry = _entry(op, outcome_state)
-        host, instance, uuid = entry[:3] if entry is not None else ("-", op.resource_label, "")
+        host, instance, uuid = entry[:3] if entry is not None else ("-", op.resource_label, op.intent.get("uuid", ""))
         _log(user.username, host, instance, uuid, f"Job {op.pk} resolved as {outcome_state}: {note}",
              outcome_state == Operation.SUCCEEDED)
     op.refresh_from_db()

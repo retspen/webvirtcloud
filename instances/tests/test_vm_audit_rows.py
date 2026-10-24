@@ -90,6 +90,17 @@ class VMRowTests(TestCase):
         self.assertEqual(rows, [("VM vm: set console password: The VM has no graphics device", False),
                                        ("VM vm: set console password", True)])
 
+    def test_a_console_setting_that_changed_nothing_writes_no_row(self):
+        self.proxy.get_console_type.return_value = "vnc"
+        self.proxy.set_console_keymap.return_value = False  # no graphics device
+        self.proxy.set_console_listener_addr.return_value = False  # a socket, no address
+        self.post("update_console", {"listen_on": "0.0.0.0", "keymap": "de"})
+        self.proxy.set_console_keymap.return_value = None  # the define's result
+        self.proxy.set_console_listener_addr.return_value = None
+        self.post("update_console", {"listen_on": "0.0.0.0", "keymap": "de"})
+        self.assertEqual(self.rows(), [("VM vm: set console keymap de", True),
+                                       ("VM vm: set console listen address 0.0.0.0", True)])
+
     def test_a_deleted_vm_and_each_of_its_disks_have_their_own_row(self):
         self.proxy.split_disk_paths_by_use.return_value = (["/pool/a.qcow2", "/pool/b.qcow2"], [])
         volume = self.proxy.get_volume_by_path.return_value
@@ -159,3 +170,18 @@ class JobRowTests(TestCase):
                 op = Operation(kind=kind, resource_label=label, params=params, intent=intent)
                 state = Operation.FAILED if kind == "snapshot.delete" else Operation.SUCCEEDED
                 self.assertEqual(get_kind(kind).log_entry(op, state), entry)
+
+
+class MigrationResolutionRowTests(TestCase):
+    def test_a_resolved_migration_carries_the_vm_uuid(self):
+        from operations import jobs
+        from operations.models import Operation
+
+        admin = get_user_model().objects.create_superuser("res-admin", "res@example.com", "pw")
+        op = Operation.objects.create(kind="instance.migrate", user=admin, username=admin.username,
+                                      submission_key="key-res-00000001", resource="instance:" + UUID,
+                                      resource_label="c1/vm", state=Operation.UNCERTAIN,
+                                      intent={"compute": 1, "uuid": UUID})
+        jobs.resolve(op.pk, admin, Operation.SUCCEEDED, "the VM runs on the target")
+        row = Logs.objects.get(message__contains="resolved")
+        self.assertEqual((row.instance, row.instance_uuid, row.success), ("c1/vm", UUID, True))

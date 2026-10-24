@@ -1781,12 +1781,13 @@ def update_console(request, pk):
 
         if "keymap" in form.changed_data or "clear_keymap" in form.changed_data:
             keymap = "" if form.cleaned_data["clear_keymap"] else form.cleaned_data["keymap"]
-            with audit_vm(request, instance, f"set console keymap {keymap}" if keymap else "remove console keymap"):
-                instance.proxy.set_console_keymap(keymap)
+            # False: no graphics device, nothing changed
+            with audit_vm(request, instance, f"set console keymap {keymap}" if keymap else "remove console keymap") as entry:
+                entry.skip = instance.proxy.set_console_keymap(keymap) is False
 
         if "listen_on" in form.changed_data:
-            with audit_vm(request, instance, f"set console listen address {form.cleaned_data['listen_on']}"):
-                instance.proxy.set_console_listener_addr(form.cleaned_data["listen_on"])
+            with audit_vm(request, instance, f"set console listen address {form.cleaned_data['listen_on']}") as entry:
+                entry.skip = instance.proxy.set_console_listener_addr(form.cleaned_data["listen_on"]) is False
     if not form.is_valid():
         messages.error(request, _("Console settings were not saved: %(errors)s") % {"errors": form.errors.as_text()})
 
