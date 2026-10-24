@@ -53,6 +53,10 @@ body {
     height: 350px;
 }
 
+.host-collapsed tr[host] {
+    display: none;
+}
+
 .search {
     margin: 5px;
 }

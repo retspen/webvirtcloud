@@ -53,6 +53,7 @@ from instances.models import Instance
 from . import utils
 from .forms import ConsoleForm, FlavorForm, NewVMForm
 from .models import Flavor
+from .states import STATES, UNKNOWN
 
 # the VM page waits this long (seconds) for the compute's drbdadm status
 DRBD_STATUS_TIMEOUT = 10
@@ -85,7 +86,8 @@ def index(request):
         request,
         "allinstances.html",
         {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
-         "reachable_computes": [c for c in computes if c.status is True]},
+         "reachable_computes": [c for c in computes if c.status is True],
+         "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]]},
     )
 
 

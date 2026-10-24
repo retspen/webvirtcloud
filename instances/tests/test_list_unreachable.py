@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
+from lxml import html
 from vrtManager.util import OperationError
 
 ERROR = "Connection Failed: No route to host"
@@ -69,7 +70,8 @@ class UnreachableListTests(TestCase):
             self.assertContains(response, vm.name)
             self.assertNotContains(response, reverse("instances:poweron", args=[vm.id]))
             self.assertNotContains(response, reverse("instances:poweroff", args=[vm.id]))
-        self.assertContains(response, "Unknown", count=len(instances))
+        states = html.fromstring(response.content).xpath("//span[@data-state]/@data-state")
+        self.assertEqual(states.count("Unknown"), len(instances))
 
     def test_nongrouped_index_lists_the_vms_of_a_down_host(self):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")

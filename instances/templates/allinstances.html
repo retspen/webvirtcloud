@@ -12,6 +12,14 @@
     {% include 'create_inst_block.html' %}
 {% endif %}
     {% include 'search_block.html' %}
+    <div class="float-end search">
+        <select id="state-filter" class="form-select" aria-label="{% trans 'State' %}">
+            <option value="">{% trans 'All states' %}</option>
+            {% for state in states %}
+                <option>{{ state }}</option>
+            {% endfor %}
+        </select>
+    </div>
 {% endblock page_heading_extra %}
 
 {% block content %}
@@ -40,7 +48,7 @@
 {% endblock content %}
 {% block script %}
     <script src="{% static 'js/sortable.min.js' %}"></script>
-    <script src="{% static 'js/filter-table.js' %}"></script>
+    <script src="{% static 'js/instance_filter.js' %}"></script>
     {% if request.user.is_superuser %}
         <script>
             // The new-VM dialog's CPU bars: each compute's load over one second,

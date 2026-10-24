@@ -17,7 +17,7 @@
             </tr>
         </thead>
         {% for compute in computes %}
-            <tbody class="searchable">
+            <tbody class="searchable" data-host="{{ compute.name }}">
                 {% if compute.instance_set.count > 0 %}
                     <tr class="table-secondary fw-bold border-bottom border-dark">
                         <td>
@@ -97,17 +97,15 @@
 
 {% block script %}
 <script>
+// a collapsed host's VM rows are hidden by its table body's class, so the
+// search (instance_filter.js, the hidden attribute) can still hide them too
 function hide_all_host_instances() {
-    var rows = $('table tr');
-    all_host_rows = rows.filter('[host]');
-    all_host_rows.toggle();
+    $('tbody.searchable').toggleClass('host-collapsed');
     $('span[id^=collapse_host_instances_]').toggleClass("bi bi-chevron-down ").toggleClass("bi bi-chevron-up");
     $('span[id^=inst_count_badge_]').toggleClass("d-none");
 }
 function hide_host_instances(host) {
-    var rows = $('table tr');
-    host_rows = rows.filter("[host='"+host+"']");
-    host_rows.toggle();
+    $("span[id='collapse_host_instances_"+host+"']").closest('tbody').toggleClass('host-collapsed');
     $("span[id='collapse_host_instances_"+host+"']").toggleClass("bi bi-chevron-down ").toggleClass("bi bi-chevron-up");
     $("span[id='inst_count_badge_"+host+"']").toggleClass("d-none");
 }

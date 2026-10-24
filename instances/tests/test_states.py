@@ -119,6 +119,16 @@ class StateTests(TestCase):
                 self.assertEqual(self.offered(page, vm), set())
 
 
+    def test_the_list_offers_each_state_and_marks_each_row_and_host(self):
+        # static/js/instance_filter.js filters by these (test_instance_filter_js)
+        AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
+        page = html.fromstring(self.get(self.admin, reverse("instances:index")))
+        options = page.xpath("//select[@id='state-filter']/option/text()")
+        self.assertEqual(options, ["All states", *LABELS.values(), "Unknown"])
+        marks = page.xpath("//tbody[@data-host='st']//tr//@data-state")
+        self.assertEqual(marks, list(LABELS.values()))
+
+
 class DetailStateTests(TestCase):
     """The VM page names every state and offers a forced power off where only that helps."""
 
