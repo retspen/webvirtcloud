@@ -381,6 +381,9 @@ REST_FRAMEWORK = {
 # "Authorization: Token wvc_..."; made and deleted on the profile page
 KNOX_TOKEN_MODEL = "accounts.ApiToken"
 REST_KNOX = {"TOKEN_PREFIX": "wvc_"}
+# knox stays installed for its token code, but its migrations would create a
+# knox_authtoken table that accounts.ApiToken replaces
+MIGRATION_MODULES = {"knox": None}
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Webvirtcloud REST-API",

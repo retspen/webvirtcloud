@@ -6,6 +6,7 @@ from datetime import timedelta
 
 from accounts.models import ApiToken
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -91,3 +92,9 @@ class ApiTokenTests(TestCase):
         response = self.client.post(reverse("accounts:api_token_create"), {"name": " ", "days": "30"})
         self.assertFalse(ApiToken.objects.exists())
         self.assertNotRegex(response.content.decode(), r"wvc_[0-9a-f]{64}")
+
+    def test_knox_makes_no_table_of_its_own(self):
+        # accounts.ApiToken replaces knox's AuthToken; a knox_authtoken table
+        # would reference auth_user unseen, and PostgreSQL could not empty
+        # auth_user between tests
+        self.assertNotIn("knox_authtoken", connection.introspection.table_names())
