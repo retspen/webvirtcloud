@@ -12,18 +12,19 @@ from logs.models import Logs
 logger = logging.getLogger("logs.audit")
 
 
-def write(user, host, instance, message, success=None, ip=None):
+def write(user, host, instance, message, success=None, ip=None, uuid=""):
     """
     Save one Logs row. A failure is written to the log file instead and never
     raised, so an audit write cannot break the action it records.
     """
-    user, host, instance = user[:150], host[:255], instance[:120]
+    user, host, instance, uuid = user[:150], host[:255], instance[:120], uuid[:36]
     try:
         with transaction.atomic():
-            Logs.objects.create(user=user, host=host, instance=instance, message=message, success=success, ip=ip)
+            Logs.objects.create(user=user, host=host, instance=instance, instance_uuid=uuid, message=message,
+                                success=success, ip=ip)
     except Exception as e:
         try:
-            line = f"audit row not saved ({e!r}): {user} {host} {instance} success={success} ip={ip} {message}"
+            line = f"audit row not saved ({e!r}): {user} {host} {instance} {uuid} success={success} ip={ip} {message}"
             logger.warning(line.replace("\r", "\\r").replace("\n", "\\n"))
         except Exception:
             pass
@@ -44,6 +45,7 @@ def request_ip(request):
 class Entry:
     action: str
     skip: bool = False
+    uuid: str = ""
 
 
 def host_of(compute):
@@ -69,26 +71,37 @@ def reason(exc, user):
 
 
 @contextmanager
-def audit(request, compute, subject, action, instance=""):
+def audit(request, compute, subject, action, instance="", uuid=""):
     """
     Write one row when the block ends: done, or failed with the reason when it
-    raises (the exception goes on). The block may set entry.action, or
-    entry.skip when nothing was done.
+    raises (the exception goes on). The block may set entry.action, entry.uuid,
+    or entry.skip when nothing was done.
     """
-    entry = Entry(action)
+    entry = Entry(action, uuid=uuid)
     user, host, ip = request.user.get_username(), host_of(compute), request_ip(request)
     try:
         yield entry
     except Exception as exc:
-        write(user, host, instance, f"{subject}: {entry.action}: {reason(exc, request.user)}", False, ip)
+        write(user, host, instance, f"{subject}: {entry.action}: {reason(exc, request.user)}", False, ip, entry.uuid)
         raise
     if not entry.skip:
-        write(user, host, instance, f"{subject}: {entry.action}", True, ip)
+        write(user, host, instance, f"{subject}: {entry.action}", True, ip, entry.uuid)
 
 
-def failed(request, compute, subject, action, why, instance=""):
+def failed(request, compute, subject, action, why, instance="", uuid=""):
     """Write the failure row of an action that was refused before it started."""
-    write(request.user.get_username(), host_of(compute), instance, f"{subject}: {action}: {why}", False, request_ip(request))
+    write(request.user.get_username(), host_of(compute), instance, f"{subject}: {action}: {why}", False,
+          request_ip(request), uuid)
+
+
+def audit_vm(request, instance, action):
+    """audit() for an operation on a VM: the row names the VM and carries its UUID."""
+    return audit(request, instance.compute, f"VM {instance.name}", action, instance=instance.name, uuid=instance.uuid)
+
+
+def failed_vm(request, instance, action, why):
+    """failed() for an operation on a VM, such as one whose error came back as a reply."""
+    failed(request, instance.compute, f"VM {instance.name}", action, why, instance=instance.name, uuid=instance.uuid)
 
 
 def snapshot(obj):

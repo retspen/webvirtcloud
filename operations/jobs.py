@@ -106,9 +106,9 @@ class Kind:
         the kind decides whether the job is idle and ends it if so."""
 
     def log_entry(self, op, state):
-        """(host, instance, message) of the Logs row written with each end of
-        the job (in the same transaction); its host and instance also go on
-        the row of a resolution. None: no row."""
+        """(host, instance, instance UUID, message) of the Logs row written
+        with each end of the job (in the same transaction); its host, instance
+        and UUID also go on the row of a resolution. None: no row."""
         return None
 
 
@@ -219,8 +219,8 @@ def _entry(op, state):
         return None
 
 
-def _log(user, host, instance, message, success):
-    write(str(user), str(host), str(instance), utils.safe_text(message), success)
+def _log(user, host, instance, uuid, message, success):
+    write(str(user), str(host), str(instance), utils.safe_text(message), success, uuid=str(uuid))
 
 
 def finish(op, outcome, *, worker=None):
@@ -262,10 +262,10 @@ def resolve(op_id, user, outcome_state, note):
         Operation.objects.filter(pk=op.pk).update(state=outcome_state, resolution=outcome_state,
                                                   resolution_note=note, resolved_by=user, resolved_at=timezone.now())
         Claim.objects.filter(operation=op).delete()
-        # the host and VM columns of the kind's own entries, so the VM's log shows it
+        # the host, VM and UUID columns of the kind's own entries, so the VM's log shows it
         entry = _entry(op, outcome_state)
-        host, instance = entry[:2] if entry is not None else ("-", op.resource_label)
-        _log(user.username, host, instance, f"Job {op.pk} resolved as {outcome_state}: {note}",
+        host, instance, uuid = entry[:3] if entry is not None else ("-", op.resource_label, "")
+        _log(user.username, host, instance, uuid, f"Job {op.pk} resolved as {outcome_state}: {note}",
              outcome_state == Operation.SUCCEEDED)
     op.refresh_from_db()
     return op

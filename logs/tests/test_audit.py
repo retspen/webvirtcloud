@@ -8,9 +8,9 @@ from django.db import IntegrityError, transaction
 from django.test import RequestFactory, TestCase
 
 from computes.models import Compute
-from logs.audit import audit, changed_fields, failed, request_ip, snapshot, write
+from instances.models import Instance
+from logs.audit import audit, audit_vm, changed_fields, failed, failed_vm, request_ip, snapshot, write
 from logs.models import Logs
-from logs.views import addlogmsg
 from operations import claims
 from vrtManager.util import OperationError
 
@@ -62,12 +62,9 @@ class WriteTests(TestCase):
         self.assertIsNone(request_ip(rf.get("/", REMOTE_ADDR="127.0.0.1", HTTP_X_REAL_IP="fe80::1%eth0")))
         self.assertIsNone(request_ip(rf.get("/", REMOTE_ADDR="")))
 
-    def test_addlogmsg_still_writes(self):
-        addlogmsg("u", "h", "vm", "Destroy")
-        row = Logs.objects.get()
-        self.assertEqual((row.user, row.host, row.instance, row.message), ("u", "h", "vm", "Destroy"))
-        self.assertIsNone(row.success)
-        self.assertIsNone(row.ip)
+    def test_a_row_without_a_vm_has_no_uuid(self):
+        write("u", "h", "", "Network lab: start", True)
+        self.assertEqual(Logs.objects.get().instance_uuid, "")
 
 
 class AuditTests(TestCase):
@@ -134,6 +131,26 @@ class AuditTests(TestCase):
         self.assertEqual(row.message, "Network lab: create: Name in use")
         self.assertEqual(row.host, "-")
         self.assertIs(row.success, False)
+
+    def test_vm_rows_name_the_vm_and_carry_its_uuid(self):
+        vm = Instance(compute=self.compute, name="web-1", uuid="11111111-2222-3333-4444-555555555555")
+        with audit_vm(self.request, vm, "power on"):
+            pass
+        with self.assertRaises(OperationError):
+            with audit_vm(self.request, vm, "power off"):
+                raise OperationError("not running")
+        failed_vm(self.request, vm, "reset root password", "gstfsd error: timed out")
+        self.assertEqual(
+            list(Logs.objects.order_by("id").values_list("host", "instance", "instance_uuid", "message", "success")), [
+                ("c", "web-1", vm.uuid, "VM web-1: power on", True),
+                ("c", "web-1", vm.uuid, "VM web-1: power off: not running", False),
+                ("c", "web-1", vm.uuid, "VM web-1: reset root password: gstfsd error: timed out", False),
+            ])
+
+    def test_the_block_may_set_the_uuid_it_learns(self):
+        with audit(self.request, self.compute, "VM web-1", "define from XML", instance="web-1") as entry:
+            entry.uuid = "11111111-2222-3333-4444-555555555555"
+        self.assertEqual(self.row().instance_uuid, "11111111-2222-3333-4444-555555555555")
 
     def test_changed_fields(self):
         compute = Compute.objects.create(name="c", hostname="192.0.2.5", type=1, password="pw")

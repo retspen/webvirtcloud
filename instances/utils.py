@@ -9,7 +9,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
-from logs.views import addlogmsg
+from logs.audit import reason, write
 from vrtManager.instance import wvmInstance, wvmInstances
 
 from .models import Instance
@@ -159,8 +159,14 @@ def migrate_instance(
     compress=False,
 ):
     """Migrates instance to new_compute and logs the outcome (the mode
-    used, or the error). Returns the mode."""
-    source = instance.compute
+    used, or the error), then each later step that failed in a row of its
+    own. Returns the mode."""
+    source, target = instance.compute, migration_target(new_compute)
+
+    def log(action, error=None):
+        message = f"VM {instance.name}: {action}" + (f": {reason(error, user)}" if error is not None else "")
+        write(user.username, source.name, instance.name, message, error is None, uuid=instance.uuid)
+
     conn_migrate = None
     try:
         conn_migrate = wvmInstances(
@@ -183,11 +189,7 @@ def migrate_instance(
             uri=new_compute.migration_uri,
         )
     except Exception as error:
-        msg = _("Instance migration to %(target)s failed: %(error)s") % {
-            "target": migration_target(new_compute),
-            "error": error,
-        }
-        addlogmsg(user.username, source.hostname, instance.name, msg)
+        log(f"migrate to {target}", error)
         raise
     finally:
         if conn_migrate is not None:
@@ -195,10 +197,7 @@ def migrate_instance(
 
     # The VM runs on new_compute now: what follows must not stop it
     # from being recorded there.
-    msg = _("Instance is migrated(%(mode)s) to %(target)s") % {
-        "mode": mode,
-        "target": migration_target(new_compute),
-    }
+    log(f"migrate ({mode}) to {target}")
     if autostart:
         conn_new = None
         try:
@@ -212,7 +211,7 @@ def migrate_instance(
             )
             conn_new.set_autostart(1)
         except (libvirtError, OSError) as error:
-            msg = _("%(msg)s; setting its autostart there failed: %(error)s") % {"msg": msg, "error": error}
+            log(f"restore autostart on {target}", error)
         finally:
             if conn_new is not None:
                 conn_new.close()
@@ -227,11 +226,7 @@ def migrate_instance(
             )
             instance.proxy.remove_nvram(nvram, conn_new)
         except Exception as error:  # the migration stands and is recorded
-            msg = _("%(msg)s; removing its NVRAM file %(path)s on the source failed: %(error)s") % {
-                "msg": msg,
-                "path": nvram,
-                "error": error,
-            }
+            log(f"remove NVRAM file {nvram} on the source", error)
         finally:
             if conn_new is not None:
                 conn_new.close()
@@ -239,11 +234,8 @@ def migrate_instance(
     try:
         record_migration(instance, new_compute)
     except Exception as error:
-        failed = _("%(msg)s, but recording it failed: %(error)s") % {"msg": msg, "error": error}
-        addlogmsg(user.username, source.hostname, instance.name, failed)
+        log(f"record the move to {target}", error)
         raise
-
-    addlogmsg(user.username, source.hostname, instance.name, msg)
     return mode
 
 

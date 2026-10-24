@@ -289,6 +289,9 @@ class XmlRefusalTests(TestCase):
     def test_a_taken_name(self):
         self.assertIn("already exists", self.post("<domain type='test'><name>test</name></domain>"))
 
+    def test_a_definition_without_a_name(self):
+        self.assertIn("no name", self.post("<domain type='kvm'><memory>1024</memory></domain>"))
+
     def test_malformed_xml(self):
         self.assertIn("not well-formed", self.post("<domain type='test'><name>new</name>"))
 

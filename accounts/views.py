@@ -19,7 +19,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.apps import admin_password_path
 from instances.models import Instance
-from logs.audit import audit, changed_fields, failed, snapshot
+from logs.audit import audit, audit_vm, changed_fields, failed, snapshot
 
 from accounts.forms import EmailOTPForm, ProfileForm, UserSSHKeyForm
 from accounts.models import User, UserAttributes, UserInstance, UserSSHKey
@@ -146,8 +146,7 @@ def user_instance_create(request, user_id):
     form = forms.UserInstanceForm(request.POST or None, initial={"user": user})
     if form.is_valid():
         instance = form.cleaned_data["instance"]
-        subject = f"VM {instance.name} owner {form.cleaned_data['user'].username}"
-        with audit(request, instance.compute, subject, "add", instance=instance.name):
+        with audit_vm(request, instance, f"add owner {form.cleaned_data['user'].username}"):
             form.save()
         return redirect(reverse("accounts:account", args=[user.id]))
 
@@ -167,11 +166,10 @@ def user_instance_update(request, pk):
     instance, before = user_instance.instance, snapshot(user_instance)
     form = forms.UserInstanceForm(request.POST or None, instance=user_instance)
     if form.is_valid():
-        subject = f"VM {instance.name} owner {user_instance.user.username}"
-        with audit(request, instance.compute, subject, "change", instance=instance.name) as entry:
+        with audit_vm(request, instance, "change owner") as entry:
             form.save()
             fields = changed_fields(before, snapshot(user_instance))
-            entry.action = "change " + ", ".join(fields)
+            entry.action = f"change owner {user_instance.user.username}: " + ", ".join(fields)
             entry.skip = not fields
         return redirect(reverse("accounts:account", args=[user_instance.user.id]))
 
@@ -190,8 +188,7 @@ def user_instance_delete(request, pk):
     user_instance = get_object_or_404(UserInstance, pk=pk)
     if request.method == "POST":
         user, instance = user_instance.user, user_instance.instance
-        with audit(request, instance.compute, f"VM {instance.name} owner {user.username}", "remove",
-                   instance=instance.name):
+        with audit_vm(request, instance, f"remove owner {user.username}"):
             user_instance.delete()
         next_url = request.GET.get("next", None)
         if next_url and url_has_allowed_host_and_scheme(

@@ -96,7 +96,7 @@ class JsonEndpointContentTypeTestCase(TestCase):
                     self.assertJson(self.client.get(url))
 
     def test_vm_logs_is_json(self):
-        self.assertJson(self.client.get(reverse("vm_logs", args=[self.instance.name])))
+        self.assertJson(self.client.get(reverse("vm_logs", args=[self.instance.pk])))
 
 
 class TemplateHtmlConcatenationTestCase(TestCase):

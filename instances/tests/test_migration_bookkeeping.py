@@ -44,19 +44,19 @@ class MigrationBookkeepingTests(TestCase):
     def test_a_failed_autostart_does_not_stop_the_records(self):
         self.migrate(autostart=True, autostart_error=util.OperationError("no autostart"))
         self.assertEqual(Instance.objects.get(id=self.vm.id).compute, self.dest)
-        self.assertEqual(
-            Logs.objects.get().message,
-            "Instance is migrated(live) to 198.51.100.9; setting its autostart there failed: no autostart",
-        )
+        self.assertEqual(list(Logs.objects.order_by("id").values_list("message", "success")), [
+            ("VM vm: migrate (live) to 198.51.100.9", True),
+            ("VM vm: restore autostart on 198.51.100.9: no autostart", False),
+        ])
 
     def test_a_failed_record_is_logged_as_such(self):
         with patch.object(Instance, "save", side_effect=DatabaseError("locked")), \
              self.assertRaises(DatabaseError):
             self.migrate()
-        self.assertEqual(
-            Logs.objects.get().message,
-            "Instance is migrated(live) to 198.51.100.9, but recording it failed: locked",
-        )
+        self.assertEqual(list(Logs.objects.order_by("id").values_list("message", "success")), [
+            ("VM vm: migrate (live) to 198.51.100.9", True),
+            ("VM vm: record the move to 198.51.100.9: DatabaseError", False),
+        ])
 
     def test_a_record_the_destination_already_has_keeps_template_and_owners(self):
         owner = get_user_model().objects.create_user("mb-owner")

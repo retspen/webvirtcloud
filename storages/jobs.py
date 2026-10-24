@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def _log(op, state, action):
     compute, _sep, pool = op.resource_label.rpartition("/")  # a pool name has no "/"
     message = f"Storage pool {pool}: {action}"
-    return compute, "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
+    return compute, "", "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
 
 
 def _storage(params):

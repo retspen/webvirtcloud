@@ -1,61 +1,60 @@
-import json
 from django.contrib.auth import get_user_model
-from django.test import Client, RequestFactory, TestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from computes.models import Compute
 from instances.models import Instance
-from logs.models import Logs
-from logs.views import addlogmsg
+from logs.audit import write
+
+UUID = "12345678-1234-1234-1234-123456789012"
 
 
-class LogsTestCase(TestCase):
+class VMLogsTestCase(TestCase):
+    """The VM page's Logs tab: the rows of one VM, found by its UUID."""
+
     def setUp(self):
         User = get_user_model()
-        self.superuser = User.objects.create_superuser(
-            username="admin_logs", email="admin@example.com", password="adminpassword"
-        )
-        self.normal_user = User.objects.create_user(
-            username="normal_logs", email="user@example.com", password="userpassword"
-        )
-        self.compute = Compute.objects.create(
-            name="local_compute",
-            hostname="localhost",
-            type=1,
-        )
-        self.instance = Instance.objects.create(
-            compute=self.compute,
-            name="test-vm",
-            uuid="12345678-1234-1234-1234-123456789012",
-        )
+        self.superuser = User.objects.create_superuser("admin_logs", "admin@example.com", "pw")
+        self.normal_user = User.objects.create_user("normal_logs", "user@example.com", "pw")
+        self.compute = Compute.objects.create(name="c1", hostname="192.0.2.1", type=1)
+        self.instance = Instance.objects.create(compute=self.compute, name="test-vm", uuid=UUID)
+        self.client.force_login(self.superuser)
 
-    def test_addlogmsg(self):
-        addlogmsg("admin", "localhost", "test-vm", "Started VM")
-        log = Logs.objects.filter(instance="test-vm").first()
-        self.assertIsNotNone(log)
-        self.assertEqual(log.user, "admin")
-        self.assertEqual(log.host, "localhost")
-        self.assertEqual(log.message, "Started VM")
-
-    def test_vm_logs_superuser_access(self):
-        addlogmsg("admin", "localhost", "test-vm", "Created VM")
-        client = Client()
-        client.login(request=RequestFactory().get("/"), username="admin_logs", password="adminpassword")
-
-        response = client.get(reverse("vm_logs", args=["test-vm"]))
+    def shown(self, instance=None):
+        response = self.client.get(reverse("vm_logs", args=[(instance or self.instance).pk]))
         self.assertEqual(response.status_code, 200)
+        return [(row["message"], row["result"]) for row in response.json()]
 
-        data = json.loads(response.content.decode("utf-8"))
-        self.assertIsInstance(data, list)
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["user"], "admin")
-        self.assertEqual(data[0]["message"], "Created VM")
-        self.assertEqual(data[0]["instance"], "test-vm")
+    def test_rows_of_the_vm_with_their_result(self):
+        write("admin", "c1", "test-vm", "VM test-vm: power on", True, uuid=UUID)
+        write("admin", "c1", "test-vm", "VM test-vm: power off: not running", False, uuid=UUID)
+        row = self.client.get(reverse("vm_logs", args=[self.instance.pk])).json()[0]
+        self.assertEqual((row["user"], row["host"], row["instance"]), ("admin", "c1", "test-vm"))
+        self.assertEqual(self.shown(), [("VM test-vm: power off: not running", "Failed"),
+                                        ("VM test-vm: power on", "Done")])
 
-    def test_vm_logs_non_superuser_forbidden(self):
-        client = Client()
-        client.login(request=RequestFactory().get("/"), username="normal_logs", password="userpassword")
+    def test_a_vm_is_found_by_uuid_not_by_name(self):
+        other = Compute.objects.create(name="c2", hostname="192.0.2.2", type=1)
+        namesake = Instance.objects.create(compute=other, name="test-vm", uuid="87654321-4321-4321-4321-210987654321")
+        write("admin", "c1", "old-name", "VM old-name: power on", True, uuid=UUID)  # before a rename
+        write("admin", "c2", "test-vm", "VM test-vm: power on", True, uuid=namesake.uuid)
+        write("admin", "c1", "test-vm", "Instance is created")  # a row from before the UUID column
+        self.assertEqual(self.shown(), [("VM old-name: power on", "Done")])
+        self.assertEqual(self.shown(namesake), [("VM test-vm: power on", "Done")])
 
-        response = client.get(reverse("vm_logs", args=["test-vm"]))
-        # superuser_only decorator redirects non-superusers to index or login
+    def test_one_vm_on_two_computes_shows_the_rows_of_both(self):
+        other = Compute.objects.create(name="c2", hostname="192.0.2.2", type=1)
+        moved = Instance.objects.create(compute=other, name="test-vm", uuid=UUID)
+        write("admin", "c1", "test-vm", "VM test-vm: migrate (live) to 192.0.2.2", True, uuid=UUID)
+        write("admin", "c2", "test-vm", "VM test-vm: power off", None, uuid=UUID)
+        self.assertEqual(self.shown(moved), [("VM test-vm: power off", "Unknown"),
+                                             ("VM test-vm: migrate (live) to 192.0.2.2", "Done")])
+        self.assertEqual(self.shown(moved), self.shown())
+
+    def test_unknown_vm(self):
+        self.assertEqual(self.client.get(reverse("vm_logs", args=[999999])).status_code, 404)
+
+    def test_non_superuser_forbidden(self):
+        self.client.force_login(self.normal_user)
+        response = self.client.get(reverse("vm_logs", args=[self.instance.pk]))
         self.assertNotEqual(response.status_code, 200)

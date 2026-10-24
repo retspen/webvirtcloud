@@ -98,7 +98,8 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
         self.assertEqual(op.intent["before"]["own"], ["/p/a.one"])
         self.assertEqual(result, {"left_behind": ["/p/a.one"]})
         jobs.finish(op, Outcome(Operation.SUCCEEDED, result=result))
-        self.assertTrue(Logs.objects.filter(message="Delete external snapshot: one").exists())
+        row = Logs.objects.get(message="VM job-vm: delete external snapshot one")
+        self.assertEqual(row.instance_uuid, self.instance.uuid)
 
     def logged(self):
         return list(Logs.objects.values_list("user", "host", "instance", "message"))
@@ -110,17 +111,17 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
             op = self.submitted()
             jobs.finish(op, Outcome(state, error="x"))
             self.assertEqual(self.logged(), [("job_admin", "job-compute", "job-vm",
-                                              f"Delete external snapshot: one ({state})")])
+                                              f"VM job-vm: delete external snapshot one ({state})")])
         Logs.objects.all().delete()
         Operation.objects.all().delete()
         jobs.cancel(self.submitted().pk, self.admin)
-        self.assertEqual(self.logged(), [("job_admin", "job-compute", "job-vm", "Delete external snapshot: one (cancelled)")])
+        self.assertEqual(self.logged(), [("job_admin", "job-compute", "job-vm", "VM job-vm: delete external snapshot one (cancelled)")])
 
     def test_a_compute_name_with_a_slash_is_logged_whole(self):
         Compute.objects.filter(pk=self.instance.compute_id).update(name="region/job-compute")
         op = self.submitted()
         jobs.finish(op, Outcome(Operation.SUCCEEDED))
-        self.assertEqual(self.logged(), [("job_admin", "region/job-compute", "job-vm", "Delete external snapshot: one")])
+        self.assertEqual(self.logged(), [("job_admin", "region/job-compute", "job-vm", "VM job-vm: delete external snapshot one")])
 
     def test_a_resolved_job_is_logged_on_its_vm(self):
         op = self.submitted()
@@ -129,6 +130,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
         jobs.resolve(op.pk, self.admin, Operation.FAILED, "disks checked")
         self.assertEqual(self.logged(), [("job_admin", "job-compute", "job-vm",
                                           f"Job {op.pk} resolved as failed: disks checked")])
+        self.assertEqual(Logs.objects.get().instance_uuid, self.instance.uuid)
 
     def test_retention_keeps_the_log(self):
         op = self.submitted()
@@ -136,7 +138,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
         Operation.objects.filter(pk=op.pk).update(finished_at=timezone.now() - timedelta(days=400))
         housekeeping()
         self.assertFalse(Operation.objects.filter(pk=op.pk).exists())
-        self.assertEqual([row[3] for row in self.logged()], ["Delete external snapshot: one (failed)"])
+        self.assertEqual([row[3] for row in self.logged()], ["VM job-vm: delete external snapshot one (failed)"])
 
     def test_precheck_refuses_a_moved_vm_and_an_inactive_user(self):
         op = self.submitted()

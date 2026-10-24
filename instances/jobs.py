@@ -53,7 +53,7 @@ def _vm_plan(params):
                 claims.instance_key(instance.uuid): Claim.EXCLUSIVE},
         resource=claims.instance_key(instance.uuid),
         label=f"{instance.compute.name}/{instance.name}",
-        intent={"compute": instance.compute_id},
+        intent={"compute": instance.compute_id, "uuid": instance.uuid},
     )
 
 
@@ -83,9 +83,12 @@ def _libvirt_busy(dom):
     return dom.isActive() and dom.jobInfo()[0] != VIR_DOMAIN_JOB_NONE
 
 
-def _log(op, state, message):
-    compute, _sep, vm = op.resource_label.rpartition("/")  # a VM name has no "/"
-    return compute, vm, message if state == Operation.SUCCEEDED else f"{message} ({state})"
+def _log(op, state, action, vm=None):
+    """The job's row: "VM <name>: <action>", the end state added unless it succeeded."""
+    compute, _sep, label_vm = op.resource_label.rpartition("/")  # a VM name has no "/"
+    vm = vm or label_vm
+    message = f"VM {vm}: {action}"
+    return compute, vm, op.intent["uuid"], message if state == Operation.SUCCEEDED else f"{message} ({state})"
 
 
 def _snapshot_free_space():
@@ -283,7 +286,7 @@ class DeleteExternalSnapshot(Kind):
                              "changed; check the VM before deleting the snapshot again or reverting to it.")
 
     def log_entry(self, op, state):
-        return _log(op, state, f"Delete external snapshot: {op.params['name']}")
+        return _log(op, state, f"delete external snapshot {op.params['name']}")
 
 
 GONE = "The VM is no longer on the compute the job ran on"
@@ -335,7 +338,7 @@ class CreateSnapshot(Kind):
 
     def log_entry(self, op, state):
         kind = "external snapshot" if op.params["external"] else "snapshot"
-        return _log(op, state, f"Create {kind}: {op.params['name']}")
+        return _log(op, state, f"take {kind} {op.params['name']}")
 
 
 def _current(proxy):
@@ -388,7 +391,7 @@ class RevertSnapshot(Kind):
 
     def log_entry(self, op, state):
         kind = "external snapshot" if op.params["external"] else "snapshot"
-        return _log(op, state, f"Revert {kind}: {op.params['name']}")
+        return _log(op, state, f"revert to {kind} {op.params['name']}")
 
 
 def _delete_created(proxy, op):
@@ -606,9 +609,8 @@ class CloneInstance(Kind):
         return Outcome(Operation.SUCCEEDED)
 
     def log_entry(self, op, state):
-        compute, _sep, source = op.resource_label.rpartition("/")
-        message = f"Create a clone of '{source}'"
-        return compute, op.intent["name"], message if state == Operation.SUCCEEDED else f"{message} ({state})"
+        source = op.resource_label.rpartition("/")[2]
+        return _log(op, state, f"clone from {source}", vm=op.intent["name"])
 
 
 @register
@@ -756,9 +758,7 @@ class CreateInstance(Kind):
         return vm_outcome(op, owner=False, volumes=names if data["hdd_size"] or data["template"] else [])
 
     def log_entry(self, op, state):
-        compute, _sep, name = op.resource_label.rpartition("/")
-        message = "Instance is created"
-        return compute, name, message if state == Operation.SUCCEEDED else f"{message} ({state})"
+        return _log(op, state, "create")
 
 
 MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress")

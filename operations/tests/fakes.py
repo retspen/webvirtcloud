@@ -68,7 +68,7 @@ class NoopKind(Kind):
         return Outcome(Operation.SUCCEEDED, result={"recovered": True})
 
     def log_entry(self, op, state):
-        return ("c", "vm", f"No-op {state}")
+        return ("c", "vm", op.params["uuid"], f"No-op {state}")
 
 
 @register

@@ -61,11 +61,12 @@ class AdminAccountRowTests(TestCase):
         self.client.post(url, {"is_vnc": "on"})  # no change
         self.client.post(reverse("accounts:user_instance_delete", args=[ui.pk]))
         self.assertEqual(rows(), [
-            ("VM vm owner bob: add", True),
-            ("VM vm owner bob: change is_vnc", True),
-            ("VM vm owner bob: remove", True),
+            ("VM vm: add owner bob", True),
+            ("VM vm: change owner bob: is_vnc", True),
+            ("VM vm: remove owner bob", True),
         ])
-        self.assertEqual(set(Logs.objects.values_list("user", "host", "instance")), {("audit-admin", "c1", "vm")})
+        self.assertEqual(set(Logs.objects.values_list("user", "host", "instance", "instance_uuid")),
+                         {("audit-admin", "c1", "vm", self.vm.uuid)})
 
     def test_otp_mail_without_an_email(self):
         from smtplib import SMTPException

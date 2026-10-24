@@ -60,7 +60,7 @@ def lock_ownership():
 
 
 def _log(inst, what):
-    write("-", inst.compute.name, "", f"VM {inst.name} ({inst.uuid}): {what}", True)
+    write("-", inst.compute.name, inst.name, f"VM {inst.name} ({inst.uuid}): {what}", True, uuid=inst.uuid)
 
 
 def _move_ownership(source, target):

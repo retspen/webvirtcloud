@@ -1,5 +1,6 @@
 """A migration is logged where it runs (migrate_instance, in the job): the
-mode it used on success, the error on failure."""
+mode it used on success, the error on failure, and each later step that
+failed in a row of its own."""
 
 from unittest.mock import MagicMock, patch
 
@@ -12,6 +13,10 @@ from logs.models import Logs
 from instances.models import Instance
 from instances.utils import migrate_instance
 from vrtManager import util
+
+
+def rows():
+    return list(Logs.objects.order_by("id").values_list("message", "success"))
 
 
 class MigrationLogTests(TestCase):
@@ -45,7 +50,7 @@ class MigrationLogTests(TestCase):
         path, destination = self.proxy.remove_nvram.call_args[0]
         self.assertEqual(path, "/var/lib/libvirt/qemu/nvram/vm_VARS.fd")
         self.assertIsNotNone(destination)
-        self.assertEqual(Logs.objects.get().message, "Instance is migrated(live) to 198.51.100.9")
+        self.assertEqual(rows(), [("VM vm: migrate (live) to 198.51.100.9", True)])
 
     def test_a_vm_without_nvram_removes_nothing(self):
         self.migrate("live", live=True)
@@ -54,11 +59,10 @@ class MigrationLogTests(TestCase):
     def test_a_failed_nvram_removal_is_logged_but_the_migration_stands(self):
         self.migrate("live", nvram="/var/lib/libvirt/qemu/nvram/vm_VARS.fd",
                      remove_nvram=libvirtError("cannot delete"), live=True)
-        self.assertEqual(
-            Logs.objects.get().message,
-            "Instance is migrated(live) to 198.51.100.9; removing its NVRAM file "
-            "/var/lib/libvirt/qemu/nvram/vm_VARS.fd on the source failed: cannot delete",
-        )
+        self.assertEqual(rows(), [
+            ("VM vm: migrate (live) to 198.51.100.9", True),
+            ("VM vm: remove NVRAM file /var/lib/libvirt/qemu/nvram/vm_VARS.fd on the source: cannot delete", False),
+        ])
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.dest)
 
@@ -67,7 +71,9 @@ class MigrationLogTests(TestCase):
                      remove_nvram=AttributeError("unexpected"), live=True)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.dest)
-        self.assertIn("on the source failed: unexpected", Logs.objects.get().message)
+        # an unknown error gives only its class name
+        self.assertEqual(rows()[-1], ("VM vm: remove NVRAM file /var/lib/libvirt/qemu/nvram/vm_VARS.fd on the source: "
+                                      "AttributeError", False))
 
     def test_a_failed_migration_removes_nothing(self):
         with self.assertRaises(util.OperationError):
@@ -77,23 +83,20 @@ class MigrationLogTests(TestCase):
     def test_success_names_the_mode_used(self):
         self.migrate("non-live, compressed", live=False, compress=True)
         log = Logs.objects.get()
-        self.assertEqual(log.message, "Instance is migrated(non-live, compressed) to 198.51.100.9")
-        self.assertEqual((log.user, log.host, log.instance), ("ml-admin", "198.51.100.8", "vm"))
+        self.assertEqual(log.message, "VM vm: migrate (non-live, compressed) to 198.51.100.9")
+        self.assertEqual((log.user, log.host, log.instance, log.instance_uuid), ("ml-admin", "ml-src", "vm", "u-ml"))
 
     def test_success_names_the_migration_address(self):
         self.dest.migration_address = "203.0.113.9"
         self.migrate("live", live=True)
-        self.assertEqual(Logs.objects.get().message, "Instance is migrated(live) to 198.51.100.9 via 203.0.113.9")
+        self.assertEqual(Logs.objects.get().message, "VM vm: migrate (live) to 198.51.100.9 via 203.0.113.9")
         self.vm.compute = self.source
         self.vm.save()
         self.dest.migration_address = "198.51.100.9"  # the host name itself
         self.migrate("live", live=True)
-        self.assertEqual(Logs.objects.latest("id").message, "Instance is migrated(live) to 198.51.100.9")
+        self.assertEqual(Logs.objects.latest("id").message, "VM vm: migrate (live) to 198.51.100.9")
 
     def test_failure_is_logged_and_raised(self):
         with self.assertRaisesRegex(util.OperationError, "A shut-off VM cannot be migrated live"):
             self.migrate(util.OperationError("A shut-off VM cannot be migrated live"), live=True)
-        self.assertEqual(
-            Logs.objects.get().message,
-            "Instance migration to 198.51.100.9 failed: A shut-off VM cannot be migrated live",
-        )
+        self.assertEqual(rows(), [("VM vm: migrate to 198.51.100.9: A shut-off VM cannot be migrated live", False)])

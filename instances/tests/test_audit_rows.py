@@ -33,11 +33,11 @@ class VMOwnerRowTests(TestCase):
         ui = UserInstance.objects.get(user=self.bob)
         self.client.post(reverse("instances:del_owner", args=[self.vm.pk]), {"userinstance": ui.pk})
         self.assertEqual(rows(), [
-            ("VM vm owner bob: add", True),
-            ("VM vm owner carol: add: only one owner is allowed", False),
-            ("VM vm owner bob: remove", True),
+            ("VM vm: add owner bob", True),
+            ("VM vm: add owner carol: only one owner is allowed", False),
+            ("VM vm: remove owner bob", True),
         ])
-        shown = [log["message"] for log in self.client.get(reverse("vm_logs", args=["vm"])).json()]
+        shown = [log["message"] for log in self.client.get(reverse("vm_logs", args=[self.vm.pk])).json()]
         self.assertCountEqual(shown, [m for m, _ in rows()])
 
 

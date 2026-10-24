@@ -36,9 +36,8 @@ from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
                      VIR_DOMAIN_UNDEFINE_NVRAM,
                      VIR_ERR_NO_SUPPORT,
                      libvirtError)
-from logs.audit import audit, changed_fields, failed
+from logs.audit import audit, audit_vm, changed_fields, failed_vm
 from logs.audit import snapshot as audit_snapshot
-from logs.views import addlogmsg
 from operations import claims, jobs
 from operations.utils import busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
@@ -178,19 +177,6 @@ def _instance_page(request, pk, instance, compute):
     # default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
 
     # clone_instance_auto_name = app_settings.CLONE_INSTANCE_AUTO_NAME
-
-    # try:
-    #     instance = Instance.objects.get(compute=compute, name=vname)
-    #     if instance.uuid != uuid:
-    #         instance.uuid = uuid
-    #         instance.save()
-    #         msg = _(f"Fixing UUID {uuid}")
-    #         addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
-    # except Instance.DoesNotExist:
-    #     instance = Instance(compute=compute, name=vname, uuid=uuid)
-    #     instance.save()
-    #     msg = _("Instance does not exist: Creating new instance")
-    #     addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     # userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
     userinstances = instance.userinstance_set.order_by("user__username")
@@ -578,10 +564,8 @@ def poweron(request, pk):
     if instance.is_template:
         messages.warning(request, _("Templates cannot be started."))
     else:
-        instance.proxy.start()
-        addlogmsg(
-            request.user.username, instance.compute.name, instance.name, _("Power On")
-        )
+        with audit_vm(request, instance, "power on"):
+            instance.proxy.start()
 
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
@@ -595,11 +579,9 @@ def powercycle(request, pk):
     if instance.is_template:
         messages.warning(request, _("Templates cannot be started."))
     else:
-        instance.proxy.force_shutdown()
-        instance.proxy.start()
-        addlogmsg(
-            request.user.username, instance.compute.name, instance.name, _("Power Cycle")
-        )
+        with audit_vm(request, instance, "power cycle"):
+            instance.proxy.force_shutdown()
+            instance.proxy.start()
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
     )
@@ -609,10 +591,8 @@ def powercycle(request, pk):
 @serialize_instance_mutation
 def poweroff(request, pk):
     instance = get_instance(request.user, pk, perm_type="power")
-    instance.proxy.shutdown()
-    addlogmsg(
-        request.user.username, instance.compute.name, instance.name, _("Power Off")
-    )
+    with audit_vm(request, instance, "power off"):
+        instance.proxy.shutdown()
 
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
@@ -624,8 +604,8 @@ def poweroff(request, pk):
 @serialize_instance_mutation
 def suspend(request, pk):
     instance = get_instance(request.user, pk)
-    instance.proxy.suspend()
-    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Suspend"))
+    with audit_vm(request, instance, "suspend"):
+        instance.proxy.suspend()
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
     )
@@ -636,8 +616,8 @@ def suspend(request, pk):
 @serialize_instance_mutation
 def resume(request, pk):
     instance = get_instance(request.user, pk)
-    instance.proxy.resume()
-    addlogmsg(request.user.username, instance.compute.name, instance.name, _("Resume"))
+    with audit_vm(request, instance, "resume"):
+        instance.proxy.resume()
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
     )
@@ -647,10 +627,8 @@ def resume(request, pk):
 @serialize_instance_mutation
 def force_off(request, pk):
     instance = get_instance(request.user, pk, perm_type="power")
-    instance.proxy.force_shutdown()
-    addlogmsg(
-        request.user.username, instance.compute.name, instance.name, _("Force Off")
-    )
+    with audit_vm(request, instance, "force off"):
+        instance.proxy.force_shutdown()
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
     )
@@ -661,37 +639,37 @@ def destroy(request, pk):
     if request.method in ["POST", "DELETE"]:
         instance = get_instance(request.user, pk, perm_type="delete")
         with libvirt_instance_lock(instance):
-            proxy = instance.proxy
-            # Paused and other active states must stop too, or the VM keeps
-            # running as a transient domain after the undefine.
-            if proxy.instance.isActive():
-                proxy.force_shutdown()
+            with audit_vm(request, instance, "delete"):
+                proxy = instance.proxy
+                # Paused and other active states must stop too, or the VM keeps
+                # running as a transient domain after the undefine.
+                if proxy.instance.isActive():
+                    proxy.force_shutdown()
 
-            to_delete, shared = [], []
-            if request.POST.get("delete_disk", ""):
-                to_delete, shared = proxy.split_disk_paths_by_use()
+                to_delete, shared = [], []
+                if request.POST.get("delete_disk", ""):
+                    to_delete, shared = proxy.split_disk_paths_by_use()
 
-            # Undefine before deleting any disk: if it fails, nothing is lost.
-            # Snapshot metadata goes with the domain; internal snapshot data
-            # stays in the disk images that are kept.
-            flags = VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
-            if request.POST.get("delete_nvram", ""):
-                flags |= VIR_DOMAIN_UNDEFINE_NVRAM
-            else:
-                flags |= VIR_DOMAIN_UNDEFINE_KEEP_NVRAM
-            proxy.delete(flags)
-            instance.delete()
+                # Undefine before deleting any disk: if it fails, nothing is lost.
+                # Snapshot metadata goes with the domain; internal snapshot data
+                # stays in the disk images that are kept.
+                flags = VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+                if request.POST.get("delete_nvram", ""):
+                    flags |= VIR_DOMAIN_UNDEFINE_NVRAM
+                else:
+                    flags |= VIR_DOMAIN_UNDEFINE_KEEP_NVRAM
+                proxy.delete(flags)
+                instance.delete()
 
+            # each disk has its own row: the VM is gone even if one is kept
             for path in to_delete:
                 try:
-                    proxy.get_volume_by_path(path).delete(0)
+                    with audit_vm(request, instance, f"delete volume {path}"):
+                        proxy.get_volume_by_path(path).delete(0)
                 except libvirtError as err:
                     messages.error(request, _("Disk %(path)s was not deleted: %(err)s") % {"path": path, "err": error_text(request, err)})
             for path in shared:
                 messages.warning(request, _("Disk %(path)s is used by another VM and was kept") % {"path": path})
-        addlogmsg(
-            request.user.username, instance.compute.name, instance.name, _("Destroy")
-        )
         return redirect(reverse("instances:index"))
 
     instance = get_instance(request.user, pk, perm_type="delete")
@@ -742,20 +720,24 @@ GSTFSD_TIMEOUT = 120  # gstfsd answers within its 100 s limit for a request (GST
 
 
 def gstfsd_request(hostname, data):
-    """Send one request to gstfsd and return its JSON reply, or an error reply."""
+    """Send one request to gstfsd and return its JSON reply; an error reply or
+    a failed exchange raises OperationError with the reason."""
     try:
         # the host name may resolve to IPv4 or IPv6
         s = socket.create_connection((hostname, GSTFSD_PORT), timeout=GSTFSD_TIMEOUT)
     except OSError as err:
-        return {"return": "error", "message": _("gstfsd error: %(err)s") % {"err": err}}
+        raise util.OperationError(_("gstfsd error: %(err)s") % {"err": err}) from err
     try:
         s.sendall(json.dumps(data).encode())
         # gstfsd sends one reply and closes the connection
-        return json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
+        reply = json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
     except (OSError, ValueError) as err:
-        return {"return": "error", "message": _("gstfsd error: %(err)s") % {"err": err}}
+        raise util.OperationError(_("gstfsd error: %(err)s") % {"err": err}) from err
     finally:
         s.close()
+    if reply["return"] != "success":
+        raise util.OperationError(reply["message"])
+    return reply
 
 
 @require_POST
@@ -771,15 +753,13 @@ def set_root_pass(request, pk):
             data = {"action": "password", "passwd": passwd_hash, "vname": instance.proxy.instance.name()}
 
             if instance.proxy.get_status() == 5:
-                result = gstfsd_request(instance.compute.hostname, data)
-                if result["return"] == "success":
-                    msg = _("Reset root password")
-                    addlogmsg(
-                        request.user.username, instance.compute.name, instance.name, msg
-                    )
-                    messages.success(request, msg)
+                try:
+                    with audit_vm(request, instance, "reset root password"):
+                        gstfsd_request(instance.compute.hostname, data)
+                except util.OperationError as err:
+                    messages.error(request, err)
                 else:
-                    messages.error(request, result["message"])
+                    messages.success(request, _("Reset root password"))
             else:
                 msg = _("Please shutdown down your instance and then try again")
                 messages.error(request, msg)
@@ -808,19 +788,15 @@ def add_public_key(request, pk):
         }
 
         if instance.proxy.get_status() == 5:
-            result = gstfsd_request(instance.compute.hostname, data)
-            if result["return"] == "error":
-                msg = result["message"]
+            try:
+                with audit_vm(request, instance, f"install SSH key {publickey.keyname}"):
+                    gstfsd_request(instance.compute.hostname, data)
+            except util.OperationError as err:
+                messages.error(request, err)
             else:
-                msg = _("Installed new SSH public key %(keyname)s") % {
+                messages.success(request, _("Installed new SSH public key %(keyname)s") % {
                     "keyname": publickey.keyname
-                }
-            addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
-
-            if result["return"] == "success":
-                messages.success(request, msg)
-            else:
-                messages.error(request, msg)
+                })
         else:
             msg = _("Please shutdown down your instance and then try again")
             messages.error(request, msg)
@@ -856,14 +832,12 @@ def resizevm_cpu(request, pk):
     else:
         cur_vcpu = new_cur_vcpu
         vcpu = new_vcpu
-        instance.proxy.resize_cpu(cur_vcpu, vcpu)
+        with audit_vm(request, instance, f"set vCPUs to {cur_vcpu} (maximum {vcpu})"):
+            instance.proxy.resize_cpu(cur_vcpu, vcpu)
         msg = _("CPU is resized:  %(old)s to %(new)s") % {
             "old": cur_vcpu,
             "new": vcpu,
         }
-        addlogmsg(
-            request.user.username, instance.compute.name, instance.name, msg
-        )
         messages.success(request, msg)
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
 
@@ -902,7 +876,8 @@ def resize_memory(request, pk):
         })
         messages.error(request, msg)
     else:
-        instance.proxy.resize_mem(new_cur_memory, new_memory)
+        with audit_vm(request, instance, f"set memory to {new_cur_memory} MiB (maximum {new_memory} MiB)"):
+            instance.proxy.resize_mem(new_cur_memory, new_memory)
         msg = _(
             "Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/%(new_max)s"
         ) % {
@@ -911,9 +886,6 @@ def resize_memory(request, pk):
             "new_cur": new_cur_memory,
             "new_max": new_memory,
         }
-        addlogmsg(
-            request.user.username, instance.compute.name, instance.name, msg
-        )
         messages.success(request, msg)
 
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
@@ -955,18 +927,15 @@ def resize_disk(request, pk):
     else:
         for disk in disks_new:
             try:
-                instance.proxy.resize_disk([disk])
+                with audit_vm(request, instance, f"resize disk {disk['dev']} to {disk['size_new'] >> 30} GiB"):
+                    instance.proxy.resize_disk([disk])
             except libvirtError as err:
                 # an LVM pool, for one, cannot resize its volumes
                 if err.get_error_code() != VIR_ERR_NO_SUPPORT:
                     raise
                 messages.error(request, _("The storage pool of %(dev)s cannot resize its volumes") % {"dev": disk["dev"]})
                 continue
-            msg = _("Disk is resized: %(dev)s") % {"dev": disk["dev"]}
-            addlogmsg(
-                request.user.username, instance.compute.name, instance.name, msg
-            )
-            messages.success(request, msg)
+            messages.success(request, _("Disk is resized: %(dev)s") % {"dev": disk["dev"]})
 
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
 
@@ -990,61 +959,57 @@ def add_new_vol(request, pk):
     if invalid:
         return reject_disk_options(request, pk, invalid)
 
-    conn_create = wvmCreate(
-        instance.compute.hostname,
-        instance.compute.login,
-        instance.compute.password,
-        instance.compute.type,
-    )
-    # a name either definition uses is taken: on an active VM a disk can be
-    # pending in the persistent one only
-    target_dev = utils.get_new_disk_dev(
-        instance.media + instance.config_media, instance.disks + instance.config_disks, bus
-    )
+    with audit_vm(request, instance, f"attach new disk {storage}/{name}"):
+        conn_create = wvmCreate(
+            instance.compute.hostname,
+            instance.compute.login,
+            instance.compute.password,
+            instance.compute.type,
+        )
+        # a name either definition uses is taken: on an active VM a disk can be
+        # pending in the persistent one only
+        target_dev = utils.get_new_disk_dev(
+            instance.media + instance.config_media, instance.disks + instance.config_disks, bus
+        )
 
-    source = conn_create.create_volume(
-        storage,
-        name,
-        size,
-        format,
-        meta_prealloc,
-        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
-        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
-    )
+        source = conn_create.create_volume(
+            storage,
+            name,
+            size,
+            format,
+            meta_prealloc,
+            int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
+            int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
+        )
 
-    conn_pool = wvmStorage(
-        instance.compute.hostname,
-        instance.compute.login,
-        instance.compute.password,
-        instance.compute.type,
-        storage,
-    )
+        conn_pool = wvmStorage(
+            instance.compute.hostname,
+            instance.compute.login,
+            instance.compute.password,
+            instance.compute.type,
+            storage,
+        )
 
-    pool_type = conn_pool.get_type()
-    disk_type = conn_pool.get_volume_type(os.path.basename(source))
-    # the pool decides: only a dir pool keeps the asked format, the others create raw
-    format = util.vol_driver_type(conn_pool.get_volume_format_type(os.path.basename(source)), pool_type)
+        pool_type = conn_pool.get_type()
+        disk_type = conn_pool.get_volume_type(os.path.basename(source))
+        # the pool decides: only a dir pool keeps the asked format, the others create raw
+        format = util.vol_driver_type(conn_pool.get_volume_format_type(os.path.basename(source)), pool_type)
 
-    if pool_type == "rbd":
-        source_info = conn_pool.get_rbd_source()
-    else:  # add more disk types to handle different pool and disk types
-        source_info = None
+        if pool_type == "rbd":
+            source_info = conn_pool.get_rbd_source()
+        else:  # add more disk types to handle different pool and disk types
+            source_info = None
 
-    instance.proxy.attach_disk(
-        target_dev,
-        source,
-        source_info=source_info,
-        pool_type=pool_type,
-        disk_type=disk_type,
-        target_bus=bus,
-        format_type=format,
-        cache_mode=cache,
-    )
-    msg = _("Attach new disk: %(name)s (%(format)s)") % {
-        "name": name,
-        "format": format,
-    }
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        instance.proxy.attach_disk(
+            target_dev,
+            source,
+            source_info=source_info,
+            pool_type=pool_type,
+            disk_type=disk_type,
+            target_bus=bus,
+            format_type=format,
+            cache_mode=cache,
+        )
     return _back(request, pk, "disks")
 
 
@@ -1091,18 +1056,17 @@ def add_existing_vol(request, pk):
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
     )
 
-    instance.proxy.attach_disk(
-        target_dev,
-        source,
-        source_info=source_info,
-        pool_type=pool_type,
-        disk_type=disk_type,
-        target_bus=bus,
-        format_type=format_type,
-        cache_mode=cache,
-    )
-    msg = _("Attach Existing disk: %(target_dev)s") % {"target_dev": target_dev}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"attach disk {storage}/{name} as {target_dev}"):
+        instance.proxy.attach_disk(
+            target_dev,
+            source,
+            source_info=source_info,
+            pool_type=pool_type,
+            disk_type=disk_type,
+            target_bus=bus,
+            format_type=format_type,
+            cache_mode=cache,
+        )
     return _back(request, pk, "disks")
 
 
@@ -1152,19 +1116,20 @@ def edit_volume(request, pk):
         if invalid:
             return reject_disk_options(request, pk, invalid)
 
-        instance.proxy.edit_disk(
-            target_dev,
-            new_path,
-            readonly,
-            shareable,
-            new_bus,
-            serial,
-            format,
-            cache,
-            io,
-            discard,
-            zeroes,
-        )
+        with audit_vm(request, instance, f"edit disk {target_dev}"):
+            instance.proxy.edit_disk(
+                target_dev,
+                new_path,
+                readonly,
+                shareable,
+                new_bus,
+                serial,
+                format,
+                cache,
+                io,
+                discard,
+                zeroes,
+            )
 
         if not instance.proxy.get_status() == 5:
             messages.success(
@@ -1176,8 +1141,6 @@ def edit_volume(request, pk):
             )
         else:
             messages.success(request, _("Volume is changed successfully."))
-        msg = _("Edit disk: %(target_dev)s") % {"target_dev": target_dev}
-        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
 
     return _back(request, pk, "disks")
 
@@ -1221,10 +1184,12 @@ def delete_vol(request, pk):
         )
         return _back(request, pk, "disks")
 
-    msg = _("Delete disk: %(dev)s") % {"dev": dev}
-    instance.proxy.detach_disk(dev)
+    volume = f"{disk['storage']}/{disk['image']}"
+    with audit_vm(request, instance, f"detach disk {dev}"):
+        instance.proxy.detach_disk(dev)
     # Never delete a volume the guest may still be writing to.
     if not instance.proxy.wait_disk_detached(dev):
+        failed_vm(request, instance, f"delete volume {volume}", "the guest has not released the disk")
         messages.warning(
             request,
             _("The guest has not released disk %(dev)s yet; volume %(vol)s was kept. "
@@ -1233,14 +1198,13 @@ def delete_vol(request, pk):
         )
         return _back(request, pk, "disks")
     try:
-        conn_delete.del_volume(disk["image"])
+        with audit_vm(request, instance, f"delete volume {volume}"):
+            conn_delete.del_volume(disk["image"])
     except util.OperationError as err:  # a file of the VM's own snapshots
         messages.warning(
             request,
             _("Disk %(dev)s was detached, but its volume was kept: %(err)s") % {"dev": dev, "err": err},
         )
-
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return _back(request, pk, "disks")
 
 
@@ -1250,9 +1214,8 @@ def delete_vol(request, pk):
 def detach_vol(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
     dev = request.POST.get("dev", "")
-    instance.proxy.detach_disk(dev)
-    msg = _("Detach disk: %(dev)s") % {"dev": dev}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"detach disk {dev}"):
+        instance.proxy.detach_disk(dev)
 
     return _back(request, pk, "disks")
 
@@ -1270,16 +1233,15 @@ def add_cdrom(request, pk):
     target = utils.get_new_disk_dev(
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
     )
-    instance.proxy.attach_disk(
-        target,
-        "",
-        disk_device="cdrom",
-        cache_mode="none",
-        target_bus=bus,
-        readonly=True,
-    )
-    msg = _("Add CD-ROM: %(target)s") % {"target": target}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"add CD-ROM {target}"):
+        instance.proxy.attach_disk(
+            target,
+            "",
+            disk_device="cdrom",
+            cache_mode="none",
+            target_bus=bus,
+            readonly=True,
+        )
 
     return _back(request, pk, "disks")
 
@@ -1289,10 +1251,8 @@ def add_cdrom(request, pk):
 @serialize_instance_mutation
 def detach_cdrom(request, pk, dev):
     instance = get_instance(request.user, pk, perm_type="change")
-    # dev = request.POST.get('detach_cdrom', '')
-    instance.proxy.detach_disk(dev)
-    msg = _("Detach CD-ROM: %(dev)s") % {"dev": dev}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"remove CD-ROM {dev}"):
+        instance.proxy.detach_disk(dev)
 
     return _back(request, pk, "disks")
 
@@ -1304,12 +1264,10 @@ def unmount_iso(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
     dev = request.POST.get("umount_iso", "")
     try:
-        instance.proxy.umount_iso(dev)
+        with audit_vm(request, instance, f"eject media from {dev}"):
+            instance.proxy.umount_iso(dev)
     except libvirtError as err:
         messages.error(request, err)
-    else:
-        msg = _("Unmount media: %(dev)s") % {"dev": dev}
-        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(same_origin_referer(request, reverse("instances:instance", args=[pk])) + "#disks")
 
 
@@ -1321,12 +1279,10 @@ def mount_iso(request, pk):
     image = request.POST.get("media", "")
     dev = request.POST.get("mount_iso", "")
     try:
-        instance.proxy.mount_iso(dev, image)
+        with audit_vm(request, instance, f"insert media {image} into {dev}"):
+            instance.proxy.mount_iso(dev, image)
     except libvirtError as err:
         messages.error(request, err)
-    else:
-        msg = _("Mount media: %(dev)s") % {"dev": dev}
-        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return redirect(same_origin_referer(request, reverse("instances:instance", args=[pk])) + "#disks")
 
 
@@ -1345,12 +1301,10 @@ def delete_snapshot(request, pk):
         raise PermissionDenied
     snap_name = request.POST.get("name", "")
     try:
-        instance.proxy.snapshot_delete(snap_name)
+        with audit_vm(request, instance, f"delete snapshot {snap_name}"):
+            instance.proxy.snapshot_delete(snap_name)
     except libvirtError as err:
         messages.error(request, _("Snapshot was not deleted: %(err)s") % {"err": error_text(request, err)})
-        return _back(request, pk, "managesnapshot")
-    msg = _("Delete snapshot: %(snap)s") % {"snap": snap_name}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return _back(request, pk, "managesnapshot")
 
 
@@ -1406,13 +1360,9 @@ def delete_external_snapshot(request, pk):
 def set_vcpu(request, pk):
     instance = get_instance(request.user, pk)
     id = request.POST.get("id", "")
-    enabled = request.POST.get("set_vcpu", "")
-    if enabled == "True":
-        instance.proxy.set_vcpu(id, 1)
-    else:
-        instance.proxy.set_vcpu(id, 0)
-    msg = _("VCPU %(id)s is enabled=%(enabled)s") % {"id": id, "enabled": enabled}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    enabled = request.POST.get("set_vcpu", "") == "True"
+    with audit_vm(request, instance, f"{'enable' if enabled else 'disable'} vCPU {id}"):
+        instance.proxy.set_vcpu(id, 1 if enabled else 0)
     return _back(request, pk, "resize")
 
 
@@ -1422,9 +1372,8 @@ def set_vcpu(request, pk):
 def set_vcpu_hotplug(request, pk):
     instance = get_instance(request.user, pk)
     status = True if request.POST.get("vcpu_hotplug", "False") == "True" else False
-    msg = _("VCPU Hot-plug is enabled=%(status)s") % {"status": status}
-    instance.proxy.set_vcpu_hotplug(status)
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"{'enable' if status else 'disable'} vCPU hot-plug"):
+        instance.proxy.set_vcpu_hotplug(status)
     return _back(request, pk, "resize")
 
 
@@ -1433,9 +1382,8 @@ def set_vcpu_hotplug(request, pk):
 @serialize_instance_mutation
 def set_autostart(request, pk):
     instance = get_instance(request.user, pk)
-    instance.proxy.set_autostart(1)
-    msg = _("Set autostart")
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, "enable autostart"):
+        instance.proxy.set_autostart(1)
     return _back(request, pk, "boot_opt")
 
 
@@ -1444,9 +1392,8 @@ def set_autostart(request, pk):
 @serialize_instance_mutation
 def unset_autostart(request, pk):
     instance = get_instance(request.user, pk)
-    instance.proxy.set_autostart(0)
-    msg = _("Unset autostart")
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, "disable autostart"):
+        instance.proxy.set_autostart(0)
     return _back(request, pk, "boot_opt")
 
 
@@ -1455,9 +1402,8 @@ def unset_autostart(request, pk):
 @serialize_instance_mutation
 def set_bootmenu(request, pk):
     instance = get_instance(request.user, pk)
-    instance.proxy.set_bootmenu(1)
-    msg = _("Enable boot menu")
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, "enable boot menu"):
+        instance.proxy.set_bootmenu(1)
     return _back(request, pk, "boot_opt")
 
 
@@ -1466,9 +1412,8 @@ def set_bootmenu(request, pk):
 @serialize_instance_mutation
 def unset_bootmenu(request, pk):
     instance = get_instance(request.user, pk)
-    instance.proxy.set_bootmenu(0)
-    msg = _("Disable boot menu")
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, "disable boot menu"):
+        instance.proxy.set_bootmenu(0)
     return _back(request, pk, "boot_opt")
 
 
@@ -1484,11 +1429,11 @@ def set_bootorder(request, pk):
             dev_type, dev = val.split(":", 1)
             order_list[idx] = {"type": dev_type, "dev": dev}
         try:
-            instance.proxy.set_bootorder(order_list)
+            with audit_vm(request, instance, "change boot order"):
+                instance.proxy.set_bootorder(order_list)
         except util.OperationError as err:
             messages.error(request, err)
             return _back(request, pk, "boot_opt")
-        msg = _("Set boot order")
 
         if not instance.proxy.get_status() == 5:
             messages.success(
@@ -1500,7 +1445,6 @@ def set_bootorder(request, pk):
             )
         else:
             messages.success(request, _("Boot order changed successfully."))
-        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     return _back(request, pk, "boot_opt")
 
 
@@ -1515,9 +1459,8 @@ def change_xml(request, pk):
     if new_xml and instance.proxy.get_status() != 5:
         messages.error(request, _("Power off the instance to change its XML"))
     elif new_xml:
-        instance.proxy._defineXML(new_xml)
-        msg = _("Change instance XML")
-        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        with audit_vm(request, instance, "change XML"):
+            instance.proxy._defineXML(new_xml)
     return _back(request, pk, "xmledit")
 
 
@@ -1528,12 +1471,11 @@ def set_guest_agent(request, pk):
     instance = get_instance(request.user, pk)
     status = request.POST.get("guest_agent")
     if status == "True":
-        instance.proxy.add_guest_agent()
+        with audit_vm(request, instance, "add guest agent channel"):
+            instance.proxy.add_guest_agent()
     if status == "False":
-        instance.proxy.remove_guest_agent()
-
-    msg = _("Set Guest Agent: %(status)s") % {"status": status}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        with audit_vm(request, instance, "remove guest agent channel"):
+            instance.proxy.remove_guest_agent()
     return _back(request, pk, "options")
 
 
@@ -1543,9 +1485,8 @@ def set_guest_agent(request, pk):
 def set_video_model(request, pk):
     instance = get_instance(request.user, pk)
     video_model = request.POST.get("video_model", "vga")
-    instance.proxy.set_video_model(video_model)
-    msg = _("Set Video Model: %(model)s") % {"model": video_model}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"set video model {video_model}"):
+        instance.proxy.set_video_model(video_model)
     return _back(request, pk, "options")
 
 
@@ -1571,31 +1512,29 @@ def change_network(request, pk):
         return redirect(back)
 
     (source, source_type) = utils.get_network_tuple(request.POST.get(f"net-source-{num}", ""))
-    if source_type == "iface":
-        iface = wvmInterface(
-            instance.compute.hostname,
-            instance.compute.login,
-            instance.compute.password,
-            instance.compute.type,
-            source,
-        )
-        source_type = iface.get_type()
-
     try:
-        instance.proxy.change_network(
-            old_mac,
-            mac,
-            source,
-            source_type,
-            request.POST.get(f"net-model-{num}"),
-            request.POST.get(f"net-nwfilter-{num}", ""),
-        )
+        with audit_vm(request, instance, f"change interface {old_mac}"):
+            if source_type == "iface":
+                iface = wvmInterface(
+                    instance.compute.hostname,
+                    instance.compute.login,
+                    instance.compute.password,
+                    instance.compute.type,
+                    source,
+                )
+                source_type = iface.get_type()
+            instance.proxy.change_network(
+                old_mac,
+                mac,
+                source,
+                source_type,
+                request.POST.get(f"net-model-{num}"),
+                request.POST.get(f"net-nwfilter-{num}", ""),
+            )
     except libvirtError as err:
         messages.error(request, err)
         return redirect(back)
 
-    msg = _("Change network: %(mac)s") % {"mac": old_mac}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     msg = _("Network Device Config is changed. Please shutdown instance to activate.")
     if instance.proxy.get_status() != 5:
         messages.success(request, msg)
@@ -1617,19 +1556,17 @@ def add_network(request, pk):
     (source, source_type) = utils.get_network_tuple(network)
     model = request.POST.get("add-net-model")
 
-    if source_type == "iface":
-        iface = wvmInterface(
-            instance.compute.hostname,
-            instance.compute.login,
-            instance.compute.password,
-            instance.compute.type,
-            source,
-        )
-        source_type = iface.get_type()
-
-    instance.proxy.add_network(mac, source, source_type, model=model, nwfilter=nwfilter)
-    msg = _("Add network: %(mac)s") % {"mac": mac}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"add interface on {source}"):
+        if source_type == "iface":
+            iface = wvmInterface(
+                instance.compute.hostname,
+                instance.compute.login,
+                instance.compute.password,
+                instance.compute.type,
+                source,
+            )
+            source_type = iface.get_type()
+        instance.proxy.add_network(mac, source, source_type, model=model, nwfilter=nwfilter)
     return _back(request, pk, "network")
 
 
@@ -1640,9 +1577,8 @@ def delete_network(request, pk):
     instance = get_instance(request.user, pk)
     mac_address = request.POST.get("delete_network", "")
 
-    instance.proxy.delete_network(mac_address)
-    msg = _("Delete Network: %(mac)s") % {"mac": mac_address}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"remove interface {mac_address}"):
+        instance.proxy.delete_network(mac_address)
     return _back(request, pk, "network")
 
 
@@ -1655,9 +1591,8 @@ def set_link_state(request, pk):
     mac_address = request.POST.get("mac", "")
     state = request.POST.get("set_link_state")
     state = "down" if state == "up" else "up"
-    instance.proxy.set_link_state(mac_address, state)
-    msg = _("Set Link State: %(state)s") % {"state": state}
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+    with audit_vm(request, instance, f"set link {state} on interface {mac_address}"):
+        instance.proxy.set_link_state(mac_address, state)
     return _back(request, pk, "network")
 
 
@@ -1680,7 +1615,8 @@ def set_qos(request, pk):
         messages.error(request, _("QoS rates must be whole numbers"))
         return _back(request, pk, "network")
 
-    instance.proxy.set_qos(mac, qos_dir, average, peak, burst)
+    with audit_vm(request, instance, f"set {qos_dir} QoS on interface {mac}"):
+        instance.proxy.set_qos(mac, qos_dir, average, peak, burst)
     if instance.proxy.get_status() == 5:
         messages.success(
             request, _("%(qos_dir)s QoS is set") % {"qos_dir": qos_dir.capitalize()}
@@ -1705,7 +1641,8 @@ def unset_qos(request, pk):
     if not mac or qos_dir not in ("inbound", "outbound"):
         messages.error(request, _("Select a network interface and a QoS direction"))
         return _back(request, pk, "network")
-    instance.proxy.unset_qos(mac, qos_dir)
+    with audit_vm(request, instance, f"remove {qos_dir} QoS from interface {mac}"):
+        instance.proxy.unset_qos(mac, qos_dir)
 
     if instance.proxy.get_status() == 5:
         messages.success(
@@ -1734,14 +1671,14 @@ def add_owner(request, pk):
     if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False":
         check_inst = UserInstance.objects.filter(instance=instance).count()
 
-    subject = f"VM {instance.name} owner {user.username}"
+    action = f"add owner {user.username}"
     if check_inst > 0:
-        failed(request, instance.compute, subject, "add", "only one owner is allowed", instance=instance.name)
+        failed_vm(request, instance, action, "only one owner is allowed")
         messages.error(
             request, _("Only one owner is allowed and the one already added")
         )
     else:
-        with audit(request, instance.compute, subject, "add", instance=instance.name) as entry:
+        with audit_vm(request, instance, action) as entry:
             entry.skip = not UserInstance.objects.get_or_create(instance=instance, user=user)[1]
         if entry.skip:
             messages.warning(request, _("%(user)s is already an owner") % {"user": user})
@@ -1756,8 +1693,7 @@ def del_owner(request, pk):
     if not userinstance_id.isdigit():
         raise Http404
     userinstance = get_object_or_404(UserInstance, pk=userinstance_id, instance=instance)
-    with audit(request, instance.compute, f"VM {instance.name} owner {userinstance.user.username}", "remove",
-               instance=instance.name):
+    with audit_vm(request, instance, f"remove owner {userinstance.user.username}"):
         userinstance.delete()
     return _back(request, pk, "users")
 
@@ -1803,8 +1739,8 @@ def update_console(request, pk):
         raise PermissionDenied
     form = ConsoleForm(request.POST or None, can_set_listener=request.user.is_superuser)
     if form.is_valid() and form.cleaned_data["console_type"] not in ("", instance.console_type):
-        instance.proxy.set_console_type(form.cleaned_data["console_type"])
-        addlogmsg(request.user.username, instance.compute.name, instance.name, _("Set console type"))
+        with audit_vm(request, instance, f"set console type {form.cleaned_data['console_type']}"):
+            instance.proxy.set_console_type(form.cleaned_data["console_type"])
     # the other fields are VNC settings; a new VNC console gets them too
     if form.is_valid() and form.cleaned_data["console_type"] != "pty":
         if (
@@ -1831,35 +1767,26 @@ def update_console(request, pk):
                     request,
                     _("The console listens beyond localhost; only an administrator can remove its password."),
                 )
-            elif not instance.proxy.set_console_passwd(password):
-                msg = _(
-                    "Error setting console password. "
-                    + "You should check that your instance have an graphic device."
-                )
-                messages.error(request, msg)
             else:
-                msg = _("Set VNC password")
-                addlogmsg(
-                    request.user.username, instance.compute.name, instance.name, msg
-                )
+                try:
+                    with audit_vm(request, instance, "set console password" if password else "remove console password"):
+                        if not instance.proxy.set_console_passwd(password):
+                            raise util.OperationError("The VM has no graphics device")
+                except util.OperationError:
+                    msg = _(
+                        "Error setting console password. "
+                        + "You should check that your instance have an graphic device."
+                    )
+                    messages.error(request, msg)
 
         if "keymap" in form.changed_data or "clear_keymap" in form.changed_data:
-            if form.cleaned_data["clear_keymap"]:
-                instance.proxy.set_console_keymap("")
-            else:
-                instance.proxy.set_console_keymap(form.cleaned_data["keymap"])
-
-            msg = _("Set VNC keymap")
-            addlogmsg(
-                request.user.username, instance.compute.name, instance.name, msg
-            )
+            keymap = "" if form.cleaned_data["clear_keymap"] else form.cleaned_data["keymap"]
+            with audit_vm(request, instance, f"set console keymap {keymap}" if keymap else "remove console keymap"):
+                instance.proxy.set_console_keymap(keymap)
 
         if "listen_on" in form.changed_data:
-            instance.proxy.set_console_listener_addr(form.cleaned_data["listen_on"])
-            msg = _("Set VNC listen address")
-            addlogmsg(
-                request.user.username, instance.compute.name, instance.name, msg
-            )
+            with audit_vm(request, instance, f"set console listen address {form.cleaned_data['listen_on']}"):
+                instance.proxy.set_console_listener_addr(form.cleaned_data["listen_on"])
     if not form.is_valid():
         messages.error(request, _("Console settings were not saved: %(errors)s") % {"errors": form.errors.as_text()})
 
@@ -1901,10 +1828,8 @@ def change_options(request, pk):
         for post in request.POST:
             if post in ["title", "description"]:
                 options[post] = request.POST.get(post, "")
-        instance.proxy.set_options(options)
-
-        msg = _("Edit options")
-        addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
+        with audit_vm(request, instance, "edit options"):
+            instance.proxy.set_options(options)
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#options"
     )
@@ -1915,8 +1840,6 @@ def getvvfile(request, pk):
     # The .vv file contains the VNC password: same rule as the console.
     if not utils.can_open_console(request.user, instance):
         raise PermissionDenied
-    msg = _("Send console.vv file")
-    addlogmsg(request.user.username, instance.compute.name, instance.name, msg)
     response = HttpResponse(
         content="",
         content_type="application/x-virt-viewer",
@@ -1925,7 +1848,7 @@ def getvvfile(request, pk):
         charset="utf-8",
     )
     # the VM found by its UUID; the stored name may be stale
-    with instance.proxy.cached_reads() as proxy:
+    with audit_vm(request, instance, "download console file"), instance.proxy.cached_reads() as proxy:
         listen = proxy.get_console_listener_addr()
         response.writelines("[virt-viewer]\n")
         response.writelines(f"type={proxy.get_console_type()}\n")
@@ -1982,13 +1905,17 @@ def create_instance_select_type(request, compute_id):
         xml = request.POST.get("dom_xml", "")
         try:
             name = util.get_xml_path(xml, "/domain/name")
-            if name in instances:
+            if not name:
+                xml_error = _("The XML has no name")
+            elif name in instances:
                 xml_error = _("A virtual machine with this name already exists")
             else:
                 with libvirt_compute_lock(compute):
-                    conn._defineXML(xml)
-                    utils.refr(compute)
-                    instance = compute.instance_set.get(name=name)
+                    with audit(request, compute, f"VM {name}", "define from XML", instance=name) as entry:
+                        conn._defineXML(xml)
+                        utils.refr(compute)
+                        instance = compute.instance_set.get(name=name)
+                        entry.uuid = instance.uuid
                 return redirect(reverse("instances:instance", args=[instance.id]))
         except util.etree.Error as err:
             xml_error = _("The XML is not well-formed: %(error)s") % {"error": err}

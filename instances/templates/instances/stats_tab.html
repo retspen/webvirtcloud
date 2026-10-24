@@ -9,7 +9,7 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab" aria-controls="logs" aria-selected="false" onclick="update_logs_table(vname);">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab" aria-controls="logs" aria-selected="false" onclick="update_logs_table();">
                 {% trans "Logs" %}
             </button>
         </li>
@@ -71,11 +71,12 @@
                             <th scope="col">{% trans "Date" %}</th>
                             <th scope="col">{% trans "User" %}</th>
                             <th scope="col">{% trans "Message" %}</th>
+                            <th scope="col">{% trans "Result" %}</th>
                         </tr>
                     </thead>
                     <tbody class="searchable">
                         <tr>
-                            <td colspan="3"><i>{% trans 'None' %}...</i></td>
+                            <td colspan="4"><i>{% trans 'None' %}...</i></td>
                         </tr>
                     </tbody>
                 </table>
@@ -85,10 +86,8 @@
     </div>
 </div>
 <script>
-    function update_logs_table(vname) {
-        // TODO
-        logurl = "{% url 'vm_logs' 1 %}".replace(1, vname);
-        $.getJSON(logurl, function(data) {
+    function update_logs_table() {
+        $.getJSON("{% url 'vm_logs' instance.id %}", function(data) {
             // Log messages contain user-entered names (snapshots, disks, clones);
             // insert them as text, never as HTML.
             var tbody = $("#logs_table > tbody").empty();
@@ -97,6 +96,7 @@
                     .append($("<td>").css("width", "150px").text(row['date']))
                     .append($("<td>").text(row['user']))
                     .append($("<td>").text(row['message']))
+                    .append($("<td>").text(row['result']))
                     .appendTo(tbody);
             });
         });
