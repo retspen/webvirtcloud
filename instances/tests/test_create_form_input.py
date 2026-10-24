@@ -201,6 +201,38 @@ class FlavorPresetTests(TestCase):
         self.assertEqual(actions[-1], reverse("instances:flavor_create"))
 
 
+class InPageFlavorTests(TestCase):
+    """The create page's flavor forms are sent from the page and get back its
+    presets and flavor dialog, so the unfinished VM form stays."""
+
+    def setUp(self):
+        self.flavor = Flavor.objects.create(label="wvc-test", memory=512, vcpu=1, disk=10)
+        render_create_page(self)  # logs in a superuser
+
+    def post(self, url, data=None):
+        response = self.client.post(url, data or {}, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["messages"]), [])
+        return html.fromstring(response.content)
+
+    def test_an_added_flavor_is_a_preset_and_a_dialog_row(self):
+        reply = self.post(reverse("instances:flavor_create"), {"label": "big", "memory": 4096, "vcpu": 4, "disk": 40})
+        self.assertEqual(reply.xpath("//*[@id='presets']//button/@data-label")[-2:], ["wvc-test", "big"])
+        self.assertEqual(len(reply.xpath("//*[@id='flavors']//li")), Flavor.objects.count())
+        self.assertEqual(reply.xpath("//*[@id='flavors']//input[@name='label']/@value"), [])
+
+    def test_a_refused_flavor_shows_its_errors_in_the_dialog(self):
+        reply = self.post(reverse("instances:flavor_create"), {"label": "big", "memory": "", "vcpu": 4, "disk": 40})
+        self.assertFalse(Flavor.objects.filter(label="big").exists())
+        self.assertEqual(reply.xpath("//*[@id='flavors']//input[@name='label']/@value"), ["big"])
+        self.assertTrue(reply.xpath("//*[@id='flavors']//input[@name='memory'][contains(@class, 'is-invalid')]"))
+
+    def test_a_deleted_flavor_leaves_the_presets(self):
+        reply = self.post(reverse("instances:flavor_delete", args=[self.flavor.id]))
+        self.assertNotIn("wvc-test", reply.xpath("//*[@id='presets']//button/@data-label"))
+        self.assertNotIn("wvc-test", reply.xpath("//*[@id='flavors']//li//strong/text()"))
+
+
 class SubmittedListsTests(TestCase):
     """The volumes and networks of a refused form come back with it."""
 

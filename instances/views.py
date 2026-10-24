@@ -2148,14 +2148,28 @@ def create_instance(request, compute_id, arch, machine):
     return render(request, "create_instance_w2.html", locals())
 
 
+def from_create_page(request):
+    """A flavor form sent from the create page's script, which swaps in the reply."""
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
+def flavors_reply(request, flavor_form):
+    return render(request, "create_flavors_reply.html",
+                  {"flavors": Flavor.objects.order_by("id"), "flavor_form": flavor_form})
+
+
 @superuser_only
 def flavor_create(request):
     form = FlavorForm(request.POST or None)
     if form.is_valid():
         with audit(request, None, f"Flavor {form.cleaned_data['label']}", "add"):
             form.save()
+        if from_create_page(request):
+            return flavors_reply(request, FlavorForm())
         messages.success(request, _("Flavor Created"))
         return get_safe_redirect(request, default=reverse("instances:index"))
+    if from_create_page(request):
+        return flavors_reply(request, form)
 
     return render(
         request,
@@ -2191,6 +2205,8 @@ def flavor_delete(request, pk):
     if request.method == "POST":
         with audit(request, None, f"Flavor {flavor.label}", "delete"):
             flavor.delete()
+        if from_create_page(request):
+            return flavors_reply(request, FlavorForm())
         messages.success(request, _("Flavor Deleted"))
         return get_safe_redirect(request, default=reverse("instances:index"))
 

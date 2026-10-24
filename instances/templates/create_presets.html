@@ -1,0 +1,16 @@
+{% load i18n %}
+<div id="presets">
+{% if flavors %}
+<div class="d-flex flex-wrap gap-2" role="group" aria-labelledby="presets-label" aria-describedby="presets_help">
+    {% for flavor in flavors %}
+    <button type="button" class="btn btn-sm border text-body focus-ring preset" aria-pressed="false"
+            data-label="{{ flavor.label }}" data-vcpu="{{ flavor.vcpu }}" data-memory="{{ flavor.memory }}" data-disk="{{ flavor.disk }}">
+        <strong>{{ flavor.label }}</strong> · {{ flavor.vcpu }} vCPU · {{ flavor.memory }} MiB · {{ flavor.disk }} GiB
+    </button>
+    {% endfor %}
+</div>
+<div id="presets_help" class="form-text">{% trans "A preset fills vCPUs, memory and a new disk of its size." %}</div>
+{% else %}
+<p class="form-text mb-0">{% trans "No flavors yet." %}</p>
+{% endif %}
+</div>

@@ -58,19 +58,7 @@
                                 {% trans "Manage flavors" %}
                             </button>
                         </div>
-                        {% if flavors %}
-                        <div class="d-flex flex-wrap gap-2" role="group" aria-labelledby="presets-label" aria-describedby="presets_help">
-                            {% for flavor in flavors %}
-                            <button type="button" class="btn btn-sm border text-body focus-ring preset" aria-pressed="false"
-                                    data-label="{{ flavor.label }}" data-vcpu="{{ flavor.vcpu }}" data-memory="{{ flavor.memory }}" data-disk="{{ flavor.disk }}">
-                                <strong>{{ flavor.label }}</strong> · {{ flavor.vcpu }} vCPU · {{ flavor.memory }} MiB · {{ flavor.disk }} GiB
-                            </button>
-                            {% endfor %}
-                        </div>
-                        <div id="presets_help" class="form-text">{% trans "A preset fills vCPUs, memory and a new disk of its size." %}</div>
-                        {% else %}
-                        <p class="form-text mb-0">{% trans "No flavors yet." %}</p>
-                        {% endif %}
+                        {% include 'create_presets.html' %}
                         <div id="preset-status" class="visually-hidden" role="status"></div>
                     </div>
 
@@ -368,27 +356,7 @@
                     <h2 class="modal-title h5" id="flavors-dialog-title">{% trans "Flavors" %}</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
-                <div class="modal-body">
-                    {% if flavors %}
-                    <ul class="list-group mb-3">
-                        {% for flavor in flavors %}
-                        <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
-                            <span><strong>{{ flavor.label }}</strong> · {{ flavor.vcpu }} vCPU · {{ flavor.memory }} MiB · {{ flavor.disk }} GiB</span>
-                            <form class="ms-auto" action="{% url 'instances:flavor_delete' flavor.id %}" method="post">{% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-secondary"
-                                        data-confirm="{% blocktrans with name=flavor.label %}Delete flavor {{ name }}? Only the size template goes; VMs made from it keep their size.{% endblocktrans %}"
-                                        onclick="return confirm(this.dataset.confirm)">{% trans "Delete" %}</button>
-                            </form>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-                    <h3 class="h6">{% trans "Add flavor" %}</h3>
-                    <form method="post" action="{% url 'instances:flavor_create' %}">{% csrf_token %}
-                        {% bootstrap_form flavor_form %}
-                        <button type="submit" class="btn btn-primary">{% trans "Add" %}</button>
-                    </form>
-                </div>
+                {% include 'create_flavors.html' %}
             </div>
         </div>
     </div>
@@ -428,8 +396,10 @@
             });
         });
         show_source(document.querySelector('input[name="disk_source"]:checked').value);
-        document.querySelectorAll(".preset").forEach(function (button) {
-            button.addEventListener("click", function () { apply_preset(button); });
+        $("#create-vm-form").on("click", ".preset", function () { apply_preset(this); });
+        $("#flavors-dialog").on("submit", "form", function (event) {
+            event.preventDefault();
+            $.post(this.action, $(this).serialize(), show_flavors).fail(() => this.submit());
         });
         ["#vm_vcpu", "#vm_memory", "#vm_hdd_size"].forEach(function (sel) {
             document.querySelector(sel).addEventListener("input", clear_presets);
@@ -477,6 +447,14 @@
             b.setAttribute("aria-pressed", "false");
             b.classList.replace("btn-primary", "text-body");
         });
+    }
+
+    // Adding or deleting a flavor stays on the page: its reply replaces the
+    // presets and the dialog's list and form, and the dialog keeps the focus.
+    function show_flavors(reply) {
+        const parts = new DOMParser().parseFromString(reply, "text/html");
+        ["#presets", "#flavors"].forEach(sel => document.querySelector(sel).replaceWith(parts.querySelector(sel)));
+        document.querySelector("#flavors .is-invalid, #flavors input:not([type=hidden])").focus();
     }
 
     // Disk and network rows: one per chosen volume or network, cloned from
