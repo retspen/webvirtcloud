@@ -89,6 +89,21 @@ class ComputesPageTests(TestCase):
         self.assertEqual(more.xpath(".//div[@class='small']/text()"), ["backup", "iso", "nfs"])
 
 
+class SingularTests(TestCase):
+    def test_one_vcpu_on_one_cpu_is_singular(self):
+        admin = get_user_model().objects.create_superuser("cap-one", "one@example.com", "pw")
+        self.client.force_login(admin)
+        c = Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
+        given = {"cpus": 1, "memory": 4 * GIB, "vcpus": {"all": 1, "running": 1},
+                 "assigned": {"all": GIB, "running": GIB}, "ratio": 1.0, "pools": []}
+        with patch.object(Compute, "capacity", new=given), patch.object(Compute, "status", new=True):
+            page = html.fromstring(self.client.get(reverse("computes")).content)
+            line = self.client.get(reverse("compute_capacity", args=[c.id])).content.decode()
+        (cell,) = page.xpath("//tbody/tr/td[2]")
+        self.assertIn("1 vCPU on 1 CPU", " ".join(cell.text_content().split()))
+        self.assertEqual(" ".join(line.split()), "Given to VMs: 1 vCPU (1.0:1), 1.0 GB memory.")
+
+
 class NewVmDialogLineTests(TestCase):
     """The new-VM dialog loads one line per host when it opens."""
 

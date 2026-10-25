@@ -56,7 +56,7 @@
                             {% if given %}
                             <td data-sort="{{ given.ratio|stringformat:".2f" }}">
                                 <div class="compute-ratio {% if given.ratio > 4 %}text-danger{% elif given.ratio > 2 %}text-warning-emphasis{% endif %}">{{ given.ratio|floatformat:1 }}:1</div>
-                                <div class="small text-body-secondary text-nowrap">{% blocktrans with all=given.vcpus.all cpus=given.cpus %}{{ all }} vCPUs on {{ cpus }} CPUs{% endblocktrans %}</div>
+                                <div class="small text-body-secondary text-nowrap">{% blocktrans count counter=given.vcpus.all %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %} {% blocktrans count counter=given.cpus %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</div>
                                 <div class="small text-body-secondary">{% blocktrans with running=given.vcpus.running %}{{ running }} running{% endblocktrans %}</div>
                             </td>
                             <td data-sort="{{ given.memory_percent }}" class="compute-memory">
