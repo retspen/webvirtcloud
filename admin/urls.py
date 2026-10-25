@@ -15,6 +15,7 @@ urlpatterns = [
     path("users/<int:pk>/block/", views.user_block, name="user_block"),
     path("users/<int:pk>/unblock/", views.user_unblock, name="user_unblock"),
     path("logs/", views.logs, name="logs"),
+    path("logs/export.xlsx", views.logs_export, name="logs_export"),
     path("removed-vms/", views.tombstone_list, name="tombstone_list"),
     path("removed-vms/<int:pk>/delete/", views.tombstone_delete, name="tombstone_delete"),
 ]

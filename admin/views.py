@@ -7,14 +7,16 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
+from django.http import HttpResponse
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 from instances.models import InstanceTombstone
+from instances.report import workbook
 from logs.audit import audit, changed_fields, snapshot
 from logs.models import Logs
 
@@ -254,11 +256,54 @@ def user_unblock(request, pk):
     return redirect("admin:user_list")
 
 
+def _logs(request):
+    """The Logs rows the search and the failed-only box choose, newest first,
+    and the query that chooses them again."""
+    rows = Logs.objects.order_by("-date", "-id")
+    text = request.GET.get("q", "").strip()
+    failed = bool(request.GET.get("failed"))
+    if text:
+        rows = rows.filter(Q(user__icontains=text) | Q(host__icontains=text) | Q(instance__icontains=text)
+                           | Q(instance_uuid__icontains=text) | Q(message__icontains=text) | Q(ip__icontains=text))
+    if failed:
+        rows = rows.filter(success=False)
+    query = urlencode([(key, value) for key, value in (("q", text), ("failed", "1" if failed else "")) if value])
+    return rows, text, failed, query
+
+
+def _result(success):
+    return _("Unknown") if success is None else _("Done") if success else _("Failed")
+
+
 @superuser_only
 def logs(request):
-    paginator = Paginator(Logs.objects.order_by("-date", "-id"), int(app_settings.LOGS_PER_PAGE))
-    logs = paginator.get_page(request.GET.get("page"))
-    return render(request, "admin/logs.html", {"logs": logs})
+    rows, text, failed, query = _logs(request)
+    logs = Paginator(rows, int(app_settings.LOGS_PER_PAGE)).get_page(request.GET.get("page"))
+    # a VM's rows link to it while it is in the panel
+    vms = dict(Instance.objects.filter(uuid__in={log.instance_uuid for log in logs if log.instance_uuid})
+               .values_list("uuid", "pk"))
+    for log in logs:
+        log.vm_pk = vms.get(log.instance_uuid)
+    return render(request, "admin/logs.html", {"logs": logs, "q": text, "failed": failed, "query": query,
+                                               "time_zone": timezone.get_current_timezone_name()})
+
+
+@superuser_only
+def logs_export(request):
+    """The rows the Logs page shows for the same search, every page of them,
+    as an Excel workbook."""
+    rows, text, failed, _query = _logs(request)
+    zone = timezone.get_current_timezone_name()
+    header = [f"Date ({zone})", "User", "Host", "VM", "VM UUID", "Message", "Result", "IP"]
+    data = [[timezone.localtime(log.date).strftime("%Y-%m-%d %H:%M:%S"), log.user, log.host, log.instance,
+             log.instance_uuid, log.message, str(_result(log.success)), log.ip or ""] for log in rows.iterator()]
+    notes = [f"Search: {text}" if text else "Search: none", "Failed only" if failed else "All results",
+             f"Rows: {len(data)}", f"Times in {zone}"]
+    response = HttpResponse(workbook("Logs", header, data, "About", notes),
+                            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    name = f"webvirtcloud-logs-{timezone.localtime():%Y%m%d-%H%M%S}.xlsx"
+    response["Content-Disposition"] = f'attachment; filename="{name}"'
+    return response
 
 
 @superuser_only

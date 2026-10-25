@@ -8,43 +8,51 @@
 {% block page_heading %}{% trans "Logs" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-    {% include 'search_block.html' %}
+{# the search runs on the server over every row; the download takes the same rows #}
+<form method="get" class="float-end d-flex flex-wrap gap-2 align-items-center" role="search">
+    <input name="q" value="{{ q }}" class="form-control w-auto" type="search" placeholder="{% trans 'Search' %}"
+           aria-label="{% trans 'Search the logs' %}">
+    <div class="form-check mb-0">
+        <input id="logs-failed" class="form-check-input" type="checkbox" name="failed" value="1"{% if failed %} checked{% endif %}>
+        <label class="form-check-label" for="logs-failed">{% trans "Failed only" %}</label>
+    </div>
+    <button type="submit" class="btn btn-primary">{% trans "Search" %}</button>
+    <a class="btn btn-outline-primary" href="{% url 'admin:logs_export' %}{% if query %}?{{ query }}{% endif %}"
+       title="{% trans 'Download these rows as an Excel file' %}">{% bs_icon 'download' %} {% trans "Excel" %}</a>
+</form>
 {% endblock page_heading_extra %}
-
-
 
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
         {% if not logs %}
-            <div class="col-lg-12">
-                <div class="alert alert-warning shadow-sm">
-                    {% bs_icon 'exclamation-triangle'%}  <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any Logs" %}
-                </div>
+            <div class="alert alert-warning shadow-sm">
+                {% bs_icon 'exclamation-triangle'%}
+                {% if q or failed %}{% trans "No log rows match." %}{% else %}{% trans "There are no log rows yet." %}{% endif %}
             </div>
         {% else %}
             <div class="table-responsive">
-                <table class="table table-hover table-striped">
+                <table class="table table-hover">
                     <thead>
                         <tr>
                             <th scope="col">#</th>
-                            <th scope="col">{% trans "Date" %}</th>
+                            <th scope="col">{% blocktrans %}Date ({{ time_zone }}){% endblocktrans %}</th>
                             <th scope="col">{% trans "User" %}</th>
                             <th scope="col">{% trans "Host" %}</th>
                             <th scope="col">{% trans "Instance" %}</th>
                             <th scope="col">{% trans "Message" %}</th>
                             <th scope="col">{% trans "Result" %}</th>
                             <th scope="col">{% trans "IP" %}</th>
-                            </tr>
+                        </tr>
                     </thead>
-                    <tbody class="searchable">
+                    <tbody>
                         {% for log in logs %}
-                            <tr>
+                            <tr{% if log.success is False %} class="table-danger"{% endif %}>
                                 <td>{{ log.id }}</td>
-                                <td style="width:130px;">{{ log.date|date:"M d H:i:s" }}</td>
+                                <td class="text-nowrap">{{ log.date|date:"Y-m-d H:i:s" }}</td>
                                 <td>{{ log.user }}</td>
                                 <td>{{ log.host }}</td>
-                                <td>{{ log.instance }}</td>
+                                <td>{% if log.vm_pk %}<a href="{% url 'instances:instance' log.vm_pk %}">{{ log.instance }}</a>{% else %}{{ log.instance }}{% endif %}</td>
                                 <td>{{ log.message }}</td>
                                 <td>{% if log.success is None %}{% trans "Unknown" %}{% elif log.success %}{% trans "Done" %}{% else %}{% trans "Failed" %}{% endif %}</td>
                                 <td>{{ log.ip|default:"" }}</td>
@@ -53,11 +61,8 @@
                     </tbody>
                 </table>
             </div>
-            {% bootstrap_pagination logs %}
+            {% bootstrap_pagination logs extra=query %}
         {% endif %}
     </div>
 </div>
 {% endblock %}
-{% block script %}
-    <script src="/static/js/filter-table.js"></script>
-{% endblock script %}
