@@ -77,6 +77,15 @@ class VMRowTests(TestCase):
         self.assertEqual(self.rows(), [("VM vm: reset root password: gstfsd error: timed out", False),
                                        ("VM vm: reset root password", True)])
 
+    def test_an_agent_error_is_a_failed_row_without_the_password(self):
+        self.proxy.get_status.return_value = 1
+        self.proxy.is_agent_ready.return_value = True
+        self.proxy.set_user_password.side_effect = libvirtError("guest agent didn't respond to command within '10' seconds")
+        self.post("rootpasswd", {"passwd": "S3cret-pass"})
+        self.assertEqual(self.rows(), [
+            ("VM vm: reset root password: guest agent didn't respond to command within '10' seconds", False)])
+        self.assertFalse(Logs.objects.filter(message__contains="$6$").exists())
+
     def test_console_password_rows_never_hold_the_password(self):
         self.proxy.get_console_type.return_value = "vnc"
         self.proxy.console_listens_locally.return_value = True

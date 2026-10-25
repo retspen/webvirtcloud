@@ -863,6 +863,11 @@ def gstfsd_request(hostname, data):
     return reply
 
 
+# root password and SSH key: gstfsd changes a shut-off VM's disk, the QEMU
+# guest agent a running VM
+AGENT_OR_SHUT_OFF = _("Shut the VM down, or start its QEMU guest agent, and try again")
+
+
 @require_POST
 @serialize_instance_mutation
 def set_root_pass(request, pk):
@@ -875,17 +880,20 @@ def set_root_pass(request, pk):
             # gstfsd opens the domain by name: send the host's current one.
             data = {"action": "password", "passwd": passwd_hash, "vname": instance.proxy.instance.name()}
 
-            if instance.proxy.get_status() == 5:
+            status = instance.proxy.get_status()
+            if status == 5 or (status == 1 and instance.guest_agent_ready):
                 try:
                     with audit_vm(request, instance, "reset root password"):
-                        gstfsd_request(instance.compute.hostname, data)
-                except util.OperationError as err:
-                    messages.error(request, err)
+                        if status == 5:
+                            gstfsd_request(instance.compute.hostname, data)
+                        else:
+                            instance.proxy.set_user_password("root", passwd_hash)
+                except (util.OperationError, libvirtError) as err:
+                    messages.error(request, error_text(request, err))
                 else:
                     messages.success(request, _("Reset root password"))
             else:
-                msg = _("Please shutdown down your instance and then try again")
-                messages.error(request, msg)
+                messages.error(request, AGENT_OR_SHUT_OFF)
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#access"
     )
@@ -910,19 +918,22 @@ def add_public_key(request, pk):
             "vname": instance.proxy.instance.name(),
         }
 
-        if instance.proxy.get_status() == 5:
+        status = instance.proxy.get_status()
+        if status == 5 or (status == 1 and instance.guest_agent_ready):
             try:
                 with audit_vm(request, instance, f"install SSH key {publickey.keyname}"):
-                    gstfsd_request(instance.compute.hostname, data)
-            except util.OperationError as err:
-                messages.error(request, err)
+                    if status == 5:
+                        gstfsd_request(instance.compute.hostname, data)
+                    else:
+                        instance.proxy.add_authorized_key("root", publickey.keypublic)
+            except (util.OperationError, libvirtError) as err:
+                messages.error(request, error_text(request, err))
             else:
                 messages.success(request, _("Installed new SSH public key %(keyname)s") % {
                     "keyname": publickey.keyname
                 })
         else:
-            msg = _("Please shutdown down your instance and then try again")
-            messages.error(request, msg)
+            messages.error(request, AGENT_OR_SHUT_OFF)
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#access"
     )

@@ -269,6 +269,8 @@ A compute node is a KVM host the panel manages over libvirt.
 
    It listens on 127.0.0.1:16510 only, which serves a panel on the same host. For a remote panel, run `sudo systemctl edit webvirt-gstfsd`, add `[Service]` and `Environment=GSTFSD_BIND_HOST=0.0.0.0 GSTFSD_ALLOW_REMOTE=1`, and restart it. It is unauthenticated: allow TCP 16510 only from the panel's IP.
 
+   A running VM gets them through its QEMU guest agent instead, without gstfsd. On RHEL-family guests, SELinux lets the agent add SSH keys only after `sudo setsebool -P virt_qemu_ga_manage_ssh on` inside the guest.
+
    A compute that ran gstfsd under supervisor: remove its program first (`/etc/supervisor/conf.d/gstfsd.conf` on Debian / Ubuntu, `/etc/supervisord.d/gstfsd.ini` on RHEL / openSUSE), run `sudo supervisorctl update`, and remove supervisor once nothing else uses it.
 
 4. Add the compute on the panel's Computes page.

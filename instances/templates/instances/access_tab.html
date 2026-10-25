@@ -88,7 +88,7 @@
         </div>
         {% if app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' and can_change %}
         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
-            <p>{% trans "You need shut down your instance and enter a new root password." %}</p>
+            <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and enter a new root password." %}</p>
             <form action="{% url 'instances:rootpasswd' instance.id %}" method="post"
                 role="form" aria-label="Add root password to instance form">
                 {% csrf_token %}
@@ -98,7 +98,7 @@
                             placeholder="{% trans "Enter Password" %}" maxlength="24">
                     </div>
                 </div>
-                {% if instance.status == 5 %}
+                {% if instance.status == 5 or instance.status == 1 and instance.guest_agent_ready %}
                 <input type="submit" class="btn btn-lg btn-success float-end" name="rootpasswd"
                     value="{% trans "Reset Root Password" %}">
                 {% else %}
@@ -111,7 +111,7 @@
         {% endif %}
         {% if app_settings.SHOW_ACCESS_SSH_KEYS == 'True' and can_change %}
         <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">
-            <p>{% trans "You need shut down your instance and choose your public key." %}</p>
+            <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and choose your public key. The key is added to root's keys." %}</p>
             <form action="{% url 'instances:add_public_key' instance.id %}"method="post"
                 role="form" aria-label="Add public key to instance form">
                 {% csrf_token %}
@@ -128,7 +128,7 @@
                         </select>
                     </div>
                 </div>
-                {% if instance.status == 5 %}
+                {% if instance.status == 5 or instance.status == 1 and instance.guest_agent_ready %}
                 <input type="submit" class="btn btn-lg btn-success float-end" name="addpublickey"
                     value="{% trans "Add Public Key" %}">
                 {% else %}

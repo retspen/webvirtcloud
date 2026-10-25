@@ -1,3 +1,4 @@
+import base64
 import contextlib
 import io
 import ipaddress
@@ -73,6 +74,8 @@ PERSISTENT_XML = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE
 SNAPSHOT_NAME = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}")
 # the longest window wvmInstance.usage() averages over
 USAGE_MAX_WINDOW = 30
+# seconds the guest agent has to set a password or add a key
+AGENT_TIMEOUT = 10
 # A running VM is cloned with a push backup that keeps the VM alive when the
 # guest shuts down during the copy: libvirt 11.10.
 LIVE_CLONE_MIN_LIBVIRT = 11_010_000
@@ -2521,6 +2524,24 @@ class wvmInstance(wvmConnect):
             return None
 
         return util.get_xml_path(self._XMLDesc(0), func=_get_agent)
+
+    def _agent_command(self, command, arguments):
+        """One guest agent command that waits AGENT_TIMEOUT seconds at most:
+        libvirt's own calls for it wait for a hung agent indefinitely, and
+        the domain's agent timeout is shared by every agent call."""
+        request = json.dumps({"execute": command, "arguments": arguments})
+        qemuAgentCommand(self.instance, request, AGENT_TIMEOUT, 0)
+
+    def set_user_password(self, user, crypted):
+        """Set a user's password in the running guest through its agent;
+        crypted is a crypt(3) hash."""
+        password = base64.b64encode(crypted.encode()).decode()
+        self._agent_command("guest-set-user-password", {"username": user, "password": password, "crypted": True})
+
+    def add_authorized_key(self, user, key):
+        """Add an SSH public key to the user's authorized keys in the running
+        guest through its agent."""
+        self._agent_command("guest-ssh-add-authorized-keys", {"username": user, "keys": [key], "reset": False})
 
     def is_agent_ready(self):
         """
