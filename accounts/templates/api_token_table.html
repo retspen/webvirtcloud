@@ -1,0 +1,33 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+{# the tokens of the signed-in user, or of owner on a superuser's view of a user #}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">{% trans "Name" %}</th>
+                <th scope="col">{% trans "Starts with" %}</th>
+                <th scope="col">{% trans "Created" %}</th>
+                <th scope="col">{% trans "Expires" %}</th>
+                <th scope="col">{% trans "Last used" %}</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for token in api_tokens %}
+            <tr>
+                <td>{{ token.name }}</td>
+                <td><code>{{ token.token_key }}</code></td>
+                <td>{{ token.created|date:"Y-m-d H:i" }}</td>
+                <td>{% if token.expiry %}{{ token.expiry|date:"Y-m-d H:i" }}{% else %}{% trans "never" %}{% endif %}</td>
+                <td>{% if token.last_used %}{{ token.last_used|date:"Y-m-d H:i" }}{% else %}{% trans "never" %}{% endif %}</td>
+                <td class="text-end">
+                    <a href="{% if owner %}{% url 'accounts:account_api_token_delete' owner.id token.token_key %}{% else %}{% url 'accounts:api_token_delete' token.token_key %}{% endif %}" title="{% trans "Delete" %}" class="btn btn-sm btn-secondary">
+                        {% bs_icon 'trash' %}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

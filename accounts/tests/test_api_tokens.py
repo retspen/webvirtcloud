@@ -129,3 +129,50 @@ class ApiTokenTests(TestCase):
         ApiToken.objects.filter(name="t0").update(expiry=timezone.now() - timedelta(days=1))
         self.make(name="new")
         self.assertEqual(sorted(ApiToken.objects.values_list("name", flat=True))[:2], ["new", "t1"])
+
+
+class AdminApiTokenTests(TestCase):
+    """A superuser sees a user's tokens on the user's page and deletes one
+    that may have leaked."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("tok-user", password="pw")
+        self.admin = get_user_model().objects.create_superuser("tok-admin", "admin@example.com", "pw")
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("accounts:api_token_create"), {"name": "ansible", "days": "90"})
+        self.token = re.search(r"wvc_[0-9a-f]{64}", response.content.decode()).group(0)
+        self.stored = ApiToken.objects.get(user=self.user)
+
+    def delete_url(self, user):
+        return reverse("accounts:account_api_token_delete", args=[user.id, self.stored.token_key])
+
+    def test_the_users_page_lists_the_tokens_without_them(self):
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("accounts:account", args=[self.user.id])).content.decode()
+        self.assertIn("ansible", page)
+        self.assertIn(self.stored.token_key, page)
+        self.assertIn(self.delete_url(self.user), page)
+        self.assertNotIn(self.token, page)
+
+    def test_a_superuser_deletes_a_users_token(self):
+        self.client.force_login(self.admin)
+        # the confirmation names whose token it is
+        self.assertIn("API token ansible of tok-user", self.client.get(self.delete_url(self.user)).content.decode())
+        self.assertRedirects(self.client.post(self.delete_url(self.user)),
+                             reverse("accounts:account", args=[self.user.id]) + "#apitokens",
+                             fetch_redirect_response=False)
+        self.assertFalse(ApiToken.objects.exists())
+        self.assertEqual(Logs.objects.order_by("id").values_list("message", "user").last(),
+                         ("API token ansible of tok-user: delete", "tok-admin"))
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("instance-list"), HTTP_AUTHORIZATION=f"Token {self.token}").status_code, 401)
+
+    def test_only_a_superuser_deletes_another_users_token(self):
+        other = get_user_model().objects.create_user("tok-other", password="pw")
+        self.client.force_login(other)
+        self.assertEqual(self.client.post(self.delete_url(self.user)).status_code, 403)
+        # nor through the owner's own address: it names the caller's tokens only
+        self.assertEqual(self.client.post(reverse("accounts:api_token_delete", args=[self.stored.token_key])).status_code, 404)
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.post(self.delete_url(other)).status_code, 404)
+        self.assertTrue(ApiToken.objects.exists())

@@ -77,19 +77,30 @@ def api_token_create(request):
     return render(request, "api_token_created.html", {"name": name, "key": key})
 
 
-def api_token_delete(request, token_key):
-    token = get_object_or_404(ApiToken, token_key=token_key, user=request.user)
+def api_token_delete(request, token_key, user_id=None):
+    """Delete one of the user's own tokens or, given user_id, a superuser
+    deletes one of that user's."""
+    if user_id is None:
+        token = get_object_or_404(ApiToken, token_key=token_key, user=request.user)
+        subject = f"API token {token.name}"
+        back = reverse("accounts:profile")
+    elif request.user.is_superuser:
+        token = get_object_or_404(ApiToken, token_key=token_key, user_id=user_id)
+        subject = f"API token {token.name} of {token.user.username}"
+        back = reverse("accounts:account", args=[user_id])
+    else:
+        raise PermissionDenied
     if request.method == "POST":
-        with audit(request, None, f"API token {token.name}", "delete"):
+        with audit(request, None, subject, "delete"):
             token.delete()
         messages.success(request, _("API token deleted"))
-        return redirect(reverse("accounts:profile") + "#apitokens")
+        return redirect(back + "#apitokens")
 
     return render(
         request,
         "common/confirm_delete.html",
         {
-            "object": token.name,
+            "object": subject,
             "title": _("Delete API token"),
             "consequence": _("Scripts and tools that use it can no longer reach the API."),
         },
@@ -148,6 +159,7 @@ def account(request, user_id):
             "user_insts": user_insts,
             "instances": instances,
             "publickeys": publickeys,
+            "api_tokens": ApiToken.objects.filter(user_id=user_id),
             "otp_enabled": settings.OTP_ENABLED,
         },
     )
