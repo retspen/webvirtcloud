@@ -11,6 +11,11 @@
     var text = dialog.dataset;
     var MAC = /^[0-9a-f]{2}([:-]?)[0-9a-f]{2}(\1[0-9a-f]{2}){4}$/i;  // as instances/addresses.py reads one
 
+    // a text with its placeholder filled; a function keeps $& and $' in the value as they are
+    function fill(template, placeholder, value) {
+        return template.replace(placeholder, function () { return value; });
+    }
+
     function cell(row, content) {
         var td = document.createElement("td");
         if (content instanceof Node) {
@@ -33,18 +38,18 @@
     }
 
     function coverageText(c) {
-        var lines = [text.checked.replace("%(n)s", c.checked)];
+        var lines = [fill(text.checked, "%(n)s", c.checked)];
         if (c.no_agent) {
-            lines.push(text.noAgent.replace("%(n)s", c.no_agent));
+            lines.push(fill(text.noAgent, "%(n)s", c.no_agent));
         }
         if (c.unread) {
-            lines.push(text.unread.replace("%(n)s", c.unread));
+            lines.push(fill(text.unread, "%(n)s", c.unread));
         }
         if (c.hosts_down && c.hosts_down.length) {
-            lines.push(text.hostsDown.replace("%(hosts)s", c.hosts_down.join(", ")));
+            lines.push(fill(text.hostsDown, "%(hosts)s", c.hosts_down.join(", ")));
         }
         if (c.hosts_unfinished && c.hosts_unfinished.length) {
-            lines.push(text.hostsUnfinished.replace("%(hosts)s", c.hosts_unfinished.join(", ")));
+            lines.push(fill(text.hostsUnfinished, "%(hosts)s", c.hosts_unfinished.join(", ")));
         }
         if (c.some_unchecked) {
             lines.push(text.someUnchecked);
@@ -76,7 +81,7 @@
         });
         table.classList.toggle("d-none", matches.length === 0);
         if (answer.coverage) {
-            var readAt = text.readAt.replace("%(time)s", new Date(answer.read_at).toLocaleTimeString());
+            var readAt = fill(text.readAt, "%(time)s", new Date(answer.read_at).toLocaleTimeString());
             var none = MAC.test(form.elements.q.value.trim()) ? text.noneMac : text.none;
             coverage.textContent = (matches.length ? "" : none + " ") + coverageText(answer.coverage) + " " + readAt;
         } else {
