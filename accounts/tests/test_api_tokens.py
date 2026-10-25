@@ -5,7 +5,7 @@ import re
 from datetime import timedelta
 from unittest.mock import patch
 
-from accounts.models import ApiToken
+from accounts.models import ApiToken, UserAttributes
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase
@@ -115,6 +115,13 @@ class ApiTokenTests(TestCase):
         self.assertEqual(ApiToken.objects.get().last_used, later)
         self.client.force_login(self.user)
         self.assertIn("Last used", self.client.get(reverse("accounts:profile")).content.decode())
+
+    def test_a_token_stops_while_its_user_must_change_the_password(self):
+        token = self.make()
+        UserAttributes.objects.update_or_create(user=self.user, defaults={"must_change_password": True})
+        self.assertEqual(self.api(token).status_code, 401)
+        UserAttributes.objects.filter(user=self.user).update(must_change_password=False)
+        self.assertEqual(self.api(token).status_code, 200)
 
     def test_a_user_has_at_most_ten_tokens(self):
         for number in range(10):

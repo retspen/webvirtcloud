@@ -79,3 +79,19 @@ class UserPagesTests(TestCase):
         self.client.force_login(self.admin)
         self.client.post(url, {"password1": "New-pw-4567y", "password2": "New-pw-4567y"})
         self.assertFalse(UserAttributes.objects.get(user=self.alice).must_change_password)
+
+    def test_a_user_without_a_password_cannot_be_made_to_change_it(self):
+        # the change form asks for the old password: one they never had
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        response = self.client.post(url, {"usable_password": "false", "must_change_password": "on"})
+        self.assertContains(response, "A user without a password cannot be made to change it")
+        self.alice.refresh_from_db()
+        self.assertTrue(self.alice.has_usable_password())
+
+    def test_an_administrator_keeps_their_own_password(self):
+        url = reverse("admin:user_update_password", args=[self.admin.pk])
+        response = self.client.post(url, {"usable_password": "false"})
+        self.assertContains(response, "You cannot block, delete or demote your own account")
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.has_usable_password())
+

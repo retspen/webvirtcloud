@@ -133,3 +133,10 @@ class AdminPasswordForm(AdminPasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["must_change_password"] = self.fields.pop("must_change_password")  # last, after Django's own
+
+    def clean(self):
+        cleaned = super().clean()
+        # the change form asks for the old password: a user without one could never pass it
+        if cleaned.get("must_change_password") and not cleaned.get("set_usable_password", True):
+            raise ValidationError(_("A user without a password cannot be made to change it"))
+        return cleaned

@@ -187,7 +187,11 @@ def user_update_password(request, pk):
     user = get_object_or_404(User, pk=pk)
     if request.method == "POST":
         form = forms.AdminPasswordForm(user, request.POST)
-        if form.is_valid():
+        valid = form.is_valid()
+        if valid and user == request.user and not form.cleaned_data["set_usable_password"]:
+            form.add_error(None, OWN_ACCOUNT)
+            valid = False
+        if valid:
             with audit(request, None, f"User {user.username}", "set password"), transaction.atomic():
                 user = form.save()
                 UserAttributes.objects.update_or_create(
