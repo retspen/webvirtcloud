@@ -111,6 +111,19 @@ class QuotaTests(TestCase):
         Instance.objects.filter(pk=vm.pk).update(is_template=True)
         self.assertEqual(self.check(0, 2, 0, 0), ("", 3))
 
+    def test_the_numbers_show_only_with_quota_debug_on(self):
+        # the setting is the text "True" or "False": "False" turns them off
+        from appsettings.models import AppSettings
+
+        for i in range(5):
+            self.own(self.up, i)
+        for value, expected in (("True", "instance (6 > 5)"), ("False", "instance")):
+            with self.subTest(value=value):
+                AppSettings.objects.filter(key="QUOTA_DEBUG").update(value=value)
+                get_settings()
+                with patch.object(Compute, "status", True), patch("instances.utils.wvmInstance", side_effect=vm_reader()):
+                    self.assertEqual(check_user_quota(self.user, 1, 0, 0, 0), expected)
+
 
 class QuotaViewTests(TestCase):
     """The resize views turn the result into a message and charge only what changes."""

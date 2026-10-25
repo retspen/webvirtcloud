@@ -15,6 +15,32 @@ from appsettings.models import AppSettings
 # the themes "manage.py build_themes" compiles; base.html links the chosen one
 THEMES_DIR = Path(settings.BASE_DIR, "static", "css", "themes")
 
+# the whole-number settings and their range: they are read as numbers, and a
+# letter would break the page or the job that reads one
+NUMBERS = {
+    **{key: bounds[:2] for key, bounds in BOUNDS.items()},
+    "LOGS_PER_PAGE": (1, 1000),
+    "LOGIN_FAILURE_LIMIT": (1, 1000),
+    "LOGIN_LOCKOUT_MINUTES": (1, 10080),
+    "SNAPSHOT_FREE_SPACE_PERCENT": (0, 100),
+    "SNAPSHOT_FREE_SPACE_MIN_GIB": (0, 100000),
+    "INSTANCE_VOLUME_DEFAULT_OWNER_UID": (0, 4294967294),
+    "INSTANCE_VOLUME_DEFAULT_OWNER_GID": (0, 4294967294),
+}
+
+
+def refusal(setting, value):
+    """Why the value cannot be saved for the setting, or None."""
+    if setting.key in NUMBERS:
+        low, high = NUMBERS[setting.key]
+        if not (value.isascii() and value.isdigit() and len(value) <= 10 and low <= int(value) <= high):
+            return _("%(setting)s must be a whole number between %(low)s and %(high)s") % {
+                "setting": setting.name, "low": low, "high": high}
+    elif setting.choices and value not in setting.choices_as_list():
+        return _("%(setting)s must be one of %(choices)s") % {
+            "setting": setting.name, "choices": ", ".join(setting.choices_as_list())}
+    return None
+
 
 @superuser_only
 def appsettings(request):
@@ -46,14 +72,11 @@ def appsettings(request):
 
         for setting in appsettings:
             if setting.key in request.POST:
-                if setting.key in BOUNDS:
-                    low, high, _default = BOUNDS[setting.key]
-                    raw = request.POST.get(setting.key, "")
-                    if not (raw.isascii() and raw.isdigit() and len(raw) <= 4 and low <= int(raw) <= high):
-                        messages.error(request, _("%(setting)s must be a whole number between %(low)s and %(high)s")
-                                       % {"setting": setting.name, "low": low, "high": high})
-                        return HttpResponseRedirect(request.get_full_path())
                 value = request.POST.get(setting.key, "")
+                refused = refusal(setting, value)
+                if refused:
+                    messages.error(request, refused)
+                    return HttpResponseRedirect(request.get_full_path())
                 try:
                     if value != setting.value:
                         with audit(request, None, f"Setting {setting.name}", f"change to {value}"):

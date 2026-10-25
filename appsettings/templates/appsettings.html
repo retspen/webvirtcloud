@@ -50,7 +50,7 @@
                     {% if setting.choices %}
                         <select class="form-select" name="{{ setting.key }}"  onchange="this.form.submit()" title="{% trans setting.description %}">
                             {% for choice in setting.choices_as_list %}
-                                <option {% if setting.value == choice %} selected {% endif %} value={{ choice }}>{% trans choice %}</option>
+                                <option {% if setting.value == choice %} selected {% endif %} value="{{ choice }}">{% trans choice %}</option>
                             {% endfor %}
                         </select>
                     {% else %}

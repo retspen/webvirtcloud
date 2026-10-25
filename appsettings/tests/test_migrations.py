@@ -61,3 +61,29 @@ class WorkerSettingsTestCase(TestCase):
                 limit = AppSettings._meta.get_field(field).max_length
                 if limit:
                     self.assertLessEqual(len(getattr(setting, field)), limit, f"{key} {field}")
+
+
+choices_fix = importlib.import_module("appsettings.migrations.0020_fix_setting_choices")
+
+
+class ChoicesFixTestCase(TestCase):
+    """Choices that offered values the panel cannot use, and a text setting
+    that showed as a True/False list."""
+
+    def test_the_broken_choices_are_fixed_and_their_values_moved(self):
+        broken = {
+            "CLONE_INSTANCE_DEFAULT_PREFIX": ("instance", "True,False"),
+            "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER": ("virtio-blk", "virtio-scsi, lsilogic, virtio-blk"),
+            "INSTANCE_MACHINE_DEFAULT_TYPE": ("x86_64", "q35,x86_64,virt"),
+            "INSTANCE_CDROM_ADD": ("virtio", "None,ide,sata,scsi,virtio"),
+        }
+        for key, (value, choices) in broken.items():
+            AppSettings.objects.filter(key=key).update(value=value, choices=choices)
+        choices_fix.fix_choices(apps, SimpleNamespace(connection=connection))
+        fixed = {s.key: (s.value, s.choices) for s in AppSettings.objects.filter(key__in=broken)}
+        self.assertEqual(fixed, {
+            "CLONE_INSTANCE_DEFAULT_PREFIX": ("instance", ""),
+            "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER": ("virtio-scsi", "virtio-scsi,lsilogic"),
+            "INSTANCE_MACHINE_DEFAULT_TYPE": ("q35", "q35,pc,virt"),
+            "INSTANCE_CDROM_ADD": ("sata", "None,ide,sata,scsi"),
+        })

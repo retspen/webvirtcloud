@@ -62,7 +62,7 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     if instance <= 0 and cpu <= 0 and memory <= 0 and disk_size <= 0:
         return msg
 
-    quota_debug = app_settings.QUOTA_DEBUG
+    quota_debug = app_settings.QUOTA_DEBUG == "True"
 
     user_instances = UserInstance.objects.filter(user=user, instance__is_template=False).select_related(
         "instance__compute"

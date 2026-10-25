@@ -54,3 +54,32 @@ class AppSettingsTestCase(TestCase):
         response = self.client.post(reverse("appsettings"), {"WORKER_CONCURRENCY": "0"})
         self.assertEqual(AppSettings.objects.get(key="WORKER_CONCURRENCY").value, "4")
         self.assertTrue(any("between 1 and 16" in str(m) for m in get_messages(response.wsgi_request)))
+
+    def post(self, key, value):
+        response = self.client.post(reverse("appsettings"), {key: value})
+        return [str(m) for m in get_messages(response.wsgi_request)]
+
+    def test_a_listed_setting_takes_only_its_choices(self):
+        messages = self.post("INSTANCE_FIRMWARE_DEFAULT_TYPE", "Coreboot")
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_FIRMWARE_DEFAULT_TYPE").value, "BIOS")
+        self.assertTrue(any("BIOS, UEFI" in m for m in messages), messages)
+
+    def test_number_settings_take_whole_numbers_in_their_range(self):
+        # read with int() elsewhere: a letter would break the logs page or VM create
+        for key, bad, good in (("LOGS_PER_PAGE", "abc", "50"), ("LOGS_PER_PAGE", "0", "1000"),
+                               ("INSTANCE_VOLUME_DEFAULT_OWNER_UID", "-1", "107"),
+                               ("INSTANCE_VOLUME_DEFAULT_OWNER_GID", "x", "4294967294"),
+                               ("LOGIN_FAILURE_LIMIT", "0", "10"), ("SNAPSHOT_FREE_SPACE_PERCENT", "101", "0")):
+            with self.subTest(key=key, bad=bad):
+                before = AppSettings.objects.get(key=key).value
+                self.assertTrue(any("whole number" in m for m in self.post(key, bad)))
+                self.assertEqual(AppSettings.objects.get(key=key).value, before)
+                self.post(key, good)
+                self.assertEqual(AppSettings.objects.get(key=key).value, good)
+
+    def test_the_clone_name_prefix_is_text(self):
+        self.post("CLONE_INSTANCE_DEFAULT_PREFIX", "web-")
+        self.assertEqual(AppSettings.objects.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value, "web-")
+        page = self.client.get(reverse("appsettings")).content.decode()
+        self.assertIn('name="CLONE_INSTANCE_DEFAULT_PREFIX" value="web-"', page)
+
