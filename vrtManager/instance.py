@@ -1668,6 +1668,7 @@ class wvmInstance(wvmConnect):
         if not memory:
             flags |= VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY
         if quiesce:
+            self.ping_agent()
             flags |= VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE
         self._snapshotCreateXML(xml, flags)
         self._refresh_pools_after_snapshot()
@@ -2259,7 +2260,15 @@ class wvmInstance(wvmConnect):
     def abort_backup(self):
         self.instance.abortJob()
 
+    def ping_agent(self):
+        """A frozen or dead agent fails here in AGENT_TIMEOUT seconds. The
+        freeze that follows is libvirt's, without a timeout: a timed freeze
+        could still end in the guest after its thaw failed, leaving the guest
+        frozen."""
+        agent_command(self.instance, "guest-ping")
+
     def fs_freeze(self):
+        self.ping_agent()
         self.instance.fsFreeze(None, 0)
 
     def fs_thaw(self):

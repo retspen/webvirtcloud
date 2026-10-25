@@ -14,6 +14,7 @@ if not settings.configured:
 
 import libvirt
 from libvirt import libvirtError
+from vrtManager import instance as instance_module
 from vrtManager import util
 from vrtManager.instance import PERSISTENT_XML, wvmInstance
 
@@ -274,9 +275,22 @@ class CreateTestCase(unittest.TestCase):
     def test_a_quiesced_snapshot_freezes_the_guest_file_systems(self):
         p = proxy()
         p.is_agent_ready = lambda: True
-        p.create_external_snapshot("q", quiesce=True)
+        with patch.object(instance_module, "qemuAgentCommand", return_value='{"return": {}}') as agent:
+            p.create_external_snapshot("q", quiesce=True)
+        self.assertEqual(agent.call_args.args[1:], ('{"execute": "guest-ping"}', 10, 0))
         _, flags = created(p)
         self.assertEqual(flags, DISK_ONLY_ATOMIC | libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE)
+
+    def test_a_quiesced_snapshot_needs_an_agent_that_answers(self):
+        # libvirt's quiesce asks the agent without a timeout: a hung agent is
+        # found by a timed ping first
+        p = proxy()
+        p.is_agent_ready = lambda: True
+        with patch.object(instance_module, "qemuAgentCommand",
+                          side_effect=libvirtError("guest agent didn't respond to command within '10' seconds")):
+            with self.assertRaises(libvirtError):
+                p.create_external_snapshot("q", quiesce=True)
+        p._snapshotCreateXML.assert_not_called()
 
     def test_quiesce_needs_a_running_vm_with_its_agent_and_no_memory(self):
         # libvirt accepts quiesce only for disk-only snapshots, through the agent

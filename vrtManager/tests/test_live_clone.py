@@ -2,11 +2,12 @@
 copied disks into new volumes, and the clone definition both paths share."""
 
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import libvirt
 from lxml import etree
 
+from vrtManager import instance as instance_module
 from vrtManager import util
 from vrtManager.instance import LIVE_CLONE_MIN_LIBVIRT, VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN, wvmInstance
 
@@ -199,12 +200,25 @@ class BackupTestCase(unittest.TestCase):
 
     def test_freeze_thaw_abort(self):
         p = proxy()
-        p.fs_freeze()
+        with patch.object(instance_module, "qemuAgentCommand", return_value='{"return": {}}') as agent:
+            p.fs_freeze()
+        # a timed ping first, then libvirt's own freeze
+        self.assertEqual(agent.call_args.args[1:], ('{"execute": "guest-ping"}', 10, 0))
         p.instance.fsFreeze.assert_called_once_with(None, 0)
         p.fs_thaw()
         p.instance.fsThaw.assert_called_once_with(None, 0)
         p.abort_backup()
         p.instance.abortJob.assert_called_once_with()
+
+    def test_an_agent_that_does_not_answer_is_not_asked_to_freeze(self):
+        # libvirt's freeze waits without a timeout; a timed freeze could end in
+        # the guest after its thaw had already failed, leaving it frozen
+        p = proxy()
+        with patch.object(instance_module, "qemuAgentCommand",
+                          side_effect=libvirt.libvirtError("guest agent didn't respond to command within '10' seconds")):
+            with self.assertRaises(libvirt.libvirtError):
+                p.fs_freeze()
+        p.instance.fsFreeze.assert_not_called()
 
 
 class CreateCloneTargetTestCase(unittest.TestCase):
