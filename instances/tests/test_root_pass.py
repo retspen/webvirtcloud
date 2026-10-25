@@ -183,3 +183,21 @@ class GuestAgentAccessTestCase(TestCase):
         self.proxy.set_user_password.side_effect = err
         self.assertEqual(self.post("rootpasswd", {"passwd": "S3cret-pass"}),
                          ["The host of this virtual machine cannot be reached right now."])
+
+
+class OsInfoErrorTestCase(TestCase):
+    """The VM page asks for the guest's OS details; an agent that does not
+    answer in time is an error answer, not a server error."""
+
+    def setUp(self):
+        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        compute = Compute.objects.create(name="osinfo-compute", hostname="192.0.2.1", type=1)
+        self.instance = Instance.objects.create(compute=compute, name="osinfo-vm",
+                                                uuid="22222222-3333-4444-5555-666666666666")
+
+    @patch.object(Instance, "proxy")
+    def test_a_silent_agent_is_an_error_answer(self, proxy):
+        proxy.osinfo.side_effect = libvirtError("guest agent didn't respond to command within '10' seconds")
+        response = self.client.get(reverse("instances:osinfo", args=[self.instance.id]))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"error": "guest agent didn't respond to command within '10' seconds"})

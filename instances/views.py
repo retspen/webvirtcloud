@@ -420,9 +420,10 @@ def stats(request, pk):
 
 def osinfo(request, pk):
     instance = get_instance(request.user, pk)
-    results = instance.proxy.osinfo()
-
-    return JsonResponse(results)
+    try:
+        return JsonResponse(instance.proxy.osinfo())
+    except libvirtError as err:
+        return JsonResponse({"error": error_text(request, err)}, status=400)
 
 
 @superuser_only

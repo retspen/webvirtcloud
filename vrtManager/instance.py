@@ -15,7 +15,6 @@ try:
     from libvirt import (
         VIR_DOMAIN_AFFECT_CONFIG,
         VIR_DOMAIN_AFFECT_LIVE,
-        VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT,
         VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
         VIR_DOMAIN_XML_SECURE,
         VIR_DOMAIN_XML_INACTIVE,
@@ -51,7 +50,7 @@ try:
         VIR_ERR_NO_DOMAIN_BACKUP,
         libvirtError,
     )
-    from libvirt_qemu import VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, qemuAgentCommand
+    from libvirt_qemu import qemuAgentCommand
 except Exception:
     from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_DOMAIN_XML_INACTIVE, VIR_MIGRATE_LIVE
 
@@ -375,36 +374,10 @@ class wvmInstance(wvmConnect):
         self.instance = self.wvm.lookupByUUIDString(uuid) if uuid else self.get_instance(vname)
 
     def osinfo(self):
-        info_results = qemuAgentCommand(
-            self.instance,
-            '{"execute":"guest-get-osinfo"}',
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
-            0,
-        )
-
-        timezone_results = qemuAgentCommand(
-            self.instance,
-            '{"execute":"guest-get-timezone"}',
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
-            0,
-        )
-
-        hostname_results = qemuAgentCommand(
-            self.instance,
-            '{"execute":"guest-get-host-name"}',
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
-            0,
-        )
-
-        info_results = json.loads(info_results).get("return")
-
-        timezone_results = json.loads(timezone_results).get("return")
-        hostname_results = json.loads(hostname_results).get("return")
-
-        info_results.update(timezone_results)
-        info_results.update(hostname_results)
-
-        return info_results
+        info = self._agent_command("guest-get-osinfo")
+        info.update(self._agent_command("guest-get-timezone"))
+        info.update(self._agent_command("guest-get-host-name"))
+        return info
 
     def start(self, flags=0):
         self.instance.createWithFlags(flags)
@@ -602,6 +575,18 @@ class wvmInstance(wvmConnect):
             return self.instance.interfaceAddresses(source)
         return {}
 
+    def _agent_interfaces(self):
+        """The guest's interfaces from its agent, in interfaceAddresses()'s
+        form, which waits for a hung agent indefinitely."""
+        interfaces = {}
+        for iface in self._agent_command("guest-network-get-interfaces"):
+            addrs = []
+            for address in iface.get("ip-addresses", []):
+                kind = 0 if address["ip-address-type"] == "ipv4" else 1
+                addrs.append({"type": kind, "addr": address["ip-address"], "prefix": address["prefix"]})
+            interfaces[iface["name"]] = {"hwaddr": iface.get("hardware-address"), "addrs": addrs}
+        return interfaces
+
     def refresh_interface_addresses(self):
         self._ip_cache = {"qemuga": {}, "arp": {}}
 
@@ -609,9 +594,8 @@ class wvmInstance(wvmConnect):
             return
 
         if self.is_agent_ready():
-            self._ip_cache["qemuga"] = self._get_interface_addresses(
-                VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
-            )
+            with contextlib.suppress(libvirtError):
+                self._ip_cache["qemuga"] = self._agent_interfaces()
 
         self._ip_cache["arp"] = self._get_interface_addresses(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
 
@@ -2525,12 +2509,15 @@ class wvmInstance(wvmConnect):
 
         return util.get_xml_path(self._XMLDesc(0), func=_get_agent)
 
-    def _agent_command(self, command, arguments):
-        """One guest agent command that waits AGENT_TIMEOUT seconds at most:
-        libvirt's own calls for it wait for a hung agent indefinitely, and
-        the domain's agent timeout is shared by every agent call."""
-        request = json.dumps({"execute": command, "arguments": arguments})
-        qemuAgentCommand(self.instance, request, AGENT_TIMEOUT, 0)
+    def _agent_command(self, command, arguments=None):
+        """The answer of one guest agent command that waits AGENT_TIMEOUT
+        seconds at most: libvirt's own calls for it wait for a hung agent
+        indefinitely, and the domain's agent timeout is shared by every agent
+        call."""
+        request = {"execute": command}
+        if arguments is not None:
+            request["arguments"] = arguments
+        return json.loads(qemuAgentCommand(self.instance, json.dumps(request), AGENT_TIMEOUT, 0))["return"]
 
     def set_user_password(self, user, crypted):
         """Set a user's password in the running guest through its agent;
