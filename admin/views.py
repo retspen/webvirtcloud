@@ -9,7 +9,9 @@ from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
@@ -96,7 +98,9 @@ def group_delete(request, pk):
 
 @superuser_only
 def user_list(request):
-    users = User.objects.all()
+    # API tokens that still work: an expired one is deleted only at the user's next create
+    live = Q(auth_token_set__expiry__isnull=True) | Q(auth_token_set__expiry__gt=timezone.now())
+    users = User.objects.annotate(api_tokens=Count("auth_token_set", filter=live))
     return render(
         request,
         "admin/user_list.html",

@@ -35,6 +35,7 @@
                             <th span="col">{% trans "Staff" %}</th>
                             <th span="col">{% trans "Superuser" %}</th>
                             <th span="col">{% trans "Can Clone" %}</th>
+                            <th span="col">{% trans "API tokens" %}</th>
                             <th span="col">{% trans "Actions" %}</th>
                         </tr>
                     </thead>
@@ -56,6 +57,7 @@
                             <td>{% if user.is_staff %}{% bs_icon 'check' %}{% endif %}</td>
                             <td>{% if user.is_superuser %}{% bs_icon 'check' %}{% endif %}</td>
                             <td>{% if can_clone %}{% bs_icon 'check' %}{% endif %}</td>
+                            <td>{% if user.api_tokens %}<a href="{% url 'accounts:account' user.id %}#apitokens">{{ user.api_tokens }}</a>{% endif %}</td>
                             <td>
                                 <div class="float-end btn-group">
                                     <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'accounts:account' user.id %}">{% bs_icon 'eye-fill' %}</a>

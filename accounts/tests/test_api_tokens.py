@@ -12,6 +12,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from logs.models import Logs
+from lxml import html
 
 
 class ApiTokenTests(TestCase):
@@ -176,3 +177,18 @@ class AdminApiTokenTests(TestCase):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.post(self.delete_url(other)).status_code, 404)
         self.assertTrue(ApiToken.objects.exists())
+
+    def test_the_user_list_counts_each_users_live_tokens(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse("accounts:api_token_create"), {"name": "old", "days": "30"})
+        ApiToken.objects.filter(name="old").update(expiry=timezone.now() - timedelta(days=1))
+        self.client.force_login(self.admin)
+        page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
+        headers = [th.text_content().strip() for th in page.xpath("//thead//th")]
+        column = headers.index("API tokens")
+        cells = {row.xpath("td")[0].text_content().strip(): row.xpath("td")[column] for row in page.xpath("//tbody/tr")}
+        # the expired one is not counted; the count opens the user's tokens
+        self.assertEqual(cells["tok-user"].text_content().strip(), "1")
+        self.assertEqual(cells["tok-user"].xpath(".//a/@href"),
+                         [reverse("accounts:account", args=[self.user.id]) + "#apitokens"])
+        self.assertEqual(cells["tok-admin"].text_content().strip(), "")
