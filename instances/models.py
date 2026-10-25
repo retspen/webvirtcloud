@@ -375,6 +375,8 @@ class CreateInstance(models.Model):
     qemu_ga = models.BooleanField(default=False)
     mac = models.CharField(max_length=255, blank=True)  # one per NIC, comma separated
     add_cdrom = models.CharField(max_length=16)
+    # a NoCloud seed on a CD-ROM: the hostname and the creating user's SSH keys
+    cloud_init = models.BooleanField(default=False)
     add_input = models.CharField(max_length=16)
     video = models.CharField(
         max_length=16, error_messages={"required": _("Please select a video driver")}

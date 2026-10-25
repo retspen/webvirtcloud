@@ -76,6 +76,16 @@ class CreateFormInputTests(TestCase):
         self.assertRedirects(response, reverse("instances", args=[compute.id]), fetch_redirect_response=False)
         self.assertEqual(Operation.objects.get().kind, "instance.create")
 
+    def test_the_cloud_init_seed_is_chosen_on_the_form(self):
+        _, response = render_create_page(self)
+        (box,) = html.fromstring(response.content).xpath("//input[@name='cloud_init']")
+        self.assertIsNone(box.get("checked"))
+        # the test driver has no CD-ROM bus to pass the job's checks: what the form hands over
+        queued = Operation(pk=1, params={"machine": "pc"})
+        with patch("instances.views.jobs.submit", return_value=queued) as submit:
+            render_create_page(self, valid(disk_source="new", hdd_size="10", storage="default-pool", cloud_init="true"))
+        self.assertIs(submit.call_args.args[2]["cloud_init"], True)
+
     def test_two_disk_sources_are_refused(self):
         # the page sends only the chosen source; a crafted request with two queues nothing
         _, response = render_create_page(self, valid(

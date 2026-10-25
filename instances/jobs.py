@@ -5,6 +5,7 @@ import re
 import time
 
 from django.core.exceptions import PermissionDenied
+from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
@@ -14,7 +15,7 @@ from vrtManager.connection import wvmConnect
 from vrtManager.create import wvmCreate
 from vrtManager.instance import wvmInstance
 
-from accounts.models import UserInstance
+from accounts.models import UserInstance, UserSSHKey
 from appsettings.settings import app_settings
 from computes.models import Compute
 from instances import utils
@@ -613,6 +614,17 @@ class CloneInstance(Kind):
         return _log(op, state, f"clone from {source}", vm=op.intent["name"])
 
 
+# pools whose volumes are files a CD-ROM can read
+SEED_POOL_TYPES = ("dir", "fs", "netfs")
+
+
+def _seed_pool(conn, data):
+    """The pool of a new VM's cloud-init seed: the one of its disk."""
+    if data["storage"]:
+        return conn.get_storage(data["storage"])
+    return conn.get_storage_by_vol_path(conn.get_volume_path(data["images"].split(",")[0]))
+
+
 @register
 class CreateInstance(Kind):
     name = "instance.create"
@@ -622,7 +634,7 @@ class CreateInstance(Kind):
     def normalize(self, raw):
         # what the API leaves out means what create_instance did by default
         params = {"template": "", "images": "", "firmware": "", "net_model": "virtio", "add_cdrom": "sata",
-                  "add_input": "default", "meta_prealloc": False, "hdd_size": 0}
+                  "add_input": "default", "meta_prealloc": False, "hdd_size": 0, "cloud_init": False}
         params.update({k: v for k, v in raw.items() if k not in ("submission_key", "create", "csrfmiddlewaretoken")})
         params.update(compute=int(raw["compute"]), devices=[list(d) for d in raw.get("devices", [])])
         if "UEFI" in params["firmware"] and "secboot" in params["firmware"].partition(":")[2]:
@@ -653,6 +665,12 @@ class CreateInstance(Kind):
             raise util.OperationError(_("Invalid cache mode"))
         if data["add_cdrom"] != "None" and data["add_cdrom"] not in cdrom_buses:
             raise util.OperationError(_("A CD-ROM cannot use the %(bus)s bus") % {"bus": data["add_cdrom"]})
+        if data["cloud_init"]:
+            if data["add_cdrom"] == "None":
+                raise util.OperationError(_("The cloud-init seed is read from a CD-ROM: choose its bus"))
+            pool = _seed_pool(conn, data)
+            if util.get_xml_path(pool.XMLDesc(0), "/pool/@type") not in SEED_POOL_TYPES:
+                raise util.OperationError(_("The cloud-init seed needs a directory storage pool for the disk"))
         try:
             utils.nic_macs(data["mac"], data["networks"])
         except ValueError as err:
@@ -715,6 +733,14 @@ class CreateInstance(Kind):
                 for vol, (device, bus) in zip(data["images"].split(","), data["devices"]):
                     volume_list.append(volume(conn.get_volume_path(vol), device, bus))
 
+            if data["cloud_init"]:
+                ctx.set_phase(gettext_noop("Writing the cloud-init seed"))
+                keys = UserSSHKey.objects.filter(user=op.user).values_list("keypublic", flat=True)
+                user_data = render_to_string("user_data", {"instance_keys": list(keys)})
+                seed = conn.create_seed(_seed_pool(conn, data).name(), op.intent["uuid"], data["name"], user_data)
+                created.append(seed)
+                volume_list.append(volume(seed, "cdrom", data["add_cdrom"]))
+
             ctx.set_phase(gettext_noop("Defining the VM"))
             conn.create_instance(
                 name=data["name"],
@@ -754,8 +780,10 @@ class CreateInstance(Kind):
 
     def reconcile(self, op):
         data = op.params
-        names = [data["name"] + ext for ext in ("", ".img", ".qcow", ".qcow2")]
-        return vm_outcome(op, owner=False, volumes=names if data["hdd_size"] or data["template"] else [])
+        names = [data["name"] + ext for ext in ("", ".img", ".qcow", ".qcow2")] if data["hdd_size"] or data["template"] else []
+        if data.get("cloud_init"):
+            names.append(f"cidata-{op.intent['uuid']}.iso")
+        return vm_outcome(op, owner=False, volumes=names)
 
     def log_entry(self, op, state):
         return _log(op, state, "create")

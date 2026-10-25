@@ -83,6 +83,7 @@ class CreateInstanceSerializer(serializers.ModelSerializer):
             "meta_prealloc",
             "virtio",
             "qemu_ga",
+            "cloud_init",
             "video",
             "listener_addr",
             "submission_key",

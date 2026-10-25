@@ -1,6 +1,5 @@
 import base64
 import contextlib
-import io
 import ipaddress
 import json
 import logging
@@ -200,20 +199,7 @@ class wvmInstances(wvmConnect):
             vol.download(stream, 0, 0, 0)
             stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
             stream.finish()
-            data = b"".join(chunks)
-            copy = target.createXML(
-                f"<volume><name>{util.xml_escape(name)}</name><capacity>{len(data)}</capacity>"
-                "<target><format type='raw'/></target></volume>",
-                0,
-            )
-            try:
-                stream = self.wvm.newStream(0)
-                copy.upload(stream, 0, len(data), 0)
-                stream.sendAll(lambda _stream, size, buffer: buffer.read(size), io.BytesIO(data))
-                stream.finish()
-            except Exception:
-                copy.delete(0)
-                raise
+            self.upload_volume(target, name, b"".join(chunks))
         return name
 
     def delete_nvram(self, name):
@@ -1525,10 +1511,14 @@ class wvmInstance(wvmConnect):
     def split_disk_paths_by_use(self):
         """This VM's disk paths, split into (only this VM, also used by another
         domain). With external snapshots, the files below a disk that the
-        snapshots were taken on, and their memory files, are the VM's too."""
+        snapshots were taken on, and their memory files, are the VM's too, and
+        so is its cloud-init seed, in a CD-ROM drive or ejected."""
         self.refresh_instance_pools()
         own = [disk["path"] for disk in self.get_disk_devices() if disk["path"]]
         own += self._snapshot_chain_files(own)
+        seed = self._seed_path()
+        if seed:
+            own.append(seed)
         used_elsewhere = self.paths_used_by_other_domains(own)
         # a kept file keeps the files below it
         for path in [path for path in own if path in used_elsewhere]:
@@ -1538,6 +1528,15 @@ class wvmInstance(wvmConnect):
             [path for path in own if path not in used_elsewhere],
             [path for path in own if path in used_elsewhere],
         )
+
+    def _seed_path(self):
+        """The path of this VM's cloud-init seed (cidata-<uuid>.iso) in an active pool, or None."""
+        name = f"cidata-{self.get_uuid()}.iso"
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            vol = self._find_volume(pool, name)
+            if vol is not None:
+                return vol.path()
+        return None
 
     def _snapshot_chain_files(self, tops):
         """The files of this VM's external snapshots that these disk images
@@ -1974,6 +1973,11 @@ class wvmInstance(wvmConnect):
             raise ValueError("An instance with the clone name already exists")
 
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        # the cloud-init seed holds the VM's own instance-id and hostname: the clone's drive stays empty
+        seed = f"cidata-{tree.findtext('uuid')}.iso"
+        for source in tree.xpath("devices/disk[@device='cdrom']/source"):
+            if os.path.basename(source.get("file") or "") == seed:
+                source.getparent().remove(source)
         tree.find("name").text = clone_data["name"]
         uuid_el = tree.find("uuid")
         if uuid_el is None:

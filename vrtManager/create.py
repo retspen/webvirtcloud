@@ -1,8 +1,30 @@
 import contextlib
+import io
+import json
 import string
 
+import pycdlib
 from vrtManager import util
 from vrtManager.connection import wvmConnect
+
+
+def nocloud_seed(instance_id, hostname, user_data):
+    """A cloud-init NoCloud seed: an ISO labelled cidata with the VM's
+    meta-data and user-data, read at first boot without the network.
+    cloud-init runs again only for a new instance-id."""
+    iso = pycdlib.PyCdlib()
+    iso.new(interchange_level=3, joliet=3, rock_ridge="1.09", vol_ident="cidata")
+    # JSON is YAML whose values stay strings: a VM named 123 or yes keeps its name
+    meta_data = json.dumps({"instance-id": instance_id, "local-hostname": hostname})
+    files = {"meta-data": meta_data, "user-data": user_data}
+    for name, text in files.items():
+        data = text.encode()
+        iso_name = name.replace("-", "").upper()
+        iso.add_fp(io.BytesIO(data), len(data), f"/{iso_name}.;1", rr_name=name, joliet_path=f"/{name}")
+    out = io.BytesIO()
+    iso.write_fp(out)
+    iso.close()
+    return out.getvalue()
 
 
 def get_rbd_storage_data(stg):
@@ -143,6 +165,11 @@ class wvmCreate(wvmConnect):
     def delete_volume(self, path):
         vol = self.get_volume_by_path(path)
         vol.delete()
+
+    def create_seed(self, pool, uuid, hostname, user_data):
+        """The VM's NoCloud seed as a volume cidata-<uuid>.iso in the pool; its path."""
+        seed = nocloud_seed(uuid, hostname, user_data)
+        return self.upload_volume(self.get_storage(pool), f"cidata-{uuid}.iso", seed).path()
 
     def create_instance(
         self,

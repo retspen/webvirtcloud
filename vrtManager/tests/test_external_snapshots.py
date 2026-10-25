@@ -765,6 +765,9 @@ class DestroyFilesTestCase(unittest.TestCase):
         p.get_volume_by_path = volume
         pool = MagicMock(**{"isActive.return_value": True})
         pool.listAllVolumes.return_value = [volume(path) for path in backing]
+        no_seed = libvirtError("no volume")
+        no_seed.err = (libvirt.VIR_ERR_NO_STORAGE_VOL,)
+        pool.storageVolLookupByName.side_effect = no_seed  # the VM has no cloud-init seed
         p.wvm.listAllStoragePools.return_value = [pool]
         p.wvm.listAllDomains.return_value = []
         return p.split_disk_paths_by_use()

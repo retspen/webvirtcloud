@@ -1,4 +1,5 @@
 import contextlib
+import io
 import os
 import re
 import socket
@@ -918,6 +919,25 @@ class wvmConnect(object):
             # a transient pool left by a failed destroy goes with libvirtd's next restart
             with contextlib.suppress(libvirtError):
                 pool.destroy()
+
+    def upload_volume(self, pool, name, data):
+        """A new raw volume in pool holding data, written through a libvirt
+        stream, which every connection type carries. A failed write leaves
+        no volume."""
+        vol = pool.createXML(
+            f"<volume><name>{util.xml_escape(name)}</name><capacity>{len(data)}</capacity>"
+            "<target><format type='raw'/></target></volume>",
+            0,
+        )
+        try:
+            stream = self.wvm.newStream(0)
+            vol.upload(stream, 0, len(data), 0)
+            stream.sendAll(lambda _stream, size, buffer: buffer.read(size), io.BytesIO(data))
+            stream.finish()
+        except Exception:
+            vol.delete(0)
+            raise
+        return vol
 
     @staticmethod
     def _find_volume(pool, name):

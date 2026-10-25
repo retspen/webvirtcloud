@@ -329,6 +329,11 @@
                                     <input id="vm_qemu_ga" class="form-check-input" type="checkbox" name="qemu_ga" value="true"{% if vm_form.qemu_ga.value %} checked{% endif %}>
                                     <label for="vm_qemu_ga" class="form-check-label">{% trans "Guest agent" %}</label>
                                 </div>
+                                <div class="form-check">
+                                    <input id="vm_cloud_init" class="form-check-input" type="checkbox" name="cloud_init" value="true"{% if vm_form.cloud_init.value %} checked{% endif %} aria-describedby="vm_cloud_init_help">
+                                    <label for="vm_cloud_init" class="form-check-label">{% trans "Cloud-init seed" %}</label>
+                                    <div id="vm_cloud_init_help" class="form-text">{% trans "The hostname and your SSH keys on the CD-ROM, for cloud images" %}</div>
+                                </div>
                                 {% if virtio_support %}
                                 <div class="form-check">
                                     <input id="vm_virtio" class="form-check-input" type="checkbox" name="virtio" value="{{ virtio_support }}"{% if vm_form.virtio.value %} checked{% endif %}>
