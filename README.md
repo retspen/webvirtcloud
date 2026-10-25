@@ -317,7 +317,7 @@ Every page is sent with `X-Frame-Options: DENY` and `Content-Security-Policy: ob
 
 ### Cloud-init datasource
 
-WebVirtCloud serves cloud-init metadata (root SSH keys and hostname) to guest instances. The host in the URL must be in `ALLOWED_HOSTS`:
+WebVirtCloud serves cloud-init metadata to guest instances: the hostname, and the SSH keys of the VM's users for the image's default user. The host in the URL must be in `ALLOWED_HOSTS`:
 
 ```yaml
 datasource:
