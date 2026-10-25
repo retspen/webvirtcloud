@@ -3,6 +3,7 @@ from pathlib import Path
 from admin.decorators import superuser_only
 from django.conf import settings
 from django.contrib import messages
+from django.db import DatabaseError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.translation import gettext_noop as _
@@ -29,8 +30,32 @@ NUMBERS = {
 }
 
 
+# the Settings page's groups, in order; a setting in none shows under Other
+GROUPS = [
+    (_("New VM defaults"), ["INSTANCE_ARCH_DEFAULT_TYPE", "INSTANCE_MACHINE_DEFAULT_TYPE",
+                            "INSTANCE_FIRMWARE_DEFAULT_TYPE", "INSTANCE_CPU_DEFAULT_MODE", "INSTANCE_NIC_DEFAULT_TYPE",
+                            "INSTANCE_VIDEO_DEFAULT_TYPE", "INSTANCE_INPUT_DEFAULT_DEVICE", "INSTANCE_CDROM_ADD"]),
+    (_("Disks"), ["INSTANCE_VOLUME_DEFAULT_BUS", "INSTANCE_VOLUME_DEFAULT_FORMAT", "INSTANCE_VOLUME_DEFAULT_CACHE",
+                  "INSTANCE_VOLUME_DEFAULT_IO", "INSTANCE_VOLUME_DEFAULT_DISCARD",
+                  "INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES", "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER",
+                  "INSTANCE_VOLUME_DEFAULT_OWNER_UID", "INSTANCE_VOLUME_DEFAULT_OWNER_GID"]),
+    (_("Clones"), ["CLONE_INSTANCE_AUTO_NAME", "CLONE_INSTANCE_DEFAULT_PREFIX"]),
+    (_("Console"), ["CONSOLE_SCALE", "CONSOLE_VIEW_ONLY", "CONSOLE_RESIZE_SESSION", "CONSOLE_CLIP_VIEWPORT"]),
+    (_("VM access and owners"), ["SHOW_ACCESS_ROOT_PASSWORD", "SHOW_ACCESS_SSH_KEYS",
+                                 "ALLOW_INSTANCE_MULTIPLE_OWNER", "QUOTA_DEBUG"]),
+    (_("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
+                               "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
+    (_("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
+    (_("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VIEW_INSTANCE_DETAIL_BOTTOM_BAR", "VM_DRBD_STATUS",
+                            "LOGS_PER_PAGE"]),
+]
+
+
 def refusal(setting, value):
     """Why the value cannot be saved for the setting, or None."""
+    if len(value) > AppSettings._meta.get_field("value").max_length:
+        return _("%(setting)s takes at most %(length)s characters") % {
+            "setting": setting.name, "length": AppSettings._meta.get_field("value").max_length}
     if setting.key in NUMBERS:
         low, high = NUMBERS[setting.key]
         if not (value.isascii() and value.isdigit() and len(value) <= 10 and low <= int(value) <= high):
@@ -44,17 +69,12 @@ def refusal(setting, value):
 
 @superuser_only
 def appsettings(request):
-    """
-    :param request:
-    :return:
-    """
+    """The settings, in groups; a group's form saves its changed settings,
+    or none of them when one is refused."""
     bootstrap_theme = AppSettings.objects.get(key="BOOTSTRAP_THEME")
     themes_list = sorted(p.name.removesuffix(".min.css") for p in THEMES_DIR.glob("*.min.css"))
-
-    # the theme has its own form; the other settings are listed one by one
-    appsettings = AppSettings.objects.exclude(
-        description__startswith="Bootstrap"
-    ).order_by("name")
+    # the theme has its own form
+    settings_by_key = {s.key: s for s in AppSettings.objects.exclude(key="BOOTSTRAP_THEME")}
 
     if request.method == "POST":
         if "BOOTSTRAP_THEME" in request.POST:
@@ -70,27 +90,36 @@ def appsettings(request):
             messages.success(request, msg)
             return HttpResponseRedirect(request.get_full_path())
 
-        for setting in appsettings:
-            if setting.key in request.POST:
-                value = request.POST.get(setting.key, "")
-                refused = refusal(setting, value)
-                if refused:
-                    messages.error(request, refused)
-                    return HttpResponseRedirect(request.get_full_path())
-                try:
+        posted = sorted(((s, request.POST[s.key]) for s in settings_by_key.values() if s.key in request.POST),
+                        key=lambda item: item[0].name)
+        refusals = [refused for refused in (refusal(s, value) for s, value in posted) if refused]
+        for refused in refusals:
+            messages.error(request, refused)
+        if not refusals:
+            saved = []
+            try:
+                for setting, value in posted:
                     if value != setting.value:
                         with audit(request, None, f"Setting {setting.name}", f"change to {value}"):
                             setting.value = value
                             setting.save()
+                        saved.append(setting.name)
+            except DatabaseError as err:  # the audit row records it as failed
+                messages.error(request, err)
+            else:
+                if saved:
+                    messages.success(request, _("Saved: %(settings)s") % {"settings": ", ".join(saved)})
+                else:
+                    messages.info(request, _("Nothing changed"))
+        return HttpResponseRedirect(request.get_full_path())
 
-                    msg = _("%(setting)s is changed. Now: %(value)s") % {
-                        "setting": setting.name,
-                        "value": setting.value,
-                    }
-                    messages.success(request, msg)
-                except Exception as err:
-                    msg = err
-                    messages.error(request, msg)
-                return HttpResponseRedirect(request.get_full_path())
-
-    return render(request, "appsettings.html", locals())
+    groups = []
+    for title, keys in GROUPS:
+        groups.append((title, [settings_by_key.pop(key) for key in keys if key in settings_by_key]))
+    if settings_by_key:
+        groups.append((_("Other"), sorted(settings_by_key.values(), key=lambda s: s.name)))
+    for _title, settings_list in groups:
+        for setting in settings_list:
+            setting.bounds = NUMBERS.get(setting.key)
+    return render(request, "appsettings.html",
+                  {"bootstrap_theme": bootstrap_theme, "themes_list": themes_list, "groups": groups})

@@ -83,3 +83,45 @@ class AppSettingsTestCase(TestCase):
         page = self.client.get(reverse("appsettings")).content.decode()
         self.assertIn('name="CLONE_INSTANCE_DEFAULT_PREFIX" value="web-"', page)
 
+    def page(self):
+        from lxml import html
+
+        return html.fromstring(self.client.get(reverse("appsettings")).content)
+
+    def test_settings_are_grouped_with_their_descriptions_shown(self):
+        page = self.page()
+        titles = [h.text_content().strip() for h in page.xpath("//form//h2")]
+        self.assertEqual(titles[:3], ["New VM defaults", "Disks", "Clones"])
+        # every setting is in one group, with a label tied to its field and its description shown
+        keys = page.xpath("//form//*[self::input or self::select][@name and @name!='csrfmiddlewaretoken']/@name")
+        names = set(AppSettings.objects.exclude(key="BOOTSTRAP_THEME").values_list("key", flat=True))
+        self.assertEqual(sorted(k for k in keys if k not in ("BOOTSTRAP_THEME", "language")), sorted(names))
+        (field,) = page.xpath("//*[@name='LOGS_PER_PAGE']")
+        self.assertEqual((field.get("type"), field.get("min"), field.get("max")), ("number", "1", "1000"))
+        self.assertEqual(page.xpath(f"//label[@for='{field.get('id')}']/text()"), ["Logs per Page"])
+        self.assertEqual(page.xpath(f"//*[@id='{field.get('aria-describedby')}']/text()"), ["Pagination for logs"])
+        # a group is saved with its button, not on every change
+        self.assertEqual(page.xpath("//*[@onchange]"), [])
+
+    def test_a_group_saves_its_changed_settings_only(self):
+        from logs.models import Logs
+
+        Logs.objects.all().delete()
+        response = self.client.post(reverse("appsettings"), {
+            "CONSOLE_SCALE": "True", "CONSOLE_VIEW_ONLY": "False",
+            "CONSOLE_RESIZE_SESSION": "False", "CONSOLE_CLIP_VIEWPORT": "True"})
+        self.assertRedirects(response, reverse("appsettings"))
+        values = dict(AppSettings.objects.filter(key__startswith="CONSOLE_").values_list("key", "value"))
+        self.assertEqual(values, {"CONSOLE_SCALE": "True", "CONSOLE_VIEW_ONLY": "False",
+                                  "CONSOLE_RESIZE_SESSION": "False", "CONSOLE_CLIP_VIEWPORT": "True"})
+        self.assertEqual(sorted(Logs.objects.values_list("message", flat=True)),
+                         ["Setting Console Clip Viewport: change to True", "Setting Console Scale: change to True"])
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["Saved: Console Clip Viewport, Console Scale"])
+
+    def test_one_bad_value_saves_nothing_of_its_group(self):
+        response = self.client.post(reverse("appsettings"), {"LOGIN_FAILURE_LIMIT": "10", "LOGIN_LOCKOUT_MINUTES": "x"})
+        self.assertEqual(AppSettings.objects.get(key="LOGIN_FAILURE_LIMIT").value, "5")
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["Login Lockout Minutes must be a whole number between 1 and 10080"])
+
