@@ -38,7 +38,6 @@ def computes(request):
     for compute in computes:
         given = compute.capacity
         if given:
-            given["ratio"] = given["vcpus"]["all"] / given["cpus"] if given["cpus"] else 0
             # the memory bar: running and shut-off VMs' memory, and a mark at the
             # host's memory, on a scale that holds whichever is larger
             assigned, memory = given["assigned"], given["memory"]
@@ -47,13 +46,22 @@ def computes(request):
                             "stopped": (assigned["all"] - assigned["running"]) * 100 / scale,
                             "host": memory * 100 / scale, "over": assigned["all"] > memory}
             given["memory_percent"] = round(assigned["all"] * 100 / memory) if memory else 0
-            pools = sorted(given["pools"], key=lambda pool: pool["name"])
-            for pool in pools:
+            for pool in given["pools"]:
                 pool["used_percent"] = (pool["size"] - pool["free"]) * 100 / pool["size"] if pool["size"] else 0
-            # the default pool shows; the others (a host may have dozens) open on a click
-            given["pool"] = next((pool for pool in pools if pool["name"] == "default"), pools[0] if pools else None)
-            given["more_pools"] = [pool for pool in pools if pool is not given["pool"]]
+            # the default pool (else the first) shows; the others (a host may
+            # have dozens) open on a click
+            pools = given["pools"]
+            given["pool"] = pools[0] if pools else None
+            given["more_pools"] = pools[1:]
     return render(request, "computes/list.html", {"computes": computes})
+
+
+@superuser_only
+def capacity(request, compute_id):
+    """One line of what the compute has given its VMs, as plain text, for the
+    new-VM dialog."""
+    compute = get_object_or_404(Compute, pk=compute_id)
+    return render(request, "computes/capacity_line.txt", {"given": compute.capacity}, content_type="text/plain; charset=utf-8")
 
 
 @superuser_only

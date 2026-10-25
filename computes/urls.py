@@ -59,6 +59,7 @@ urlpatterns = [
                 path("update/", views.compute_update, name="compute_update"),
                 path("delete/", views.compute_delete, name="compute_delete"),
                 path("statistics", views.compute_graph, name="compute_graph"),
+                path("capacity/", views.capacity, name="compute_capacity"),
                 path("instances/", views.instances, name="instances"),
                 path("storages/", storages, name="storages"),
                 path("storage/<str:pool>/volumes/", get_volumes, name="volumes"),
