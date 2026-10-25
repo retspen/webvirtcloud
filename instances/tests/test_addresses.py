@@ -1,13 +1,16 @@
 """Finding the VMs that use an address (instances/addresses.py), with libvirt
 answers faked per source."""
 
+import json
 import threading
 import time
 import unittest
+import unittest.mock
 from ipaddress import ip_address, ip_network
 from types import SimpleNamespace
 
 from instances import addresses
+from vrtManager import instance as vrt_instance
 from libvirt import (
     VIR_CONNECT_LIST_DOMAINS_ACTIVE,
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT,
@@ -18,6 +21,21 @@ from libvirt import (
 
 AGENT, ARP, LEASE = (VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT, VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
                      VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+
+# the guest agent is asked through qemuAgentCommand, which needs a real domain:
+# the fake domains answer it themselves
+_agent_patch = unittest.mock.patch.object(
+    vrt_instance, "qemuAgentCommand",
+    lambda dom, request, timeout, flags: json.dumps({"return": dom.agent(json.loads(request)["execute"], timeout)}))
+
+
+def setUpModule():
+    _agent_patch.start()
+
+
+def tearDownModule():
+    _agent_patch.stop()
+
 
 MAC1 = "52:54:00:00:00:01"
 MAC2 = "52:54:00:00:00:02"
@@ -42,6 +60,7 @@ class FakeDomain:
 
     def __init__(self, answers, uuid="uuid-a", name="vm-a", xml=None, state=1, os=None):
         self.answers, self.uuid, self.vname, self.state_, self.os = answers, uuid, name, state, os
+        self.agent_timeouts = []
         self.xml = xml or domain_xml(MAC1, agent="connected")
 
     def interfaceAddresses(self, source):
@@ -78,6 +97,19 @@ class FakeDomain:
 
     def XMLDesc(self, flags=0):
         return self.xml
+
+    def agent(self, command, timeout):
+        """The guest agent's answer to a command, from the same answers in
+        the agent's own form; the timeouts asked with are kept."""
+        self.agent_timeouts.append(timeout)
+        if command == "guest-get-osinfo":
+            return {key.removeprefix("os."): value for key, value in self.guestInfo().items()}
+        interfaces = []
+        for name, nic in self.interfaceAddresses(AGENT).items():
+            ips = [{"ip-address-type": "ipv4" if a["type"] == 0 else "ipv6", "ip-address": a["addr"],
+                    "prefix": a["prefix"]} for a in nic.get("addrs") or []]
+            interfaces.append({"name": name, "hardware-address": nic.get("hwaddr"), "ip-addresses": ips})
+        return interfaces
 
 
 def compute(name, *domains, pk=1, down=False):
@@ -287,6 +319,14 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(web["addresses"], [("192.0.2.10", ["ARP", "agent"]), ("2001:db8::10", ["agent"])])
         self.assertEqual((win["name"], win["state"], win["addresses"]), ("win", 5, []))
         self.assertEqual((win["os"], win["os_family"]), ("win 2k22", "Windows"))
+
+    def test_the_agent_is_asked_with_a_timeout(self):
+        # interfaceAddresses() and guestInfo() would wait for a hung agent
+        # indefinitely, and the search's thread with it
+        dom = FakeDomain({AGENT: {"eth0": iface(MAC1, (0, "192.0.2.10", 24))}},
+                         os={"os.id": "almalinux", "os.pretty-name": "AlmaLinux 10.0"})
+        addresses.inventory([addresses.Target(compute("c1", dom), None)])
+        self.assertEqual(dom.agent_timeouts, [10, 10])
 
     def test_an_os_without_an_agent_or_metadata_is_unknown(self):
         dom = vm("a", MAC1, "192.0.2.10", agent=None)

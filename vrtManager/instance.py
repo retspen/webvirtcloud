@@ -362,6 +362,29 @@ class wvmInstances(wvmConnect):
             ) from error
 
 
+def agent_command(dom, command, arguments=None):
+    """The answer of one guest agent command that waits AGENT_TIMEOUT seconds
+    at most: libvirt's own calls for it wait for a hung agent indefinitely,
+    and the domain's agent timeout is shared by every agent call."""
+    request = {"execute": command}
+    if arguments is not None:
+        request["arguments"] = arguments
+    return json.loads(qemuAgentCommand(dom, json.dumps(request), AGENT_TIMEOUT, 0))["return"]
+
+
+def agent_interfaces(dom):
+    """The guest's interfaces from its agent, in interfaceAddresses()'s form,
+    which waits for a hung agent indefinitely."""
+    interfaces = {}
+    for iface in agent_command(dom, "guest-network-get-interfaces"):
+        addrs = []
+        for address in iface.get("ip-addresses", []):
+            kind = 0 if address["ip-address-type"] == "ipv4" else 1
+            addrs.append({"type": kind, "addr": address["ip-address"], "prefix": address["prefix"]})
+        interfaces[iface["name"]] = {"hwaddr": iface.get("hardware-address"), "addrs": addrs}
+    return interfaces
+
+
 class wvmInstance(wvmConnect):
     # set by cached_reads(): libvirt answers reused within the block
     _read_cache = None
@@ -374,9 +397,9 @@ class wvmInstance(wvmConnect):
         self.instance = self.wvm.lookupByUUIDString(uuid) if uuid else self.get_instance(vname)
 
     def osinfo(self):
-        info = self._agent_command("guest-get-osinfo")
-        info.update(self._agent_command("guest-get-timezone"))
-        info.update(self._agent_command("guest-get-host-name"))
+        info = agent_command(self.instance, "guest-get-osinfo")
+        info.update(agent_command(self.instance, "guest-get-timezone"))
+        info.update(agent_command(self.instance, "guest-get-host-name"))
         return info
 
     def start(self, flags=0):
@@ -575,18 +598,6 @@ class wvmInstance(wvmConnect):
             return self.instance.interfaceAddresses(source)
         return {}
 
-    def _agent_interfaces(self):
-        """The guest's interfaces from its agent, in interfaceAddresses()'s
-        form, which waits for a hung agent indefinitely."""
-        interfaces = {}
-        for iface in self._agent_command("guest-network-get-interfaces"):
-            addrs = []
-            for address in iface.get("ip-addresses", []):
-                kind = 0 if address["ip-address-type"] == "ipv4" else 1
-                addrs.append({"type": kind, "addr": address["ip-address"], "prefix": address["prefix"]})
-            interfaces[iface["name"]] = {"hwaddr": iface.get("hardware-address"), "addrs": addrs}
-        return interfaces
-
     def refresh_interface_addresses(self):
         self._ip_cache = {"qemuga": {}, "arp": {}}
 
@@ -595,7 +606,7 @@ class wvmInstance(wvmConnect):
 
         if self.is_agent_ready():
             with contextlib.suppress(libvirtError):
-                self._ip_cache["qemuga"] = self._agent_interfaces()
+                self._ip_cache["qemuga"] = agent_interfaces(self.instance)
 
         self._ip_cache["arp"] = self._get_interface_addresses(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
 
@@ -2509,26 +2520,16 @@ class wvmInstance(wvmConnect):
 
         return util.get_xml_path(self._XMLDesc(0), func=_get_agent)
 
-    def _agent_command(self, command, arguments=None):
-        """The answer of one guest agent command that waits AGENT_TIMEOUT
-        seconds at most: libvirt's own calls for it wait for a hung agent
-        indefinitely, and the domain's agent timeout is shared by every agent
-        call."""
-        request = {"execute": command}
-        if arguments is not None:
-            request["arguments"] = arguments
-        return json.loads(qemuAgentCommand(self.instance, json.dumps(request), AGENT_TIMEOUT, 0))["return"]
-
     def set_user_password(self, user, crypted):
         """Set a user's password in the running guest through its agent;
         crypted is a crypt(3) hash."""
         password = base64.b64encode(crypted.encode()).decode()
-        self._agent_command("guest-set-user-password", {"username": user, "password": password, "crypted": True})
+        agent_command(self.instance, "guest-set-user-password", {"username": user, "password": password, "crypted": True})
 
     def add_authorized_key(self, user, key):
         """Add an SSH public key to the user's authorized keys in the running
         guest through its agent."""
-        self._agent_command("guest-ssh-add-authorized-keys", {"username": user, "keys": [key], "reset": False})
+        agent_command(self.instance, "guest-ssh-add-authorized-keys", {"username": user, "keys": [key], "reset": False})
 
     def is_agent_ready(self):
         """

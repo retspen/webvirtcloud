@@ -16,7 +16,6 @@ from urllib.parse import urlparse
 
 from libvirt import (
     VIR_CONNECT_LIST_DOMAINS_ACTIVE,
-    VIR_DOMAIN_GUEST_INFO_OS,
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT,
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE,
@@ -24,6 +23,7 @@ from libvirt import (
     libvirtError,
 )
 from lxml import etree
+from vrtManager.instance import agent_command, agent_interfaces
 
 # in the order a match lists its sources
 SOURCES = {
@@ -33,10 +33,10 @@ SOURCES = {
 }
 
 # A search asks the hosts in parallel, at most MAX_WORKERS threads at once.
-# A guest agent may never answer (libvirt waits without limit by default):
-# its thread stays blocked after the search answers (and holds up the
-# worker's exit until it does), so a search starts only while its threads
-# fit in MAX_RUNNING search threads in this process.
+# A read may outlast the search (a guest agent has AGENT_TIMEOUT seconds, a
+# host its connection's timeouts): its thread goes on after the search
+# answers, so a search starts only while its threads fit in MAX_RUNNING
+# search threads in this process.
 MAX_WORKERS = 8
 MAX_RUNNING = 16
 _running = 0
@@ -85,7 +85,10 @@ def read(dom, source):
     """(MAC, address) pairs the source reports for the domain's interfaces
     that have a MAC (an agent's tunnels have none); None if it fails."""
     try:
-        answer = dom.interfaceAddresses(source)
+        if source == VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT:
+            answer = agent_interfaces(dom)
+        else:
+            answer = dom.interfaceAddresses(source)
     except libvirtError:
         return None
     return [(iface["hwaddr"].lower(), ip_address(addr["addr"]))
@@ -140,12 +143,12 @@ def _matching(dom, vm, source, macs, network):
 def _read_os(dom):
     """The guest agent's OS as (name, family); None if it gives none."""
     try:
-        info = dom.guestInfo(VIR_DOMAIN_GUEST_INFO_OS)
+        info = agent_command(dom, "guest-get-osinfo")
     except libvirtError:
         return None
-    if not info.get("os.id"):
+    if not info.get("id"):
         return None
-    return info.get("os.pretty-name") or info.get("os.name") or info["os.id"], os_family(info["os.id"])
+    return info.get("pretty-name") or info.get("name") or info["id"], os_family(info["id"])
 
 
 def _read_host(target, network, everything, mac):
