@@ -61,6 +61,7 @@
                     <input id="setting-{{ setting.key }}" class="form-control" type="text" name="{{ setting.key }}" value="{{ setting.value }}"
                            maxlength="25" aria-describedby="help-{{ setting.key }}">
                 {% endif %}
+                    <input type="hidden" name="was-{{ setting.key }}" value="{{ setting.value }}">
                     <div id="help-{{ setting.key }}" class="form-text">{% trans setting.description %}</div>
                 </div>
             </div>

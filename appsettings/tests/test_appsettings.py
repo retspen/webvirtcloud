@@ -93,7 +93,7 @@ class AppSettingsTestCase(TestCase):
         titles = [h.text_content().strip() for h in page.xpath("//form//h2")]
         self.assertEqual(titles[:3], ["New VM defaults", "Disks", "Clones"])
         # every setting is in one group, with a label tied to its field and its description shown
-        keys = page.xpath("//form//*[self::input or self::select][@name and @name!='csrfmiddlewaretoken']/@name")
+        keys = page.xpath("//form//*[self::input or self::select][@name and @name!='csrfmiddlewaretoken' and not(starts-with(@name, 'was-'))]/@name")
         names = set(AppSettings.objects.exclude(key="BOOTSTRAP_THEME").values_list("key", flat=True))
         self.assertEqual(sorted(k for k in keys if k not in ("BOOTSTRAP_THEME", "language")), sorted(names))
         (field,) = page.xpath("//*[@name='LOGS_PER_PAGE']")
@@ -114,10 +114,38 @@ class AppSettingsTestCase(TestCase):
         values = dict(AppSettings.objects.filter(key__startswith="CONSOLE_").values_list("key", "value"))
         self.assertEqual(values, {"CONSOLE_SCALE": "True", "CONSOLE_VIEW_ONLY": "False",
                                   "CONSOLE_RESIZE_SESSION": "False", "CONSOLE_CLIP_VIEWPORT": "True"})
-        self.assertEqual(sorted(Logs.objects.values_list("message", flat=True)),
-                         ["Setting Console Clip Viewport: change to True", "Setting Console Scale: change to True"])
+        # one row for the group's save
+        self.assertEqual(list(Logs.objects.values_list("message", flat=True)),
+                         ["Settings: change Console Clip Viewport to True, Console Scale to True"])
         self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
                          ["Saved: Console Clip Viewport, Console Scale"])
+
+    def test_a_group_keeps_what_another_administrator_saved_meanwhile(self):
+        # both opened the page with 5 and 15; the first saved 10 for the limit
+        AppSettings.objects.filter(key="LOGIN_FAILURE_LIMIT").update(value="10")
+        self.client.post(reverse("appsettings"), {"LOGIN_FAILURE_LIMIT": "5", "was-LOGIN_FAILURE_LIMIT": "5",
+                                                  "LOGIN_LOCKOUT_MINUTES": "30", "was-LOGIN_LOCKOUT_MINUTES": "15"})
+        values = dict(AppSettings.objects.filter(key__startswith="LOGIN_").values_list("key", "value"))
+        self.assertEqual(values, {"LOGIN_FAILURE_LIMIT": "10", "LOGIN_LOCKOUT_MINUTES": "30"})
+
+    def test_a_failed_save_changes_none_of_its_group(self):
+        from unittest.mock import patch
+
+        from django.db import DatabaseError
+
+        saves = []
+
+        def save(setting, *args, **kwargs):
+            saves.append(setting.key)
+            if len(saves) == 2:
+                raise DatabaseError("disk full")
+            return original(setting, *args, **kwargs)
+
+        original = AppSettings.save
+        with patch.object(AppSettings, "save", save):
+            self.client.post(reverse("appsettings"), {"CONSOLE_SCALE": "True", "CONSOLE_CLIP_VIEWPORT": "True"})
+        values = dict(AppSettings.objects.filter(key__in=["CONSOLE_SCALE", "CONSOLE_CLIP_VIEWPORT"]).values_list("key", "value"))
+        self.assertEqual(values, {"CONSOLE_SCALE": "False", "CONSOLE_CLIP_VIEWPORT": "False"})
 
     def test_one_bad_value_saves_nothing_of_its_group(self):
         response = self.client.post(reverse("appsettings"), {"LOGIN_FAILURE_LIMIT": "10", "LOGIN_LOCKOUT_MINUTES": "x"})

@@ -32,7 +32,7 @@ class SettingRowTests(TestCase):
         self.client.post(self.url, {"BOOTSTRAP_THEME": theme})
         self.client.post(self.url, {"BOOTSTRAP_THEME": theme})  # no change
         self.assertEqual(rows(), [
-            (f"Setting {name}: change to 50", True, "-"),
+            (f"Settings: change {name} to 50", True, "-"),
             (f"Setting Theme: change to {theme}", True, "-"),
         ])
 
@@ -41,4 +41,4 @@ class SettingRowTests(TestCase):
         with patch.object(AppSettings, "save", side_effect=DatabaseError("disk full")):
             response = self.client.post(self.url, {"LOGS_PER_PAGE": "50"}, follow=True)
         self.assertIn("error", [m.level_tag for m in response.context["messages"]])
-        self.assertEqual(rows(), [(f"Setting {name}: change to 50: DatabaseError", False, "-")])
+        self.assertEqual(rows(), [(f"Settings: change {name} to 50: DatabaseError", False, "-")])

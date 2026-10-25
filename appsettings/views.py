@@ -3,7 +3,7 @@ from pathlib import Path
 from admin.decorators import superuser_only
 from django.conf import settings
 from django.contrib import messages
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.translation import gettext_noop as _
@@ -90,27 +90,28 @@ def appsettings(request):
             messages.success(request, msg)
             return HttpResponseRedirect(request.get_full_path())
 
+        # a field counts as changed against the value the page showed (was-KEY): one left
+        # as it was does not undo what another administrator saved meanwhile
         posted = sorted(((s, request.POST[s.key]) for s in settings_by_key.values() if s.key in request.POST),
                         key=lambda item: item[0].name)
-        refusals = [refused for refused in (refusal(s, value) for s, value in posted) if refused]
+        changed = [(s, value) for s, value in posted if value != request.POST.get(f"was-{s.key}", s.value)]
+        refusals = [refused for refused in (refusal(s, value) for s, value in changed) if refused]
         for refused in refusals:
             messages.error(request, refused)
-        if not refusals:
-            saved = []
+        if changed and not refusals:
+            action = "change " + ", ".join(f"{s.name} to {value}" for s, value in changed)
             try:
-                for setting, value in posted:
-                    if value != setting.value:
-                        with audit(request, None, f"Setting {setting.name}", f"change to {value}"):
-                            setting.value = value
-                            setting.save()
-                        saved.append(setting.name)
+                # one row, and all of the group or none of it
+                with audit(request, None, "Settings", action), transaction.atomic():
+                    for setting, value in changed:
+                        setting.value = value
+                        setting.save()
             except DatabaseError as err:  # the audit row records it as failed
                 messages.error(request, err)
             else:
-                if saved:
-                    messages.success(request, _("Saved: %(settings)s") % {"settings": ", ".join(saved)})
-                else:
-                    messages.info(request, _("Nothing changed"))
+                messages.success(request, _("Saved: %(settings)s") % {"settings": ", ".join(s.name for s, _v in changed)})
+        elif not refusals:
+            messages.info(request, _("Nothing changed"))
         return HttpResponseRedirect(request.get_full_path())
 
     groups = []
