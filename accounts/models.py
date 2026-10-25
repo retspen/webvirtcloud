@@ -46,25 +46,25 @@ class UserAttributes(models.Model):
     max_instances = models.IntegerField(
         _("max instances"),
         default=2,
-        help_text=_("-1 for unlimited. Any integer value"),
+        help_text=_("-1: no limit; 0: none allowed"),
         validators=[MinValueValidator(-1)],
     )
     max_cpus = models.IntegerField(
         _("max CPUs"),
         default=2,
-        help_text=_("-1 for unlimited. Any integer value"),
+        help_text=_("-1: no limit; 0: none allowed"),
         validators=[MinValueValidator(-1)],
     )
     max_memory = models.IntegerField(
-        _("max memory"),
+        _("max memory (MiB)"),
         default=2048,
-        help_text=_("-1 for unlimited. Any integer value"),
+        help_text=_("-1: no limit; 0: none allowed"),
         validators=[MinValueValidator(-1)],
     )
     max_disk_size = models.IntegerField(
-        _("max disk size"),
+        _("max disk size (GiB)"),
         default=20,
-        help_text=_("-1 for unlimited. Any integer value"),
+        help_text=_("-1: no limit; 0: none allowed"),
         validators=[MinValueValidator(-1)],
     )
 

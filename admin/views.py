@@ -96,6 +96,11 @@ def group_delete(request, pk):
     )
 
 
+# an administrator who blocks, deletes or demotes their own account is out of
+# these pages at once, and may have been the last one
+OWN_ACCOUNT = _("You cannot block, delete or demote your own account")
+
+
 @superuser_only
 def user_list(request):
     # API tokens that still work: an expired one is deleted only at the user's next create
@@ -145,7 +150,11 @@ def user_update(request, pk):
     attributes_form = forms.UserAttributesForm(
         request.POST or None, instance=attributes
     )
-    if user_form.is_valid() and attributes_form.is_valid():
+    valid = user_form.is_valid() and attributes_form.is_valid()
+    if valid and user == request.user and not (user_form.cleaned_data["is_active"] and user_form.cleaned_data["is_superuser"]):
+        user_form.add_error(None, OWN_ACCOUNT)
+        valid = False
+    if valid:
         with audit(request, None, subject, "change") as entry:
             user_form.save()
             attributes_form.save()
@@ -166,6 +175,7 @@ def user_update(request, pk):
         {
             "user_form": user_form,
             "attributes_form": attributes_form,
+            "edited_user": user,
             "title": _("Update User"),
         },
     )
@@ -202,6 +212,9 @@ def user_update_password(request, pk):
 @superuser_only
 def user_delete(request, pk):
     user = get_object_or_404(User, pk=pk)
+    if user == request.user:
+        messages.error(request, OWN_ACCOUNT)
+        return redirect("admin:user_list")
     if request.method == "POST":
         with audit(request, None, f"User {user.username}", "delete"):
             user.delete()
@@ -219,6 +232,9 @@ def user_delete(request, pk):
 @superuser_only
 def user_block(request, pk):
     user: User = get_object_or_404(User, pk=pk)
+    if user == request.user:
+        messages.error(request, OWN_ACCOUNT)
+        return redirect("admin:user_list")
     with audit(request, None, f"User {user.username}", "block") as entry:
         entry.skip = not user.is_active  # already blocked
         user.is_active = False

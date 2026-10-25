@@ -13,6 +13,15 @@
         <form id="create-update" action="" method="post">
             {% csrf_token %}
             {% bootstrap_form user_form layout='horizontal' %}
+            {% if edited_user %}
+            <div class="row mb-3">
+                <span class="col-sm-2 col-form-label">{% trans "Password" %}</span>
+                <div class="col-sm-10 col-form-label">
+                    {% if edited_user.has_usable_password %}{% trans "Set" %}{% else %}{% trans "Not set" %}{% endif %}
+                    <a class="ms-2" href="{% url 'admin:user_update_password' edited_user.id %}">{% trans "Change password" %}</a>
+                </div>
+            </div>
+            {% endif %}
             {% bootstrap_form attributes_form layout='horizontal' %}
         </form>
         <div class="float-end">

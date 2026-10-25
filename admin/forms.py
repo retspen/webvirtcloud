@@ -1,10 +1,7 @@
 from django import forms
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
-from django.urls import reverse_lazy
-from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import UserAttributes
@@ -72,26 +69,8 @@ class UserForm(forms.ModelForm):
             "is_active",
             "is_superuser",
         ]
-
-    def __init__(self, *args, **kwargs):
-        super(UserForm, self).__init__(*args, **kwargs)
-        if self.instance.id:
-            password = ReadOnlyPasswordHashField(
-                label=_("Password"),
-                help_text=format_lazy(
-                    _(
-                        """Raw passwords are not stored, so there is no way to see this user's password, 
-                    but you can change the password using <a href='{}'>this form</a>."""
-                    ),
-                    reverse_lazy(
-                        "admin:user_update_password",
-                        args=[
-                            self.instance.id,
-                        ],
-                    ),
-                ),
-            )
-            self.fields["Password"] = password
+        labels = {"is_staff": _("Template editor")}
+        help_texts = {"is_staff": _("May change and delete the template VMs given to them")}
 
 
 class UserCreateForm(UserForm):
@@ -125,8 +104,7 @@ class UserCreateForm(UserForm):
             self.save_m2m()
         return user
 
-    class Meta:
-        model = User
+    class Meta(UserForm.Meta):
         fields = [
             "username",
             "password",

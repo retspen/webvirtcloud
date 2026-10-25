@@ -89,7 +89,7 @@ class QuotaTests(TestCase):
         self.assertEqual(self.check(0, 0, -512, 0), ("", 0))
 
     def test_unlimited_users_are_not_checked(self):
-        UserAttributes.objects.filter(user=self.user).update(max_instances=-1, max_cpus=-1, max_memory=0, max_disk_size=-1)
+        UserAttributes.objects.filter(user=self.user).update(max_instances=-1, max_cpus=-1, max_memory=-1, max_disk_size=-1)
         self.own(self.down, 1)
         self.assertEqual(self.check(1, 4, 4096, 50), ("", 0))
 
@@ -110,6 +110,19 @@ class QuotaTests(TestCase):
             vm = self.own(self.up, n)
         Instance.objects.filter(pk=vm.pk).update(is_template=True)
         self.assertEqual(self.check(0, 2, 0, 0), ("", 3))
+
+    def test_zero_allows_none_and_minus_one_has_no_limit(self):
+        # 0 takes a quota away from the user; -1 lifts it
+        ua = UserAttributes.objects.get(user=self.user)
+        for field, delta, refused in (("max_instances", (1, 0, 0, 0), "instance"), ("max_cpus", (0, 1, 0, 0), "cpu"),
+                                      ("max_memory", (0, 0, 512, 0), "memory"), ("max_disk_size", (0, 0, 0, 1), "disk")):
+            with self.subTest(field=field):
+                setattr(ua, field, 0)
+                ua.save()
+                self.assertEqual(self.check(*delta)[0], refused)
+                setattr(ua, field, -1)
+                ua.save()
+                self.assertEqual(self.check(*delta)[0], "")
 
     def test_the_numbers_show_only_with_quota_debug_on(self):
         # the setting is the text "True" or "False": "False" turns them off

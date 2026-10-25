@@ -146,7 +146,7 @@ def ssh_key_delete(request, pk):
 
 @superuser_only
 def account(request, user_id):
-    user = User.objects.get(id=user_id)
+    user = get_object_or_404(User, id=user_id)
     user_insts = UserInstance.objects.filter(user_id=user_id)
     instances = Instance.objects.all().order_by("name")
     publickeys = UserSSHKey.objects.filter(user_id=user_id)

@@ -49,7 +49,8 @@ QUOTA_UNVERIFIED = "unverified"
 def check_user_quota(user, instance, cpu, memory, disk_size):
     """
     Which quota the user would exceed by adding these amounts (instances,
-    vCPUs, memory MiB, disk GiB) to their VMs, or "". QUOTA_UNVERIFIED if a
+    vCPUs, memory MiB, disk GiB) to their VMs, or "". A quota of -1 has no
+    limit; 0 allows none. QUOTA_UNVERIFIED if a
     VM that counts cannot be read (its host is down, the VM is gone): the
     usage is unknown, so an increase is refused.
     """
@@ -68,12 +69,12 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
         "instance__compute"
     )
     instance += user_instances.count()
-    if ua.max_instances > 0 and instance > ua.max_instances:
+    if ua.max_instances >= 0 and instance > ua.max_instances:
         msg = "instance"
         if quota_debug:
             msg += f" ({instance} > {ua.max_instances})"
         return msg
-    if ua.max_cpus <= 0 and ua.max_memory <= 0 and ua.max_disk_size <= 0:
+    if ua.max_cpus < 0 and ua.max_memory < 0 and ua.max_disk_size < 0:
         return msg
 
     computes = {}  # status is cached per object: check each host once
@@ -99,15 +100,15 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
         except libvirtError:
             return QUOTA_UNVERIFIED
 
-    if ua.max_cpus > 0 and cpu > ua.max_cpus:
+    if ua.max_cpus >= 0 and cpu > ua.max_cpus:
         msg = "cpu"
         if quota_debug:
             msg += f" ({cpu} > {ua.max_cpus})"
-    if ua.max_memory > 0 and memory > ua.max_memory:
+    if ua.max_memory >= 0 and memory > ua.max_memory:
         msg = "memory"
         if quota_debug:
             msg += f" ({memory} > {ua.max_memory})"
-    if ua.max_disk_size > 0 and disk_size > ua.max_disk_size:
+    if ua.max_disk_size >= 0 and disk_size > ua.max_disk_size:
         msg = "disk"
         if quota_debug:
             msg += f" ({disk_size} > {ua.max_disk_size})"
