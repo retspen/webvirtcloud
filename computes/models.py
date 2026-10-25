@@ -4,11 +4,12 @@ from django.db import transaction
 from django.db.models import CharField, IntegerField, Model
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from libvirt import virConnect
+from libvirt import libvirtError, virConnect
 
 from computes.validators import validate_hostname, validate_login, validate_migration_address
 from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
+from vrtManager.storage import wvmStorages
 
 
 class Compute(Model):
@@ -86,6 +87,20 @@ class Compute(Model):
     @cached_property
     def ram_usage(self):
         return self.proxy.get_memory_usage()["percent"]
+
+    @cached_property
+    def capacity(self):
+        """What the host has given its VMs (wvmHostDetails.get_capacity) and
+        its active storage pools, or None when it cannot be read."""
+        if self.status is not True:
+            return None
+        try:
+            given = self.proxy.get_capacity()
+            storages = wvmStorages(self.hostname, self.login, self.password, self.type)
+            given["pools"] = [pool for pool in storages.get_storages_info() if pool["status"]]
+        except libvirtError:
+            return None
+        return given
 
     def __str__(self):
         return self.name

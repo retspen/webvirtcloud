@@ -23,7 +23,7 @@ from computes.forms import (
 )
 from computes.models import Compute
 
-from . import capacity, utils
+from . import utils
 
 # The host CPU graph sends back the CPU sample of its previous answer; usage
 # is taken since then when it is this recent, otherwise over one second.
@@ -33,11 +33,10 @@ CPU_SAMPLE_SIGNER = signing.TimestampSigner(salt="computes.cpu-sample")
 
 @superuser_only
 def computes(request):
-    """The computes, with what each has given its VMs (computes/capacity.py)."""
+    """The computes, with what each has given its VMs."""
     computes = list(Compute.objects.order_by("name"))
-    found = capacity.read_all(computes)
     for compute in computes:
-        compute.capacity = given = found.get(compute.id)
+        given = compute.capacity
         if given:
             given["ratio"] = given["vcpus"]["all"] / given["cpus"] if given["cpus"] else 0
             # the memory bar: running and shut-off VMs' memory, and a mark at the
@@ -48,9 +47,9 @@ def computes(request):
                             "stopped": (assigned["all"] - assigned["running"]) * 100 / scale,
                             "host": memory * 100 / scale, "over": assigned["all"] > memory}
             given["memory_percent"] = round(assigned["all"] * 100 / memory) if memory else 0
-            pools = [{"name": name, "size": size, "free": free,
-                      "used_percent": (size - free) * 100 / size if size else 0}
-                     for name, size, free in given["pools"]]
+            pools = sorted(given["pools"], key=lambda pool: pool["name"])
+            for pool in pools:
+                pool["used_percent"] = (pool["size"] - pool["free"]) * 100 / pool["size"] if pool["size"] else 0
             # the default pool shows; the others (a host may have dozens) open on a click
             given["pool"] = next((pool for pool in pools if pool["name"] == "default"), pools[0] if pools else None)
             given["more_pools"] = [pool for pool in pools if pool is not given["pool"]]

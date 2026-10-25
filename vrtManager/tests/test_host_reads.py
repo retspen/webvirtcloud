@@ -13,9 +13,19 @@ from django.conf import settings
 if not settings.configured:
     settings.configure(MAC_OUI="52:54:10")
 
-from libvirt import VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET, VIR_ERR_NO_SUPPORT, VIR_ERR_OPERATION_DENIED, VIR_ERR_XML_ERROR, libvirtError
+from libvirt import (
+    VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET,
+    VIR_DOMAIN_PAUSED,
+    VIR_DOMAIN_RUNNING,
+    VIR_DOMAIN_SHUTOFF,
+    VIR_ERR_NO_SUPPORT,
+    VIR_ERR_OPERATION_DENIED,
+    VIR_ERR_XML_ERROR,
+    libvirtError,
+)
 from vrtManager.connection import wvmConnect
 from vrtManager.hostdetails import wvmHostDetails
+from vrtManager.storage import wvmStorages
 
 CAPABILITIES = """<capabilities><host><cpu><arch>x86_64</arch></cpu></host>
 <guest><os_type>hvm</os_type><arch name='x86_64'><emulator>/usr/bin/qemu-kvm</emulator>
@@ -132,3 +142,32 @@ class ChangeInterfacesTestCase(unittest.TestCase):
                 self.assertIs(conn.can_change_interfaces(), changeable)
                 # an invalid definition: nothing can be defined by asking
                 conn.wvm.interfaceDefineXML.assert_called_once_with("<interface/>", 0)
+
+
+class CapacityTestCase(unittest.TestCase):
+    def test_a_host_gives_its_vms_cpus_and_memory(self):
+        conn = connection(wvmHostDetails)
+        gib = 1024 ** 3
+        # get_host_instances gives the vCPUs as text, the memory in bytes
+        conn.get_host_instances = MagicMock(return_value={
+            "web": {"status": VIR_DOMAIN_RUNNING, "vcpu": "4", "memory": 4 * gib},
+            "db": {"status": VIR_DOMAIN_PAUSED, "vcpu": "2", "memory": 2 * gib},
+            "old": {"status": VIR_DOMAIN_SHUTOFF, "vcpu": "8", "memory": 8 * gib},
+        })
+        self.assertEqual(conn.get_capacity(), {
+            "cpus": 4, "memory": 2 * gib,
+            "vcpus": {"all": 14, "running": 6},
+            "assigned": {"all": 14 * gib, "running": 6 * gib},
+        })
+        conn.get_host_instances.assert_called_once_with(raw_mem_size=True)
+
+
+class StoragesInfoTestCase(unittest.TestCase):
+    def test_each_pool_tells_its_free_space(self):
+        conn = connection(wvmStorages)
+        pool = MagicMock(**{"isActive.return_value": 1, "XMLDesc.return_value": "<pool type='dir'/>",
+                            "listVolumes.return_value": ["a.qcow2"], "info.return_value": [2, 500, 380, 120]})
+        conn.get_storages = lambda: ["default"]
+        conn.get_storage = lambda name: pool
+        (info,) = conn.get_storages_info()
+        self.assertEqual((info["name"], info["size"], info["free"]), ("default", 500, 120))

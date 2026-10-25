@@ -1,13 +1,8 @@
-"""What each compute has given its VMs (computes/capacity.py) and the
-Computes page that shows it."""
+"""What each compute has given its VMs (Compute.capacity) and the Computes
+page that shows it."""
 
-import threading
-import time
-import unittest
-from types import SimpleNamespace
 from unittest.mock import patch
 
-from computes import capacity
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -18,85 +13,33 @@ from lxml import html
 GIB = 1024 ** 3
 
 
-def domain(state, memory_mib, vcpus):
-    info = [state, memory_mib * 1024, memory_mib * 1024, vcpus, 0]
-    return SimpleNamespace(info=lambda: info)
+def pool(name, size_gib, free_gib, status=1):
+    return {"name": name, "status": status, "size": size_gib * GIB, "free": free_gib * GIB}
 
 
-def pool(name, capacity_gib, available_gib):
-    return SimpleNamespace(name=lambda: name, info=lambda: [2, capacity_gib * GIB, 0, available_gib * GIB])
-
-
-def compute(name, domains=(), pools=(), cpus=16, memory_mib=65536, down=False, pk=1):
-    connection = SimpleNamespace(
-        getInfo=lambda: ["x86_64", memory_mib, cpus, 2400, 1, 1, 8, 2],
-        listAllDomains=lambda flags=0: list(domains),
-        listAllStoragePools=lambda flags=0: list(pools),
-    )
-    return SimpleNamespace(id=pk, name=name, status=Exception("down") if down else True, connection=connection)
-
-
-class ReadTests(unittest.TestCase):
+class CapacityTests(TestCase):
     def setUp(self):
-        capacity._reading.clear()  # a stuck read of an earlier test may not have ended yet
+        self.compute = Compute(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
+        self.compute.status = True
 
-    def test_a_host_gives_its_vms_cpus_and_memory(self):
-        c = compute("c1", [domain(1, 4096, 4), domain(1, 2048, 2), domain(5, 8192, 8)],
-                    [pool("default", 500, 120), pool("iso", 100, 90)])
-        result = capacity.read(c)
-        self.assertEqual(result["cpus"], 16)
-        self.assertEqual(result["memory"], 64 * GIB)
-        self.assertEqual(result["vcpus"], {"all": 14, "running": 6})
-        self.assertEqual(result["assigned"], {"all": 14 * GIB, "running": 6 * GIB})
-        self.assertEqual(result["pools"], [("default", 500 * GIB, 120 * GIB), ("iso", 100 * GIB, 90 * GIB)])
+    @patch("computes.models.wvmStorages")
+    @patch("computes.models.wvmHostDetails")
+    def test_a_host_tells_what_it_gave_and_its_active_pools(self, details, storages):
+        details.return_value.get_capacity.return_value = {"cpus": 16}
+        storages.return_value.get_storages_info.return_value = [pool("default", 500, 120), pool("off", 10, 0, status=0)]
+        self.assertEqual(self.compute.capacity, {"cpus": 16, "pools": [pool("default", 500, 120)]})
 
-    def test_a_vm_that_goes_meanwhile_is_skipped(self):
-        def gone():
-            raise libvirtError("Domain not found")
+    @patch("computes.models.wvmHostDetails")
+    def test_a_host_whose_read_fails_has_no_capacity(self, details):
+        # a VM that goes while the host is read, for one
+        details.return_value.get_capacity.side_effect = libvirtError("Domain not found")
+        self.assertIsNone(self.compute.capacity)
 
-        c = compute("c1", [SimpleNamespace(info=gone), domain(1, 1024, 1)])
-        self.assertEqual(capacity.read(c)["vcpus"], {"all": 1, "running": 1})
-
-    def test_a_down_host_has_no_capacity(self):
-        self.assertIsNone(capacity.read(compute("c1", down=True)))
-
-    def test_hosts_are_read_together_by_the_deadline(self):
-        slow = threading.Event()
-        try:
-            stuck = compute("c2", pk=2)
-            stuck.connection.getInfo = lambda: slow.wait() and None
-            started = time.monotonic()
-            found = capacity.read_all([compute("c1"), stuck], deadline=0.3)
-            self.assertLess(time.monotonic() - started, 1)
-            self.assertEqual(set(found), {1})
-        finally:
-            slow.set()
-
-
-    def test_a_host_still_being_read_is_not_read_again(self):
-        # a stuck read keeps its thread; a second page load must not add another
-        slow, calls = threading.Event(), []
-        try:
-            stuck = compute("c2", pk=2)
-            stuck.connection.getInfo = lambda: calls.append(1) or slow.wait() and None
-            for _ in range(2):
-                self.assertEqual(set(capacity.read_all([compute("c1"), stuck], deadline=0.2)), {1})
-            self.assertEqual(len(calls), 1)
-        finally:
-            slow.set()
-
-
-    def test_a_host_whose_read_never_started_is_read_next_time(self):
-        # more hosts than threads: a read still queued at the deadline is cancelled
-        slow = threading.Event()
-        try:
-            stuck = compute("c1")
-            stuck.connection.getInfo = lambda: slow.wait() and None
-            with patch.object(capacity, "MAX_WORKERS", 1):
-                self.assertEqual(capacity.read_all([stuck, compute("c2", pk=2)], deadline=0.2), {})
-            self.assertEqual(set(capacity.read_all([compute("c2", pk=2)], deadline=1)), {2})
-        finally:
-            slow.set()
+    @patch("computes.models.wvmHostDetails")
+    def test_a_down_host_is_not_read(self, details):
+        self.compute.status = False
+        self.assertIsNone(self.compute.capacity)
+        details.assert_not_called()
 
 
 class ComputesPageTests(TestCase):
@@ -107,8 +50,8 @@ class ComputesPageTests(TestCase):
         Compute.objects.create(name="host-two", hostname="192.0.2.2", login="u", password="p", type=1)
         found = {c1.id: {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 40, "running": 24},
                          "assigned": {"all": 48 * GIB, "running": 32 * GIB},
-                         "pools": [("default", 500 * GIB, 120 * GIB)]}}
-        with patch("computes.views.capacity.read_all", return_value=found), \
+                         "pools": [pool("default", 500, 120)]}}
+        with patch.object(Compute, "capacity", new=property(lambda c: found.get(c.id))), \
                 patch.object(Compute, "status", new=True):
             page = html.fromstring(self.client.get(reverse("computes")).content)
         headers = [" ".join(th.text_content().split()) for th in page.xpath("//thead//th")]
@@ -121,19 +64,18 @@ class ComputesPageTests(TestCase):
         self.assertIn("48.0 GB given of 64.0 GB", cells[2])
         self.assertIn("32.0 GB of it running", cells[2])
         self.assertIn("120.0 GB free of 500.0 GB", cells[3])
-        # host-two answered nothing in time: one cell says so
-        self.assertIn("could not be read in time", " ".join(two.text_content().split()))
+        # host-two could not be read: one cell says so
+        self.assertIn("capacity could not be read", " ".join(two.text_content().split()))
 
     def test_the_default_pool_shows_and_the_others_open_on_a_click(self):
         admin = get_user_model().objects.create_superuser("cap-pools", "pools@example.com", "pw")
         self.client.force_login(admin)
-        c1 = Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
-        pools = [("backup", 900 * GIB, 800 * GIB), ("default", 500 * GIB, 120 * GIB),
-                 ("iso", 100 * GIB, 90 * GIB), ("nfs", 2000 * GIB, 1000 * GIB)]
-        found = {c1.id: {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 8, "running": 8},
-                         "assigned": {"all": 8 * GIB, "running": 8 * GIB}, "pools": pools}}
-        with patch("computes.views.capacity.read_all", return_value=found), \
-                patch.object(Compute, "status", new=True):
+        Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
+        # libvirt lists the pools in no order
+        pools = [pool("nfs", 2000, 1000), pool("default", 500, 120), pool("iso", 100, 90), pool("backup", 900, 800)]
+        given = {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 8, "running": 8},
+                 "assigned": {"all": 8 * GIB, "running": 8 * GIB}, "pools": pools}
+        with patch.object(Compute, "capacity", new=given), patch.object(Compute, "status", new=True):
             page = html.fromstring(self.client.get(reverse("computes")).content)
         (storage,) = page.xpath("//tbody/tr/td[4]")
         shown = " ".join(" ".join(storage.xpath("./div//text()")).split())

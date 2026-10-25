@@ -1,6 +1,6 @@
 import time
 
-from libvirt import VIR_NODE_CPU_STATS_ALL_CPUS
+from libvirt import VIR_DOMAIN_SHUTOFF, VIR_NODE_CPU_STATS_ALL_CPUS
 
 from vrtManager.connection import wvmConnect
 from vrtManager.util import get_xml_path
@@ -83,3 +83,18 @@ class wvmHostDetails(wvmConnect):
         )  # cpu version
         info.append(self.wvm.getURI())  # uri
         return info
+
+    def get_capacity(self):
+        """
+        What the host has given its VMs: vCPUs and memory (bytes) of all VMs
+        and of the running ones, against its CPUs and memory. A shut-off VM
+        takes its share again when it starts.
+        """
+        vcpus = {"all": 0, "running": 0}
+        assigned = {"all": 0, "running": 0}
+        for vm in self.get_host_instances(raw_mem_size=True).values():
+            for share in ("all",) if vm["status"] == VIR_DOMAIN_SHUTOFF else ("all", "running"):
+                vcpus[share] += int(vm["vcpu"])
+                assigned[share] += vm["memory"]
+        return {"cpus": self.host_info[2], "memory": self.host_info[1] * 1048576,
+                "vcpus": vcpus, "assigned": assigned}

@@ -81,7 +81,7 @@
                                 {% endif %}
                             </td>
                             {% else %}
-                            <td colspan="3" class="small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read in time." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                            <td colspan="3" class="small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
                             {% endif %}
                             <td class="text-end">
                                 <div class="btn-group">

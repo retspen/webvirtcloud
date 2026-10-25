@@ -14,7 +14,7 @@ class wvmStorages(wvmConnect):
             stg_status = stg.isActive()
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
             stg_vol = len(stg.listVolumes()) if stg_status else None
-            stg_size = stg.info()[1]
+            _state, stg_size, _allocation, stg_free = stg.info()
             storages.append(
                 {
                     "name": pool,
@@ -22,6 +22,7 @@ class wvmStorages(wvmConnect):
                     "type": stg_type,
                     "volumes": stg_vol,
                     "size": stg_size,
+                    "free": stg_free,
                 }
             )
         return storages
