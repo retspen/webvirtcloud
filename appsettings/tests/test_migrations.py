@@ -87,3 +87,15 @@ class ChoicesFixTestCase(TestCase):
             "INSTANCE_MACHINE_DEFAULT_TYPE": ("q35", "q35,pc,virt"),
             "INSTANCE_CDROM_ADD": ("sata", "None,ide,sata,scsi"),
         })
+
+
+descriptions = importlib.import_module("appsettings.migrations.0021_setting_descriptions")
+
+
+class DescriptionsTestCase(TestCase):
+    def test_every_setting_says_what_it_does_within_its_column(self):
+        limit = AppSettings._meta.get_field("description").max_length
+        for key, text in descriptions.DESCRIPTIONS.items():
+            with self.subTest(key=key):
+                self.assertLessEqual(len(text), limit)
+                self.assertEqual(AppSettings.objects.get(key=key).description, text)

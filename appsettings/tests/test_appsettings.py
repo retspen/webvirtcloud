@@ -99,7 +99,7 @@ class AppSettingsTestCase(TestCase):
         (field,) = page.xpath("//*[@name='LOGS_PER_PAGE']")
         self.assertEqual((field.get("type"), field.get("min"), field.get("max")), ("number", "1", "1000"))
         self.assertEqual(page.xpath(f"//label[@for='{field.get('id')}']/text()"), ["Logs per Page"])
-        self.assertEqual(page.xpath(f"//*[@id='{field.get('aria-describedby')}']/text()"), ["Pagination for logs"])
+        self.assertEqual(page.xpath(f"//*[@id='{field.get('aria-describedby')}']/text()"), ["Rows per page on the Logs page"])
         # a group is saved with its button, not on every change
         self.assertEqual(page.xpath("//*[@onchange]"), [])
 
