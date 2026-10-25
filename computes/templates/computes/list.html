@@ -21,32 +21,70 @@
         </div>
     {% else %}
         <div class="col-lg-12">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover" data-sortable>
+            {# position-relative: the hidden status texts are positioned within it, not the page #}
+            <div class="table-responsive position-relative">
+                <table class="table align-middle compute-list" data-sortable>
                     <thead>
                         <tr>
-                            <th span="col" class="col-sm-3">{% trans "Name" %}</th>
-                            <th span="col" class="col-sm-2">{% trans "Status" %}</th>
-                            <th span="col" class="col-sm-5">{% trans "Details" %}</th>
-                            <th span="col" class="col-sm-2 text-center" data-sort-method="none">{% trans "Actions" %}</th>
+                            <th scope="col">{% trans "Host" %}</th>
+                            <th scope="col" data-sort-method="number">{% trans "vCPUs" %}</th>
+                            <th scope="col" data-sort-method="number">{% trans "Memory" %}</th>
+                            <th scope="col" data-sort-method="none">{% trans "Storage" %}</th>
+                            <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                         </tr>
                     </thead>
                     <tbody class="searchable">
                     {% for compute in computes %}
+                        {% with given=compute.capacity %}
                         <tr>
-                            <td class="col-sm-3">
-                                {{ compute.name }}
-                            </td>
-                            <td class="col-sm-2">
-                                {% if compute.status is True %}{% trans "Connected" %}{% else %}{% trans "Not Connected" %}
-                                    <br><small class="text-danger">{{ compute.connection_error }}</small>
+                            <td>
+                                <div class="d-flex align-items-baseline gap-2">
+                                    {% if compute.status is True %}
+                                        <span class="compute-dot bg-success" title="{% trans "Connected" %}"></span>
+                                        <span class="visually-hidden">{% trans "Connected" %}</span>
+                                    {% else %}
+                                        <span class="compute-dot bg-danger" title="{% trans "Not Connected" %}"></span>
+                                        <span class="visually-hidden">{% trans "Not Connected" %}</span>
+                                    {% endif %}
+                                    <span class="fw-semibold">{{ compute.name }}</span>
+                                </div>
+                                <div class="small text-body-secondary ms-3">{{ compute.hostname }}{% if compute.details %}<br>{{ compute.details }}{% endif %}</div>
+                                {% if compute.status is not True %}
+                                    <div class="small text-danger ms-3">{{ compute.connection_error }}</div>
                                 {% endif %}
                             </td>
-                            <td class="col-sm-5">
-                                {{ compute.details|default:"" }}
+                            {% if given %}
+                            <td data-sort="{{ given.ratio|stringformat:".2f" }}">
+                                <div class="compute-ratio {% if given.ratio > 4 %}text-danger{% elif given.ratio > 2 %}text-warning-emphasis{% endif %}">{{ given.ratio|floatformat:1 }}:1</div>
+                                <div class="small text-body-secondary text-nowrap">{% blocktrans with all=given.vcpus.all cpus=given.cpus %}{{ all }} vCPUs on {{ cpus }} CPUs{% endblocktrans %}</div>
+                                <div class="small text-body-secondary">{% blocktrans with running=given.vcpus.running %}{{ running }} running{% endblocktrans %}</div>
                             </td>
-                            <td class="col-sm-2">
-                                <div class="float-end btn-group">
+                            <td data-sort="{{ given.memory_percent }}" class="compute-memory">
+                                <div class="mb-1 text-nowrap">{% blocktrans with all=given.assigned.all|filesizeformat memory=given.memory|filesizeformat %}{{ all }} given of {{ memory }}{% endblocktrans %}</div>
+                                <div class="cap-bar" role="img" aria-label="{% blocktrans with percent=given.memory_percent %}{{ percent }}% of the host's memory given{% endblocktrans %}"
+                                     title="{% trans "Dark: running VMs. Light: shut-off VMs, which take their memory again when they start. Line: the host's memory." %}">
+                                    <div class="cap-running {% if given.bar.over %}bg-danger{% endif %}" style="width: {{ given.bar.running|stringformat:".1f" }}%"></div>
+                                    <div class="cap-stopped {% if given.bar.over %}bg-danger{% endif %}" style="width: {{ given.bar.stopped|stringformat:".1f" }}%"></div>
+                                    <div class="cap-host" style="left: {{ given.bar.host|stringformat:".1f" }}%"></div>
+                                </div>
+                                <div class="small text-body-secondary mt-1">{% blocktrans with running=given.assigned.running|filesizeformat %}{{ running }} of it running{% endblocktrans %}</div>
+                            </td>
+                            <td class="compute-storage">
+                                {% if given.pool %}{% include "computes/pool_bar.html" with pool=given.pool %}{% endif %}
+                                {% if given.more_pools %}
+                                    <details class="mt-2">
+                                        <summary class="small text-body-secondary">{% blocktrans count counter=given.more_pools|length %}{{ counter }} more pool{% plural %}{{ counter }} more pools{% endblocktrans %}</summary>
+                                        {% for pool in given.more_pools %}
+                                            <div class="mt-2">{% include "computes/pool_bar.html" %}</div>
+                                        {% endfor %}
+                                    </details>
+                                {% endif %}
+                            </td>
+                            {% else %}
+                            <td colspan="3" class="small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read in time." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                            {% endif %}
+                            <td class="text-end">
+                                <div class="btn-group">
                                     {% if compute.status is True %}
                                         <a class="btn btn-success" title="{%trans "Overview" %}" href="{% url 'overview' compute.id %}">{% bs_icon 'eye-fill' %}</a>
                                     {% else %}
@@ -57,6 +95,7 @@
                                 </div>
                             </td>
                         </tr>
+                        {% endwith %}
                     {% endfor %}
                     </tbody>
                 </table>
