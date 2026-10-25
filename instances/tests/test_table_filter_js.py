@@ -1,5 +1,5 @@
-"""The instance list's search box and state list (static/js/instance_filter.js).
-Its behaviour is checked with Node."""
+"""The search box of the list pages, with the instance list's state list
+(static/js/table_filter.js). Its behaviour is checked with Node."""
 
 import shutil
 import subprocess
@@ -11,11 +11,11 @@ from django.conf import settings
 BASE = Path(settings.BASE_DIR)
 
 
-class InstanceFilterTestCase(unittest.TestCase):
+class TableFilterTestCase(unittest.TestCase):
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
-    def test_instance_filter_js(self):
+    def test_table_filter_js(self):
         result = subprocess.run(
-            ["node", str(BASE / "instances/tests/js/instance_filter.test.js"), str(BASE / "static/js/instance_filter.js")],
+            ["node", str(BASE / "instances/tests/js/table_filter.test.js"), str(BASE / "static/js/table_filter.js")],
             capture_output=True,
             text=True,
             timeout=60,

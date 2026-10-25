@@ -1,20 +1,26 @@
-// node instance_filter.test.js path/to/static/js/instance_filter.js
+// node table_filter.test.js path/to/static/js/table_filter.js
 const assert = require("assert");
-const {filterInstances} = require(process.argv[2]);
+const {filterTable: filterInstances} = require(process.argv[2]);
 
-// A minimal DOM: table bodies of rows; a VM row holds its state mark.
+// A minimal DOM: table bodies of rows; a VM row holds its state mark, a
+// group's header row is marked as one.
 function vm(text, state) {
     const mark = {dataset: {state}};
-    return {textContent: text, hidden: false, querySelector: (s) => (s === "[data-state]" ? mark : null)};
+    return {textContent: text, hidden: false, hasAttribute: () => false,
+            querySelector: (s) => (s === "[data-state]" ? mark : null)};
 }
 function hostRow(text) {
-    return {textContent: text, hidden: false, querySelector: () => null};
+    return {textContent: text, hidden: false, hasAttribute: (a) => a === "data-group-header", querySelector: () => null};
+}
+function plainRow(text) {
+    return {textContent: text, hidden: false, hasAttribute: () => false, querySelector: () => null};
 }
 function group(rows, host) {
     return {dataset: host ? {host} : {}, querySelectorAll: (s) => (s === "tr" ? rows : [])};
 }
 function page(groups, text, state) {
-    const inputs = {filter: {value: text}, "state-filter": {value: state}};
+    // a list without a state list (state undefined) has no such element
+    const inputs = {filter: {value: text}, "state-filter": state === undefined ? undefined : {value: state}};
     return {
         getElementById: (id) => inputs[id],
         querySelectorAll: (s) => (s === ".searchable" ? groups : []),
@@ -49,3 +55,12 @@ filterInstances(page(groups, "host-a", "Off"));
 assert.deepStrictEqual(visible(a), ["host-a Connected", "db-1 Off"], "the state applies to a host's VMs too");
 filterInstances(page(groups, "Connected", ""));
 assert.deepStrictEqual(visible(a), [], "a host row's other text is not its name");
+
+// any other list: no state list, no groups; its rows are filtered by their text
+const plain = [plainRow("alice Active"), plainRow("bob (vda) Blocked"), plainRow("carol Active")];
+filterInstances(page([group(plain)], "ACTIVE"));
+assert.deepStrictEqual(visible(plain), ["alice Active", "carol Active"], "a plain list is searched");
+filterInstances(page([group(plain)], "(vda"));
+assert.deepStrictEqual(visible(plain), ["bob (vda) Blocked"], "a bracket is text there too");
+filterInstances(page([group(plain)], ""));
+assert.deepStrictEqual(visible(plain), ["alice Active", "bob (vda) Blocked", "carol Active"]);

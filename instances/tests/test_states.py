@@ -120,7 +120,7 @@ class StateTests(TestCase):
 
 
     def test_the_list_offers_each_state_and_marks_each_row_and_host(self):
-        # static/js/instance_filter.js filters by these (test_instance_filter_js)
+        # static/js/table_filter.js filters by these (test_table_filter_js)
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
         page = html.fromstring(self.get(self.admin, reverse("instances:index")))
         options = page.xpath("//select[@id='state-filter']/option/text()")
