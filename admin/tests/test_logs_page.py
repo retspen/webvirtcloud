@@ -3,6 +3,7 @@ only, says the year and time zone, links a VM's rows to the VM, and downloads
 what it shows as an Excel workbook."""
 
 from io import BytesIO
+from unittest.mock import patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
@@ -85,3 +86,18 @@ class LogsPageTests(TestCase):
     def test_only_an_administrator_downloads(self):
         self.client.force_login(get_user_model().objects.create_user("lg-user", password="pw"))
         self.assertEqual(self.client.get(reverse("admin:logs_export")).status_code, 403)
+
+    def test_a_control_character_in_a_row_is_shown_not_a_failure(self):
+        # a failed login writes the name it was tried with, as typed
+        Logs.objects.create(user="eve\x01", instance="", message="Login", success=False)
+        response = self.client.get(reverse("admin:logs_export"), {"q": "eve"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(load_workbook(BytesIO(response.content)).active.cell(row=2, column=2).value, "eve\\x01")
+
+    def test_the_download_stops_at_its_row_limit_and_says_so(self):
+        with patch("admin.views.EXPORT_ROWS", 3):
+            book = load_workbook(BytesIO(self.client.get(reverse("admin:logs_export")).content))
+        self.assertEqual(book.active.max_row, 4)  # the header and three rows
+        notes = [row[0] for row in book["About"].values]
+        self.assertIn("Only the newest 3 rows: narrow the search for the others", notes)
+

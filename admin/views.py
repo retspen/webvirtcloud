@@ -260,6 +260,10 @@ def user_unblock(request, pk):
     return redirect("admin:user_list")
 
 
+# rows in one Logs download: the workbook is built in memory
+EXPORT_ROWS = 100000
+
+
 def _logs(request):
     """The Logs rows the search and the failed-only box choose, newest first,
     and the query that chooses them again."""
@@ -299,10 +303,13 @@ def logs_export(request):
     rows, text, failed, _query = _logs(request)
     zone = timezone.get_current_timezone_name()
     header = [f"Date ({zone})", "User", "Host", "VM", "VM UUID", "Message", "Result", "IP"]
+    logs = list(rows[:EXPORT_ROWS + 1])
     data = [[timezone.localtime(log.date).strftime("%Y-%m-%d %H:%M:%S"), log.user, log.host, log.instance,
-             log.instance_uuid, log.message, str(_result(log.success)), log.ip or ""] for log in rows.iterator()]
+             log.instance_uuid, log.message, str(_result(log.success)), log.ip or ""] for log in logs[:EXPORT_ROWS]]
     notes = [f"Search: {text}" if text else "Search: none", "Failed only" if failed else "All results",
              f"Rows: {len(data)}", f"Times in {zone}"]
+    if len(logs) > EXPORT_ROWS:
+        notes.append(f"Only the newest {EXPORT_ROWS} rows: narrow the search for the others")
     response = HttpResponse(workbook("Logs", header, data, "About", notes),
                             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     name = f"webvirtcloud-logs-{timezone.localtime():%Y%m%d-%H%M%S}.xlsx"

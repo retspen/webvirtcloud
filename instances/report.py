@@ -3,6 +3,7 @@
 from io import BytesIO
 
 from openpyxl import Workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
@@ -17,7 +18,9 @@ def workbook(title, header, rows, notes_title, notes):
     sheet = book.active
     sheet.title = title
     for values in [header, *rows]:
-        sheet.append(values)
+        # a control character (a name typed at a failed login) cannot be in the file: written as \x01
+        sheet.append([ILLEGAL_CHARACTERS_RE.sub(lambda m: f"\\x{ord(m.group()):02x}", value)
+                      if isinstance(value, str) else value for value in values])
     for row in sheet.iter_rows():
         for cell in row:
             if isinstance(cell.value, str):
