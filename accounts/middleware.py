@@ -7,7 +7,8 @@ ALLOWED_VIEWS = {"accounts:change_password", "accounts:logout", "accounts:login"
 
 
 class ForcePasswordChangeMiddleware:
-    """Send users who still have the generated admin password to the change form."""
+    """Send users who must change their password (the generated admin one, or one
+    an administrator set) to the change form."""
 
     def __init__(self, get_response):
         self.get_response = get_response

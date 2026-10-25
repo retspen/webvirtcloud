@@ -5,7 +5,6 @@ from appsettings.settings import app_settings
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -185,10 +184,12 @@ def user_update(request, pk):
 def user_update_password(request, pk):
     user = get_object_or_404(User, pk=pk)
     if request.method == "POST":
-        form = AdminPasswordChangeForm(user, request.POST)
+        form = forms.AdminPasswordForm(user, request.POST)
         if form.is_valid():
-            with audit(request, None, f"User {user.username}", "set password"):
+            with audit(request, None, f"User {user.username}", "set password"), transaction.atomic():
                 user = form.save()
+                UserAttributes.objects.update_or_create(
+                    user=user, defaults={"must_change_password": form.cleaned_data["must_change_password"]})
             update_session_auth_hash(request, user)  # Important!
             messages.success(
                 request, _("Password changed for %(user)s") % {"user": user.username}
@@ -197,7 +198,7 @@ def user_update_password(request, pk):
         else:
             messages.error(request, _("Wrong Data Provided"))
     else:
-        form = AdminPasswordChangeForm(user)
+        form = forms.AdminPasswordForm(user)
 
     return render(
         request,

@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import password_validation
+from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -123,3 +124,12 @@ class UserAttributesForm(forms.ModelForm):
     class Meta:
         model = UserAttributes
         exclude = ["user", "can_clone_instances", "must_change_password"]
+
+
+class AdminPasswordForm(AdminPasswordChangeForm):
+    """A password an administrator sets; the user may have to change it at their next login."""
+    must_change_password = forms.BooleanField(label=_("The user must change it at their next login"), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["must_change_password"] = self.fields.pop("must_change_password")  # last, after Django's own

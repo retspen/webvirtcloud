@@ -1,5 +1,6 @@
-"""The Users pages: an administrator cannot lock their own account out, and
-the user form says what its fields mean."""
+"""The Users pages: an administrator cannot lock their own account out, the
+user form says what its fields mean, and a password set by an administrator
+can be one the user must change."""
 
 from accounts.models import UserAttributes
 from django.contrib.auth import get_user_model
@@ -65,3 +66,16 @@ class UserPagesTests(TestCase):
         page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
         (row,) = [r for r in page.xpath("//tbody/tr") if r.xpath("td")[0].text_content().strip() == "up-alice"]
         self.assertEqual(row.xpath("td")[2].text_content().strip(), "never")
+
+    def test_a_password_set_by_an_administrator_can_be_one_to_change(self):
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        self.client.post(url, {"password1": "New-pw-4567x", "password2": "New-pw-4567x", "must_change_password": "on"})
+        self.assertTrue(UserAttributes.objects.get(user=self.alice).must_change_password)
+        # the user is sent to the change form until they choose their own
+        self.alice.refresh_from_db()  # the new password's hash, or the session is not hers
+        self.client.force_login(self.alice)
+        self.assertRedirects(self.client.get(reverse("instances:index")), reverse("accounts:change_password"),
+                             fetch_redirect_response=False)
+        self.client.force_login(self.admin)
+        self.client.post(url, {"password1": "New-pw-4567y", "password2": "New-pw-4567y"})
+        self.assertFalse(UserAttributes.objects.get(user=self.alice).must_change_password)
