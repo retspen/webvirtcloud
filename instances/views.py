@@ -869,6 +869,20 @@ def gstfsd_request(hostname, data):
 AGENT_OR_SHUT_OFF = _("Shut the VM down, or start its QEMU guest agent, and try again")
 
 
+# libvirt's value; bindings built against older libvirt (Ubuntu 24.04's) lack
+# the name, and the code comes from the host's libvirtd
+VIR_ERR_AGENT_COMMAND_TIMEOUT = 112
+
+
+def access_error(request, err):
+    """The error of a root password or SSH key change. A command that timed
+    out was sent to the agent, which still runs it when it answers again."""
+    text = error_text(request, err)
+    if isinstance(err, libvirtError) and err.get_error_code() == VIR_ERR_AGENT_COMMAND_TIMEOUT:
+        text += " " + _("The change may still be made when the agent answers again.")
+    return text
+
+
 @require_POST
 @serialize_instance_mutation
 def set_root_pass(request, pk):
@@ -890,7 +904,7 @@ def set_root_pass(request, pk):
                         else:
                             instance.proxy.set_user_password("root", passwd_hash)
                 except (util.OperationError, libvirtError) as err:
-                    messages.error(request, error_text(request, err))
+                    messages.error(request, access_error(request, err))
                 else:
                     messages.success(request, _("Reset root password"))
             else:
@@ -928,7 +942,7 @@ def add_public_key(request, pk):
                     else:
                         instance.proxy.add_authorized_key("root", publickey.keypublic)
             except (util.OperationError, libvirtError) as err:
-                messages.error(request, error_text(request, err))
+                messages.error(request, access_error(request, err))
             else:
                 messages.success(request, _("Installed new SSH public key %(keyname)s") % {
                     "keyname": publickey.keyname

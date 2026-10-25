@@ -169,6 +169,24 @@ class GuestAgentAccessTestCase(TestCase):
         self.assertEqual(self.post("rootpasswd", {"passwd": "S3cret-pass"}),
                          ["guest agent command failed: user root not found"])
 
+    def test_a_command_that_timed_out_may_still_be_made(self):
+        # sent to the agent: it runs when the agent answers again; a failed
+        # synchronization sends nothing
+        from libvirt import VIR_ERR_AGENT_UNRESPONSIVE
+
+        for code, text, note in (
+            (112, "guest agent command timed out", True),  # VIR_ERR_AGENT_COMMAND_TIMEOUT
+            (VIR_ERR_AGENT_UNRESPONSIVE, "Guest agent is not responding", False),
+        ):
+            with self.subTest(code=code):
+                err = libvirtError(text)
+                err.get_error_code = lambda code=code: code
+                self.proxy.set_user_password.side_effect = err
+                self.proxy.add_authorized_key.side_effect = err
+                expected = text + (" The change may still be made when the agent answers again." if note else "")
+                self.assertEqual(self.post("rootpasswd", {"passwd": "S3cret-pass"})[-1], expected)
+                self.assertEqual(self.post("add_public_key", {"sshkeyid": self.key.id})[-1], expected)
+
     def test_a_user_who_does_not_see_hosts_gets_no_connection_details(self):
         from accounts.models import UserInstance
         from django.contrib.auth import get_user_model
