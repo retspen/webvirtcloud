@@ -182,19 +182,22 @@ class CompatibilityMixIn(object):
         cnx_debug_msg += "- console_socket : '%s'\n" % console_socket
         logging.debug(cnx_debug_msg)
 
+        tunnel = None
         if console_socket and conntype == CONN_SOCKET:
             # Local socket on local host
             self.msg("Try to open local socket %s" % console_socket)
             tsock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             tsock.connect(console_socket)
+        elif conntype == CONN_SOCKET and re.match(r"^127\.", console_host):
+            # libvirt runs on this host: its loopback is ours
+            self.msg("connecting to: %s:%s" % (console_host, console_port))
+            tsock = socket_factory(console_host, console_port, connect=True)
         elif console_socket or re.match(r"^127\.", console_host):
             # Need tunnel to physical host
             if conntype != CONN_SSH:
-                self.msg(
-                    "Need a tunnel to access console but can't mount "
-                    + "one because it's not a SSH host"
-                )
-                raise Exception(self.msg)
+                message = "Need a tunnel to access console but can't mount one because it's not a SSH host"
+                self.msg(message)
+                raise Exception(message)
             try:
                 # generate a string with all placeholders to avoid TypeErrors
                 # in sprintf
@@ -231,7 +234,6 @@ class CompatibilityMixIn(object):
             # Direct access
             self.msg("connecting to: %s:%s" % (connhost, console_port))
             tsock = socket_factory(connhost, console_port, connect=True)
-            tunnel = None
 
         if self.verbose and not daemon:
             print(self.traffic_legend)

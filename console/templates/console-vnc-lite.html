@@ -10,7 +10,7 @@
     noVNC is licensed under the MPL 2.0 (see LICENSE.txt)
     This file is licensed under the 2-Clause BSD license (see LICENSE.txt).
     Connect parameters are provided in query string:
-        http://example.com/?host=HOST&port=PORT&scale=true
+        http://example.com/?scale=true (the proxy host, port and path come from the server)
 -->
 <title>WebVirtCloud - noVNC - Lite</title>
 
@@ -265,10 +265,10 @@
         bindKeyAction('ctrlaltf' + (i + 1), () => sendCtrlAltFN(i));
     }
 
-    // Read parameters specified in the URL query string
-    // By default, use the host and port of server that served this file
-    const host = readQueryVariable('host', '{{ ws_host|escapejs }}');
-    let port = readQueryVariable('port', '{{ ws_port|escapejs }}');
+    // The proxy the server names, never one from the link: the page sends
+    // it a console token
+    const host = '{{ ws_host|escapejs }}';
+    let port = '{{ ws_port|escapejs }}';
 
     {% if perms.instances.passwordless_console and console_passwd %}
         const password = '{{ console_passwd|escapejs }}';
@@ -276,8 +276,7 @@
         const password = readQueryVariable('password');
     {% endif %}
 
-    //const path = readQueryVariable('path', 'websockify');
-    const path = readQueryVariable('path', '{{ ws_path|escapejs }}');
+    const path = '{{ ws_path|escapejs }}';
 
     // | | |         | | |
     // | | | Connect | | |

@@ -230,6 +230,26 @@ class ConsoleViewsTestCase(TestCase):
         self.assertContains(response, f"const token = '{escapejs(signed)}'")
 
     @patch("console.views.wvmInstance")
+    def test_a_shut_off_vm_says_so(self, mock_wvm):
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.instance.isActive.return_value = 0
+        self.client.force_login(self.alice)
+        response = self.client.get(reverse("console") + f"?token={self.token}")
+        self.assertContains(response, "The VM is not running")
+
+    @patch("console.views.wvmInstance")
+    def test_the_lite_console_connects_only_to_the_servers_proxy(self, mock_wvm):
+        # a link naming another host would send it the signed console token
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_websocket_port.return_value = None
+        self.client.force_login(self.alice)
+        response = self.client.get(reverse("console") + f"?token={self.token}&host=attacker.example&port=443&path=x")
+        self.assertNotContains(response, "attacker.example")
+        for name in ("host", "port", "path"):
+            self.assertNotContains(response, f"readQueryVariable('{name}'")
+        self.assertContains(response, "const host = 'testserver';")
+
+    @patch("console.views.wvmInstance")
     def test_console_token_cookie_flags(self, mock_wvm):
         # The token cookie is only read by novncd, never by JS.
         mock_conn = MagicMock()
@@ -538,6 +558,20 @@ class NovncdDaemonLogicTestCase(TestCase):
 
         mock_get_info.assert_called_once_with("1-uuid-from-query")
         socket_factory.assert_called_once_with("host2", 5901, connect=True)
+
+    @patch.object(novncd_mod, "get_connection_infos")
+    def test_a_local_socket_host_reaches_a_console_on_its_loopback(self, mock_get_info):
+        # libvirt on the panel's host, the VM's console listening on 127.0.0.1
+        mock_get_info.return_value = ("localhost", None, "", novncd_mod.CONN_SOCKET, "127.0.0.1", 5902, None)
+        handler = self.CompatibilityMixIn()
+        handler.headers = {"cookie": "token=1-uuid"}
+        handler.path = "/novncd/"
+        handler.msg = MagicMock()
+        handler.do_proxy = MagicMock()
+        handler.verbose = False
+        socket_factory = MagicMock()
+        handler._new_client(daemon=False, socket_factory=socket_factory)
+        socket_factory.assert_called_once_with("127.0.0.1", 5902, connect=True)
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_compatibility_mixin_missing_token_safe_exit(self, mock_get_info):

@@ -105,7 +105,9 @@ def console(request):
         console_type = conn.get_console_type()
         console_websocket_port = conn.get_console_websocket_port()
         console_passwd = conn.get_console_passwd()
+        running = conn.instance.isActive()
     except (libvirtError, ValueError, IndexError, Instance.DoesNotExist):
+        running = False
         console_type = None
         console_websocket_port = None
         console_passwd = None
@@ -124,7 +126,10 @@ def console(request):
     if ws_path:
         ws_path = ws_path.strip("/") + "/" if ws_path.strip("/") else ""
 
-    if console_type == "vnc":
+    if console_type and not running:  # a shut-off VM has no console to connect to
+        console_error = _("The VM is not running: start it to open its console.")
+        response = render(request, "console-vnc-lite.html", locals())
+    elif console_type == "vnc":
         console_page = "console-vnc-" + view_type + ".html"
         response = render(request, console_page, locals())
     elif console_type == "pty" and not settings.SERIAL_CONSOLE_ENABLED:
