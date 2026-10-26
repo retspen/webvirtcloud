@@ -50,9 +50,6 @@ class wvmNetworks(wvmConnect):
 
         return networks
 
-    def define_network(self, xml):
-        self.wvm.networkDefineXML(xml)
-
     def create_network(
         self,
         name,
@@ -104,11 +101,9 @@ class wvmNetworks(wvmConnect):
                     xml += f"""<dhcp>
                                 <range start='{dhcp4_0}' end='{dhcp4_1}' />"""
                     if fixed:
-                        fist_oct = int(dhcp4[0].strip().split(".")[3])
-                        last_oct = int(dhcp4[1].strip().split(".")[3])
-                        gw_prefix = util.xml_escape(str(gateway)[:-2])
-                        for ip in range(fist_oct, last_oct + 1):
-                            xml += f"""<host mac='{util.randomMAC()}' ip='{gw_prefix}.{ip}' />"""
+                        first, last = (int(ipaddress.IPv4Address(ip)) for ip in dhcp4)
+                        for ip in range(first, last + 1):
+                            xml += f"""<host mac='{util.randomMAC()}' ip='{ipaddress.IPv4Address(ip)}' />"""
                     xml += """</dhcp>"""
                 xml += """</ip>"""
             if ipv6:
@@ -121,9 +116,12 @@ class wvmNetworks(wvmConnect):
                     xml += """</dhcp>"""
                 xml += """</ip>"""
         xml += """</network>"""
-        self.define_network(xml)
-        net = self.get_network(name)
-        net.create()
+        net = self.wvm.networkDefineXML(xml)
+        try:
+            net.create()
+        except libvirtError:  # e.g. the subnet is in use: the name stays free for another try
+            net.undefine()
+            raise
         net.setAutostart(1)
 
 
@@ -182,7 +180,10 @@ class wvmNetwork(wvmConnect):
                                       "start; remove their network cards first")
         self.net.undefine()
 
-    def update(self, command, section, xml, parentIndex, flags=0):
+    def update(self, command, section, xml, parentIndex):
+        """Changes the network's configuration and, while it runs, the running
+        network too (libvirt refuses a live change on a stopped one)."""
+        flags = VIR_NETWORK_UPDATE_AFFECT_CONFIG | (VIR_NETWORK_UPDATE_AFFECT_LIVE if self.is_active() else 0)
         return self.net.update(command, section, parentIndex, xml, flags)
 
     def get_ip_networks(self):
@@ -289,22 +290,13 @@ class wvmNetwork(wvmConnect):
             parent_index = self.parent_count - 1
         for h in hosts:
             if h.get("ip") == ip:
-                h_name = util.xml_escape(h.get("name") or "")
-                name_attr = f' name="{h_name}"' if h.get("name") else ""
-                ip_esc = util.xml_escape(ip)
-                if family == "ipv4":
-                    h_mac = util.xml_escape(h.get("mac") or "")
-                    new_xml = f'<host mac="{h_mac}"{name_attr} ip="{ip_esc}"/>'
-                if family == "ipv6":
-                    h_id = util.xml_escape(h.get("id") or "")
-                    new_xml = f'<host id="{h_id}"{name_attr} ip="{ip_esc}"/>'
-
+                # the host as it is: a host may have only a name and an address
+                new_xml = etree.tostring(h, with_tail=False).decode()
                 self.update(
                     VIR_NETWORK_UPDATE_COMMAND_DELETE,
                     VIR_NETWORK_SECTION_IP_DHCP_HOST,
                     new_xml,
                     parent_index,
-                    VIR_NETWORK_UPDATE_AFFECT_LIVE | VIR_NETWORK_UPDATE_AFFECT_CONFIG,
                 )
                 break
 
@@ -332,7 +324,6 @@ class wvmNetwork(wvmConnect):
                 VIR_NETWORK_SECTION_IP_DHCP_HOST,
                 new_xml,
                 parent_index,
-                VIR_NETWORK_UPDATE_AFFECT_LIVE | VIR_NETWORK_UPDATE_AFFECT_CONFIG,
             )
         else:
             # change the host
@@ -344,7 +335,6 @@ class wvmNetwork(wvmConnect):
                     VIR_NETWORK_SECTION_IP_DHCP_HOST,
                     new_xml,
                     parent_index,
-                    VIR_NETWORK_UPDATE_AFFECT_LIVE | VIR_NETWORK_UPDATE_AFFECT_CONFIG,
                 )
 
     def get_qos(self):

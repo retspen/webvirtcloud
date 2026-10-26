@@ -61,6 +61,14 @@ class AddNetPool(forms.Form):
     def clean_subnet(self):
         return checked_subnet(self.cleaned_data["subnet"], 4)
 
+    def clean(self):
+        cleaned = super().clean()
+        # one fixed address per address of the DHCP range
+        subnet = cleaned.get("subnet")
+        if cleaned.get("fixed") and subnet and ipaddress.ip_network(subnet, strict=False).prefixlen < 24:
+            self.add_error("fixed", _("Fixed addresses need an IPv4 subnet of /24 or smaller"))
+        return cleaned
+
     def clean_subnet6(self):
         return checked_subnet(self.cleaned_data["subnet6"], 6)
 

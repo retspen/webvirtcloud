@@ -183,19 +183,21 @@
                         {% for fix4 in ipv4_fixed_address %}
                             <tr>
                             <form method="post" role="form" aria-label="IPv4 edit/delete form">{% csrf_token %}
-                                <td><input class="form-control" value="{{ fix4.mac }}" name="mac" readonly/></td>
+                                <td><input class="form-control" value="{{ fix4.mac|default_if_none:"" }}" name="mac" readonly/></td>
                                 <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
                                 <td><input class="form-control" value="{{ fix4.name }}" name="name" /></td>
                                 <td class="text-nowrap">
                                     <input hidden name="family" value="ipv4"/>
+                                    {% if fix4.mac %}{# an entry is changed by its MAC #}
                                     <button type="submit" class="btn btn-sm btn-primary"
                                             name="modify_fixed_address"
                                             title="{% trans "Edit entry" %}">
                                             {% bs_icon 'save' %}
                                     </button>
+                                    {% endif %}
                                     <button type="submit" class="btn btn-sm btn-danger"
                                             name="delete_fixed_address"
-                                            title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with mac=fix4.mac %}Delete the fixed address of {{ mac }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
+                                            title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with mac=fix4.mac|default:fix4.ip %}Delete the fixed address of {{ mac }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                             {% bs_icon 'trash' %}
                                     </button>
                                 </td>
@@ -294,19 +296,21 @@
                         {% for fix6 in ipv6_fixed_address %}
                             <tr>
                                 <form method="post" role="form" aria-label="IP v6 edit/delete form">{% csrf_token %}
-                                    <td><input class="form-control" value="{{ fix6.id }}" name="id" readonly/></td>
+                                    <td><input class="form-control" value="{{ fix6.id|default_if_none:"" }}" name="id" readonly/></td>
                                     <td><input class="form-control" value="{{ fix6.ip }}" name="address" /></td>
                                     <td><input class="form-control" value="{{ fix6.name }}" name="name" /></td>
                                     <td class="text-nowrap">
                                         <input hidden name="family" value="ipv6"/>
+                                        {% if fix6.id %}{# an entry is changed by its DUID #}
                                         <button type="submit" class="btn btn-sm btn-primary"
                                                 name="modify_fixed_address"
                                                 title="{% trans "Edit entry" %}">
                                             <span>{% bs_icon 'save' %} </span>
                                         </button>
+                                        {% endif %}
                                         <button type="submit" class="btn btn-sm btn-danger"
                                                 name="delete_fixed_address"
-                                                title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with id=fix6.id %}Delete the fixed address of {{ id }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
+                                                title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with id=fix6.id|default:fix6.ip %}Delete the fixed address of {{ id }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                             <span>{% bs_icon 'trash' %} </span>
                                         </button>
                                     </td>
@@ -320,7 +324,7 @@
         </div>
     {% endif %}
 
-    {% if net_forward.0 == 'route' or net_forward.0 == 'nat' or net_forward.0 == 'isolated'  %}
+    {% if net_forward.0 == 'route' or net_forward.0 == 'nat' or not net_forward.0 %}{# an isolated network has no forward #}
         {% if state == 0 and qos.items|length != 2%}
             <form method="post" name="set_qos" role="form" aria-label="Create network qos form">{% csrf_token %}
                 {% include 'add_network_qos.html' %}
@@ -357,7 +361,7 @@
                             <td class="text-nowrap">
                                 <input name="qos_direction" value="{{ q }}" hidden/>
                                 <button type="submit" class="btn btn-sm btn-primary"
-                                        name="set_qos" data-bs-toggle="modal"
+                                        name="set_qos"
                                         title="{% trans "Edit QoS" %}">
                                         {% bs_icon 'save' %}
                                 </button>

@@ -71,29 +71,22 @@
 {% block script %}
 <script>
     $(document).ready(function () {
-        $('#forward_select').change(function (eventObject) {
-            if ($(this).val() == 'bridge') {
-                $('.bridge_name_form_group').show();
-                $('.bridge_name_form_group_dhcp').hide();
-            } else if ($(this).val() == 'macvtap') {
-                $('#bridge_label').text("Dev Name");
-                $('#bridge_name').attr("placeholder", "eth0");
-                $('.bridge_name_form_group').show();
-                $('.bridge_name_form_group_dhcp').hide();
-                $('.openvswitch').hide();
-            } else {
-                $('.bridge_name_form_group').hide();
-                $('.bridge_name_form_group_dhcp').show();
-            }
-        }).change();
-
-        $('#enable_ipv6').change(function (eventObject) {
-            if ($(this).is(':checked')) {
-                $('.ipv6_group').show();
-            } else {
-                $('.ipv6_group').hide();
-            }
-        }).change();
+        // a hidden field is disabled: the browser neither checks nor sends it
+        function show(rows, on) {
+            $(rows).toggle(on).find(':input').prop('disabled', !on);
+        }
+        function update() {
+            var forward = $('#forward_select').val();
+            var bridged = forward == 'bridge' || forward == 'macvtap';
+            show('.bridge_name_form_group', bridged);
+            show('.openvswitch', forward == 'bridge');
+            show('.bridge_name_form_group_dhcp', !bridged);
+            show('.ipv6_group', !bridged && $('#enable_ipv6').is(':checked'));
+            $('#bridge_label').text(forward == 'macvtap' ? "{% trans 'Dev Name'|escapejs %}" : "{% trans 'Bridge Name'|escapejs %}");
+            $('#bridge_name').attr('placeholder', forward == 'macvtap' ? 'eth0' : 'br0');
+        }
+        $('#forward_select, #enable_ipv6').change(update);
+        update();
     });
 </script>
 {% endblock %}

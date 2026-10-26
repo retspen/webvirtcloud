@@ -188,12 +188,15 @@ def network(request, compute_id, pool):
 
             try:
                 with audit(request, compute, subject, f"set fixed address {address}"):
-                    conn.modify_fixed_address(name, address, mac_duid, family)
-                messages.success(
-                    request,
-                    _("Fixed address operation completed for %(family)s")
-                    % {"family": family.upper()},
-                )
+                    changed = conn.modify_fixed_address(name, address, mac_duid, family)
+                if changed is False:
+                    messages.info(request, _("The fixed address is unchanged"))
+                else:
+                    messages.success(
+                        request,
+                        _("Fixed address operation completed for %(family)s")
+                        % {"family": family.upper()},
+                    )
                 return HttpResponseRedirect(request.get_full_path())
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
@@ -232,7 +235,7 @@ def network(request, compute_id, pool):
                     messages.success(
                         request,
                         _(
-                            "Network XML is changed. \\"
+                            "Network XML is changed. "
                             "Stop and start network to activate new config."
                         ),
                     )
@@ -277,8 +280,8 @@ def network(request, compute_id, pool):
                 messages.success(
                     request,
                     _(
-                        "%(qos_dir)s QoS is deleted. Network XML is changed. \
-                        Stop and start network to activate new config"
+                        "%(qos_dir)s QoS is deleted. Network XML is changed. "
+                        "Stop and start network to activate new config"
                     )
                     % {"qos_dir": qos_dir.capitalize()},
                 )
