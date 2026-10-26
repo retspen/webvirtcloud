@@ -119,6 +119,17 @@ class VMRowTests(TestCase):
         self.assertEqual(self.rows(), [("VM vm: set console keymap de", True),
                                        ("VM vm: set console listen address 0.0.0.0", True)])
 
+    def test_auto_removes_the_keymap(self):
+        # no "Clear keymap" box: Auto removes it, never writes an empty keymap
+        self.proxy.get_console_type.return_value = "vnc"
+        self.proxy.get_console_listener_addr.return_value = "127.0.0.1"
+        self.proxy.get_console_passwd.return_value = ""
+        self.proxy.get_console_keymap.return_value = "de"
+        self.proxy.set_console_keymap.return_value = None
+        self.post("update_console", {"listen_on": "127.0.0.1", "keymap": "auto"})
+        self.proxy.set_console_keymap.assert_called_once_with("auto")
+        self.assertEqual(self.rows(), [("VM vm: remove console keymap", True)])
+
     def test_a_console_save_logs_only_what_changed(self):
         # an address the form does not list stays: the select offers it
         self.proxy.get_console_type.return_value = "vnc"

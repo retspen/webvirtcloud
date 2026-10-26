@@ -30,7 +30,6 @@ class ConsoleForm(forms.Form):
         widget=forms.PasswordInput(render_value=True),
         required=False
     )
-    clear_keymap = forms.BooleanField(label=_("Clear keymap"), required=False)
     keymap = forms.ChoiceField(label=_("Keymap"), required=False)
 
     def __init__(self, *args, instance, can_set_listener, **kwargs):

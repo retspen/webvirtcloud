@@ -1979,10 +1979,11 @@ def update_console(request, pk):
                     )
                     messages.error(request, msg)
 
-        if "keymap" in form.changed_data or "clear_keymap" in form.changed_data:
-            keymap = "" if form.cleaned_data["clear_keymap"] else form.cleaned_data["keymap"]
+        if "keymap" in form.changed_data:
+            # "auto" removes the keymap: the client's keys go through as they are
+            keymap = form.cleaned_data["keymap"]
             # False: no graphics device, nothing changed
-            with audit_vm(request, instance, f"set console keymap {keymap}" if keymap else "remove console keymap") as entry:
+            with audit_vm(request, instance, "remove console keymap" if keymap == "auto" else f"set console keymap {keymap}") as entry:
                 entry.skip = instance.proxy.set_console_keymap(keymap) is False
 
         if "listen_on" in form.changed_data:

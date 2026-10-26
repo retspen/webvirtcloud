@@ -345,7 +345,7 @@
         <div id="noVNC_password_block">
             <label for="noVNC_password_input">{% trans 'Password' %}:</label>
             {% if perms.instances.passwordless_console %}
-                <input id="noVNC_password_input" type="password" value="{{ console_passwd }}">
+                <input id="noVNC_password_input" type="password" value="{{ console_passwd|default_if_none:"" }}">
             {% else %}
                 <input id="noVNC_password_input" type="password">
             {% endif %}
