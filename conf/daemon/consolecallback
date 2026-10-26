@@ -3,11 +3,12 @@
 # (socketiod runs it in a pty, one per client). It opens the console through
 # the compute's connection (its stored credentials); the connection's event
 # loop thread runs the stream callbacks. The console survives guest reboots.
+# socketiod made the terminal raw before starting it (setting it here would
+# drop what the user typed meanwhile).
 
 import os
 import sys
 import time
-import tty
 
 import django
 
@@ -117,7 +118,6 @@ def main():
     c = instance.compute
     try:
         console = Console(connection_manager.get_connection(c.hostname, c.login, c.password, c.type), instance.uuid)
-        tty.setraw(0)  # before the console opens: nothing typed is echoed by the terminal
         console.check()
     except libvirt.libvirtError as err:
         say("Cannot open the console of %s: %s" % (instance.name, public_error_text(err)))

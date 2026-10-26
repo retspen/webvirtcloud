@@ -16,6 +16,7 @@ import struct
 import sys
 import termios
 import threading
+import tty
 
 import django
 
@@ -40,7 +41,9 @@ sio = socketio.Server(async_mode="threading")  # the same origin only
 # Handlers run on their own threads. sessions (sid -> {"pid", "fd", "vm",
 # "lock", "open"}) changes only under sessions_lock; a session's fd is used
 # and closed only under its own lock, while it is open, so a closed fd's
-# number, reused by a new session, never reaches another console.
+# number, reused by a new session, never reaches another console. The fd
+# is non-blocking: no one waits on it while holding the lock (a paste and
+# the guest's echo of it would wait on each other).
 sessions = {}
 sessions_lock = threading.Lock()
 
@@ -71,6 +74,8 @@ def connect(sid, environ, auth):
             raise refused("Too many consoles are open on this server: try again later")
         if open_sid is not None:  # a superuser takes over a console left open
             taken = open_sid, sessions.pop(open_sid)
+            # gone before the new worker starts: libvirt gives a console to one at a time
+            end(taken[1], wait=True)
         pid, fd = pty.fork()
         if pid == 0:
             try:
@@ -80,13 +85,16 @@ def connect(sid, environ, auth):
                 os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk), str(user.pk)])
             finally:
                 os._exit(1)
+        os.set_blocking(fd, False)
+        # raw at once, not when the worker gets to it: until then the terminal
+        # keeps at most one 4 KiB line of a paste
+        tty.setraw(fd)
         sessions[sid] = session = {"pid": pid, "fd": fd, "vm": instance.pk, "lock": threading.Lock(), "open": True}
     logger.info("serial console of VM %s opened by %s%s", instance.name, user.username,
                 " (taken over)" if taken else "")
     if taken:
-        old_sid, old_session = taken
+        old_sid, _ = taken
         sio.emit("pty_output", {"output": "\r\n[An administrator opened this console]\r\n"}, to=old_sid)
-        end(old_session)
         sio.disconnect(old_sid)
     sio.start_background_task(forward, sid, session)
 
@@ -107,6 +115,8 @@ def forward(sid, session):
                 return
             try:
                 output = os.read(session["fd"], 20480)
+            except BlockingIOError:  # nothing after all
+                continue
             except OSError:  # EIO: the worker ended
                 output = b""
         if not output:
@@ -125,8 +135,8 @@ def stop(sid):
         end(session)
 
 
-def end(session):
-    """End a session taken out of sessions."""
+def end(session, wait=False):
+    """End a session taken out of sessions; with wait, once its worker is gone."""
     try:
         os.kill(session["pid"], signal.SIGKILL)  # first: a write blocked on its terminal ends
     except ProcessLookupError:
@@ -137,20 +147,35 @@ def end(session):
             os.close(session["fd"])
         except OSError:
             pass
-    sio.start_background_task(os.waitpid, session["pid"], 0)
+    if wait:
+        try:
+            os.waitpid(session["pid"], 0)
+        except ChildProcessError:  # reaped already
+            pass
+    else:
+        sio.start_background_task(os.waitpid, session["pid"], 0)
 
 
 @sio.event
 def pty_input(sid, message):
     session = sessions.get(sid)
     if session and isinstance(message, dict) and isinstance(message.get("input"), str):
-        data = message["input"].encode(errors="replace")  # a lone surrogate from the browser
-        with session["lock"]:
-            if session["open"]:
+        data = memoryview(message["input"].encode(errors="replace"))  # a lone surrogate from the browser
+        while data:
+            with session["lock"]:
+                if not session["open"]:
+                    return
                 try:
-                    os.write(session["fd"], data)
-                except OSError:
+                    data = data[os.write(session["fd"], data):]
+                    continue
+                except BlockingIOError:  # the worker has not read the rest yet
                     pass
+                except OSError:
+                    return
+            try:
+                select.select([], [session["fd"]], [], 0.1)  # outside the lock: output goes on meanwhile
+            except (OSError, ValueError):  # closed meanwhile: the loop sees it
+                pass
 
 
 @sio.event
@@ -162,7 +187,10 @@ def resize(sid, message):
     if all(isinstance(v, int) and 1 <= v <= 500 for v in (rows, cols)):
         with session["lock"]:
             if session["open"]:
-                fcntl.ioctl(session["fd"], termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+                try:
+                    fcntl.ioctl(session["fd"], termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+                except OSError:  # the worker has just ended
+                    pass
 
 
 @sio.event

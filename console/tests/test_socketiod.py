@@ -1,6 +1,7 @@
 """socketiod: who may connect, and each session's console kept to itself."""
 
 import os
+import select
 import tempfile
 import time
 from importlib.machinery import SourceFileLoader
@@ -67,6 +68,7 @@ class SocketiodTestCase(Base):
         super().setUp()
         self.d = load_socketiod()
         self.started = []
+        self.killed_before_fork = []
         self.forks = iter(range(1000, 2000))
         patches = [
             patch.object(self.d.pty, "fork", side_effect=self.fork),
@@ -80,9 +82,10 @@ class SocketiodTestCase(Base):
             self.addCleanup(p.stop)
 
     def fork(self):
-        read, write = os.pipe()
-        self.addCleanup(lambda: [os.close(fd) for fd in (read, write) if _open(fd)])
-        return next(self.forks), read
+        self.killed_before_fork.append(self.d.os.kill.call_count)
+        master, worker_side = os.openpty()
+        self.addCleanup(lambda: [os.close(fd) for fd in (master, worker_side) if _open(fd)])
+        return next(self.forks), master
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
     def test_a_valid_token_starts_a_console_for_its_session(self):
@@ -116,7 +119,8 @@ class SocketiodTestCase(Base):
     def test_input_and_resize_go_to_the_session_and_are_checked(self):
         self.d.connect("sid-1", {}, {"token": self.token()})
         fd = self.d.sessions["sid-1"]["fd"]
-        with patch.object(self.d.os, "write") as write, patch.object(self.d.fcntl, "ioctl") as ioctl:
+        with patch.object(self.d.os, "write", side_effect=lambda fd, data: len(data)) as write, \
+                patch.object(self.d.fcntl, "ioctl") as ioctl:
             self.d.pty_input("sid-1", {"input": "ls\r"})
             for bad in (None, "ls", {"input": 7}):
                 self.d.pty_input("sid-1", bad)
@@ -124,7 +128,8 @@ class SocketiodTestCase(Base):
             self.d.resize("sid-1", {"rows": 24, "cols": 80})
             for bad in ({"rows": 0, "cols": 80}, {"rows": 24, "cols": 501}, {"rows": "24", "cols": 80}, "x"):
                 self.d.resize("sid-1", bad)
-        write.assert_called_once_with(fd, b"ls\r")
+        self.assertEqual(write.call_count, 1)
+        self.assertEqual((write.call_args.args[0], bytes(write.call_args.args[1])), (fd, b"ls\r"))
         self.assertEqual(ioctl.call_count, 1)
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
@@ -153,6 +158,8 @@ class SocketiodTestCase(Base):
             self.assertIsNone(self.d.connect("admin-tab", {}, {"token": self.token(admin)}))
         self.assertEqual(list(self.d.sessions), ["admin-tab"])
         self.assertFalse(old["open"])
+        # the old worker was killed before the new one started: libvirt gives the console to one
+        self.assertEqual(self.killed_before_fork, [0, 1])
         self.assertIn("An administrator opened this console", emit.call_args.args[1]["output"])
         disconnect.assert_called_once_with("owner-tab")
 
@@ -180,6 +187,40 @@ class SocketiodTestCase(Base):
         self.assertEqual(len(self.d.sessions), 1)
 
 
+class PasteTestCase(Base):
+    """A real worker that echoes every byte twice: a paste far larger than the
+    terminal's buffers goes through while its echo comes back. With the
+    session lock held during a blocking write, the paste and its echo
+    waited on each other for ever."""
+
+    @override_settings(SERIAL_CONSOLE_ENABLED=True)
+    def test_a_large_paste_and_its_echo_do_not_wait_on_each_other(self):
+        import threading
+
+        d = load_socketiod()
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script:
+            # raw already: socketiod made the terminal raw before starting it
+            script.write("import os\nwhile (data := os.read(0, 4096)):\n    os.write(1, data * 2)\n")
+        self.addCleanup(os.unlink, script.name)
+        echoed = []
+        patches = [patch.object(d, "CONSOLECALLBACK", script.name), patch.object(d.db, "close_old_connections"),
+                   patch.object(d.sio, "emit", side_effect=lambda event, data, to: echoed.append(len(data["output"]))),
+                   patch.object(d.sio, "disconnect")]
+        for p in patches:
+            p.start()
+            self.addCleanup(p.stop)
+        d.connect("sid-1", {}, {"token": self.token()})
+        self.addCleanup(d.stop, "sid-1")
+        paste = threading.Thread(target=d.pty_input, args=("sid-1", {"input": "x" * 1_000_000}), daemon=True)
+        paste.start()
+        paste.join(30)
+        self.assertFalse(paste.is_alive(), "the paste never finished")
+        deadline = time.monotonic() + 30
+        while sum(echoed) < 2_000_000 and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertEqual(sum(echoed), 2_000_000)
+
+
 class WorkerIsolationTestCase(Base):
     """A real fork: a session's worker holds no other session's console."""
 
@@ -197,9 +238,10 @@ class WorkerIsolationTestCase(Base):
             d.connect("first", {}, {"token": self.token()})
             d.connect("second", {}, {"token": self.token(vm=other)})
         self.addCleanup(lambda: [d.stop(sid) for sid in list(d.sessions)])
-        output = b""
+        output, fd = b"", d.sessions["second"]["fd"]
         while b"]" not in output:
-            output += os.read(d.sessions["second"]["fd"], 1024)
+            select.select([fd], [], [], 5)
+            output += os.read(fd, 1024)
         # 0-2: its terminal, 3: the listing itself
         self.assertEqual(output.decode().strip(), "['0', '1', '2', '3']")
 
