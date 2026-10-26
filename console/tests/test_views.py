@@ -506,7 +506,7 @@ class NovncdDaemonLogicTestCase(TestCase):
     @patch.object(novncd_mod, "get_connection_infos")
     def test_a_cookie_does_not_choose_the_console(self, mock_get_info):
         # another tab's console in a cookie: the URL's own token is used
-        mock_get_info.return_value = ("host1", 22, "root", 1, "192.168.1.50", 5900, None)
+        mock_get_info.return_value = ("host1", "root", 1, "192.168.1.50", 5900, None)
         handler = self.CompatibilityMixIn()
         handler.headers = {"cookie": "token=1-uuid-of-another-tab"}
         handler.path = "/novncd/?token=1-uuid-of-this-tab"
@@ -520,7 +520,6 @@ class NovncdDaemonLogicTestCase(TestCase):
     def test_compatibility_mixin_token_from_query_params(self, mock_get_info):
         mock_get_info.return_value = (
             "host2",
-            22,
             "root",
             1,
             "192.168.1.50",
@@ -544,7 +543,7 @@ class NovncdDaemonLogicTestCase(TestCase):
     @patch.object(novncd_mod, "get_connection_infos")
     def test_a_local_socket_host_reaches_a_console_on_its_loopback(self, mock_get_info):
         # libvirt on the panel's host, the VM's console listening on 127.0.0.1
-        mock_get_info.return_value = ("localhost", None, "", novncd_mod.CONN_SOCKET, "127.0.0.1", 5902, None)
+        mock_get_info.return_value = ("localhost", "", novncd_mod.CONN_SOCKET, "127.0.0.1", 5902, None)
         handler = self.CompatibilityMixIn()
         handler.headers = {}
         handler.path = "/novncd/?token=1-uuid"
@@ -554,6 +553,32 @@ class NovncdDaemonLogicTestCase(TestCase):
         socket_factory = MagicMock()
         handler._new_client(daemon=False, socket_factory=socket_factory)
         socket_factory.assert_called_once_with("127.0.0.1", 5902, connect=True)
+
+    def test_an_ssh_hosts_console_always_goes_through_the_tunnel(self):
+        # whatever address the console listens on, the VNC stream is not sent unencrypted
+        for console_host, console_socket, target in (
+            ("192.0.2.40", None, "192.0.2.40:5900"),
+            ("0.0.0.0", None, "127.0.0.1:5900"),
+            ("::", None, "[::1]:5900"),
+            ("127.0.0.1", None, "127.0.0.1:5900"),
+            (None, "/run/libvirt/qemu/vnc.sock", "/run/libvirt/qemu/vnc.sock"),
+        ):
+            with self.subTest(console_host=console_host), patch.object(
+                novncd_mod, "get_connection_infos",
+                return_value=("kvm1.example.com", "root", novncd_mod.CONN_SSH, console_host, 5900, console_socket),
+            ), patch.object(novncd_mod, "open_tunnel", return_value=(MagicMock(), MagicMock())) as open_tunnel, \
+                    patch.object(novncd_mod, "close_tunnel", return_value="") as close_tunnel:
+                handler = self.CompatibilityMixIn()
+                handler.path = "/novncd/?token=1-uuid"
+                handler.msg = MagicMock()
+                handler.do_proxy = MagicMock()
+                handler.verbose = False
+                socket_factory = MagicMock()
+                handler._new_client(daemon=False, socket_factory=socket_factory)
+                open_tunnel.assert_called_once_with("kvm1.example.com", "root", target)
+                socket_factory.assert_not_called()
+                # the tunnel ends with the session
+                close_tunnel.assert_called_once_with(open_tunnel.return_value[1])
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_compatibility_mixin_missing_token_safe_exit(self, mock_get_info):
@@ -594,7 +619,7 @@ class NovncdDaemonLogicTestCase(TestCase):
 
         infos = novncd_mod.get_connection_infos(token)
         self.assertEqual(infos[0], "127.0.0.1")
-        self.assertEqual(infos[5], 5900)
+        self.assertEqual(infos[4], 5900)
         # the VM access was checked for, not whichever VM has its name now
         self.assertEqual(mock_wvm.call_args.kwargs["uuid"], mock_instance.uuid)
 
