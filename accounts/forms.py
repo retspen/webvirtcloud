@@ -34,7 +34,18 @@ class UserInstanceForm(ModelForm):
         fields = "__all__"
 
 
-class ProfileForm(ModelForm):
+class UniqueEmailMixin:
+    """"Lost OTP?" mails only an address that is one user's: a second user
+    with the same address would switch it off for both."""
+
+    def clean_email(self):
+        email = self.cleaned_data["email"]
+        if email and get_user_model().objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise ValidationError(_("Another user has this email address"))
+        return email
+
+
+class ProfileForm(UniqueEmailMixin, ModelForm):
     class Meta:
         model = get_user_model()
         fields = ("first_name", "last_name", "email")

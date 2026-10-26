@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from accounts.forms import UniqueEmailMixin
 from accounts.models import UserAttributes
 
 from .models import Permission
@@ -42,7 +43,7 @@ class GroupForm(forms.ModelForm):
         fields = "__all__"
 
 
-class UserForm(forms.ModelForm):
+class UserForm(UniqueEmailMixin, forms.ModelForm):
     user_permissions = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
         queryset=Permission.objects.filter(content_type__model="permissionset"),
