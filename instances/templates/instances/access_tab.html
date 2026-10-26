@@ -37,49 +37,11 @@
             {% if not can_open_console %}
             <p>{% trans "Only the owners of this instance and administrators can open its console." %}</p>
             {% else %}
-            {% if instance.console_type == 'vnc' %}
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="scale"
-                        {% if app_settings.CONSOLE_SCALE == 'True' %} checked {% endif %}
-                        id="scale">
-                    <label class="form-check-label" for="scale">{% trans "Scale" %}</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="view_only"
-                        {% if app_settings.CONSOLE_VIEW_ONLY == 'True' %} checked {% endif %}
-                        id="view_only">
-                    <label class="form-check-label" for="view_only">{% trans "View Only" %}</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="resize_session"
-                        {% if app_settings.CONSOLE_RESIZE_SESSION == 'True' %} checked {% endif %}
-                        id="resize_session">
-                    <label class="form-check-label" for="resize_session">{% trans "Resize Session" %}</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="clip_viewport"
-                        {% if app_settings.CONSOLE_CLIP_VIEWPORT == 'True' %} checked {% endif %}
-                        id="clip_viewport">
-                    <label class="form-check-label" for="clip_viewport">{% trans "Clip viewport" %}</label>
-                </div>
-            {% endif %}
             {% if instance.status == 1 %}
-            <!-- Split button -->
-            <div class="btn-group float-end" role="group">
-                <button type="button" id="consoleBtnGroup" class="btn btn-lg btn-success"
-                    onclick="open_console('lite')">{% trans 'Console' %}</button>
-                <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split"
-                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                </button>
-                <div class="dropdown-menu">
-                    <a class="dropdown-item" href="#"
-                        title="{% trans "Console port" %}: {{ instance.console_port }}"
-                        onclick="open_console('lite')">{% trans "Console" %} - {% trans "Lite" %}</a>
-                    <a class="dropdown-item" href="#"
-                        title="{% trans "Console port" %}: {{ instance.console_port }}"
-                        onclick="open_console('full')">{% trans "Console" %} - {% trans "Full" %}</a>
-                </div>
-            </div>
+            {# one window per VM: opening it again reloads it #}
+            <button type="button" class="btn btn-lg btn-success float-end" id="console_button"
+                data-url="{% url 'console' compute.id instance.uuid %}" data-window="console-{{ instance.uuid }}"
+                onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')">{% trans "Console" %}</button>
             {% else %}
             <button class="btn btn-lg btn-success float-end disabled">{% trans "Console" %}</button>
             {% endif %}
@@ -153,17 +115,3 @@
         {% endif %}
     </div>
 </div>
-{% block script %}
-{% if can_open_console %}
-<script>
-    function open_console(view_style) {
-        const sc = $("#scale").is(':checked');
-        const vo = $("#view_only").is(':checked');
-        const rs = $("#resize_session").is(':checked');
-        const cv = $("#clip_viewport").is(':checked');
-        const options = new URLSearchParams({view: view_style, view_only: vo, scale: sc, clip_viewport: cv, resize_session: rs});
-        window.open('{% url 'console' compute.id instance.uuid %}?' + options, '', 'width=850,height=600')
-    }
-</script>
-{% endif %}
-{% endblock %}

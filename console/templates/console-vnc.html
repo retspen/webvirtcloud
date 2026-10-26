@@ -1,0 +1,121 @@
+{% extends "console-base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block head %}
+<style>
+    #screen { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+</style>
+{{ vnc|json_script:"vnc-config" }}
+<script type="module" src="{% static "js/console_vnc.js" %}"></script>
+{% endblock %}
+
+{% block navbarstatus %}
+<span id="status" class="badge text-bg-secondary" role="status"
+    data-connected="{% trans "Connected" %}" data-disconnected="{% trans "Disconnected" %}"
+    data-lost="{% trans "Connection lost" %}" data-failed="{% trans "Could not connect" %}"
+    data-refused="{% trans "Authentication failed" %}">{% trans "Connecting" %}</span>
+{% endblock %}
+
+{% block navbarmenu %}
+{% include "console-menu.html" %}
+<li class="nav-item">
+    <a class="nav-link" href="#" role="button" data-bs-toggle="modal" data-bs-target="#clipboard_dialog">{% trans "Clipboard" %}</a>
+</li>
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" id="viewMenuLink" data-bs-toggle="dropdown"
+        data-bs-auto-close="outside" aria-expanded="false">{% trans "View" %}</a>
+    <form class="dropdown-menu shadow p-3" id="view_menu" aria-labelledby="viewMenuLink" style="min-width: 280px;">
+        <label class="form-label" for="view_resize">{% trans "Scaling" %}</label>
+        <select class="form-select form-select-sm mb-3" id="view_resize">
+            <option value="off">{% trans "None" %}</option>
+            <option value="scale">{% trans "Fit to the window" %}</option>
+            <option value="remote">{% trans "Resize the VM's screen to the window" %}</option>
+        </select>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="view_clip">
+            <label class="form-check-label" for="view_clip">{% trans "Clip to the window" %}</label>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="view_drag">
+            <label class="form-check-label" for="view_drag">{% trans "Drag to move a clipped screen" %}</label>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="view_only">
+            <label class="form-check-label" for="view_only">{% trans "View only" %}</label>
+        </div>
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="view_dot">
+            <label class="form-check-label" for="view_dot">{% trans "Show a dot when the VM hides the cursor" %}</label>
+        </div>
+        <label class="form-label" for="view_quality">{% trans "Quality" %}</label>
+        <input class="form-range" type="range" id="view_quality" min="0" max="9" value="6">
+        <label class="form-label" for="view_compression">{% trans "Compression" %}</label>
+        <input class="form-range" type="range" id="view_compression" min="0" max="9" value="2">
+    </form>
+</li>
+<li class="nav-item" id="keyboard_button" hidden>
+    <a class="nav-link" href="#" role="button">{% trans "Keyboard" %}</a>
+</li>
+{% endblock %}
+
+{% block navbarend %}
+<button type="button" class="btn btn-sm btn-light" id="connection_button"
+    data-reconnect="{% trans "Reconnect" %}">{% trans "Disconnect" %}</button>
+{% endblock %}
+
+{% block content %}
+<div id="screen"></div>
+<textarea id="keyboard_input" class="visually-hidden" autocapitalize="off" autocomplete="off"
+    spellcheck="false" tabindex="-1" aria-label="{% trans "Keyboard" %}"></textarea>
+
+<div class="modal fade" id="credentials_dialog" tabindex="-1" aria-labelledby="credentials_title"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="credentials_form">
+            <div class="modal-header">
+                <h5 class="modal-title" id="credentials_title">{% trans "The console asks for its password" %}</h5>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3" id="credentials_username_field" hidden>
+                    <label class="form-label" for="credentials_username">{% trans "Username" %}</label>
+                    <input class="form-control" id="credentials_username" autocomplete="off">
+                </div>
+                <label class="form-label" for="credentials_password">{% trans "Password" %}</label>
+                <input class="form-control" type="password" id="credentials_password" autocomplete="off">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="credentials_cancel">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary">{% trans "Connect" %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="clipboard_dialog" tabindex="-1" aria-labelledby="clipboard_title">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clipboard_title">{% trans "Clipboard" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label" for="clipboard_text">{% trans "Text" %}</label>
+                <textarea class="form-control font-monospace" id="clipboard_text" rows="6"></textarea>
+                <div class="form-text">
+                    {% trans "Type it: the VM gets it key by key, also in its firmware, an installer or a login prompt. The VM's clipboard takes it only with clipboard support in the VM; what the VM copies shows here." %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="clipboard_send">{% trans "Send to the VM's clipboard" %}</button>
+                <button type="button" class="btn btn-primary" id="clipboard_type">{% trans "Type it" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<audio id="bell" preload="none">
+    <source src="{% static "js/novnc/app/sounds/bell.oga" %}" type="audio/ogg">
+    <source src="{% static "js/novnc/app/sounds/bell.mp3" %}" type="audio/mpeg">
+</audio>
+{% endblock %}

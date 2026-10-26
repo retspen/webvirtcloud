@@ -1,17 +1,19 @@
 # pylint: disable=no-member
 import importlib.machinery
+import json
 import importlib.util
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from accounts.models import UserInstance
+from appsettings.models import AppSettings
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.signing import TimestampSigner
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils.html import escapejs
 from instances.models import Instance
 from libvirt import libvirtError
 from lxml import html
@@ -26,6 +28,11 @@ assert _spec is not None
 assert _spec.loader is not None
 novncd_mod = importlib.util.module_from_spec(_spec)
 _loader.exec_module(novncd_mod)
+
+
+def vnc_config(response):
+    """What the VNC page's script starts from."""
+    return json.loads(html.fromstring(response.content).get_element_by_id("vnc-config").text)
 
 
 class ConsoleViewsTestCase(TestCase):
@@ -72,52 +79,25 @@ class ConsoleViewsTestCase(TestCase):
         cls.url = reverse("console", args=[cls.compute.id, cls.instance.uuid])
 
     @patch("console.views.wvmInstance")
-    def test_console_superuser_vnc_lite(self, mock_wvm):
+    def test_console_superuser_vnc(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
+        mock_conn.get_console_passwd.return_value = None
         mock_conn.get_console_passwd.return_value = "vncsecret"
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = self.url + "?view=lite"
-        response = self.client.get(url)
+        response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "console-vnc-lite.html")
+        self.assertTemplateUsed(response, "console-vnc.html")
+        config = vnc_config(response)
         signer = TimestampSigner(salt="console.novnc")
-        unsigned = signer.unsign(response.context["token"], max_age=120)
+        unsigned = signer.unsign(config["token"], max_age=120)
         self.assertEqual(
             unsigned, f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}"
         )
-        self.assertEqual(response.context["console_passwd"], "vncsecret")
-
-    @patch("console.views.wvmInstance")
-    def test_console_superuser_vnc_full(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_wvm.return_value = mock_conn
-
-        self.client.force_login(self.admin_user)
-        url = self.url + "?view=full"
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "console-vnc-full.html")
-        # a VM with a QEMU websocket port goes through novncd too, on its VNC port
-        self.assertContains(response, "port: Number(window.location.port")
-
-    @patch("console.views.wvmInstance")
-    def test_the_lite_console_switches_scaling_from_its_menu(self, mock_wvm):
-        mock_wvm.return_value.get_console_type.return_value = "vnc"
-        self.client.force_login(self.admin_user)
-        for query, pressed in (("", "false"), ("&scale=true", "true")):
-            with self.subTest(query=query):
-                page = html.fromstring(self.client.get(self.url + f"?view=lite{query}").content)
-                switch = page.xpath("//*[@id='scale_button']//a")[0]
-                self.assertEqual(switch.get("aria-pressed"), pressed)
-                self.assertEqual("active" in switch.get("class").split(), pressed == "true")
-        page = html.fromstring(self.client.get(self.url + "?view=full").content)
-        self.assertEqual(page.xpath("//*[@id='scale_button']"), [])  # noVNC's own settings scale the full view
+        self.assertEqual(config["password"], "vncsecret")
 
     @patch("console.views.wvmInstance")
     def test_console_unsupported_graphics_type(self, mock_wvm):
@@ -127,8 +107,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = self.url + "?view=full"
-        response = self.client.get(url)
+        response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "console-error.html")
@@ -170,6 +149,7 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_user_assigned_instance_access(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
+        mock_conn.get_console_passwd.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.alice)
@@ -177,14 +157,14 @@ class ConsoleViewsTestCase(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "console-vnc-lite.html")
+        self.assertTemplateUsed(response, "console-vnc.html")
 
     @patch("console.views.wvmInstance")
     def test_the_console_password_reaches_the_page_only_with_passwordless_console(self, mock_wvm):
         # without the permission noVNC asks for the password; the page must not hold it
-        # (letters and digits only: escapejs keeps them as they are in the lite view)
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
+        mock_conn.get_console_passwd.return_value = None
         mock_conn.get_console_passwd.return_value = "vncpw7f3a"
         mock_wvm.return_value = mock_conn
         permission = Permission.objects.get(codename="passwordless_console")
@@ -192,12 +172,11 @@ class ConsoleViewsTestCase(TestCase):
         for user, holds in ((self.alice, False), (self.alice, True), (self.admin_user, True)):
             if holds and not user.is_superuser:
                 user.user_permissions.add(permission)
-            for view in ("lite", "full"):
-                with self.subTest(user=user.username, permission=holds, view=view):
-                    self.client.force_login(get_user_model().objects.get(pk=user.pk))  # fresh permission cache
-                    response = self.client.get(self.url + f"?view={view}")
-                    self.assertEqual(response.status_code, 200)
-                    self.assertEqual("vncpw7f3a" in response.content.decode(), holds)
+            with self.subTest(user=user.username, permission=holds):
+                self.client.force_login(get_user_model().objects.get(pk=user.pk))  # fresh permission cache
+                response = self.client.get(self.url)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual("vncpw7f3a" in response.content.decode(), holds)
 
     def test_console_unauthorized_user_forbidden(self):
         self.client.force_login(self.bob)
@@ -232,42 +211,73 @@ class ConsoleViewsTestCase(TestCase):
                 self.assertEqual(page.findtext(".//title"), "vm-alpha - Console")
 
     @patch("console.views.wvmInstance")
-    def test_console_lite_uses_the_signed_token(self, mock_wvm):
+    def test_the_vnc_page_carries_the_signed_token(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
+        mock_conn.get_console_passwd.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
         response = self.client.get(self.url)
 
-        signed = response.context["token"]
+        signed = vnc_config(response)["token"]
         self.assertEqual(TimestampSigner(salt="console.novnc").unsign(signed),
                          f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}")
-        self.assertContains(response, f"const token = '{escapejs(signed)}'")
 
     @patch("console.views.wvmInstance")
     def test_a_shut_off_vm_says_so(self, mock_wvm):
         mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_passwd.return_value = None
         mock_wvm.return_value.instance.isActive.return_value = 0
         self.client.force_login(self.alice)
         response = self.client.get(self.url)
         self.assertContains(response, "The VM is not running")
 
     @patch("console.views.wvmInstance")
-    def test_the_lite_console_connects_only_to_the_servers_proxy(self, mock_wvm):
-        # a link naming another host would send it the signed console token
+    def test_the_vnc_page_connects_only_to_the_servers_proxy(self, mock_wvm):
+        # a link naming another host would send it the signed console token;
+        # nginx proxies /novncd/ on the panel's own scheme, host and port
         mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_passwd.return_value = None
         self.client.force_login(self.alice)
-        response = self.client.get(self.url + "?host=attacker.example&port=443&path=x")
+        response = self.client.get(self.url + "?host=attacker.example&port=443&path=x&password=x")
         self.assertNotContains(response, "attacker.example")
-        # nor a password from it: a link would leave it in history and logs
-        self.assertNotContains(response, "readQueryVariable")
-        self.assertContains(response, "const host = window.location.hostname;")
+        self.assertEqual(set(vnc_config(response)), {"token", "password", "resize", "clip", "viewOnly"})
+        script = (Path(settings.BASE_DIR) / "static/js/console_vnc.js").read_text()
+        self.assertIn("scheme + window.location.host + '/novncd/?token='", script)
 
+    @patch("console.views.wvmInstance")
+    def test_the_vnc_page_starts_as_the_console_settings_say(self, mock_wvm):
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_passwd.return_value = None
+        self.client.force_login(self.alice)
+        names = ("CONSOLE_SCALE", "CONSOLE_RESIZE_SESSION", "CONSOLE_CLIP_VIEWPORT", "CONSOLE_VIEW_ONLY")
+        for values, resize, clip, view_only in (
+            (("False", "False", "False", "False"), "off", False, False),
+            (("True", "False", "True", "True"), "scale", True, True),
+            (("True", "True", "False", "False"), "remote", False, False),
+        ):
+            with self.subTest(values=values):
+                for name, value in zip(names, values):
+                    AppSettings.objects.filter(key=name).update(value=value)
+                config = vnc_config(self.client.get(self.url))
+                self.assertEqual((config["resize"], config["clip"], config["viewOnly"]), (resize, clip, view_only))
+
+    @patch("console.views.wvmInstance")
+    def test_the_vnc_password_stays_data_in_the_page(self, mock_wvm):
+        # json_script: no quote or tag in it ends the script element
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_passwd.return_value = None
+        mock_wvm.return_value.get_console_passwd.return_value = "O'B</script><script>x()&"
+        self.client.force_login(self.admin_user)
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "</script><script>x()")
+        self.assertEqual(vnc_config(response)["password"], "O'B</script><script>x()&")
     @patch("console.views.wvmInstance")
     def test_the_page_sets_no_token_cookie(self, mock_wvm):
         # one cookie for every tab would name the last console opened
         mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_passwd.return_value = None
         self.client.force_login(self.admin_user)
         response = self.client.get(self.url)
         self.assertNotIn("token", response.cookies)
@@ -278,6 +288,7 @@ class ConsoleViewsTestCase(TestCase):
         # is for superusers and VM owners only.
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
+        mock_conn.get_console_passwd.return_value = None
         mock_wvm.return_value = mock_conn
 
         perm = Permission.objects.get(codename="view_instances")
@@ -288,7 +299,7 @@ class ConsoleViewsTestCase(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 403)
-        self.assertTemplateNotUsed(response, "console-vnc-lite.html")
+        self.assertTemplateNotUsed(response, "console-vnc.html")
 
     @patch("console.views.wvmInstance")
     def test_a_tcp_hosts_loopback_console_says_why_it_cannot_open(self, mock_wvm):
@@ -296,6 +307,7 @@ class ConsoleViewsTestCase(TestCase):
         Compute.objects.filter(pk=self.compute.pk).update(type=1)
         conn = mock_wvm.return_value
         conn.get_console_type.return_value = "vnc"
+        conn.get_console_passwd.return_value = None
         conn.get_console_socket.return_value = None
         conn.console_listens_locally.return_value = False  # next start: all interfaces
         self.client.force_login(self.admin_user)
@@ -304,108 +316,6 @@ class ConsoleViewsTestCase(TestCase):
                 conn.get_console_listener_addr.return_value = live
                 response = self.client.get(self.url)
                 self.assertEqual("This console listens only on its host" in response.content.decode(), refused)
-
-    @patch("console.views.wvmInstance")
-    def test_both_pages_connect_to_novncd_behind_the_panels_own_address(self, mock_wvm):
-        # nginx proxies /novncd/ on the panel's own scheme, host and port: no
-        # console address to configure, HTTPS gives wss
-        mock_wvm.return_value.get_console_type.return_value = "vnc"
-        self.client.force_login(self.admin_user)
-        lite = self.client.get(self.url + "?view=lite")
-        self.assertContains(lite, "const host = window.location.hostname;")
-        self.assertContains(lite, "const path = 'novncd/';")
-        full = self.client.get(self.url + "?view=full")
-        self.assertContains(full, "host: window.location.hostname,")
-        self.assertContains(full, "encrypt: https,")
-
-    @patch("console.views.wvmInstance")
-    def test_console_xss_protection_query_parameters(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_wvm.return_value = mock_conn
-
-        self.client.force_login(self.admin_user)
-        # Attempt XSS injection via query parameters
-        url = (
-            self.url
-            + "?view=lite&view_only=alert('xss')&scale=true&clip_viewport=1"
-        )
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["view_only"], False)
-        self.assertEqual(response.context["scale"], True)
-        self.assertEqual(response.context["clip_viewport"], True)
-
-        content = response.content.decode("utf-8")
-        self.assertNotIn("alert('xss')", content)
-        self.assertIn("rfb.viewOnly = false;", content)
-        self.assertIn("rfb.scaleViewport = true;", content)
-
-    @patch("console.views.wvmInstance")
-    def test_console_password_escapejs_escaping(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_passwd.return_value = "O'Brian<script>&123"
-        mock_wvm.return_value = mock_conn
-
-        self.client.force_login(self.admin_user)
-
-        # Test Lite mode
-        url_lite = self.url + "?view=lite"
-        resp_lite = self.client.get(url_lite)
-        self.assertEqual(resp_lite.status_code, 200)
-        content_lite = resp_lite.content.decode("utf-8")
-        self.assertIn(r"O\u0027Brian", content_lite)
-        self.assertNotIn("&#39;", content_lite)
-
-        # Test Full mode
-        url_full = self.url + "?view=full"
-        resp_full = self.client.get(url_full)
-        self.assertEqual(resp_full.status_code, 200)
-        content_full = resp_full.content.decode("utf-8")
-        # In script tag, password must use JS unicode escape and not HTML entities
-        main_script_block = [
-            s.split("</script>")[0]
-            for s in content_full.split("<script")
-            if "defaults" in s
-        ][0]
-        self.assertIn(r"password: 'O\u0027Brian", main_script_block)
-        self.assertNotIn("&#39;", main_script_block)
-        self.assertNotIn("&#x27;", main_script_block)
-
-    @patch("console.views.wvmInstance")
-    def test_console_full_resize_syntax_validity(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_wvm.return_value = mock_conn
-
-        self.client.force_login(self.admin_user)
-
-        # Default: scale=False, resize_session=False -> 'off'
-        url = self.url + "?view=full"
-        resp = self.client.get(url)
-        self.assertEqual(resp.status_code, 200)
-        content = resp.content.decode("utf-8")
-        self.assertIn("resize: 'off',", content)
-        self.assertNotIn("&#x27;off&#x27;", content)
-        self.assertNotIn("&#39;off&#39;", content)
-
-        # scale=True, resize_session=False -> 'scale'
-        url_scale = self.url + "?view=full&scale=true"
-        resp_scale = self.client.get(url_scale)
-        self.assertEqual(resp_scale.status_code, 200)
-        content_scale = resp_scale.content.decode("utf-8")
-        self.assertIn("resize: 'scale',", content_scale)
-
-        # resize_session=True -> 'remote'
-        url_remote = (
-            self.url + "?view=full&resize_session=true"
-        )
-        resp_remote = self.client.get(url_remote)
-        self.assertEqual(resp_remote.status_code, 200)
-        content_remote = resp_remote.content.decode("utf-8")
-        self.assertIn("resize: 'remote',", content_remote)
 
     @patch("console.views.wvmInstance")
     def test_console_libvirt_error_fallback(self, mock_wvm):
@@ -441,11 +351,11 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_send_keys_menu_elements(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
+        mock_conn.get_console_passwd.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = self.url + "?view=lite"
-        response = self.client.get(url)
+        response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
@@ -460,6 +370,9 @@ class ConsoleViewsTestCase(TestCase):
             "ctrlz",
             "ctrld",
             "ctrlbackslash",
+            "holdctrl",
+            "holdalt",
+            "holdsuper",
         ] + [f"ctrlaltf{i}" for i in range(1, 13)]
 
         for key_id in expected_ids:

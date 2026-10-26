@@ -5,7 +5,7 @@
         id="dropdownMenuLink" aria-haspopup="true" aria-expanded="false">
         {% trans "Send key(s)" %}
     </a>
-    <div class="dropdown-menu shadow" aria-labelledby="dropdownMenuLink" style="min-width: 250px;">
+    <div class="dropdown-menu shadow overflow-auto" aria-labelledby="dropdownMenuLink" style="min-width: 250px; max-height: calc(100dvh - 4rem);">
         {% if not serial %}
         <h6 class="dropdown-header">{% trans "System" %}</h6>
         <a class="dropdown-item" id="ctrlaltdel" href="#">Ctrl+Alt+Del</a>
@@ -45,6 +45,11 @@
                 <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf12" href="#">F12</a></div>
             </div>
         </div>
+        <div class="dropdown-divider"></div>
+        <h6 class="dropdown-header">{% trans "Hold until chosen again" %}</h6>
+        <a class="dropdown-item" id="holdctrl" href="#" role="button" aria-pressed="false">Ctrl</a>
+        <a class="dropdown-item" id="holdalt" href="#" role="button" aria-pressed="false">Alt</a>
+        <a class="dropdown-item" id="holdsuper" href="#" role="button" aria-pressed="false">Windows / Super Key</a>
         {% endif %}
     </div>
 </li>

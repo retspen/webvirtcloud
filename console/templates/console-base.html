@@ -21,7 +21,7 @@
             padding: 0;
             width: 100%;
             max-width: none;
-            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             background-color: #494949;
@@ -42,9 +42,10 @@
 
 <body>
     <div id="main_container">
-        <nav class="navbar sticky-top navbar-expand-md navbar-dark bg-primary" aria-label="console navbar">
+        <nav class="navbar navbar-expand-md navbar-dark bg-primary py-1" aria-label="{% trans "Console" %}">
             <div class="container-fluid">
-                <a class="navbar-brand">{{ instance.name }}</a>
+                <span class="navbar-brand py-0">{{ instance.name }}</span>
+                {% block navbarstatus %}{% endblock %}
                 {% block navbar %}
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                     aria-expanded="false" aria-label="Toggle navigation">
@@ -52,9 +53,10 @@
                 </button>
 
                 <div class="collapse navbar-collapse">
-                    <ul class="navbar-nav me-auto my-2 my-lg-0">
+                    <ul class="navbar-nav me-auto">
                         {% block navbarmenu %}{% endblock %}
                     </ul>
+                    {% block navbarend %}{% endblock %}
                 </div>
                 {% endblock %}
             </div>

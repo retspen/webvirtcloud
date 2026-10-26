@@ -84,7 +84,7 @@ class PageControls:
             return bool(doc.xpath("//form[@action=$a]", a=reverse(f"instances:{name}", args=[pk])))
 
         found = {
-            "console": bool(doc.xpath("//button[@id='consoleBtnGroup']")),
+            "console": bool(doc.xpath("//button[@id='console_button']")),
             "vv file": bool(doc.xpath("//a[@href=$a]", a=reverse("instances:getvvfile", args=[pk]))),
             "vdi": bool(doc.xpath("//*[@id='vdiconsole']")),
             "power": form("poweroff") or form("poweron"),

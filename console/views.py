@@ -13,22 +13,9 @@ from vrtManager.instance import wvmInstance
 from vrtManager.util import is_loopback
 
 
-def to_bool(val, default=False):
-    if val is None:
-        return default
-    return str(val).strip().lower() in ("true", "1", "yes")
-
-
 def console(request, compute_id, uuid):
-    """The console page of the VM with this UUID on this compute. The page's
-    query gives the view (lite or full) and its display options. A console
+    """The console page of the VM with this UUID on this compute. A console
     that cannot open gets a page that says why, and no console client."""
-    view_type = "full" if request.GET.get("view", "").strip().lower() == "full" else "lite"
-    view_only = to_bool(request.GET.get("view_only"), default=to_bool(app_settings.CONSOLE_VIEW_ONLY))
-    scale = to_bool(request.GET.get("scale"), default=to_bool(app_settings.CONSOLE_SCALE))
-    resize_session = to_bool(request.GET.get("resize_session"), default=to_bool(app_settings.CONSOLE_RESIZE_SESSION))
-    clip_viewport = to_bool(request.GET.get("clip_viewport"), default=to_bool(app_settings.CONSOLE_CLIP_VIEWPORT))
-
     instance = Instance.objects.filter(compute_id=compute_id, uuid=uuid).first()
     # Same answer for "no such VM" and "not allowed", so the response
     # does not reveal whether a VM exists.
@@ -84,5 +71,22 @@ def console(request, compute_id, uuid):
 
     # the console daemons' credential for this page
     token = tokens.SIGNER.sign(f"{compute_id}:{uuid}:{request.user.id}")
-    console_page = "console-xterm.html" if console_type == "pty" else "console-vnc-" + view_type + ".html"
-    return render(request, console_page, locals())
+    if console_type == "pty":
+        return render(request, "console-xterm.html", {"instance": instance, "token": token})
+
+    # how the VNC page starts (Settings > Console); its View menu changes them
+    if app_settings.CONSOLE_RESIZE_SESSION == "True":
+        resize = "remote"
+    elif app_settings.CONSOLE_SCALE == "True":
+        resize = "scale"
+    else:
+        resize = "off"
+    vnc = {
+        "token": token,
+        # without the permission the VNC server asks the user for it
+        "password": console_passwd if request.user.has_perm("instances.passwordless_console") else None,
+        "resize": resize,
+        "clip": app_settings.CONSOLE_CLIP_VIEWPORT == "True",
+        "viewOnly": app_settings.CONSOLE_VIEW_ONLY == "True",
+    }
+    return render(request, "console-vnc.html", {"instance": instance, "vnc": vnc})
