@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib.auth.models import Group, User
@@ -7,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.forms import UniqueEmailMixin
 from accounts.models import UserAttributes
+from instances.models import Instance
 
 from .models import Permission
 
@@ -84,6 +86,17 @@ class UserCreateForm(UserForm):
         self.fields["user_permissions"].initial = Permission.objects.filter(
             content_type__app_label="accounts", codename="change_password"
         )
+
+    def clean(self):
+        # the VMs a new user owns, by name: a name may repeat across hosts
+        cleaned = super().clean()
+        self.default_instances = []
+        for name in settings.NEW_USER_DEFAULT_INSTANCES:
+            found = list(Instance.objects.filter(name=name)[:2])
+            if len(found) != 1:
+                raise ValidationError(_("NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM") % {"name": name})
+            self.default_instances += found
+        return cleaned
 
     def _post_clean(self):
         # The validators in AUTH_PASSWORD_VALIDATORS, as on the password change

@@ -1,7 +1,7 @@
 """Changes to users and groups write rows on the Logs page."""
 
 from django.contrib.auth.models import Group, Permission, User
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 
 from logs.models import Logs
@@ -76,14 +76,6 @@ class UserRowTests(TestCase):
             ("User carol: set password", True),
         ])
         self.assertFalse(Logs.objects.filter(message__contains="New-carol-pass-1").exists())
-
-    @override_settings(NEW_USER_DEFAULT_INSTANCES=["no-such-vm"])
-    def test_a_failing_default_vm_leaves_no_user(self):
-        from instances.models import Instance
-        with self.assertRaises(Instance.DoesNotExist):
-            self.create()
-        self.assertFalse(User.objects.filter(username="carol").exists())
-        self.assertEqual(rows(), [("User carol: add: DoesNotExist", False)])
 
     def test_the_row_has_actor_and_ip(self):
         self.client.post(

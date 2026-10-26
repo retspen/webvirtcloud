@@ -127,7 +127,8 @@ def user_create(request):
             attributes = attributes_form.save(commit=False)
             attributes.user = user
             attributes.save()
-            add_default_instances(user)
+            UserInstance.objects.bulk_create(UserInstance(user=user, instance=instance)
+                                             for instance in user_form.default_instances)
         return redirect("admin:user_list")
 
     return render(
@@ -346,14 +347,3 @@ def tombstone_delete(request, pk):
          "consequence": _("Its owners no longer get the VM back if its UUID shows up again.")},
     )
 
-
-def add_default_instances(user):
-    """
-    Adds instances listed in NEW_USER_DEFAULT_INSTANCES to user
-    """
-    existing_instances = UserInstance.objects.filter(user=user)
-    if not existing_instances:
-        for instance_name in settings.NEW_USER_DEFAULT_INSTANCES:
-            instance = Instance.objects.get(name=instance_name)
-            user_instance = UserInstance(user=user, instance=instance)
-            user_instance.save()
