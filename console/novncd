@@ -58,22 +58,18 @@ def get_connection_infos(token):
     from console.tokens import authorize
     from vrtManager.instance import wvmInstance
 
-    try:
-        instance, _user = authorize(token)
-        conn = wvmInstance(
-            instance.compute.hostname,
-            instance.compute.login,
-            instance.compute.password,
-            instance.compute.type,
-            instance.name,
-            uuid=instance.uuid,  # the VM access was checked for, whatever its name now
-        )
-        console_host = conn.get_console_listener_addr()
-        console_port = conn.get_console_port()
-        console_socket = conn.get_console_socket()
-    except Exception as e:
-        logging.error("Fail to retrieve console connection infos: %s", e)
-        raise
+    instance, _user = authorize(token)
+    conn = wvmInstance(
+        instance.compute.hostname,
+        instance.compute.login,
+        instance.compute.password,
+        instance.compute.type,
+        instance.name,
+        uuid=instance.uuid,  # the VM access was checked for, whatever its name now
+    )
+    console_host = conn.get_console_listener_addr()
+    console_port = conn.get_console_port()
+    console_socket = conn.get_console_socket()
     compute = instance.compute
     return compute.hostname, compute.login, compute.type, console_host, console_port, console_socket
 
@@ -98,13 +94,13 @@ class ConsoleClient:
         # is shared by the browser's tabs and would name the last console opened
         token = parse_qs(urlparse(self.path).query).get("token", [None])[0]
         if not token:
-            self.msg("No console token in the websocket URL")
+            logging.warning("Console connection without a token in its websocket URL")
             return
 
         try:
             connhost, connuser, conntype, console_host, console_port, console_socket = get_connection_infos(token)
         except Exception as e:
-            self.msg("Console connection denied: %s" % e)
+            logging.warning("Console connection denied: %s", e)
             return
         logging.debug(
             "Console of %s@%s (type %s): %s:%s, socket %s",
@@ -160,14 +156,12 @@ class ConsoleProxyHandler(ProxyRequestHandler, ConsoleClient):
 if __name__ == "__main__":
     options = get_parser().parse_args()
 
-    FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
-    if options.debug:
-        logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-        options.verbose = True
-    elif options.verbose:
-        logging.basicConfig(level=logging.INFO, format=FORMAT)
-    else:
-        logging.basicConfig(level=logging.WARNING, format=FORMAT)
+    # to stderr (the journal, docker logs), not the panel's own log file:
+    # each process rotating that file would lose lines. force: Django's
+    # settings already gave the root logger that file.
+    level = logging.DEBUG if options.debug else logging.INFO if options.verbose else logging.WARNING
+    logging.basicConfig(level=level, format="%(levelname)s %(name)s: %(message)s", force=True)
+    options.verbose = options.verbose or options.debug
 
     # nginx ends TLS: novncd speaks plain websockets on the loopback
     WebSocketProxy(

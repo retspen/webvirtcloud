@@ -577,12 +577,13 @@ class NovncdDaemonLogicTestCase(TestCase):
         handler.msg = MagicMock()
 
         socket_factory = MagicMock()
-        # Should cleanly exit and log message without raising UnboundLocalError
-        handler._new_client(socket_factory=socket_factory)
+        # a refusal is a warning: it shows in the log without -v
+        with self.assertLogs(level="WARNING") as log:
+            handler._new_client(socket_factory=socket_factory)
 
         mock_get_info.assert_not_called()
         socket_factory.assert_not_called()
-        handler.msg.assert_called_with("No console token in the websocket URL")
+        self.assertIn("without a token", log.output[0])
 
     @patch("console.tokens.authorize")
     @patch("vrtManager.instance.wvmInstance")

@@ -91,8 +91,10 @@ class SocketiodTestCase(Base):
         self.assertEqual(self.started[0][0], self.d.forward)
 
     def refused(self, sid, auth):
-        with self.assertRaises(self.d.socketio.exceptions.ConnectionRefusedError) as refusal:
+        with self.assertRaises(self.d.socketio.exceptions.ConnectionRefusedError) as refusal, \
+                self.assertLogs("socketiod", level="INFO") as log:  # the reason is logged too
             self.d.connect(sid, {}, auth)
+        self.assertIn(refusal.exception.error_args["message"], log.output[0])
         return refusal.exception.error_args["message"]
 
     def test_refused_connections_start_nothing_and_say_why(self):

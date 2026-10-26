@@ -7,6 +7,7 @@
 import argparse
 import codecs
 import fcntl
+import logging
 import os
 import pty
 import select
@@ -34,6 +35,7 @@ from console.tokens import authorize  # noqa: E402
 CONSOLECALLBACK = os.path.join(ROOT_PATH, "conf", "daemon", "consolecallback")
 MAX_SESSIONS = 20
 
+logger = logging.getLogger("socketiod")
 sio = socketio.Server(async_mode="threading")  # the same origin only
 # Handlers run on their own threads. sessions (sid -> {"pid", "fd", "vm",
 # "lock", "open"}) changes only under sessions_lock; a session's fd is used
@@ -43,24 +45,30 @@ sessions = {}
 sessions_lock = threading.Lock()
 
 
+def refused(reason):
+    """The refusal the page shows; it is logged too."""
+    logger.info("serial console refused: %s", reason)
+    return socketio.exceptions.ConnectionRefusedError(reason)
+
+
 @sio.event
 def connect(sid, environ, auth):
     # the page shows the reason
     if not settings.SERIAL_CONSOLE_ENABLED:
-        raise socketio.exceptions.ConnectionRefusedError("The serial console is turned off on this server")
+        raise refused("The serial console is turned off on this server")
     try:
         instance, user = authorize((auth or {}).get("token"))
     except PermissionError:
-        raise socketio.exceptions.ConnectionRefusedError("The console link has expired: reload the page")
+        raise refused("The console link has expired: reload the page")
     finally:
         db.close_old_connections()
     taken = None
     with sessions_lock:
         open_sid = next((s for s, session in sessions.items() if session["vm"] == instance.pk), None)
         if open_sid is not None and not user.is_superuser:
-            raise socketio.exceptions.ConnectionRefusedError("The console of this VM is open in another window")
+            raise refused("The console of this VM is open in another window")
         if open_sid is None and len(sessions) >= MAX_SESSIONS:
-            raise socketio.exceptions.ConnectionRefusedError("Too many consoles are open on this server: try again later")
+            raise refused("Too many consoles are open on this server: try again later")
         if open_sid is not None:  # a superuser takes over a console left open
             taken = open_sid, sessions.pop(open_sid)
         pid, fd = pty.fork()
@@ -73,6 +81,8 @@ def connect(sid, environ, auth):
             finally:
                 os._exit(1)
         sessions[sid] = session = {"pid": pid, "fd": fd, "vm": instance.pk, "lock": threading.Lock(), "open": True}
+    logger.info("serial console of VM %s opened by %s%s", instance.name, user.username,
+                " (taken over)" if taken else "")
     if taken:
         old_sid, old_session = taken
         sio.emit("pty_output", {"output": "\r\n[An administrator opened this console]\r\n"}, to=old_sid)
@@ -183,4 +193,7 @@ if __name__ == "__main__":
     parser.add_argument("-H", "--host", default=settings.SOCKETIO_HOST, help="Listen host")
     parser.add_argument("-p", "--port", type=int, default=settings.SOCKETIO_PORT, help="Listen port")
     options = parser.parse_args()
+    # to stderr (the journal, docker logs), not the panel's own log file:
+    # each process rotating that file would lose lines
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s", force=True)
     Server(options.host, options.port).run()
