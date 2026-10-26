@@ -1,5 +1,6 @@
 from admin.permissions import IsSuperUser
 from computes.models import Compute
+from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from logs.audit import audit, changed_fields, snapshot
@@ -50,7 +51,7 @@ class ComputeArchitecturesView(viewsets.ViewSet):
         """
         Return a list of supported host architectures.
         """
-        compute = Compute.objects.get(pk=compute_pk)
+        compute = get_object_or_404(Compute, pk=compute_pk)
         conn = wvmCreate(
             compute.hostname,
             compute.login,
@@ -61,7 +62,7 @@ class ComputeArchitecturesView(viewsets.ViewSet):
 
     @extend_schema(responses={200: {"type": "array", "items": {"type": "string"}}})
     def retrieve(self, request, compute_pk=None, pk=None):
-        compute = Compute.objects.get(pk=compute_pk)
+        compute = get_object_or_404(Compute, pk=compute_pk)
         conn = wvmCreate(
             compute.hostname,
             compute.login,
@@ -70,19 +71,3 @@ class ComputeArchitecturesView(viewsets.ViewSet):
         )
         return Response(conn.get_machine_types(pk))
 
-
-class ComputeMachinesView(viewsets.ViewSet):
-    permission_classes = [IsSuperUser]
-
-    def list(self, request, compute_pk=None, archs_pk=None):
-        """
-        Return a list of supported host architectures.
-        """
-        compute = Compute.objects.get(pk=compute_pk)
-        conn = wvmCreate(
-            compute.hostname,
-            compute.login,
-            compute.password,
-            compute.type,
-        )
-        return Response(conn.get_machine_types(archs_pk))

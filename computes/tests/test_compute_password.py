@@ -31,3 +31,12 @@ class ComputePasswordTests(TestCase):
         compute = Compute.objects.create(name="cp-long", hostname="192.0.2.7", login="admin", password="", type=1)
         self.assertContains(self.client.get(reverse("compute_update", args=[compute.id])), "Edit Compute")
         self.assertEqual(self.edit(compute, "p" * 40), "p" * 40)
+
+    def test_the_api_keeps_the_password_when_it_is_left_empty(self):
+        compute = Compute.objects.create(name="cp-api", hostname="192.0.2.8", login="admin", password="secret", type=1)
+        for password in ("", None):
+            with self.subTest(password=password):
+                self.client.patch(f"/api/v1/computes/{compute.id}/", {"password": password}, content_type="application/json")
+                compute.refresh_from_db()
+                self.assertEqual(compute.password, "secret")
+        self.assertEqual(self.client.get("/api/v1/computes/999999/archs/").status_code, 404)

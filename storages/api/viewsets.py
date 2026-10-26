@@ -185,7 +185,7 @@ class VolumeViewSet(viewsets.ViewSet):
                         serializer.validated_data["name"],
                         serializer.validated_data["size"],
                         serializer.validated_data["type"],
-                        serializer.validated_data["meta_prealloc"],
+                        serializer.validated_data["meta_prealloc"] and serializer.validated_data["type"] == "qcow2",
                         int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
                         int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
                     )

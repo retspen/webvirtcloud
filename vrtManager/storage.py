@@ -332,7 +332,7 @@ class wvmStorage(wvmConnect):
             alloc = 0
         xml = f"""
             <volume>
-                <name>{name}</name>
+                <name>{util.xml_escape(name)}</name>
                 <capacity>{size}</capacity>
                 <allocation>{alloc}</allocation>
                 <target>

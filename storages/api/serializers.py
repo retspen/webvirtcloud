@@ -18,8 +18,11 @@ class StorageSerializer(serializers.ModelSerializer):
 
 
 class VolumeSerializer(serializers.ModelSerializer):
+    # what the web form (storages.forms.CreateVolumeForm) takes
+    name = serializers.RegexField(r"^[a-zA-Z0-9._-]+$", max_length=120)
+    size = serializers.IntegerField(min_value=1)  # GiB
     allocation = serializers.ReadOnlyField()
-    meta_prealloc = serializers.BooleanField(write_only=True)
+    meta_prealloc = serializers.BooleanField(write_only=True, default=False)
     class Meta:
         model = Volume
         fields = ['name', 'type', 'allocation', 'size', 'meta_prealloc'] 

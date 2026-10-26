@@ -204,6 +204,18 @@ class PoolAndVolumeRowTests(TransactionTestCase):
             ("Storage pool default: delete volume disk1.qcow2", True),
         ])
 
+    def test_the_api_takes_the_volumes_the_web_form_takes(self):
+        for name, size in (("x</name><backingStore><path>/etc/passwd</path></backingStore><name>y", 1), ("disk3", 0)):
+            with self.subTest(name=name, size=size):
+                response = self.client.post(self.api + "volumes/", {"name": name, "type": "qcow2", "size": size},
+                                            content_type="application/json")
+                self.assertEqual(response.status_code, 400)
+        self.api_pool.create_volume.assert_not_called()
+        # metadata preallocation is a qcow2 option, as on the web form
+        self.client.post(self.api + "volumes/", {"name": "disk3", "type": "raw", "size": 1, "meta_prealloc": True},
+                         content_type="application/json")
+        self.assertFalse(self.api_pool.create_volume.call_args.args[3])
+
     def test_an_inactive_pool_refuses_api_volume_changes(self):
         self.api_pool.is_active.return_value = False
         response = self.client.post(self.api + "volumes/", {"name": "disk2", "type": "qcow2", "size": 1,

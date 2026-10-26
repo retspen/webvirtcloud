@@ -20,6 +20,10 @@ class ComputeSerializer(serializers.ModelSerializer):
     )
     type = serializers.ChoiceField(choices=conn_types)
 
+    def validate_password(self, value):
+        # as on the web form, an empty password on an edit keeps the stored one
+        return value or (self.instance.password if self.instance else value)
+
     class Meta:
         model = Compute
         fields = ["id", "name", "hostname", "login", "password", "type", "details", "migration_address"]
