@@ -3,6 +3,7 @@
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 {% load operations %}
+{% load tz %}
 
 {% block title %}{% trans "Jobs" %}{% endblock %}
 
@@ -14,7 +15,7 @@
         {% if worker_unavailable %}
             <div class="alert alert-warning shadow-sm">
                 {% bs_icon 'exclamation-triangle' %} {% trans "Worker unavailable, last seen" %}
-                {% if worker_last_seen %}{{ worker_last_seen|date:"M d H:i:s" }}{% else %}{% trans "never" %}{% endif %}
+                {% if worker_last_seen %}{{ worker_last_seen|date:"Y-m-d H:i:s" }}{% else %}{% trans "never" %}{% endif %}
             </div>
         {% endif %}
         {% if request.user.is_superuser %}
@@ -56,7 +57,8 @@
                 <table class="table table-hover table-striped align-middle">
                     <thead>
                         <tr>
-                            <th scope="col" class="d-none d-md-table-cell">{% trans "Created" %}</th>
+                            {% get_current_timezone as TIME_ZONE %}
+                            <th scope="col" class="d-none d-md-table-cell">{% blocktrans %}Created ({{ TIME_ZONE }}){% endblocktrans %}</th>
                             <th scope="col">{% trans "Job" %}</th>
                             <th scope="col">{% trans "State" %}</th>
                             <th scope="col" class="d-none d-md-table-cell">{% trans "Resource" %}</th>
@@ -66,7 +68,7 @@
                     <tbody>
                         {% for op, row in rows %}
                             <tr>
-                                <td class="text-nowrap d-none d-md-table-cell">{{ op.created_at|date:"M d H:i:s" }}</td>
+                                <td class="text-nowrap d-none d-md-table-cell">{{ op.created_at|date:"Y-m-d H:i:s" }}</td>
                                 <td style="min-width: 10rem;">
                                     <a href="{% url 'operations:job' row.id %}">{{ row.label }}</a>
                                     {% if op.state in active_states and op.phase %}
@@ -75,7 +77,7 @@
                                         <div class="small text-body-secondary" title="{{ op.error }}">{{ op.error|truncatechars:80 }}</div>
                                     {% endif %}
                                     {# below md the hidden columns show here #}
-                                    <div class="d-md-none small text-body-secondary">{{ row.resource_label|wrap_at_slash }}<br>{{ op.created_at|date:"M d H:i:s" }}{% if request.user.is_superuser %} &middot; {{ row.username }}{% endif %}</div>
+                                    <div class="d-md-none small text-body-secondary">{{ row.resource_label|wrap_at_slash }}<br>{{ op.created_at|date:"Y-m-d H:i:s" }}{% if request.user.is_superuser %} &middot; {{ row.username }}{% endif %}</div>
                                 </td>
                                 <td>{% include "operations/state_badge.html" with state=op.state %}</td>
                                 <td class="d-none d-md-table-cell">{{ row.resource_label|wrap_at_slash }}</td>

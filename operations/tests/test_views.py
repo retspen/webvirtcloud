@@ -54,6 +54,13 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(self.client.get(reverse("operations:jobs"), {"compute": "c"}), link)
         self.assertNotContains(self.client.get(reverse("operations:jobs"), {"state": "failed"}), link)
 
+    def test_host_and_user_filters_match_part_of_the_name(self):
+        self.client.force_login(self.admin)
+        link = reverse("operations:job", args=[self.op.pk])
+        for filters in ({"compute": "C"}, {"username": "PAGE_U"}):
+            self.assertContains(self.client.get(reverse("operations:jobs"), filters), link)
+        self.assertNotContains(self.client.get(reverse("operations:jobs"), {"username": "other"}), link)
+
     def test_resolve_needs_a_superuser_an_outcome_and_a_note(self):
         jobs.finish(self.op, Outcome(Operation.UNCERTAIN, error="check"))
         self.client.force_login(self.user)
@@ -121,7 +128,8 @@ class JobsPageTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         for response in (self.client.get(reverse("operations:jobs")),
                          self.client.get(reverse("operations:job", args=[self.op.pk]))):
-            self.assertContains(response, "Oct 13 23:04:00")
+            self.assertContains(response, "2026-10-13 23:04:00")
+            self.assertContains(response, f"Created ({django_timezone.get_current_timezone_name()})")
             self.assertNotContains(response, "2026-10-13T20:04")
 
     def test_list_and_detail_refresh_while_a_job_is_active(self):
@@ -196,12 +204,12 @@ class JobsPageTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         html = self.client.get(reverse("operations:jobs")).content.decode()
         # below md only Job and State are columns
-        for header in ("Created", "Resource", "User"):
+        for header in (f"Created ({django_timezone.get_current_timezone_name()})", "Resource", "User"):
             self.assertIn(f'<th scope="col" class="d-none d-md-table-cell">{header}</th>', html)
         narrow = re.search(r'<div class="d-md-none small text-body-secondary">(.*?)</div>', html, re.S).group(1)
         for text in ('<span class="text-nowrap">wvc-test-vm</span>', "page_user"):
             self.assertIn(text, narrow)
-        self.assertRegex(narrow, r"[A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2}")
+        self.assertRegex(narrow, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
         # a plain user's narrow line has no user
         self.client.force_login(self.user)
         html = self.client.get(reverse("operations:jobs")).content.decode()

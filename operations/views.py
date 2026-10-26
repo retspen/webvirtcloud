@@ -30,9 +30,12 @@ def _get(user, pk):
 def jobs(request):
     qs = _visible(request.user)
     if request.user.is_superuser:
+        # the host and the user as typed: the start of the host, any part of the name
         if compute := request.GET.get("compute"):
-            qs = qs.filter(resource_label__startswith=f"{compute}/")
-        for field in ("state", "kind", "username"):
+            qs = qs.filter(resource_label__istartswith=compute)
+        if username := request.GET.get("username"):
+            qs = qs.filter(username__icontains=username)
+        for field in ("state", "kind"):
             if value := request.GET.get(field):
                 qs = qs.filter(**{field: value})
     page = Paginator(qs, 50).get_page(request.GET.get("page"))

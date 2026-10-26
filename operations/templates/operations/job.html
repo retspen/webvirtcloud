@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% load operations %}
+{% load tz %}
 
 {% block title %}{{ job.label }}{% endblock %}
 
@@ -45,9 +46,10 @@
                     </span>
                 </dd>
             {% endif %}
-            <dt class="col-sm-3">{% trans "Created" %}</dt><dd class="col-sm-9">{{ op.created_at|date:"M d H:i:s" }}</dd>
-            {% if op.started_at %}<dt class="col-sm-3">{% trans "Started" %}</dt><dd class="col-sm-9">{{ op.started_at|date:"M d H:i:s" }}</dd>{% endif %}
-            {% if op.finished_at %}<dt class="col-sm-3">{% trans "Finished" %}</dt><dd class="col-sm-9">{{ op.finished_at|date:"M d H:i:s" }}</dd>{% endif %}
+            {% get_current_timezone as TIME_ZONE %}
+            <dt class="col-sm-3">{% blocktrans %}Created ({{ TIME_ZONE }}){% endblocktrans %}</dt><dd class="col-sm-9">{{ op.created_at|date:"Y-m-d H:i:s" }}</dd>
+            {% if op.started_at %}<dt class="col-sm-3">{% trans "Started" %}</dt><dd class="col-sm-9">{{ op.started_at|date:"Y-m-d H:i:s" }}</dd>{% endif %}
+            {% if op.finished_at %}<dt class="col-sm-3">{% trans "Finished" %}</dt><dd class="col-sm-9">{{ op.finished_at|date:"Y-m-d H:i:s" }}</dd>{% endif %}
             {% if job.result.left_behind %}
                 <dt class="col-sm-3">{% trans "Left behind" %}</dt>
                 <dd class="col-sm-9">
