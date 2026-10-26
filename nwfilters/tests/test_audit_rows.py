@@ -41,7 +41,9 @@ class FilterRowTests(TestCase):
     @patch("nwfilters.views.wvmInstances")
     def test_filter_list_actions(self, instances):
         instances.return_value.get_instances.return_value = []
-        self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": NEW})
+        # the list is read again, so the new filter shows
+        self.assertRedirects(self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": NEW}),
+                             self.list_url, fetch_redirect_response=False)
         self.client.post(self.list_url, {"cln_nwfilter": "", "nwfiltername": "web", "cln_name": "web-copy"})
         self.client.post(self.list_url, {"del_nwfilter": "", "nwfiltername": "web"})
         self.assertEqual(rows(), [
@@ -84,7 +86,7 @@ class FilterRowTests(TestCase):
         self.client.post(self.url, {"edit_nwfilter": "", "edit_xml": XML})
         self.client.post(self.url, {"add_nwfilter_rule": "",
                                     "nwfilterrule_xml": "<rule action='accept' direction='in' priority='500'><all/></rule>"})
-        self.client.post(self.url, {"del_nwfilter_rule": "", "action": "drop", "direction": "in", "priority": "900"})
+        self.client.post(self.url, {"del_nwfilter_rule": "", "index": "0", "action": "drop", "direction": "in", "priority": "900"})
         self.client.post(self.url, {"add_nwfilter_ref": "", "nwfilters_select": "no-spoofing"})
         self.client.post(self.url, {"del_nwfilter_ref": "", "ref": "clean-traffic"})
         self.assertEqual(rows(), [

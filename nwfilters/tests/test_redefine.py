@@ -41,7 +41,7 @@ class FilterRedefineTests(TestCase):
         return etree.fromstring(self.wvm.nwfilterDefineXML.call_args.args[0]), response
 
     def test_a_rule_is_removed_in_place(self):
-        tree, _ = self.defined({"del_nwfilter_rule": "", "action": "drop", "direction": "in", "priority": "900"})
+        tree, _ = self.defined({"del_nwfilter_rule": "", "index": "1", "action": "drop", "direction": "in", "priority": "900"})
         self.assertEqual(tree.findtext("uuid"), UUID)
         self.assertEqual([r.get("action") for r in tree.findall("rule")], ["accept"])
 
@@ -53,7 +53,8 @@ class FilterRedefineTests(TestCase):
         rule = "<rule action='accept' direction='in' priority='500'><udp dstportstart='53'/></rule>"
         tree, response = self.defined({"add_nwfilter_rule": "", "nwfilterrule_xml": rule})
         self.assertEqual(tree.findtext("uuid"), UUID)
-        self.assertEqual(tree.xpath("rule[@priority='500']/*/@dstportstart"), ["22", "53"])
+        # a rule of its own: libvirt keeps one protocol per rule
+        self.assertEqual([rule.xpath("*/@dstportstart") for rule in tree.findall("rule")], [["22"], [], ["53"]])
         self.assertRedirects(response, self.url, fetch_redirect_response=False)
 
     def test_a_reference_is_added_in_place(self):
@@ -71,5 +72,41 @@ class FilterRedefineTests(TestCase):
 
     def test_a_refused_definition_is_reported_not_undone(self):
         self.wvm.nwfilterDefineXML.side_effect = libvirtError("XML error: Invalid value for attribute 'action'")
-        _, response = self.defined({"del_nwfilter_rule": "", "action": "drop", "direction": "in", "priority": "900"})
+        _, response = self.defined({"del_nwfilter_rule": "", "index": "1", "action": "drop", "direction": "in", "priority": "900"})
         self.assertIn("Invalid value for attribute 'action'", " ".join(str(m) for m in get_messages(response.wsgi_request)))
+
+
+class RuleDeleteTests(TestCase):
+    """Rules sharing action, direction and priority: the one clicked goes."""
+
+    def setUp(self):
+        patcher = patch("vrtManager.connection.connection_manager.get_connection")
+        self.wvm = patcher.start().return_value
+        self.addCleanup(patcher.stop)
+        nwfilter = self.wvm.nwfilterLookupByName.return_value
+        nwfilter.XMLDesc.return_value = (
+            f"<filter name='web' chain='root'><uuid>{UUID}</uuid>"
+            "<rule action='accept' direction='in' priority='500'><tcp dstportstart='22'/></rule>"
+            "<rule action='accept' direction='in' priority='500'><tcp dstportstart='80'/></rule></filter>")
+        nwfilter.name.return_value = "web"
+        nwfilter.UUIDString.return_value = UUID
+        self.wvm.listNWFilters.return_value = ["web"]
+        compute = Compute.objects.create(name="nwf", hostname="localhost", login="", password="", type=4)
+        self.client.force_login(get_user_model().objects.create_superuser("nwf", "nwf@example.com", "pw"))
+        self.url = reverse("nwfilter", args=[compute.id, "web"])
+
+    def delete(self, index, priority="500"):
+        return self.client.post(self.url, {"del_nwfilter_rule": "", "index": index, "action": "accept",
+                                           "direction": "in", "priority": priority})
+
+    def test_the_second_of_two_alike_rules_is_deleted(self):
+        self.delete("1")
+        tree = etree.fromstring(self.wvm.nwfilterDefineXML.call_args.args[0])
+        self.assertEqual(tree.xpath("rule/*/@dstportstart"), ["22"])
+
+    def test_a_rule_that_is_no_longer_there_is_not_deleted(self):
+        for index, priority in (("2", "500"), ("1", "900")):
+            with self.subTest(index=index):
+                response = self.delete(index, priority)
+                self.assertIn("reload the page", " ".join(str(m) for m in get_messages(response.wsgi_request)))
+        self.wvm.nwfilterDefineXML.assert_not_called()

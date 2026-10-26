@@ -145,6 +145,7 @@
                         <td>{{ rule.directives }}</td>
                         <td>
                             <form action="" method="post" role="form" aria-label="Delete NWFilter rule">{% csrf_token %}
+                                <input type="hidden" name="index" value="{{ rule.index }}">
                                 <input type="hidden" name="action" value="{{ rule.action }}">
                                 <input type="hidden" name="direction" value="{{ rule.direction }}">
                                 <input type="hidden" name="priority" value="{{ rule.priority }}">

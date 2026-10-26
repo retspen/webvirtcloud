@@ -51,7 +51,7 @@ class wvmNWFilter(wvmConnect):
         rules = []
 
         tree = ElementTree.fromstring(self._XMLDesc(0))
-        for r in tree.findall("./rule"):
+        for index, r in enumerate(tree.findall("./rule")):
             rule_action = r.get("action")
             rule_direction = r.get("direction")
             rule_priority = r.get("priority")
@@ -62,6 +62,7 @@ class wvmNWFilter(wvmConnect):
                 rule_directives = ElementTree.tostring(rule_directives).decode()
 
             rule_info = {
+                "index": index,
                 "action": rule_action,
                 "direction": rule_direction,
                 "priority": rule_priority,
@@ -81,22 +82,16 @@ class wvmNWFilter(wvmConnect):
                 break
         return ElementTree.tostring(tree).decode()
 
-    @staticmethod
-    def _rules(tree, action, direction, priority):
-        # compared, not put into an XPath predicate: the values come from forms
-        return [
-            rule
-            for rule in tree.findall("./rule")
-            if (rule.get("action"), rule.get("direction"), rule.get("priority")) == (action, direction, priority)
-        ]
-
-    def delete_rule(self, action, direction, priority):
+    def delete_rule(self, index, action, direction, priority):
+        """The filter without its rule at index (several rules may share
+        action, direction and priority); those must still match, so a filter
+        changed since the page was read loses no other rule."""
         tree = ElementTree.fromstring(self._XMLDesc(0))
-
-        rule_tree = self._rules(tree, action, direction, priority)
-        if rule_tree:
-            tree.remove(rule_tree[0])
-
+        rules = tree.findall("./rule")
+        if index >= len(rules) or (rules[index].get("action"), rules[index].get("direction"),
+                                   rules[index].get("priority")) != (action, direction, priority):
+            raise ValueError("The filter has changed; reload the page and try again")
+        tree.remove(rules[index])
         return ElementTree.tostring(tree).decode()
 
     def add_ref(self, name):
@@ -107,23 +102,11 @@ class wvmNWFilter(wvmConnect):
         return ElementTree.tostring(tree).decode()
 
     def add_rule(self, xml):
+        """The filter with the rule added as entered; libvirt keeps one
+        protocol per rule, so it is never merged into another rule."""
         tree = ElementTree.fromstring(self._XMLDesc(0))
         rule = ElementTree.fromstring(xml)
-
-        rule_action = rule.get("action")
-        rule_direction = rule.get("direction")
-        rule_priority = rule.get("priority")
-        rule_directives = rule.find("./")
-        rule_tree = self._rules(tree, rule_action, rule_direction, rule_priority)
-
-        if rule_tree:
-            rule_tree[0].append(rule_directives)
-        else:
-            element = ElementTree.Element("rule")
-            element.attrib["action"] = rule_action
-            element.attrib["direction"] = rule_direction
-            element.attrib["priority"] = rule_priority
-            element.append(rule_directives)
-            tree.append(element)
-
+        if rule.tag != "rule":
+            raise ValueError("Enter one <rule> element")
+        tree.append(rule)
         return ElementTree.tostring(tree).decode()

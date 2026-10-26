@@ -61,6 +61,8 @@ def nwfilters(request, compute_id):
                                 conn.create_nwfilter(xml)
                         except libvirtError as lib_err:
                             messages.error(request, lib_err)
+                        else:
+                            return HttpResponseRedirect(request.get_full_path())
 
             if "del_nwfilter" in request.POST:
                 name = request.POST.get("nwfiltername", "")
@@ -171,12 +173,13 @@ def nwfilter(request, compute_id, nwfltr):
                         conn.create_nwfilter(new_xml)
 
             if "del_nwfilter_rule" in request.POST:
+                index = int(request.POST.get("index", ""))
                 action = request.POST.get("action", "")
                 direction = request.POST.get("direction", "")
                 priority = request.POST.get("priority", "")
 
                 with audit(request, compute, subject, "delete rule"):
-                    conn.create_nwfilter(nwfilter.delete_rule(action, direction, priority))
+                    conn.create_nwfilter(nwfilter.delete_rule(index, action, direction, priority))
 
             if "del_nwfilter_ref" in request.POST:
                 ref_name = request.POST.get("ref")

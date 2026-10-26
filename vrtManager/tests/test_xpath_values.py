@@ -44,15 +44,15 @@ class XPathValueTests(unittest.TestCase):
         nwf = wvmNWFilter.__new__(wvmNWFilter)
         nwf._XMLDesc = lambda flags: FILTER
         # values with quotes or brackets are compared, not parsed as XPath
-        self.assertEqual(nwf.delete_rule("drop'][@priority='2", "in", "1").count("<rule "), 2)
-        self.assertEqual(nwf.delete_rule("it's", "in", "1").count("<rule "), 2)
-        kept = nwf.delete_rule("drop", "in", "2")
+        for action in ("drop'][@priority='2", "it's"):
+            with self.subTest(action=action), self.assertRaises(ValueError):
+                nwf.delete_rule(0, action, "in", "1")
+        kept = nwf.delete_rule(1, "drop", "in", "2")
         self.assertEqual(kept.count("<rule "), 1)
         self.assertIn("priority=\"1\"", kept)
-        # add_rule appends to the matching rule only
+        # add_rule adds a rule of its own
         added = nwf.add_rule("<rule action='drop' direction='in' priority='2'><icmp/></rule>")
-        self.assertEqual(added.count("<rule "), 2)
-        self.assertIn("<icmp", added.split('priority="2"')[1])
+        self.assertEqual(added.count("<rule "), 3)
 
     def test_qos_direction_must_be_known(self):
         net = wvmNetwork.__new__(wvmNetwork)
