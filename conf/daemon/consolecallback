@@ -20,7 +20,17 @@ django.setup()
 import libvirt  # noqa: E402
 
 from instances.models import Instance  # noqa: E402
+from operations.utils import public_error_text  # noqa: E402
 from vrtManager.connection import connection_manager  # noqa: E402
+
+# libvirt prints its errors on stderr, which is the user's terminal: they are
+# raised and told in one line instead
+libvirt.registerErrorHandler(lambda context, error: None, None)
+SEND_WAIT = 5  # seconds a paste may wait for the VM to take it
+
+
+def say(text):
+    os.write(1, ("\r\n[%s]\r\n" % text).encode())
 
 
 class Console:
@@ -34,14 +44,18 @@ class Console:
         """Open the stream while the VM runs, drop it while it does not."""
         active = self.domain.state()[0] in (libvirt.VIR_DOMAIN_RUNNING, libvirt.VIR_DOMAIN_PAUSED)
         if active and self.stream is None:
-            self.stream = self.connection.newStream(libvirt.VIR_STREAM_NONBLOCK)
-            self.domain.openConsole(None, self.stream, 0)  # a console in use is refused
-            self.stream.eventAddCallback(libvirt.VIR_STREAM_EVENT_READABLE, from_vm, self)
+            stream = self.connection.newStream(libvirt.VIR_STREAM_NONBLOCK)
+            self.domain.openConsole(None, stream, 0)  # a console in use is refused
+            stream.eventAddCallback(libvirt.VIR_STREAM_EVENT_READABLE, from_vm, self)
+            self.stream = stream
         elif not active and self.stream is not None:
             self.close_stream()
+            say("The VM is not running: its console opens again when it starts")
 
     def close_stream(self):
         stream, self.stream = self.stream, None
+        if stream is None:  # the other thread closed it
+            return
         try:
             stream.eventRemoveCallback()
             stream.abort()
@@ -56,11 +70,19 @@ def from_client(watch, fd, events, console):
         data = b""
     if not data:  # the client is gone
         console.running = False
-    elif console.stream is not None:
-        try:
-            console.stream.send(data)
-        except libvirt.libvirtError:
-            console.close_stream()
+        return
+    stream = console.stream  # the main thread may drop it meanwhile
+    deadline = time.monotonic() + SEND_WAIT
+    try:
+        # a non-blocking stream takes part of a paste, or none (-2) while the VM is busy
+        while data and stream is not None and time.monotonic() < deadline:
+            sent = stream.send(data)
+            if sent == -2:
+                time.sleep(0.01)
+            else:
+                data = data[sent:]
+    except libvirt.libvirtError:
+        console.close_stream()
 
 
 def from_vm(stream, events, console):
@@ -80,15 +102,22 @@ def main():
     c = instance.compute
     try:
         console = Console(connection_manager.get_connection(c.hostname, c.login, c.password, c.type), instance.uuid)
+        tty.setraw(0)  # before the console opens: nothing typed is echoed by the terminal
         console.check()
     except libvirt.libvirtError as err:
-        sys.stdout.write("Cannot open the console of %s: %s\r\n" % (instance.name, err.get_error_message()))
+        say("Cannot open the console of %s: %s" % (instance.name, public_error_text(err)))
         sys.exit(1)
-    tty.setraw(0)
+    if console.stream is None:
+        say("The VM is not running: its console opens when it starts")
     libvirt.virEventAddHandle(0, libvirt.VIR_EVENT_HANDLE_READABLE, from_client, console)
-    while console.running:
-        time.sleep(0.2)
-        console.check()
+    try:
+        while console.running:
+            time.sleep(0.2)
+            console.check()
+    except libvirt.libvirtError as err:  # the host went away, the VM was undefined or migrated
+        say("The console of %s closed: %s" % (instance.name, public_error_text(err)))
+        sys.exit(1)
 
 
-main()
+if __name__ == "__main__":
+    main()
