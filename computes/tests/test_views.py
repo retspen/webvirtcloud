@@ -180,7 +180,7 @@ class ComputesTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_a_disk_is_offered_the_hosts_disk_buses(self):
-        with patch("computes.views.wvmConnect") as conn:
+        with patch("computes.models.wvmHostDetails") as conn:
             conn.return_value.get_disk_device_types.return_value = ["disk", "cdrom", "lun"]
             conn.return_value.get_disk_bus_types.return_value = ["virtio", "sata", "scsi"]
             response = self.client.get(reverse("buses", args=[self.compute.id, "x86_64", "q35", "disk"]))

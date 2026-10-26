@@ -20,6 +20,7 @@ from lxml import html
 from computes.models import Compute
 from computes.views import CPU_SAMPLE_MAX_AGE, CPU_SAMPLE_SIGNER
 from vrtManager.hostdetails import cpu_percent, wvmHostDetails
+from vrtManager.util import ConnectionFailed
 
 # the page script runs after the shared chart helpers
 CHARTS_JS = settings.BASE_DIR / "static" / "js" / "charts.js"
@@ -77,7 +78,7 @@ class GraphTestCase(TestCase):
         self.other = Compute.objects.create(name="other", hostname="192.0.2.2", login="u", password="p", type=1)
         admin = get_user_model().objects.create_superuser("graph-admin", "graph@example.com", "pw")
         self.client.force_login(admin)
-        for target in ("computes.views.wvmConnect", "computes.views.wvmHostDetails"):
+        for target in ("computes.models.wvmHostDetails", "computes.views.wvmHostDetails"):
             patcher = patch(target)
             self.addCleanup(patcher.stop)
             self.conn = patcher.start().return_value  # the graph reads through wvmHostDetails
@@ -116,6 +117,16 @@ class GraphTestCase(TestCase):
         data = self.graph()
         self.assertEqual((data["cpudata"], data["memdata"]["total"]), (None, None))
         self.assertNotIn("cpu_sample", data)
+
+    def test_a_host_that_cannot_be_connected_to_answers_without_values(self):
+        down = ConnectionFailed("192.0.2.1 is down")
+        with patch("computes.views.wvmHostDetails", side_effect=down), patch(
+            "computes.models.wvmHostDetails", side_effect=down
+        ):
+            self.assertIsNone(self.graph()["cpudata"])
+            for url in (reverse("machines", args=[self.compute.id, "x86_64"]),
+                        reverse("buses", args=[self.compute.id, "x86_64", "q35", "disk"])):
+                self.assertEqual(json.loads(self.client.get(url).content), {})
 
 
 @unittest.skipUnless(shutil.which("node"), "node is not installed")

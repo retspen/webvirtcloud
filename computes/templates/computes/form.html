@@ -3,12 +3,12 @@
 {% load bootstrap_icons %}
 {% load i18n %}
 
-{% block title %}{% trans "Add Compute" %}{% endblock %}
+{% block title %}{% if form.instance.pk %}{% trans "Edit Compute" %}{% else %}{% trans "Add Compute" %}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <h2 class="page-header">{% trans "Create Compute" %}</h2>
+        <h2 class="page-header">{% if form.instance.pk %}{% trans "Edit Compute" %}{% else %}{% trans "Add Compute" %}{% endif %}</h2>
     </div>
 </div>
 <div class="row">

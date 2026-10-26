@@ -130,7 +130,7 @@
             return span ? text + ' ({{ average_over|escapejs }} ' + span + ' s)' : text;
         },
     });
-    var memChart = lineChart(document.getElementById("memChart"), "MB", ["Usage"]);
+    var memChart = lineChart(document.getElementById("memChart"), "MiB", ["Usage"]);
     if (Boolean({{ status }}) === true) {
         // the CPU sample of the previous answer: usage is taken since then
         var cpuSample = null;

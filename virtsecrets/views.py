@@ -9,6 +9,7 @@ from libvirt import (
     VIR_SECRET_USAGE_TYPE_NONE,
     VIR_SECRET_USAGE_TYPE_TLS,
     VIR_SECRET_USAGE_TYPE_VOLUME,
+    VIR_SECRET_USAGE_TYPE_VTPM,
     libvirtError,
 )
 from logs.audit import audit
@@ -34,6 +35,7 @@ def secrets(request, compute_id):
         VIR_SECRET_USAGE_TYPE_CEPH: "ceph",
         VIR_SECRET_USAGE_TYPE_ISCSI: "iscsi",
         VIR_SECRET_USAGE_TYPE_TLS: "tls",
+        VIR_SECRET_USAGE_TYPE_VTPM: "vtpm",
     }
     # the create dialog offers the usage types the form takes
     usage_choices = AddSecret.base_fields["usage_type"].choices

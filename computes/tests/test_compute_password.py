@@ -26,3 +26,8 @@ class ComputePasswordTests(TestCase):
                                                  password="secret", type=conn_type)
                 self.assertEqual(self.edit(compute, ""), "secret")
                 self.assertEqual(self.edit(compute, "other"), "other")
+
+    def test_a_long_password_is_kept_and_the_page_says_edit(self):
+        compute = Compute.objects.create(name="cp-long", hostname="192.0.2.7", login="admin", password="", type=1)
+        self.assertContains(self.client.get(reverse("compute_update", args=[compute.id])), "Edit Compute")
+        self.assertEqual(self.edit(compute, "p" * 40), "p" * 40)

@@ -15,8 +15,8 @@ from vrtManager.storage import wvmStorages
 class Compute(Model):
     name = CharField(_("name"), max_length=64, unique=True)
     hostname = CharField(_("hostname"), max_length=64, validators=[validate_hostname])
-    login = CharField(_("login"), max_length=20, blank=True, validators=[validate_login])
-    password = CharField(_("password"), max_length=14, blank=True, null=True)
+    login = CharField(_("login"), max_length=32, blank=True, validators=[validate_login])
+    password = CharField(_("password"), max_length=255, blank=True, null=True)
     details = CharField(_("details"), max_length=64, null=True, blank=True)
     type = IntegerField()
     migration_address = CharField(

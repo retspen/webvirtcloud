@@ -12,7 +12,6 @@ from instances.models import Instance
 from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims
-from vrtManager.connection import wvmConnect
 from vrtManager.hostdetails import wvmHostDetails
 
 from computes.forms import (
@@ -206,17 +205,11 @@ def get_compute_machine_types(request, compute_id, arch):
 class ComputeManager:
     def __init__(self, compute_id):
         self.compute = get_object_or_404(Compute, pk=compute_id)
-        self.conn = wvmConnect(
-            self.compute.hostname,
-            self.compute.login,
-            self.compute.password,
-            self.compute.type,
-        )
 
     def get_machine_types(self, arch):
         data = dict()
         try:
-            data["machines"] = self.conn.get_machine_types(arch)
+            data["machines"] = self.compute.proxy.get_machine_types(arch)
         except libvirtError:
             pass
 
@@ -225,11 +218,11 @@ class ComputeManager:
     def get_disk_buses(self, arch, machine, disk):
         data = dict()
         try:
-            disk_device_types = self.conn.get_disk_device_types(arch, machine)
+            disk_device_types = self.compute.proxy.get_disk_device_types(arch, machine)
 
             if disk in disk_device_types:
                 if disk == "disk":
-                    data["bus"] = sorted(self.conn.get_disk_bus_types(arch, machine))
+                    data["bus"] = sorted(self.compute.proxy.get_disk_bus_types(arch, machine))
                 elif disk == "cdrom":
                     data["bus"] = ["ide", "sata", "scsi"]
                 elif disk == "floppy":
