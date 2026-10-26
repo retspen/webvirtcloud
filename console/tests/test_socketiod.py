@@ -90,19 +90,24 @@ class SocketiodTestCase(Base):
         self.assertEqual(self.d.sessions["sid-1"]["vm"], self.vm.pk)
         self.assertEqual(self.started[0][0], self.d.forward)
 
-    def test_refused_connections_start_nothing(self):
+    def refused(self, sid, auth):
+        with self.assertRaises(self.d.socketio.exceptions.ConnectionRefusedError) as refusal:
+            self.d.connect(sid, {}, auth)
+        return refusal.exception.error_args["message"]
+
+    def test_refused_connections_start_nothing_and_say_why(self):
         other = Instance.objects.create(compute=self.compute, name="vm-b", uuid="11111111-0000-0000-0000-000000000002")
         UserInstance.objects.create(user=self.user, instance=other)
         with override_settings(SERIAL_CONSOLE_ENABLED=False):
-            self.assertIs(self.d.connect("off", {}, {"token": self.token()}), False)
+            self.assertIn("turned off", self.refused("off", {"token": self.token()}))
         with override_settings(SERIAL_CONSOLE_ENABLED=True):
-            self.assertIs(self.d.connect("no-auth", {}, None), False)
-            self.assertIs(self.d.connect("bad", {}, {"token": "x"}), False)
+            self.assertIn("expired", self.refused("no-auth", None))
+            self.assertIn("expired", self.refused("bad", {"token": "x"}))
             self.assertIsNone(self.d.connect("first", {}, {"token": self.token()}))
             # one session per VM
-            self.assertIs(self.d.connect("second", {}, {"token": self.token()}), False)
+            self.assertIn("another window", self.refused("second", {"token": self.token()}))
             with patch.object(self.d, "MAX_SESSIONS", 1):
-                self.assertIs(self.d.connect("over", {}, {"token": self.token(vm=other)}), False)
+                self.assertIn("Too many", self.refused("over", {"token": self.token(vm=other)}))
         self.assertEqual(list(self.d.sessions), ["first"])
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
@@ -124,10 +129,41 @@ class SocketiodTestCase(Base):
     def test_a_session_is_stopped_once(self):
         self.d.connect("sid-1", {}, {"token": self.token()})
         pid = self.d.sessions["sid-1"]["pid"]
+        session = self.d.sessions["sid-1"]
         self.d.disconnect("sid-1")
         self.d.stop("sid-1")
         self.assertNotIn("sid-1", self.d.sessions)
         self.d.os.kill.assert_called_once_with(pid, self.d.signal.SIGKILL)
+        # a closed session's fd number may belong to a new session: nothing uses it
+        self.assertFalse(session["open"])
+        with patch.object(self.d.os, "write") as write:
+            self.d.pty_input("sid-1", {"input": "x"})
+            session_input = self.d.sessions.get("sid-1")
+        write.assert_not_called()
+        self.assertIsNone(session_input)
+
+    @override_settings(SERIAL_CONSOLE_ENABLED=True)
+    def test_two_connections_at_once_start_one_console(self):
+        import threading
+
+        barrier, results = threading.Barrier(8), []
+
+        def connect(n):
+            barrier.wait()
+            try:
+                results.append(self.d.connect(f"sid-{n}", {}, {"token": self.token()}))
+            except self.d.socketio.exceptions.ConnectionRefusedError:
+                results.append("refused")
+
+        threads = [threading.Thread(target=connect, args=(n,)) for n in range(8)]
+        # the threads have their own database connections, outside this test's transaction
+        with patch.object(self.d, "authorize", return_value=self.vm):
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+        self.assertEqual(sorted(results, key=str), [None] + ["refused"] * 7)
+        self.assertEqual(len(self.d.sessions), 1)
 
 
 class WorkerIsolationTestCase(Base):

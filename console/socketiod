@@ -14,6 +14,7 @@ import signal
 import struct
 import sys
 import termios
+import threading
 
 import django
 
@@ -34,44 +35,61 @@ CONSOLECALLBACK = os.path.join(ROOT_PATH, "conf", "daemon", "consolecallback")
 MAX_SESSIONS = 20
 
 sio = socketio.Server(async_mode="threading")  # the same origin only
-sessions = {}  # sid -> {"pid", "fd", "vm"}
+# Handlers run on their own threads. sessions (sid -> {"pid", "fd", "vm",
+# "lock", "open"}) changes only under sessions_lock; a session's fd is used
+# and closed only under its own lock, while it is open, so a closed fd's
+# number, reused by a new session, never reaches another console.
+sessions = {}
+sessions_lock = threading.Lock()
 
 
 @sio.event
 def connect(sid, environ, auth):
+    # the page shows the reason
     if not settings.SERIAL_CONSOLE_ENABLED:
-        return False
+        raise socketio.exceptions.ConnectionRefusedError("The serial console is turned off on this server")
     try:
         instance = authorize((auth or {}).get("token"))
     except PermissionError:
-        return False
+        raise socketio.exceptions.ConnectionRefusedError("The console link has expired: reload the page")
     finally:
         db.close_old_connections()
-    if len(sessions) >= MAX_SESSIONS or any(s["vm"] == instance.pk for s in sessions.values()):
-        return False
-    pid, fd = pty.fork()
-    if pid == 0:
-        try:
-            # pty.fork's master is inheritable: without this each worker would
-            # hold the other sessions' consoles open
-            os.closerange(3, os.sysconf("SC_OPEN_MAX"))
-            os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk)])
-        finally:
-            os._exit(1)
-    sessions[sid] = session = {"pid": pid, "fd": fd, "vm": instance.pk}
+    with sessions_lock:
+        if any(s["vm"] == instance.pk for s in sessions.values()):
+            raise socketio.exceptions.ConnectionRefusedError("The console of this VM is open in another window")
+        if len(sessions) >= MAX_SESSIONS:
+            raise socketio.exceptions.ConnectionRefusedError("Too many consoles are open on this server: try again later")
+        pid, fd = pty.fork()
+        if pid == 0:
+            try:
+                # pty.fork's master is inheritable: without this each worker would
+                # hold the other sessions' consoles open
+                os.closerange(3, os.sysconf("SC_OPEN_MAX"))
+                os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk)])
+            finally:
+                os._exit(1)
+        sessions[sid] = session = {"pid": pid, "fd": fd, "vm": instance.pk, "lock": threading.Lock(), "open": True}
     sio.start_background_task(forward, sid, session)
 
 
 def forward(sid, session):
     """The worker's output to its client, until the worker ends."""
     decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")  # a character may be split
-    while sessions.get(sid) is session:
-        if not select.select([session["fd"]], [], [], 0.1)[0]:
-            continue
+    while session["open"]:
         try:
-            output = os.read(session["fd"], 20480)
-        except OSError:  # EIO: the worker ended
-            output = b""
+            # a fd closed meanwhile may wake this up: the session is closed then
+            ready = select.select([session["fd"]], [], [], 0.1)[0]
+        except (OSError, ValueError):
+            ready = True
+        if not ready:
+            continue
+        with session["lock"]:
+            if not session["open"]:
+                return
+            try:
+                output = os.read(session["fd"], 20480)
+            except OSError:  # EIO: the worker ended
+                output = b""
         if not output:
             sio.emit("pty_output", {"output": decoder.decode(b"", final=True) + "\r\n[console closed]\r\n"}, to=sid)
             stop(sid)
@@ -82,17 +100,20 @@ def forward(sid, session):
 
 def stop(sid):
     """End the sid's worker; once, whoever calls it first."""
-    session = sessions.pop(sid, None)
+    with sessions_lock:
+        session = sessions.pop(sid, None)
     if session is None:
         return
     try:
-        os.close(session["fd"])
-    except OSError:
-        pass
-    try:
-        os.kill(session["pid"], signal.SIGKILL)
+        os.kill(session["pid"], signal.SIGKILL)  # first: a write blocked on its terminal ends
     except ProcessLookupError:
         pass
+    with session["lock"]:
+        session["open"] = False
+        try:
+            os.close(session["fd"])
+        except OSError:
+            pass
     sio.start_background_task(os.waitpid, session["pid"], 0)
 
 
@@ -100,10 +121,13 @@ def stop(sid):
 def pty_input(sid, message):
     session = sessions.get(sid)
     if session and isinstance(message, dict) and isinstance(message.get("input"), str):
-        try:
-            os.write(session["fd"], message["input"].encode())
-        except OSError:
-            pass
+        data = message["input"].encode(errors="replace")  # a lone surrogate from the browser
+        with session["lock"]:
+            if session["open"]:
+                try:
+                    os.write(session["fd"], data)
+                except OSError:
+                    pass
 
 
 @sio.event
@@ -113,7 +137,9 @@ def resize(sid, message):
         return
     rows, cols = message.get("rows"), message.get("cols")
     if all(isinstance(v, int) and 1 <= v <= 500 for v in (rows, cols)):
-        fcntl.ioctl(session["fd"], termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+        with session["lock"]:
+            if session["open"]:
+                fcntl.ioctl(session["fd"], termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
 
 
 @sio.event

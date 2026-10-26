@@ -23,8 +23,9 @@
 <div id="terminal"></div>
 <script>
         // socketiod is behind this page's own /socket.io/ location; the page's
-        // signed token is the credential (the cookie holds the last console's)
-        var socket = io({transports: ["websocket", "polling"], auth: {token: "{{ token|escapejs }}"}});
+        // signed token is the credential. It lasts two minutes: a new
+        // connection takes a new page (Reconnect), not an automatic retry.
+        var socket = io({transports: ["websocket", "polling"], auth: {token: "{{ token|escapejs }}"}, reconnection: false});
 
         const status = document.getElementById("status");
         const button = document.getElementById("button");
@@ -49,12 +50,12 @@
         function showStatus(text, color) {
             status.textContent = text;
             status.style.backgroundColor = color;
-            button.textContent = socket.connected ? "Disconnect" : "Connect";
+            button.textContent = socket.connected ? "{% trans 'Disconnect'|escapejs %}" : "{% trans 'Reconnect'|escapejs %}";
         }
-        socket.on("connect", () => showStatus("connected", "lightgreen"));
-        socket.on("disconnect", () => showStatus("disconnected", "#ff8383"));
-        // refused: serial console off, an expired token, or the VM's console already open
-        socket.on("connect_error", () => showStatus("refused", "#ff8383"));
+        socket.on("connect", () => showStatus("{% trans 'connected'|escapejs %}", "lightgreen"));
+        socket.on("disconnect", () => showStatus("{% trans 'disconnected'|escapejs %}", "#ff8383"));
+        // the server says why: serial console off, an expired link, the console open elsewhere
+        socket.on("connect_error", (err) => showStatus(err.message, "#ff8383"));
 
         function myFunction(){
             if (socket.connected) {
