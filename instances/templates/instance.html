@@ -438,15 +438,17 @@
     }
     function load_osinfo() {
         $.getJSON("{% url 'instances:osinfo' instance.id %}", function (data) {
-            $.each(data, function() {
-                $('#oshostname').text(data['host-name']);
-                $('#osname').text(data.id);
-                $('#osprettyname').text(data['pretty-name']);
-                $('#oskernelrelease').text(data['kernel-release']);
-                $('#oskernelversion').text(data['kernel-version']);
-                $('#osversion').text(data.version);
-                $('#ostimezone').text(data.zone + " / " + data.offset);
-            })
+            $('#osinfo-error').addClass('d-none');
+            $('#oshostname').text(data['host-name'] || '');
+            $('#osname').text(data.id || '');
+            $('#osprettyname').text(data['pretty-name'] || '');
+            $('#oskernelrelease').text(data['kernel-release'] || '');
+            $('#oskernelversion').text(data['kernel-version'] || '');
+            $('#osversion').text(data.version || '');
+            $('#ostimezone').text(data.zone ? data.zone + " / " + data.offset : '');
+        }).fail(function (xhr) {
+            var error = xhr.responseJSON && xhr.responseJSON.error;
+            $('#osinfo-error').text(error || "{% trans 'The guest agent did not answer' %}").removeClass('d-none');
         });
     }
 </script>

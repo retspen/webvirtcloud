@@ -71,6 +71,19 @@ class OsInfoTestCase(unittest.TestCase):
             self.assertEqual(inst.osinfo(), {"kernel-release": "6.12", "zone": "UTC", "host-name": "web"})
         self.assertEqual({c.args[2] for c in agent.call_args_list}, {10})
 
+    def test_a_command_the_agent_lacks_leaves_out_only_its_details(self):
+        inst = wvmInstance.__new__(wvmInstance)
+        inst.instance = MagicMock()
+
+        def agent(dom, cmd, timeout, flags):
+            if json.loads(cmd)["execute"] == "guest-get-timezone":
+                raise libvirtError("The command guest-get-timezone has not been found")
+            return json.dumps({"return": {"guest-get-osinfo": {"id": "alma"}, "guest-get-host-name": {"host-name": "web"}}[
+                json.loads(cmd)["execute"]]})
+
+        with patch.object(module, "qemuAgentCommand", side_effect=agent):
+            self.assertEqual(inst.osinfo(), {"id": "alma", "host-name": "web"})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -389,8 +389,10 @@ class wvmInstance(wvmConnect):
 
     def osinfo(self):
         info = agent_command(self.instance, "guest-get-osinfo")
-        info.update(agent_command(self.instance, "guest-get-timezone"))
-        info.update(agent_command(self.instance, "guest-get-host-name"))
+        # an agent without one of these commands still gives the rest
+        for command in ("guest-get-timezone", "guest-get-host-name"):
+            with contextlib.suppress(libvirtError):
+                info.update(agent_command(self.instance, command))
         return info
 
     def start(self, flags=0):
