@@ -27,8 +27,18 @@ class wvmStorages(wvmConnect):
             )
         return storages
 
-    def define_storage(self, xml, flag):
-        self.wvm.storagePoolDefineXML(xml, flag)
+    def define_storage(self, xml, flags):
+        """Define the pool, start it with flags and set it to autostart. A
+        pool that does not start is undefined again, so its name stays free
+        for another try."""
+        stg = self.wvm.storagePoolDefineXML(xml, 0)
+        try:
+            stg.create(flags)
+        except libvirt.libvirtError:
+            stg.undefine()
+            raise
+        stg.setAutostart(1)
+        return stg
 
     def get_pool_by_target(self, target):
         pool_names = self.get_storages()
@@ -56,13 +66,8 @@ class wvmStorages(wvmConnect):
                        <path>{target}</path>
                   </target>
                 </pool>"""
-        self.define_storage(xml, 0)
-        stg = self.get_storage(name)
         # builds the dir pool's directory or the logical pool's volume group
-        stg.create(libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
-        stg.setAutostart(1)
-
-        return stg
+        return self.define_storage(xml, libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
 
     def create_storage_ceph(
         self, stg_type, name, ceph_pool, ceph_host, ceph_user, secret
@@ -81,9 +86,6 @@ class wvmStorages(wvmConnect):
                 </pool>
                 """
         self.define_storage(xml, 0)
-        stg = self.get_storage(name)
-        stg.create(0)
-        stg.setAutostart(1)
 
     def create_storage_netfs(
         self, stg_type, name, netfs_host, source, source_format, target
@@ -102,13 +104,8 @@ class wvmStorages(wvmConnect):
                 </target>
                 </pool>
                 """
-        self.define_storage(xml, 0)
-        stg = self.get_storage(name)
         # builds the mount point
-        stg.create(libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
-        stg.setAutostart(1)
-
-        return stg
+        return self.define_storage(xml, libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
 
 
 class wvmStorage(wvmConnect):

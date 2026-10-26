@@ -73,7 +73,7 @@ class CreateVolumeForm(forms.Form):
         required=True,
         choices=(("qcow2", "qcow2 (recommended)"), ("qcow", "qcow"), ("raw", "raw")),
     )
-    size = forms.IntegerField()
+    size = forms.IntegerField(label=_("Size (GiB)"), min_value=1)
     meta_prealloc = forms.BooleanField(required=False)
 
     def clean_name(self):

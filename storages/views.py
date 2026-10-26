@@ -1,3 +1,4 @@
+import contextlib
 import logging
 
 from admin.decorators import superuser_only
@@ -165,7 +166,7 @@ def storage(request, compute_id, pool):
     try:
         size, free = conn.get_size()
         used = size - free
-        if state:
+        if state and size:  # an iSCSI pool without LUNs has no size
             percent = (used * 100) // size
         else:
             percent = 0
@@ -178,7 +179,6 @@ def storage(request, compute_id, pool):
     autostart = conn.get_autostart()
 
     if state:
-        conn.refresh()
         volumes = conn.update_volumes()
     else:
         volumes = None
@@ -313,7 +313,8 @@ def get_volumes(request, compute_id, pool):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, pool
         )
-        conn.refresh()
+        with contextlib.suppress(libvirtError):  # refused while a volume is cloned in the pool
+            conn.refresh()
         data["vols"] = sorted(conn.get_volumes())
     except libvirtError as err:
         # do not answer 200 with an empty list when the listing failed: the

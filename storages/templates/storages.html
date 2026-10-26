@@ -62,7 +62,7 @@
                             <dt class="col-6">{% trans "Size" %}</dt>
                             <dd class="col-6">{{ pool.size|filesizeformat }}</dd>
                             <dt class="col-6">{% trans "Volumes" %}</dt>
-                            <dd class="col-6">{{ pool.volumes }}</dd>
+                            <dd class="col-6">{{ pool.volumes|default_if_none:"" }}</dd>
                         </dl>
                     </div>
                 </div>

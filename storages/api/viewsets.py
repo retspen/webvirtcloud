@@ -1,9 +1,12 @@
+import contextlib
+
 from admin.permissions import IsSuperUser
 from appsettings.settings import app_settings
 from computes.models import Compute
 from computes.utils import libvirt_compute_lock
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, inline_serializer
+from libvirt import libvirtError
 from logs.audit import audit, failed
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
@@ -136,7 +139,6 @@ class VolumeViewSet(viewsets.ViewSet):
         state = conn.is_active()
 
         if state:
-            conn.refresh()
             volume_queryset = conn.update_volumes()
         else:
             volume_queryset = None
@@ -176,7 +178,8 @@ class VolumeViewSet(viewsets.ViewSet):
             subject, action = f"Storage pool {storage_pk}", f"add volume {serializer.validated_data['name']}"
             state = conn.is_active()
             if state:
-                conn.refresh()
+                with contextlib.suppress(libvirtError):  # refused while a volume is cloned in the pool
+                    conn.refresh()
                 with audit(request, compute, subject, action) as entry:
                     ret = conn.create_volume(
                         serializer.validated_data["name"],

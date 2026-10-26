@@ -1,9 +1,11 @@
 """The host, pool, user and format values of a new Ceph or NFS pool go into
-its XML as text, whatever characters they hold."""
+its XML as text, whatever characters they hold; a new pool that does not
+start is not left defined."""
 
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
+from libvirt import libvirtError
 from lxml import etree
 from vrtManager.storage import wvmStorages
 
@@ -28,3 +30,13 @@ class PoolXmlTests(SimpleTestCase):
         self.assertEqual(pool.find("source/host").get("name"), ODD + "host")
         self.assertEqual(pool.find("source/format").get("type"), ODD + "fmt")
         self.assertEqual(pool.find("source/dir").get("path"), "/srv/nfs")
+
+    def test_a_pool_that_does_not_start_is_undefined(self):
+        with patch("vrtManager.connection.connection_manager.get_connection") as get:
+            pool = get.return_value.storagePoolDefineXML.return_value
+            pool.create.side_effect = libvirtError("mount failed")
+            with self.assertRaises(libvirtError):
+                wvmStorages("host", "login", "pw", 1).create_storage_netfs(
+                    "netfs", "pool1", "nfs.example.com", "/srv/nfs", "auto", "/mnt/pool1")
+        pool.undefine.assert_called_once_with()
+        pool.setAutostart.assert_not_called()

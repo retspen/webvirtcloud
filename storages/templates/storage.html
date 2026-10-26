@@ -130,7 +130,7 @@
                                                         <input type="hidden" name="image" value="{{ volume.name }}">
                                                     </div>
                                                 </div>
-                                                <div class="row" id="image_format">
+                                                <div class="row">
                                                     <label class="col-sm-3 col-form-label" for="clone{{ forloop.counter }}_convert">{% trans "Convert" %}</label>
                                                     <div class="col-sm-6">
                                                         <input class="volume-convert" type="checkbox" name="convert" value="true" id="clone{{ forloop.counter }}_convert">
@@ -200,24 +200,13 @@
     {% job_panel_script job_resource %}
     <script src="{% static 'js/table_filter.js' %}"></script>
     <script>
+        // each clone dialog shows its own format and metadata rows
         $('.format-convert').hide();
-        $(document).on('change', '.volume-convert', function () {
-            if ($(this).prop('checked')) {
-                $('.format-convert').show();
-                if ($('.image-format').val() == 'qcow2') {
-                    $('.meta-prealloc').show();
-                }
-            } else {
-                $('.format-convert').hide();
-                $('.meta-prealloc').hide();
-            }
-        });
-        $(document).on('change', '.image-format', function () {
-            if ($(this).val() == "qcow2") {
-                $('.meta-prealloc').show();
-            } else {
-                $('.meta-prealloc').hide();
-            }
+        $(document).on('change', '.volume-convert, .image-format', function () {
+            var form = $(this).closest('form');
+            var convert = form.find('.volume-convert').prop('checked');
+            form.find('.format-convert').toggle(convert);
+            form.find('.meta-prealloc').toggle(convert && form.find('.image-format').val() == 'qcow2');
         });
 
         $(document).ready(function() {

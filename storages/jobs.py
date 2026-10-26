@@ -1,10 +1,12 @@
 """Jobs of the storages app (operations framework)."""
 
+import contextlib
 import logging
 import os
 
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_noop
+from libvirt import libvirtError
 from vrtManager import util
 from vrtManager.storage import wvmStorage
 
@@ -109,7 +111,8 @@ class UploadVolume(Kind):
 
     def plan(self, user, params):
         compute, stg = _storage(params)
-        stg.refresh()
+        with contextlib.suppress(libvirtError):  # refused while a volume is cloned in the pool
+            stg.refresh()
         if params["name"] in stg.get_volumes():
             raise FileExistsError(f"The pool has a volume named {params['name']}")
         pool = claims.pool_key(compute.pk, params["pool"])
