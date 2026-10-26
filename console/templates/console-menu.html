@@ -1,0 +1,53 @@
+{% load i18n %}
+{# the console pages' Send key(s) menu and Fullscreen; serial: only the keys a terminal takes #}
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button"
+        id="dropdownMenuLink" aria-haspopup="true" aria-expanded="false">
+        {% trans "Send key(s)" %}
+    </a>
+    <div class="dropdown-menu shadow" aria-labelledby="dropdownMenuLink" style="min-width: 250px;">
+        {% if not serial %}
+        <h6 class="dropdown-header">{% trans "System" %}</h6>
+        <a class="dropdown-item" id="ctrlaltdel" href="#">Ctrl+Alt+Del</a>
+        <a class="dropdown-item" id="ctrlaltbackspace" href="#">Ctrl+Alt+Backspace</a>
+        <div class="dropdown-divider"></div>
+        <h6 class="dropdown-header">{% trans "Navigation & Desktop" %}</h6>
+        <a class="dropdown-item" id="alttab" href="#">Alt+Tab</a>
+        <a class="dropdown-item" id="superkey" href="#">Windows / Super Key</a>
+        <a class="dropdown-item" id="sendesc" href="#">Escape</a>
+        <a class="dropdown-item" id="sendtab" href="#">Tab</a>
+        <div class="dropdown-divider"></div>
+        {% endif %}
+        <h6 class="dropdown-header">{% trans "Terminal Control" %}</h6>
+        <a class="dropdown-item" id="ctrlc" href="#">Ctrl+C</a>
+        <a class="dropdown-item" id="ctrlz" href="#">Ctrl+Z</a>
+        <a class="dropdown-item" id="ctrld" href="#">Ctrl+D</a>
+        <a class="dropdown-item" id="ctrlbackslash" href="#">Ctrl+\</a>
+        {% if serial %}
+        <a class="dropdown-item" id="sendesc" href="#">Escape</a>
+        <a class="dropdown-item" id="sendtab" href="#">Tab</a>
+        {% else %}
+        <div class="dropdown-divider"></div>
+        <h6 class="dropdown-header">{% trans "Virtual Consoles (Ctrl+Alt+F#)" %}</h6>
+        <div class="px-3 py-1">
+            <div class="row g-1 text-center">
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf1" href="#">F1</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf2" href="#">F2</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf3" href="#">F3</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf4" href="#">F4</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf5" href="#">F5</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf6" href="#">F6</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf7" href="#">F7</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf8" href="#">F8</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf9" href="#">F9</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf10" href="#">F10</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf11" href="#">F11</a></div>
+                <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf12" href="#">F12</a></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</li>
+<li class="nav-item" id="fullscreen_button">
+    <a class="nav-link" href="#">{% trans "Fullscreen" %}</a>
+</li>

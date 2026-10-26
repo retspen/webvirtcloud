@@ -3,7 +3,6 @@
 {% load static %}
 
 {% block head %}
-<title>WebVirtCloud - XTerm</title>
 <link rel="stylesheet" href="{% static 'css/xterm.css' %}"/>
 <script src="{% static 'js/xterm/xterm.js' %}"></script>
 <script src="{% static 'js/xterm/addon-fit.js' %}"></script>
@@ -14,6 +13,8 @@
 </style>
 
 {% endblock %}
+{% block navbarmenu %}{% include "console-menu.html" with serial=True %}{% endblock %}
+
 {% block content %}
 <div style="background: white; padding-bottom: 5px;">
     <span style="font-size: small;">Status: <span style="font-size: small;" id="status">connecting...</span></span>

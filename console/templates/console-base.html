@@ -7,6 +7,7 @@
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{% static "favicon.ico" %}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if instance %}{{ instance.name }} - {% endif %}{% trans "Console" %}</title>
     {# error pages render without app_settings: they get zephyr #}
     {% with theme=app_settings.BOOTSTRAP_THEME|default:"zephyr" %}<link rel="stylesheet" href="{% static "css/themes/"|add:theme|add:".min.css" %}" id="wvc_css">{% endwith %}
     <link href="{% static "css/webvirtcloud.css" %}" rel="stylesheet">
@@ -24,8 +25,6 @@
             display: flex;
             flex-direction: column;
             background-color: #494949;
-            border-bottom-right-radius: 850px 600px;
-
         }
 
         #main_container canvas {
@@ -42,10 +41,11 @@
 </head>
 
 <body>
-    <div id='main_container' class="container">
+    <div id="main_container">
         <nav class="navbar sticky-top navbar-expand-md navbar-dark bg-primary" aria-label="console navbar">
-            <div class="container">
+            <div class="container-fluid">
                 <a class="navbar-brand">{{ instance.name }}</a>
+                {% block navbar %}
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                     aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -53,61 +53,12 @@
 
                 <div class="collapse navbar-collapse">
                     <ul class="navbar-nav me-auto my-2 my-lg-0">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button"
-                                id="dropdownMenuLink" aria-haspopup="true" aria-expanded="false">
-                                {% trans "Send key(s)" %}
-                            </a>
-                            <div class="dropdown-menu shadow" aria-labelledby="dropdownMenuLink" style="min-width: 250px;">
-                                <h6 class="dropdown-header">{% trans "System" %}</h6>
-                                <a class="dropdown-item" id="ctrlaltdel" href="#">Ctrl+Alt+Del</a>
-                                <a class="dropdown-item" id="ctrlaltbackspace" href="#">Ctrl+Alt+Backspace</a>
-                                <div class="dropdown-divider"></div>
-                                <h6 class="dropdown-header">{% trans "Navigation & Desktop" %}</h6>
-                                <a class="dropdown-item" id="alttab" href="#">Alt+Tab</a>
-                                <a class="dropdown-item" id="superkey" href="#">Windows / Super Key</a>
-                                <a class="dropdown-item" id="sendesc" href="#">Escape</a>
-                                <a class="dropdown-item" id="sendtab" href="#">Tab</a>
-                                <div class="dropdown-divider"></div>
-                                <h6 class="dropdown-header">{% trans "Terminal Control" %}</h6>
-                                <a class="dropdown-item" id="ctrlc" href="#">Ctrl+C</a>
-                                <a class="dropdown-item" id="ctrlz" href="#">Ctrl+Z</a>
-                                <a class="dropdown-item" id="ctrld" href="#">Ctrl+D</a>
-                                <a class="dropdown-item" id="ctrlbackslash" href="#">Ctrl+\</a>
-                                <div class="dropdown-divider"></div>
-                                <h6 class="dropdown-header">{% trans "Virtual Consoles (Ctrl+Alt+F#)" %}</h6>
-                                <div class="px-3 py-1">
-                                    <div class="row g-1 text-center">
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf1" href="#">F1</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf2" href="#">F2</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf3" href="#">F3</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf4" href="#">F4</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf5" href="#">F5</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf6" href="#">F6</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf7" href="#">F7</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf8" href="#">F8</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf9" href="#">F9</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf10" href="#">F10</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf11" href="#">F11</a></div>
-                                        <div class="col-3"><a class="btn btn-sm btn-outline-secondary w-100 py-1" id="ctrlaltf12" href="#">F12</a></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="nav-item" id="fullscreen_button">
-                            <a class="nav-link" href="#">{% trans "Fullscreen" %}</a>
-                        </li>
                         {% block navbarmenu %}{% endblock %}
                     </ul>
                 </div>
+                {% endblock %}
             </div>
         </nav>
-        {% if console_error %}
-        <div class="alert alert-danger alert-dismissible rounded-0 m-0" role="alert">
-            {{ console_error }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans "Close" %}"></button>
-        </div>
-        {% endif %}
         {% block content %}{% endblock %}
     </div>
     <script src="{% static "js/jquery.js" %}"></script>

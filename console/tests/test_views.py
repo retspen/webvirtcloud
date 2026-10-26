@@ -131,7 +131,7 @@ class ConsoleViewsTestCase(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "console-vnc-lite.html")
+        self.assertTemplateUsed(response, "console-error.html")
         self.assertIn("'rdp' is not supported", str(response.context["console_error"]))
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
@@ -204,9 +204,32 @@ class ConsoleViewsTestCase(TestCase):
         url = self.url
         response = self.client.get(url)
 
-        # Non-permitted user attempting to view other user's instance
+        # Non-permitted user attempting to view other user's instance: the
+        # console's own error page, without the VM's name or a console token
         self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, "console-error.html")
         self.assertIn("permission", response.content.decode("utf-8").lower())
+        self.assertNotContains(response, "vm-alpha", status_code=403)
+        self.assertNotIn("token", response.context)
+
+    @override_settings(SERIAL_CONSOLE_ENABLED=False)
+    @patch("console.views.wvmInstance")
+    def test_a_console_that_cannot_open_gets_no_console_client(self, mock_wvm):
+        # the page says why; it neither connects to novncd nor offers keys
+        conn = mock_wvm.return_value
+        conn.instance.isActive.return_value = 1
+        self.client.force_login(self.admin_user)
+        for console_type, running in (("vnc", 0), ("pty", 1), ("rdp", 1), (None, 1)):
+            with self.subTest(console_type=console_type, running=running):
+                conn.get_console_type.return_value = console_type
+                conn.instance.isActive.return_value = running
+                response = self.client.get(self.url)
+                self.assertTemplateUsed(response, "console-error.html")
+                self.assertNotIn("token", response.context)
+                page = html.fromstring(response.content)
+                self.assertEqual(page.xpath("//script[@type='module'] | //*[@id='dropdownMenuLink']"), [])
+                self.assertEqual(len(page.xpath("//div[@role='alert']")), 1)
+                self.assertEqual(page.findtext(".//title"), "vm-alpha - Console")
 
     @patch("console.views.wvmInstance")
     def test_console_lite_uses_the_signed_token(self, mock_wvm):
@@ -220,7 +243,6 @@ class ConsoleViewsTestCase(TestCase):
         signed = response.context["token"]
         self.assertEqual(TimestampSigner(salt="console.novnc").unsign(signed),
                          f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}")
-        self.assertNotContains(response, "readQueryVariable('token'")
         self.assertContains(response, f"const token = '{escapejs(signed)}'")
 
     @patch("console.views.wvmInstance")
@@ -238,8 +260,8 @@ class ConsoleViewsTestCase(TestCase):
         self.client.force_login(self.alice)
         response = self.client.get(self.url + "?host=attacker.example&port=443&path=x")
         self.assertNotContains(response, "attacker.example")
-        for name in ("host", "port", "path"):
-            self.assertNotContains(response, f"readQueryVariable('{name}'")
+        # nor a password from it: a link would leave it in history and logs
+        self.assertNotContains(response, "readQueryVariable")
         self.assertContains(response, "const host = window.location.hostname;")
 
     @patch("console.views.wvmInstance")
@@ -394,7 +416,7 @@ class ConsoleViewsTestCase(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "console-vnc-lite.html")
+        self.assertTemplateUsed(response, "console-error.html")
         self.assertIsNotNone(response.context["console_error"])
 
     def test_an_unknown_vm_gives_the_superuser_an_error_page(self):
@@ -402,9 +424,18 @@ class ConsoleViewsTestCase(TestCase):
         url = reverse("console", args=[self.compute.id, "no-such-uuid"])
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "console-vnc-lite.html")
+        self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, "console-error.html")
         self.assertIsNotNone(response.context["console_error"])
+
+    @override_settings(SERIAL_CONSOLE_ENABLED=True)
+    @patch("console.views.wvmInstance")
+    def test_the_serial_console_offers_only_the_keys_a_terminal_takes(self, mock_wvm):
+        mock_wvm.return_value.get_console_type.return_value = "pty"
+        self.client.force_login(self.admin_user)
+        page = html.fromstring(self.client.get(self.url).content)
+        keys = page.xpath("//*[@aria-labelledby='dropdownMenuLink']//a/@id")
+        self.assertEqual(sorted(keys), ["ctrlbackslash", "ctrlc", "ctrld", "ctrlz", "sendesc", "sendtab"])
 
     @patch("console.views.wvmInstance")
     def test_console_send_keys_menu_elements(self, mock_wvm):

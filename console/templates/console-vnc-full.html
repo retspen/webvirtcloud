@@ -13,7 +13,6 @@
     or the fragment:
         http://example.com/#host=HOST&port=PORT&encrypt=1
     -->
-<title>WebVirtCloud - noVNC</title>
 
 <meta charset="utf-8" />
 
@@ -95,6 +94,8 @@
 </script>
 <!-- end scripts -->
 {% endblock %}
+
+{% block navbarmenu %}{% include "console-menu.html" %}{% endblock %}
 
 {% block content %}
 <div id="noVNC_fallback_error" class="noVNC_center">
