@@ -28,7 +28,15 @@ class ConsoleForm(forms.Form):
     clear_keymap = forms.BooleanField(label=_("Clear keymap"), required=False)
     keymap = forms.ChoiceField(label=_("Keymap"), required=False)
 
-    def __init__(self, *args, can_set_listener=True, **kwargs):
+    def __init__(self, *args, instance, can_set_listener, **kwargs):
+        # the VM's settings as the initial values: a save changes only the fields edited
+        listener = instance.config_console_listener_address
+        kwargs["initial"] = {
+            "console_type": instance.console_type,
+            "listen_on": listener,
+            "password": instance.config_console_passwd,
+            "keymap": instance.config_console_keymap or "auto",
+        }
         super(ConsoleForm, self).__init__(*args, **kwargs)
         types = [("vnc", "VNC")]
         if settings.SERIAL_CONSOLE_ENABLED:
@@ -38,9 +46,13 @@ class ConsoleForm(forms.Form):
         # Only administrators choose the listen address: beyond localhost the
         # console is reachable from the network. A disabled field ignores
         # posted values.
+        listeners = list(QEMU_CONSOLE_LISTENER_ADDRESSES)
+        # an address set elsewhere (the XML editor) is offered, so a save keeps it
+        if listener and listener not in dict(listeners):
+            listeners.append((listener, listener))
         self.fields["listen_on"] = forms.ChoiceField(
             label=_("Listen on"),
-            choices=QEMU_CONSOLE_LISTENER_ADDRESSES,
+            choices=listeners,
             disabled=not can_set_listener,
             required=can_set_listener,
         )

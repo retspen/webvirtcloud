@@ -28,6 +28,9 @@ class ConsoleListenerTests(TestCase):
         with patch("instances.models.wvmInstance") as wvm:
             proxy = wvm.return_value
             proxy.console_listens_locally.return_value = local
+            proxy.get_console_listener_addr.return_value = "127.0.0.1" if local else "0.0.0.0"
+            proxy.get_console_passwd.return_value = "Old-pass-1"
+            proxy.get_console_keymap.return_value = ""
             proxy.set_console_passwd.return_value = True
             response = self.client.post(reverse("instances:update_console", args=[self.vm.id]), data)
         return proxy, [str(m) for m in get_messages(response.wsgi_request)]
@@ -50,7 +53,7 @@ class ConsoleListenerTests(TestCase):
         proxy.set_console_passwd.assert_called_once_with("s3cret-pass")
 
     def test_superuser_can_open_the_console_to_all_interfaces(self):
-        proxy, _ = self.post(self.admin, {"listen_on": "0.0.0.0", "clear_password": "on", "keymap": "auto"}, local=False)
+        proxy, _ = self.post(self.admin, {"listen_on": "0.0.0.0", "clear_password": "on", "keymap": "auto"})
         proxy.set_console_listener_addr.assert_called_once_with("0.0.0.0")
         proxy.set_console_passwd.assert_called_once_with("")
 

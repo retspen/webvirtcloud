@@ -101,6 +101,9 @@ class VMRowTests(TestCase):
 
     def test_a_console_setting_that_changed_nothing_writes_no_row(self):
         self.proxy.get_console_type.return_value = "vnc"
+        self.proxy.get_console_listener_addr.return_value = "127.0.0.1"
+        self.proxy.get_console_passwd.return_value = ""
+        self.proxy.get_console_keymap.return_value = ""
         self.proxy.set_console_keymap.return_value = False  # no graphics device
         self.proxy.set_console_listener_addr.return_value = False  # a socket, no address
         self.post("update_console", {"listen_on": "0.0.0.0", "keymap": "de"})
@@ -109,6 +112,18 @@ class VMRowTests(TestCase):
         self.post("update_console", {"listen_on": "0.0.0.0", "keymap": "de"})
         self.assertEqual(self.rows(), [("VM vm: set console keymap de", True),
                                        ("VM vm: set console listen address 0.0.0.0", True)])
+
+    def test_a_console_save_logs_only_what_changed(self):
+        # an address the form does not list stays: the select offers it
+        self.proxy.get_console_type.return_value = "vnc"
+        self.proxy.get_console_listener_addr.return_value = "192.0.2.10"
+        self.proxy.get_console_keymap.return_value = "de"
+        self.proxy.get_console_passwd.return_value = "Vnc-pass-1"
+        form = {"listen_on": "192.0.2.10", "keymap": "de"}
+        self.post("update_console", {**form, "password": "Vnc-pass-1"})
+        self.post("update_console", {**form, "password": "Vnc-pass-2"})
+        self.assertEqual(self.rows(), [("VM vm: set console password", True)])
+        self.proxy.set_console_listener_addr.assert_not_called()
 
     def test_a_deleted_vm_and_each_of_its_disks_have_their_own_row(self):
         self.proxy.split_disk_paths_by_use.return_value = (["/pool/a.qcow2", "/pool/b.qcow2"], [])
