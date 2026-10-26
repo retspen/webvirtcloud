@@ -11,6 +11,18 @@ EnvironmentFile=-/etc/default/webvirtcloud
 ExecStart=/srv/webvirtcloud/venv/bin/python3 /srv/webvirtcloud/console/novncd
 Restart=on-failure
 RestartSec=10
+# Sandbox: what the console daemons need (TCP and Unix sockets, ssh,
+# writes under /srv and the user's ~/.ssh) and no more. No private /tmp:
+# a VM's VNC Unix socket may be there.
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes
 
 [Install]
 WantedBy=multi-user.target
