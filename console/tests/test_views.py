@@ -270,12 +270,18 @@ class ConsoleViewsTestCase(TestCase):
 
     @patch("console.views.wvmInstance")
     def test_a_tcp_hosts_loopback_console_says_why_it_cannot_open(self, mock_wvm):
+        # the running VM's listener decides, as for novncd, not its next-start settings
         Compute.objects.filter(pk=self.compute.pk).update(type=1)
-        mock_wvm.return_value.get_console_type.return_value = "vnc"
-        mock_wvm.return_value.console_listens_locally.return_value = True
+        conn = mock_wvm.return_value
+        conn.get_console_type.return_value = "vnc"
+        conn.get_console_socket.return_value = None
+        conn.console_listens_locally.return_value = False  # next start: all interfaces
         self.client.force_login(self.admin_user)
-        response = self.client.get(self.url)
-        self.assertContains(response, "This console listens only on its host")
+        for live, refused in (("127.0.0.1", True), ("::1", True), ("0.0.0.0", False), ("192.0.2.40", False)):
+            with self.subTest(live=live):
+                conn.get_console_listener_addr.return_value = live
+                response = self.client.get(self.url)
+                self.assertEqual("This console listens only on its host" in response.content.decode(), refused)
 
     @patch("console.views.wvmInstance")
     def test_both_pages_connect_to_novncd_behind_the_panels_own_address(self, mock_wvm):

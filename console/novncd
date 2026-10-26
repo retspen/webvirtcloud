@@ -4,7 +4,6 @@
 # through an SSH tunnel or a local Unix socket.
 
 import argparse
-import ipaddress
 import logging
 import os
 import socket
@@ -23,6 +22,7 @@ from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 
 from console.sshtunnels import open_tunnel, tunnel_target  # noqa: E402
 from vrtManager.connection import CONN_SOCKET, CONN_SSH  # noqa: E402
+from vrtManager.util import is_loopback  # noqa: E402
 from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
 
 
@@ -75,14 +75,6 @@ def get_connection_infos(token):
 
 
 WILDCARD = (None, "", "0.0.0.0", "::")
-
-
-def is_loopback(address):
-    """127.0.0.0/8, ::1 or localhost: reachable only on the compute itself."""
-    try:
-        return ipaddress.ip_address(address).is_loopback
-    except ValueError:
-        return address == "localhost"
 
 
 class ConsoleClient:

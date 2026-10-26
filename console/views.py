@@ -11,6 +11,7 @@ from instances.utils import can_open_console
 from libvirt import libvirtError
 from vrtManager.connection import CONN_TCP, CONN_TLS
 from vrtManager.instance import wvmInstance
+from vrtManager.util import is_loopback
 
 
 def to_bool(val, default=False):
@@ -57,8 +58,10 @@ def console(request, compute_id, uuid):
         console_passwd = conn.get_console_passwd()
         running = conn.instance.isActive()
         # novncd reaches a console that listens on its host's loopback only
-        # through SSH (or on this host)
-        unreachable = instance.compute.type in (CONN_TCP, CONN_TLS) and conn.console_listens_locally()
+        # through SSH (or on this host); the running VM's listener, as novncd sees it
+        unreachable = instance.compute.type in (CONN_TCP, CONN_TLS) and bool(
+            conn.get_console_socket() or is_loopback(conn.get_console_listener_addr())
+        )
     except (libvirtError, ValueError, IndexError, Instance.DoesNotExist):
         running = unreachable = False
         console_type = None

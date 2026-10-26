@@ -1,3 +1,4 @@
+import ipaddress
 import random
 import secrets
 import re
@@ -224,3 +225,11 @@ def vol_driver_type(vol_format, pool_type=None):
     if pool_type == "disk" or vol_format in (None, "", "none", "unknown", "iso"):
         return "raw"
     return vol_format
+
+
+def is_loopback(address):
+    """127.0.0.0/8, ::1 or localhost: reachable only on that host itself."""
+    try:
+        return ipaddress.ip_address(address).is_loopback
+    except ValueError:
+        return address == "localhost"
