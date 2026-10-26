@@ -24,12 +24,13 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
-                            <th span="col">{% trans "Name" %}</th>
-                            <th span="col">{% trans "UUID" %}</th>
-                            <th span="col">{% trans "Owners" %}</th>
-                            <th span="col">{% trans "Removed" %}</th>
-                            <th span="col">{% trans "Expires" %}</th>
-                            <th span="col">{% trans "Actions" %}</th>
+                            <th scope="col">{% trans "Name" %}</th>
+                            <th scope="col">{% trans "UUID" %}</th>
+                            <th scope="col">{% trans "Host" %}</th>
+                            <th scope="col">{% trans "Owners" %}</th>
+                            <th scope="col">{% trans "Removed" %}</th>
+                            <th scope="col">{% trans "Expires" %}</th>
+                            <th scope="col">{% trans "Actions" %}</th>
                         </tr>
                     </thead>
                     <tbody class="searchable">
@@ -40,6 +41,7 @@
                                 {% if tombstone.is_template %}<span class="badge bg-secondary">{% trans "Template" %}</span>{% endif %}
                             </td>
                             <td>{{ tombstone.uuid }}</td>
+                            <td>{{ tombstone.host }}</td>
                             <td>{{ tombstone.owner_names|join:", " }}</td>
                             <td>{{ tombstone.removed|date:"Y-m-d H:i" }}</td>
                             <td>{{ tombstone.expires|date:"Y-m-d H:i" }}</td>

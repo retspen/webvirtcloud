@@ -100,7 +100,8 @@ def _bury(inst):
         for ui in UserInstance.objects.filter(instance=inst)
     ]
     if owners or inst.is_template:
-        InstanceTombstone.objects.create(uuid=inst.uuid, name=inst.name, is_template=inst.is_template, owners=owners)
+        InstanceTombstone.objects.create(uuid=inst.uuid, name=inst.name, host=inst.compute.name,
+                                         is_template=inst.is_template, owners=owners)
         _log(inst, "owners kept on the Removed VMs page")
     else:
         _log(inst, "left the panel (no owners)")

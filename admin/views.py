@@ -338,6 +338,7 @@ def tombstone_delete(request, pk):
     if request.method == "POST":
         with audit(request, None, f"Removed VM {tombstone.name} ({tombstone.uuid})", "delete"):
             tombstone.delete()
+        messages.success(request, _("Removed VM %(name)s deleted") % {"name": tombstone.name})
         return redirect("admin:tombstone_list")
 
     return render(

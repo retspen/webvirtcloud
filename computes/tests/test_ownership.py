@@ -142,7 +142,8 @@ class OwnershipTestCase(TestCase):
     def test_a_host_added_again_gets_its_vms_back_with_their_owners(self):
         self.owned_vm(self.host_a)
         self.delete(self.host_a)
-        self.assertEqual(InstanceTombstone.objects.get().owners[0]["user"], self.owner.id)
+        tombstone = InstanceTombstone.objects.get()
+        self.assertEqual((tombstone.owners[0]["user"], tombstone.host), (self.owner.id, "host-a"))
         self.assertEqual(self.rows(), [
             ("cd-admin", "-", "Login"),
             ("-", "host-a", f"VM vm ({UUID}): owners kept on the Removed VMs page"),

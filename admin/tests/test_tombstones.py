@@ -19,6 +19,7 @@ class TombstoneTests(TestCase):
         self.tombstone = InstanceTombstone.objects.create(
             uuid=UUID,
             name="ts-vm",
+            host="ts-host",
             owners=[
                 {"user": self.owner.id, "is_change": True, "is_delete": False, "is_vnc": True},
                 {"user": 999999, "is_change": False, "is_delete": False, "is_vnc": False},
@@ -37,6 +38,8 @@ class TombstoneTests(TestCase):
         self.assertContains(response, "ts-vm")
         self.assertContains(response, UUID)
         self.assertContains(response, "ts-owner")
+        self.assertContains(response, "<td>ts-host</td>", html=True)
+        self.assertContains(response, '<th scope="col">Host</th>', html=True)
 
     def test_only_superusers_see_or_remove_them(self):
         self.client.force_login(self.owner)
@@ -51,6 +54,7 @@ class TombstoneTests(TestCase):
         self.assertTrue(InstanceTombstone.objects.exists())
 
     def test_a_post_removes_it(self):
-        response = self.client.post(reverse("admin:tombstone_delete", args=[self.tombstone.pk]))
+        response = self.client.post(reverse("admin:tombstone_delete", args=[self.tombstone.pk]), follow=True)
         self.assertRedirects(response, reverse("admin:tombstone_list"))
+        self.assertContains(response, "Removed VM ts-vm deleted")
         self.assertFalse(InstanceTombstone.objects.exists())

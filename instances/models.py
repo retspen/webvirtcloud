@@ -398,6 +398,7 @@ class InstanceTombstone(models.Model):
 
     uuid = models.CharField(max_length=36, db_index=True)
     name = models.CharField(max_length=120)
+    host = models.CharField(max_length=64, blank=True)  # the compute's name: the compute may be deleted
     is_template = models.BooleanField(default=False)
     owners = models.JSONField(default=list)  # [{"user": id, "is_change": .., "is_delete": .., "is_vnc": ..}]
     removed = models.DateTimeField(auto_now_add=True)
