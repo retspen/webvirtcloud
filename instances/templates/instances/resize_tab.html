@@ -97,7 +97,7 @@
                                 <option value="{{ mem }}" {% if mem == instance.cur_memory %}selected{% endif %}>{{ mem }}</option>
                             {% endfor %}
                             </select>
-                            <input type="text" name="cur_memory_custom" class="form-select js-custom__toggle" style="display: none" />
+                            <input type="text" name="cur_memory_custom" class="form-select js-custom__toggle" style="display: none" disabled />
                             <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
                         </div>
                     </div>
@@ -106,13 +106,18 @@
                             {% trans "Maximum Allocation" %} ({% trans "MB" %})
                         </label>
                         <div class="col-sm-4 js-custom__container">
-                            <select name="memory" class="form-select js-custom__toggle">
+                            {# a running VM keeps its maximum: only the current memory changes #}
+                            <select name="memory" class="form-select js-custom__toggle"{% if instance.status != 5 %} disabled{% endif %}>
                             {% for mem in memory_range %}
                                 <option value="{{ mem }}" {% if mem == instance.memory %}selected{% endif %}>{{ mem }}</option>
                             {% endfor %}
                             </select>
-                            <input type="text" name="memory_custom" class="form-select js-custom__toggle" style="display: none" />
+                            {% if instance.status == 5 %}
+                            <input type="text" name="memory_custom" class="form-select js-custom__toggle" style="display: none" disabled />
                             <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
+                            {% else %}
+                            <small class="text-body-secondary">{% trans "Shut off the VM to change the maximum" %}</small>
+                            {% endif %}
                         </div>
                     </div>
                     <button type="submit" class="btn btn-lg btn-success float-end" name="resizevm_mem">{% trans "Resize" %}</button>
@@ -127,7 +132,7 @@
             {% if can_change %}
                 <form action="{% url 'instances:resize_disk' instance.id %}" method="post" role="form" aria-label="Resize instance disk form">
                     {% csrf_token %}
-                    <p class="fw-bold">{% trans "Disk allocation (GB)" %}:</p>
+                    <p class="fw-bold">{% trans "New disk size (GiB); leave empty to keep a disk as it is" %}:</p>
                     {% for disk in instance.disks %}
                     <div class="row">
                         <label class="col-sm-4 col-form-label">{% trans "Current Allocation" %} ({{ disk.dev }})</label>
@@ -139,7 +144,9 @@
                         </div>
                         {% else %}
                         <div class="col-sm-4 js-custom__container">
-                            <input type="number" name="disk_size_{{ disk.dev }}" class="form-control" value="{% widthratio disk.size 1073741824 1 %}" />
+                            {# empty: the disk stays as it is #}
+                            <input type="number" name="disk_size_{{ disk.dev }}" class="form-control" min="1" step="1"
+                                   placeholder="{{ disk.size|filesizeformat }}" aria-label="{% trans "New size (GiB)" %} {{ disk.dev }}" />
                         </div>
                         {% endif %}
                     </div>

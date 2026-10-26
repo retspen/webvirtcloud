@@ -163,7 +163,8 @@ class QuotaViewTests(TestCase):
         return messages, check, wvm.return_value
 
     def test_unverified_quota_has_its_own_message(self):
-        messages, _, proxy = self.post("instances:resizevm_cpu", {"vcpu": 2, "cur_vcpu": 2}, quota=QUOTA_UNVERIFIED)
+        messages, _, proxy = self.post("instances:resizevm_cpu", {"vcpu": 2, "cur_vcpu": 2}, quota=QUOTA_UNVERIFIED,
+                                         status=5)
         self.assertEqual(len(messages), 1)
         self.assertIn("a host of your virtual machines cannot be reached", messages[0])
         self.assertNotIn("quota reached", messages[0])

@@ -966,6 +966,13 @@ def resizevm_cpu(request, pk):
     if not _is_int(new_vcpu) or not _is_int(new_cur_vcpu):
         messages.error(request, _("Enter a whole number of vCPUs"))
         return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+    # a running VM would get them only at its next start, past the quota counted now
+    if instance.proxy.instance.isActive():
+        messages.error(request, _("Shut off the VM to change its vCPUs"))
+        return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+    if int(new_cur_vcpu) > int(new_vcpu):
+        messages.error(request, _("The current vCPUs cannot be more than the maximum"))
+        return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
 
     quota_msg = utils.check_user_quota(
         request.user, 0, int(new_vcpu) - vcpu, 0, 0
@@ -1015,6 +1022,9 @@ def resize_memory(request, pk):
     if not _is_int(new_memory) or not _is_int(new_cur_memory):
         messages.error(request, _("Enter a whole number for memory"))
         return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+    if int(new_cur_memory) > int(new_memory):
+        messages.error(request, _("The current memory cannot be more than the maximum"))
+        return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
     quota_msg = utils.check_user_quota(request.user, 0, 0, int(new_memory) - memory, 0)
     if not request.user.is_superuser and quota_msg:
         msg = quota_refused(quota_msg, _(
@@ -1049,11 +1059,15 @@ def resize_disk(request, pk):
 
     disks_new = list()
     for disk in disks:
-        input_disk_size = (
-            int(request.POST.get("disk_size_" + disk["dev"], "0")) * 1073741824
-        )
-        if input_disk_size > disk["size"] + (64 << 20):
-            disk["size_new"] = input_disk_size
+        # an empty field leaves the disk as it is; a disk outside a pool has no size and no field
+        size = request.POST.get("disk_size_" + disk["dev"], "")
+        if not size or disk["size"] is None:
+            continue
+        if not _is_int(size):
+            messages.error(request, _("Enter disk sizes as whole GiB"))
+            return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+        if int(size) << 30 > disk["size"]:
+            disk["size_new"] = int(size) << 30
             disks_new.append(disk)
 
     if not disks_new:

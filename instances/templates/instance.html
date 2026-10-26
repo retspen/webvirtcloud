@@ -320,6 +320,8 @@
             var container  = $(this).closest('.js-custom__container');
             var toggles    = container.find('.js-custom__toggle');
             toggles.toggle();
+            // a custom value is sent only while its box is ticked
+            container.find('input.js-custom__toggle').prop('disabled', !this.checked);
         });
     });
 </script>

@@ -52,6 +52,7 @@ class QuotaRaceTestCase(TransactionTestCase):
             "instances.models.wvmInstance"
         ) as wvm:
             wvm.return_value.get_vcpu.return_value = 1
+            wvm.return_value.instance.isActive.return_value = False  # vCPUs change on a shut-off VM
             wvm.return_value.resize_cpu.side_effect = self.fake_resize
             threads = [threading.Thread(target=self.resize, args=(vm,)) for vm in self.vms]
             for t in threads:
