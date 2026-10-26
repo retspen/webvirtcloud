@@ -34,6 +34,7 @@ from django.conf import settings  # noqa: E402
 from console.tokens import authorize  # noqa: E402
 
 CONSOLECALLBACK = os.path.join(ROOT_PATH, "conf", "daemon", "consolecallback")
+LOG_FD = os.dup(2)  # this daemon's stderr: a worker logs there on its fd 3
 MAX_SESSIONS = 20
 
 logger = logging.getLogger("socketiod")
@@ -62,7 +63,7 @@ def connect(sid, environ, auth):
     try:
         instance, user = authorize((auth or {}).get("token"))
     except PermissionError:
-        raise refused("The console link has expired: reload the page")
+        raise refused("The console link has expired, or you may no longer open this console: reload the page")
     finally:
         db.close_old_connections()
     taken = None
@@ -81,7 +82,9 @@ def connect(sid, environ, auth):
             try:
                 # pty.fork's master is inheritable: without this each worker would
                 # hold the other sessions' consoles open
-                os.closerange(3, os.sysconf("SC_OPEN_MAX"))
+                os.dup2(LOG_FD, 3)
+                os.closerange(4, os.sysconf("SC_OPEN_MAX"))
+                os.environ["CONSOLECALLBACK_LOG_FD"] = "3"
                 os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk), str(user.pk)])
             finally:
                 os._exit(1)

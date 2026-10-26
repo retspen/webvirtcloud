@@ -70,8 +70,9 @@ def start_socketiod(test):
     port = free_port()
     env = dict(os.environ, DJANGO_SETTINGS_MODULE="socketiod_test_settings",
                PYTHONPATH=os.pathsep.join([tmp.name, str(ROOT)]))
+    test.log = Path(tmp.name) / "socketiod.log"  # its stderr, as the journal would have it
     server = subprocess.Popen([sys.executable, str(SOCKETIOD), "-H", "127.0.0.1", "-p", str(port)],
-                              cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                              cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=test.log.open("w"))
     test.addCleanup(lambda: (server.kill(), server.wait()))
     end = time.monotonic() + 20
     while time.monotonic() < end:
@@ -125,6 +126,10 @@ class SocketiodProcessTestCase(TransactionTestCase):
             time.sleep(0.05)
         self.assertEqual(consoles(self.server.pid), [])
         self.assertIsNone(self.server.poll())
+        # the operator finds why in socketiod's log, with the details the user is not shown
+        log = self.log.read_text()
+        for name in self.tokens:
+            self.assertIn("serial console of VM %s did not open" % name, log)
 
     def test_a_client_without_a_valid_token_is_refused(self):
         for token in ("", "22-no-such-vm"):

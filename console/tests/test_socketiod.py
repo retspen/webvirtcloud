@@ -242,8 +242,8 @@ class WorkerIsolationTestCase(Base):
         while b"]" not in output:
             select.select([fd], [], [], 5)
             output += os.read(fd, 1024)
-        # 0-2: its terminal, 3: the listing itself
-        self.assertEqual(output.decode().strip(), "['0', '1', '2', '3']")
+        # 0-2: its terminal, 3: socketiod's log, 4: the listing itself
+        self.assertEqual(output.decode().strip(), "['0', '1', '2', '3', '4']")
 
 
 def _open(fd):

@@ -6,6 +6,7 @@
 # socketiod made the terminal raw before starting it (setting it here would
 # drop what the user typed meanwhile).
 
+import logging
 import os
 import sys
 import time
@@ -32,6 +33,9 @@ from vrtManager.connection import connection_manager  # noqa: E402
 libvirt.registerErrorHandler(lambda context, error: None, None)
 SEND_WAIT = 5  # seconds a paste may wait for the VM to take it
 ACCESS_CHECK = 10  # seconds between checks that the user may still use the console
+
+
+log = logging.getLogger("consolecallback")
 
 
 def say(text):
@@ -82,7 +86,7 @@ def from_client(watch, fd, events, console):
         # a non-blocking stream takes part of a paste, or none (-2) while the VM is busy
         while data and stream is not None and time.monotonic() < deadline:
             sent = stream.send(data)
-            if sent == -2:
+            if sent <= 0:  # -2: busy; 0 cannot advance either
                 time.sleep(0.01)
             else:
                 data = data[sent:]
@@ -113,6 +117,11 @@ def may_still_open(user_id, instance):
 
 
 def main():
+    # what the operator reads goes to socketiod's log (the journal, docker
+    # logs), on the descriptor it names; the user's terminal gets a short line
+    if os.environ.get("CONSOLECALLBACK_LOG_FD"):
+        log.addHandler(logging.StreamHandler(os.fdopen(int(os.environ["CONSOLECALLBACK_LOG_FD"]), "w", buffering=1)))
+        log.propagate = False
     instance = Instance.objects.select_related("compute").get(pk=int(sys.argv[1]))
     user_id = int(sys.argv[2])
     c = instance.compute
@@ -120,6 +129,7 @@ def main():
         console = Console(connection_manager.get_connection(c.hostname, c.login, c.password, c.type), instance.uuid)
         console.check()
     except libvirt.libvirtError as err:
+        log.warning("serial console of VM %s did not open: %s", instance.name, err)
         say("Cannot open the console of %s: %s" % (instance.name, public_error_text(err)))
         sys.exit(1)
     if console.stream is None:
@@ -132,10 +142,12 @@ def main():
             console.check()
             if time.monotonic() - checked > ACCESS_CHECK:
                 if not may_still_open(user_id, instance):
+                    log.info("serial console of VM %s closed: its user may no longer open it", instance.name)
                     say("You may no longer open this console")
                     sys.exit(1)
                 checked = time.monotonic()
     except libvirt.libvirtError as err:  # the host went away, the VM was undefined or migrated
+        log.warning("serial console of VM %s closed: %s", instance.name, err)
         say("The console of %s closed: %s" % (instance.name, public_error_text(err)))
         sys.exit(1)
 
