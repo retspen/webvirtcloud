@@ -1,3 +1,4 @@
+import json
 import socket
 
 from accounts.models import UserInstance, UserSSHKey
@@ -39,7 +40,7 @@ def os_metadata_json(request, version):
 
     if version == "latest":
         ip = get_client_ip(request)
-        hostname = get_hostname_by_ip(ip)
+        hostname = get_hostname_by_ip(ip) or ip
         response = {"uuid": OS_UUID, "hostname": hostname}
         return JsonResponse(response)
     else:
@@ -55,17 +56,19 @@ def os_userdata(request, version):
     :return:
     """
     if version == "latest":
-        ip = get_client_ip(request)
-        hostname = get_hostname_by_ip(ip)
-        vname = hostname.split(".")[0]
+        hostname = get_hostname_by_ip(get_client_ip(request))
 
         instance_keys = []
-        # VM names are not unique: with two VMs of this name, a user could put
-        # their key into the other VM by naming theirs the same. No keys then.
-        instances = list(Instance.objects.filter(name=vname)[:2])
+        # The VM is named by its address's reverse DNS entry; without one there
+        # is no name (the address's first number is no VM's name). VM names
+        # are not unique: with two VMs of this name, a user could put their key
+        # into the other VM by naming theirs the same. No keys then.
+        instances = list(Instance.objects.filter(name=hostname.split(".")[0])[:2]) if hostname else []
         if len(instances) == 1:
             for ui in UserInstance.objects.filter(instance=instances[0]):
                 instance_keys += UserSSHKey.objects.filter(user=ui.user).values_list("keypublic", flat=True)
+        # quoted, so a comment such as "it's: mine" stays one YAML string
+        instance_keys = [json.dumps(key) for key in instance_keys]
 
         return render(request, "user_data", locals())
     else:
@@ -89,13 +92,12 @@ def get_client_ip(request):
 def get_hostname_by_ip(ip):
     """
     :param ip:
-    :return:
+    :return: the address's reverse DNS name, or None
     """
     try:
-        addrs = socket.gethostbyaddr(ip)
+        return socket.gethostbyaddr(ip)[0]
     except OSError:  # no reverse DNS entry or an invalid address
-        addrs = [ip]
-    return addrs[0]
+        return None
 
 
 def get_vdi_url(request, compute_id, vname):
@@ -115,7 +117,7 @@ def get_vdi_url(request, compute_id, vname):
             compute.hostname, compute.login, compute.password, compute.type, vname, uuid=instance.uuid
         )
 
-        fqdn = get_hostname_by_ip(compute.hostname)
+        fqdn = get_hostname_by_ip(compute.hostname) or compute.hostname
         url = f"{conn.get_console_type()}://{fqdn}:{conn.get_console_port()}"
         response = url
         return HttpResponse(response)
