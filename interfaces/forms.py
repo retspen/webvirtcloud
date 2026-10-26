@@ -32,11 +32,13 @@ class AddInterface(forms.Form):
     stp = forms.ChoiceField(required=False, choices=(("on", "on"), ("off", "off")))
     delay = forms.IntegerField(required=False, min_value=0)
 
-    def __init__(self, *args, netdevs=(), **kwargs):
+    def __init__(self, *args, netdevs=(), defined=(), **kwargs):
         # The host's network devices: a bridge member, or the device an
-        # ethernet interface configures, must be one of them.
+        # ethernet interface configures, must be one of them. The interfaces
+        # the host defines: defining one again would replace its configuration.
         super().__init__(*args, **kwargs)
         self.netdevs = set(netdevs)
+        self.defined = set(defined)
 
     def clean_ipv4_addr(self):
         ipv4_addr = self.cleaned_data["ipv4_addr"]
@@ -90,6 +92,8 @@ class AddInterface(forms.Form):
             raise forms.ValidationError(
                 _("The interface name may have up to 15 letters, digits and . _ -")
             )
+        if name in self.defined:
+            raise forms.ValidationError(_("The host already defines interface %(name)s") % {"name": name})
         return name
 
     def clean_netdev(self):

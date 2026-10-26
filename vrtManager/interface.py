@@ -8,7 +8,7 @@ from vrtManager.connection import wvmConnect
 
 class wvmInterfaces(wvmConnect):
     def define_iface(self, xml, flag=0):
-        self.wvm.interfaceDefineXML(xml, flag)
+        return self.wvm.interfaceDefineXML(xml, flag)
 
     def bridge_member_xml(self, netdev):
         """netdev as a bridge member: as the host defines it (a bond keeps its
@@ -69,9 +69,13 @@ class wvmInterfaces(wvmConnect):
                         {self.bridge_member_xml(netdev)}
                       </bridge>"""
         xml += """</interface>"""
-        self.define_iface(xml)
-        iface = self.get_iface(name)
-        iface.create()
+        # the form refuses a name the host defines, so nothing is replaced
+        iface = self.define_iface(xml)
+        try:
+            iface.create()
+        except libvirtError:  # the name stays free for another try
+            iface.undefine()
+            raise
 
 
 class wvmInterface(wvmConnect):

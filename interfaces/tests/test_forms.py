@@ -28,6 +28,16 @@ def form(**values):
     return AddInterface(data={**BASE, **values}, netdevs=NETDEVS)
 
 
+class DefinedNameTestCase(SimpleTestCase):
+    def test_an_interface_the_host_defines_is_not_replaced(self):
+        defined = ["br0", "bond-lan"]  # as libvirt lists them
+        for values in ({"name": "br0"}, {"name": "bond-lan", "itype": "ethernet", "netdev": ""}):
+            with self.subTest(**values):
+                f = AddInterface(data={**BASE, **values}, netdevs=NETDEVS, defined=defined)
+                self.assertEqual(f.errors["name"], [f"The host already defines interface {values['name']}"])
+        self.assertTrue(AddInterface(data={**BASE, "ipv6_type": "none"}, netdevs=NETDEVS, defined=defined).is_valid())
+
+
 class Ipv6FormTestCase(SimpleTestCase):
     def test_valid_addresses_are_normalized(self):
         f = form(ipv6_addr="2001:DB8::10/64", ipv6_gw="2001:DB8::1")
@@ -196,11 +206,8 @@ class BridgeMemberXmlTestCase(SimpleTestCase):
     def member(self, host_xml):
         conn = wvmInterfaces.__new__(wvmInterfaces)
         conn.define_iface = MagicMock()
-        created = MagicMock()
 
         def get_iface(name):
-            if name == "br1":
-                return created
             if host_xml is None:
                 raise no_interface(name)
             iface = MagicMock()
@@ -209,7 +216,7 @@ class BridgeMemberXmlTestCase(SimpleTestCase):
 
         conn.get_iface = MagicMock(side_effect=get_iface)
         conn.create_iface("br1", "bridge", "onboot", "bond0", "none", "", "", "none", "", "", "on", 0)
-        self.assertTrue(created.create.called)
+        self.assertTrue(conn.define_iface.return_value.create.called)
         members = etree.fromstring(conn.define_iface.call_args[0][0]).findall("bridge/interface")
         self.assertEqual(len(members), 1)
         return members[0]
@@ -253,6 +260,15 @@ class BridgeMemberXmlTestCase(SimpleTestCase):
         with self.assertRaises(libvirt.libvirtError):
             conn.create_iface("br1", "bridge", "onboot", "bond0", "none", "", "", "none", "", "", "on", 0)
         self.assertFalse(conn.define_iface.called)
+
+    def test_an_interface_that_does_not_start_is_undefined(self):
+        conn = wvmInterfaces.__new__(wvmInterfaces)
+        conn.define_iface = MagicMock()
+        iface = conn.define_iface.return_value
+        iface.create.side_effect = libvirt.libvirtError("failed to bring up br1")
+        with self.assertRaises(libvirt.libvirtError):
+            conn.create_iface("br1", "ethernet", "onboot", "", "none", "", "", "none", "", "", "on", 0)
+        iface.undefine.assert_called_once_with()
 
 
 class BridgeSettingsTestCase(SimpleTestCase):

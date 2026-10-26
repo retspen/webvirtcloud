@@ -55,7 +55,7 @@ def interfaces(request, compute_id):
             # the page says why nothing is created on a host that cannot change
             # interfaces; without the host's devices nothing can be checked
             if "create" in request.POST and changeable and netdev_error is None:
-                form = AddInterface(request.POST, netdevs=netdevs)
+                form = AddInterface(request.POST, netdevs=netdevs, defined=ifaces)
                 if form.is_valid():
                     data = form.cleaned_data
                     with audit(request, compute, f"Interface {data['name']}", "add"):
