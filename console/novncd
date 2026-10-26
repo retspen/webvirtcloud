@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
+# The VNC console proxy: nginx passes /novncd/ websockets to it; each one
+# carries a console token and is joined to that VM's VNC server, directly,
+# through an SSH tunnel or a local Unix socket.
 
-import os
-import sys
+import argparse
+import ipaddress
 import logging
+import os
+import socket
+import sys
+from urllib.parse import parse_qs, urlparse
+
 import django
 
-DIR_PATH = os.path.dirname(os.path.abspath(__file__))
-ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, "..", ""))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
-CERT = DIR_PATH + "/cert.pem"
-
+ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 if ROOT_PATH not in sys.path:
     sys.path.append(ROOT_PATH)
-
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
 django.setup()
 
-import ipaddress
-import socket
+from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 
-from urllib.parse import parse_qs, urlparse
-import argparse
-from console.sshtunnels import close_tunnel, open_tunnel, tunnel_target
-from vrtManager.connection import CONN_SOCKET, CONN_SSH
-from webvirtcloud.settings import WS_HOST, WS_PORT
+from console.sshtunnels import close_tunnel, open_tunnel, tunnel_target  # noqa: E402
+from vrtManager.connection import CONN_SOCKET, CONN_SSH  # noqa: E402
+from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
 
 
-def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080, default_cert=CERT):
+def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080):
     parser = argparse.ArgumentParser(description="WebVirtCloud noVNC daemon")
     parser.add_argument(
         "-v",
@@ -50,35 +51,7 @@ def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080, default_cert=
         help="Listen port",
         default=default_port,
     )
-    parser.add_argument(
-        "-c",
-        "--cert",
-        dest="cert",
-        action="store",
-        help="Certificate file path",
-        default=default_cert,
-    )
     return parser
-
-
-
-try:
-    from websockify import WebSocketProxy
-
-    try:
-        from websockify import ProxyRequestHandler
-    except ImportError:
-        USE_HANDLER = False
-    else:
-        USE_HANDLER = True
-except ImportError:
-    try:
-        from novnc.wsproxy import WebSocketProxy
-    except ImportError:
-        print("Unable to import a websockify implementation,\n please install one")
-        sys.exit(1)
-    else:
-        USE_HANDLER = False
 
 
 def get_connection_infos(token):
@@ -116,8 +89,11 @@ def is_loopback(address):
         return address == "localhost"
 
 
-class CompatibilityMixIn(object):
-    def _new_client(self, daemon, socket_factory):
+class ConsoleClient:
+    """What a console websocket is joined to; ConsoleProxyHandler is the
+    websockify handler that runs it."""
+
+    def _new_client(self, socket_factory):
         # The page puts its own console's token on its websocket URL: a cookie
         # is shared by the browser's tabs and would name the last console opened
         token = parse_qs(urlparse(self.path).query).get("token", [None])[0]
@@ -162,9 +138,6 @@ class CompatibilityMixIn(object):
             self.msg("connecting to: %s:%s" % (address, console_port))
             tsock = socket_factory(address, console_port, connect=True)
 
-        if self.verbose and not daemon:
-            print(self.traffic_legend)
-
         try:
             self.msg("Start proxying")
             self.do_proxy(tsock)
@@ -176,38 +149,12 @@ class CompatibilityMixIn(object):
                     logging.warning("SSH tunnel to %s@%s failed: %s", connuser, connhost, error)
 
 
-if USE_HANDLER:
+class ConsoleProxyHandler(ProxyRequestHandler, ConsoleClient):
+    def msg(self, *args, **kwargs):
+        self.log_message(*args, **kwargs)
 
-    class NovaProxyRequestHandler(ProxyRequestHandler, CompatibilityMixIn):
-        def msg(self, *args, **kwargs):
-            self.log_message(*args, **kwargs)
-
-        def vmsg(self, *args, **kwargs):
-            if self.verbose:
-                self.msg(*args, **kwargs)
-
-        def new_websocket_client(self):
-            """
-            Called after a new WebSocket connection has been established.
-            """
-            # Setup variable for compatibility
-            daemon = self.server.daemon
-            socket_factory = self.server.socket
-
-            self._new_client(daemon, socket_factory)
-
-else:
-
-    class NovaWebSocketProxy(WebSocketProxy, CompatibilityMixIn):
-        def new_client(self):
-            """
-            Called after a new WebSocket connection has been established.
-            """
-            # Setup variable for compatibility
-            daemon = self.daemon
-            socket_factory = self.socket
-
-            self._new_client(daemon, socket_factory)
+    def new_websocket_client(self):
+        self._new_client(self.server.socket)
 
 
 if __name__ == "__main__":
@@ -222,42 +169,14 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.WARNING, format=FORMAT)
 
-    if USE_HANDLER:
-        # Create the WebSocketProxy with NovaProxyRequestHandler handler
-        server = WebSocketProxy(
-            RequestHandlerClass=NovaProxyRequestHandler,
-            listen_host=options.host,
-            listen_port=options.port,
-            source_is_ipv6=False,
-            verbose=options.verbose,
-            cert=options.cert,
-            key=None,
-            ssl_only=False,
-            daemon=False,
-            record=False,
-            web=False,
-            traffic=False,
-            target_host="ignore",
-            target_port="ignore",
-            wrap_mode="exit",
-            wrap_cmd=None,
-        )
-    else:
-        # Create the NovaWebSockets proxy
-        server = NovaWebSocketProxy(
-            listen_host=options.host,
-            listen_port=options.port,
-            source_is_ipv6=False,
-            verbose=options.verbose,
-            cert=options.cert,
-            key=None,
-            ssl_only=False,
-            daemon=False,
-            record=False,
-            web=False,
-            target_host="ignore",
-            target_port="ignore",
-            wrap_mode="exit",
-            wrap_cmd=None,
-        )
-    server.start_server()
+    # nginx ends TLS: novncd speaks plain websockets on the loopback
+    WebSocketProxy(
+        RequestHandlerClass=ConsoleProxyHandler,
+        listen_host=options.host,
+        listen_port=options.port,
+        verbose=options.verbose,
+        daemon=False,
+        web=False,
+        target_host="ignore",
+        target_port="ignore",
+    ).start_server()

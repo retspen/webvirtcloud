@@ -449,7 +449,7 @@ class ConsoleViewsTestCase(TestCase):
 class NovncdDaemonLogicTestCase(TestCase):
     def setUp(self):
         self.get_parser = novncd_mod.get_parser
-        self.CompatibilityMixIn = novncd_mod.CompatibilityMixIn
+        self.ConsoleClient = novncd_mod.ConsoleClient
 
     def test_novncd_parser_defaults(self):
         parser = self.get_parser()
@@ -460,26 +460,22 @@ class NovncdDaemonLogicTestCase(TestCase):
 
     def test_novncd_parser_custom_arguments(self):
         parser = self.get_parser()
-        opts = parser.parse_args(
-            ["-v", "-d", "-H", "192.168.1.100", "-p", "7070", "-c", "/path/to/cert.pem"]
-        )
+        opts = parser.parse_args(["-v", "-d", "-H", "192.168.1.100", "-p", "7070"])
         self.assertTrue(opts.verbose)
         self.assertTrue(opts.debug)
         self.assertEqual(opts.host, "192.168.1.100")
         self.assertEqual(opts.port, 7070)
-        self.assertEqual(opts.cert, "/path/to/cert.pem")
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_a_cookie_does_not_choose_the_console(self, mock_get_info):
         # another tab's console in a cookie: the URL's own token is used
         mock_get_info.return_value = ("host1", "root", 1, "192.168.1.50", 5900, None)
-        handler = self.CompatibilityMixIn()
+        handler = self.ConsoleClient()
         handler.headers = {"cookie": "token=1-uuid-of-another-tab"}
         handler.path = "/novncd/?token=1-uuid-of-this-tab"
         handler.msg = MagicMock()
         handler.do_proxy = MagicMock()
-        handler.verbose = False
-        handler._new_client(daemon=False, socket_factory=MagicMock())
+        handler._new_client(socket_factory=MagicMock())
         mock_get_info.assert_called_once_with("1-uuid-of-this-tab")
 
     @patch.object(novncd_mod, "get_connection_infos")
@@ -493,15 +489,14 @@ class NovncdDaemonLogicTestCase(TestCase):
             None,
         )
 
-        handler = self.CompatibilityMixIn()
+        handler = self.ConsoleClient()
         handler.headers = {}
         handler.path = "/novncd/?token=1-uuid-from-query"
         handler.msg = MagicMock()
         handler.do_proxy = MagicMock()
-        handler.verbose = False
 
         socket_factory = MagicMock()
-        handler._new_client(daemon=False, socket_factory=socket_factory)
+        handler._new_client(socket_factory=socket_factory)
 
         mock_get_info.assert_called_once_with("1-uuid-from-query")
         # the address the console listens on
@@ -511,14 +506,13 @@ class NovncdDaemonLogicTestCase(TestCase):
     def test_a_local_socket_host_reaches_a_console_on_its_loopback(self, mock_get_info):
         # libvirt on the panel's host, the VM's console listening on 127.0.0.1
         mock_get_info.return_value = ("localhost", "", novncd_mod.CONN_SOCKET, "127.0.0.1", 5902, None)
-        handler = self.CompatibilityMixIn()
+        handler = self.ConsoleClient()
         handler.headers = {}
         handler.path = "/novncd/?token=1-uuid"
         handler.msg = MagicMock()
         handler.do_proxy = MagicMock()
-        handler.verbose = False
         socket_factory = MagicMock()
-        handler._new_client(daemon=False, socket_factory=socket_factory)
+        handler._new_client(socket_factory=socket_factory)
         socket_factory.assert_called_once_with("127.0.0.1", 5902, connect=True)
 
     def test_an_ssh_hosts_console_always_goes_through_the_tunnel(self):
@@ -535,13 +529,12 @@ class NovncdDaemonLogicTestCase(TestCase):
                 return_value=("kvm1.example.com", "root", novncd_mod.CONN_SSH, console_host, 5900, console_socket),
             ), patch.object(novncd_mod, "open_tunnel", return_value=(MagicMock(), MagicMock())) as open_tunnel, \
                     patch.object(novncd_mod, "close_tunnel", return_value="") as close_tunnel:
-                handler = self.CompatibilityMixIn()
+                handler = self.ConsoleClient()
                 handler.path = "/novncd/?token=1-uuid"
                 handler.msg = MagicMock()
                 handler.do_proxy = MagicMock()
-                handler.verbose = False
                 socket_factory = MagicMock()
-                handler._new_client(daemon=False, socket_factory=socket_factory)
+                handler._new_client(socket_factory=socket_factory)
                 open_tunnel.assert_called_once_with("kvm1.example.com", "root", target)
                 socket_factory.assert_not_called()
                 # the tunnel ends with the session
@@ -555,13 +548,12 @@ class NovncdDaemonLogicTestCase(TestCase):
                 return_value=("kvm1.example.com", "", 1,
                               console_host, 5900, None),
             ):
-                handler = self.CompatibilityMixIn()
+                handler = self.ConsoleClient()
                 handler.path = "/novncd/?token=1-uuid"
                 handler.msg = MagicMock()
                 handler.do_proxy = MagicMock()
-                handler.verbose = False
                 socket_factory = MagicMock()
-                handler._new_client(daemon=False, socket_factory=socket_factory)
+                handler._new_client(socket_factory=socket_factory)
                 socket_factory.assert_called_once_with(reached, 5900, connect=True)
 
     def test_a_tcp_hosts_loopback_console_is_refused(self):
@@ -569,25 +561,24 @@ class NovncdDaemonLogicTestCase(TestCase):
             with self.subTest(console_host=console_host), patch.object(
                 novncd_mod, "get_connection_infos", return_value=("kvm1.example.com", "", 1, console_host, 5900, None),
             ):
-                handler = self.CompatibilityMixIn()
+                handler = self.ConsoleClient()
                 handler.path = "/novncd/?token=1-uuid"
                 handler.msg = MagicMock()
-                handler.verbose = False
                 socket_factory = MagicMock()
                 with self.assertRaises(Exception):
-                    handler._new_client(daemon=False, socket_factory=socket_factory)
+                    handler._new_client(socket_factory=socket_factory)
                 socket_factory.assert_not_called()
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_compatibility_mixin_missing_token_safe_exit(self, mock_get_info):
-        handler = self.CompatibilityMixIn()
+        handler = self.ConsoleClient()
         handler.headers = {}
         handler.path = "/novncd/"
         handler.msg = MagicMock()
 
         socket_factory = MagicMock()
         # Should cleanly exit and log message without raising UnboundLocalError
-        handler._new_client(daemon=False, socket_factory=socket_factory)
+        handler._new_client(socket_factory=socket_factory)
 
         mock_get_info.assert_not_called()
         socket_factory.assert_not_called()
