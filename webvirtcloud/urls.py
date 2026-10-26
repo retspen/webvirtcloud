@@ -26,7 +26,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("appsettings/", appsettings, name="appsettings"),
     path("computes/", include("computes.urls")),
-    path("console/", console, name="console"),
+    path("console/<int:compute_id>/<str:uuid>/", console, name="console"),
     path("datasource/", include("datasource.urls")),
     path("instances/", include("instances.urls")),
     path("i18n/", include("django.conf.urls.i18n")),

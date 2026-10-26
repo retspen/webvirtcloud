@@ -3,7 +3,6 @@
 from appsettings.settings import app_settings
 from console import tokens
 from django.conf import settings
-from django.core.signing import BadSignature, SignatureExpired
 from django.http.response import HttpResponseForbidden
 from django.shortcuts import render
 from django.utils.translation import gettext_lazy as _
@@ -20,67 +19,19 @@ def to_bool(val, default=False):
     return str(val).strip().lower() in ("true", "1", "yes")
 
 
-def console(request):
-    """
-    :param request:
-    :return:
-    """
+def console(request, compute_id, uuid):
+    """The console page of the VM with this UUID on this compute. The page's
+    query gives the view (lite or full) and its display options."""
     console_error = None
     token = ""
-    view_type = "lite"
-    view_only = to_bool(app_settings.CONSOLE_VIEW_ONLY, default=False)
-    scale = to_bool(app_settings.CONSOLE_SCALE, default=False)
-    resize_session = to_bool(app_settings.CONSOLE_RESIZE_SESSION, default=False)
-    clip_viewport = to_bool(app_settings.CONSOLE_CLIP_VIEWPORT, default=False)
-
-    if request.method == "GET":
-        token = request.GET.get("token", token)
-        view_type = (
-            "full"
-            if str(request.GET.get("view", view_type)).strip().lower() == "full"
-            else "lite"
-        )
-        if "view_only" in request.GET:
-            view_only = to_bool(request.GET.get("view_only"), default=view_only)
-        if "scale" in request.GET:
-            scale = to_bool(request.GET.get("scale"), default=scale)
-        if "resize_session" in request.GET:
-            resize_session = to_bool(
-                request.GET.get("resize_session"), default=resize_session
-            )
-        if "clip_viewport" in request.GET:
-            clip_viewport = to_bool(
-                request.GET.get("clip_viewport"), default=clip_viewport
-            )
-
-    signer = tokens.SIGNER
-    host = None
-    uuid = None
-
-    if token:
-        try:
-            unsigned = signer.unsign(token, max_age=120)
-            parts = unsigned.split(":")
-            if len(parts) >= 2:
-                host = int(parts[0])
-                uuid = parts[1]
-        except (BadSignature, SignatureExpired, ValueError, TypeError):
-            pass
-
-        if host is None or uuid is None:
-            try:
-                temptoken = token.split("-", 1)
-                host = int(temptoken[0])
-                uuid = temptoken[1]
-            except (ValueError, IndexError):
-                host = None
-                uuid = None
+    view_type = "full" if request.GET.get("view", "").strip().lower() == "full" else "lite"
+    view_only = to_bool(request.GET.get("view_only"), default=to_bool(app_settings.CONSOLE_VIEW_ONLY))
+    scale = to_bool(request.GET.get("scale"), default=to_bool(app_settings.CONSOLE_SCALE))
+    resize_session = to_bool(request.GET.get("resize_session"), default=to_bool(app_settings.CONSOLE_RESIZE_SESSION))
+    clip_viewport = to_bool(request.GET.get("clip_viewport"), default=to_bool(app_settings.CONSOLE_CLIP_VIEWPORT))
 
     try:
-        if host is None or uuid is None:
-            raise ValueError("Invalid token")
-
-        instance = Instance.objects.filter(compute_id=host, uuid=uuid).first()
+        instance = Instance.objects.filter(compute_id=compute_id, uuid=uuid).first()
         if instance is None and request.user.is_superuser:
             raise Instance.DoesNotExist
         # Same answer for "no such VM" and "not allowed", so the response
@@ -92,7 +43,7 @@ def console(request):
             return HttpResponseForbidden(console_error)
 
         # Generate secure signed token for noVNC daemon
-        token = signer.sign(f"{host}:{uuid}:{request.user.id}")
+        token = tokens.SIGNER.sign(f"{compute_id}:{uuid}:{request.user.id}")
 
         conn = wvmInstance(
             instance.compute.hostname,

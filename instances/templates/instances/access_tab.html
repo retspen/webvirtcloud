@@ -161,8 +161,8 @@
         const vo = $("#view_only").is(':checked');
         const rs = $("#resize_session").is(':checked');
         const cv = $("#clip_viewport").is(':checked');
-        url = '{% url 'console' %}?token={{ compute.id }}-{{ instance.get_uuid }}&view=' + view_style + '' + '&view_only=' + vo + '' + '&scale=' + sc + '' + '&clip_viewport=' + cv + '' + '&resize_session=' + rs + '';
-        window.open(url, '', 'width=850,height=600')
+        const options = new URLSearchParams({view: view_style, view_only: vo, scale: sc, clip_viewport: cv, resize_session: rs});
+        window.open('{% url 'console' compute.id instance.uuid %}?' + options, '', 'width=850,height=600')
     }
 </script>
 {% endif %}

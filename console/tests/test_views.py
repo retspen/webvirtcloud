@@ -69,7 +69,7 @@ class ConsoleViewsTestCase(TestCase):
             instance=cls.instance,
         )
 
-        cls.token = f"{cls.compute.id}-{cls.instance.uuid}"
+        cls.url = reverse("console", args=[cls.compute.id, cls.instance.uuid])
 
     @patch("console.views.wvmInstance")
     def test_console_superuser_vnc_lite(self, mock_wvm):
@@ -80,7 +80,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}&view=lite"
+        url = self.url + "?view=lite"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -100,7 +100,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}&view=full"
+        url = self.url + "?view=full"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -114,11 +114,11 @@ class ConsoleViewsTestCase(TestCase):
         self.client.force_login(self.admin_user)
         for query, pressed in (("", "false"), ("&scale=true", "true")):
             with self.subTest(query=query):
-                page = html.fromstring(self.client.get(reverse("console") + f"?token={self.token}&view=lite{query}").content)
+                page = html.fromstring(self.client.get(self.url + f"?view=lite{query}").content)
                 switch = page.xpath("//*[@id='scale_button']//a")[0]
                 self.assertEqual(switch.get("aria-pressed"), pressed)
                 self.assertEqual("active" in switch.get("class").split(), pressed == "true")
-        page = html.fromstring(self.client.get(reverse("console") + f"?token={self.token}&view=full").content)
+        page = html.fromstring(self.client.get(self.url + "?view=full").content)
         self.assertEqual(page.xpath("//*[@id='scale_button']"), [])  # noVNC's own settings scale the full view
 
     @patch("console.views.wvmInstance")
@@ -130,7 +130,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}&view=full"
+        url = self.url + "?view=full"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -145,7 +145,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}"
+        url = self.url
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -159,7 +159,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}"
+        url = self.url
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -177,7 +177,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.alice)
-        url = reverse("console") + f"?token={self.token}"
+        url = self.url
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -200,13 +200,13 @@ class ConsoleViewsTestCase(TestCase):
             for view in ("lite", "full"):
                 with self.subTest(user=user.username, permission=holds, view=view):
                     self.client.force_login(get_user_model().objects.get(pk=user.pk))  # fresh permission cache
-                    response = self.client.get(reverse("console") + f"?token={self.token}&view={view}")
+                    response = self.client.get(self.url + f"?view={view}")
                     self.assertEqual(response.status_code, 200)
                     self.assertEqual("vncpw7f3a" in response.content.decode(), holds)
 
     def test_console_unauthorized_user_forbidden(self):
         self.client.force_login(self.bob)
-        url = reverse("console") + f"?token={self.token}"
+        url = self.url
         response = self.client.get(url)
 
         # Non-permitted user attempting to view other user's instance
@@ -214,17 +214,18 @@ class ConsoleViewsTestCase(TestCase):
         self.assertIn("permission", response.content.decode("utf-8").lower())
 
     @patch("console.views.wvmInstance")
-    def test_console_lite_uses_the_signed_token_not_the_url_token(self, mock_wvm):
+    def test_console_lite_uses_the_signed_token(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
         mock_conn.get_console_websocket_port.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        response = self.client.get(reverse("console") + f"?token={self.token}")
+        response = self.client.get(self.url)
 
         signed = response.context["token"]
-        self.assertNotEqual(signed, self.token)
+        self.assertEqual(TimestampSigner(salt="console.novnc").unsign(signed),
+                         f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}")
         self.assertNotContains(response, "readQueryVariable('token'")
         self.assertContains(response, f"const token = '{escapejs(signed)}'")
 
@@ -233,7 +234,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value.get_console_type.return_value = "vnc"
         mock_wvm.return_value.instance.isActive.return_value = 0
         self.client.force_login(self.alice)
-        response = self.client.get(reverse("console") + f"?token={self.token}")
+        response = self.client.get(self.url)
         self.assertContains(response, "The VM is not running")
 
     @patch("console.views.wvmInstance")
@@ -242,7 +243,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value.get_console_type.return_value = "vnc"
         mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.alice)
-        response = self.client.get(reverse("console") + f"?token={self.token}&host=attacker.example&port=443&path=x")
+        response = self.client.get(self.url + "?host=attacker.example&port=443&path=x")
         self.assertNotContains(response, "attacker.example")
         for name in ("host", "port", "path"):
             self.assertNotContains(response, f"readQueryVariable('{name}'")
@@ -254,7 +255,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value.get_console_type.return_value = "vnc"
         mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.admin_user)
-        response = self.client.get(reverse("console") + f"?token={self.token}")
+        response = self.client.get(self.url)
         self.assertNotIn("token", response.cookies)
 
     @patch("console.views.wvmInstance")
@@ -270,7 +271,7 @@ class ConsoleViewsTestCase(TestCase):
         self.bob.user_permissions.add(perm)
 
         self.client.force_login(self.bob)
-        url = reverse("console") + f"?token={self.token}"
+        url = self.url
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 403)
@@ -282,7 +283,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value.get_console_type.return_value = "vnc"
         mock_wvm.return_value.console_listens_locally.return_value = True
         self.client.force_login(self.admin_user)
-        response = self.client.get(reverse("console") + f"?token={self.token}")
+        response = self.client.get(self.url)
         self.assertContains(response, "This console listens only on its host")
 
     @patch("console.views.wvmInstance")
@@ -292,10 +293,10 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value.get_console_type.return_value = "vnc"
         mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.admin_user)
-        lite = self.client.get(reverse("console") + f"?token={self.token}&view=lite")
+        lite = self.client.get(self.url + "?view=lite")
         self.assertContains(lite, "const host = window.location.hostname;")
         self.assertContains(lite, "const path = 'novncd/';")
-        full = self.client.get(reverse("console") + f"?token={self.token}&view=full")
+        full = self.client.get(self.url + "?view=full")
         self.assertContains(full, "host: window.location.hostname,")
         self.assertContains(full, "encrypt: https,")
 
@@ -309,9 +310,8 @@ class ConsoleViewsTestCase(TestCase):
         self.client.force_login(self.admin_user)
         # Attempt XSS injection via query parameters
         url = (
-            reverse("console")
-            + f"?token={self.token}"
-            + "&view=lite&view_only=alert('xss')&scale=true&clip_viewport=1"
+            self.url
+            + "?view=lite&view_only=alert('xss')&scale=true&clip_viewport=1"
         )
         response = self.client.get(url)
 
@@ -336,7 +336,7 @@ class ConsoleViewsTestCase(TestCase):
         self.client.force_login(self.admin_user)
 
         # Test Lite mode
-        url_lite = reverse("console") + f"?token={self.token}&view=lite"
+        url_lite = self.url + "?view=lite"
         resp_lite = self.client.get(url_lite)
         self.assertEqual(resp_lite.status_code, 200)
         content_lite = resp_lite.content.decode("utf-8")
@@ -344,7 +344,7 @@ class ConsoleViewsTestCase(TestCase):
         self.assertNotIn("&#39;", content_lite)
 
         # Test Full mode
-        url_full = reverse("console") + f"?token={self.token}&view=full"
+        url_full = self.url + "?view=full"
         resp_full = self.client.get(url_full)
         self.assertEqual(resp_full.status_code, 200)
         content_full = resp_full.content.decode("utf-8")
@@ -368,7 +368,7 @@ class ConsoleViewsTestCase(TestCase):
         self.client.force_login(self.admin_user)
 
         # Default: scale=False, resize_session=False -> 'off'
-        url = reverse("console") + f"?token={self.token}&view=full"
+        url = self.url + "?view=full"
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode("utf-8")
@@ -377,7 +377,7 @@ class ConsoleViewsTestCase(TestCase):
         self.assertNotIn("&#39;off&#39;", content)
 
         # scale=True, resize_session=False -> 'scale'
-        url_scale = reverse("console") + f"?token={self.token}&view=full&scale=true"
+        url_scale = self.url + "?view=full&scale=true"
         resp_scale = self.client.get(url_scale)
         self.assertEqual(resp_scale.status_code, 200)
         content_scale = resp_scale.content.decode("utf-8")
@@ -385,7 +385,7 @@ class ConsoleViewsTestCase(TestCase):
 
         # resize_session=True -> 'remote'
         url_remote = (
-            reverse("console") + f"?token={self.token}&view=full&resize_session=true"
+            self.url + "?view=full&resize_session=true"
         )
         resp_remote = self.client.get(url_remote)
         self.assertEqual(resp_remote.status_code, 200)
@@ -397,16 +397,16 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.side_effect = libvirtError("Connection to libvirtd failed")
 
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}"
+        url = self.url
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "console-vnc-lite.html")
         self.assertIsNotNone(response.context["console_error"])
 
-    def test_console_missing_token_safe_fallback(self):
+    def test_an_unknown_vm_gives_the_superuser_an_error_page(self):
         self.client.force_login(self.admin_user)
-        url = reverse("console")
+        url = reverse("console", args=[self.compute.id, "no-such-uuid"])
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -420,7 +420,7 @@ class ConsoleViewsTestCase(TestCase):
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}&view=lite"
+        url = self.url + "?view=lite"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
