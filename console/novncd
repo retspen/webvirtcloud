@@ -21,7 +21,7 @@ django.setup()
 
 from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 
-from console.sshtunnels import close_tunnel, open_tunnel, tunnel_target  # noqa: E402
+from console.sshtunnels import open_tunnel, tunnel_target  # noqa: E402
 from vrtManager.connection import CONN_SOCKET, CONN_SSH  # noqa: E402
 from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
 
@@ -140,7 +140,7 @@ class ConsoleClient:
         finally:
             tsock.close()
             if tunnel:
-                error = close_tunnel(tunnel)
+                error = tunnel.close()
                 if error:
                     logging.warning("SSH tunnel to %s@%s failed: %s", connuser, connhost, error)
 

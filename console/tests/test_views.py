@@ -514,8 +514,7 @@ class NovncdDaemonLogicTestCase(TestCase):
             with self.subTest(console_host=console_host), patch.object(
                 novncd_mod, "get_connection_infos",
                 return_value=("kvm1.example.com", "root", novncd_mod.CONN_SSH, console_host, 5900, console_socket),
-            ), patch.object(novncd_mod, "open_tunnel", return_value=(MagicMock(), MagicMock())) as open_tunnel, \
-                    patch.object(novncd_mod, "close_tunnel", return_value="") as close_tunnel:
+            ), patch.object(novncd_mod, "open_tunnel", return_value=(MagicMock(), MagicMock())) as open_tunnel:
                 handler = self.ConsoleClient()
                 handler.path = "/novncd/?token=1-uuid"
                 handler.msg = MagicMock()
@@ -525,7 +524,7 @@ class NovncdDaemonLogicTestCase(TestCase):
                 open_tunnel.assert_called_once_with("kvm1.example.com", "root", target)
                 socket_factory.assert_not_called()
                 # the tunnel ends with the session
-                close_tunnel.assert_called_once_with(open_tunnel.return_value[1])
+                open_tunnel.return_value[1].close.assert_called_once_with()
 
     def test_a_tcp_hosts_console_is_reached_where_it_listens(self):
         for console_host, reached in (("0.0.0.0", "kvm1.example.com"), ("::", "kvm1.example.com"),
