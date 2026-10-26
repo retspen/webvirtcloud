@@ -1368,14 +1368,6 @@ class wvmInstance(wvmConnect):
         )
         return port
 
-    def get_console_websocket_port(self):
-        console_type = self.get_console_type()
-        websocket_port = util.get_xml_path(
-            self._XMLDesc(0),
-            "/domain/devices/graphics[@type='%s']/@websocket" % console_type,
-        )
-        return websocket_port
-
     def get_console_passwd(self, config=False):
         return util.get_xml_path(
             self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd"

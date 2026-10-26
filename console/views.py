@@ -54,7 +54,6 @@ def console(request, compute_id, uuid):
             uuid=instance.uuid,
         )
         console_type = conn.get_console_type()
-        console_websocket_port = conn.get_console_websocket_port()
         console_passwd = conn.get_console_passwd()
         running = conn.instance.isActive()
         # novncd reaches a console that listens on its host's loopback only
@@ -63,7 +62,6 @@ def console(request, compute_id, uuid):
     except (libvirtError, ValueError, IndexError, Instance.DoesNotExist):
         running = unreachable = False
         console_type = None
-        console_websocket_port = None
         console_passwd = None
 
     if console_type and not running:  # a shut-off VM has no console to connect to

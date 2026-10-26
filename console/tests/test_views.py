@@ -75,7 +75,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_superuser_vnc_lite(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_conn.get_console_passwd.return_value = "vncsecret"
         mock_wvm.return_value = mock_conn
 
@@ -96,7 +95,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_superuser_vnc_full(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = 5900
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
@@ -105,12 +103,12 @@ class ConsoleViewsTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "console-vnc-full.html")
-        self.assertEqual(response.context["console_websocket_port"], 5900)
+        # a VM with a QEMU websocket port goes through novncd too, on its VNC port
+        self.assertContains(response, "port: Number(window.location.port")
 
     @patch("console.views.wvmInstance")
     def test_the_lite_console_switches_scaling_from_its_menu(self, mock_wvm):
         mock_wvm.return_value.get_console_type.return_value = "vnc"
-        mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.admin_user)
         for query, pressed in (("", "false"), ("&scale=true", "true")):
             with self.subTest(query=query):
@@ -126,7 +124,6 @@ class ConsoleViewsTestCase(TestCase):
         # Only VNC is supported; a VM defined elsewhere may use another type.
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "rdp"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
@@ -173,7 +170,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_user_assigned_instance_access(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.alice)
@@ -189,7 +185,6 @@ class ConsoleViewsTestCase(TestCase):
         # (letters and digits only: escapejs keeps them as they are in the lite view)
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_conn.get_console_passwd.return_value = "vncpw7f3a"
         mock_wvm.return_value = mock_conn
         permission = Permission.objects.get(codename="passwordless_console")
@@ -217,7 +212,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_lite_uses_the_signed_token(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
@@ -241,7 +235,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_the_lite_console_connects_only_to_the_servers_proxy(self, mock_wvm):
         # a link naming another host would send it the signed console token
         mock_wvm.return_value.get_console_type.return_value = "vnc"
-        mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.alice)
         response = self.client.get(self.url + "?host=attacker.example&port=443&path=x")
         self.assertNotContains(response, "attacker.example")
@@ -253,7 +246,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_the_page_sets_no_token_cookie(self, mock_wvm):
         # one cookie for every tab would name the last console opened
         mock_wvm.return_value.get_console_type.return_value = "vnc"
-        mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.admin_user)
         response = self.client.get(self.url)
         self.assertNotIn("token", response.cookies)
@@ -264,7 +256,6 @@ class ConsoleViewsTestCase(TestCase):
         # is for superusers and VM owners only.
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_wvm.return_value = mock_conn
 
         perm = Permission.objects.get(codename="view_instances")
@@ -291,7 +282,6 @@ class ConsoleViewsTestCase(TestCase):
         # nginx proxies /novncd/ on the panel's own scheme, host and port: no
         # console address to configure, HTTPS gives wss
         mock_wvm.return_value.get_console_type.return_value = "vnc"
-        mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.admin_user)
         lite = self.client.get(self.url + "?view=lite")
         self.assertContains(lite, "const host = window.location.hostname;")
@@ -304,7 +294,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_xss_protection_query_parameters(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)
@@ -329,7 +318,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_password_escapejs_escaping(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_conn.get_console_passwd.return_value = "O'Brian<script>&123"
         mock_wvm.return_value = mock_conn
 
@@ -362,7 +350,6 @@ class ConsoleViewsTestCase(TestCase):
     def test_console_full_resize_syntax_validity(self, mock_wvm):
         mock_conn = MagicMock()
         mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
         mock_wvm.return_value = mock_conn
 
         self.client.force_login(self.admin_user)

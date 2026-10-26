@@ -66,8 +66,7 @@
 
     bindSendKeys(() => UI.rfb);
 
-    // novncd behind the panel's own address (nginx's /novncd/); a VM with a
-    // QEMU websocket port is reached on that port of the panel's host name
+    // novncd behind the panel's own address (nginx's /novncd/)
     let fullPath = 'novncd/';
     const token = '{{ token|escapejs }}';
     if (token) {
@@ -87,7 +86,7 @@
     const https = window.location.protocol === 'https:';
     const mandatory = {
         host: window.location.hostname,
-        port: Number('{{ console_websocket_port|default_if_none:""|escapejs }}' || window.location.port || (https ? 443 : 80)),
+        port: Number(window.location.port || (https ? 443 : 80)),
         path: fullPath,
         encrypt: https,
     };

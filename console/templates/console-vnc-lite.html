@@ -149,10 +149,9 @@
     bindSendKeys(() => rfb);
 
     // novncd behind the panel's own address (nginx's /novncd/), never a host
-    // from the link: the page sends it a console token. A VM with a QEMU
-    // websocket port is reached on that port of the panel's host name.
+    // from the link: the page sends it a console token
     const host = window.location.hostname;
-    let port = '{{ console_websocket_port|default_if_none:""|escapejs }}' || window.location.port;
+    let port = window.location.port;
 
     {% if perms.instances.passwordless_console and console_passwd %}
         const password = '{{ console_passwd|escapejs }}';
