@@ -49,26 +49,35 @@ def connect(sid, environ, auth):
     if not settings.SERIAL_CONSOLE_ENABLED:
         raise socketio.exceptions.ConnectionRefusedError("The serial console is turned off on this server")
     try:
-        instance = authorize((auth or {}).get("token"))
+        instance, user = authorize((auth or {}).get("token"))
     except PermissionError:
         raise socketio.exceptions.ConnectionRefusedError("The console link has expired: reload the page")
     finally:
         db.close_old_connections()
+    taken = None
     with sessions_lock:
-        if any(s["vm"] == instance.pk for s in sessions.values()):
+        open_sid = next((s for s, session in sessions.items() if session["vm"] == instance.pk), None)
+        if open_sid is not None and not user.is_superuser:
             raise socketio.exceptions.ConnectionRefusedError("The console of this VM is open in another window")
-        if len(sessions) >= MAX_SESSIONS:
+        if open_sid is None and len(sessions) >= MAX_SESSIONS:
             raise socketio.exceptions.ConnectionRefusedError("Too many consoles are open on this server: try again later")
+        if open_sid is not None:  # a superuser takes over a console left open
+            taken = open_sid, sessions.pop(open_sid)
         pid, fd = pty.fork()
         if pid == 0:
             try:
                 # pty.fork's master is inheritable: without this each worker would
                 # hold the other sessions' consoles open
                 os.closerange(3, os.sysconf("SC_OPEN_MAX"))
-                os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk)])
+                os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk), str(user.pk)])
             finally:
                 os._exit(1)
         sessions[sid] = session = {"pid": pid, "fd": fd, "vm": instance.pk, "lock": threading.Lock(), "open": True}
+    if taken:
+        old_sid, old_session = taken
+        sio.emit("pty_output", {"output": "\r\n[An administrator opened this console]\r\n"}, to=old_sid)
+        end(old_session)
+        sio.disconnect(old_sid)
     sio.start_background_task(forward, sid, session)
 
 
@@ -102,8 +111,12 @@ def stop(sid):
     """End the sid's worker; once, whoever calls it first."""
     with sessions_lock:
         session = sessions.pop(sid, None)
-    if session is None:
-        return
+    if session is not None:
+        end(session)
+
+
+def end(session):
+    """End a session taken out of sessions."""
     try:
         os.kill(session["pid"], signal.SIGKILL)  # first: a write blocked on its terminal ends
     except ProcessLookupError:

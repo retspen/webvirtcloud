@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# consolecallback <instance id> - the serial console of one VM on stdin/stdout
+# consolecallback <instance id> <user id> - the serial console of one VM on stdin/stdout
 # (socketiod runs it in a pty, one per client). It opens the console through
 # the compute's connection (its stored credentials); the connection's event
 # loop thread runs the stream callbacks. The console survives guest reboots.
@@ -18,8 +18,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
 django.setup()
 
 import libvirt  # noqa: E402
+from django import db  # noqa: E402
+from django.contrib.auth import get_user_model  # noqa: E402
 
 from instances.models import Instance  # noqa: E402
+from instances.utils import can_open_console  # noqa: E402
 from operations.utils import public_error_text  # noqa: E402
 from vrtManager.connection import connection_manager  # noqa: E402
 
@@ -27,6 +30,7 @@ from vrtManager.connection import connection_manager  # noqa: E402
 # raised and told in one line instead
 libvirt.registerErrorHandler(lambda context, error: None, None)
 SEND_WAIT = 5  # seconds a paste may wait for the VM to take it
+ACCESS_CHECK = 10  # seconds between checks that the user may still use the console
 
 
 def say(text):
@@ -97,8 +101,19 @@ def from_vm(stream, events, console):
     os.write(1, data)
 
 
+def may_still_open(user_id, instance):
+    """The user still may open the console: an owner may have been removed or
+    the user deactivated since the session started."""
+    try:
+        user = get_user_model().objects.filter(pk=user_id).first()
+        return user is not None and can_open_console(user, instance)
+    finally:
+        db.connection.close()  # a session may last for days: no idle connection meanwhile
+
+
 def main():
     instance = Instance.objects.select_related("compute").get(pk=int(sys.argv[1]))
+    user_id = int(sys.argv[2])
     c = instance.compute
     try:
         console = Console(connection_manager.get_connection(c.hostname, c.login, c.password, c.type), instance.uuid)
@@ -110,10 +125,16 @@ def main():
     if console.stream is None:
         say("The VM is not running: its console opens when it starts")
     libvirt.virEventAddHandle(0, libvirt.VIR_EVENT_HANDLE_READABLE, from_client, console)
+    checked = time.monotonic()
     try:
         while console.running:
             time.sleep(0.2)
             console.check()
+            if time.monotonic() - checked > ACCESS_CHECK:
+                if not may_still_open(user_id, instance):
+                    say("You may no longer open this console")
+                    sys.exit(1)
+                checked = time.monotonic()
     except libvirt.libvirtError as err:  # the host went away, the VM was undefined or migrated
         say("The console of %s closed: %s" % (instance.name, public_error_text(err)))
         sys.exit(1)

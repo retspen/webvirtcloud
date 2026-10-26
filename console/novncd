@@ -86,7 +86,7 @@ def get_connection_infos(token):
     from vrtManager.instance import wvmInstance
 
     try:
-        instance = authorize(token)
+        instance, _user = authorize(token)
         conn = wvmInstance(
             instance.compute.hostname,
             instance.compute.login,

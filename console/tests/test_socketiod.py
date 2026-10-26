@@ -40,7 +40,7 @@ class Base(TestCase):
 
 class TokenTestCase(Base):
     def test_a_token_opens_its_vm_for_a_user_who_may_open_it(self):
-        self.assertEqual(tokens.authorize(self.token()), self.vm)
+        self.assertEqual(tokens.authorize(self.token()), (self.vm, self.user))
 
     def test_refused_tokens(self):
         stranger = get_user_model().objects.create_user("stranger", password="pw")
@@ -143,6 +143,18 @@ class SocketiodTestCase(Base):
         self.assertIsNone(session_input)
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
+    def test_a_superuser_takes_over_a_console_left_open(self):
+        admin = get_user_model().objects.create_superuser("root", "root@example.com", "pw")
+        self.d.connect("owner-tab", {}, {"token": self.token()})
+        old = self.d.sessions["owner-tab"]
+        with patch.object(self.d.sio, "emit") as emit, patch.object(self.d.sio, "disconnect") as disconnect:
+            self.assertIsNone(self.d.connect("admin-tab", {}, {"token": self.token(admin)}))
+        self.assertEqual(list(self.d.sessions), ["admin-tab"])
+        self.assertFalse(old["open"])
+        self.assertIn("An administrator opened this console", emit.call_args.args[1]["output"])
+        disconnect.assert_called_once_with("owner-tab")
+
+    @override_settings(SERIAL_CONSOLE_ENABLED=True)
     def test_two_connections_at_once_start_one_console(self):
         import threading
 
@@ -157,7 +169,7 @@ class SocketiodTestCase(Base):
 
         threads = [threading.Thread(target=connect, args=(n,)) for n in range(8)]
         # the threads have their own database connections, outside this test's transaction
-        with patch.object(self.d, "authorize", return_value=self.vm):
+        with patch.object(self.d, "authorize", return_value=(self.vm, self.user)):
             for t in threads:
                 t.start()
             for t in threads:

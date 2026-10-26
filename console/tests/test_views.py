@@ -606,7 +606,7 @@ class NovncdDaemonLogicTestCase(TestCase):
         mock_instance.compute.password = ""
         mock_instance.compute.type = 1
         mock_instance.name = "test-vm"
-        mock_inst_get.return_value = mock_instance
+        mock_inst_get.return_value = (mock_instance, user)
 
         mock_conn = MagicMock()
         mock_conn.get_console_listener_addr.return_value = "127.0.0.1"

@@ -7,6 +7,13 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth import get_user_model
+from django.test import TestCase as DjangoTestCase
+
+from accounts.models import UserInstance
+from computes.models import Compute
+from instances.models import Instance
+
 CONSOLECALLBACK = Path(__file__).resolve().parent.parent.parent / "conf" / "daemon" / "consolecallback"
 
 
@@ -57,3 +64,19 @@ class ConsoleWorkerTests(TestCase):
             self.cb.from_client(None, 0, None, self.console)
         self.assertFalse(self.console.running)
         self.console.stream.send.assert_not_called()
+
+
+class AccessTests(DjangoTestCase):
+    """The worker ends a session whose user may no longer open the console."""
+
+    def test_an_owner_removed_meanwhile_loses_the_console(self):
+        cb = load()
+        compute = Compute.objects.create(name="c", hostname="192.0.2.1", login="u", password="p", type=1)
+        vm = Instance.objects.create(compute=compute, name="vm-a", uuid="11111111-0000-0000-0000-000000000009")
+        owner = get_user_model().objects.create_user("owner", password="pw")
+        ownership = UserInstance.objects.create(user=owner, instance=vm)
+        with patch.object(cb.db.connection, "close"):  # the test's transaction keeps its connection
+            self.assertTrue(cb.may_still_open(owner.pk, vm))
+            ownership.delete()
+            self.assertFalse(cb.may_still_open(owner.pk, vm))
+            self.assertFalse(cb.may_still_open(999999, vm))

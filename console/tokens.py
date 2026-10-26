@@ -14,7 +14,8 @@ MAX_AGE = 120
 
 
 def authorize(token):
-    """The Instance the token opens; PermissionError otherwise."""
+    """The Instance the token opens and the user it was given to;
+    PermissionError otherwise."""
     try:
         host, uuid, user_id = SIGNER.unsign(token, max_age=MAX_AGE).split(":")
         host, user_id = int(host), int(user_id)
@@ -24,4 +25,4 @@ def authorize(token):
     user = get_user_model().objects.filter(id=user_id, is_active=True).first()
     if instance is None or user is None or not can_open_console(user, instance):
         raise PermissionError("No access to this console")
-    return instance
+    return instance, user

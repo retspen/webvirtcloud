@@ -23,6 +23,12 @@ from instances.tests import livetest
 P = livetest.PREFIX
 
 
+def wait_for(condition, seconds=30):
+    deadline = time.monotonic() + seconds
+    while not condition() and time.monotonic() < deadline:
+        time.sleep(0.2)
+
+
 def serial_vm(conn, name):
     """A paused VM without graphics whose BIOS writes to the serial console once resumed."""
     dom = conn.defineXML(
@@ -57,6 +63,11 @@ class LiveSerialConsoleTestCase(TransactionTestCase):
         UserInstance.objects.create(user=self.user, instance=vm)
         return tokens.SIGNER.sign(f"{compute.id}:{vm.uuid}:{self.user.id}"), dom
 
+    def admin_token(self, token):
+        host, uuid, _user = tokens.SIGNER.unsign(token).split(":")
+        admin, _ = get_user_model().objects.get_or_create(username="serial-live-admin", is_superuser=True)
+        return tokens.SIGNER.sign(f"{host}:{uuid}:{admin.id}")
+
     def test_the_console_of_a_running_vm_opens_once(self):
         for args in self.hosts:
             with self.subTest(host=args[0], type=args[3]):
@@ -68,12 +79,17 @@ class LiveSerialConsoleTestCase(TransactionTestCase):
                 while "SeaBIOS" not in "".join(received["output"]) and time.monotonic() < deadline:
                     time.sleep(0.2)
                 self.assertIn("SeaBIOS", "".join(received["output"]))
-                # one client per VM
+                # one client per VM; a superuser takes a console left open over
                 with self.assertRaises(socketio.exceptions.ConnectionError):
                     console(self.port, token)
+                admin_client, admin_received = console(self.port, self.admin_token(token))
+                wait_for(lambda: "An administrator opened this console" in "".join(received["output"]))
+                self.assertIn("An administrator opened this console", "".join(received["output"]))
                 client.disconnect()
-                deadline = time.monotonic() + 5
-                while consoles(self.server.pid) and time.monotonic() < deadline:
-                    time.sleep(0.05)
-                self.assertEqual(consoles(self.server.pid), [])
+                # the VM stops: the terminal says so
                 dom.destroy()
+                wait_for(lambda: "not running" in "".join(admin_received["output"]))
+                self.assertIn("The VM is not running", "".join(admin_received["output"]))
+                admin_client.disconnect()
+                wait_for(lambda: not consoles(self.server.pid))
+                self.assertEqual(consoles(self.server.pid), [])
