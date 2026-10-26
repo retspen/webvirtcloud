@@ -55,6 +55,7 @@ from vrtManager.util import randomPasswd
 from instances.models import Instance
 
 from . import addresses, report, utils
+from .api.serializers import DestroyOptionsSerializer
 from .forms import ConsoleForm, FlavorForm, NewVMForm
 from .models import Flavor
 from .states import STATES, UNKNOWN, state_label
@@ -764,6 +765,10 @@ def force_off(request, pk):
 def destroy(request, pk):
     if request.method in ["POST", "DELETE"]:
         instance = get_instance(request.user, pk, perm_type="delete")
+        # an API request is a DRF request whose body is in .data; refused
+        # options stop nothing
+        options = DestroyOptionsSerializer(data=getattr(request, "data", request.POST))
+        options.is_valid(raise_exception=True)
         with libvirt_instance_lock(instance):
             with audit_vm(request, instance, "delete"):
                 proxy = instance.proxy
@@ -773,14 +778,14 @@ def destroy(request, pk):
                     proxy.force_shutdown()
 
                 to_delete, shared = [], []
-                if request.POST.get("delete_disk", ""):
+                if options.validated_data["delete_disk"]:
                     to_delete, shared = proxy.split_disk_paths_by_use()
 
                 # Undefine before deleting any disk: if it fails, nothing is lost.
                 # Snapshot metadata goes with the domain; internal snapshot data
                 # stays in the disk images that are kept.
                 flags = VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
-                if request.POST.get("delete_nvram", ""):
+                if options.validated_data["delete_nvram"]:
                     flags |= VIR_DOMAIN_UNDEFINE_NVRAM
                 else:
                     flags |= VIR_DOMAIN_UNDEFINE_KEEP_NVRAM

@@ -10,6 +10,15 @@ class InstanceSerializer(serializers.ModelSerializer):
 
 
 class InstanceDetailsSerializer(serializers.ModelSerializer):
+    def get_fields(self):
+        fields = super().get_fields()
+        # the host's ISO images are a superuser's, as on the VM page; reading
+        # them refreshes every pool of the host
+        request = self.context.get("request")
+        if not (request and request.user.is_superuser):
+            del fields["media_iso"]
+        return fields
+
     class Meta:
         model = Instance
         fields = [
@@ -49,7 +58,17 @@ class InstanceDetailsSerializer(serializers.ModelSerializer):
 class FlavorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flavor
-        fields = ["label", "memory", "vcpu", "disk"]
+        fields = ["id", "label", "memory", "vcpu", "disk"]
+        # as the web form (instances.forms.FlavorForm): MiB, vCPUs and GiB, each at least 1
+        extra_kwargs = {"memory": {"min_value": 1}, "vcpu": {"min_value": 1}, "disk": {"min_value": 1}}
+
+
+class DestroyOptionsSerializer(serializers.Serializer):
+    """What a VM's delete takes besides the VM: from the web form's checkboxes
+    or an API body, JSON or form-encoded ("false" is false)."""
+
+    delete_disk = serializers.BooleanField(default=False)
+    delete_nvram = serializers.BooleanField(default=False)
 
 
 class CreateInstanceSerializer(serializers.ModelSerializer):
@@ -92,7 +111,8 @@ class CreateInstanceSerializer(serializers.ModelSerializer):
 
 class MigrateSerializer(serializers.ModelSerializer):
     instance = Instance.objects.all().prefetch_related("userinstance_set")
-    live = serializers.BooleanField(initial=True)
+    live = serializers.BooleanField(default=True)
+    offline = serializers.BooleanField(default=False)
     # left out, also from a form-encoded request: auto converge on
     autoconverge = serializers.BooleanField(default=True)
     compress = serializers.BooleanField(default=False)

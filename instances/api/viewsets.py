@@ -26,6 +26,7 @@ from webvirtcloud.serializers import StatusSerializer
 
 from .serializers import (
     CreateInstanceSerializer,
+    DestroyOptionsSerializer,
     FlavorSerializer,
     InstanceDetailsSerializer,
     InstanceSerializer,
@@ -119,7 +120,7 @@ class InstanceViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    @extend_schema(responses=StatusSerializer)
+    @extend_schema(request=DestroyOptionsSerializer, responses=StatusSerializer)
     def destroy(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="delete")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
@@ -132,6 +133,8 @@ class InstanceViewSet(viewsets.ViewSet):
         queryset = get_instance(request.user, pk, perm_type="power")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
+        if queryset.is_template:
+            return Response({"status": "Templates cannot be started"}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(poweron, request, pk, "poweron command send")
 
     @extend_schema(request=None, responses=StatusSerializer)
@@ -148,6 +151,8 @@ class InstanceViewSet(viewsets.ViewSet):
         queryset = get_instance(request.user, pk, perm_type="power")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
+        if queryset.is_template:
+            return Response({"status": "Templates cannot be started"}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(powercycle, request, pk, "powercycle command send")
 
     @extend_schema(request=None, responses=StatusSerializer)

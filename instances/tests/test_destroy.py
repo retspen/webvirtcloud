@@ -44,6 +44,26 @@ class DestroyOrderTestCase(TestCase):
                 self.assertTrue(flags & wanted)
                 self.assertFalse(flags & unwanted)
 
+    def test_the_api_takes_its_options_as_booleans(self):
+        url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
+        for body, content_type, deleted in (
+            ({"delete_disk": True}, "application/json", True),
+            ("delete_disk=false", "application/x-www-form-urlencoded", False),
+        ):
+            with self.subTest(body=body):
+                Instance.objects.get_or_create(
+                    compute=self.instance.compute, name="destroy-vm", uuid="11111111-2222-3333-4444-555555555555"
+                )
+                self.instance = Instance.objects.get(uuid="11111111-2222-3333-4444-555555555555")
+                with patch("instances.models.wvmInstance") as wvm:
+                    proxy = wvm.return_value
+                    proxy.instance.isActive.return_value = False
+                    proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], [])
+                    url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
+                    response = self.client.delete(url, body, content_type=content_type)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(proxy.get_volume_by_path.called, deleted)
+
     def test_disks_are_deleted_after_the_undefine(self):
         proxy = self.destroy()
         proxy.get_volume_by_path.assert_called_once_with("/pool/own.qcow2")

@@ -5,6 +5,7 @@ import re
 import time
 
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
@@ -648,7 +649,7 @@ class CreateInstance(Kind):
         if not user.is_superuser:
             raise PermissionDenied
         data = params
-        c = Compute.objects.get(pk=data["compute"])
+        c = get_object_or_404(Compute, pk=data["compute"])
         conn = wvmCreate(c.hostname, c.login, c.password, c.type)
         cdrom_buses = [bus for bus in conn.get_disk_bus_types(data["arch"], data["machine"]) if bus in CDROM_BUSES]
         if data["name"] in conn.get_instances():
