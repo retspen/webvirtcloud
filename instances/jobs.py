@@ -13,7 +13,7 @@ from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE,
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.create import wvmCreate
-from vrtManager.instance import wvmInstance
+from vrtManager.instance import check_snapshot_name, wvmInstance
 
 from accounts.models import UserInstance, UserSSHKey
 from appsettings.settings import app_settings
@@ -305,6 +305,7 @@ class CreateSnapshot(Kind):
                 "memory": bool(raw.get("memory")), "quiesce": bool(raw.get("quiesce"))}
 
     def validate(self, user, params):
+        check_snapshot_name(params["name"])
         # recovery counts a listed snapshot as taken by the job
         if params["name"] in _proxy(_authorized(user, params["instance"])).instance.snapshotListNames(0):
             raise util.OperationError(f"A snapshot named {params['name']} already exists")

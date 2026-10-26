@@ -1,4 +1,6 @@
 {% load i18n %}
+{% load tz %}
+{% get_current_timezone as TIME_ZONE %}
 {% load bootstrap_icons %}
 {% load operations %}
 <div class="tab-pane" id="snapshots" role="tabpanel">
@@ -38,7 +40,7 @@
             <form action="{% url 'instances:snapshot' instance.id %}" method="post" role="form" aria-label="Create snapshot form">
                 {% csrf_token %}{% submission_key %}
                     <div class="input-group mb-3">
-                        <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="14">
+                        <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="64" pattern="[A-Za-z0-9_\-][A-Za-z0-9._\-]{0,63}" title="{% trans "Letters, digits, '.', '_' or '-'; not starting with '.'" %}" required>
                         <span class="input-group-text">|</span>
                         <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
                         {% if instance.external_snapshots or busy or held %}
@@ -90,7 +92,7 @@
                     <table class="table" id="internal-snapshots">
                         <thead>
                             <tr>
-                                <th scope="col">{% trans "Date" %}</th>
+                                <th scope="col">{% blocktrans %}Date ({{ TIME_ZONE }}){% endblocktrans %}</th>
                                 <th scope="col">{% trans "Name" %}</th>
                                 <th scope="col">{% trans "Description" %}</th>
                                 <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
@@ -99,7 +101,7 @@
                         <tbody>
                             {% for snap in instance.internal_snapshots %}
                                 <tr>
-                                    <td>{{ snap.date|date:"M d H:i:s" }}</td>
+                                    <td>{{ snap.date|date:"Y-m-d H:i:s" }}</td>
                                     <td><strong>{{ snap.name }}</strong></td>
                                     <td>{{ snap.description }}</td>
                                     <td style="width:30px;">
@@ -138,7 +140,7 @@
                     <table class="table" id="external-snapshots">
                         <thead>
                             <tr>
-                                <th scope="col">{% trans "Date" %}</th>
+                                <th scope="col">{% blocktrans %}Date ({{ TIME_ZONE }}){% endblocktrans %}</th>
                                 <th scope="col">{% trans "Name" %}</th>
                                 <th scope="col">{% trans "Description" %}</th>
                                 <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
@@ -147,7 +149,7 @@
                         <tbody>
                             {% for ext_snap in instance.external_snapshots %}
                                 <tr>
-                                    <td>{{ ext_snap.date|date:"M d H:i:s" }}</td>
+                                    <td>{{ ext_snap.date|date:"Y-m-d H:i:s" }}</td>
                                     <td>
                                         <strong>{{ ext_snap.name }}</strong>
                                         {% if ext_snap.current %}<span class="badge text-bg-secondary">{% trans "current" %}</span>{% endif %}

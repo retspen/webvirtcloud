@@ -62,6 +62,13 @@ class SnapshotJobsTestCase(TransactionTestCase):
                          {"name": "a", "submission_key": "key-snap0001"})
         self.assertFalse(Operation.objects.exists())
 
+    def test_a_name_that_is_empty_or_not_a_snapshot_name_is_refused_on_the_page(self):
+        for name in ("", ".hidden", "a b"):
+            response = self.client.post(reverse("instances:snapshot", args=[self.instance.pk]),
+                                        {"name": name, "submission_key": "key-snap0001"}, follow=True)
+            self.assertContains(response, "Snapshot names are 1-64 letters")
+        self.assertFalse(Operation.objects.exists())
+
     def test_create_recovery(self):
         op = Operation(params={"instance": self.instance.pk, "name": "a", "external": True},
                        intent={"compute": self.instance.compute_id})

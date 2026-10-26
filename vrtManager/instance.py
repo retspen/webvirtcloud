@@ -348,6 +348,11 @@ class wvmInstances(wvmConnect):
             ) from error
 
 
+def check_snapshot_name(name):
+    if not SNAPSHOT_NAME.fullmatch(name):
+        raise util.OperationError("Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start with '.'")
+
+
 def agent_command(dom, command, arguments=None):
     """The answer of one guest agent command that waits AGENT_TIMEOUT seconds
     at most: libvirt's own calls for it wait for a hung agent indefinitely,
@@ -1618,10 +1623,7 @@ class wvmInstance(wvmConnect):
         accepts it only without memory, which keeps the whole state anyway).
         free_percent, free_min_gib: the free space each pool keeps (see
         _check_snapshot_space)."""
-        if not SNAPSHOT_NAME.fullmatch(name):
-            raise util.OperationError(
-                "Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start with '.'"
-            )
+        check_snapshot_name(name)
         if quiesce:
             if memory:
                 raise util.OperationError("A snapshot with memory is not quiesced; it keeps the whole guest state")
