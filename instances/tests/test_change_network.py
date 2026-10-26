@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
@@ -32,6 +33,13 @@ class ChangeNetworkViewTestCase(TestCase):
             "net-model-1": "e1000",
         })
         change.assert_called_once_with("52:54:00:00:00:02", "52:54:00:00:00:03", "default", "net", "e1000", "")
+
+    def test_a_shut_off_vm_is_told_the_change_is_made(self):
+        with patch("instances.models.wvmInstance") as wvm:
+            wvm.return_value.get_status.return_value = 5
+            response = self.client.post(self.url, {"net-old-mac-1": "52:54:00:00:00:02", "net-source-1": "net:default",
+                                                   "net-model-1": "virtio"}, HTTP_REFERER="/instances/%d/" % self.instance.id)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Network device changed"])
 
     def test_invalid_mac_is_rejected(self):
         change = self.post({

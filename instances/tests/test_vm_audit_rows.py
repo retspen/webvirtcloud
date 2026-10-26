@@ -6,6 +6,7 @@ from unittest.mock import patch
 import libvirt
 from computes.models import Compute
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
@@ -60,6 +61,11 @@ class VMRowTests(TestCase):
         self.post("set_qos", {"qos_direction": "sideways", "net-mac-0": "52:54:00:00:00:01"})
         Instance.objects.filter(pk=self.vm.pk).update(is_template=True)
         self.post("poweron")
+        self.assertEqual(self.rows(), [])
+
+    def test_an_empty_root_password_is_refused_with_a_message(self):
+        response = self.post("rootpasswd", {"passwd": ""})
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Enter a password"])
         self.assertEqual(self.rows(), [])
 
     def test_qos_is_logged(self):

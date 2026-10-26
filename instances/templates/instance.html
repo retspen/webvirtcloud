@@ -290,10 +290,9 @@
             var label = $(this).parent();
             var newPos = label.index() - 1;
             if (newPos > -1) {
-                 $('#b_order label').eq(newPos).before("<label><input type='checkbox' value='"+$(this).val()+"' name='"+$(this).val()+"' checked>"+$(this).parent().text()+"</label>");
-                 label.remove();
+                 // moved, not rebuilt: the checkbox keeps its handler
+                 $('#b_order label').eq(newPos).before(label);
             }
-            $(".multiselect").multiselect();
         });
         set_orderlist($("#bootorder"));
     });
@@ -305,10 +304,8 @@
             var label = $(this).parent();
             var newPos = label.index() + countSelected;
             if (newPos < countOptions) {
-                $('#b_order label').eq(newPos).after("<label><input type='checkbox' value='"+$(this).val()+"' name='"+$(this).val()+"' checked>"+$(this).parent().text()+"</label>");
-                label.remove();
+                $('#b_order label').eq(newPos).after(label);
             }
-            $(".multiselect").multiselect();
         });
        set_orderlist($("#bootorder"));
     });

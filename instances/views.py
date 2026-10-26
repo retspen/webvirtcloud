@@ -911,6 +911,8 @@ def set_root_pass(request, pk):
                     messages.success(request, _("Reset root password"))
             else:
                 messages.error(request, AGENT_OR_SHUT_OFF)
+        else:
+            messages.error(request, _("Enter a password"))
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#access"
     )
@@ -1727,9 +1729,10 @@ def change_network(request, pk):
         messages.error(request, err)
         return redirect(back)
 
-    msg = _("Network Device Config is changed. Please shutdown instance to activate.")
     if instance.proxy.get_status() != 5:
-        messages.success(request, msg)
+        messages.success(request, _("Network Device Config is changed. Please shutdown instance to activate."))
+    else:
+        messages.success(request, _("Network device changed"))
     return redirect(back)
 
 
