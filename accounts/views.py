@@ -21,7 +21,6 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from accounts.apps import admin_password_path
-from instances.models import Instance
 from logs.audit import audit, audit_vm, changed_fields, failed, snapshot
 
 from accounts.forms import ApiTokenForm, EmailOTPForm, ProfileForm, UserSSHKeyForm
@@ -147,8 +146,7 @@ def ssh_key_delete(request, pk):
 @superuser_only
 def account(request, user_id):
     user = get_object_or_404(User, id=user_id)
-    user_insts = UserInstance.objects.filter(user_id=user_id)
-    instances = Instance.objects.all().order_by("name")
+    user_insts = UserInstance.objects.filter(user_id=user_id).select_related("instance")
     publickeys = UserSSHKey.objects.filter(user_id=user_id)
 
     return render(
@@ -157,7 +155,6 @@ def account(request, user_id):
         {
             "user": user,
             "user_insts": user_insts,
-            "instances": instances,
             "publickeys": publickeys,
             "api_tokens": ApiToken.objects.filter(user_id=user_id),
             "otp_enabled": settings.OTP_ENABLED,
