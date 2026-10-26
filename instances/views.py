@@ -341,13 +341,13 @@ def drbd_status(request, pk):
         except subprocess.TimeoutExpired:
             return result
 
-        if remoteDrbdStatus.stdout:
-            instanceFindDrbd = re.compile(
-                re.escape(instance.name) + "[_]*[A-Z]* role:(.+?)\n  disk:(.+?)\n",
-                re.IGNORECASE,
-            )
-            instanceDrbd = instanceFindDrbd.findall(remoteDrbdStatus.stdout)
-
+        # the VM's resources are its name or its name_SUFFIX, at the start of a line
+        instanceFindDrbd = re.compile(
+            "^" + re.escape(instance.name) + "(?:_[A-Z]+)? role:(.+?)\n  disk:(.+?)\n",
+            re.IGNORECASE | re.MULTILINE,
+        )
+        instanceDrbd = instanceFindDrbd.findall(remoteDrbdStatus.stdout or "")
+        if instanceDrbd:
             primaryCount = 0
             secondaryCount = 0
             statusDisk = "OK"

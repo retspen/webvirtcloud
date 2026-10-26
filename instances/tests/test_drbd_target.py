@@ -26,3 +26,29 @@ class DrbdTargetTestCase(unittest.TestCase):
         ) as run:
             self.assertEqual(drbd_status(SimpleNamespace(user=None), 1), "None DRBD")
         self.assertEqual(run.call_args.kwargs["timeout"], DRBD_STATUS_TIMEOUT)
+
+
+STATUS = """webserver role:Primary
+  disk:UpToDate
+web role:Secondary
+  disk:UpToDate
+web_data role:Secondary
+  disk:Outdated
+"""
+
+
+class DrbdStatusTestCase(unittest.TestCase):
+    def status(self, name, stdout=STATUS):
+        vm = SimpleNamespace(name=name, compute=SimpleNamespace(type=2, login="root", hostname="192.0.2.1"))
+        with patch("instances.views.get_instance", return_value=vm), patch(
+            "instances.views.subprocess.run", return_value=SimpleNamespace(stdout=stdout)
+        ):
+            return drbd_status(SimpleNamespace(user=None), 1)
+
+    def test_a_vm_counts_only_its_own_resources(self):
+        # "webserver" is another VM's resource; "web_data" is web's second disk
+        self.assertEqual(self.status("web"), "Secondary/NOK")
+        self.assertEqual(self.status("webserver"), "Primary/OK")
+
+    def test_a_vm_without_a_resource_has_no_drbd(self):
+        self.assertEqual(self.status("db"), "None DRBD")
