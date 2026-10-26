@@ -52,6 +52,9 @@ def connect(sid, environ, auth):
     pid, fd = pty.fork()
     if pid == 0:
         try:
+            # pty.fork's master is inheritable: without this each worker would
+            # hold the other sessions' consoles open
+            os.closerange(3, os.sysconf("SC_OPEN_MAX"))
             os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk)])
         finally:
             os._exit(1)

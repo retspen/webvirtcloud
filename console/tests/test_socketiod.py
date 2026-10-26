@@ -1,6 +1,7 @@
 """socketiod: who may connect, and each session's console kept to itself."""
 
 import os
+import tempfile
 import time
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
@@ -127,6 +128,30 @@ class SocketiodTestCase(Base):
         self.d.stop("sid-1")
         self.assertNotIn("sid-1", self.d.sessions)
         self.d.os.kill.assert_called_once_with(pid, self.d.signal.SIGKILL)
+
+
+class WorkerIsolationTestCase(Base):
+    """A real fork: a session's worker holds no other session's console."""
+
+    @override_settings(SERIAL_CONSOLE_ENABLED=True)
+    def test_a_worker_has_only_its_own_terminal(self):
+        d = load_socketiod()
+        other = Instance.objects.create(compute=self.compute, name="vm-b", uuid="11111111-0000-0000-0000-000000000002")
+        UserInstance.objects.create(user=self.user, instance=other)
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script:
+            # stands in for consolecallback: prints the descriptors it holds
+            script.write("import os, time\nprint(sorted(os.listdir('/proc/self/fd')))\ntime.sleep(5)\n")
+        self.addCleanup(os.unlink, script.name)
+        with patch.object(d, "CONSOLECALLBACK", script.name), patch.object(d.sio, "start_background_task"), \
+                patch.object(d.db, "close_old_connections"):
+            d.connect("first", {}, {"token": self.token()})
+            d.connect("second", {}, {"token": self.token(vm=other)})
+        self.addCleanup(lambda: [d.stop(sid) for sid in list(d.sessions)])
+        output = b""
+        while b"]" not in output:
+            output += os.read(d.sessions["second"]["fd"], 1024)
+        # 0-2: its terminal, 3: the listing itself
+        self.assertEqual(output.decode().strip(), "['0', '1', '2', '3']")
 
 
 def _open(fd):
