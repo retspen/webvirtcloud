@@ -27,7 +27,7 @@
 <script type="module" crossorigin="anonymous">
     // RFB holds the API to connect and communicate with a VNC server
     import RFB from '{% static "js/novnc/core/rfb.js" %}';
-    import KeyTable from '{% static "js/novnc/core/input/keysym.js" %}';
+    import { bindKeyAction, bindSendKeys } from '{% static "js/console_keys.js" %}';
 
     let rfb;
     let desktopName;
@@ -58,76 +58,6 @@
     // a desktop name from the server
     function updateDesktopName(e) {
         desktopName = e.detail.name;
-    }
-
-    function isConnected() {
-        return rfb && (!rfb._rfbConnectionState || rfb._rfbConnectionState === 'connected');
-    }
-
-    function sendSingleKey(keysym, code) {
-        if (!isConnected()) { return false; }
-        rfb.sendKey(keysym, code, true);
-        setTimeout(() => {
-            if (isConnected()) {
-                rfb.sendKey(keysym, code, false);
-            }
-        }, 20);
-        return false;
-    }
-
-    function sendKeyCombo(keys) {
-        if (!isConnected()) { return false; }
-        for (let i = 0; i < keys.length; i++) {
-            rfb.sendKey(keys[i].keysym, keys[i].code, true);
-        }
-        setTimeout(() => {
-            if (isConnected()) {
-                for (let i = keys.length - 1; i >= 0; i--) {
-                    rfb.sendKey(keys[i].keysym, keys[i].code, false);
-                }
-            }
-        }, 20);
-        return false;
-    }
-
-    // Since most operating systems will catch Ctrl+Alt+Del
-    // before they get a chance to be intercepted by the browser,
-    // we provide a way to emulate this key sequence.
-    function sendCtrlAltDel() {
-        if (isConnected() && typeof rfb.sendCtrlAltDel === 'function') {
-            rfb.sendCtrlAltDel();
-        } else {
-            sendKeyCombo([
-                { keysym: KeyTable.XK_Control_L, code: 'ControlLeft' },
-                { keysym: KeyTable.XK_Alt_L, code: 'AltLeft' },
-                { keysym: KeyTable.XK_Delete, code: 'Delete' }
-            ]);
-        }
-        return false;
-    }
-
-    const fnKeys = [
-        { keysym: KeyTable.XK_F1, code: 'F1' },
-        { keysym: KeyTable.XK_F2, code: 'F2' },
-        { keysym: KeyTable.XK_F3, code: 'F3' },
-        { keysym: KeyTable.XK_F4, code: 'F4' },
-        { keysym: KeyTable.XK_F5, code: 'F5' },
-        { keysym: KeyTable.XK_F6, code: 'F6' },
-        { keysym: KeyTable.XK_F7, code: 'F7' },
-        { keysym: KeyTable.XK_F8, code: 'F8' },
-        { keysym: KeyTable.XK_F9, code: 'F9' },
-        { keysym: KeyTable.XK_F10, code: 'F10' },
-        { keysym: KeyTable.XK_F11, code: 'F11' },
-        { keysym: KeyTable.XK_F12, code: 'F12' }
-    ];
-
-    function sendCtrlAltFN(f) {
-        if (f < 0 || f >= fnKeys.length) { return false; }
-        return sendKeyCombo([
-            { keysym: KeyTable.XK_Control_L, code: 'ControlLeft' },
-            { keysym: KeyTable.XK_Alt_L, code: 'AltLeft' },
-            fnKeys[f]
-        ]);
     }
 
     function fullscreen() {
@@ -170,31 +100,18 @@
     });
 
     function machineShutdown() {
-        if (isConnected()) { rfb.machineShutdown(); }
-        return false;
+        rfb.machineShutdown();
     }
     function machineReboot() {
-        if (isConnected()) { rfb.machineReboot(); }
-        return false;
+        rfb.machineReboot();
     }
     function machineReset() {
-        if (isConnected()) { rfb.machineReset(); }
-        return false;
+        rfb.machineReset();
     }
 
     // Show a status text in the top bar
     function status(text) {
         document.getElementById('noVNC_status').textContent = text;
-    }
-
-    function bindKeyAction(id, handler) {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('click', (e) => {
-                e.preventDefault();
-                handler();
-            });
-        }
     }
 
     // This function extracts the value of one variable from the
@@ -217,7 +134,6 @@
         return defaultValue;
     }
 
-    bindKeyAction('sendCtrlAltDelButton', sendCtrlAltDel);
     bindKeyAction('machineShutdownButton', machineShutdown);
     bindKeyAction('machineRebootButton', machineReboot);
     bindKeyAction('machineResetButton', machineReset);
@@ -230,40 +146,7 @@
         link.setAttribute('aria-pressed', rfb.scaleViewport);
     });
 
-    bindKeyAction('ctrlaltdel', sendCtrlAltDel);
-    bindKeyAction('ctrlaltbackspace', () => sendKeyCombo([
-        { keysym: KeyTable.XK_Control_L, code: 'ControlLeft' },
-        { keysym: KeyTable.XK_Alt_L, code: 'AltLeft' },
-        { keysym: KeyTable.XK_BackSpace, code: 'Backspace' }
-    ]));
-    bindKeyAction('alttab', () => sendKeyCombo([
-        { keysym: KeyTable.XK_Alt_L, code: 'AltLeft' },
-        { keysym: KeyTable.XK_Tab, code: 'Tab' }
-    ]));
-    bindKeyAction('superkey', () => sendSingleKey(KeyTable.XK_Super_L, 'MetaLeft'));
-    bindKeyAction('sendesc', () => sendSingleKey(KeyTable.XK_Escape, 'Escape'));
-    bindKeyAction('sendtab', () => sendSingleKey(KeyTable.XK_Tab, 'Tab'));
-
-    bindKeyAction('ctrlc', () => sendKeyCombo([
-        { keysym: KeyTable.XK_Control_L, code: 'ControlLeft' },
-        { keysym: KeyTable.XK_c, code: 'KeyC' }
-    ]));
-    bindKeyAction('ctrlz', () => sendKeyCombo([
-        { keysym: KeyTable.XK_Control_L, code: 'ControlLeft' },
-        { keysym: KeyTable.XK_z, code: 'KeyZ' }
-    ]));
-    bindKeyAction('ctrld', () => sendKeyCombo([
-        { keysym: KeyTable.XK_Control_L, code: 'ControlLeft' },
-        { keysym: KeyTable.XK_d, code: 'KeyD' }
-    ]));
-    bindKeyAction('ctrlbackslash', () => sendKeyCombo([
-        { keysym: KeyTable.XK_Control_L, code: 'ControlLeft' },
-        { keysym: KeyTable.XK_backslash, code: 'Backslash' }
-    ]));
-
-    for (let i = 0; i < 12; i++) {
-        bindKeyAction('ctrlaltf' + (i + 1), () => sendCtrlAltFN(i));
-    }
+    bindSendKeys(() => rfb);
 
     // novncd behind the panel's own address (nginx's /novncd/), never a host
     // from the link: the page sends it a console token. A VM with a QEMU
