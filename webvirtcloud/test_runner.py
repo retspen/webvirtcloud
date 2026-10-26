@@ -1,6 +1,19 @@
 """manage.py test --parallel on the SQLite database in WAL mode."""
 
+import contextlib
+import os
+
+from django.db import connections
 from django.test.runner import DiscoverRunner
+
+
+def remove_wal_files(name):
+    """Django replaces a SQLite test database by its main file only. A run
+    that was killed or whose pool crashed leaves the database's WAL behind,
+    and SQLite would replay that run's writes into the new database."""
+    for suffix in ("-wal", "-shm"):
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(f"{name}{suffix}")
 
 
 class TestRunner(DiscoverRunner):
@@ -19,6 +32,9 @@ class TestRunner(DiscoverRunner):
         # migrate's writes are still in the WAL file (operations/apps.py):
         # create the database alone, write the WAL back, then clone.
         parallel, self.parallel = self.parallel, 0
+        test_files = [c.settings_dict["TEST"]["NAME"] for c in connections.all() if c.vendor == "sqlite"]
+        for name in filter(None, test_files) if not self.keepdb else ():
+            remove_wal_files(name)
         old_config = super().setup_databases(**kwargs)
         self.parallel = parallel
         for connection, _, created in old_config:
@@ -30,6 +46,8 @@ class TestRunner(DiscoverRunner):
                     if cursor.fetchone()[0]:
                         raise RuntimeError("The test database's WAL could not be written back before cloning")
             for index in range(parallel):
+                if connection.vendor == "sqlite" and not self.keepdb:
+                    remove_wal_files(connection.creation.get_test_db_clone_settings(str(index + 1))["NAME"])
                 connection.creation.clone_test_db(
                     suffix=str(index + 1), verbosity=self.verbosity, keepdb=self.keepdb
                 )
