@@ -154,13 +154,17 @@ class SocketiodTestCase(Base):
         admin = get_user_model().objects.create_superuser("root", "root@example.com", "pw")
         self.d.connect("owner-tab", {}, {"token": self.token()})
         old = self.d.sessions["owner-tab"]
-        with patch.object(self.d.sio, "emit") as emit, patch.object(self.d.sio, "disconnect") as disconnect:
+        killed_at_emit = []
+        with patch.object(self.d.sio, "emit", side_effect=lambda *a, **k: killed_at_emit.append(self.d.os.kill.call_count)) as emit, \
+                patch.object(self.d.sio, "disconnect") as disconnect:
             self.assertIsNone(self.d.connect("admin-tab", {}, {"token": self.token(admin)}))
         self.assertEqual(list(self.d.sessions), ["admin-tab"])
         self.assertFalse(old["open"])
         # the old worker was killed before the new one started: libvirt gives the console to one
         self.assertEqual(self.killed_before_fork, [0, 1])
-        self.assertIn("An administrator opened this console", emit.call_args.args[1]["output"])
+        emit.assert_called_once_with("taken_over", {"by": "root"}, to="owner-tab")
+        # told before its worker was killed: the old page's forward disconnects it then
+        self.assertEqual(killed_at_emit, [0])
         disconnect.assert_called_once_with("owner-tab")
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)

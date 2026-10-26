@@ -6,100 +6,28 @@
 <link rel="stylesheet" href="{% static 'css/xterm.css' %}"/>
 <script src="{% static 'js/xterm/xterm.js' %}"></script>
 <script src="{% static 'js/xterm/addon-fit.js' %}"></script>
-
 <script src="{% static 'js/socket.io.js' %}"></script>
 <style>
-    #terminal { flex: 1; min-height: 0; }
+    #terminal { flex: 1 1 auto; min-height: 0; background: #000; }
 </style>
-
+{{ token|json_script:"serial-token" }}
+<script type="module" src="{% static "js/console_serial.js" %}"></script>
 {% endblock %}
+
+{% block navbarstatus %}
+<span id="status" class="badge text-bg-secondary" role="status"
+    data-connected="{% trans "Connected" %}" data-disconnected="{% trans "Disconnected" %}"
+    data-taken-over="{% trans "Taken over by %(name)s" %}"
+    data-hint="{% trans "Connected. If the VM shows nothing, press Enter." %}">{% trans "Connecting" %}</span>
+{% endblock %}
+
 {% block navbarmenu %}{% include "console-menu.html" with serial=True %}{% endblock %}
 
+{% block navbarend %}
+<button type="button" class="btn btn-sm btn-light" id="connection_button"
+    data-disconnect="{% trans "Disconnect" %}" data-reconnect="{% trans "Reconnect" %}">{% trans "Disconnect" %}</button>
+{% endblock %}
+
 {% block content %}
-<div style="background: white; padding-bottom: 5px;">
-    <span style="font-size: small;">Status: <span style="font-size: small;" id="status">connecting...</span></span>
-    <button id="button" type="button" onclick="myFunction();">Connect</button>
-</div>
-
 <div id="terminal"></div>
-<script>
-        // socketiod is behind this page's own /socket.io/ location; the page's
-        // signed token is the credential. It lasts two minutes: a new
-        // connection takes a new page (Reconnect), not an automatic retry.
-        var socket = io({transports: ["websocket", "polling"], auth: {token: "{{ token|escapejs }}"}, reconnection: false});
-
-        const status = document.getElementById("status");
-        const button = document.getElementById("button");
-
-        var term = new Terminal({
-            cursorBlink: true,
-        });
-        var fitAddon = new FitAddon.FitAddon();
-        term.loadAddon(fitAddon);
-
-        term.open(document.getElementById('terminal'));
-
-        // typed and pasted input
-        term.onData((data) => {
-            socket.emit("pty_input", {"input": data})
-        });
-
-        socket.on("pty_output", function(output){
-            term.write(output["output"])
-        })
-
-        function showStatus(text, color) {
-            status.textContent = text;
-            status.style.backgroundColor = color;
-            button.textContent = socket.connected ? "{% trans 'Disconnect'|escapejs %}" : "{% trans 'Reconnect'|escapejs %}";
-        }
-        socket.on("connect", () => showStatus("{% trans 'connected'|escapejs %}", "lightgreen"));
-        socket.on("disconnect", () => showStatus("{% trans 'disconnected'|escapejs %}", "#ff8383"));
-        // the server says why: serial console off, an expired link, the console open elsewhere
-        socket.on("connect_error", (err) => showStatus(err.message, "#ff8383"));
-
-        function myFunction(){
-            if (socket.connected) {
-                socket.disconnect();
-            } else {
-                location.reload();
-            }
-        }
-
-        function resize(){
-            fitAddon.fit()
-            socket.emit("resize", {"cols": term.cols, "rows": term.rows})
-        }
-
-        function bindTerminalKey(id, str) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    socket.emit("pty_input", {"input": str});
-                });
-            }
-        }
-        bindTerminalKey('ctrlc', '\x03');
-        bindTerminalKey('ctrld', '\x04');
-        bindTerminalKey('ctrlz', '\x1a');
-        bindTerminalKey('ctrlbackslash', '\x1c');
-        bindTerminalKey('sendtab', '\t');
-        bindTerminalKey('sendesc', '\x1b');
-
-        const fsBtn = document.getElementById('fullscreen_button');
-        if (fsBtn) {
-            fsBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (document.fullscreenElement) {
-                    document.exitFullscreen().catch(() => {});
-                } else {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                }
-            });
-        }
-
-        window.onresize = resize;
-        window.onload = resize;
-</script>
 {% endblock %}

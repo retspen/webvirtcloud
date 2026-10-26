@@ -87,8 +87,9 @@ def start_socketiod(test):
 def console(port, token):
     """A connected client and what it receives until the server disconnects it."""
     client = socketio.Client(reconnection=False)
-    received = {"output": [], "gone": threading.Event()}
+    received = {"output": [], "taken_over": [], "gone": threading.Event()}
     client.on("pty_output", lambda data: received["output"].append(data["output"]))
+    client.on("taken_over", lambda data: received["taken_over"].append(data["by"]))
     client.on("disconnect", lambda *args: received["gone"].set())
     # the same origin as the server, as the page through nginx
     url = "http://127.0.0.1:%d" % port

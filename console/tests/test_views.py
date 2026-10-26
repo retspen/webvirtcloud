@@ -126,6 +126,10 @@ class ConsoleViewsTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "console-xterm.html")
+        # the page's credential for socketiod, as data
+        signed = json.loads(html.fromstring(response.content).get_element_by_id("serial-token").text)
+        self.assertEqual(TimestampSigner(salt="console.novnc").unsign(signed),
+                         f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}")
 
     @override_settings(SERIAL_CONSOLE_ENABLED=False)
     @patch("console.views.wvmInstance")

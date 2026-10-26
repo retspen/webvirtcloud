@@ -83,8 +83,8 @@ class LiveSerialConsoleTestCase(TransactionTestCase):
                 with self.assertRaises(socketio.exceptions.ConnectionError):
                     console(self.port, token)
                 admin_client, admin_received = console(self.port, self.admin_token(token))
-                wait_for(lambda: "An administrator opened this console" in "".join(received["output"]))
-                self.assertIn("An administrator opened this console", "".join(received["output"]))
+                wait_for(lambda: received["taken_over"])
+                self.assertEqual(received["taken_over"], ["serial-live-admin"])
                 client.disconnect()
                 # the VM stops: the terminal says so
                 dom.destroy()

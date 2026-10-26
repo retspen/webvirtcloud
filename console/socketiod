@@ -75,6 +75,9 @@ def connect(sid, environ, auth):
             raise refused("Too many consoles are open on this server: try again later")
         if open_sid is not None:  # a superuser takes over a console left open
             taken = open_sid, sessions.pop(open_sid)
+            # the page tells its user who took the console; first, as its
+            # forward ends the connection as soon as the worker is gone
+            sio.emit("taken_over", {"by": user.username}, to=open_sid)
             # gone before the new worker starts: libvirt gives a console to one at a time
             end(taken[1], wait=True)
         pid, fd = pty.fork()
@@ -96,9 +99,7 @@ def connect(sid, environ, auth):
     logger.info("serial console of VM %s opened by %s%s", instance.name, user.username,
                 " (taken over)" if taken else "")
     if taken:
-        old_sid, _ = taken
-        sio.emit("pty_output", {"output": "\r\n[An administrator opened this console]\r\n"}, to=old_sid)
-        sio.disconnect(old_sid)
+        sio.disconnect(taken[0])
     sio.start_background_task(forward, sid, session)
 
 
