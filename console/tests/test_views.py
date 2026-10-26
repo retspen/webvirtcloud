@@ -48,12 +48,13 @@ class ConsoleViewsTestCase(TestCase):
             username="bob", email="bob@example.com", password="bobpassword"
         )
 
+        # SSH: novncd reaches any console listener (a TCP host's loopback one it cannot)
         cls.compute = Compute.objects.create(
             name="test-compute",
             hostname="127.0.0.1",
             login="root",
             password="",
-            type=1,
+            type=2,
         )
 
         cls.instance = Instance.objects.create(
@@ -276,6 +277,15 @@ class ConsoleViewsTestCase(TestCase):
         self.assertTemplateNotUsed(response, "console-vnc-lite.html")
 
     @patch("console.views.wvmInstance")
+    def test_a_tcp_hosts_loopback_console_says_why_it_cannot_open(self, mock_wvm):
+        Compute.objects.filter(pk=self.compute.pk).update(type=1)
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.console_listens_locally.return_value = True
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse("console") + f"?token={self.token}")
+        self.assertContains(response, "This console listens only on its host")
+
+    @patch("console.views.wvmInstance")
     def test_both_pages_connect_to_novncd_behind_the_panels_own_address(self, mock_wvm):
         # nginx proxies /novncd/ on the panel's own scheme, host and port: no
         # console address to configure, HTTPS gives wss
@@ -494,7 +504,8 @@ class NovncdDaemonLogicTestCase(TestCase):
         handler._new_client(daemon=False, socket_factory=socket_factory)
 
         mock_get_info.assert_called_once_with("1-uuid-from-query")
-        socket_factory.assert_called_once_with("host2", 5901, connect=True)
+        # the address the console listens on
+        socket_factory.assert_called_once_with("192.168.1.50", 5901, connect=True)
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_a_local_socket_host_reaches_a_console_on_its_loopback(self, mock_get_info):
@@ -535,6 +546,37 @@ class NovncdDaemonLogicTestCase(TestCase):
                 socket_factory.assert_not_called()
                 # the tunnel ends with the session
                 close_tunnel.assert_called_once_with(open_tunnel.return_value[1])
+
+    def test_a_tcp_hosts_console_is_reached_where_it_listens(self):
+        for console_host, reached in (("0.0.0.0", "kvm1.example.com"), ("::", "kvm1.example.com"),
+                                      (None, "kvm1.example.com"), ("192.0.2.40", "192.0.2.40")):
+            with self.subTest(console_host=console_host), patch.object(
+                novncd_mod, "get_connection_infos",
+                return_value=("kvm1.example.com", "", 1,
+                              console_host, 5900, None),
+            ):
+                handler = self.CompatibilityMixIn()
+                handler.path = "/novncd/?token=1-uuid"
+                handler.msg = MagicMock()
+                handler.do_proxy = MagicMock()
+                handler.verbose = False
+                socket_factory = MagicMock()
+                handler._new_client(daemon=False, socket_factory=socket_factory)
+                socket_factory.assert_called_once_with(reached, 5900, connect=True)
+
+    def test_a_tcp_hosts_loopback_console_is_refused(self):
+        for console_host in ("127.0.0.1", "::1", "localhost"):
+            with self.subTest(console_host=console_host), patch.object(
+                novncd_mod, "get_connection_infos", return_value=("kvm1.example.com", "", 1, console_host, 5900, None),
+            ):
+                handler = self.CompatibilityMixIn()
+                handler.path = "/novncd/?token=1-uuid"
+                handler.msg = MagicMock()
+                handler.verbose = False
+                socket_factory = MagicMock()
+                with self.assertRaises(Exception):
+                    handler._new_client(daemon=False, socket_factory=socket_factory)
+                socket_factory.assert_not_called()
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_compatibility_mixin_missing_token_safe_exit(self, mock_get_info):

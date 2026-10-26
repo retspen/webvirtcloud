@@ -15,7 +15,7 @@ if ROOT_PATH not in sys.path:
 
 django.setup()
 
-import re
+import ipaddress
 import socket
 
 from urllib.parse import parse_qs, urlparse
@@ -105,6 +105,17 @@ def get_connection_infos(token):
     return compute.hostname, compute.login, compute.type, console_host, console_port, console_socket
 
 
+WILDCARD = (None, "", "0.0.0.0", "::")
+
+
+def is_loopback(address):
+    """127.0.0.0/8, ::1 or localhost: reachable only on the compute itself."""
+    try:
+        return ipaddress.ip_address(address).is_loopback
+    except ValueError:
+        return address == "localhost"
+
+
 class CompatibilityMixIn(object):
     def _new_client(self, daemon, socket_factory):
         # The page puts its own console's token on its websocket URL: a cookie
@@ -125,7 +136,7 @@ class CompatibilityMixIn(object):
         )
 
         tunnel = None
-        loopback = re.match(r"^127\.", console_host or "")
+        loopback = is_loopback(console_host)
         if conntype == CONN_SSH:
             # the console travels inside the SSH connection, encrypted,
             # whatever address it listens on
@@ -146,9 +157,10 @@ class CompatibilityMixIn(object):
             self.msg(message)
             raise Exception(message)
         else:
-            # Direct access
-            self.msg("connecting to: %s:%s" % (connhost, console_port))
-            tsock = socket_factory(connhost, console_port, connect=True)
+            # the address the console listens on, or the compute's for a wildcard
+            address = connhost if console_host in WILDCARD else console_host
+            self.msg("connecting to: %s:%s" % (address, console_port))
+            tsock = socket_factory(address, console_port, connect=True)
 
         if self.verbose and not daemon:
             print(self.traffic_legend)

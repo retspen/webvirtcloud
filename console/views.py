@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 from instances.utils import can_open_console
 from libvirt import libvirtError
+from vrtManager.connection import CONN_TCP, CONN_TLS
 from vrtManager.instance import wvmInstance
 
 
@@ -105,14 +106,24 @@ def console(request):
         console_websocket_port = conn.get_console_websocket_port()
         console_passwd = conn.get_console_passwd()
         running = conn.instance.isActive()
+        # novncd reaches a console that listens on its host's loopback only
+        # through SSH (or on this host)
+        unreachable = instance.compute.type in (CONN_TCP, CONN_TLS) and conn.console_listens_locally()
     except (libvirtError, ValueError, IndexError, Instance.DoesNotExist):
-        running = False
+        running = unreachable = False
         console_type = None
         console_websocket_port = None
         console_passwd = None
 
     if console_type and not running:  # a shut-off VM has no console to connect to
         console_error = _("The VM is not running: start it to open its console.")
+        response = render(request, "console-vnc-lite.html", locals())
+    elif console_type == "vnc" and unreachable:
+        console_error = _(
+            "This console listens only on its host, which the panel reaches over TCP or TLS. "
+            "Let the console listen on all interfaces in the VM's console settings, "
+            "or add the host as an SSH host."
+        )
         response = render(request, "console-vnc-lite.html", locals())
     elif console_type == "vnc":
         console_page = "console-vnc-" + view_type + ".html"
