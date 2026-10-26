@@ -33,7 +33,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_noop as _
 from django.views.decorators.http import require_POST
-from libvirt import (VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
+from libvirt import (VIR_DOMAIN_PAUSED,
+                     VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
                      VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
                      VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA,
                      VIR_DOMAIN_UNDEFINE_NVRAM,
@@ -546,6 +547,15 @@ def get_instance(user, pk, perm_type="view"):
     return instance
 
 
+def _power_instance(user, pk):
+    """The VM to power on, off or cycle: a VM an administrator paused stays
+    paused until an administrator resumes it."""
+    instance = get_instance(user, pk, perm_type="power")
+    if not user.is_superuser and instance.proxy.get_status() == VIR_DOMAIN_PAUSED:
+        raise PermissionDenied
+    return instance
+
+
 def from_script(request):
     """A form a page's script sends and answers itself: the create page's
     flavor forms (it swaps in the reply), the XML editor's dialog (JSON)."""
@@ -684,7 +694,7 @@ def reject_disk_options(request, pk, invalid):
 @require_POST
 @serialize_instance_mutation
 def poweron(request, pk):
-    instance = get_instance(request.user, pk, perm_type="power")
+    instance = _power_instance(request.user, pk)
     if instance.is_template:
         messages.warning(request, _("Templates cannot be started."))
     else:
@@ -699,7 +709,7 @@ def poweron(request, pk):
 @require_POST
 @serialize_instance_mutation
 def powercycle(request, pk):
-    instance = get_instance(request.user, pk, perm_type="power")
+    instance = _power_instance(request.user, pk)
     if instance.is_template:
         messages.warning(request, _("Templates cannot be started."))
     else:
@@ -714,7 +724,7 @@ def powercycle(request, pk):
 @require_POST
 @serialize_instance_mutation
 def poweroff(request, pk):
-    instance = get_instance(request.user, pk, perm_type="power")
+    instance = _power_instance(request.user, pk)
     with audit_vm(request, instance, "power off"):
         instance.proxy.shutdown()
 
@@ -750,7 +760,7 @@ def resume(request, pk):
 @require_POST
 @serialize_instance_mutation
 def force_off(request, pk):
-    instance = get_instance(request.user, pk, perm_type="power")
+    instance = _power_instance(request.user, pk)
     with audit_vm(request, instance, "force off"):
         instance.proxy.force_shutdown()
     return get_safe_redirect(
