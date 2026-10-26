@@ -65,7 +65,7 @@ class ListInfoCallTests(TestCase):
         self.assertEqual(response.status_code, 200)
         return response
 
-    def assert_one_info_per_vm(self, response, memory="2048 MB"):
+    def assert_one_info_per_vm(self, response, memory="2048 MiB"):
         self.assertEqual(len(self.domains), 2, "one proxy per VM row")
         for domain in self.domains:
             self.assertEqual(domain.info_calls, 1)

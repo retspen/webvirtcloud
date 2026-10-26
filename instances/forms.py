@@ -10,6 +10,11 @@ from .utils import nic_macs
 
 
 class FlavorForm(forms.ModelForm):
+    # the units the create form fills in from a flavor
+    memory = forms.IntegerField(label=_("Memory (MiB)"), min_value=1)
+    vcpu = forms.IntegerField(label=_("vCPUs"), min_value=1)
+    disk = forms.IntegerField(label=_("Disk (GiB)"), min_value=1)
+
     class Meta:
         model = Flavor
         fields = "__all__"

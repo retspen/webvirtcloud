@@ -307,3 +307,12 @@ class XmlRefusalTests(TestCase):
 
     def test_a_definition_libvirt_refuses(self):
         self.assertIn("libvirt", self.post("<domain type='nope'><name>new</name><memory>1024</memory></domain>"))
+
+
+class FlavorFormTests(TestCase):
+    def test_a_flavor_is_at_least_one_of_each_in_named_units(self):
+        from instances.forms import FlavorForm
+
+        form = FlavorForm({"label": "tiny", "memory": "0", "vcpu": "-1", "disk": "0"})
+        self.assertEqual(set(form.errors), {"memory", "vcpu", "disk"})
+        self.assertEqual((form["memory"].label, form["disk"].label), ("Memory (MiB)", "Disk (GiB)"))

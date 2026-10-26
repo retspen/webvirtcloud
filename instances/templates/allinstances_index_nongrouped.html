@@ -4,7 +4,7 @@
         <thead>
             <tr>
                 <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
-                {% if request.user.is_superuser %}
+                {% if show_hosts %}
                     <th scope="col">{% trans 'Host' %}<br>{% trans 'User' %}</th>
                 {% endif %}
                 <th scope="col">{% trans 'Status' %}</th>
@@ -26,9 +26,10 @@
                             <br>
                             {% if instance.info %}<p class="m-0 small font-italic">{{ instance.title }}</p>{% endif %}
                         </td>
-                        {% if request.user.is_superuser %}
+                        {% if show_hosts %}
                             <td>
-                                <a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a><br>
+                                {# the host pages are a superuser's #}
+                                {% if request.user.is_superuser %}<a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a>{% else %}{{ instance.compute.name }}{% endif %}<br>
                                     <small><em>
                                         {% if instance.userinstance_set.all.count > 0 %}
                                             {{ instance.userinstance_set.all.0.user }}
@@ -48,7 +49,7 @@
                         </td>
                         {% endif %}
                         <td data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
-                        <td data-sort="{{ instance.info.2 }}">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
+                        <td data-sort="{{ instance.info.2 }}">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MiB{% endif %}</td>
                         <td class="text-nowrap">
                             {% include 'instance_actions.html' %}
                         </td>

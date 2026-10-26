@@ -36,7 +36,7 @@
                             {% endif %}
                         </td>
                         {% if app_settings.VM_DRBD_STATUS == 'True' %}
-                            <td class="d-none d-sm-table-cell"></td>
+                            <td></td>
                         {% endif %}
                         {% if compute.status is True %}
                         <td class="d-none d-sm-table-cell text-center">{{ compute.cpu_count }}</td>
@@ -62,7 +62,7 @@
                                 <br>
                                 {% if instance.info %}<p class="m-0 small fst-italic">{{ instance.title }}</p>{% endif %}
                             </td>
-                            <td>
+                            <td class="d-none d-sm-table-cell">
                                 <em>
                                     {% if instance.userinstance_set.all.count > 0 %}
                                     {{ instance.userinstance_set.all.0.user }}
@@ -80,8 +80,8 @@
                                 {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="badge bg-success-subtle text-success-emphasis">{% else %}<span class="badge bg-danger-subtle text-danger-emphasis">{% endif %}{{ instance.drbd }}</span>
                             </td>
                             {% endif %}
-                            <td data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
-                            <td data-sort="{{ instance.info.2 }}">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MB{% endif %}</td>
+                            <td class="d-none d-sm-table-cell" data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
+                            <td class="d-none d-sm-table-cell" data-sort="{{ instance.info.2 }}">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MiB{% endif %}</td>
                             <td class="text-nowrap">
                                 {% include 'instance_actions.html' %}
                             </td>

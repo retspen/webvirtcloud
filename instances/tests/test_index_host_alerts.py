@@ -61,3 +61,10 @@ class IndexHostAlertTests(TestCase):
         viewer.user_permissions.add(Permission.objects.get(codename="view_instances"))
         response = self.get(viewer, down={"other-host"})
         self.assertContains(response, "Connection Failed: no route to 10.0.0.2")
+
+    def test_global_viewer_sees_each_vms_host_without_the_host_page(self):
+        viewer = get_user_model().objects.create_user(username="viewer2", password="pwd")
+        viewer.user_permissions.add(Permission.objects.get(codename="view_instances"))
+        response = self.get(viewer, down=set())
+        self.assertContains(response, "mine-host")
+        self.assertNotContains(response, reverse("overview", args=[self.mine.id]))
