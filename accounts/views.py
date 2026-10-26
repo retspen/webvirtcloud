@@ -124,19 +124,30 @@ def ssh_key_create(request):
     )
 
 
-def ssh_key_delete(request, pk):
-    ssh_key = get_object_or_404(UserSSHKey, pk=pk, user=request.user)
+def ssh_key_delete(request, pk, user_id=None):
+    """Delete one of the user's own keys or, given user_id, a superuser
+    deletes one of that user's."""
+    if user_id is None:
+        ssh_key = get_object_or_404(UserSSHKey, pk=pk, user=request.user)
+        subject = f"SSH key {ssh_key.keyname}"
+        back = reverse("accounts:profile")
+    elif request.user.is_superuser:
+        ssh_key = get_object_or_404(UserSSHKey, pk=pk, user_id=user_id)
+        subject = f"SSH key {ssh_key.keyname} of {ssh_key.user.username}"
+        back = reverse("accounts:account", args=[user_id]) + "#public-keys"
+    else:
+        raise PermissionDenied
     if request.method == "POST":
-        with audit(request, None, f"SSH key {ssh_key.keyname}", "delete"):
+        with audit(request, None, subject, "delete"):
             ssh_key.delete()
         messages.success(request, _("SSH key deleted"))
-        return redirect("accounts:profile")
+        return redirect(back)
 
     return render(
         request,
         "common/confirm_delete.html",
         {
-            "object": ssh_key,
+            "object": subject,
             "title": _("Delete SSH key"),
             "consequence": _("VMs that already have it keep it; VMs created from now on do not get it."),
         },

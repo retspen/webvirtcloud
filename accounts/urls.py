@@ -14,6 +14,7 @@ urlpatterns = [
     path("profile/<int:user_id>/", views.account, name="account"),
     path("profile/<int:user_id>/api_token/<str:token_key>/delete/", views.api_token_delete,
          name="account_api_token_delete"),
+    path("profile/<int:user_id>/ssh_key/<int:pk>/delete/", views.ssh_key_delete, name="account_ssh_key_delete"),
     path("change_password/", views.change_password, name="change_password"),
     path(
         "user_instance/create/<int:user_id>/",

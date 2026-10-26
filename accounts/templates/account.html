@@ -60,9 +60,9 @@
                             <tr>
                                 <td>{{ forloop.counter }}</td>
                                 <td><a href="{% url 'instances:instance' inst.instance.id %}">{{ inst.instance.name }}</a></td>
-                                <td>{{ inst.is_vnc }}</td>
-                                <td>{{ inst.is_change }}</td>
-                                <td>{{ inst.is_delete }}</td>
+                                <td>{% if inst.is_vnc %}{% bs_icon 'check' %}{% endif %}</td>
+                                <td>{% if inst.is_change %}{% bs_icon 'check' %}{% endif %}</td>
+                                <td>{% if inst.is_delete %}{% bs_icon 'check' %}{% endif %}</td>
                                 <td style="width:5px;">
                                     <a href="{% url 'accounts:user_instance_update' inst.id %}" class="btn btn-sm btn-secondary" title="{% trans "edit" %}">
                                         {% bs_icon 'pencil' %}
@@ -74,6 +74,8 @@
                                     </a>
                                 </td>
                             </tr>
+                        {% empty %}
+                            <tr><td colspan="7" class="text-body-secondary">{% trans "No VMs." %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -86,6 +88,7 @@
                         <tr>
                             <th scope="col">{% trans "Key name" %}</th>
                             <th scope="col">{% trans "Public key" %}</th>
+                            <th scope="col"><span class="visually-hidden">{% trans "Action" %}</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -93,6 +96,11 @@
                         <tr>
                         <td>{{ publickey.keyname }}</td>
                         <td title="{{ publickey.keypublic }}">{{ publickey.keypublic|truncatechars:64 }}</td>
+                        <td style="width:5px;">
+                            <a class="btn btn-sm btn-secondary" href="{% url 'accounts:account_ssh_key_delete' user.id publickey.id %}" title="{% trans "Delete" %}">
+                                {% bs_icon 'trash' %}
+                            </a>
+                        </td>
                         </tr>
                     {% endfor %}
                     </tbody>
