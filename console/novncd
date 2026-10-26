@@ -22,10 +22,10 @@ from urllib.parse import parse_qs, urlparse
 import argparse
 from console.sshtunnels import close_tunnel, open_tunnel, tunnel_target
 from vrtManager.connection import CONN_SOCKET, CONN_SSH
-from webvirtcloud.settings import WS_CERT, WS_HOST, WS_PORT
+from webvirtcloud.settings import WS_HOST, WS_PORT
 
 
-def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080, default_cert=WS_CERT or CERT):
+def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080, default_cert=CERT):
     parser = argparse.ArgumentParser(description="WebVirtCloud noVNC daemon")
     parser.add_argument(
         "-v",

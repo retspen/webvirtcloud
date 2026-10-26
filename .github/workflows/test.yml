@@ -197,7 +197,6 @@ jobs:
       - name: Console Through Nginx Only
         run: |
           [ "$(docker inspect -f '{{json .Config.ExposedPorts}}' webvirtcloud:ci)" = '{"80/tcp":{}}' ]
-          docker exec wvc grep -qx 'WS_PUBLIC_PORT = 80' /srv/webvirtcloud/webvirtcloud/settings.py
           code=$(curl -s -m 5 -o /dev/null -w '%{http_code}' -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
             -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGVzdGtleXRlc3RrZXk9PQ==' http://127.0.0.1:8080/novncd/ || true)
           [ "$code" = 101 ] || { echo "websocket upgrade through nginx: $code"; exit 1; }

@@ -176,10 +176,9 @@
         bindKeyAction('ctrlaltf' + (i + 1), () => sendCtrlAltFN(i));
     }
 
-    let fullPath = '{{ ws_path|escapejs }}';
-    if (fullPath.startsWith('/')) {
-        fullPath = fullPath.substring(1);
-    }
+    // novncd behind the panel's own address (nginx's /novncd/); a VM with a
+    // QEMU websocket port is reached on that port of the panel's host name
+    let fullPath = 'novncd/';
     const token = '{{ token|escapejs }}';
     if (token) {
         fullPath += (fullPath.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
@@ -195,10 +194,12 @@
         {% endif %}
     };
 
+    const https = window.location.protocol === 'https:';
     const mandatory = {
-        host: '{{ ws_host|escapejs }}',
-        port: {{ ws_port|default:6080 }},
+        host: window.location.hostname,
+        port: Number('{{ console_websocket_port|default_if_none:""|escapejs }}' || window.location.port || (https ? 443 : 80)),
         path: fullPath,
+        encrypt: https,
     };
 
     UI.start({ settings: { defaults, mandatory } });
@@ -345,16 +346,16 @@
                                         </li>
                                         <li>
                                             <label for="noVNC_setting_host">Host:</label>
-                                            <input id="noVNC_setting_host" type="text" value="{{ ws_host }}">
+                                            <input id="noVNC_setting_host" type="text">
                                         </li>
                                         <li>
                                             <label for="noVNC_setting_port">Port:</label>
-                                            <input id="noVNC_setting_port" type="number" value="{{ ws_port }}">
+                                            <input id="noVNC_setting_port" type="number">
                                         </li>
                                         <li>
                                             <label for="noVNC_setting_path">Path:</label>
                                             <!-- <input id="noVNC_setting_path" type="text" value="websockify"> -->
-                                            <input id="noVNC_setting_path" type="text" value="{{ ws_path }}">
+                                            <input id="noVNC_setting_path" type="text">
                                         </li>
                                     </ul></div>
                                 </li>

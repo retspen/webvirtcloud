@@ -1,5 +1,4 @@
 # pylint: disable=no-name-in-module,no-member
-import re
 
 from appsettings.settings import app_settings
 from console import tokens
@@ -111,20 +110,6 @@ def console(request):
         console_type = None
         console_websocket_port = None
         console_passwd = None
-
-    ws_public_port = getattr(settings, "WS_PUBLIC_PORT", 6080)
-    ws_public_host = getattr(settings, "WS_PUBLIC_HOST", None)
-    ws_public_path = getattr(settings, "WS_PUBLIC_PATH", "/")
-
-    ws_port = console_websocket_port if console_websocket_port else ws_public_port
-    ws_host = ws_public_host if ws_public_host else request.get_host()
-    ws_path = ws_public_path if ws_public_path else "/"
-
-    if ":" in ws_host:
-        ws_host = re.sub(":[0-9]+", "", ws_host)
-
-    if ws_path:
-        ws_path = ws_path.strip("/") + "/" if ws_path.strip("/") else ""
 
     if console_type and not running:  # a shut-off VM has no console to connect to
         console_error = _("The VM is not running: start it to open its console.")

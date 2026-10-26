@@ -89,8 +89,6 @@ class ConsoleViewsTestCase(TestCase):
         self.assertEqual(
             unsigned, f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}"
         )
-        self.assertEqual(response.context["ws_path"], "novncd/")
-        self.assertEqual(response.context["ws_port"], 6080)
         self.assertEqual(response.context["console_passwd"], "vncsecret")
 
     @patch("console.views.wvmInstance")
@@ -106,7 +104,7 @@ class ConsoleViewsTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "console-vnc-full.html")
-        self.assertEqual(response.context["ws_port"], 5900)
+        self.assertEqual(response.context["console_websocket_port"], 5900)
 
     @patch("console.views.wvmInstance")
     def test_the_lite_console_switches_scaling_from_its_menu(self, mock_wvm):
@@ -247,7 +245,7 @@ class ConsoleViewsTestCase(TestCase):
         self.assertNotContains(response, "attacker.example")
         for name in ("host", "port", "path"):
             self.assertNotContains(response, f"readQueryVariable('{name}'")
-        self.assertContains(response, "const host = 'testserver';")
+        self.assertContains(response, "const host = window.location.hostname;")
 
     @patch("console.views.wvmInstance")
     def test_the_page_sets_no_token_cookie(self, mock_wvm):
@@ -278,60 +276,18 @@ class ConsoleViewsTestCase(TestCase):
         self.assertTemplateNotUsed(response, "console-vnc-lite.html")
 
     @patch("console.views.wvmInstance")
-    @override_settings(WS_PUBLIC_PATH="/novncd/")
-    def test_console_ws_path_normalization_leading_slash(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_wvm.return_value = mock_conn
-
+    def test_both_pages_connect_to_novncd_behind_the_panels_own_address(self, mock_wvm):
+        # nginx proxies /novncd/ on the panel's own scheme, host and port: no
+        # console address to configure, HTTPS gives wss
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}"
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["ws_path"], "novncd/")
-
-    @patch("console.views.wvmInstance")
-    @override_settings(WS_PUBLIC_PATH="novncd/")
-    def test_console_ws_path_normalization_clean(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_wvm.return_value = mock_conn
-
-        self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}"
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["ws_path"], "novncd/")
-
-    @patch("console.views.wvmInstance")
-    @override_settings(WS_PUBLIC_PATH="/")
-    def test_console_ws_path_root_slash(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_wvm.return_value = mock_conn
-
-        self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}"
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["ws_path"], "")
-
-    @override_settings(ALLOWED_HOSTS=["panel.example.com"])
-    @patch("console.views.wvmInstance")
-    def test_console_ws_host_strip_port(self, mock_wvm):
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_wvm.return_value = mock_conn
-
-        self.client.force_login(self.admin_user)
-        url = reverse("console") + f"?token={self.token}"
-        response = self.client.get(url, HTTP_HOST="panel.example.com:8080")
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["ws_host"], "panel.example.com")
+        lite = self.client.get(reverse("console") + f"?token={self.token}&view=lite")
+        self.assertContains(lite, "const host = window.location.hostname;")
+        self.assertContains(lite, "const path = 'novncd/';")
+        full = self.client.get(reverse("console") + f"?token={self.token}&view=full")
+        self.assertContains(full, "host: window.location.hostname,")
+        self.assertContains(full, "encrypt: https,")
 
     @patch("console.views.wvmInstance")
     def test_console_xss_protection_query_parameters(self, mock_wvm):

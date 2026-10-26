@@ -275,23 +275,10 @@ LOGGING = {
 # WebVirtCloud settings
 #
 
-# Websock port
+# The VNC console proxy (novncd). Browsers reach it through nginx's /novncd/
+# on the panel's own address, so it listens on the loopback only.
 WS_PORT = 6080
-
-# Websock host
-WS_HOST = "0.0.0.0"
-
-# Websock public port - 80 or 443 if reverse-proxy, else 6080
-WS_PUBLIC_PORT = 6080
-
-# Websock public host
-WS_PUBLIC_HOST = None
-
-# Websock public path
-WS_PUBLIC_PATH = "novncd/"
-
-# Websock Certificate for SSL
-WS_CERT = None
+WS_HOST = "127.0.0.1"
 
 # Serial console (xterm.js over socketiod) for VMs without graphics. socketiod
 # accepts only the console page's signed token (as noVNC does); while this is

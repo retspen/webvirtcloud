@@ -170,7 +170,6 @@ semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)" 2>/dev/null
 restorecon -R /srv/webvirtcloud 2>/dev/null || true
 setsebool -P httpd_can_network_connect on 2>/dev/null || true
 firewall-cmd --add-service=http --permanent 2>/dev/null || true
-firewall-cmd --add-port=6080/tcp --permanent 2>/dev/null || true
 firewall-cmd --reload 2>/dev/null || true
 systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 systemctl enable nginx && nginx -t && systemctl restart nginx
@@ -295,7 +294,6 @@ If libvirt warns `Host SMBIOS information is not available`, install `dmidecode`
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | SMTP for e-mail OTP |
 | `WEBVIRTCLOUD_LOG_FILE` | log file (default `data/webvirtcloud.log`, rotated at 10 MB × 5) |
 | `SECRET_KEY` | Django secret key (default: the `data/secret_key` file) |
-| `WS_PUBLIC_PORT`, `WS_PUBLIC_HOST`, `WS_PUBLIC_PATH` | Docker only: public console address; `WS_PUBLIC_PORT` must be the port the panel is published on (default 80) |
 
 Where to set them:
 
@@ -309,7 +307,6 @@ For a panel served over HTTPS:
 
 - set `WEBVIRTCLOUD_HTTPS=1`: session and CSRF cookies become HTTPS-only, HTTP is redirected to HTTPS (except `/datasource/`, which VMs fetch over HTTP), and HSTS is sent for one year;
 - add the HTTPS origin to `CSRF_TRUSTED_ORIGINS`, e.g. `CSRF_TRUSTED_ORIGINS=https://wvc.example.com` and `WEBVIRTCLOUD_HTTPS=1` in `/etc/default/webvirtcloud`;
-- set the public noVNC port to the proxy's port (the bundled nginx config already proxies `/novncd/`): `WS_PUBLIC_PORT = 443` in `webvirtcloud/settings.py`, or `WS_PUBLIC_PORT=443` in `docker-compose.override.yml` for Docker;
 
 TLS can end at the bundled nginx or at a proxy in front of it; such a proxy must send `X-Forwarded-Proto: https`. Failed logins are counted per client address, which the bundled nginx passes in `X-Real-IP`. A proxy that replaces the bundled nginx must set `X-Real-IP` itself, and its address must be in `LOGIN_TRUSTED_PROXIES` in `settings.py`. With a proxy in front of the bundled nginx, configure nginx's `set_real_ip_from` / `real_ip_header` for that proxy, or all clients share its address.
 
@@ -610,7 +607,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 - With the bundled nginx config, browsers revalidate static files on each load (304 when unchanged), so an update or a theme change shows without a hard reload. Files cached before this update can stay until a hard reload (Ctrl+F5) of each affected page, or until the site's browser cache is cleared once; an external caching proxy may need a purge.
 - External snapshots use libvirt's snapshot API and need libvirt 9.9 or newer on the compute hosts. They work on UEFI VMs and running, paused or shut-off VMs, can save memory too or, on a running VM with a connected QEMU guest agent, freeze the guest's file systems (the default there), and a revert keeps disks added later (it detaches them). A snapshot is refused when a storage pool with the VM's disks has less free space than a share of those disks (10%, at least 1 GiB; both on the Settings page) plus, for the pool of the memory file, the VM's memory; this is checked before the snapshot only, nothing is reserved. A VM's snapshots form one chain: after a revert, delete the newer snapshots before taking another. Snapshot names no longer get an `s1.` prefix; existing ones keep theirs and can still be reverted and deleted, except that a snapshot an older version took of a UEFI VM can only be deleted. On NFS, libvirt removes merged snapshot files as the qemu user, who needs write access to the image directory; files it could not remove are named in a warning after the delete or revert. Deleting a VM with its data removes its snapshot files too, except a template it grew from and files another VM uses.
 - A storage volume a VM still needs (a disk, a backing file or a snapshot's file) is no longer deleted from the storage page or the API; the delete is refused with the reason. Only VMs on the same compute are checked.
-- Docker no longer publishes port 6080; the console goes through nginx on the panel's port (`WS_PUBLIC_PORT`, default 80).
+- The VNC console connects to `/novncd/` on the panel's own address, scheme and port, through nginx: it works on HTTPS, behind another proxy and on any published port without settings. `WS_PUBLIC_PORT`, `WS_PUBLIC_HOST`, `WS_PUBLIC_PATH` and `WS_CERT` are gone; remove them from `docker-compose.override.yml`, `/etc/default/webvirtcloud` or a kept `settings.py`, set `WS_HOST = "127.0.0.1"` in a kept `settings.py`, and close port 6080 in the firewall.
 - The serial console works (off by default, see [Serial console](#serial-console)); `SOCKETIO_PUBLIC_HOST`/`_PORT`/`_PATH` are gone, the page uses the panel's own address.
 - Long operations run as jobs in a worker process (`manage.py run_worker`); follow them on the VM page and on the Jobs page.
 - Cloning a VM or a volume and creating a VM run as jobs: the page returns at once and the job panel follows them. The API's VM create answers 202 with the job and needs a new `submission_key` per request. The create form no longer takes a console password; set it on the VM page.
@@ -697,7 +694,7 @@ Run every step as your normal user, not with `sudo`: if `manage.py` ever runs as
    python manage.py runserver 0.0.0.0:8000 --settings=webvirtcloud.settings-dev
    ```
 
-   Open `http://127.0.0.1:8000`. For the browser console, run `python console/novncd` (port 6080) in a separate terminal.
+   Open `http://127.0.0.1:8000`. The browser consoles connect to `/novncd/` and `/socket.io/` on the panel's own address, which the dev server does not proxy: try them in the Docker image, or behind nginx with `conf/nginx/webvirtcloud.conf`.
 
 ### Running tests
 

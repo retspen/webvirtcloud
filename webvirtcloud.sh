@@ -307,14 +307,10 @@ install_webvirtcloud () {
     # settings.py reads data/secret_key, so the key persists across re-runs.
     tzone_escape="$(echo -n "$tzone"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
     novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-    novncd_public_port_escape="$(echo -n "$novncd_public_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-    novncd_host_escape="$(echo -n "$novncd_host"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
 
     #TODO escape SED delimiter in variables
     sed -i "s|^\\(TIME_ZONE = \\).*|\\1$tzone_escape|" "$APP_PATH/webvirtcloud/settings.py"
     sed -i "s|^\\(WS_PORT = \\).*|\\1$novncd_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
-    sed -i "s|^\\(WS_PUBLIC_PORT = \\).*|\\1$novncd_public_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
-    sed -i "s|^\\(WS_HOST = \\).*|\\1\'$novncd_host_escape\'|" "$APP_PATH/webvirtcloud/settings.py"
 
     # set CSRF TRUSTED ORIGINS
     host_ip="'http://127.0.0.1', "
@@ -362,12 +358,8 @@ install_webvirtcloud () {
 
 set_firewall () {
   if test -n "$(command -v firewall-cmd)" && test "$(firewall-cmd --state)" == "running"; then
-    echo "* Configuring firewall to allow HTTP & novnc traffic."
+    echo "* Configuring firewall to allow HTTP traffic."
     log "firewall-cmd --zone=public --add-port=http/tcp --permanent"
-    log "firewall-cmd --zone=public --add-port=$novncd_port/tcp --permanent"
-    #firewall-cmd --zone=public --add-port=$novncd_port/tcp --permanent
-    log "firewall-cmd --zone=public --add-port=$novncd_public_port/tcp --permanent"
-    #firewall-cmd --zone=public --add-port=$novncd_public_port/tcp --permanent
     log "firewall-cmd --reload"
     #firewall-cmd --reload
   fi
@@ -534,22 +526,6 @@ if [ -z "$novncd_port" ]; then
   readonly novncd_port=6080
 fi
 echo "     Setting novnc service port $novncd_port"
-echo ""
-
-echo -n "  Q. NOVNC public port number for reverse proxy(e.g: 80 or 443)?(Default: 6080) "
-read -r novncd_public_port
-if [ -z "$novncd_public_port" ]; then
-  readonly novncd_public_port=6080
-fi
-echo "     Setting novnc public port $novncd_public_port"
-echo ""
-
-echo -n "  Q. NOVNC host listen ip?(Default: 0.0.0.0) "
-read -r novncd_host
-if [ -z "$novncd_host" ]; then
-  readonly novncd_host="0.0.0.0"
-fi
-echo "     Setting novnc host ip $novncd_host"
 echo ""
 
 echo "========="

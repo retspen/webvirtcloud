@@ -37,14 +37,15 @@ The platform provides:
                                |     Web Browser / Client    |
                                +--------------+--------------+
                                               |
-                        HTTP / HTTPS (Port 80/443)   WebSockets (Port 6080)
-                                              |              |
-                                              v              v
+                        HTTP / HTTPS and WebSockets (Port 80/443)
+                                              |
+                                              v
 +------------------------------------------------------------------------------------+
 | Nginx Reverse Proxy                                                                |
 |   ├── /static/  --> Static Assets (WhiteNoise / Nginx)                             |
 |   ├── /         --> Gunicorn (Django WSGI Application)                             |
-|   └── :6080     --> WebSockify (novncd background service)                         |
+|   ├── /novncd/  --> novncd (VNC console proxy, 127.0.0.1:6080)                     |
+|   └── /socket.io/ --> socketiod (serial console, 127.0.0.1:6081)                   |
 +-------------------------------------+----------------------------------------------+
                                       |
                                       v
@@ -160,7 +161,7 @@ Built on Django REST Framework with `drf-nested-routers`, providing a structured
 ## 6. Deployment & Service Lifecycle
 
 1. **Gunicorn**: WSGI application server running `webvirtcloud.wsgi:application` (binds to a Unix socket or port 8000).
-2. **novncd**: Background WebSockify daemon translating VNC TCP ports to WebSockets on port 6080.
+2. **novncd**: Background WebSockify daemon translating VNC TCP ports to WebSockets; it listens on 127.0.0.1:6080 behind nginx's `/novncd/`.
 3. **Nginx**: Front-facing reverse proxy handling ports 80/443, serving static assets directly, proxying dynamic web requests to Gunicorn, and routing WebSocket console traffic to `novncd`.
 4. **systemd / runit**: systemd units on hosts (`conf/systemd/`) and runit services in the Docker image (`conf/runit/`) run Gunicorn, novncd, socketiod and the job worker with automatic restarts.
 

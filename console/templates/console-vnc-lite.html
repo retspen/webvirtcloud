@@ -265,10 +265,11 @@
         bindKeyAction('ctrlaltf' + (i + 1), () => sendCtrlAltFN(i));
     }
 
-    // The proxy the server names, never one from the link: the page sends
-    // it a console token
-    const host = '{{ ws_host|escapejs }}';
-    let port = '{{ ws_port|escapejs }}';
+    // novncd behind the panel's own address (nginx's /novncd/), never a host
+    // from the link: the page sends it a console token. A VM with a QEMU
+    // websocket port is reached on that port of the panel's host name.
+    const host = window.location.hostname;
+    let port = '{{ console_websocket_port|default_if_none:""|escapejs }}' || window.location.port;
 
     {% if perms.instances.passwordless_console and console_passwd %}
         const password = '{{ console_passwd|escapejs }}';
@@ -276,7 +277,7 @@
         const password = readQueryVariable('password');
     {% endif %}
 
-    const path = '{{ ws_path|escapejs }}';
+    const path = 'novncd/';
 
     // | | |         | | |
     // | | | Connect | | |

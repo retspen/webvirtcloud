@@ -15,9 +15,6 @@ services:
       # - SECRET_KEY=your-custom-secret-key-here
       # Optional: comma-separated trusted CSRF origins (e.g. http://wvc.example.com,https://wvc.example.com)
       # - CSRF_TRUSTED_ORIGINS=http://localhost,http://127.0.0.1
-      # The console goes through nginx on the panel's port: set this to the
-      # published port if it is not 80 (443 behind TLS)
-      # - WS_PUBLIC_PORT=443
       # Optional: PostgreSQL instead of the bundled sqlite (also WEBVIRTCLOUD_DB_PORT/_NAME/_USER)
       # - WEBVIRTCLOUD_DB_HOST=db.example.com
       # - WEBVIRTCLOUD_DB_PASSWORD=change-me
