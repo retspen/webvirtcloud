@@ -85,7 +85,7 @@ class ConsoleViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "console-vnc-lite.html")
         signer = TimestampSigner(salt="console.novnc")
-        unsigned = signer.unsign(response.cookies["token"].value, max_age=120)
+        unsigned = signer.unsign(response.context["token"], max_age=120)
         self.assertEqual(
             unsigned, f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}"
         )
@@ -250,19 +250,13 @@ class ConsoleViewsTestCase(TestCase):
         self.assertContains(response, "const host = 'testserver';")
 
     @patch("console.views.wvmInstance")
-    def test_console_token_cookie_flags(self, mock_wvm):
-        # The token cookie is only read by novncd, never by JS.
-        mock_conn = MagicMock()
-        mock_conn.get_console_type.return_value = "vnc"
-        mock_conn.get_console_websocket_port.return_value = None
-        mock_wvm.return_value = mock_conn
-
+    def test_the_page_sets_no_token_cookie(self, mock_wvm):
+        # one cookie for every tab would name the last console opened
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_websocket_port.return_value = None
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse("console") + f"?token={self.token}")
-
-        cookie = response.cookies["token"]
-        self.assertTrue(cookie["httponly"])
-        self.assertEqual(cookie["samesite"], "Lax")
+        self.assertNotIn("token", response.cookies)
 
     @patch("console.views.wvmInstance")
     def test_console_view_instances_perm_does_not_open_console(self, mock_wvm):
@@ -510,29 +504,17 @@ class NovncdDaemonLogicTestCase(TestCase):
         self.assertEqual(opts.cert, "/path/to/cert.pem")
 
     @patch.object(novncd_mod, "get_connection_infos")
-    def test_compatibility_mixin_token_from_cookie(self, mock_get_info):
-        mock_get_info.return_value = (
-            "host1",
-            22,
-            "root",
-            1,
-            "192.168.1.50",
-            5900,
-            None,
-        )
-
+    def test_a_cookie_does_not_choose_the_console(self, mock_get_info):
+        # another tab's console in a cookie: the URL's own token is used
+        mock_get_info.return_value = ("host1", 22, "root", 1, "192.168.1.50", 5900, None)
         handler = self.CompatibilityMixIn()
-        handler.headers = {"cookie": "other=123; token=1-uuid-from-cookie; test=456"}
-        handler.path = "/novncd/"
+        handler.headers = {"cookie": "token=1-uuid-of-another-tab"}
+        handler.path = "/novncd/?token=1-uuid-of-this-tab"
         handler.msg = MagicMock()
         handler.do_proxy = MagicMock()
         handler.verbose = False
-
-        socket_factory = MagicMock()
-        handler._new_client(daemon=False, socket_factory=socket_factory)
-
-        mock_get_info.assert_called_once_with("1-uuid-from-cookie")
-        socket_factory.assert_called_once_with("host1", 5900, connect=True)
+        handler._new_client(daemon=False, socket_factory=MagicMock())
+        mock_get_info.assert_called_once_with("1-uuid-of-this-tab")
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_compatibility_mixin_token_from_query_params(self, mock_get_info):
@@ -564,8 +546,8 @@ class NovncdDaemonLogicTestCase(TestCase):
         # libvirt on the panel's host, the VM's console listening on 127.0.0.1
         mock_get_info.return_value = ("localhost", None, "", novncd_mod.CONN_SOCKET, "127.0.0.1", 5902, None)
         handler = self.CompatibilityMixIn()
-        handler.headers = {"cookie": "token=1-uuid"}
-        handler.path = "/novncd/"
+        handler.headers = {}
+        handler.path = "/novncd/?token=1-uuid"
         handler.msg = MagicMock()
         handler.do_proxy = MagicMock()
         handler.verbose = False
@@ -586,9 +568,7 @@ class NovncdDaemonLogicTestCase(TestCase):
 
         mock_get_info.assert_not_called()
         socket_factory.assert_not_called()
-        handler.msg.assert_called_with(
-            "No console token provided in cookie or query parameters"
-        )
+        handler.msg.assert_called_with("No console token in the websocket URL")
 
     @patch("console.tokens.authorize")
     @patch("vrtManager.instance.wvmInstance")
@@ -615,6 +595,8 @@ class NovncdDaemonLogicTestCase(TestCase):
         infos = novncd_mod.get_connection_infos(token)
         self.assertEqual(infos[0], "127.0.0.1")
         self.assertEqual(infos[5], 5900)
+        # the VM access was checked for, not whichever VM has its name now
+        self.assertEqual(mock_wvm.call_args.kwargs["uuid"], mock_instance.uuid)
 
     @patch("sys.argv", ["novncd"])
     @override_settings(DEBUG=False)

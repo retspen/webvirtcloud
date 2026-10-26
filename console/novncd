@@ -18,8 +18,7 @@ django.setup()
 import re
 import socket
 
-# from six.moves import http_cookies as Cookie
-from http import cookies as Cookie
+from urllib.parse import parse_qs, urlparse
 import argparse
 from console.sshtunnels import SSHTunnels
 from vrtManager.connection import CONN_SOCKET, CONN_SSH
@@ -94,6 +93,7 @@ def get_connection_infos(token):
             instance.compute.password,
             instance.compute.type,
             instance.name,
+            uuid=instance.uuid,  # the VM access was checked for, whatever its name now
         )
         if instance.compute.hostname.count(":"):
             connhost = instance.compute.hostname.split(":")[0]
@@ -122,40 +122,11 @@ def get_connection_infos(token):
 
 class CompatibilityMixIn(object):
     def _new_client(self, daemon, socket_factory):
-        # NoVNC uses it's own convention that forward token
-        # from the request to a cookie header, we should check
-        # also for this behavior
-        token = None
-        hcookie = self.headers.get("cookie")
-
-        if hcookie:
-            cookie = Cookie.SimpleCookie()
-            for hcookie_part in hcookie.split(";"):
-                hcookie_part = hcookie_part.lstrip()
-                try:
-                    cookie.load(hcookie_part)
-                except Cookie.CookieError:
-                    # NOTE(stgleb): Do not print out cookie content
-                    # for security reasons.
-                    self.msg("Found malformed cookie")
-                else:
-                    if "token" in cookie:
-                        token = cookie["token"].value
-
-        # Fallback to query parameter if token not found in cookie
-        if not token and hasattr(self, "path"):
-            from urllib.parse import parse_qs, urlparse
-
-            try:
-                parsed_url = urlparse(self.path)
-                query_params = parse_qs(parsed_url.query)
-                if "token" in query_params:
-                    token = query_params["token"][0]
-            except Exception:
-                pass
-
+        # The page puts its own console's token on its websocket URL: a cookie
+        # is shared by the browser's tabs and would name the last console opened
+        token = parse_qs(urlparse(self.path).query).get("token", [None])[0]
         if not token:
-            self.msg("No console token provided in cookie or query parameters")
+            self.msg("No console token in the websocket URL")
             return
 
         try:

@@ -150,9 +150,4 @@ def console(request):
                 "Console type '%(type)s' is not supported. Please switch the VM graphics to VNC."
             ) % {"type": console_type}
         response = render(request, "console-vnc-lite.html", locals())
-
-    # Only novncd reads this cookie; JavaScript gets the token from the page.
-    response.set_cookie(
-        "token", token, httponly=True, samesite="Lax", secure=request.is_secure()
-    )
     return response
