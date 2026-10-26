@@ -34,6 +34,12 @@ class ChangePasswordPermissionTestCase(TestCase):
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse("accounts:change_password")).status_code, 403)
 
+    def test_a_user_without_a_local_password_cannot_change_it(self):
+        user = get_user_model().objects.create_user("ldap-user")  # as django-auth-ldap makes them
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("accounts:change_password")).status_code, 403)
+        self.assertNotContains(self.client.get(reverse("accounts:profile")), reverse("accounts:change_password"))
+
     def test_create_form_ticks_it_and_the_admin_choice_wins(self):
         self.assertIn(permission(), UserCreateForm().fields["user_permissions"].initial)
         form = UserCreateForm(data={"username": "unticked", "password": "pw", "is_active": True})

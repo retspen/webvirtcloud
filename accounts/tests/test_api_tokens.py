@@ -23,7 +23,7 @@ class ApiTokenTests(TestCase):
     def make(self, name="ansible", days="90"):
         """The token the creation page shows once."""
         self.client.force_login(self.user)
-        response = self.client.post(reverse("accounts:api_token_create"), {"name": name, "days": days})
+        response = self.client.post(reverse("accounts:api_token_create"), {"name": name, "days": days}, follow=True)
         self.assertEqual(response.status_code, 200)
         return re.search(r"wvc_[0-9a-f]{64}", response.content.decode()).group(0)
 
@@ -48,8 +48,15 @@ class ApiTokenTests(TestCase):
 
     def test_the_page_showing_the_token_is_not_cached(self):
         self.client.force_login(self.user)
-        response = self.client.post(reverse("accounts:api_token_create"), {"name": "ci", "days": "30"})
+        response = self.client.post(reverse("accounts:api_token_create"), {"name": "ci", "days": "30"}, follow=True)
         self.assertIn("no-store", response["Cache-Control"])
+
+    def test_reloading_the_page_creates_no_second_token(self):
+        token = self.make(name="ci")
+        response = self.client.get(reverse("accounts:api_token_created"))
+        self.assertRedirects(response, reverse("accounts:profile") + "#apitokens", fetch_redirect_response=False)
+        self.assertNotIn(token, response.content.decode())
+        self.assertEqual(ApiToken.objects.filter(user=self.user).count(), 1)
 
     def test_a_token_lasts_the_days_chosen_or_until_deleted(self):
         self.make(name="month", days="30")
@@ -147,7 +154,7 @@ class AdminApiTokenTests(TestCase):
         self.user = get_user_model().objects.create_user("tok-user", password="pw")
         self.admin = get_user_model().objects.create_superuser("tok-admin", "admin@example.com", "pw")
         self.client.force_login(self.user)
-        response = self.client.post(reverse("accounts:api_token_create"), {"name": "ansible", "days": "90"})
+        response = self.client.post(reverse("accounts:api_token_create"), {"name": "ansible", "days": "90"}, follow=True)
         self.token = re.search(r"wvc_[0-9a-f]{64}", response.content.decode()).group(0)
         self.stored = ApiToken.objects.get(user=self.user)
 

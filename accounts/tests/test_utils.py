@@ -34,11 +34,13 @@ class AccountsUtilsTestCase(TestCase):
         b64 = base64.b64encode(blob).decode()
         valid_key = f"ssh-rsa {b64} user@example.com"
         self.assertTrue(validate_ssh_key(valid_key))
+        # ssh-keygen -C "John Doe laptop": the comment holds spaces
+        self.assertTrue(validate_ssh_key(f"ssh-rsa {b64} John Doe laptop"))
+        self.assertTrue(validate_ssh_key(f"ssh-rsa {b64}"))
 
     def test_validate_ssh_key_invalid_parts(self):
         self.assertFalse(validate_ssh_key("only_two parts"))
         self.assertFalse(validate_ssh_key("one_part"))
-        self.assertFalse(validate_ssh_key("four parts key here now"))
 
     def test_validate_ssh_key_invalid_base64(self):
         self.assertFalse(validate_ssh_key("ssh-rsa not-valid-b64! user@example.com"))

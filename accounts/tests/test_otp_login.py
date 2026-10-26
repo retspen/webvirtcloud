@@ -178,3 +178,14 @@ class OTPLoginHTTPTestCase(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(f"{reverse('accounts:login')}?next={reverse('computes')}")
         self.assertRedirects(response, reverse("computes"), fetch_redirect_response=False)
+
+
+class OtpLoginPageTestCase(TestCase):
+    def test_a_field_error_is_shown_in_the_error_box(self):
+        from django.template.loader import render_to_string
+
+        request = RequestFactory().post("/accounts/login/")
+        form = SingleDeviceOTPForm(request, data={"username": "u" * 200, "password": "pw"})
+        self.assertFalse(form.is_valid())
+        page = render_to_string("accounts/otp_login.html", {"form": form}, request=request)
+        self.assertIn(str(form.errors["username"][0]), page)

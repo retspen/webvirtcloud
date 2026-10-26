@@ -73,7 +73,18 @@ def api_token_create(request):
     name, days = form.cleaned_data["name"], form.cleaned_data["days"]
     with audit(request, None, f"API token {name}", "add"):
         _token, key = ApiToken.objects.create(request.user, expiry=timedelta(days=days) if days else None, name=name)
-    return render(request, "api_token_created.html", {"name": name, "key": key})
+    # shown by a GET, so reloading the page does not create another token
+    request.session["api_token_created"] = {"name": name, "key": key}
+    return redirect("accounts:api_token_created")
+
+
+@never_cache
+def api_token_created(request):
+    """The token just created, shown once."""
+    created = request.session.pop("api_token_created", None)
+    if created is None:
+        return redirect(reverse("accounts:profile") + "#apitokens")
+    return render(request, "api_token_created.html", created)
 
 
 def api_token_delete(request, token_key, user_id=None):
@@ -179,6 +190,8 @@ def change_password(request):
         user=request.user, must_change_password=True
     ).exists()
     if not must_change and not request.user.has_perm("accounts.change_password"):
+        raise PermissionDenied
+    if not request.user.has_usable_password():  # an LDAP user: the password is changed in LDAP
         raise PermissionDenied
     form = PasswordChangeForm(request.user, request.POST or None)
 

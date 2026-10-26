@@ -33,9 +33,9 @@ def get_user_totp_device(user):
 
 
 def validate_ssh_key(key):
-    array = key.strip().encode().split()
-    # An OpenSSH public key has 2 parts (type, key) or 3 parts (type, key, comment).
-    if len(array) not in (2, 3):
+    # An OpenSSH public key is a type, a key and an optional comment, which may hold spaces
+    array = key.strip().encode().split(maxsplit=2)
+    if len(array) < 2:
         return False
     typeofkey = array[0]
     string = array[1]

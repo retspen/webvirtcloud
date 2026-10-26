@@ -33,7 +33,8 @@
                 <form method="post" action="" role="form" aria-label="Edit user info form">
                     {% csrf_token %}
                     {% bootstrap_form profile_form layout='horizontal' %}
-                    {% if perms.accounts.change_password %}
+                    {# an LDAP user's password is changed in LDAP #}
+                    {% if perms.accounts.change_password and user.has_usable_password %}
                         <a href="{% url 'accounts:change_password' %}" class="btn btn-primary">
                             {% bs_icon 'lock' %} {% trans "Change Password" %}
                         </a>
