@@ -124,7 +124,7 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row meta-prealloc" style="display: none;">
+                                                <div class="row meta-prealloc d-none">
                                                     <label class="col-sm-3 col-form-label">{% trans "Metadata" %}</label>
                                                     <div class="col-sm-6">
                                                         <input type="checkbox" name="meta_prealloc" value="true">
@@ -184,7 +184,7 @@
             var form = $(this).closest('form');
             var convert = form.find('.volume-convert').prop('checked');
             form.find('.format-convert').toggle(convert);
-            form.find('.meta-prealloc').toggle(convert && form.find('.image-format').val() == 'qcow2');
+            form.find('.meta-prealloc').toggleClass('d-none', !(convert && form.find('.image-format').val() == 'qcow2'));
         });
 
         $(document).ready(function() {
@@ -208,7 +208,7 @@
                 var fileName = file.name;
                 var errorMessage = $('#upload-error-message');
                 if (!/\.iso$/i.test(fileName) || fileName.length <= 4) {
-                    errorMessage.text("{% trans 'Only .iso files can be uploaded.'|escapejs %}").show();
+                    errorMessage.text("{% trans 'Only .iso files can be uploaded.'|escapejs %}").removeClass("d-none");
                     return;
                 }
                 if (file.size === 0) {
@@ -235,7 +235,7 @@
                 var uploadStatusText = $('#upload-status-text');
                 var uploadButton = $('#isoUploadForm button[type="submit"]');
 
-                errorMessage.hide();
+                errorMessage.addClass("d-none");
                 uploadStatusText.text("{% trans 'Starting upload...'|escapejs %}");
                 uploadStatus.removeClass('d-none').addClass('d-flex');
                 uploadButton.prop('disabled', true);
@@ -299,7 +299,7 @@
                                 pendingUpload = null;
                             }
                             var errorText = jqXHR.responseJSON && jqXHR.responseJSON.error ? jqXHR.responseJSON.error : "{% trans 'An error occurred during upload.'|escapejs %}";
-                            errorMessage.text(errorText).show();
+                            errorMessage.text(errorText).removeClass("d-none");
                             uploadDialog.show();
                         }
                     });

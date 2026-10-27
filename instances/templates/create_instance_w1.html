@@ -5,17 +5,13 @@
 
 {% block title %}{% trans "Create new instance" %} - {% trans "Machine" %}{% endblock %}
 
-{% block style %}
-    <style>.create-vm { max-width: 56rem; }</style>
-{% endblock %}
-
 {% block page_heading%}
 {% blocktrans with host=compute.name %}New instance on {{ host }} {% endblocktrans %}
 {% endblock page_heading %}
 
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
-    <div class="create-vm mx-auto">
+    <div>
         {% include "create_steps.html" with step=2 %}
 
         <section class="card mb-3" aria-labelledby="machine-heading">

@@ -97,7 +97,7 @@
                                 <option value="{{ mem }}" {% if mem == instance.cur_memory %}selected{% endif %}>{{ mem }}</option>
                             {% endfor %}
                             </select>
-                            <input type="text" name="cur_memory_custom" class="form-select js-custom__toggle" style="display: none" disabled />
+                            <input type="text" name="cur_memory_custom" class="form-select js-custom__toggle d-none" disabled />
                             <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
                         </div>
                     </div>
@@ -113,7 +113,7 @@
                             {% endfor %}
                             </select>
                             {% if instance.status == 5 %}
-                            <input type="text" name="memory_custom" class="form-select js-custom__toggle" style="display: none" disabled />
+                            <input type="text" name="memory_custom" class="form-select js-custom__toggle d-none" disabled />
                             <small><input type="checkbox" class="js-custom__checkbox" /> {% trans "Custom value" %}</small>
                             {% else %}
                             <small class="text-body-secondary">{% trans "Shut off the VM to change the maximum" %}</small>
