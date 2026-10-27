@@ -49,27 +49,26 @@ class OverviewTestCase(TestCase):
         conn.get_emulator.return_value = "/usr/libexec/qemu-kvm"
         conn.get_hypervisors_domain_types.return_value = {"i686": ["kvm", "qemu"], "x86_64": ["kvm", "qemu"]}
         page = self.page()
-        self.assertIn("Connected", text(page, "//p[span]"))
-        self.assertIn("rack 4", text(page, "//p[span]"))
-        cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card-body' or contains(@class,'card-body ')]")]
+        self.assertIn("Connected", text(page, "//div[@id='host_status']"))
+        self.assertIn("rack 4", text(page, "//div[@id='host_status']"))
+        cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
         self.assertIn("VMs 6 3 running, 2 shut off, 1 paused Instances →", cards)
         self.assertTrue(any(card.startswith("vCPUs 1.5:1 12 vCPUs on 8 CPUs 6 running") for card in cards), cards)
-        self.assertTrue(any("24.0 GB given of 32.0 GB" in card for card in cards), cards)
+        self.assertTrue(any(card.startswith("Memory 75 % 24.0 GB / 32.0 GB") for card in cards), cards)
         self.assertTrue(any("120.0 GB free of 500.0 GB" in card for card in cards), cards)
-        hardware = text(page, "//h4[.='Hardware']/following-sibling::dl")
-        self.assertIn("Logical CPUs 8 Physical cores 4 Sockets 2", hardware)
-        self.assertIn("NUMA nodes 2", hardware)
-        software = text(page, "//h4[.='Software and connection']/following-sibling::dl")
-        self.assertIn("Hypervisor QEMU 10.1.0", software)
-        self.assertIn("x86_64 (kvm, qemu)", software)
-        # the charts poll only for a host that was read
+        hardware = text(page, "//div[@class='card-header'][normalize-space()='Hardware']/..")
+        self.assertIn("Processor Xeon Architecture x86_64 Logical CPUs 8 Physical cores 4 Sockets 2 NUMA nodes 2 "
+                      "Clock 2.4 GHz Memory 32.0 GB", hardware)
+        software = text(page, "//div[@class='card-header'][normalize-space()='Software and connection']/..")
+        self.assertIn("QEMU 10.1.0 libvirt 11.10.0", software)
+        self.assertIn("x86_64 kvm · qemu", software)
         self.assertTrue(page.xpath("//canvas[@id='cpuChart']"))
 
     @patch("computes.views.wvmHostDetails")
     def test_a_host_the_panel_cannot_reach_keeps_its_page_with_the_reason(self, details):
         page = self.page(connected=False, given=None)
         details.assert_not_called()
-        self.assertIn("Not connected", text(page, "//p[span]"))
+        self.assertIn("Not connected", text(page, "//div[@id='host_status']"))
         self.assertIn("did not answer within 5 s", text(page, "//div[@role='alert']"))
         # the way back: its sections, its connection and its removal
         self.assertTrue(page.xpath("//nav[@aria-label='Host sections']"))
@@ -83,10 +82,10 @@ class OverviewTestCase(TestCase):
         details.return_value.get_lib_version.side_effect = libvirtError("cannot read the version")
         page = self.page()
         self.assertIn("cannot read the version", text(page, "//div[@role='alert']"))
-        self.assertTrue(page.xpath("//h5[.='VMs']"))
+        self.assertTrue(page.xpath("//div[@class='card-header'][normalize-space()='VMs']"))
         # the load is read on its own, by the charts
         self.assertTrue(page.xpath("//canvas[@id='cpuChart']"))
-        self.assertFalse(page.xpath("//h4[.='Hardware']"))
+        self.assertFalse(page.xpath("//div[@class='card-header'][normalize-space()='Hardware']"))
 
     def test_the_list_links_the_overview_of_a_host_it_cannot_reach(self):
         with patch.object(Compute, "status", new_callable=PropertyMock, return_value=False):

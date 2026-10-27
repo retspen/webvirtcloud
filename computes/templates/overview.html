@@ -13,7 +13,7 @@
 {% block page_heading %}{{ compute.name }}{% endblock page_heading %}
 
 {% block content %}
-<p class="d-flex flex-wrap align-items-baseline column-gap-3 text-body-secondary">
+<div id="host_status" class="d-flex flex-wrap align-items-baseline column-gap-3 text-body-secondary mb-3">
     <span>
         {% if connected %}
             <span class="compute-dot bg-success" aria-hidden="true"></span> <span class="text-body">{% trans "Connected" %}</span>
@@ -23,13 +23,13 @@
     </span>
     <span class="text-break">{{ compute.hostname }}</span>
     {% if compute.details %}<span class="text-break">{{ compute.details }}</span>{% endif %}
-</p>
+</div>
 
 {% include "computes/host_nav.html" with section="overview" %}
 
 {% if not connected %}
 <div class="alert alert-warning" role="alert">
-    <p>{% trans "The panel cannot reach this host, so its VMs, capacity and load are not shown:" %} {{ compute.connection_error }}</p>
+    <div class="mb-2">{% trans "The panel cannot reach this host, so its VMs, capacity and load are not shown:" %} {{ compute.connection_error }}</div>
     <a class="btn btn-sm btn-warning" href="{% url 'overview' compute.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Try again" %}</a>
     <a class="btn btn-sm btn-outline-secondary" href="{% url 'compute_update' compute.id %}">{% trans "Edit connection" %}</a>
 </div>
@@ -39,108 +39,150 @@
 <div class="alert alert-warning" role="alert">{% trans "The host's details could not be read:" %} {{ read_error }}</div>
 {% endif %}
 
-<h4 class="page-header">{% trans "VMs and what they were given" %}</h4>
 {% if given %}
 <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
     <div class="col">
-        <div class="card h-100"><div class="card-body">
-            <h5 class="card-title">{% trans "VMs" %}</h5>
+        <div class="card h-100">
+            <div class="card-header">{% bs_icon 'server' %} {% trans "VMs" %}</div>
+            <div class="card-body">
             <div class="compute-ratio">{{ given.vm_count }}</div>
             <div class="small text-body-secondary">
                 {% blocktrans with running=given.vms.running shutoff=given.vms.shutoff %}{{ running }} running, {{ shutoff }} shut off{% endblocktrans %}{% if given.vms.paused %}, {% blocktrans with paused=given.vms.paused %}{{ paused }} paused{% endblocktrans %}{% endif %}{% if given.vms.other %}, {% blocktrans with other=given.vms.other %}{{ other }} other{% endblocktrans %}{% endif %}
             </div>
             <a class="small" href="{% url 'instances' compute.id %}">{% trans "Instances" %} &rarr;</a>
-        </div></div>
+            </div>
+        </div>
     </div>
     <div class="col">
-        <div class="card h-100"><div class="card-body">
-            <h5 class="card-title">{% trans "vCPUs" %}</h5>
+        <div class="card h-100">
+            <div class="card-header">{% bs_icon 'cpu' %} {% trans "vCPUs" %}</div>
+            <div class="card-body">
             {% include "computes/capacity_vcpus.html" %}
-        </div></div>
+            </div>
+        </div>
     </div>
     <div class="col">
-        <div class="card h-100"><div class="card-body compute-memory">
-            <h5 class="card-title">{% trans "Memory" %}</h5>
+        <div class="card h-100">
+            <div class="card-header">{% bs_icon 'memory' %} {% trans "Memory" %}</div>
+            <div class="card-body compute-memory">
             {% include "computes/capacity_memory.html" %}
-        </div></div>
+            </div>
+        </div>
     </div>
     <div class="col">
-        <div class="card h-100"><div class="card-body compute-storage">
-            <h5 class="card-title">{% trans "Storage" %}</h5>
+        <div class="card h-100">
+            <div class="card-header">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</div>
+            <div class="card-body compute-storage">
             {% include "computes/capacity_storage.html" %}
             <a class="small" href="{% url 'storages' compute.id %}">{% trans "Storages" %} &rarr;</a>
-        </div></div>
+            </div>
+        </div>
     </div>
 </div>
 {% else %}
-<p class="text-body-secondary">{% trans "The capacity could not be read." %}</p>
+<div class="text-body-secondary mb-4">{% trans "The capacity could not be read." %}</div>
 {% endif %}
 
 {# the load is read on its own: shown also when the details could not be #}
-<h4 class="page-header">{% trans "Load" %}</h4>
 <div class="row g-3">
     <div class="col-lg-6">
-        <div class="card h-100"><div class="card-body">
-            <h5 class="card-title d-flex justify-content-between">{% trans "CPU in use" %} <span id="cpu_now" class="text-body-secondary">&ndash;</span></h5>
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span>{% bs_icon 'speedometer2' %} {% trans "CPU in use" %}</span> <span id="cpu_now" class="fw-semibold">&ndash;</span>
+            </div>
+            <div class="card-body">
             <div class="chart"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU in use, recent readings" %}"></canvas></div>
-        </div></div>
+            </div>
+        </div>
     </div>
     <div class="col-lg-6">
-        <div class="card h-100"><div class="card-body">
-            <h5 class="card-title d-flex justify-content-between">{% trans "Memory in use" %} <span id="mem_now" class="text-body-secondary">&ndash;</span></h5>
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span>{% bs_icon 'memory' %} {% trans "Memory in use" %}</span> <span id="mem_now" class="fw-semibold">&ndash;</span>
+            </div>
+            <div class="card-body">
             <div class="chart"><canvas id="memChart" role="img" aria-label="{% trans "Memory in use, recent readings" %}"></canvas></div>
-        </div></div>
+            </div>
+        </div>
     </div>
 </div>
-<p class="small text-body-secondary mt-2 mb-4">
+<div class="small text-body-secondary mt-2 mb-4">
     {% trans "The last 10 readings, one every 5 seconds. Memory in use leaves out the host's buffers and cache." %}
     <span id="graph_state" data-updated="{% trans "Updated at %(time)s." %}"
         data-stale="{% trans "Not updated since %(time)s: the host did not answer." %}">{% trans "Waiting for the first reading." %}</span>
-</p>
+</div>
 
 {% if host %}
-<div class="row g-4">
+<div class="row g-3 mb-4">
     <div class="col-lg-6">
-        <h4 class="page-header">{% trans "Hardware" %}</h4>
-        <dl class="row">
-            <dt class="col-sm-5">{% trans "Hostname" %}</dt>
-            <dd class="col-sm-7 text-break">{{ host.hostname }}</dd>
-            <dt class="col-sm-5">{% trans "Architecture" %}</dt>
-            <dd class="col-sm-7">{{ host.arch }}</dd>
-            <dt class="col-sm-5">{% trans "Processor" %}</dt>
-            <dd class="col-sm-7">{{ host.processor|default:"–" }}</dd>
-            <dt class="col-sm-5">{% trans "Logical CPUs" %}</dt>
-            <dd class="col-sm-7">{{ host.topology.cpus }}</dd>
-            <dt class="col-sm-5">{% trans "Physical cores" %}</dt>
-            <dd class="col-sm-7">{{ host.topology.cores|default:"–" }}</dd>
-            <dt class="col-sm-5">{% trans "Sockets" %}</dt>
-            <dd class="col-sm-7">{{ host.topology.sockets|default:"–" }}</dd>
-            <dt class="col-sm-5">{% trans "NUMA nodes" %}</dt>
-            <dd class="col-sm-7">{{ host.topology.nodes|default:"–" }}</dd>
-            <dt class="col-sm-5">{% trans "Clock" %}</dt>
-            <dd class="col-sm-7">{{ host.topology.mhz }} MHz</dd>
-            <dt class="col-sm-5">{% trans "Memory" %}</dt>
-            <dd class="col-sm-7">{{ host.memory|filesizeformat }}</dd>
-        </dl>
+        <div class="card h-100">
+            <div class="card-header">{% bs_icon 'cpu' %} {% trans "Hardware" %}</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Processor" %}</span>
+                    <span class="text-end text-break">{{ host.processor|default:"–" }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Architecture" %}</span>
+                    <span class="text-end text-break">{{ host.arch }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Logical CPUs" %}</span>
+                    <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.cpus }}</span></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Physical cores" %}</span>
+                    <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.cores|default:"–" }}</span></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Sockets" %}</span>
+                    <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.sockets|default:"–" }}</span></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "NUMA nodes" %}</span>
+                    <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.nodes|default:"–" }}</span></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Clock" %}</span>
+                    <span class="text-end text-break">{{ host.ghz }} GHz</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Memory" %}</span>
+                    <span class="text-end text-break"><span class="fw-semibold">{{ host.memory|filesizeformat }}</span></span>
+                </li>
+            </ul>
+        </div>
     </div>
     <div class="col-lg-6">
-        <h4 class="page-header">{% trans "Software and connection" %}</h4>
-        <dl class="row">
-            <dt class="col-sm-5">{% trans "Hypervisor" %}</dt>
-            <dd class="col-sm-7">{{ host.hypervisor }} {{ host.hypervisor_version }}</dd>
-            <dt class="col-sm-5">libvirt</dt>
-            <dd class="col-sm-7">{{ host.libvirt_version }}</dd>
-            <dt class="col-sm-5">{% trans "Emulator" %}</dt>
-            <dd class="col-sm-7 text-break">{{ host.emulator|default:"–" }}</dd>
-            <dt class="col-sm-5">{% trans "Guest architectures" %}</dt>
-            <dd class="col-sm-7">
-                {% for arch, types in host.guest_archs.items %}
-                    <div>{{ arch }} <span class="text-body-secondary">({{ types|join:", " }})</span></div>
-                {% endfor %}
-            </dd>
-            <dt class="col-sm-5">{% trans "Connection" %}</dt>
-            <dd class="col-sm-7 text-break">{{ host.uri }}</dd>
-        </dl>
+        <div class="card h-100">
+            <div class="card-header">{% bs_icon 'layers' %} {% trans "Software and connection" %}</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Hostname" %}</span>
+                    <span class="text-end text-break">{{ host.hostname }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{{ host.hypervisor }}</span>
+                    <span class="text-end text-break"><span class="badge text-bg-primary">{{ host.hypervisor_version }}</span></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">libvirt</span>
+                    <span class="text-end text-break"><span class="badge text-bg-primary">{{ host.libvirt_version }}</span></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Guest architectures" %}</span>
+                    <span class="text-end text-break">{% for arch, types in host.guest_archs.items %}<span class="badge text-bg-light border ms-1">{{ arch }} <span class="fw-normal text-body-secondary">{{ types|join:" · " }}</span></span>{% endfor %}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Emulator" %}</span>
+                    <span class="text-end text-break"><code>{{ host.emulator|default:"–" }}</code></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <span class="text-body-secondary">{% trans "Connection" %}</span>
+                    <span class="text-end text-break"><code>{{ host.uri }}</code></span>
+                </li>
+            </ul>
+        </div>
     </div>
 </div>
 {% endif %}

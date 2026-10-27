@@ -84,9 +84,10 @@ def overview(request, compute_id):
         try:
             conn = wvmHostDetails(compute.hostname, compute.login, compute.password, compute.type)
             hostname, arch, memory, _cpus, processor, uri = conn.get_node_info()
+            topology = conn.get_cpu_topology()
             context["host"] = {
                 "hostname": hostname, "arch": arch, "memory": memory, "processor": processor, "uri": uri,
-                "topology": conn.get_cpu_topology(),
+                "topology": topology, "ghz": round(topology["mhz"] / 1000, 1),
                 "hypervisor": conn.wvm.getType(), "hypervisor_version": conn.get_version(),
                 "libvirt_version": conn.get_lib_version(),
                 "emulator": conn.get_emulator(arch), "guest_archs": conn.get_hypervisors_domain_types(),

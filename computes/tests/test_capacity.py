@@ -74,8 +74,8 @@ class ComputesPageTests(TestCase):
         self.assertIn("host-one", cells[0])
         self.assertIn("2.5:1", cells[1])
         self.assertIn("40 vCPUs on 16 CPUs 24 running", cells[1])
-        self.assertIn("48.0 GB given of 64.0 GB", cells[2])
-        self.assertIn("32.0 GB of it running", cells[2])
+        self.assertIn("75 % 48.0 GB / 64.0 GB", cells[2])
+        self.assertIn("32.0 GB running", cells[2])
         self.assertIn("120.0 GB free of 500.0 GB", cells[3])
         # host-two could not be read: one cell says so
         self.assertIn("capacity could not be read", " ".join(two.text_content().split()))
