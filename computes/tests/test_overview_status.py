@@ -22,5 +22,5 @@ class OverviewStatusTests(TestCase):
             Compute, "connection_error", new_callable=PropertyMock, return_value=ERROR
         ):
             response = self.client.get(reverse("computes"))
-        self.assertContains(response, "Not Connected")
+        self.assertContains(response, "Not connected")
         self.assertContains(response, ERROR)

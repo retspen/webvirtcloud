@@ -50,14 +50,20 @@ class ComputesPageTests(TestCase):
             page = html.fromstring(self.client.get(reverse("computes")).content)
         headers = [" ".join(th.text_content().split()) for th in page.xpath("//thead//th")]
         # no pools: measuring their space scans each pool of each host (views.host_pools)
-        self.assertEqual(headers, ["Host", "vCPUs", "Memory", "Actions"])
+        self.assertEqual(headers, ["Host", "VMs", "vCPUs", "Memory", "Actions"])
         one, two = page.xpath("//tbody/tr")
         cells = [" ".join(td.text_content().split()) for td in one.xpath("td")]
-        self.assertIn("host-one", cells[0])
-        self.assertIn("2.5:1", cells[1])
-        self.assertIn("40 vCPUs on 16 CPUs 24 running", cells[1])
-        self.assertIn("75 % 48.0 GB / 64.0 GB", cells[2])
-        self.assertIn("32.0 GB running", cells[2])
+        self.assertIn("host-one Connected TCP 192.0.2.1", cells[0])
+        self.assertEqual(cells[1], "6 3 running")
+        self.assertIn("2.5:1", cells[2])
+        self.assertIn("40 vCPUs on 16 CPUs", cells[2])
+        self.assertIn("24 running", cells[2])
+        self.assertIn("75 % 48.0 GB / 64.0 GB", cells[3])
+        self.assertIn("32.0 GB running", cells[3])
+        # the totals of the hosts read: host-two's capacity could not be
+        totals = [" ".join(card.text_content().split()) for card in page.xpath("//div[@class='card-body']")]
+        self.assertEqual(totals, ["Hosts 2 / 2 connected", "VMs 3 / 6 running", "vCPUs given 40 on 16 CPUs",
+                                  "Memory given 48.0 GB of 64.0 GB"])
         # host-two could not be read: one cell says so
         self.assertIn("capacity could not be read", " ".join(two.text_content().split()))
 
@@ -72,7 +78,7 @@ class SingularTests(TestCase):
         with patch.object(Compute, "capacity", new=given), patch.object(Compute, "status", new=True):
             page = html.fromstring(self.client.get(reverse("computes")).content)
             line = self.client.get(reverse("compute_capacity", args=[c.id])).content.decode()
-        (cell,) = page.xpath("//tbody/tr/td[2]")
+        (cell,) = page.xpath("//tbody/tr/td[3]")
         self.assertIn("1 vCPU on 1 CPU", " ".join(cell.text_content().split()))
         self.assertEqual(" ".join(line.split()), "Given to VMs: 1 vCPU (1.0:1), 1.0 GB memory.")
 

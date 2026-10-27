@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
-{% load common_tags %}
 {% load bootstrap_icons %}
 {% block title %}{% trans "Computes" %}{% endblock %}
 {% block content %}
@@ -12,73 +11,110 @@
         <h3 class="mb-3">{% trans "Computes" %}</h3>
     </div>
 </div>
-<div class="row">
-    {% if not computes %}
-        <div class="col-lg-12">
-            <div class="alert alert-warning shadow-sm">
-                {% bs_icon 'exclamation-triangle'%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any computes" %}
-            </div>
+{% if not computes %}
+    <div class="alert alert-warning shadow-sm">
+        {% bs_icon 'exclamation-triangle'%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any computes" %}
+    </div>
+{% else %}
+    {# the totals of the hosts the panel reaches #}
+    <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
+        <div class="col">
+            <div class="card h-100"><div class="card-body">
+                <div class="small text-body-secondary">{% bs_icon 'hdd-rack' %} {% trans "Hosts" %}</div>
+                <div class="fs-4 lh-sm">{{ totals.connected }} / {{ totals.hosts }}</div>
+                <div class="small {% if totals.connected < totals.hosts %}text-danger{% else %}text-body-secondary{% endif %}">{% trans "connected" %}</div>
+            </div></div>
         </div>
-    {% else %}
-        <div class="col-lg-12">
-            {# position-relative: the hidden status texts are positioned within it, not the page #}
-            <div class="table-responsive position-relative">
-                <table class="table align-middle" data-sortable>
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans "Host" %}</th>
-                            <th scope="col" data-sort-method="number">{% trans "vCPUs" %}</th>
-                            <th scope="col" data-sort-method="number">{% trans "Memory" %}</th>
-                            <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                    {% for compute in computes %}
-                        {% with given=compute.shown_capacity %}
-                        <tr>
-                            <td class="py-3">
-                                <div class="d-flex align-items-baseline gap-2">
-                                    {% if compute.status is True %}
-                                        <span class="d-inline-block rounded-circle p-1 flex-shrink-0 bg-success" title="{% trans "Connected" %}" aria-hidden="true"></span>
-                                        <span class="visually-hidden">{% trans "Connected" %}</span>
-                                    {% else %}
-                                        <span class="d-inline-block rounded-circle p-1 flex-shrink-0 bg-danger" title="{% trans "Not Connected" %}" aria-hidden="true"></span>
-                                        <span class="visually-hidden">{% trans "Not Connected" %}</span>
-                                    {% endif %}
-                                    <span class="fw-semibold">{{ compute.name }}</span>
-                                </div>
-                                <div class="small text-body-secondary ms-3">{{ compute.hostname }}{% if compute.details %}<br>{{ compute.details }}{% endif %}</div>
-                                {% if compute.status is not True %}
-                                    <div class="small text-danger ms-3">{{ compute.connection_error }}</div>
-                                {% endif %}
-                            </td>
-                            {% if given %}
-                            <td class="py-3" data-sort="{{ given.ratio|stringformat:".2f" }}">
-                                {% include "computes/capacity_vcpus.html" %}
-                            </td>
-                            <td class="py-3" data-sort="{{ given.memory_percent }}">
-                                {% include "computes/capacity_memory.html" %}
-                            </td>
+        <div class="col">
+            <div class="card h-100"><div class="card-body">
+                <div class="small text-body-secondary">{% bs_icon 'server' %} {% trans "VMs" %}</div>
+                <div class="fs-4 lh-sm">{{ totals.running }} / {{ totals.vms }}</div>
+                <div class="small text-body-secondary">{% trans "running" %}</div>
+            </div></div>
+        </div>
+        <div class="col">
+            <div class="card h-100"><div class="card-body">
+                <div class="small text-body-secondary">{% bs_icon 'cpu' %} {% trans "vCPUs given" %}</div>
+                <div class="fs-4 lh-sm">{{ totals.vcpus }}</div>
+                <div class="small text-body-secondary">{% blocktrans count counter=totals.cpus %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</div>
+            </div></div>
+        </div>
+        <div class="col">
+            <div class="card h-100"><div class="card-body">
+                <div class="small text-body-secondary">{% bs_icon 'memory' %} {% trans "Memory given" %}</div>
+                <div class="fs-4 lh-sm">{{ totals.assigned|filesizeformat }}</div>
+                <div class="small text-body-secondary">{% blocktrans with memory=totals.memory|filesizeformat %}of {{ memory }}{% endblocktrans %}</div>
+            </div></div>
+        </div>
+    </div>
+
+    {# position-relative: the hidden status texts are positioned within it, not the page #}
+    <div class="table-responsive position-relative">
+        <table class="table table-hover align-middle" data-sortable>
+            <thead>
+                <tr>
+                    <th scope="col">{% trans "Host" %}</th>
+                    <th scope="col" data-sort-method="number">{% trans "VMs" %}</th>
+                    <th scope="col" data-sort-method="number">{% trans "vCPUs" %}</th>
+                    <th scope="col" data-sort-method="number">{% trans "Memory" %}</th>
+                    <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+                </tr>
+            </thead>
+            <tbody class="searchable">
+            {% for compute in computes %}
+                {% with given=compute.shown_capacity %}
+                <tr{% if compute.status is not True %} class="table-warning"{% endif %}>
+                    <td class="py-3">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <a class="fw-semibold" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
+                            {% if compute.status is True %}
+                                <span class="badge text-bg-success">{% trans "Connected" %}</span>
                             {% else %}
-                            <td colspan="2" class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                                <span class="badge text-bg-danger">{% trans "Not connected" %}</span>
                             {% endif %}
-                            <td class="py-3 text-end">
-                                <div class="btn-group">
-                                    {# a host the panel cannot reach opens too: its page says why #}
-                                    <a class="btn {% if compute.status is True %}btn-success{% else %}btn-light{% endif %}" title="{% trans "Overview" %}" href="{% url 'overview' compute.id %}">{% bs_icon 'eye-fill' %}</a>
-                                    <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil-fill' %}</a>
-                                    <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x-circle-fill' %}</a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endwith %}
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    {% endif %}
-</div>
+                            <span class="badge text-bg-light border">{{ compute.connection_name }}</span>
+                        </div>
+                        <div class="small text-body-secondary font-monospace mt-1">{{ compute.hostname }}</div>
+                        {% if compute.details %}<div class="small text-body-secondary">{{ compute.details }}</div>{% endif %}
+                        {% if compute.status is not True %}
+                            <div class="small text-danger">{{ compute.connection_error }}</div>
+                        {% endif %}
+                    </td>
+                    {% if given %}
+                    <td class="py-3" data-sort="{{ given.vm_count }}">
+                        <a class="fs-4 lh-sm text-decoration-none" href="{% url 'instances' compute.id %}">{{ given.vm_count }}</a>
+                        <div class="small text-body-secondary">{% blocktrans with running=given.vms.running %}{{ running }} running{% endblocktrans %}</div>
+                    </td>
+                    <td class="py-3" data-sort="{{ given.ratio|stringformat:".2f" }}">
+                        {% include "computes/capacity_vcpus.html" %}
+                    </td>
+                    <td class="py-3" data-sort="{{ given.memory_percent }}">
+                        {% include "computes/capacity_memory.html" %}
+                    </td>
+                    {% else %}
+                    <td colspan="3" class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                    {% endif %}
+                    <td class="py-3 text-end">
+                        {# fixed: the menu would be cut off by the table's scrolling box #}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                    data-bs-popper-config='{"strategy": "fixed"}'
+                                    aria-label="{% blocktrans with name=compute.name %}Actions for {{ name }}{% endblocktrans %}">{% bs_icon 'three-dots' %}</button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item" href="{% url 'overview' compute.id %}">{% bs_icon 'eye' %} {% trans "Overview" %}</a></li>
+                                <li><a class="dropdown-item" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil' %} {% trans "Edit connection" %}</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x-circle' %} {% trans "Remove from panel" %}</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
 {% endblock content %}
 
 {% block script %}

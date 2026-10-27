@@ -12,6 +12,7 @@ from instances.models import Instance
 from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims
+from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.storage import wvmStorages
 
@@ -44,6 +45,11 @@ def shown_capacity(compute):
         given["bar"] = {"running": assigned["running"] * 100 / scale, "stopped": assigned["stopped"] * 100 / scale,
                         "over": assigned["all"] > memory}
         given["memory_percent"] = round(assigned["all"] * 100 / memory) if memory else 0
+        # the vCPU bar likewise: running and shut-off VMs' vCPUs against the CPUs
+        vcpus, cpus = given["vcpus"], given["cpus"]
+        vcpus["stopped"] = vcpus["all"] - vcpus["running"]
+        cpu_scale = max(vcpus["all"], cpus) or 1
+        given["cpu_bar"] = {"running": vcpus["running"] * 100 / cpu_scale, "stopped": vcpus["stopped"] * 100 / cpu_scale}
         given["vm_count"] = sum(given["vms"].values())
     return given
 
@@ -63,13 +69,29 @@ def host_pools(compute):
     return {"pool": pools[0] if pools else None, "more_pools": pools[1:]}
 
 
+# how the panel reaches a compute, by Compute.type
+CONNECTIONS = {CONN_TCP: "TCP", CONN_SSH: "SSH", CONN_TLS: "TLS", CONN_SOCKET: "Socket"}
+
+
 @superuser_only
 def computes(request):
-    """The computes, with what each has given its VMs."""
+    """The computes, with what each has given its VMs, and the totals of the
+    ones the panel reaches."""
     computes = list(Compute.objects.order_by("name"))
+    totals = {"hosts": len(computes), "connected": 0, "vms": 0, "running": 0,
+              "vcpus": 0, "cpus": 0, "assigned": 0, "memory": 0}
     for compute in computes:
-        compute.shown_capacity = shown_capacity(compute)
-    return render(request, "computes/list.html", {"computes": computes})
+        compute.connection_name = CONNECTIONS.get(compute.type, "")
+        compute.shown_capacity = given = shown_capacity(compute)
+        totals["connected"] += compute.status is True
+        if given:
+            totals["vms"] += given["vm_count"]
+            totals["running"] += given["vms"]["running"]
+            totals["vcpus"] += given["vcpus"]["all"]
+            totals["cpus"] += given["cpus"]
+            totals["assigned"] += given["assigned"]["all"]
+            totals["memory"] += given["memory"]
+    return render(request, "computes/list.html", {"computes": computes, "totals": totals})
 
 
 @superuser_only

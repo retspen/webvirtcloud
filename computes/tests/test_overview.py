@@ -117,4 +117,5 @@ class OverviewTestCase(TestCase):
     def test_the_list_links_the_overview_of_a_host_it_cannot_reach(self):
         with patch.object(Compute, "status", new_callable=PropertyMock, return_value=False):
             page = html.fromstring(self.client.get(reverse("computes")).content)
-        self.assertTrue(page.xpath(f"//a[@title='Overview'][@href='{self.url}']"))
+        # its name and its menu's Overview
+        self.assertEqual(len(page.xpath(f"//tbody//a[@href='{self.url}']")), 2)
