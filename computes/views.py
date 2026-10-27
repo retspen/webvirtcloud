@@ -35,13 +35,13 @@ def shown_capacity(compute):
     be read."""
     given = compute.capacity
     if given:
-        # the memory bar: running and shut-off VMs' memory, and a mark at the
-        # host's memory, on a scale that holds whichever is larger
+        # the memory bar: running and shut-off VMs' memory, on a scale that
+        # holds the host's memory or all given, whichever is larger
         assigned, memory = given["assigned"], given["memory"]
+        assigned["stopped"] = assigned["all"] - assigned["running"]
         scale = max(assigned["all"], memory) or 1
-        given["bar"] = {"running": assigned["running"] * 100 / scale,
-                        "stopped": (assigned["all"] - assigned["running"]) * 100 / scale,
-                        "host": memory * 100 / scale, "over": assigned["all"] > memory}
+        given["bar"] = {"running": assigned["running"] * 100 / scale, "stopped": assigned["stopped"] * 100 / scale,
+                        "over": assigned["all"] > memory}
         given["memory_percent"] = round(assigned["all"] * 100 / memory) if memory else 0
         given["vm_count"] = sum(given["vms"].values())
         # the default pool (else the first) shows; the others (a host may

@@ -18,8 +18,6 @@
         /* the chosen card by its border only: the Bootswatch dark themes keep light "subtle" backgrounds */
         .source-option:has(input:checked) { border-color: var(--bs-primary) !important; box-shadow: inset 0 0 0 1px var(--bs-primary); }
         .source-option:has(input:focus-visible) { outline: 2px solid var(--bs-primary); outline-offset: 2px; }
-        .row-list { list-style: none; padding-left: 0; }
-        .row-list li { overflow-wrap: anywhere; }
     </style>
 {% endblock %}
 
@@ -171,7 +169,7 @@
                                 {% field_error vm_form.images "image-control" %}
                             </div>
                         </div>
-                        <ul id="img-list" class="row-list mt-2 mb-0" aria-label="{% trans "Chosen volumes" %}"></ul>
+                        <ul id="img-list" class="list-unstyled mt-2 mb-0" aria-label="{% trans "Chosen volumes" %}"></ul>
                         <template id="disk-row">
                             <li class="d-flex flex-wrap align-items-center gap-2 py-1">
                                 <span class="row-label font-monospace"></span>
@@ -181,7 +179,7 @@
                                 <select class="form-select form-select-sm w-auto disk-bus" aria-label="{% trans "Bus" %}">
                                     {% for bus in disk_buses %}<option value="{{ bus }}"{% if bus == default_bus %} selected{% endif %}>{% trans bus %}</option>{% endfor %}
                                 </select>
-                                <span class="row-item"></span>
+                                <span class="row-item text-break"></span>
                                 <button type="button" class="btn btn-sm btn-link ms-auto row-remove" aria-label="{% trans "Remove" %}">{% bs_icon 'x-lg' %}</button>
                             </li>
                         </template>
@@ -232,11 +230,11 @@
                     {% field_error vm_form.networks "network-control" %}
                     <input id="networks" type="hidden" name="networks" value="">
                     <input id="vm_mac" type="hidden" name="mac" value="">
-                    <ul id="net-list" class="row-list mt-2 mb-0" aria-label="{% trans "Network interfaces" %}"></ul>
+                    <ul id="net-list" class="list-unstyled mt-2 mb-0" aria-label="{% trans "Network interfaces" %}"></ul>
                     <template id="network-row">
                         <li class="d-flex flex-wrap align-items-center gap-2 py-1">
                             <span class="row-label font-monospace"></span>
-                            <span class="row-item"></span>
+                            <span class="row-item text-break"></span>
                             <input type="text" class="form-control form-control-sm w-auto font-monospace" maxlength="17" size="17" required
                                    autocomplete="off" autocapitalize="none" spellcheck="false"
                                    pattern="[a-fA-F0-9:]+" aria-label="{% trans "MAC address" %}">
@@ -247,16 +245,17 @@
                 </div>
             </section>
 
-            <section class="card mb-3" aria-labelledby="advanced-heading">
-                <div class="card-body">
-                    <h2 class="h5 card-title mb-0" id="advanced-heading">
-                        <button class="btn p-0 border-0 text-body fw-medium w-100 text-start focus-ring disclosure" type="button" data-bs-toggle="collapse" data-bs-target="#advanced"
+            <section class="accordion mb-3" aria-labelledby="advanced-heading">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="advanced-heading">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advanced"
                                 aria-expanded="false" aria-controls="advanced">
-                            {% bs_icon 'chevron-down' %} {% trans "Advanced" %}
+                            {% trans "Advanced" %}
                         </button>
                     </h2>
-                    <div class="collapse" id="advanced">
-                        <div class="row g-3 pt-3">
+                    <div class="accordion-collapse collapse" id="advanced">
+                        <div class="accordion-body">
+                        <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="vm_cache_mode" class="form-label">{% trans "Disk cache mode" %}</label>
                                 <select id="vm_cache_mode" class="form-select{{ vm_form.cache_mode|invalid }}" name="cache_mode"{% error_attrs vm_form.cache_mode "vm_cache_mode" %}>
@@ -341,6 +340,7 @@
                                 </div>
                                 {% endif %}
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>

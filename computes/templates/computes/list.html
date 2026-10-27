@@ -23,7 +23,7 @@
         <div class="col-lg-12">
             {# position-relative: the hidden status texts are positioned within it, not the page #}
             <div class="table-responsive position-relative">
-                <table class="table align-middle compute-list" data-sortable>
+                <table class="table align-middle" data-sortable>
                     <thead>
                         <tr>
                             <th scope="col">{% trans "Host" %}</th>
@@ -37,13 +37,13 @@
                     {% for compute in computes %}
                         {% with given=compute.shown_capacity %}
                         <tr>
-                            <td>
+                            <td class="py-3">
                                 <div class="d-flex align-items-baseline gap-2">
                                     {% if compute.status is True %}
-                                        <span class="compute-dot bg-success" title="{% trans "Connected" %}"></span>
+                                        <span class="d-inline-block rounded-circle p-1 flex-shrink-0 bg-success" title="{% trans "Connected" %}" aria-hidden="true"></span>
                                         <span class="visually-hidden">{% trans "Connected" %}</span>
                                     {% else %}
-                                        <span class="compute-dot bg-danger" title="{% trans "Not Connected" %}"></span>
+                                        <span class="d-inline-block rounded-circle p-1 flex-shrink-0 bg-danger" title="{% trans "Not Connected" %}" aria-hidden="true"></span>
                                         <span class="visually-hidden">{% trans "Not Connected" %}</span>
                                     {% endif %}
                                     <span class="fw-semibold">{{ compute.name }}</span>
@@ -54,19 +54,19 @@
                                 {% endif %}
                             </td>
                             {% if given %}
-                            <td data-sort="{{ given.ratio|stringformat:".2f" }}">
+                            <td class="py-3" data-sort="{{ given.ratio|stringformat:".2f" }}">
                                 {% include "computes/capacity_vcpus.html" %}
                             </td>
-                            <td data-sort="{{ given.memory_percent }}" class="compute-memory">
+                            <td class="py-3" data-sort="{{ given.memory_percent }}">
                                 {% include "computes/capacity_memory.html" %}
                             </td>
-                            <td class="compute-storage">
+                            <td class="py-3">
                                 {% include "computes/capacity_storage.html" %}
                             </td>
                             {% else %}
-                            <td colspan="3" class="small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                            <td colspan="3" class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
                             {% endif %}
-                            <td class="text-end">
+                            <td class="py-3 text-end">
                                 <div class="btn-group">
                                     {# a host the panel cannot reach opens too: its page says why #}
                                     <a class="btn {% if compute.status is True %}btn-success{% else %}btn-light{% endif %}" title="{% trans "Overview" %}" href="{% url 'overview' compute.id %}">{% bs_icon 'eye-fill' %}</a>

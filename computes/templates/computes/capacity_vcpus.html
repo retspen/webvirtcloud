@@ -1,5 +1,5 @@
 {% load i18n %}
 {# the vCPUs a host has given its VMs: given, what its list cell and its overview show #}
-<div class="compute-ratio {% if given.ratio > 4 %}text-danger{% elif given.ratio > 2 %}text-warning-emphasis{% endif %}">{{ given.ratio|floatformat:1 }}:1</div>
+<div class="fs-4 lh-sm {% if given.ratio > 4 %}text-danger{% elif given.ratio > 2 %}text-warning-emphasis{% endif %}">{{ given.ratio|floatformat:1 }}:1</div>
 <div class="small text-body-secondary">{% blocktrans count counter=given.vcpus.all %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %} {% blocktrans count counter=given.cpus %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</div>
 <div class="small text-body-secondary">{% blocktrans with running=given.vcpus.running %}{{ running }} running{% endblocktrans %}</div>

@@ -44,16 +44,16 @@
             <button class="btn btn-primary" type="button" id="next" disabled>{% trans "Next" %}</button>
         </div>
 
-        <section class="card mb-3" aria-labelledby="xml-heading">
-            <div class="card-body">
-                <h2 class="h5 card-title mb-0" id="xml-heading">
-                    <button class="btn p-0 border-0 text-body fw-medium w-100 text-start focus-ring disclosure" type="button" data-bs-toggle="collapse" data-bs-target="#from-xml"
+        <section class="accordion mb-3" aria-labelledby="xml-heading">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="xml-heading">
+                    <button class="accordion-button{% if not xml_error %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#from-xml"
                             aria-expanded="{% if xml_error %}true{% else %}false{% endif %}" aria-controls="from-xml">
-                        {% bs_icon 'chevron-down' %} {% trans "Or define it from XML" %}
+                        {% trans "Or define it from XML" %}
                     </button>
                 </h2>
-                <div class="collapse{% if xml_error %} show{% endif %}" id="from-xml">
-                    <form method="post" class="pt-3" aria-label="{% trans "Create instance from XML" %}">{% csrf_token %}
+                <div class="accordion-collapse collapse{% if xml_error %} show{% endif %}" id="from-xml">
+                    <form method="post" class="accordion-body" aria-label="{% trans "Create instance from XML" %}">{% csrf_token %}
                         {% if xml_error %}<div class="alert alert-danger form-errors" role="alert">{{ xml_error }}</div>{% endif %}
                         <input type="hidden" name="dom_xml" value="{{ xml }}">
                         <div class="xmlheight mb-3"><textarea id="editor" aria-label="{% trans "Domain XML" %}">{{ xml }}</textarea></div>

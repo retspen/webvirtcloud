@@ -33,18 +33,6 @@ body {
   color: inherit;
 }
 
-/* a disclosure's chevron points up while its section is open */
-.disclosure[aria-expanded="true"] .bi-chevron-down {
-  transform: rotate(180deg);
-}
-
-/* the steps of creating a VM: the separator is drawn, not a list item */
-.create-steps li + li::before {
-  content: "›";
-  margin-right: 0.5rem;
-  color: var(--bs-secondary-color);
-}
-
 .xmlheight {
     height: 364px;
 }
@@ -137,43 +125,11 @@ p {
     margin-top: 20px;
 }
 
-/* a live chart (static/js/charts.js) fills the width of its card */
+/* a live chart (static/js/charts.js) fills the width of its card at this height */
 .chart {
-    position: relative;
     height: 160px;
 }
 
-.netIN {
-    border-color: rgb(83, 191, 189);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
-
-.netOUT {
-    border-color: rgb(151, 187, 205);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
-
-.diskRD {
-    border-color: rgb(190, 195, 205);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
-
-.diskWR {
-    border-color: rgb(249, 134, 33);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
 .keyselect {
     display: inline;
     min-width: 250px;
@@ -197,10 +153,6 @@ p {
     background-color:#000099;
 }
 
-.bottom-bar-margin {
-    margin-top: 65px;
-}
-
 /* make dropdowns show on hover */
 @media only screen and (min-width: 768px) {
   .dropdown:hover .dropdown-menu {
@@ -214,73 +166,4 @@ p {
 /* remove ugly dotted outline on tabs */
 a {
     outline: 0;
-}
-
-.input-xs {
-    height: 22px;
-    padding: 2px 5px;
-    font-size: 12px;
-    line-height: 1.5; /* If Placeholder of the input is moved up, rem/modify this. */
-    border-radius: 2px;
-  }
-
-/* the Computes list: what each host has given its VMs */
-.compute-list td {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-}
-
-.compute-dot {
-    display: inline-block;
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.compute-ratio {
-    font-size: 1.5rem;
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
-}
-
-.compute-memory {
-    min-width: 11rem;
-}
-
-.compute-storage {
-    min-width: 9rem;
-}
-
-/* a bar of given capacity: running VMs solid, shut-off VMs faint, and a
-   mark where the host's own capacity ends */
-.cap-bar {
-    position: relative;
-    display: flex;
-    height: 0.6rem;
-    border-radius: 0.3rem;
-    background: var(--bs-secondary-bg);
-}
-
-.cap-bar.cap-thin {
-    height: 0.3rem;
-}
-
-.cap-running {
-    background: var(--bs-primary);
-    border-radius: 0.3rem 0 0 0.3rem;
-}
-
-.cap-stopped {
-    background: var(--bs-primary);
-    opacity: 0.35;
-}
-
-.cap-host {
-    position: absolute;
-    top: -0.2rem;
-    bottom: -0.2rem;
-    width: 2px;
-    margin-left: -1px;
-    background: var(--bs-body-color);
 }

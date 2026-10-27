@@ -16,9 +16,9 @@
 <div id="host_status" class="d-flex flex-wrap align-items-baseline column-gap-3 text-body-secondary mb-3">
     <span>
         {% if connected %}
-            <span class="compute-dot bg-success" aria-hidden="true"></span> <span class="text-body">{% trans "Connected" %}</span>
+            <span class="d-inline-block rounded-circle p-1 flex-shrink-0 bg-success" aria-hidden="true"></span> <span class="text-body">{% trans "Connected" %}</span>
         {% else %}
-            <span class="compute-dot bg-danger" aria-hidden="true"></span> <span class="text-body">{% trans "Not connected" %}</span>
+            <span class="d-inline-block rounded-circle p-1 flex-shrink-0 bg-danger" aria-hidden="true"></span> <span class="text-body">{% trans "Not connected" %}</span>
         {% endif %}
     </span>
     <span class="text-break">{{ compute.hostname }}</span>
@@ -45,7 +45,7 @@
         <div class="card h-100">
             <div class="card-header">{% bs_icon 'server' %} {% trans "VMs" %}</div>
             <div class="card-body">
-            <div class="compute-ratio">{{ given.vm_count }}</div>
+            <div class="fs-4 lh-sm">{{ given.vm_count }}</div>
             <div class="small text-body-secondary">
                 {% blocktrans with running=given.vms.running shutoff=given.vms.shutoff %}{{ running }} running, {{ shutoff }} shut off{% endblocktrans %}{% if given.vms.paused %}, {% blocktrans with paused=given.vms.paused %}{{ paused }} paused{% endblocktrans %}{% endif %}{% if given.vms.other %}, {% blocktrans with other=given.vms.other %}{{ other }} other{% endblocktrans %}{% endif %}
             </div>
@@ -64,7 +64,7 @@
     <div class="col">
         <div class="card h-100">
             <div class="card-header">{% bs_icon 'memory' %} {% trans "Memory" %}</div>
-            <div class="card-body compute-memory">
+            <div class="card-body">
             {% include "computes/capacity_memory.html" %}
             </div>
         </div>
@@ -72,7 +72,7 @@
     <div class="col">
         <div class="card h-100">
             <div class="card-header">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</div>
-            <div class="card-body compute-storage">
+            <div class="card-body">
             {% include "computes/capacity_storage.html" %}
             <a class="small" href="{% url 'storages' compute.id %}">{% trans "Storages" %} &rarr;</a>
             </div>
@@ -91,7 +91,7 @@
                 <span>{% bs_icon 'speedometer2' %} {% trans "CPU in use" %}</span> <span id="cpu_now" class="fw-semibold">&ndash;</span>
             </div>
             <div class="card-body">
-            <div class="chart"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU in use, recent readings" %}"></canvas></div>
+            <div class="chart position-relative"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU in use, recent readings" %}"></canvas></div>
             </div>
         </div>
     </div>
@@ -101,7 +101,7 @@
                 <span>{% bs_icon 'memory' %} {% trans "Memory in use" %}</span> <span id="mem_now" class="fw-semibold">&ndash;</span>
             </div>
             <div class="card-body">
-            <div class="chart"><canvas id="memChart" role="img" aria-label="{% trans "Memory in use, recent readings" %}"></canvas></div>
+            <div class="chart position-relative"><canvas id="memChart" role="img" aria-label="{% trans "Memory in use, recent readings" %}"></canvas></div>
             </div>
         </div>
     </div>

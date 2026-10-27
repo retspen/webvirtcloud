@@ -24,7 +24,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="chart"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU Usage" %}"></canvas></div>
+                    <div class="chart position-relative"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU Usage" %}"></canvas></div>
                 </div>
             </div>
             <div class="mb-1 card border-danger">
@@ -34,7 +34,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="chart"><canvas id="memChart" role="img" aria-label="{% trans "Memory Usage" %}"></canvas></div>
+                    <div class="chart position-relative"><canvas id="memChart" role="img" aria-label="{% trans "Memory Usage" %}"></canvas></div>
                 </div>
             </div>
             {% for net in instance.networks %}
@@ -45,7 +45,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="chart"><canvas id="netEth{{ forloop.counter0 }}Chart" role="img" aria-label="{% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}"></canvas></div>
+                    <div class="chart position-relative"><canvas id="netEth{{ forloop.counter0 }}Chart" role="img" aria-label="{% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}"></canvas></div>
                 </div>
             </div>
             {% endfor %}
@@ -57,7 +57,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="chart"><canvas id="blk{{ disk.dev }}Chart" role="img" aria-label="{% trans "Disk I/O device" %}: {{ disk.dev }}"></canvas></div>
+                    <div class="chart position-relative"><canvas id="blk{{ disk.dev }}Chart" role="img" aria-label="{% trans "Disk I/O device" %}: {{ disk.dev }}"></canvas></div>
                 </div>
             </div>
             {% endfor %}
