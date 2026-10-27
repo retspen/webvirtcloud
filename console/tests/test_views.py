@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from computes.models import Compute
+from console.views import LAYOUTS_DIR
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.signing import TimestampSigner
@@ -249,6 +250,19 @@ class ConsoleViewsTestCase(TestCase):
         self.assertEqual(set(vnc_config(response)), {"token", "password", "resize", "clip", "viewOnly"})
         script = (Path(settings.BASE_DIR) / "static/js/console_vnc.js").read_text()
         self.assertIn("scheme + window.location.host + '/novncd/?token='", script)
+
+    @patch("console.views.wvmInstance")
+    def test_the_vnc_page_offers_each_keyboard_layout_file(self, mock_wvm):
+        mock_wvm.return_value.get_console_type.return_value = "vnc"
+        mock_wvm.return_value.get_console_passwd.return_value = None
+        self.client.force_login(self.alice)
+        response = self.client.get(self.url)
+        layouts = json.loads(html.fromstring(response.content).get_element_by_id("keyboard-layouts").text)
+        files = sorted(path.stem for path in LAYOUTS_DIR.glob("*.json"))
+        self.assertEqual(sorted(layouts), files)
+        self.assertEqual(next(iter(layouts)), "us")
+        for layout_id, layout in layouts.items():
+            self.assertContains(response, f'<option value="{layout_id}">{layout["name"]}</option>', html=True)
 
     @patch("console.views.wvmInstance")
     def test_the_vnc_page_starts_as_the_console_settings_say(self, mock_wvm):

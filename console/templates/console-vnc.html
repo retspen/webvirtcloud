@@ -7,6 +7,7 @@
     #screen { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 </style>
 {{ vnc|json_script:"vnc-config" }}
+{{ layouts|json_script:"keyboard-layouts" }}
 <script type="module" src="{% static "js/console_vnc.js" %}"></script>
 {% endblock %}
 
@@ -103,8 +104,16 @@
                 <label class="form-label" for="clipboard_text">{% trans "Text" %}</label>
                 <textarea class="form-control font-monospace" id="clipboard_text" rows="6"></textarea>
                 <div class="form-text">
-                    {% trans "Type it: the VM gets it key by key, also in its firmware, an installer or a login prompt. The VM's clipboard takes it only with clipboard support in the VM; what the VM copies shows here." %}
+                    {% trans "Type it: the VM gets it key by key, as the keys of its keyboard layout, also in its firmware, an installer or a login prompt. The VM's clipboard takes it only with clipboard support in the VM; what the VM copies shows here." %}
                 </div>
+                <label class="form-label mt-3" for="clipboard_layout">{% trans "The VM's keyboard layout" %}</label>
+                <select class="form-select" id="clipboard_layout">
+                    {% for id, layout in layouts.items %}
+                    <option value="{{ id }}">{{ layout.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="alert alert-warning mt-3 mb-0" id="clipboard_missing" role="alert" hidden
+                    data-text="{% trans "Nothing was typed: no key types these characters on this layout:" %}"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="clipboard_send">{% trans "Send to the VM's clipboard" %}</button>

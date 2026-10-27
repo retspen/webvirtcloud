@@ -1,5 +1,9 @@
 # pylint: disable=no-name-in-module,no-member
 
+import functools
+import json
+from pathlib import Path
+
 from appsettings.settings import app_settings
 from console import tokens
 from django.conf import settings
@@ -11,6 +15,22 @@ from libvirt import libvirtError
 from vrtManager.connection import CONN_TCP, CONN_TLS
 from vrtManager.instance import wvmInstance
 from vrtManager.util import is_loopback
+
+# one file a layout, written by dev/console_layout.py
+LAYOUTS_DIR = Path(__file__).resolve().parent / "layouts"
+
+
+@functools.cache
+def keyboard_layouts():
+    """The keyboard layouts the VNC console types text with, US first, then
+    by name: {id: {"name": ..., "keys": {DOM code: [plain, Shift, AltGr,
+    Shift+AltGr]}}}."""
+    layouts = {}
+    for path in LAYOUTS_DIR.glob("*.json"):
+        layout = json.loads(path.read_text())
+        layouts[path.stem] = {"name": layout["name"], "keys": layout["keys"]}
+    us = layouts.pop("us")
+    return {"us": us, **dict(sorted(layouts.items(), key=lambda item: item[1]["name"]))}
 
 
 def console(request, compute_id, uuid):
@@ -89,4 +109,4 @@ def console(request, compute_id, uuid):
         "clip": app_settings.CONSOLE_CLIP_VIEWPORT == "True",
         "viewOnly": app_settings.CONSOLE_VIEW_ONLY == "True",
     }
-    return render(request, "console-vnc.html", {"instance": instance, "vnc": vnc})
+    return render(request, "console-vnc.html", {"instance": instance, "vnc": vnc, "layouts": keyboard_layouts()})

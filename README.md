@@ -698,6 +698,18 @@ Run every step as your normal user, not with `sudo`: if `manage.py` ever runs as
 
    Open `http://127.0.0.1:8000`. The browser consoles connect to `/novncd/` and `/socket.io/` on the panel's own address, which the dev server does not proxy: try them in the Docker image, or behind nginx with `conf/nginx/webvirtcloud.conf`.
 
+### Keyboard layouts
+
+The VNC console's "Type it" sends the keys that type each character on the VM's keyboard layout. A layout is one file in `console/layouts/`, written from the XKB layout of the same name (needs `libxkbcommon` and `xkeyboard-config`, present on Linux desktops):
+
+```bash
+python3 dev/console_layout.py de "German"                  # XKB layout, the name the console shows
+python3 dev/console_layout.py tr "Turkish F" --variant f   # a variant
+python3 dev/console_layout.py us "English (US)" --model pc104  # a keyboard without the key left of Z
+```
+
+It lists the dead keys it leaves out: a character only a dead key types cannot be typed. Type a sample with every character group of the layout into a VM set to that layout before committing the file.
+
 ### Running tests
 
 ```bash

@@ -6,6 +6,7 @@ import KeyTable from './novnc/core/input/keysym.js';
 import keysyms from './novnc/core/input/keysymdef.js';
 import { isTouchDevice } from './novnc/core/util/browser.js';
 import { bindFullscreen, bindKeyAction, bindSendKeys, releaseHeld } from './console_keys.js';
+import { layoutKeys } from './console_layouts.js';
 
 const config = JSON.parse(document.getElementById('vnc-config').textContent);
 const status = document.getElementById('status');
@@ -99,50 +100,88 @@ bindKeyAction('credentials_cancel', () => {
 bindSendKeys(rfb);
 bindFullscreen();
 
-// the characters a US keyboard types with Shift: the VM gets keys, and its
-// key for "A" is the key for "a"
-const SHIFTED = /[A-Z~!@#$%^&*()_+{}|:"<>?]/;
+// the VM's keyboard layout, the viewer's last choice
+const layout = document.getElementById('clipboard_layout');
+try {
+    layout.value = localStorage.getItem('console_layout') || layout.value;
+} catch {}
+layout.selectedIndex = Math.max(layout.selectedIndex, 0);  // a layout no longer offered
+layout.addEventListener('change', () => {
+    try {
+        localStorage.setItem('console_layout', layout.value);
+    } catch {}
+});
 
 const typedKeys = {
     '\n': [KeyTable.XK_Return, 'Enter'],
     '\b': [KeyTable.XK_BackSpace, 'Backspace'],
     '\t': [KeyTable.XK_Tab, 'Tab'],
+    ' ': [KeyTable.XK_space, 'Space'],
 };
+const modifierKeysyms = { ShiftLeft: KeyTable.XK_Shift_L, AltRight: KeyTable.XK_ISO_Level3_Shift };
 
-async function typeCharacter(character) {
+// [keysym, key code, modifier codes], or nothing when no key types it: the
+// VM makes the character of the key (its scancode), the keysym only names it
+function keysFor(layoutId, character) {
+    if (character in typedKeys) {
+        return [...typedKeys[character], []];
+    }
+    const keys = layoutKeys(layoutId, character);
+    return keys && [keysyms.lookup(character.codePointAt(0)), ...keys];
+}
+
+async function typeKeys([keysym, code, modifiers]) {
     // a typist's pace: firmware drops keys that come faster
     await new Promise((resolve) => setTimeout(resolve, 25));
-    const [keysym, code] = typedKeys[character] || [keysyms.lookup(character.codePointAt(0)), null];
-    if (SHIFTED.test(character)) {
-        rfb.sendKey(KeyTable.XK_Shift_L, 'ShiftLeft', true);
-        rfb.sendKey(keysym, code);
-        rfb.sendKey(KeyTable.XK_Shift_L, 'ShiftLeft', false);
-    } else {
-        rfb.sendKey(keysym, code);
-    }
+    modifiers.forEach((modifier) => rfb.sendKey(modifierKeysyms[modifier], modifier, true));
+    rfb.sendKey(keysym, code);
+    [...modifiers].reverse().forEach((modifier) => rfb.sendKey(modifierKeysyms[modifier], modifier, false));
 }
 
 // key by key, after what is still being typed: works where no clipboard does
-// (firmware, installers, login prompts); "\b" is a Backspace
+// (firmware, installers, login prompts); "\b" is a Backspace. All or nothing,
+// a password or a command with a character left out is a wrong one: returns
+// the characters no key types on the layout.
 let typing = Promise.resolve();
 function typeText(text) {
-    for (const character of text.replace(/\r\n?/g, '\n')) {
-        typing = typing.then(() => typeCharacter(character));
+    const characters = [...text.replace(/\r\n?/g, '\n')];
+    const keys = characters.map((character) => keysFor(layout.value, character));
+    const missing = characters.filter((character, i) => !keys[i]);
+    if (missing.length === 0) {
+        for (const characterKeys of keys) {
+            typing = typing.then(() => typeKeys(characterKeys));
+        }
     }
+    return missing;
+}
+
+// a character as the user can see it: an invisible one by its code point
+function shown(character) {
+    const invisible = /[\s\p{C}]/u.test(character);
+    return invisible ? 'U+' + character.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') : character;
 }
 
 const clipboardText = document.getElementById('clipboard_text');
+const clipboardMissing = document.getElementById('clipboard_missing');
 const clipboardDialog = bootstrap.Modal.getOrCreateInstance('#clipboard_dialog');
 rfb.addEventListener('clipboard', (e) => {
     clipboardText.value = e.detail.text;
+});
+document.getElementById('clipboard_dialog').addEventListener('show.bs.modal', () => {
+    clipboardMissing.hidden = true;
 });
 bindKeyAction('clipboard_send', () => {
     rfb.clipboardPasteFrom(clipboardText.value);
     clipboardDialog.hide();
 });
 bindKeyAction('clipboard_type', () => {
-    clipboardDialog.hide();
-    typeText(clipboardText.value);
+    const missing = typeText(clipboardText.value);
+    if (missing.length === 0) {
+        clipboardDialog.hide();
+    } else {
+        clipboardMissing.textContent = clipboardMissing.dataset.text + ' ' + [...new Set(missing)].map(shown).join(' ');
+        clipboardMissing.hidden = false;
+    }
 });
 
 const bell = document.getElementById('bell');
@@ -212,8 +251,10 @@ if (isTouchDevice) {
         while (same < Math.min(text.length, lastText.length) && text[same] === lastText[same]) {
             same++;
         }
-        typeText('\b'.repeat(lastText.length - same) + text.slice(same));
-        if (text.length === 0 || text.length > 200) {
+        // a character the layout has no key for: the field stays as the VM has it
+        if (typeText('\b'.repeat(lastText.length - same) + text.slice(same)).length > 0) {
+            keyboardInput.value = lastText;
+        } else if (text.length === 0 || text.length > 200) {
             resetInput();
         } else {
             lastText = text;
