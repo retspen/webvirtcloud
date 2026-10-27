@@ -69,6 +69,19 @@ export function bindSendKeys(rfb) {
             }
         });
     }
+    // the same key on the keyboard, where noVNC takes keys (the screen, the
+    // touch keyboard): its release lets the held key go. Sent here, seen
+    // before noVNC (which keeps the event to itself): noVNC sends no release
+    // of a key it did not see go down, as when it went down in a dialog.
+    for (const target of [document.getElementById('screen'), document.getElementById('keyboard_input')]) {
+        target.addEventListener('keyup', (e) => {
+            for (const [id, key] of HOLDS) {
+                if (e.code === key.code && document.getElementById(id).getAttribute('aria-pressed') === 'true') {
+                    hold(rfb, id, key, false);
+                }
+            }
+        }, true);
+    }
 }
 
 // the Fullscreen item; in full screen the page also takes the keys the
