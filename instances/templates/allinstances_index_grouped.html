@@ -4,7 +4,7 @@
     <table class="table table-hover align-middle" data-sortable>
         <thead>
             <tr>
-                <th scope="col" data-sort-method="none"><a class="link-primary" href="#" id="hide-all-instances" onclick="hide_all_host_instances()">#</a></th>
+                <th scope="col" data-sort-method="none"><a class="link-primary" href="#" id="hide-all-instances" onclick="hide_all_host_instances(); return false;">#</a></th>
                 <th scope="col">{% trans "Name" %}<br>{% trans "Description" %}</th>
                 <th scope="col" class="d-none d-sm-table-cell">{% trans "User"%}</th>
                 <th scope="col">{% trans "Status" %}</th>
@@ -55,7 +55,8 @@
                         {% endif %}
                     </tr>
                     {% for instance in compute.instance_set.all %}
-                        <tr host="{{ compute.id }}">
+                        {# searched for its name, title and owners, not its buttons #}
+                        <tr host="{{ compute.id }}" data-search="{{ instance.name }}{% if instance.info %} {{ instance.title }}{% endif %}{% for owner in instance.userinstance_set.all %} {{ owner.user }}{% endfor %}">
                             <td></td>
                             <td>
                                 <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
@@ -97,15 +98,20 @@
 <script>
 // a collapsed host's VM rows are hidden by its table body's class, so the
 // search (table_filter.js, the hidden attribute) can still hide them too
+function set_host_collapsed(tbody, collapsed) {
+    $(tbody).toggleClass('host-collapsed', collapsed);
+    $(tbody).find('span[id^=collapse_host_instances_]').toggleClass('bi-chevron-down', collapsed).toggleClass('bi-chevron-up', !collapsed);
+    $(tbody).find('span[id^=inst_count_badge_]').toggleClass('d-none', !collapsed);
+}
+// every host the same way: collapsed, unless all already are
 function hide_all_host_instances() {
-    $('tbody.searchable').toggleClass('host-collapsed');
-    $('span[id^=collapse_host_instances_]').toggleClass("bi bi-chevron-down ").toggleClass("bi bi-chevron-up");
-    $('span[id^=inst_count_badge_]').toggleClass("d-none");
+    var bodies = $('tbody.searchable');
+    var collapse = bodies.not('.host-collapsed').length > 0;
+    bodies.each(function () { set_host_collapsed(this, collapse); });
 }
 function hide_host_instances(host) {
-    $("span[id='collapse_host_instances_"+host+"']").closest('tbody').toggleClass('host-collapsed');
-    $("span[id='collapse_host_instances_"+host+"']").toggleClass("bi bi-chevron-down ").toggleClass("bi bi-chevron-up");
-    $("span[id='inst_count_badge_"+host+"']").toggleClass("d-none");
+    var tbody = $('#collapse_host_instances_' + host).closest('tbody');
+    set_host_collapsed(tbody, !tbody.hasClass('host-collapsed'));
 }
 </script>
 {% endblock %}

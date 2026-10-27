@@ -74,16 +74,16 @@ def index(request):
         utils.refr(compute)
     # each host's VMs by name: the database keeps no order of its own
     prefetch_related_objects(computes, Prefetch("instance_set", queryset=Instance.objects.order_by("name")),
-                             "instance_set__userinstance_set")
+                             "instance_set__userinstance_set__user")
 
     show_hosts = request.user.is_superuser or request.user.has_perm("instances.view_instances")
     own_hosts_down = False
     if show_hosts:
-        instances = Instance.objects.order_by("name").prefetch_related("userinstance_set")
+        instances = Instance.objects.order_by("name").prefetch_related("userinstance_set__user")
     else:
         instances = Instance.objects.filter(
             userinstance__user=request.user
-        ).order_by("name").prefetch_related("userinstance_set")
+        ).order_by("name").prefetch_related("userinstance_set__user")
         # other users get no host names or connection errors, only whether
         # a host of their own VMs is down
         own = set(instances.values_list("compute_id", flat=True))
@@ -94,6 +94,7 @@ def index(request):
         "allinstances.html",
         {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
          "reachable_computes": [c for c in computes if c.status is True],
+         "unreachable_computes": [c for c in computes if c.status is not True],
          "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]]},
     )
 

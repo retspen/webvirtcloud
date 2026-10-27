@@ -65,12 +65,12 @@ class ListInfoCallTests(TestCase):
         self.assertEqual(response.status_code, 200)
         return response
 
-    def assert_one_info_per_vm(self, response, memory="2048 MiB"):
+    def assert_one_info_per_vm(self, response):
         self.assertEqual(len(self.domains), 2, "one proxy per VM row")
         for domain in self.domains:
             self.assertEqual(domain.info_calls, 1)
             self.assertEqual(domain.xml_calls, 1, "only the title reads the XML")
-        self.assertContains(response, memory, count=2)
+        self.assertContains(response, "2048 MiB", count=2)
         self.assertContains(response, "Active")
 
     def test_nongrouped_index(self):
@@ -83,4 +83,5 @@ class ListInfoCallTests(TestCase):
 
     def test_compute_instances(self):
         # this page shows the maximum memory, as before
-        self.assert_one_info_per_vm(self.get(reverse("instances", args=[self.compute.id])), memory="4096 MiB")
+        # the VM's current memory, as on the Instances page, not its maximum
+        self.assert_one_info_per_vm(self.get(reverse("instances", args=[self.compute.id])))

@@ -26,14 +26,18 @@
 
 {% block content %}
     {% if show_hosts %}
-        {% for compute in computes %}
-            {% if compute.status is not True %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {% trans 'Problem occurred with host' %} {{ compute.name }}: {{ compute.connection_error }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endif %}
-        {% endfor %}
+        {% if unreachable_computes %}
+            {# one alert for every host the panel cannot reach, each with why #}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="fw-semibold">{% blocktrans count counter=unreachable_computes|length %}The panel cannot reach {{ counter }} host:{% plural %}The panel cannot reach {{ counter }} hosts:{% endblocktrans %}</div>
+                <ul class="mb-0">
+                    {% for compute in unreachable_computes %}
+                        <li><span class="fw-semibold">{{ compute.name }}</span>: {{ compute.connection_error }}</li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans "Close" %}"></button>
+            </div>
+        {% endif %}
     {% elif own_hosts_down %}
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             {% trans 'A host of some of your virtual machines cannot be reached right now.' %}
@@ -41,11 +45,18 @@
         </div>
     {% endif %}
     <div class="col-lg-12">
-        {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
+        {% if not instances.exists %}
+            <p class="text-center text-body-secondary py-4">{% trans "There are no VMs here yet." %}</p>
+        {% elif app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
             {% include 'allinstances_index_grouped.html' %}
         {% else %}
             {% include 'allinstances_index_nongrouped.html' %}
         {% endif %}
+        {# table_filter.js shows it while no row matches #}
+        <div id="no-match" class="text-center text-body-secondary py-4" hidden>
+            {% trans "No VM matches the search and the state." %}
+            <button type="button" class="btn btn-link" id="clear-filters">{% trans "Clear the filters" %}</button>
+        </div>
     </div>
     <div class="modal fade" id="find-address" tabindex="-1" aria-labelledby="find-address-title" aria-hidden="true"
          data-url="{% url 'instances:find_address' %}" data-failed="{% trans "The search did not go through. Try again." %}"

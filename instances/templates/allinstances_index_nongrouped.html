@@ -18,13 +18,14 @@
         </thead>
         <tbody class="searchable">
             {% for instance in instances  %}
-                    <tr>
+                    {# searched for its name, title, host and owners, not its buttons #}
+                    <tr data-search="{{ instance.name }}{% if instance.info %} {{ instance.title }}{% endif %}{% if show_hosts %} {{ instance.compute.name }}{% for owner in instance.userinstance_set.all %} {{ owner.user }}{% endfor %}{% endif %}">
                         <td>
                             <a class="link-primary" href="{% url 'instances:instance' instance.id %}">
                                 {{ instance.name }}
                             </a>
                             <br>
-                            {% if instance.info %}<p class="m-0 small font-italic">{{ instance.title }}</p>{% endif %}
+                            {% if instance.info %}<p class="m-0 small fst-italic">{{ instance.title }}</p>{% endif %}
                         </td>
                         {% if show_hosts %}
                             <td>

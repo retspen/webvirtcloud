@@ -133,6 +133,20 @@ class StateTests(TestCase):
         self.assertEqual([r.xpath("td[@data-sort]/@data-sort") for r in rows[1:2]], [["2", "2097152"]])
 
 
+    def test_rows_are_searched_for_their_vm_not_their_buttons(self):
+        # table_filter.js searches data-search: a menu's "Force off" would match "off" in every row
+        for style in ("grouped", "nongrouped"):
+            AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value=style)
+            page = html.fromstring(self.get(self.admin, reverse("instances:index")))
+            searched = page.xpath("//tbody//tr/@data-search")
+            with self.subTest(style=style):
+                self.assertEqual(len(searched), len(self.vms))
+                for vm, text in zip(self.vms.values(), searched):
+                    self.assertTrue(text.startswith(vm.name), text)
+                    self.assertIn("st-owner", text)
+                    self.assertNotIn("Force", text)
+                self.assertTrue(page.xpath("//div[@id='no-match'][@hidden]//button[@id='clear-filters']"))
+
     def test_the_lists_show_the_vms_by_name(self):
         # the first VM made comes last by name: the database's own order is not the list's
         Instance.objects.filter(pk=self.vms[0].pk).update(name="st-vm-9")
@@ -211,3 +225,11 @@ class TemplateCloneTests(TestCase):
         self.assertEqual(allowed_actions(cloner, vm, 5), {"clone"})
         self.assertEqual(allowed_actions(admin, vm, 5), {"clone"})
         self.assertEqual(allowed_actions(owner, vm, 5), set())  # no clone permission
+
+
+class EmptyListTests(TestCase):
+    def test_a_user_without_vms_is_told_so(self):
+        self.client.force_login(get_user_model().objects.create_user("st-nobody", password="pw"))
+        response = self.client.get(reverse("instances:index"))
+        self.assertContains(response, "There are no VMs here yet.")
+        self.assertNotContains(response, "searchable")  # no VM table

@@ -4,23 +4,24 @@ const {filterTable: filterInstances} = require(process.argv[2]);
 
 // A minimal DOM: table bodies of rows; a VM row holds its state mark, a
 // group's header row is marked as one.
-function vm(text, state) {
+function vm(text, state, search) {
     const mark = {dataset: {state}};
-    return {textContent: text, hidden: false, hasAttribute: () => false,
+    return {textContent: text, dataset: search === undefined ? {} : {search}, hidden: false, hasAttribute: () => false,
             querySelector: (s) => (s === "[data-state]" ? mark : null)};
 }
 function hostRow(text) {
-    return {textContent: text, hidden: false, hasAttribute: (a) => a === "data-group-header", querySelector: () => null};
+    return {textContent: text, dataset: {}, hidden: false, hasAttribute: (a) => a === "data-group-header", querySelector: () => null};
 }
 function plainRow(text) {
-    return {textContent: text, hidden: false, hasAttribute: () => false, querySelector: () => null};
+    return {textContent: text, dataset: {}, hidden: false, hasAttribute: () => false, querySelector: () => null};
 }
 function group(rows, host) {
     return {dataset: host ? {host} : {}, querySelectorAll: (s) => (s === "tr" ? rows : [])};
 }
-function page(groups, text, state) {
+function page(groups, text, state, noMatch) {
     // a list without a state list (state undefined) has no such element
-    const inputs = {filter: {value: text}, "state-filter": state === undefined ? undefined : {value: state}};
+    const inputs = {filter: {value: text}, "state-filter": state === undefined ? undefined : {value: state},
+                    "no-match": noMatch};
     return {
         getElementById: (id) => inputs[id],
         querySelectorAll: (s) => (s === ".searchable" ? groups : []),
@@ -64,3 +65,17 @@ filterInstances(page([group(plain)], "(vda"));
 assert.deepStrictEqual(visible(plain), ["bob (vda) Blocked"], "a bracket is text there too");
 filterInstances(page([group(plain)], ""));
 assert.deepStrictEqual(visible(plain), ["alice Active", "bob (vda) Blocked", "carol Active"]);
+
+// a row with data-search is searched there only: its menus' words are not the VM's
+const menus = [vm("web-1 Active Force off Power cycle", "Active", "web-1 alice"), vm("db-1 Off Start", "Off", "db-1 bob")];
+filterInstances(page([group(menus)], "off", ""));
+assert.deepStrictEqual(visible(menus), [], "a menu's 'Force off' is not a match");
+filterInstances(page([group(menus)], "BOB", ""));
+assert.deepStrictEqual(visible(menus), ["db-1 Off Start"], "an owner is searched");
+
+// the page says so when nothing matches, and not otherwise
+const noMatch = {hidden: true};
+filterInstances(page([group(menus)], "nothing-like-this", "", noMatch));
+assert.strictEqual(noMatch.hidden, false, "no row: the message shows");
+filterInstances(page([group(menus)], "web", "", noMatch));
+assert.strictEqual(noMatch.hidden, true, "a row: the message goes");
