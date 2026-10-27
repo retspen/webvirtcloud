@@ -34,7 +34,7 @@
     <link rel="shortcut icon" href="{%  static 'favicon.ico' %}">
   </head>
 
-  <body{% block body_attrs %}{% endblock %}>
+  <body class="pb-5"{% block body_attrs %}{% endblock %}>
 
     {% if request.user.is_authenticated %}
     {% include 'navbar.html' %}

@@ -1,5 +1,5 @@
 {% load i18n %}
-<div class="tab-pane" id="resize" role="tabpanel">
+<div class="tab-pane mt-3" id="resize" role="tabpanel">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance resize options">
         <li class="nav-item" role="presentation">
@@ -20,7 +20,7 @@
     </ul>
     <!-- Tab panes -->
     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="resizevm_cpu">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="resizevm_cpu">
             {% if can_change %}
                 {% if instance.status == 5 or not instance.vcpus %}
                 <form action="{% url 'instances:resizevm_cpu' instance.id %}" method="post" role="form" aria-label="Resize instance cpu form">{% csrf_token %}
@@ -82,7 +82,7 @@
             {% endif %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_mem">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="resizevm_mem">
             {% if can_change %}
                 <form action="{% url 'instances:resize_memory' instance.id %}" method="post" role="form" aria-label="Resize instance memory form">
                     {% csrf_token %}
@@ -128,7 +128,7 @@
             {% endif %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="resizevm_disk">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="resizevm_disk">
             {% if can_change %}
                 <form action="{% url 'instances:resize_disk' instance.id %}" method="post" role="form" aria-label="Resize instance disk form">
                     {% csrf_token %}

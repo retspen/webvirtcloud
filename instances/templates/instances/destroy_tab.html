@@ -1,5 +1,5 @@
 {% load i18n %}
-<div class="tab-pane" id="undefine" role="tabpanel">
+<div class="tab-pane mt-3" id="undefine" role="tabpanel">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance destroy menu">
         <li class="nav-item">
@@ -10,7 +10,7 @@
     </ul>
     <!-- Tab panes -->
     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="destroy">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="destroy">
             <p>{% trans 'This action starts remove instance process' %}</p>
             {% if can_delete %}
                 <a href="{% url 'instances:destroy' instance.id %}" class="btn btn-lg btn-success float-end">{% trans "Destroy" %}</a>

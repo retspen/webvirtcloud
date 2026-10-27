@@ -1,5 +1,5 @@
 {% load i18n %}
-<div class="tab-pane" id="access" role="tabpanel" aria-label="Instance access options">
+<div class="tab-pane mt-3" id="access" role="tabpanel" aria-label="Instance access options">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -31,7 +31,7 @@
     </ul>
     <!-- Tab panes -->
     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="vnconsole">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="vnconsole">
             <p>{% blocktrans with type=instance.console_type|upper %} This action opens a new window with a {{ type }} connection to the console of the instance.{% endblocktrans %}
             </p>
             {% if not can_open_console %}
@@ -49,7 +49,7 @@
             <div class="clearfix"></div>
         </div>
         {% if app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' and can_change %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="rootpasswd">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="rootpasswd">
             <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and enter a new root password." %}</p>
             <form action="{% url 'instances:rootpasswd' instance.id %}" method="post"
                 role="form" aria-label="Add root password to instance form">
@@ -72,14 +72,14 @@
         </div>
         {% endif %}
         {% if app_settings.SHOW_ACCESS_SSH_KEYS == 'True' and can_change %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="sshkeys">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="sshkeys">
             <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and choose your public key. The key is added to root's keys." %}</p>
             <form action="{% url 'instances:add_public_key' instance.id %}"method="post"
                 role="form" aria-label="Add public key to instance form">
                 {% csrf_token %}
                 <div class="row">
                     <div class="col-sm-12">
-                        <select name="sshkeyid" class="form-control-lg keyselect">
+                        <select name="sshkeyid" class="form-select form-select-lg">
                             {% if publickeys %}
                             {% for key in publickeys %}
                             <option value="{{ key.id }}">{{ key.keyname }}</option>
@@ -101,7 +101,7 @@
         </div>
         {% endif %}
         {% if instance.status == 1 and can_open_console %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vdiconsole">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="vdiconsole">
             <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
             <div class="input-group">
                 <input type="text" class="input-lg disabled form-control" disabled id="vdi_url_input" />

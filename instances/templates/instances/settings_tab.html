@@ -2,7 +2,7 @@
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 {% load operations %}
-<div class="tab-pane" id="settings" role="tabpanel">
+<div class="tab-pane mt-3" id="settings" role="tabpanel">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance settings">
         {% if instance.guest_agent_ready %}
@@ -81,7 +81,7 @@
         {% include 'instances/info_tab.html' %}
         {% endif %}
         {% if request.user.is_superuser %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot_opt">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="boot_opt">
             <p class="fw-bold">{% trans 'Autostart' %}</p>
                 <div class="row">
                     <div class="col-sm-12 text-center">
@@ -130,15 +130,15 @@
                 <form action="{% url 'instances:set_bootorder' instance.id %}" method="post" role="form" aria-label="Boot order edit form">{% csrf_token %}
                     <input id="bootorder" name="bootorder" hidden>
                     <div class="d-flex justify-content-center">
-                        <div id="b_order" class="multipleselect border-0">
+                        <div id="b_order" class="list-group me-3">
                             {% for disk in instance.config_disks %}
-                                <label><input type="checkbox" name="disk:{{ disk.dev }}" value="disk:{{ disk.dev }}" onclick="set_orderlist($('#bootorder'))" />{{ disk.dev }} - {{ disk.image }}</label>
+                                <label class="list-group-item"><input class="form-check-input me-2" type="checkbox" name="disk:{{ disk.dev }}" value="disk:{{ disk.dev }}" onclick="set_orderlist($('#bootorder'))">{{ disk.dev }} - {{ disk.image }}</label>
                             {% endfor %}
                             {% for cd in instance.config_media %}
-                                <label><input type="checkbox" name="cdrom:{{ cd.dev }}" value="cdrom:{{ cd.dev }}" onclick="set_orderlist($('#bootorder'))"/>{{ cd.dev }} - {{ cd.image }}</label>
+                                <label class="list-group-item"><input class="form-check-input me-2" type="checkbox" name="cdrom:{{ cd.dev }}" value="cdrom:{{ cd.dev }}" onclick="set_orderlist($('#bootorder'))">{{ cd.dev }} - {{ cd.image }}</label>
                             {% endfor %}
                             {% for net in instance.config_networks %}
-                                <label><input type="checkbox" name="network:{{ net.mac }}" value="network:{{ net.mac }}" onclick="set_orderlist($('#bootorder'))"/>NIC - {{ net.mac|slice:"9:" }}</label>
+                                <label class="list-group-item"><input class="form-check-input me-2" type="checkbox" name="network:{{ net.mac }}" value="network:{{ net.mac }}" onclick="set_orderlist($('#bootorder'))">NIC - {{ net.mac|slice:"9:" }}</label>
                             {% endfor %}
                         </div>
                         <div>
@@ -159,7 +159,7 @@
             {% endif %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="disks">
                 <form action="{% url 'instances:add_cdrom' instance.id %}" method="post" role="form" aria-label="Add CD-ROM form">{% csrf_token %}
                     <p class="fw-bold">
                         {% trans "Instance Media" %}
@@ -249,7 +249,7 @@
                     {% include 'add_instance_volume.html' %}
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover align-middle">
                         <thead>
                             <tr>
                                 <th scope="col">{% trans "Device" %}</th>
@@ -345,7 +345,7 @@
                 </div>
                 <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="network">
             <div class="mb-3">
                 {% trans "Add a network device" %}
                 {% include 'add_instance_network_block.html' %}
@@ -355,7 +355,7 @@
                 <div class="col-lg-12 mt-3">
                 <h5 class="fw-bold">{% trans "Network Devices" %}</h5>
                 <div class="table-responsive">
-                    <table class="table">
+                    <table align-middle class="table">
                         <thead>
                             <tr>
                                 <th scope="col">{% trans 'Name' %}</th>
@@ -525,7 +525,7 @@
                 </div>
                 <div class="col-12 col-sm-12">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover align-middle">
                             <thead>
                             <tr class="d-flex">
                                 <th scope="col" class="col-2">{% trans "MAC" %}/{% trans "Direction" %}</th>
@@ -582,7 +582,7 @@
             {% endif %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="migrate">
             <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
             <form action="{% url 'instances:migrate' instance.id %}" class="ms-3 form" method="post" role="form" aria-label="Migrate instance form">
                 {% csrf_token %}{% submission_key %}
@@ -654,7 +654,7 @@
             </form>
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="xmledit">
             {% if instance.status != 5 %}
                 <p id="xml-next-start">{% trans "This is the definition for the VM's next start; a saved change applies then." %}</p>
             {% endif %}
@@ -689,7 +689,7 @@
                 </div>
             </div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="users">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="users">
             <div>
             <div class="mb-3">
                 <span class="fw-bold">{% trans "Instance owners" %}</span>
@@ -697,7 +697,7 @@
             </div>
             </div>
             <div class="table-responsive">
-                <table class="table table-striped mt-3">
+                <table class="table table-striped mt-3 align-middle">
                     <tbody class="searchable">
                     {% for userinstance in userinstances %}
                         <tr>
@@ -716,7 +716,7 @@
         </div>
         {% endif %}
         {% if can_manage_console %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="vncsettings">
             <form method="post" action="{% url 'instances:update_console' instance.id %}">
                 {% csrf_token %}
                 {% if instance.status != 5 %}
@@ -737,7 +737,7 @@
         </div>
         {% endif %}
         {% if can_clone %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="clone">
             <p class="fw-bold">{% trans "Create a clone" %}</p>
             <form class="form" action="{% url 'instances:clone' instance.id %}" method="post" role="form" aria-label="Create clone form">{% csrf_token %}{% submission_key %}
                 <div class="row">
@@ -833,7 +833,7 @@
         </div>
         {% endif %}
         {% if can_change %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="options">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="options">
             <p>{% trans "To set instance template name description, shutdown the instance." %}</p>
             <form action="{% url 'instances:change_options' instance.id %}" method="post" role="form" aria-label="Set instance template name description form">{% csrf_token %}
                 <div class="row">

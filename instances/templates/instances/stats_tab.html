@@ -1,6 +1,6 @@
 {% load i18n %}
 {% load bootstrap_icons %}
-<div class="tab-pane" id="graphics" role="tabpanel" >
+<div class="tab-pane mt-3" id="graphics" role="tabpanel" >
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist" aria-label="Instance graphs and logs menu">
         <li class="nav-item" role="presentation">
@@ -16,7 +16,7 @@
     </ul>
     <!-- Tab panes -->
     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="graphs">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="graphs">
             <div class="mb-1 card border-success">
                 <div class="card-header">
                     <h5 class="card-title">{% bs_icon 'arrow-right' %} 
@@ -63,9 +63,9 @@
             {% endfor %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="logs">
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="logs">
             <div class="table-responsive">
-                <table class="table table-striped" id="logs_table">
+                <table class="table table-striped align-middle" id="logs_table">
                     <thead>
                         <tr>
                             <th scope="col">{% trans "Date" %}</th>

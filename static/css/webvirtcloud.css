@@ -6,10 +6,6 @@
 
 /* Global Styles */
 
-body {
-    padding-bottom: 50px;
-}
-
 .container {
     max-width: 900px;
 }
@@ -66,104 +62,12 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
     display: none;
 }
 
-.search {
-    margin: 5px;
-}
-
-.btn-header {
-    margin-top: 5px;
-}
-
-.action-block {
-    display: block;
-    padding: 15px 0;
-    font-weight: 400;
-    font-size: 14px;
-    width: 65px;
-}
-
-.action-button {
-    text-align: center;
-}
-
-.tab-pane-bordered {
-    border: 1px solid #eee;
-    border-top-width: 0;
-    padding: 20px;
-}
-
 p {
     display: block;
     margin: 10px 10px 10px 10px;
 }
 
-#power {
-    margin-top: 20px;
-}
-
-#access {
-    margin-top: 20px;
-}
-
-#resize {
-    margin-top: 20px;
-}
-
-#snapshots {
-    margin-top: 20px;
-}
-
-#settings {
-    margin-top: 20px;
-}
-
-#graphics {
-    margin-top: 20px;
-}
-
-#undefine {
-    margin-top: 20px;
-}
-
 /* a live chart (static/js/charts.js) fills the width of its card at this height */
 .chart {
     height: 160px;
-}
-
-.keyselect {
-    display: inline;
-    min-width: 250px;
-}
-
-.multipleselect {
-    width:27em;
-    height:10em;
-    border:solid 2px #c0c0c0;
-    overflow:auto;
-    padding: 0 1em;
-    margin: 0.9em;
-}
-
-.multipleselect label {
-    display:block;
-}
-
-.multipleselect-on {
-    color:#ffffff;
-    background-color:#000099;
-}
-
-/* make dropdowns show on hover */
-@media only screen and (min-width: 768px) {
-  .dropdown:hover .dropdown-menu {
-    display: block;
-  }
-}
-.table > tbody > tr > td {
-    vertical-align: middle;
-}
-
-/* remove ugly dotted outline on tabs */
-a {
-    outline: 0;
 }

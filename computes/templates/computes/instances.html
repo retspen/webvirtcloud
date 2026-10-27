@@ -8,7 +8,7 @@
 
 {% block page_heading_extra %}
 <a href="{% url 'instances:create_instance_select_type' compute.id %}"
-    class="btn btn-success btn-header float-end" title="{% trans "New Instance" %}">
+    class="btn btn-success mt-1 float-end" title="{% trans "New Instance" %}">
     {% bs_icon 'plus-circle-fill' %}
 </a>
 {% if instances %}
@@ -39,7 +39,7 @@
             {% endif %}
         {% else %}
             <div class="table-responsive">
-                <table class="table table-hover" data-sortable>
+                <table class="table table-hover align-middle" data-sortable>
                     <thead>
                         <tr>
                             <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>

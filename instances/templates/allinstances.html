@@ -9,7 +9,7 @@
     {% include 'create_inst_block.html' %}
 {% endif %}
     {# the list's filters (state, text) and the address search, as one control #}
-    <div class="float-end search">
+    <div class="float-end m-1">
         <div class="input-group">
             <select id="state-filter" class="form-select flex-grow-0 w-auto" aria-label="{% trans 'State' %}">
                 <option value="">{% trans 'All states' %}</option>
@@ -74,7 +74,7 @@
                     </form>
                     <div class="alert alert-danger d-none" role="alert" id="find-address-error"></div>
                     <div class="table-responsive">
-                        <table class="table table-sm d-none" id="find-address-results">
+                        <table class="table table-sm d-none align-middle" id="find-address-results">
                             <thead>
                                 <tr>
                                     <th scope="col">{% trans "Address" %}</th>
