@@ -30,28 +30,36 @@ CPU_SAMPLE_MAX_AGE = 15
 CPU_SAMPLE_SIGNER = signing.TimestampSigner(salt="computes.cpu-sample")
 
 
+def shown_capacity(compute):
+    """The compute's capacity, with what its bars show; None when it cannot
+    be read."""
+    given = compute.capacity
+    if given:
+        # the memory bar: running and shut-off VMs' memory, and a mark at the
+        # host's memory, on a scale that holds whichever is larger
+        assigned, memory = given["assigned"], given["memory"]
+        scale = max(assigned["all"], memory) or 1
+        given["bar"] = {"running": assigned["running"] * 100 / scale,
+                        "stopped": (assigned["all"] - assigned["running"]) * 100 / scale,
+                        "host": memory * 100 / scale, "over": assigned["all"] > memory}
+        given["memory_percent"] = round(assigned["all"] * 100 / memory) if memory else 0
+        given["vm_count"] = sum(given["vms"].values())
+        # the default pool (else the first) shows; the others (a host may
+        # have dozens) open on a click
+        pools = given["pools"] or []
+        for pool in pools:
+            pool["used_percent"] = (pool["size"] - pool["free"]) * 100 / pool["size"] if pool["size"] else 0
+        given["pool"] = pools[0] if pools else None
+        given["more_pools"] = pools[1:]
+    return given
+
+
 @superuser_only
 def computes(request):
     """The computes, with what each has given its VMs."""
     computes = list(Compute.objects.order_by("name"))
     for compute in computes:
-        given = compute.capacity
-        if given:
-            # the memory bar: running and shut-off VMs' memory, and a mark at the
-            # host's memory, on a scale that holds whichever is larger
-            assigned, memory = given["assigned"], given["memory"]
-            scale = max(assigned["all"], memory) or 1
-            given["bar"] = {"running": assigned["running"] * 100 / scale,
-                            "stopped": (assigned["all"] - assigned["running"]) * 100 / scale,
-                            "host": memory * 100 / scale, "over": assigned["all"] > memory}
-            given["memory_percent"] = round(assigned["all"] * 100 / memory) if memory else 0
-            for pool in given["pools"]:
-                pool["used_percent"] = (pool["size"] - pool["free"]) * 100 / pool["size"] if pool["size"] else 0
-            # the default pool (else the first) shows; the others (a host may
-            # have dozens) open on a click
-            pools = given["pools"]
-            given["pool"] = pools[0] if pools else None
-            given["more_pools"] = pools[1:]
+        compute.shown_capacity = shown_capacity(compute)
     return render(request, "computes/list.html", {"computes": computes})
 
 
@@ -65,33 +73,29 @@ def capacity(request, compute_id):
 
 @superuser_only
 def overview(request, compute_id):
+    """The host's page: whether the panel reaches it, its VMs, what it has
+    given them, its load, hardware and software. A host it cannot reach
+    keeps the page, with the reason and its connection to edit."""
     compute = get_object_or_404(Compute, pk=compute_id)
     # the connection itself, not a TCP probe: ssh aliases and ProxyJump hosts
     # are not reachable by name and port from here
-    status = "true" if compute.status else "false"
-
-    conn = wvmHostDetails(
-        compute.hostname,
-        compute.login,
-        compute.password,
-        compute.type,
-    )
-    (
-        hostname,
-        host_arch,
-        host_memory,
-        logical_cpu,
-        model_cpu,
-        uri_conn,
-    ) = conn.get_node_info()
-    hypervisor = conn.get_hypervisors_domain_types()
-    mem_usage = conn.get_memory_usage()
-    emulator = conn.get_emulator(host_arch)
-    version = conn.get_version()
-    lib_version = conn.get_lib_version()
-    conn.close()
-
-    return render(request, "overview.html", locals())
+    context = {"compute": compute, "connected": compute.status is True}
+    if context["connected"]:
+        try:
+            conn = wvmHostDetails(compute.hostname, compute.login, compute.password, compute.type)
+            hostname, arch, memory, _cpus, processor, uri = conn.get_node_info()
+            context["host"] = {
+                "hostname": hostname, "arch": arch, "memory": memory, "processor": processor, "uri": uri,
+                "topology": conn.get_cpu_topology(),
+                "hypervisor": conn.wvm.getType(), "hypervisor_version": conn.get_version(),
+                "libvirt_version": conn.get_lib_version(),
+                "emulator": conn.get_emulator(arch), "guest_archs": conn.get_hypervisors_domain_types(),
+            }
+            conn.close()
+        except libvirtError as error:
+            context["read_error"] = str(error)
+        context["given"] = shown_capacity(compute)
+    return render(request, "overview.html", context)
 
 
 @superuser_only

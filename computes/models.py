@@ -91,18 +91,22 @@ class Compute(Model):
     @cached_property
     def capacity(self):
         """What the host has given its VMs (wvmHostDetails.get_capacity), its
-        vCPUs per CPU, and its active storage pools, the default one first; or
-        None when it cannot be read."""
+        vCPUs per CPU, and its active storage pools, the default one first
+        (None when the pools cannot be read); or None when the host cannot be
+        read."""
         if self.status is not True:
             return None
         try:
             given = self.proxy.get_capacity()
-            storages = wvmStorages(self.hostname, self.login, self.password, self.type)
-            pools = [pool for pool in storages.get_storages_info() if pool["status"]]
         except libvirtError:
             return None
         given["ratio"] = given["vcpus"]["all"] / given["cpus"] if given["cpus"] else 0
-        given["pools"] = sorted(pools, key=lambda pool: (pool["name"] != "default", pool["name"]))
+        try:
+            storages = wvmStorages(self.hostname, self.login, self.password, self.type)
+            pools = [pool for pool in storages.get_storages_info() if pool["status"]]
+            given["pools"] = sorted(pools, key=lambda pool: (pool["name"] != "default", pool["name"]))
+        except libvirtError:
+            given["pools"] = None
         return given
 
     def __str__(self):

@@ -158,8 +158,33 @@ class CapacityTestCase(unittest.TestCase):
             "cpus": 4, "memory": 2 * gib,
             "vcpus": {"all": 14, "running": 6},
             "assigned": {"all": 14 * gib, "running": 6 * gib},
+            "vms": {"running": 1, "paused": 1, "shutoff": 1, "other": 0},
         })
         conn.get_host_instances.assert_called_once_with(raw_mem_size=True)
+
+
+class CpuTopologyTestCase(unittest.TestCase):
+    """The topology comes from the capabilities' NUMA cells: getInfo makes
+    one up (one node, one socket, every CPU a core) for hosts it cannot
+    describe."""
+
+    def topology(self, cells):
+        conn = connection(wvmHostDetails)
+        conn.__dict__["host_info"] = ["x86_64", 65536, 16, 2400, 1, 1, 16, 1]  # getInfo's made-up one
+        conn.get_cap_xml = lambda: f"<capabilities><host><topology><cells num='2'>{cells}</cells></topology></host></capabilities>"
+        return conn.get_cpu_topology()
+
+    def test_sockets_and_cores_are_counted_from_the_cpus_of_the_numa_cells(self):
+        # two nodes, two sockets, four cores of two threads each
+        cells = "".join(
+            f"<cell id='{node}'><cpus num='4'>"
+            + "".join(f"<cpu id='{node * 4 + i}' socket_id='{node}' die_id='0' core_id='{i // 2}' siblings=''/>" for i in range(4))
+            + "</cpus></cell>" for node in range(2))
+        self.assertEqual(self.topology(cells), {"nodes": 2, "sockets": 2, "cores": 4, "cpus": 16, "mhz": 2400})
+
+    def test_a_host_that_does_not_say_has_no_sockets_or_cores(self):
+        cells = "<cell id='0'><cpus num='2'><cpu id='0'/><cpu id='1'/></cpus></cell>"
+        self.assertEqual(self.topology(cells), {"nodes": 1, "sockets": None, "cores": None, "cpus": 16, "mhz": 2400})
 
 
 class StoragesInfoTestCase(unittest.TestCase):

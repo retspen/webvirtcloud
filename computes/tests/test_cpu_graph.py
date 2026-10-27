@@ -24,6 +24,7 @@ from vrtManager.util import ConnectionFailed
 
 # the page script runs after the shared chart helpers
 CHARTS_JS = settings.BASE_DIR / "static" / "js" / "charts.js"
+TOPOLOGY = {"nodes": 1, "sockets": 1, "cores": 2, "threads": 1, "mhz": 2400, "cpus": 2}
 
 
 def host(*readings):
@@ -138,17 +139,20 @@ class GraphScriptTestCase(TestCase):
         compute = Compute.objects.create(name="gs", hostname="192.0.2.1", login="u", password="p", type=1)
         with patch("computes.views.wvmHostDetails") as details, patch.object(
             Compute, "status", new_callable=PropertyMock, return_value=True
-        ):
+        ), patch.object(Compute, "capacity", new=None):
             details.return_value.get_node_info.return_value = ("h", "x86_64", 1024, 2, "cpu", "qemu+tcp://h/system")
-            details.return_value.get_memory_usage.return_value = {"total": 1024, "usage": 512, "percent": 50}
+            details.return_value.get_cpu_topology.return_value = TOPOLOGY
             page = self.client.get(reverse("overview", args=[compute.id])).content.decode()
         script = next(s for s in html.fromstring(page).xpath("//script[not(@src)]/text()") if "pollWhileVisible(" in s)
         js = """
         const vm = require("vm");
         const charts = [], requests = [];
+        const element = (dataset) => ({dataset, textContent: "", classList: {add: () => {}, remove: () => {}}});
+        const elements = {graph_state: element({updated: "Updated at %(time)s.", stale: "Not updated since %(time)s."}),
+                          cpu_now: element({}), mem_now: element({})};
         let poll;
         const page = {
-            document: {body: {}, getElementById: () => ({})},
+            document: {body: {}, getElementById: (id) => elements[id] || {}},
             // Chart.js adds the lists a config leaves out
             getComputedStyle: () => ({getPropertyValue: () => ""}),
             Chart: Object.assign(function (canvas, config) {
@@ -158,21 +162,23 @@ class GraphScriptTestCase(TestCase):
                 this.update = () => {};
                 charts.push(this);
             }, {defaults: {}}),
-            $: {getJSON: (url, params) => { requests.push(params); return {}; }},
+            $: {getJSON: (url, params) => { requests.push(params); return {fail() { return this; }}; }},
             pollWhileVisible: (interval, request, onData) => { poll = {request, onData}; },
         };
         const context = vm.createContext(page);
         vm.runInContext(CHARTS, context);
         vm.runInContext(SCRIPT, context);
         const answer = (cpu, sample) => ({cpudata: cpu, window: 5.1, cpu_sample: sample, timeline: "t",
-                                          memdata: {total: 1048576, usage: 0}});
+                                          memdata: {total: 2 * 1073741824, usage: 1073741824}});
         poll.request();
         poll.onData(answer(3, "token-1"));
+        const shown = [elements.cpu_now.textContent, elements.mem_now.textContent, elements.graph_state.textContent];
         poll.request();
         poll.onData({cpudata: null, memdata: {total: null, usage: null}, timeline: "t"});
         poll.request();
         const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", dataIndex: 0});
-        console.log(JSON.stringify({requests, label, cpu: charts[0].data.datasets[0].data,
+        console.log(JSON.stringify({requests, label, shown, state: elements.graph_state.textContent,
+                                    cpu: charts[0].data.datasets[0].data,
                                     mem: charts[1].data.datasets[0].data, memMax: charts[1].options.scales.y.max}));
         """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text()))
         out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
@@ -181,5 +187,8 @@ class GraphScriptTestCase(TestCase):
         self.assertEqual(result["requests"], [{}, {"cpu_sample": "token-1"}, {}])
         self.assertEqual(result["cpu"], [3, None])
         # a host that could not be read leaves a gap and keeps the memory axis
-        self.assertEqual((result["mem"], result["memMax"]), ([0, None], 1))
+        self.assertEqual((result["mem"], result["memMax"]), ([1, None], 2))
+        # the readings in words, and since when they are not updated
+        self.assertEqual(result["shown"], ["3 %", "1 / 2 GB", "Updated at t."])
+        self.assertEqual(result["state"], "Not updated since t.")
         self.assertTrue(result["label"].endswith(": 3 % (average over 5.1 s)"), result["label"])

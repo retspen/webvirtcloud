@@ -1,0 +1,10 @@
+{% load i18n %}
+{# the memory a host has given its VMs: given, from views.shown_capacity #}
+<div class="mb-1 text-nowrap">{% blocktrans with all=given.assigned.all|filesizeformat memory=given.memory|filesizeformat %}{{ all }} given of {{ memory }}{% endblocktrans %}</div>
+<div class="cap-bar" role="img" aria-label="{% blocktrans with percent=given.memory_percent %}{{ percent }}% of the host's memory given{% endblocktrans %}"
+     title="{% trans "Dark: running VMs. Light: shut-off VMs, which take their memory again when they start. Line: the host's memory." %}">
+    <div class="cap-running {% if given.bar.over %}bg-danger{% endif %}" style="width: {{ given.bar.running|stringformat:".1f" }}%"></div>
+    <div class="cap-stopped {% if given.bar.over %}bg-danger{% endif %}" style="width: {{ given.bar.stopped|stringformat:".1f" }}%"></div>
+    <div class="cap-host" style="left: {{ given.bar.host|stringformat:".1f" }}%"></div>
+</div>
+<div class="small text-body-secondary mt-1">{% blocktrans with running=given.assigned.running|filesizeformat %}{{ running }} of it running{% endblocktrans %}</div>

@@ -5,97 +5,154 @@
 
 {% block title %}{% trans "Overview" %} - {{ compute.name }}{% endblock %}
 
+{% block page_heading_extra %}
+<a class="btn btn-sm btn-outline-primary" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil' %} {% trans "Edit connection" %}</a>
+<a class="btn btn-sm btn-outline-danger" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x-circle' %} {% trans "Remove from panel" %}</a>
+{% endblock page_heading_extra %}
+
 {% block page_heading %}{{ compute.name }}{% endblock page_heading %}
 
 {% block content %}
-    <div class="row">
-        {% include "computes/host_nav.html" with section="overview" %}
-        </div>
+<p class="d-flex flex-wrap align-items-baseline column-gap-3 text-body-secondary">
+    <span>
+        {% if connected %}
+            <span class="compute-dot bg-success" aria-hidden="true"></span> <span class="text-body">{% trans "Connected" %}</span>
+        {% else %}
+            <span class="compute-dot bg-danger" aria-hidden="true"></span> <span class="text-body">{% trans "Not connected" %}</span>
+        {% endif %}
+    </span>
+    <span class="text-break">{{ compute.hostname }}</span>
+    {% if compute.details %}<span class="text-break">{{ compute.details }}</span>{% endif %}
+</p>
 
-    <div class="shadow-sm">
-        <h3 class="page-header">{% trans "Basic details" %}</h3>
-        <dl class="mx-3 row">
-            <dt class="col-3">{% trans "Hostname" %}</dt>
-            <dd class="col-9">{{ hostname }}</dd>
-            <dt class="col-3">{% trans "Hypervisors" %}</dt>
-            <dd class="col-9">
-                <div class="dropdown">
-                    {% for arch, hpv in hypervisor.items|slice:":4" %}
-                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="hpvArchDrop{{ forloop.counter0 }}" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        {{ arch }}
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="hpvArchDrop{{ forloop.counter0 }}">
-                        {% for h in hpv %}
-                            <a class="dropdown-item" href="#">{{ h }}</a>
-                        {% endfor %}
-                    </div>
-                    {% endfor %}
-                </div>
-                <div class="dropdown">
-                  {% if hypervisor.items|length > 4 %}
-                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="hpvDrop{{ forloop.counter0 }}" data-bs-toggle="dropdown">
-                        {{ hypervisor.items|slice:"4:"|length }} {% trans 'more' %}...
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="hpvDrop{{ forloop.counter0 }}" role="menu">
-                        {% for arc in hypervisor.keys|slice:"4:" %}
-                                <a class="dropdown-item" tabindex="-1" href="#">{{ arc }}</a>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-            </dd>  
-            <dt class="col-3">{% trans "Emulator" %}</dt>
-            <dd class="col-9">{{ emulator }}</dd>
-            <dt class="col-3">{% trans "Version" %}</dt>
-            <dd class="col-9">
-                <span class="badge bg-secondary">{% trans 'Qemu' %} </span>
-                <span class="badge bg-primary">{{ version }}</span> &nbsp;
-                <span class="badge bg-secondary">{% trans 'Libvirt' %} </span>
-                <span class="badge bg-primary">{{ lib_version }}</span> &nbsp;
-            </dd>
-            <dt class="col-3">{% trans "Memory" %}</dt>
-            <dd class="col-9">{{ host_memory|filesizeformat }}</dd>
-            <dt class="col-3">{% trans "Architecture" %}</dt>
-            <dd class="col-9">{{ host_arch }}</dd>
-            <dt class="col-3">{% trans "Logical CPUs" %}</dt>
-            <dd class="col-9">{{ logical_cpu }}</dd>
-            <dt class="col-3">{% trans "Processor" %}</dt>
-            <dd class="col-9">{{ model_cpu }}</dd>
-            <dt class="col-3">{% trans "Connection" %}</dt>
-            <dd class="col-9">{{ uri_conn }}</dd>
-            <dt class="col-3">{% trans "Details" %}</dt>
-            <dd class="col-9">{{ compute.details }}</dd>
+{% include "computes/host_nav.html" with section="overview" %}
+
+{% if not connected %}
+<div class="alert alert-warning" role="alert">
+    <p>{% trans "The panel cannot reach this host, so its VMs, capacity and load are not shown:" %} {{ compute.connection_error }}</p>
+    <a class="btn btn-sm btn-warning" href="{% url 'overview' compute.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Try again" %}</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'compute_update' compute.id %}">{% trans "Edit connection" %}</a>
+</div>
+{% else %}
+
+{% if read_error %}
+<div class="alert alert-warning" role="alert">{% trans "The host's details could not be read:" %} {{ read_error }}</div>
+{% endif %}
+
+<h4 class="page-header">{% trans "VMs and what they were given" %}</h4>
+{% if given %}
+<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+    <div class="col">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title">{% trans "VMs" %}</h5>
+            <div class="compute-ratio">{{ given.vm_count }}</div>
+            <div class="small text-body-secondary">
+                {% blocktrans with running=given.vms.running shutoff=given.vms.shutoff %}{{ running }} running, {{ shutoff }} shut off{% endblocktrans %}{% if given.vms.paused %}, {% blocktrans with paused=given.vms.paused %}{{ paused }} paused{% endblocktrans %}{% endif %}{% if given.vms.other %}, {% blocktrans with other=given.vms.other %}{{ other }} other{% endblocktrans %}{% endif %}
+            </div>
+            <a class="small" href="{% url 'instances' compute.id %}">{% trans "Instances" %} &rarr;</a>
+        </div></div>
+    </div>
+    <div class="col">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title">{% trans "vCPUs" %}</h5>
+            {% include "computes/capacity_vcpus.html" %}
+        </div></div>
+    </div>
+    <div class="col">
+        <div class="card h-100"><div class="card-body compute-memory">
+            <h5 class="card-title">{% trans "Memory" %}</h5>
+            {% include "computes/capacity_memory.html" %}
+        </div></div>
+    </div>
+    <div class="col">
+        <div class="card h-100"><div class="card-body compute-storage">
+            <h5 class="card-title">{% trans "Storage" %}</h5>
+            {% include "computes/capacity_storage.html" %}
+            <a class="small" href="{% url 'storages' compute.id %}">{% trans "Storages" %} &rarr;</a>
+        </div></div>
+    </div>
+</div>
+{% else %}
+<p class="text-body-secondary">{% trans "The capacity could not be read." %}</p>
+{% endif %}
+
+{# the load is read on its own: shown also when the details could not be #}
+<h4 class="page-header">{% trans "Load" %}</h4>
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title d-flex justify-content-between">{% trans "CPU in use" %} <span id="cpu_now" class="text-body-secondary">&ndash;</span></h5>
+            <div class="chart"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU in use, recent readings" %}"></canvas></div>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title d-flex justify-content-between">{% trans "Memory in use" %} <span id="mem_now" class="text-body-secondary">&ndash;</span></h5>
+            <div class="chart"><canvas id="memChart" role="img" aria-label="{% trans "Memory in use, recent readings" %}"></canvas></div>
+        </div></div>
+    </div>
+</div>
+<p class="small text-body-secondary mt-2 mb-4">
+    {% trans "The last 10 readings, one every 5 seconds. Memory in use leaves out the host's buffers and cache." %}
+    <span id="graph_state" data-updated="{% trans "Updated at %(time)s." %}"
+        data-stale="{% trans "Not updated since %(time)s: the host did not answer." %}">{% trans "Waiting for the first reading." %}</span>
+</p>
+
+{% if host %}
+<div class="row g-4">
+    <div class="col-lg-6">
+        <h4 class="page-header">{% trans "Hardware" %}</h4>
+        <dl class="row">
+            <dt class="col-sm-5">{% trans "Hostname" %}</dt>
+            <dd class="col-sm-7 text-break">{{ host.hostname }}</dd>
+            <dt class="col-sm-5">{% trans "Architecture" %}</dt>
+            <dd class="col-sm-7">{{ host.arch }}</dd>
+            <dt class="col-sm-5">{% trans "Processor" %}</dt>
+            <dd class="col-sm-7">{{ host.processor|default:"–" }}</dd>
+            <dt class="col-sm-5">{% trans "Logical CPUs" %}</dt>
+            <dd class="col-sm-7">{{ host.topology.cpus }}</dd>
+            <dt class="col-sm-5">{% trans "Physical cores" %}</dt>
+            <dd class="col-sm-7">{{ host.topology.cores|default:"–" }}</dd>
+            <dt class="col-sm-5">{% trans "Sockets" %}</dt>
+            <dd class="col-sm-7">{{ host.topology.sockets|default:"–" }}</dd>
+            <dt class="col-sm-5">{% trans "NUMA nodes" %}</dt>
+            <dd class="col-sm-7">{{ host.topology.nodes|default:"–" }}</dd>
+            <dt class="col-sm-5">{% trans "Clock" %}</dt>
+            <dd class="col-sm-7">{{ host.topology.mhz }} MHz</dd>
+            <dt class="col-sm-5">{% trans "Memory" %}</dt>
+            <dd class="col-sm-7">{{ host.memory|filesizeformat }}</dd>
         </dl>
-
-        <h3 class="page-header">{% trans "Performance" %}</h3>
-        <div class="mx-3 shadow-sm">
-            <div class="my-3 card border-success">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        {% bs_icon 'arrow-right' %} 
-                        {% trans "CPU Utilization" %}
-                    </h5>
-                    <div class="chart"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU Utilization" %}"></canvas></div>
-                </div>
-            </div>
-
-            <div class="my-3 card border-primary">
-                    <div class="card-body">
-                        <h5 class="card-title ">
-                            {% bs_icon 'arrow-right'%} {% trans "RAM Utilization" %}
-                        </h5>
-                        <div class="chart"><canvas id="memChart" role="img" aria-label="{% trans "RAM Utilization" %}"></canvas></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    </div>
+    <div class="col-lg-6">
+        <h4 class="page-header">{% trans "Software and connection" %}</h4>
+        <dl class="row">
+            <dt class="col-sm-5">{% trans "Hypervisor" %}</dt>
+            <dd class="col-sm-7">{{ host.hypervisor }} {{ host.hypervisor_version }}</dd>
+            <dt class="col-sm-5">libvirt</dt>
+            <dd class="col-sm-7">{{ host.libvirt_version }}</dd>
+            <dt class="col-sm-5">{% trans "Emulator" %}</dt>
+            <dd class="col-sm-7 text-break">{{ host.emulator|default:"–" }}</dd>
+            <dt class="col-sm-5">{% trans "Guest architectures" %}</dt>
+            <dd class="col-sm-7">
+                {% for arch, types in host.guest_archs.items %}
+                    <div>{{ arch }} <span class="text-body-secondary">({{ types|join:", " }})</span></div>
+                {% endfor %}
+            </dd>
+            <dt class="col-sm-5">{% trans "Connection" %}</dt>
+            <dd class="col-sm-7 text-break">{{ host.uri }}</dd>
+        </dl>
+    </div>
+</div>
+{% endif %}
+{% endif %}
 {% endblock %}
+
 {% block script %}
+{% if connected %}
 <script src="{% static "js/chart.umd.min.js" %}"></script>
 <script src="{% static "js/charts.js" %}"></script>
 <script src="{% static "js/poll.js" %}"></script>
 <script>
-
     {% trans "average over" as average_over %}
     // the seconds each CPU point averages
     var cpuWindows = [];
@@ -106,27 +163,50 @@
             return span ? text + ' ({{ average_over|escapejs }} ' + span + ' s)' : text;
         },
     });
-    var memChart = lineChart(document.getElementById("memChart"), "MiB", ["Usage"]);
-    if (Boolean({{ status }}) === true) {
-        // the CPU sample of the previous answer: usage is taken since then
-        var cpuSample = null;
-        pollWhileVisible(5000, function () {
-            return $.getJSON('{% url 'compute_graph' compute_id %}', cpuSample ? {cpu_sample: cpuSample} : {});
-        }, function graph_usage(data) {
-            cpuSample = data.cpu_sample || null;
-            cpuWindows.push(data.window);
-            if (cpuWindows.length > CHART_POINTS) {
-                cpuWindows.shift();
-            }
-            addPoint(cpuChart, data.timeline, [data.cpudata]);
-            // a host that could not be read gives no memory value: a gap, same axis
-            if (data.memdata.total) {
-                memChart.options.scales.y.max = Math.round(data.memdata.total / 1048576);
-                addPoint(memChart, data.timeline, [Math.round(data.memdata.usage / 1048576)]);
-            } else {
-                addPoint(memChart, data.timeline, [null]);
-            }
-        });
+    var memChart = lineChart(document.getElementById("memChart"), "GB", ["Usage"]);
+    var cpuNow = document.getElementById("cpu_now");
+    var memNow = document.getElementById("mem_now");
+    var state = document.getElementById("graph_state");
+    var lastUpdate = "–";
+
+    function gb(bytes) {
+        return Math.round(bytes / 107374182.4) / 10;
     }
+
+    // a failed reading leaves the charts as they were: say since when
+    function stale() {
+        state.textContent = state.dataset.stale.replace("%(time)s", lastUpdate);
+        state.classList.add("text-danger");
+    }
+
+    // the CPU sample of the previous answer: usage is taken since then
+    var cpuSample = null;
+    pollWhileVisible(5000, function () {
+        return $.getJSON('{% url 'compute_graph' compute.id %}', cpuSample ? {cpu_sample: cpuSample} : {}).fail(stale);
+    }, function (data) {
+        cpuSample = data.cpu_sample || null;
+        cpuWindows.push(data.window);
+        if (cpuWindows.length > CHART_POINTS) {
+            cpuWindows.shift();
+        }
+        addPoint(cpuChart, data.timeline, [data.cpudata]);
+        // a host that could not be read gives no values: a gap, same axis
+        if (data.memdata.total) {
+            memChart.options.scales.y.max = gb(data.memdata.total);
+            addPoint(memChart, data.timeline, [gb(data.memdata.usage)]);
+            memNow.textContent = gb(data.memdata.usage) + " / " + gb(data.memdata.total) + " GB";
+        } else {
+            addPoint(memChart, data.timeline, [null]);
+        }
+        if (data.cpudata == null) {
+            stale();
+            return;
+        }
+        cpuNow.textContent = data.cpudata + " %";
+        lastUpdate = data.timeline;
+        state.textContent = state.dataset.updated.replace("%(time)s", data.timeline);
+        state.classList.remove("text-danger");
+    }, 0);
 </script>
+{% endif %}
 {% endblock %}

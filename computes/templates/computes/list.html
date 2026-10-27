@@ -35,7 +35,7 @@
                     </thead>
                     <tbody class="searchable">
                     {% for compute in computes %}
-                        {% with given=compute.capacity %}
+                        {% with given=compute.shown_capacity %}
                         <tr>
                             <td>
                                 <div class="d-flex align-items-baseline gap-2">
@@ -55,41 +55,21 @@
                             </td>
                             {% if given %}
                             <td data-sort="{{ given.ratio|stringformat:".2f" }}">
-                                <div class="compute-ratio {% if given.ratio > 4 %}text-danger{% elif given.ratio > 2 %}text-warning-emphasis{% endif %}">{{ given.ratio|floatformat:1 }}:1</div>
-                                <div class="small text-body-secondary text-nowrap">{% blocktrans count counter=given.vcpus.all %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %} {% blocktrans count counter=given.cpus %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</div>
-                                <div class="small text-body-secondary">{% blocktrans with running=given.vcpus.running %}{{ running }} running{% endblocktrans %}</div>
+                                {% include "computes/capacity_vcpus.html" %}
                             </td>
                             <td data-sort="{{ given.memory_percent }}" class="compute-memory">
-                                <div class="mb-1 text-nowrap">{% blocktrans with all=given.assigned.all|filesizeformat memory=given.memory|filesizeformat %}{{ all }} given of {{ memory }}{% endblocktrans %}</div>
-                                <div class="cap-bar" role="img" aria-label="{% blocktrans with percent=given.memory_percent %}{{ percent }}% of the host's memory given{% endblocktrans %}"
-                                     title="{% trans "Dark: running VMs. Light: shut-off VMs, which take their memory again when they start. Line: the host's memory." %}">
-                                    <div class="cap-running {% if given.bar.over %}bg-danger{% endif %}" style="width: {{ given.bar.running|stringformat:".1f" }}%"></div>
-                                    <div class="cap-stopped {% if given.bar.over %}bg-danger{% endif %}" style="width: {{ given.bar.stopped|stringformat:".1f" }}%"></div>
-                                    <div class="cap-host" style="left: {{ given.bar.host|stringformat:".1f" }}%"></div>
-                                </div>
-                                <div class="small text-body-secondary mt-1">{% blocktrans with running=given.assigned.running|filesizeformat %}{{ running }} of it running{% endblocktrans %}</div>
+                                {% include "computes/capacity_memory.html" %}
                             </td>
                             <td class="compute-storage">
-                                {% if given.pool %}{% include "computes/pool_bar.html" with pool=given.pool %}{% endif %}
-                                {% if given.more_pools %}
-                                    <details class="mt-2">
-                                        <summary class="small text-body-secondary">{% blocktrans count counter=given.more_pools|length %}{{ counter }} more pool{% plural %}{{ counter }} more pools{% endblocktrans %}</summary>
-                                        {% for pool in given.more_pools %}
-                                            <div class="mt-2">{% include "computes/pool_bar.html" %}</div>
-                                        {% endfor %}
-                                    </details>
-                                {% endif %}
+                                {% include "computes/capacity_storage.html" %}
                             </td>
                             {% else %}
                             <td colspan="3" class="small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
                             {% endif %}
                             <td class="text-end">
                                 <div class="btn-group">
-                                    {% if compute.status is True %}
-                                        <a class="btn btn-success" title="{%trans "Overview" %}" href="{% url 'overview' compute.id %}">{% bs_icon 'eye-fill' %}</a>
-                                    {% else %}
-                                        <a class="btn btn-light" title="{%trans "Overview" %}">{% bs_icon 'eye' %}</a>
-                                    {% endif %}
+                                    {# a host the panel cannot reach opens too: its page says why #}
+                                    <a class="btn {% if compute.status is True %}btn-success{% else %}btn-light{% endif %}" title="{% trans "Overview" %}" href="{% url 'overview' compute.id %}">{% bs_icon 'eye-fill' %}</a>
                                     <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil-fill' %}</a>
                                     <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x-circle-fill' %}</a>
                                 </div>

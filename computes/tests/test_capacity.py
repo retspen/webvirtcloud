@@ -11,6 +11,7 @@ from libvirt import libvirtError
 from lxml import html
 
 GIB = 1024 ** 3
+VMS = {"running": 3, "paused": 1, "shutoff": 2, "other": 0}
 
 
 def pool(name, size_gib, free_gib, status=1):
@@ -33,6 +34,14 @@ class CapacityTests(TestCase):
             "cpus": 16, "vcpus": {"all": 24, "running": 8}, "ratio": 1.5,
             "pools": [pool("default", 500, 120), pool("iso", 100, 90), pool("nfs", 900, 800)]})
 
+    @patch("computes.models.wvmStorages")
+    @patch("computes.models.wvmHostDetails")
+    def test_pools_that_cannot_be_read_leave_the_cpus_and_memory(self, details, storages):
+        details.return_value.get_capacity.return_value = {"cpus": 16, "vcpus": {"all": 24, "running": 8}}
+        storages.return_value.get_storages_info.side_effect = libvirtError("cannot refresh pool")
+        self.assertEqual(self.compute.capacity, {
+            "cpus": 16, "vcpus": {"all": 24, "running": 8}, "ratio": 1.5, "pools": None})
+
     @patch("computes.models.wvmHostDetails")
     def test_a_host_whose_read_fails_has_no_capacity(self, details):
         # a VM that goes while the host is read, for one
@@ -53,7 +62,7 @@ class ComputesPageTests(TestCase):
         c1 = Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
         Compute.objects.create(name="host-two", hostname="192.0.2.2", login="u", password="p", type=1)
         found = {c1.id: {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 40, "running": 24},
-                         "assigned": {"all": 48 * GIB, "running": 32 * GIB}, "ratio": 2.5,
+                         "assigned": {"all": 48 * GIB, "running": 32 * GIB}, "ratio": 2.5, "vms": VMS,
                          "pools": [pool("default", 500, 120)]}}
         with patch.object(Compute, "capacity", new=property(lambda c: found.get(c.id))), \
                 patch.object(Compute, "status", new=True):
@@ -77,7 +86,7 @@ class ComputesPageTests(TestCase):
         Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
         pools = [pool("default", 500, 120), pool("backup", 900, 800), pool("iso", 100, 90), pool("nfs", 2000, 1000)]
         given = {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 8, "running": 8}, "ratio": 0.5,
-                 "assigned": {"all": 8 * GIB, "running": 8 * GIB}, "pools": pools}
+                 "assigned": {"all": 8 * GIB, "running": 8 * GIB}, "pools": pools, "vms": VMS}
         with patch.object(Compute, "capacity", new=given), patch.object(Compute, "status", new=True):
             page = html.fromstring(self.client.get(reverse("computes")).content)
         (storage,) = page.xpath("//tbody/tr/td[4]")
@@ -95,7 +104,7 @@ class SingularTests(TestCase):
         self.client.force_login(admin)
         c = Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
         given = {"cpus": 1, "memory": 4 * GIB, "vcpus": {"all": 1, "running": 1},
-                 "assigned": {"all": GIB, "running": GIB}, "ratio": 1.0, "pools": []}
+                 "assigned": {"all": GIB, "running": GIB}, "ratio": 1.0, "pools": [], "vms": VMS}
         with patch.object(Compute, "capacity", new=given), patch.object(Compute, "status", new=True):
             page = html.fromstring(self.client.get(reverse("computes")).content)
             line = self.client.get(reverse("compute_capacity", args=[c.id])).content.decode()
