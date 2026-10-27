@@ -4,14 +4,12 @@
  * For details, see http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-/* Global Styles */
-
-.container {
-    max-width: 900px;
-}
-
-.page-header {
-    margin: 5px 5px 20px 20px;
+/* pages stop at Bootstrap's lg container width (960px): its xl and xxl
+   widths (1140px, 1320px) leave the panel's forms and lists too wide */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 960px;
+    }
 }
 
 #editor {
@@ -60,11 +58,6 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 
 .host-collapsed tr[host] {
     display: none;
-}
-
-p {
-    display: block;
-    margin: 10px 10px 10px 10px;
 }
 
 /* a live chart (static/js/charts.js) fills the width of its card at this height */
