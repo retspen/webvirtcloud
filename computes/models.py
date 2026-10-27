@@ -9,7 +9,6 @@ from libvirt import libvirtError, virConnect
 from computes.validators import validate_hostname, validate_login, validate_migration_address
 from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.storage import wvmStorages
 
 
 class Compute(Model):
@@ -90,10 +89,10 @@ class Compute(Model):
 
     @cached_property
     def capacity(self):
-        """What the host has given its VMs (wvmHostDetails.get_capacity), its
-        vCPUs per CPU, and its active storage pools, the default one first
-        (None when the pools cannot be read); or None when the host cannot be
-        read."""
+        """What the host has given its VMs (wvmHostDetails.get_capacity) and
+        its vCPUs per CPU; or None when the host cannot be read. Not its
+        pools: their space is measured by a refresh that scans each pool,
+        too slow for pages that read every host (computes.views.host_pools)."""
         if self.status is not True:
             return None
         try:
@@ -101,12 +100,6 @@ class Compute(Model):
         except libvirtError:
             return None
         given["ratio"] = given["vcpus"]["all"] / given["cpus"] if given["cpus"] else 0
-        try:
-            storages = wvmStorages(self.hostname, self.login, self.password, self.type)
-            pools = [pool for pool in storages.get_storages_info() if pool["status"]]
-            given["pools"] = sorted(pools, key=lambda pool: (pool["name"] != "default", pool["name"]))
-        except libvirtError:
-            given["pools"] = None
         return given
 
     def __str__(self):

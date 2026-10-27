@@ -14,33 +14,15 @@ GIB = 1024 ** 3
 VMS = {"running": 3, "paused": 1, "shutoff": 2, "other": 0}
 
 
-def pool(name, size_gib, free_gib, status=1):
-    return {"name": name, "status": status, "size": size_gib * GIB, "free": free_gib * GIB}
-
-
 class CapacityTests(TestCase):
     def setUp(self):
         self.compute = Compute(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
         self.compute.status = True
 
-    @patch("computes.models.wvmStorages")
     @patch("computes.models.wvmHostDetails")
-    def test_a_host_tells_what_it_gave_and_its_active_pools(self, details, storages):
+    def test_a_host_tells_what_it_gave(self, details):
         details.return_value.get_capacity.return_value = {"cpus": 16, "vcpus": {"all": 24, "running": 8}}
-        storages.return_value.get_storages_info.return_value = [
-            pool("nfs", 900, 800), pool("off", 10, 0, status=0), pool("default", 500, 120), pool("iso", 100, 90)]
-        # the default pool first, the others by name
-        self.assertEqual(self.compute.capacity, {
-            "cpus": 16, "vcpus": {"all": 24, "running": 8}, "ratio": 1.5,
-            "pools": [pool("default", 500, 120), pool("iso", 100, 90), pool("nfs", 900, 800)]})
-
-    @patch("computes.models.wvmStorages")
-    @patch("computes.models.wvmHostDetails")
-    def test_pools_that_cannot_be_read_leave_the_cpus_and_memory(self, details, storages):
-        details.return_value.get_capacity.return_value = {"cpus": 16, "vcpus": {"all": 24, "running": 8}}
-        storages.return_value.get_storages_info.side_effect = libvirtError("cannot refresh pool")
-        self.assertEqual(self.compute.capacity, {
-            "cpus": 16, "vcpus": {"all": 24, "running": 8}, "ratio": 1.5, "pools": None})
+        self.assertEqual(self.compute.capacity, {"cpus": 16, "vcpus": {"all": 24, "running": 8}, "ratio": 1.5})
 
     @patch("computes.models.wvmHostDetails")
     def test_a_host_whose_read_fails_has_no_capacity(self, details):
@@ -62,13 +44,13 @@ class ComputesPageTests(TestCase):
         c1 = Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
         Compute.objects.create(name="host-two", hostname="192.0.2.2", login="u", password="p", type=1)
         found = {c1.id: {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 40, "running": 24},
-                         "assigned": {"all": 48 * GIB, "running": 32 * GIB}, "ratio": 2.5, "vms": VMS,
-                         "pools": [pool("default", 500, 120)]}}
+                         "assigned": {"all": 48 * GIB, "running": 32 * GIB}, "ratio": 2.5, "vms": VMS}}
         with patch.object(Compute, "capacity", new=property(lambda c: found.get(c.id))), \
                 patch.object(Compute, "status", new=True):
             page = html.fromstring(self.client.get(reverse("computes")).content)
         headers = [" ".join(th.text_content().split()) for th in page.xpath("//thead//th")]
-        self.assertEqual(headers, ["Host", "vCPUs", "Memory", "Storage", "Actions"])
+        # no pools: measuring their space scans each pool of each host (views.host_pools)
+        self.assertEqual(headers, ["Host", "vCPUs", "Memory", "Actions"])
         one, two = page.xpath("//tbody/tr")
         cells = [" ".join(td.text_content().split()) for td in one.xpath("td")]
         self.assertIn("host-one", cells[0])
@@ -76,26 +58,8 @@ class ComputesPageTests(TestCase):
         self.assertIn("40 vCPUs on 16 CPUs 24 running", cells[1])
         self.assertIn("75 % 48.0 GB / 64.0 GB", cells[2])
         self.assertIn("32.0 GB running", cells[2])
-        self.assertIn("120.0 GB free of 500.0 GB", cells[3])
         # host-two could not be read: one cell says so
         self.assertIn("capacity could not be read", " ".join(two.text_content().split()))
-
-    def test_the_default_pool_shows_and_the_others_open_on_a_click(self):
-        admin = get_user_model().objects.create_superuser("cap-pools", "pools@example.com", "pw")
-        self.client.force_login(admin)
-        Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
-        pools = [pool("default", 500, 120), pool("backup", 900, 800), pool("iso", 100, 90), pool("nfs", 2000, 1000)]
-        given = {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 8, "running": 8}, "ratio": 0.5,
-                 "assigned": {"all": 8 * GIB, "running": 8 * GIB}, "pools": pools, "vms": VMS}
-        with patch.object(Compute, "capacity", new=given), patch.object(Compute, "status", new=True):
-            page = html.fromstring(self.client.get(reverse("computes")).content)
-        (storage,) = page.xpath("//tbody/tr/td[4]")
-        shown = " ".join(" ".join(storage.xpath("./div//text()")).split())
-        self.assertIn("default", shown)
-        self.assertNotIn("backup", shown)
-        (more,) = storage.xpath(".//details")
-        self.assertEqual(" ".join(more.xpath("summary")[0].text_content().split()), "3 more pools")
-        self.assertEqual(more.xpath(".//div[@class='small']/text()"), ["backup", "iso", "nfs"])
 
 
 class SingularTests(TestCase):
@@ -104,7 +68,7 @@ class SingularTests(TestCase):
         self.client.force_login(admin)
         c = Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
         given = {"cpus": 1, "memory": 4 * GIB, "vcpus": {"all": 1, "running": 1},
-                 "assigned": {"all": GIB, "running": GIB}, "ratio": 1.0, "pools": [], "vms": VMS}
+                 "assigned": {"all": GIB, "running": GIB}, "ratio": 1.0, "vms": VMS}
         with patch.object(Compute, "capacity", new=given), patch.object(Compute, "status", new=True):
             page = html.fromstring(self.client.get(reverse("computes")).content)
             line = self.client.get(reverse("compute_capacity", args=[c.id])).content.decode()
@@ -130,13 +94,11 @@ class NewVmDialogLineTests(TestCase):
     def test_the_line_tells_what_the_host_has_given(self):
         given = {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 24, "running": 8},
                  "assigned": {"all": 48 * GIB, "running": 32 * GIB}, "ratio": 1.5,
-                 "pools": [pool("a&b", 500, 120), pool("iso", 100, 90)]}
-        # plain text: a pool name is not escaped
-        self.assertEqual(self.line(given), "Given to VMs: 24 vCPUs (1.5:1), 48.0 GB memory. "
-                                           "Pool a&b: 120.0 GB free.")
+                 }
+        self.assertEqual(self.line(given), "Given to VMs: 24 vCPUs (1.5:1), 48.0 GB memory.")
 
     def test_a_host_without_pools_or_capacity_says_so(self):
         given = {"cpus": 2, "memory": 4 * GIB, "vcpus": {"all": 0, "running": 0},
-                 "assigned": {"all": 0, "running": 0}, "ratio": 0, "pools": []}
+                 "assigned": {"all": 0, "running": 0}, "ratio": 0}
         self.assertEqual(self.line(given), "Given to VMs: 0 vCPUs (0.0:1), 0 bytes memory.")
         self.assertEqual(self.line(None), "The capacity could not be read.")

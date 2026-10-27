@@ -29,7 +29,6 @@
                             <th scope="col">{% trans "Host" %}</th>
                             <th scope="col" data-sort-method="number">{% trans "vCPUs" %}</th>
                             <th scope="col" data-sort-method="number">{% trans "Memory" %}</th>
-                            <th scope="col" data-sort-method="none">{% trans "Storage" %}</th>
                             <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                         </tr>
                     </thead>
@@ -60,11 +59,8 @@
                             <td class="py-3" data-sort="{{ given.memory_percent }}">
                                 {% include "computes/capacity_memory.html" %}
                             </td>
-                            <td class="py-3">
-                                {% include "computes/capacity_storage.html" %}
-                            </td>
                             {% else %}
-                            <td colspan="3" class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                            <td colspan="2" class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
                             {% endif %}
                             <td class="py-3 text-end">
                                 <div class="btn-group">

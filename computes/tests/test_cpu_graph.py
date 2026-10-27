@@ -139,7 +139,7 @@ class GraphScriptTestCase(TestCase):
         compute = Compute.objects.create(name="gs", hostname="192.0.2.1", login="u", password="p", type=1)
         with patch("computes.views.wvmHostDetails") as details, patch.object(
             Compute, "status", new_callable=PropertyMock, return_value=True
-        ), patch.object(Compute, "capacity", new=None):
+        ), patch.object(Compute, "capacity", new=None), patch("computes.views.host_pools", return_value=None):
             details.return_value.get_node_info.return_value = ("h", "x86_64", 1024, 2, "cpu", "qemu+tcp://h/system")
             details.return_value.get_cpu_topology.return_value = TOPOLOGY
             page = self.client.get(reverse("overview", args=[compute.id])).content.decode()

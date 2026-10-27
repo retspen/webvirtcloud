@@ -14,8 +14,11 @@ from computes.models import Compute
 GIB = 1024 ** 3
 GIVEN = {"cpus": 8, "memory": 32 * GIB, "vcpus": {"all": 12, "running": 6},
          "assigned": {"all": 24 * GIB, "running": 12 * GIB}, "ratio": 1.5,
-         "vms": {"running": 3, "paused": 1, "shutoff": 2, "other": 0},
-         "pools": [{"name": "default", "status": 1, "size": 500 * GIB, "free": 120 * GIB}]}
+         "vms": {"running": 3, "paused": 1, "shutoff": 2, "other": 0}}
+
+
+def pool(name, size_gib, free_gib, status=1):
+    return {"name": name, "status": status, "size": size_gib * GIB, "free": free_gib * GIB}
 
 
 def text(page, xpath):
@@ -29,11 +32,13 @@ class OverviewTestCase(TestCase):
                                               type=1, details="rack 4")
         self.url = reverse("overview", args=[self.compute.id])
 
-    def page(self, connected=True, given=GIVEN):
-        with patch.object(Compute, "status", new_callable=PropertyMock, return_value=connected), \
+    def page(self, connected=True, given=GIVEN, pools=(pool("default", 500, 120),)):
+        with patch("computes.views.wvmStorages") as storages, \
+                patch.object(Compute, "status", new_callable=PropertyMock, return_value=connected), \
                 patch.object(Compute, "connection_error", new_callable=PropertyMock,
                              return_value="Connection Failed: 192.0.2.1 did not answer within 5 s"), \
                 patch.object(Compute, "capacity", new=given and {**given}):
+            storages.return_value.get_storages_info.return_value = [dict(p) for p in pools]
             response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         return html.fromstring(response.content)
@@ -63,6 +68,28 @@ class OverviewTestCase(TestCase):
         self.assertIn("QEMU 10.1.0 libvirt 11.10.0", software)
         self.assertIn("x86_64 kvm · qemu", software)
         self.assertTrue(page.xpath("//canvas[@id='cpuChart']"))
+
+    @patch("computes.views.wvmHostDetails")
+    def test_the_default_pool_shows_and_the_others_open_on_a_click(self, details):
+        details.return_value.get_node_info.return_value = ("h", "x86_64", GIB, 2, None, "qemu+tcp://192.0.2.1/system")
+        details.return_value.get_lib_version.side_effect = libvirtError("details are not this test's")
+        pools = [pool("nfs", 2000, 1000), pool("off", 10, 0, status=0), pool("default", 500, 120),
+                 pool("backup", 900, 800), pool("iso", 100, 90)]
+        page = self.page(pools=pools)
+        storage = page.xpath("//div[@class='card-header'][normalize-space()='Storage']/..")[0]
+        self.assertIn("default 120.0 GB free of 500.0 GB", " ".join(" ".join(storage.xpath("./div/div//text()")).split()))
+        (more,) = storage.xpath(".//details")
+        self.assertEqual(" ".join(more.xpath("summary")[0].text_content().split()), "3 more pools")
+        # active pools only, by name after the default one
+        self.assertEqual(more.xpath(".//div[@class='small']/text()"), ["backup", "iso", "nfs"])
+
+    @patch("computes.views.wvmHostDetails")
+    def test_pools_that_cannot_be_read_leave_the_rest(self, details):
+        details.return_value.get_node_info.return_value = ("h", "x86_64", GIB, 2, None, "qemu+tcp://192.0.2.1/system")
+        with patch("computes.views.host_pools", return_value=None):
+            page = self.page()
+        self.assertIn("The storage pools could not be read.", text(page, "//div[@class='card-header'][normalize-space()='Storage']/.."))
+        self.assertTrue(page.xpath("//div[@class='card-header'][normalize-space()='VMs']"))
 
     @patch("computes.views.wvmHostDetails")
     def test_a_host_the_panel_cannot_reach_keeps_its_page_with_the_reason(self, details):

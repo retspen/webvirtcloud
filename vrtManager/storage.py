@@ -7,11 +7,18 @@ from vrtManager.connection import wvmConnect
 
 class wvmStorages(wvmConnect):
     def get_storages_info(self):
+        """Each pool's state, type, volume count, size and free space. An active
+        pool is refreshed first: libvirt measures its space only when it is
+        refreshed, so two hosts sharing a pool's storage told different free
+        space, each as of its own last refresh."""
         get_storages = self.get_storages()
         storages = []
         for pool in get_storages:
             stg = self.get_storage(pool)
             stg_status = stg.isActive()
+            if stg_status:
+                with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in it
+                    stg.refresh(0)
             stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
             stg_vol = len(stg.listVolumes()) if stg_status else None
             _state, stg_size, _allocation, stg_free = stg.info()

@@ -196,3 +196,24 @@ class StoragesInfoTestCase(unittest.TestCase):
         conn.get_storage = lambda name: pool
         (info,) = conn.get_storages_info()
         self.assertEqual((info["name"], info["size"], info["free"]), ("default", 500, 120))
+        # measured now: libvirt keeps a pool's space as of its last refresh
+        self.assertEqual([c[0] for c in pool.mock_calls[:2]], ["isActive", "refresh"])
+
+    def test_a_pool_that_refuses_a_refresh_tells_its_last_space(self):
+        conn = connection(wvmStorages)
+        pool = MagicMock(**{"isActive.return_value": 1, "XMLDesc.return_value": "<pool type='dir'/>",
+                            "listVolumes.return_value": [], "info.return_value": [2, 500, 380, 120],
+                            "refresh.side_effect": libvirtError("pool is busy: a volume is cloned")})
+        conn.get_storages = lambda: ["default"]
+        conn.get_storage = lambda name: pool
+        (info,) = conn.get_storages_info()
+        self.assertEqual(info["free"], 120)
+
+    def test_an_inactive_pool_is_not_refreshed(self):
+        conn = connection(wvmStorages)
+        pool = MagicMock(**{"isActive.return_value": 0, "XMLDesc.return_value": "<pool type='dir'/>",
+                            "info.return_value": [0, 0, 0, 0]})
+        conn.get_storages = lambda: ["off"]
+        conn.get_storage = lambda name: pool
+        conn.get_storages_info()
+        pool.refresh.assert_not_called()

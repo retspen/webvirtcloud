@@ -1,6 +1,5 @@
 {% load i18n %}{% autoescape off %}{% if given %}
 {% blocktrans count counter=given.vcpus.all with ratio=given.ratio|floatformat:1 assigned=given.assigned.all|filesizeformat %}Given to VMs: {{ counter }} vCPU ({{ ratio }}:1), {{ assigned }} memory.{% plural %}Given to VMs: {{ counter }} vCPUs ({{ ratio }}:1), {{ assigned }} memory.{% endblocktrans %}
-{% with pool=given.pools.0 %}{% if pool %}{% blocktrans with name=pool.name free=pool.free|filesizeformat %}Pool {{ name }}: {{ free }} free.{% endblocktrans %}{% endif %}{% endwith %}
 {% else %}
 {% trans "The capacity could not be read." %}
 {% endif %}{% endautoescape %}

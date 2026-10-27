@@ -13,6 +13,7 @@ from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims
 from vrtManager.hostdetails import wvmHostDetails
+from vrtManager.storage import wvmStorages
 
 from computes.forms import (
     SocketComputeForm,
@@ -44,14 +45,22 @@ def shown_capacity(compute):
                         "over": assigned["all"] > memory}
         given["memory_percent"] = round(assigned["all"] * 100 / memory) if memory else 0
         given["vm_count"] = sum(given["vms"].values())
-        # the default pool (else the first) shows; the others (a host may
-        # have dozens) open on a click
-        pools = given["pools"] or []
-        for pool in pools:
-            pool["used_percent"] = (pool["size"] - pool["free"]) * 100 / pool["size"] if pool["size"] else 0
-        given["pool"] = pools[0] if pools else None
-        given["more_pools"] = pools[1:]
     return given
+
+
+def host_pools(compute):
+    """The compute's active storage pools, measured now: the default one (else
+    the first) to show, the others (a host may have dozens) to open on a
+    click; or None when they cannot be read."""
+    try:
+        storages = wvmStorages(compute.hostname, compute.login, compute.password, compute.type)
+        pools = [pool for pool in storages.get_storages_info() if pool["status"]]
+    except libvirtError:
+        return None
+    pools.sort(key=lambda pool: (pool["name"] != "default", pool["name"]))
+    for pool in pools:
+        pool["used_percent"] = (pool["size"] - pool["free"]) * 100 / pool["size"] if pool["size"] else 0
+    return {"pool": pools[0] if pools else None, "more_pools": pools[1:]}
 
 
 @superuser_only
@@ -96,6 +105,7 @@ def overview(request, compute_id):
         except libvirtError as error:
             context["read_error"] = str(error)
         context["given"] = shown_capacity(compute)
+        context["storage"] = host_pools(compute)
     return render(request, "overview.html", context)
 
 

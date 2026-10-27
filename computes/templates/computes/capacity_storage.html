@@ -1,15 +1,16 @@
 {% load i18n %}
-{# a host's storage pools: given, from views.shown_capacity #}
-{% if given.pools is None %}
+{# a host's storage pools: storage, from views.host_pools #}
+{% if storage is None %}
 <div class="small text-body-secondary">{% trans "The storage pools could not be read." %}</div>
-{% elif not given.pool %}
+{% elif not storage.pool %}
 <div class="small text-body-secondary">{% trans "No active storage pool." %}</div>
+{% else %}
+{% include "computes/pool_bar.html" with pool=storage.pool %}
 {% endif %}
-{% if given.pool %}{% include "computes/pool_bar.html" with pool=given.pool %}{% endif %}
-{% if given.more_pools %}
+{% if storage.more_pools %}
     <details class="mt-2">
-        <summary class="small text-body-secondary">{% blocktrans count counter=given.more_pools|length %}{{ counter }} more pool{% plural %}{{ counter }} more pools{% endblocktrans %}</summary>
-        {% for pool in given.more_pools %}
+        <summary class="small text-body-secondary">{% blocktrans count counter=storage.more_pools|length %}{{ counter }} more pool{% plural %}{{ counter }} more pools{% endblocktrans %}</summary>
+        {% for pool in storage.more_pools %}
             <div class="mt-2">{% include "computes/pool_bar.html" %}</div>
         {% endfor %}
     </details>
