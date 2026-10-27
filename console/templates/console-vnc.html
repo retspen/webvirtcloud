@@ -3,9 +3,6 @@
 {% load static %}
 
 {% block head %}
-<style>
-    #screen { flex: 1 1 auto; min-height: 0; overflow: hidden; }
-</style>
 {{ vnc|json_script:"vnc-config" }}
 {{ layouts|json_script:"keyboard-layouts" }}
 <script type="module" src="{% static "js/console_vnc.js" %}"></script>
@@ -66,7 +63,7 @@
 {% endblock %}
 
 {% block content %}
-<div id="screen"></div>
+<div id="screen" class="flex-grow-1 overflow-hidden" style="min-height: 0;"></div>
 <textarea id="keyboard_input" class="visually-hidden" autocapitalize="off" autocomplete="off"
     spellcheck="false" tabindex="-1" aria-label="{% trans "Keyboard" %}"></textarea>
 

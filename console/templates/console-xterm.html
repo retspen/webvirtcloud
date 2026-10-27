@@ -7,9 +7,6 @@
 <script src="{% static 'js/xterm/xterm.js' %}"></script>
 <script src="{% static 'js/xterm/addon-fit.js' %}"></script>
 <script src="{% static 'js/socket.io.js' %}"></script>
-<style>
-    #terminal { flex: 1 1 auto; min-height: 0; background: #000; }
-</style>
 {{ token|json_script:"serial-token" }}
 <script type="module" src="{% static "js/console_serial.js" %}"></script>
 {% endblock %}
@@ -29,5 +26,5 @@
 {% endblock %}
 
 {% block content %}
-<div id="terminal"></div>
+<div id="terminal" class="flex-grow-1 bg-black" style="min-height: 0;"></div>
 {% endblock %}

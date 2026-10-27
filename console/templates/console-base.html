@@ -12,32 +12,14 @@
     {% with theme=app_settings.BOOTSTRAP_THEME|default:"zephyr" %}<link rel="stylesheet" href="{% static "css/themes/"|add:theme|add:".min.css" %}" id="wvc_css">{% endwith %}
     <link href="{% static "css/webvirtcloud.css" %}" rel="stylesheet">
 
-    <style>
-        #main_container {
-            padding: 0;
-            width: 100%;
-            max-width: none;
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            background-color: #494949;
-        }
-
-        #main_container canvas {
-            padding-left: 0;
-            padding-right: 0;
-            margin-left: auto;
-            margin-right: auto;
-            display: block;
-        }
-    </style>
 
     {% block head %}{% endblock %}
 
 </head>
 
 <body>
-    <div id="main_container">
+    {# the whole window, 100dvh: vh-100 would run under a phone browser's bar #}
+    <div class="d-flex flex-column p-0 bg-dark" style="height: 100dvh;">
         <nav class="navbar navbar-expand-md navbar-dark bg-primary py-1" aria-label="{% trans "Console" %}">
             <div class="container-fluid">
                 <span class="navbar-brand py-0">{{ instance.name }}</span>
