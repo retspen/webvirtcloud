@@ -9,31 +9,7 @@
 
 {% block content %}
     <div class="row">
-        <nav aria-label="breadcrumb">
-        <ol class="breadcrumb shadow-sm">
-            <li class="breadcrumb-item" aria-current="page">
-                <span class="fw-bold">{% bs_icon 'laptop' %} {% trans "Overview" %}</span>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'instances' compute.id %}">{% bs_icon 'server' %} {% trans "Instances" %}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'storages' compute.id %}">{% bs_icon 'device-hdd' %} {% trans "Storages" %}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'networks' compute.id %}">{% bs_icon 'hdd-network' %} {% trans "Networks" %}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'interfaces' compute.id %}">{% bs_icon 'wifi' %} {% trans "Interfaces" %}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'nwfilters' compute.id %}">{% bs_icon 'filter' %} {% trans "NWFilters" %}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'virtsecrets' compute.id %}">{% bs_icon 'key' %} {% trans "Secrets" %}</a>
-            </li>
-        </ol>
-        </nav>
+        {% include "computes/host_nav.html" with section="overview" %}
         </div>
 
     <div class="shadow-sm">

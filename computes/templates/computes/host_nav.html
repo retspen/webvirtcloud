@@ -1,0 +1,28 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+{# The host's sections. section: the one this page belongs to; detail: the page is an item of it (a pool, a network), not the section's own page #}
+<nav class="mb-3" aria-label="{% trans "Host sections" %}">
+    <ul class="nav nav-pills flex-wrap gap-1">
+        <li class="nav-item">
+            <a class="nav-link{% if section == "overview" %} active{% endif %}" href="{% url 'overview' compute.id %}"{% if section == "overview" %} aria-current="{{ detail|yesno:"true,page" }}"{% endif %}>{% bs_icon 'laptop' %} {% trans "Overview" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% if section == "instances" %} active{% endif %}" href="{% url 'instances' compute.id %}"{% if section == "instances" %} aria-current="{{ detail|yesno:"true,page" }}"{% endif %}>{% bs_icon 'server' %} {% trans "Instances" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% if section == "storages" %} active{% endif %}" href="{% url 'storages' compute.id %}"{% if section == "storages" %} aria-current="{{ detail|yesno:"true,page" }}"{% endif %}>{% bs_icon 'device-hdd' %} {% trans "Storages" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% if section == "networks" %} active{% endif %}" href="{% url 'networks' compute.id %}"{% if section == "networks" %} aria-current="{{ detail|yesno:"true,page" }}"{% endif %}>{% bs_icon 'hdd-network' %} {% trans "Networks" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% if section == "interfaces" %} active{% endif %}" href="{% url 'interfaces' compute.id %}"{% if section == "interfaces" %} aria-current="{{ detail|yesno:"true,page" }}"{% endif %}>{% bs_icon 'wifi' %} {% trans "Interfaces" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% if section == "nwfilters" %} active{% endif %}" href="{% url 'nwfilters' compute.id %}"{% if section == "nwfilters" %} aria-current="{{ detail|yesno:"true,page" }}"{% endif %}>{% bs_icon 'filter' %} {% trans "NWFilters" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% if section == "virtsecrets" %} active{% endif %}" href="{% url 'virtsecrets' compute.id %}"{% if section == "virtsecrets" %} aria-current="{{ detail|yesno:"true,page" }}"{% endif %}>{% bs_icon 'key' %} {% trans "Secrets" %}</a>
+        </li>
+    </ul>
+</nav>
