@@ -104,9 +104,7 @@ def instances(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     utils.refresh_instance_database(compute)
-    instances = Instance.objects.filter(compute=compute).prefetch_related(
-        "userinstance_set"
-    )
+    instances = Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set")
 
     return render(
         request, "computes/instances.html",

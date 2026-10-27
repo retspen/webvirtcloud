@@ -133,6 +133,20 @@ class StateTests(TestCase):
         self.assertEqual([r.xpath("td[@data-sort]/@data-sort") for r in rows[1:2]], [["2", "2097152"]])
 
 
+    def test_the_lists_show_the_vms_by_name(self):
+        # the first VM made comes last by name: the database's own order is not the list's
+        Instance.objects.filter(pk=self.vms[0].pk).update(name="st-vm-9")
+        by_name = [LABELS[state] for state in [*list(LABELS)[1:], 0]]
+        for style in ("grouped", "nongrouped"):
+            AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value=style)
+            page = html.fromstring(self.get(self.admin, reverse("instances:index")))
+            with self.subTest(style=style):
+                self.assertEqual(page.xpath("//tbody//tr//@data-state"), by_name)
+        page = html.fromstring(self.get(self.admin, reverse("instances", args=[self.compute.id])))
+        names = [name.strip() for name in page.xpath("//tbody//tr//a[starts-with(normalize-space(), 'st-vm-')]/text()")]
+        self.assertEqual(names, sorted(names))
+
+
 class DetailStateTests(TestCase):
     """The VM page names every state and offers a forced power off where only that helps."""
 

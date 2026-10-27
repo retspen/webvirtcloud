@@ -27,7 +27,7 @@ from django.contrib.auth.models import User
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponse, JsonResponse
-from django.db.models import prefetch_related_objects
+from django.db.models import Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -72,16 +72,18 @@ def index(request):
     computes = list(Compute.objects.all().order_by("name"))
     for compute in computes:
         utils.refr(compute)
-    prefetch_related_objects(computes, "instance_set__userinstance_set")
+    # each host's VMs by name: the database keeps no order of its own
+    prefetch_related_objects(computes, Prefetch("instance_set", queryset=Instance.objects.order_by("name")),
+                             "instance_set__userinstance_set")
 
     show_hosts = request.user.is_superuser or request.user.has_perm("instances.view_instances")
     own_hosts_down = False
     if show_hosts:
-        instances = Instance.objects.all().prefetch_related("userinstance_set")
+        instances = Instance.objects.order_by("name").prefetch_related("userinstance_set")
     else:
         instances = Instance.objects.filter(
             userinstance__user=request.user
-        ).prefetch_related("userinstance_set")
+        ).order_by("name").prefetch_related("userinstance_set")
         # other users get no host names or connection errors, only whether
         # a host of their own VMs is down
         own = set(instances.values_list("compute_id", flat=True))
