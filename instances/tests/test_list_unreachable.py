@@ -83,7 +83,7 @@ class UnreachableListTests(TestCase):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
         response = self.get(reverse("instances:index"), unreachable)
         self.assert_unknown(response, [self.vm_a, self.vm_b])
-        self.assertContains(response, "Not Connected")
+        self.assertContains(response, "Not connected")
 
     def test_one_unreadable_vm_does_not_hide_the_others(self):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")

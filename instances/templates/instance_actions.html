@@ -1,69 +1,65 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% load vm_states %}
+{# the actions this user may use on the VM now (states.allowed_actions), as one group of the same shape in every row: the console, the power action the state calls for (its icon only, named on hover), and a menu of the others; what does not apply now is disabled, all of it for a VM its owner cannot use now (one an administrator paused). The console's word is hidden on a phone. #}
 {% vm_actions instance as actions %}
-{% if actions %}
-<div class="btn-group" role="group" aria-label="Instance actions">
+{% vm_manages instance as manages %}
+{% if actions or manages and instance.info %}
+<div class="d-flex justify-content-end">
+<div class="btn-group" role="group" aria-label="{% blocktrans with name=instance.name %}Actions for {{ name }}{% endblocktrans %}">
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-url="{% url 'console' instance.compute_id instance.uuid %}" data-window="console-{{ instance.uuid }}"
+        onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')" aria-label="{% trans "Console" %}"{% if "console" not in actions %} disabled{% endif %}>{% bs_icon 'display' %} <span class="d-none d-sm-inline">{% trans "Console" %}</span></button>
     {% if "clone" in actions %}
-        <a href="{% url 'instances:instance' instance.id %}#clone" class="btn btn-sm btn-secondary" title="{% trans "Clone" %}">
-            {% bs_icon 'copy' %}
-        </a>
+        <a href="{% url 'instances:instance' instance.id %}#clone" class="btn btn-sm btn-outline-secondary" title="{% trans "Clone" %}" aria-label="{% trans "Clone" %}">{% bs_icon 'copy' %}</a>
     {% elif "poweron" in actions %}
-        <form action="{% url 'instances:poweron' instance.id %}" method="post" class="d-inline" onsubmit="showPleaseWaitDialog()">
+        <form action="{% url 'instances:poweron' instance.id %}" method="post" class="btn-group" onsubmit="showPleaseWaitDialog()">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Power On" %}">{% bs_icon 'play-fill' %}</button>
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans "Start" %}" aria-label="{% trans "Start" %}">{% bs_icon 'play-fill' %}</button>
         </form>
     {% elif "resume" in actions %}
-        <form action="{% url 'instances:resume' instance.id %}" method="post" class="d-inline">
+        <form action="{% url 'instances:resume' instance.id %}" method="post" class="btn-group">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Resume" %}">{% bs_icon 'play-fill' %}</button>
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans "Resume" %}" aria-label="{% trans "Resume" %}">{% bs_icon 'play-fill' %}</button>
+        </form>
+    {% elif "poweroff" in actions %}
+        <form action="{% url 'instances:poweroff' instance.id %}" method="post" class="btn-group">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans "Shut down" %}" aria-label="{% trans "Shut down" %}">{% bs_icon 'stop-fill' %}</button>
         </form>
     {% else %}
-        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power On" %}" disabled>{% bs_icon 'play-fill' %}</button>
+        {% if instance.info.0 == 3 %}
+        <button type="button" class="btn btn-sm btn-outline-secondary" title="{% trans "Resume" %}" aria-label="{% trans "Resume" %}" disabled>{% bs_icon 'play-fill' %}</button>
+        {% else %}
+        <button type="button" class="btn btn-sm btn-outline-secondary" title="{% trans "Start" %}" aria-label="{% trans "Start" %}" disabled>{% bs_icon 'play-fill' %}</button>
+        {% endif %}
     {% endif %}
-
-    {% if "suspend" in actions %}
-        <form action="{% url 'instances:suspend' instance.id %}" method="post" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Suspend" %}">{% bs_icon 'pause-fill' %}</button>
-        </form>
-    {% else %}
-        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Suspend" %}" disabled>{% bs_icon 'pause-fill' %}</button>
-    {% endif %}
-
-    {% if "poweroff" in actions %}
-        <form action="{% url 'instances:poweroff' instance.id %}" method="post" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Power Off" %}">{% bs_icon 'power' %}</button>
-        </form>
-    {% elif "force_off" in actions %}
-        <form action="{% url 'instances:force_off' instance.id %}" method="post" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Force Off" %}"
-                    data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}"
-                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'power' %}</button>
-        </form>
-    {% else %}
-        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power Off" %}" disabled>{% bs_icon 'power' %}</button>
-    {% endif %}
-
-    {% if "powercycle" in actions %}
-        <form action="{% url 'instances:powercycle' instance.id %}" method="post" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Power Cycle" %}"
-                    data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}"
-                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'repeat' %}</button>
-        </form>
-    {% else %}
-        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Power Cycle" %}" disabled>{% bs_icon 'repeat' %}</button>
-    {% endif %}
-
-    {% if "console" in actions %}
-        <button class="btn btn-sm btn-secondary" type="button" data-url="{% url 'console' instance.compute_id instance.uuid %}" data-window="console-{{ instance.uuid }}"
-            onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')"
-            title="{% trans "Console" %}">{% bs_icon 'eye-fill' %}</button>
-    {% else %}
-        <button class="btn btn-sm btn-secondary disabled" title="{% trans "VNC Console" %}" disabled>{% bs_icon 'eye-fill' %}</button>
-    {% endif %}
+    <div class="btn-group">
+        {# fixed: the menu would be cut off by the table's scrolling box #}
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% trans "More actions" %}"
+                {% if "suspend" not in actions and "force_off" not in actions and "powercycle" not in actions %}disabled{% endif %}>{% bs_icon 'three-dots' %}</button>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+            {% if "suspend" in actions %}
+            <li><form action="{% url 'instances:suspend' instance.id %}" method="post">{% csrf_token %}
+                <button type="submit" class="dropdown-item">{% bs_icon 'pause-fill' %} {% trans "Suspend" %}</button>
+            </form></li>
+            {% endif %}
+            {% if "force_off" in actions %}
+            <li><form action="{% url 'instances:force_off' instance.id %}" method="post">{% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger"
+                        data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}"
+                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'power' %} {% trans "Force off" %}</button>
+            </form></li>
+            {% endif %}
+            {% if "powercycle" in actions %}
+            <li><form action="{% url 'instances:powercycle' instance.id %}" method="post">{% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger"
+                        data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}"
+                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'repeat' %} {% trans "Power cycle" %}</button>
+            </form></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
 </div>
 {% endif %}

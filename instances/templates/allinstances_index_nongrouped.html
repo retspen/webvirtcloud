@@ -3,42 +3,28 @@
     <table class="table table-hover align-middle" data-sortable>
         <thead>
             <tr>
-                <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
+                <th scope="col">{% trans 'Name' %}</th>
                 {% if show_hosts %}
-                    <th scope="col">{% trans 'Host' %}<br>{% trans 'User' %}</th>
+                    <th scope="col">{% trans 'Host' %}</th>
                 {% endif %}
                 <th scope="col">{% trans 'Status' %}</th>
                 {% if app_settings.VM_DRBD_STATUS == 'True' %}
                 <th scope="col">{% trans 'Role/Disk' %}</th>
                 {% endif %}
-                <th scope="col" data-sort-method="number">{% trans 'VCPU' %}</th>
-                <th scope="col" data-sort-method="number">{% trans 'Memory' %}</th>
-                <th scope="col" data-sort-method="none">{% trans 'Actions' %}</th>
+                <th scope="col" class="d-none d-sm-table-cell" data-sort-method="number">{% trans 'vCPUs' %}</th>
+                <th scope="col" class="d-none d-sm-table-cell" data-sort-method="number">{% trans 'Memory' %}</th>
+                <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans 'Actions' %}</span></th>
             </tr>
         </thead>
         <tbody class="searchable">
             {% for instance in instances  %}
                     {# searched for its name, title, host and owners, not its buttons #}
                     <tr data-search="{{ instance.name }}{% if instance.info %} {{ instance.title }}{% endif %}{% if show_hosts %} {{ instance.compute.name }}{% for owner in instance.userinstance_set.all %} {{ owner.user }}{% endfor %}{% endif %}">
-                        <td>
-                            <a class="link-primary" href="{% url 'instances:instance' instance.id %}">
-                                {{ instance.name }}
-                            </a>
-                            <br>
-                            {% if instance.info %}<p class="m-0 small fst-italic">{{ instance.title }}</p>{% endif %}
-                        </td>
+                        <td>{% include 'instance_name_cell.html' with owners=show_hosts %}</td>
                         {% if show_hosts %}
                             <td>
                                 {# the host pages are a superuser's #}
-                                {% if request.user.is_superuser %}<a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a>{% else %}{{ instance.compute.name }}{% endif %}<br>
-                                    <small><em>
-                                        {% if instance.userinstance_set.all.count > 0 %}
-                                            {{ instance.userinstance_set.all.0.user }}
-                                            {% if instance.userinstance_set.all.count > 1 %}
-                                                (+{{ instance.userinstance_set.all.count|add:"-1" }})
-                                            {% endif %}
-                                        {% endif %}
-                                    </em></small>
+                                {% if request.user.is_superuser %}<a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a>{% else %}{{ instance.compute.name }}{% endif %}
                             </td>
                         {% endif %}
                         <td>
@@ -49,9 +35,9 @@
                                 {% if instance.drbd == "Primary/OK" or instance.drbd == "Secondary/OK" %}<span class="badge bg-success-subtle text-success-emphasis">{% else %}<span class="badge bg-danger-subtle text-danger-emphasis">{% endif %}{{ instance.drbd }}</span>
                         </td>
                         {% endif %}
-                        <td data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
-                        <td data-sort="{{ instance.info.2 }}">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MiB{% endif %}</td>
-                        <td class="text-nowrap">
+                        <td class="d-none d-sm-table-cell" data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
+                        <td class="d-none d-sm-table-cell" data-sort="{{ instance.info.2 }}">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MiB{% endif %}</td>
+                        <td>
                             {% include 'instance_actions.html' %}
                         </td>
                     </tr>

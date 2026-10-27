@@ -5,22 +5,16 @@
 {% block page_heading %}{% trans "Instances" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-{% if request.user.is_superuser %}
-    {% include 'create_inst_block.html' %}
-{% endif %}
-    {# the list's filters (state, text) and the address search, as one control #}
-    <div class="float-end m-1">
-        <div class="input-group">
-            <select id="state-filter" class="form-select flex-grow-0 w-auto" aria-label="{% trans 'State' %}">
-                <option value="">{% trans 'All states' %}</option>
-                {% for state in states %}
-                    <option>{{ state }}</option>
-                {% endfor %}
-            </select>
+    <div class="d-flex flex-wrap justify-content-end gap-2 mt-1">
+        {# the list's search and the address search, as one control #}
+        <div class="input-group w-auto">
             <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
             <button type="button" class="btn btn-outline-secondary" id="find-address-open"
-                    data-bs-toggle="modal" data-bs-target="#find-address">{% trans "Find IP" %}</button>
+                    data-bs-toggle="modal" data-bs-target="#find-address">{% trans "Find IP / MAC" %}</button>
         </div>
+        {% if request.user.is_superuser %}
+            {% include 'create_inst_block.html' %}
+        {% endif %}
     </div>
 {% endblock page_heading_extra %}
 
@@ -45,6 +39,23 @@
         </div>
     {% endif %}
     <div class="col-lg-12">
+        {% if instances.exists %}
+            {# the state filter: table_filter.js counts each state's VMs the search finds #}
+            <input type="hidden" id="state-filter" value="">
+            <nav class="mb-3" aria-label="{% trans "VM states" %}">
+                <div class="nav nav-pills flex-wrap gap-1" id="state-pills">
+                    <button type="button" class="nav-link active py-1 px-2" data-pill-state="" aria-pressed="true">
+                        {% trans "All" %} <span class="badge text-bg-light ms-1" data-count-state=""></span>
+                    </button>
+                    {% for state in states %}
+                    <button type="button" class="nav-link py-1 px-2" data-pill-state="{{ state }}" aria-pressed="false" hidden>
+                        {{ state }} <span class="badge text-bg-light ms-1" data-count-state="{{ state }}"></span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </nav>
+            <div id="filter-status" class="visually-hidden" role="status" data-text="{% trans "%(shown)s of %(all)s VMs match" %}"></div>
+        {% endif %}
         {% if not instances.exists %}
             <p class="text-center text-body-secondary py-4">{% trans "There are no VMs here yet." %}</p>
         {% elif app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}

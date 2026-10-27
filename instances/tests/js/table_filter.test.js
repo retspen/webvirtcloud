@@ -18,13 +18,13 @@ function plainRow(text) {
 function group(rows, host) {
     return {dataset: host ? {host} : {}, querySelectorAll: (s) => (s === "tr" ? rows : [])};
 }
-function page(groups, text, state, noMatch) {
+function page(groups, text, state, noMatch, extra = {}) {
     // a list without a state list (state undefined) has no such element
     const inputs = {filter: {value: text}, "state-filter": state === undefined ? undefined : {value: state},
-                    "no-match": noMatch};
+                    "no-match": noMatch, "filter-status": extra.status};
     return {
         getElementById: (id) => inputs[id],
-        querySelectorAll: (s) => (s === ".searchable" ? groups : []),
+        querySelectorAll: (s) => (s === ".searchable" ? groups : s === "[data-count-state]" ? extra.counts || [] : []),
     };
 }
 const visible = (rows) => rows.filter((r) => !r.hidden).map((r) => r.textContent);
@@ -79,3 +79,18 @@ filterInstances(page([group(menus)], "nothing-like-this", "", noMatch));
 assert.strictEqual(noMatch.hidden, false, "no row: the message shows");
 filterInstances(page([group(menus)], "web", "", noMatch));
 assert.strictEqual(noMatch.hidden, true, "a row: the message goes");
+
+// the state pills count the VMs the search finds, each state's and all; a
+// state without any is hidden unless chosen; the status says how many show
+const count = (state) => ({dataset: {countState: state}, textContent: "", parentElement: {hidden: false}});
+const counts = [count(""), count("Active"), count("Off"), count("Crashed")];
+const status = {dataset: {text: "%(shown)s of %(all)s VMs match"}, textContent: ""};
+const fleet = [vm("web-1", "Active", "web-1"), vm("web-2", "Off", "web-2"), vm("db-1", "Active", "db-1")];
+filterInstances(page([group(fleet)], "web", "Off", undefined, {counts, status}));
+assert.deepStrictEqual(counts.map((c) => c.textContent), [2, 1, 1, 0], "counts follow the search, not the state");
+assert.deepStrictEqual(counts.map((c) => c.parentElement.hidden), [false, false, false, true]);
+assert.strictEqual(status.textContent, "1 of 3 VMs match");
+filterInstances(page([group(fleet)], "", "Crashed", undefined, {counts, status}));
+assert.strictEqual(counts[3].parentElement.hidden, false, "the chosen state stays, even empty");
+filterInstances(page([group(fleet)], "no-such-vm", "Active", undefined, {counts, status}));
+assert.strictEqual(counts[0].parentElement.hidden, false, "All stays when nothing is found");

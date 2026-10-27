@@ -1,8 +1,8 @@
 {% load i18n %}
 {% load bootstrap_icons %}
-<a href="#AddInstance" type="button" class="btn btn-success mt-1 float-end" title="{% trans "New Instance" %}" data-bs-toggle="modal">
-    <span aria-hidden="true">{% bs_icon 'plus-circle-fill'%} </span>
-</a>
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddInstance">
+    <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New VM" %}
+</button>
 
 <div class="modal fade" id="AddInstance" tabindex="-1" aria-labelledby="AddInstanceTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg">

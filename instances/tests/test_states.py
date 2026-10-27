@@ -123,8 +123,9 @@ class StateTests(TestCase):
         # static/js/table_filter.js filters by these (test_table_filter_js)
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
         page = html.fromstring(self.get(self.admin, reverse("instances:index")))
-        options = page.xpath("//select[@id='state-filter']/option/text()")
-        self.assertEqual(options, ["All states", *LABELS.values(), "Unknown"])
+        # a pill for all and for each state, every state kept (table_filter.js hides the empty ones)
+        pills = page.xpath("//div[@id='state-pills']/button/@data-pill-state")
+        self.assertEqual(pills, ["", *LABELS.values(), "Unknown"])
         marks = page.xpath("//tbody[@data-host='st']//tr//@data-state")
         self.assertEqual(marks, list(LABELS.values()))
         # the host row stays on top of its VMs; memory and vCPUs sort as numbers
@@ -132,6 +133,43 @@ class StateTests(TestCase):
         self.assertEqual(rows[0].get("data-sort-method"), "none")
         self.assertEqual([r.xpath("td[@data-sort]/@data-sort") for r in rows[1:2]], [["2", "2097152"]])
 
+
+    def row_group(self, page, state):
+        url = reverse("instances:instance", args=[self.vms[state].id])
+        return page.xpath(f"//tr[.//a[@href='{url}']]//div[@role='group']")
+
+    @staticmethod
+    def enabled(group):
+        return [c.get("aria-label") for c in group.xpath(".//*[contains(@class,'btn-sm')]") if c.get("disabled") is None]
+
+    def test_each_row_has_the_same_group_its_state_s_actions_enabled(self):
+        # console, the power action, the menu, in every row: those that do not apply now disabled
+        page = html.fromstring(self.get(self.admin, reverse("instances:index")))
+        power = {"poweron": "Start", "resume": "Resume", "poweroff": "Shut down"}
+        in_menu = {"suspend": "Suspend", "force_off": "Force off", "powercycle": "Power cycle"}
+        for state, label in LABELS.items():
+            vm = self.vms[state]
+            with self.subTest(state=label):
+                (group,) = self.row_group(page, state)
+                self.assertEqual(group.get("aria-label"), f"Actions for {vm.name}")
+                self.assertEqual(len(group.xpath(".//*[contains(@class,'btn-sm')]")), 3)
+                running = state in (1, 2)
+                expected = (["Console"] if running else []) + [power[a] for a in power if a in ACTIONS[state]]
+                if ACTIONS[state] & set(in_menu):
+                    expected.append("More actions")
+                self.assertEqual(self.enabled(group), expected)
+                items = [i.text_content().strip() for i in group.xpath(".//*[contains(@class,'dropdown-item')]")]
+                self.assertEqual(items, [in_menu[a] for a in in_menu if a in ACTIONS[state]])
+
+    def test_an_owner_sees_the_group_disabled_on_a_vm_an_administrator_paused(self):
+        page = html.fromstring(self.get(self.owner, reverse("instances:index")))
+        (group,) = self.row_group(page, 3)
+        self.assertEqual(self.enabled(group), [])
+        self.assertTrue(group.xpath(".//button[@aria-label='Resume'][@disabled]"))
+        # a user who only views VMs gets no group
+        page = html.fromstring(self.get(self.viewer, reverse("instances:index")))
+        self.assertEqual(len(page.xpath("//tbody//tr[@data-search]")), len(self.vms))
+        self.assertEqual(page.xpath("//div[@role='group']"), [])
 
     def test_rows_are_searched_for_their_vm_not_their_buttons(self):
         # table_filter.js searches data-search: a menu's "Force off" would match "off" in every row

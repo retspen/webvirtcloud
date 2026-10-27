@@ -1,3 +1,3 @@
 {% load vm_states %}
 {% if instance.info %}{% vm_state instance.info.0 as state %}{% else %}{% vm_state None as state %}{% endif %}
-<span class="text-{{ state.1 }}" data-state="{{ state.0 }}">{{ state.0 }}</span>
+<span class="badge text-bg-{{ state.1 }}" data-state="{{ state.0 }}">{{ state.0 }}</span>

@@ -1,6 +1,6 @@
 from django import template
 
-from instances.states import allowed_actions, state_label
+from instances.states import allowed_actions, manages, state_label
 
 register = template.Library()
 
@@ -17,3 +17,9 @@ def vm_actions(context, instance):
     if not instance.info:
         return set()
     return allowed_actions(context["request"].user, instance, instance.info[0])
+
+
+@register.simple_tag(takes_context=True)
+def vm_manages(context, instance):
+    """{% vm_manages instance as manages %}: the user is a superuser or one of the VM's owners."""
+    return manages(context["request"].user, instance)

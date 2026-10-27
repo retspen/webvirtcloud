@@ -12,7 +12,7 @@ STATES = {
     2: (_("Blocked"), "success"),  # running, waiting for a resource
     3: (_("Suspended"), "warning"),
     4: (_("Shutting down"), "warning"),
-    5: (_("Off"), "danger"),
+    5: (_("Off"), "secondary"),  # shut off is not a fault
     6: (_("Crashed"), "danger"),
     7: (_("PM suspended"), "warning"),  # suspended by the guest
 }
@@ -38,6 +38,12 @@ def state_label(state):
     return UNKNOWN if state is None else STATES.get(state, STATES[0])
 
 
+def manages(user, instance):
+    """Superusers and a VM's owners: the users its power actions are for."""
+    # the lists prefetch userinstance_set
+    return user.is_superuser or any(ui.user_id == user.id for ui in instance.userinstance_set.all())
+
+
 def allowed_actions(user, instance, state):
     """
     The power actions the state allows and the user may use: superusers all,
@@ -50,8 +56,7 @@ def allowed_actions(user, instance, state):
         return {"clone"} if user.has_perm("instances.clone_instances") else set()
     if user.is_superuser:
         return STATE_ACTIONS.get(state, set())
-    # the lists prefetch userinstance_set
-    if not any(ui.user_id == user.id for ui in instance.userinstance_set.all()):
+    if not manages(user, instance):
         return set()
     if state == 3:
         return set()

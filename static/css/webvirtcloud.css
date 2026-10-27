@@ -56,6 +56,15 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
     border-bottom-color: currentColor;
 }
 
+/* a phone keeps Bootstrap's own cell padding: some themes (Zephyr) double
+   it, and a list's last column no longer fits the screen */
+@media (max-width: 575.98px) {
+    .table > :not(caption) > * > * {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
 .host-collapsed tr[host] {
     display: none;
 }

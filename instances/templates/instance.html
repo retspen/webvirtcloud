@@ -16,7 +16,7 @@
      <div>
         <div>
             {% vm_state instance.status as state %}
-            <span class="badge bg-{{ state.1 }}">{{ state.0 }}</span>
+            <span class="badge text-bg-{{ state.1 }}">{{ state.0 }}</span>
             |
             <span 
                 {%if instance.guest_agent %}
