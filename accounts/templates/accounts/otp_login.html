@@ -1,77 +1,71 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load static %}
 {% load django_bootstrap5 %}
 
 {% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign In with OTP" %}{% endblock title %}
 
-{% block style %}
-<link href="{% static "css/signin.css" %}" rel="stylesheet">
-{% endblock style %}
-
 {% block content %}
-<div class="signin-wrapper">
-    <div class="signin-card">
-        <div class="signin-brand">
-            <div class="signin-logo-badge">
-                <i class="bi bi-shield-check"></i>
-            </div>
-            <h1 class="signin-title">{% trans "Two-Factor Auth" %}</h1>
-            <p class="signin-subtitle">{% trans "Enter your authentication code to continue" %}</p>
-        </div>
-
-        {% if form.errors %}
-            <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
-                <i class="bi bi-exclamation-triangle-fill fs-5 me-2 flex-shrink-0"></i>
-                <div>{% bootstrap_form_errors form %}</div>
-            </div>
-        {% endif %}
-
-        <form id="form-signin" method="post" role="form" aria-label="OTP Login form">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label class="signin-field-label" for="id_username">{% trans "Username" %}</label>
-                <div class="signin-input-group">
-                    <span class="signin-input-icon"><i class="bi bi-person"></i></span>
-                    <input type="text" id="id_username" class="signin-input form-control" name="username" value="{{ form.username.value|default:'' }}" placeholder="{% trans 'Enter username' %}" autocapitalize="none" autocorrect="off" required>
+<div class="row justify-content-center pt-5">
+    <div class="col-sm-9 col-md-7 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4 p-sm-5">
+                <div class="text-center mb-4">
+                    <div class="d-inline-block rounded-3 bg-primary text-white fs-2 lh-1 p-3 mb-3"><i class="bi bi-shield-check"></i></div>
+                    <h1 class="h3 fw-bold mb-1">{% trans "Two-Factor Auth" %}</h1>
+                    <p class="text-body-secondary small mb-0">{% trans "Enter your authentication code to continue" %}</p>
                 </div>
-            </div>
 
-            <div class="mb-3">
-                <label class="signin-field-label" for="id_password">{% trans "Password" %}</label>
-                <div class="signin-input-group">
-                    <span class="signin-input-icon"><i class="bi bi-shield-lock"></i></span>
-                    <input type="password" id="id_password" class="signin-input form-control" name="password" placeholder="{% trans 'Enter password' %}" required>
-                    <button class="signin-toggle-pwd" type="button" id="btn-toggle-pwd" tabindex="-1" aria-label="{% trans 'Toggle password visibility' %}">
-                        <i class="bi bi-eye" id="toggle-icon"></i>
+                {% if form.errors %}
+                    <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 me-2 flex-shrink-0"></i>
+                        <div>{% bootstrap_form_errors form %}</div>
+                    </div>
+                {% endif %}
+
+                <form id="form-signin" method="post" aria-label="OTP Login form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium" for="id_username">{% trans "Username" %}</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" id="id_username" class="form-control" name="username" value="{{ form.username.value|default:'' }}" placeholder="{% trans 'Enter username' %}" autocapitalize="none" autocorrect="off" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium" for="id_password">{% trans "Password" %}</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                            <input type="password" id="id_password" class="form-control" name="password" placeholder="{% trans 'Enter password' %}" required>
+                            <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pwd" tabindex="-1" aria-label="{% trans 'Toggle password visibility' %}">
+                                <i class="bi bi-eye" id="toggle-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label small fw-medium mb-0" for="id_otp_token">{% trans "Security Code" %}</label>
+                            <a href="{% url 'accounts:email_otp' %}" class="small">{% trans "Lost OTP?" %}</a>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="text" id="id_otp_token" class="form-control font-monospace" name="otp_token" placeholder="000000" inputmode="numeric" pattern="[0-9]*" maxlength="6" autofocus>
+                        </div>
+                        <div class="form-text">{% trans "Leave empty if you have not set up two-factor authentication." %}</div>
+                    </div>
+
+                    <button id="btn-signin" class="btn btn-primary w-100 py-2" type="submit">
+                        <i class="bi bi-shield-lock-fill me-1"></i>
+                        <span id="btn-text">{% trans "Verify & Sign In" %}</span>
                     </button>
+                </form>
+
+                <div class="d-flex align-items-center small text-body-secondary border-top mt-4 pt-3">
+                    <span class="d-inline-block rounded-circle p-1 bg-success me-2" aria-hidden="true"></span>
+                    {% trans "2FA Protection Active" %}
                 </div>
             </div>
-
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="signin-field-label mb-0" for="id_otp_token">{% trans "Security Code" %}</label>
-                    <a href="{% url 'accounts:email_otp' %}" class="signin-link small">{% trans "Lost OTP?" %}</a>
-                </div>
-                <div class="signin-input-group">
-                    <span class="signin-input-icon"><i class="bi bi-key"></i></span>
-                    <input type="text" id="id_otp_token" class="signin-input form-control font-monospace" name="otp_token" placeholder="000000" inputmode="numeric" pattern="[0-9]*" maxlength="6" autofocus>
-                </div>
-                <small class="text-muted">{% trans "Leave empty if you have not set up two-factor authentication." %}</small>
-            </div>
-
-            <button id="btn-signin" class="btn btn-primary btn-signin-submit" type="submit">
-                <i class="bi bi-shield-lock-fill"></i>
-                <span id="btn-text">{% trans "Verify & Sign In" %}</span>
-            </button>
-        </form>
-
-        <div class="signin-footer">
-            <span class="d-inline-flex align-items-center">
-                <span class="pulse-indicator"></span>
-                <span>{% trans "2FA Protection Active" %}</span>
-            </span>
-            <span class="font-monospace">v2.0.0</span>
         </div>
     </div>
 </div>
@@ -80,8 +74,6 @@
 {% block script %}
 <script>
     $(document).ready(function() {
-        $('body').addClass('signin-page');
-
         // Toggle password visibility
         $('#btn-toggle-pwd').on('click', function(e) {
             e.preventDefault();

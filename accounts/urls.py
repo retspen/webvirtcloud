@@ -9,7 +9,8 @@ from .otp import SingleDeviceOTPForm
 app_name = "accounts"
 
 urlpatterns = [
-    path("logout/", LogoutView.as_view(template_name="logout.html"), name="logout"),
+    # LOGOUT_REDIRECT_URL sends a signed-out user to the sign-in page
+    path("logout/", LogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
     path("profile/<int:user_id>/", views.account, name="account"),
     path("profile/<int:user_id>/api_token/<str:token_key>/delete/", views.api_token_delete,
