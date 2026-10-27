@@ -3,4 +3,4 @@
 <div class="cap-bar cap-thin my-1" role="img" aria-label="{% blocktrans with name=pool.name percent=pool.used_percent|floatformat:0 %}{{ name }} {{ percent }}% used{% endblocktrans %}">
     <div class="cap-running {% if pool.used_percent > 90 %}bg-danger{% elif pool.used_percent > 75 %}bg-warning{% endif %}" style="width: {{ pool.used_percent|stringformat:".1f" }}%"></div>
 </div>
-<div class="small text-body-secondary text-nowrap">{% blocktrans with free=pool.free|filesizeformat size=pool.size|filesizeformat %}{{ free }} free of {{ size }}{% endblocktrans %}</div>
+<div class="small text-body-secondary">{% blocktrans with free=pool.free|filesizeformat size=pool.size|filesizeformat %}{{ free }} free of {{ size }}{% endblocktrans %}</div>
