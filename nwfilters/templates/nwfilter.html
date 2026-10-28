@@ -50,8 +50,8 @@
                     <label class="input-group-text" for="nwfilter_select">{% trans "Filter" %}</label>
                     <select id="nwfilter_select" name="nwfilters_select" class="form-select">
                         <option value="" selected>{% trans 'None' %}</option>
-                        {% for nwf in nwfilters_all %}
-                            <option value="{{ nwf.name }}">{{ nwf.name }}</option>
+                        {% for nwf in ref_choices %}
+                            <option value="{{ nwf }}">{{ nwf }}</option>
                         {% endfor %}
                     </select>
                     <button type="submit" class="btn btn-success float-end" name="add_nwfilter_ref" title="{% trans "Add" %}">
@@ -78,11 +78,12 @@
                      {% for ref in refs %}
                         <tr>
                             <th scope="row">{{ forloop.counter }}</th>
-                            <td>{{ ref }}</td>
+                            <td>{{ ref.filter }}{% for param, value in ref.parameters %} <span class="font-monospace small">{{ param }}={{ value }}</span>{% endfor %}</td>
                             <td style="width:30px;">
                                 <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
-                                    <input type="hidden" name="ref" value="{{ ref }}">
-                                    <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" data-confirm="{% blocktrans with ref=ref %}Remove the reference to {{ ref }}? Its rules no longer apply through this filter.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
+                                    <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                                    <input type="hidden" name="ref" value="{{ ref.text }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" data-confirm="{% blocktrans with ref=ref.filter %}Remove the reference to {{ ref }}? Its rules no longer apply through this filter.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                         {% bs_icon 'trash' %}
                                     </button>
                                 </form>
@@ -120,13 +121,11 @@
                         <td>{{ rule.direction }}</td>
                         <td>{{ rule.priority }}</td>
                         <td>{{ rule.statematch }}</td>
-                        <td>{{ rule.directives }}</td>
+                        <td class="font-monospace small">{% for protocol in rule.protocols %}<div>{{ protocol.name }}{% for attribute, value in protocol.attributes %} {{ attribute }}={{ value }}{% endfor %}</div>{% endfor %}</td>
                         <td>
                             <form action="" method="post" role="form" aria-label="Delete NWFilter rule">{% csrf_token %}
-                                <input type="hidden" name="index" value="{{ rule.index }}">
-                                <input type="hidden" name="action" value="{{ rule.action }}">
-                                <input type="hidden" name="direction" value="{{ rule.direction }}">
-                                <input type="hidden" name="priority" value="{{ rule.priority }}">
+                                <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                                <input type="hidden" name="rule" value="{{ rule.text }}">
                                 <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans 'Delete' %}" data-confirm="{% trans "Delete this rule? Interfaces that use the filter no longer get it." %}" onclick="return confirm(this.dataset.confirm)">
                                     {% bs_icon 'trash' %} 
                                 </button>
@@ -146,6 +145,7 @@
         editor.getSession().setMode("ace/mode/xml");
 
         var edit_input = $('input[name="edit_xml"]');
+        edit_input.val(editor.getSession().getValue());
         editor.getSession().on("change",function () {
         edit_input.val(editor.getSession().getValue());
         });
@@ -154,6 +154,7 @@
         rule_editor.getSession().setMode("ace/mode/xml");
 
         var rule_input = $('input[name="nwfilterrule_xml"]');
+        rule_input.val(rule_editor.getSession().getValue());
         rule_editor.getSession().on("change",function () {
         rule_input.val(rule_editor.getSession().getValue());
         });

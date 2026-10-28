@@ -1,35 +1,119 @@
-from xml.etree import ElementTree
+import copy
+import re
+from functools import cached_property
 
+from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_NO_DOMAIN, libvirtError
+from lxml import etree
+
+from vrtManager import util
 from vrtManager.connection import wvmConnect
+
+# the names the panel gives filters: letters, digits, dots, dashes and underscores
+NAME = re.compile(r"[A-Za-z0-9._-]+")
+
+
+def element_text(element):
+    """An element as the page shows it and sends it back: a rule or reference
+    is changed only while it still reads the same."""
+    return same_text(etree.tostring(element, encoding="unicode", with_tail=False))
+
+
+def same_text(text):
+    """text without the space between its tags, which a browser may send
+    back with other line breaks."""
+    return re.sub(r">\s+<", "><", text.strip())
+
+
+def filter_info(nwfilter, tree):
+    """What a filter and its XML tell: name, UUID, chain, priority, how many
+    rules it has and the filters it references."""
+    return {"name": nwfilter.name(), "uuid": nwfilter.UUIDString(), "chain": tree.get("chain"),
+            "priority": tree.get("priority"), "rules": len(tree.findall("rule")),
+            "refs": [ref.get("filter") for ref in tree.findall("filterref")]}
 
 
 class wvmNWFilters(wvmConnect):
-    def get_nwfilter_info(self, name):
-        nwfilter = self.get_nwfilter(name)
-        xml = nwfilter.XMLDesc(0)
-        uuid = nwfilter.UUIDString()
-        return {"name": name, "uuid": uuid, "xml": xml}
+    def get_nwfilters_info(self):
+        """Every filter of the host (filter_info) by name: one listing, one XML
+        read per filter."""
+        filters = [filter_info(nwfilter, etree.fromstring(nwfilter.XMLDesc(0)))
+                   for nwfilter in self.wvm.listAllNWFilters(0)]
+        return sorted(filters, key=lambda nwfilter: nwfilter["name"])
+
+    def get_users(self):
+        """The VMs whose interfaces reference each filter, by filter name: as
+        they run and, for a persistent VM that runs, as saved for its next
+        boot. One listing, one or two XML reads per VM."""
+        users = {}
+        for dom in self.wvm.listAllDomains(0):
+            try:
+                xmls = [dom.XMLDesc(0)]
+                if dom.isActive() and dom.isPersistent():
+                    xmls.append(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
+            except libvirtError as err:  # a VM undefined meanwhile uses none
+                if err.get_error_code() != VIR_ERR_NO_DOMAIN:
+                    raise
+                continue
+            names = set()
+            for xml in xmls:
+                names.update(etree.fromstring(xml).xpath("devices/interface/filterref/@filter"))
+            for name in names:
+                users.setdefault(name, []).append(dom.name())
+        return users
 
     def create_nwfilter(self, xml):
+        """Define a filter from the XML entered: one whose name or UUID the
+        host has is refused, as it would replace that filter."""
+        tree = util.parse_xml(xml)
+        if tree.tag != "filter":
+            raise util.OperationError("Enter one <filter> element")
+        if not NAME.fullmatch(tree.get("name") or ""):
+            raise util.OperationError("The filter's name may have letters, digits, dots, dashes and underscores")
+        for nwfilter in self.wvm.listAllNWFilters(0):
+            if nwfilter.name() == tree.get("name"):
+                raise util.OperationError("A network filter with this name already exists")
+            if nwfilter.UUIDString() == tree.findtext("uuid"):
+                raise util.OperationError("A network filter with this UUID already exists")
         self.wvm.nwfilterDefineXML(xml)
 
-    def clone_nwfilter(self, name, cln_name):
-        nwfilter = self.get_nwfilter(name)
-        if nwfilter:
-            tree = ElementTree.fromstring(nwfilter.XMLDesc(0))
-            tree.set("name", cln_name)
-            uuid = tree.find("uuid")
-            tree.remove(uuid)
-            self.create_nwfilter(ElementTree.tostring(tree).decode())
+    def clone_nwfilter(self, name, clone_name):
+        """Define a copy of filter name as clone_name, with its rules,
+        references and their parameters, and a UUID of its own."""
+        if not NAME.fullmatch(clone_name):
+            raise util.OperationError("The filter's name may have letters, digits, dots, dashes and underscores")
+        if clone_name in self.get_nwfilters():
+            raise util.OperationError(f"A network filter named {clone_name} already exists")
+        tree = etree.fromstring(self.get_nwfilter(name).XMLDesc(0))
+        tree.set("name", clone_name)
+        tree.remove(tree.find("uuid"))
+        self.wvm.nwfilterDefineXML(etree.tostring(tree, encoding="unicode"))
+
+    def delete_nwfilter(self, name):
+        """Undefine a filter that no VM's interface and no other filter
+        references. libvirt refuses only one a running VM uses; a stopped VM,
+        or a VM using a filter that references it, would not start."""
+        vms = self.get_users().get(name, [])
+        if vms:
+            raise util.OperationError(f"Filter {name} is used by VM {', '.join(vms)}")
+        referencing = [nwfilter["name"] for nwfilter in self.get_nwfilters_info() if name in nwfilter["refs"]]
+        if referencing:
+            raise util.OperationError(f"Filter {name} is referenced by filter {', '.join(referencing)}")
+        self.get_nwfilter(name).undefine()
 
 
 class wvmNWFilter(wvmConnect):
+    """A filter of the host. A page reads its XML once (tree); a change is
+    the filter defined again with its UUID, which libvirt does in place, also
+    while a VM uses it, and refuses for XML it cannot parse or apply to the
+    running VMs' interfaces."""
+
     def __init__(self, host, login, passwd, conn, nwfiltername):
         wvmConnect.__init__(self, host, login, passwd, conn)
         self.nwfilter = self.get_nwfilter(nwfiltername)
 
-    def _XMLDesc(self, flags):
-        return self.nwfilter.XMLDesc(flags)
+    @cached_property
+    def tree(self):
+        return etree.fromstring(self.nwfilter.XMLDesc(0))
 
     def get_uuid(self):
         return self.nwfilter.UUIDString()
@@ -38,75 +122,82 @@ class wvmNWFilter(wvmConnect):
         return self.nwfilter.name()
 
     def get_xml(self):
-        """With the UUID: defined again with it, libvirt changes the filter in
-        place, also while a VM uses it. It refuses XML it cannot parse or
-        apply to the running VMs' interfaces."""
-        return self._XMLDesc(0)
+        return etree.tostring(self.tree, encoding="unicode")
 
-    def get_filter_refs(self):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        return [ref.get("filter") for ref in tree.findall("./filterref")]
+    def get_refs(self):
+        """The filters it references, each with its parameters in order (one
+        name may repeat, giving a list) and its text."""
+        return [{"filter": ref.get("filter"), "text": element_text(ref),
+                 "parameters": [(param.get("name"), param.get("value")) for param in ref.findall("parameter")]}
+                for ref in self.tree.findall("filterref")]
 
     def get_rules(self):
+        """Its rules: action, direction, priority, statematch, each protocol
+        element with its attributes (one rule may have several of one
+        protocol, a match and a negated one) and the rule's text."""
         rules = []
-
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        for index, r in enumerate(tree.findall("./rule")):
-            rule_action = r.get("action")
-            rule_direction = r.get("direction")
-            rule_priority = r.get("priority")
-            rule_statematch = r.get("statematch")
-
-            rule_directives = r.find("./")
-            if rule_directives is not None:
-                rule_directives = ElementTree.tostring(rule_directives).decode()
-
-            rule_info = {
-                "index": index,
-                "action": rule_action,
-                "direction": rule_direction,
-                "priority": rule_priority,
-                "statematch": rule_statematch,
-                "directives": rule_directives,
-            }
-
-            rules.append(rule_info)
-
+        for rule in self.tree.findall("rule"):
+            protocols = [{"name": protocol.tag, "attributes": list(protocol.attrib.items())} for protocol in rule]
+            rules.append({"action": rule.get("action"), "direction": rule.get("direction"),
+                          "priority": rule.get("priority"), "statematch": rule.get("statematch"),
+                          "protocols": protocols, "text": element_text(rule)})
         return rules
 
-    def delete_ref(self, name):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        for ref in tree.findall("./filterref"):
-            if name == ref.get("filter"):
-                tree.remove(ref)
-                break
-        return ElementTree.tostring(tree).decode()
+    def get_ref_choices(self):
+        """The filters a reference can be added to: not this one, nor one it
+        references already."""
+        taken = {self.get_name(), *(ref.get("filter") for ref in self.tree.findall("filterref"))}
+        return [name for name in sorted(self.get_nwfilters()) if name not in taken]
 
-    def delete_rule(self, index, action, direction, priority):
-        """The filter without its rule at index (several rules may share
-        action, direction and priority); those must still match, so a filter
-        changed since the page was read loses no other rule."""
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        rules = tree.findall("./rule")
-        if index >= len(rules) or (rules[index].get("action"), rules[index].get("direction"),
-                                   rules[index].get("priority")) != (action, direction, priority):
-            raise ValueError("The filter has changed; reload the page and try again")
-        tree.remove(rules[index])
-        return ElementTree.tostring(tree).decode()
+    def _define(self, tree):
+        self.wvm.nwfilterDefineXML(etree.tostring(tree, encoding="unicode"))
+
+    def _without(self, tag, index, text):
+        """The filter without its tag element at index, which must still read
+        as text: a filter changed since the page was read loses nothing else.
+        Returns the element removed."""
+        tree = copy.deepcopy(self.tree)
+        elements = tree.findall(tag)
+        try:
+            index = int(index)
+        except ValueError:
+            index = -1
+        if not 0 <= index < len(elements) or element_text(elements[index]) != same_text(text):
+            raise util.OperationError("The filter has changed; reload the page and try again")
+        tree.remove(elements[index])
+        self._define(tree)
+        return elements[index]
+
+    def edit(self, xml):
+        """Define the filter anew from the XML entered: the same filter, of
+        its name and UUID."""
+        tree = util.parse_xml(xml)
+        if tree.tag != "filter" or tree.get("name") != self.get_name():
+            raise util.OperationError(f"The XML must define filter {self.get_name()}")
+        if tree.findtext("uuid") != self.get_uuid():
+            raise util.OperationError("The XML must keep the filter's UUID")
+        self.wvm.nwfilterDefineXML(xml)
+
+    def delete_rule(self, index, text):
+        self._without("rule", index, text)
+
+    def delete_ref(self, index, text):
+        """Returns the name of the filter it referenced."""
+        return self._without("filterref", index, text).get("filter")
 
     def add_ref(self, name):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        element = ElementTree.Element("filterref")
-        element.attrib["filter"] = name
-        tree.append(element)
-        return ElementTree.tostring(tree).decode()
+        if name not in self.get_ref_choices():
+            raise util.OperationError(f"Filter {name} cannot be referenced: it is this one, referenced already or not on the host")
+        tree = copy.deepcopy(self.tree)
+        etree.SubElement(tree, "filterref", filter=name)
+        self._define(tree)
 
     def add_rule(self, xml):
         """The filter with the rule added as entered; libvirt keeps one
         protocol per rule, so it is never merged into another rule."""
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        rule = ElementTree.fromstring(xml)
+        rule = util.parse_xml(xml)
         if rule.tag != "rule":
-            raise ValueError("Enter one <rule> element")
+            raise util.OperationError("Enter one <rule> element")
+        tree = copy.deepcopy(self.tree)
         tree.append(rule)
-        return ElementTree.tostring(tree).decode()
+        self._define(tree)

@@ -522,17 +522,6 @@ class wvmInstance(wvmConnect):
         title = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/title")
         return title or ""
 
-    def get_filterrefs(self):
-        def filterrefs(ctx):
-            result = []
-            for net in ctx.xpath("/domain/devices/interface"):
-                filterref = net.xpath("filterref/@filter")
-                if filterref:
-                    result.append(filterref[0])
-            return result
-
-        return util.get_xml_path(self._XMLDesc(0), func=filterrefs)
-
     def get_description(self, config=False):
         description = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/description")
         return description or ""

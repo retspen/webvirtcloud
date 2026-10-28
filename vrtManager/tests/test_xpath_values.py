@@ -10,15 +10,10 @@ if not settings.configured:
 
 from vrtManager.connection import wvmConnect
 from vrtManager.network import wvmNetwork
-from vrtManager.nwfilters import wvmNWFilter
 
 CAPS = """<capabilities><guest><arch name='x86_64'><wordsize>64</wordsize><emulator>/usr/bin/qemu-x86</emulator>
 <machine canonical='pc-q35'>q35</machine></arch>
 <arch name='aarch64'><emulator>/usr/bin/qemu-arm</emulator><machine>virt</machine></arch></guest></capabilities>"""
-
-FILTER = """<filter name='f'><rule action='drop' direction='in' priority='1'><tcp/></rule>
-<rule action='drop' direction='in' priority='2'><udp/></rule></filter>"""
-
 
 class FakeConn:
     def __init__(self):
@@ -40,20 +35,6 @@ class XPathValueTests(unittest.TestCase):
         self.assertIsNone(self.conn.get_emulator(injected))
         self.assertEqual(self.conn.get_machine_types(injected), [])
         self.assertEqual(self.conn.get_capabilities(injected), {})
-
-    def test_nwfilter_rule_is_matched_by_its_attributes(self):
-        nwf = wvmNWFilter.__new__(wvmNWFilter)
-        nwf._XMLDesc = lambda flags: FILTER
-        # values with quotes or brackets are compared, not parsed as XPath
-        for action in ("drop'][@priority='2", "it's"):
-            with self.subTest(action=action), self.assertRaises(ValueError):
-                nwf.delete_rule(0, action, "in", "1")
-        kept = nwf.delete_rule(1, "drop", "in", "2")
-        self.assertEqual(kept.count("<rule "), 1)
-        self.assertIn("priority=\"1\"", kept)
-        # add_rule adds a rule of its own
-        added = nwf.add_rule("<rule action='drop' direction='in' priority='2'><icmp/></rule>")
-        self.assertEqual(added.count("<rule "), 3)
 
     def test_qos_direction_must_be_known(self):
         net = wvmNetwork.__new__(wvmNetwork)

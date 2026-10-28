@@ -142,11 +142,11 @@ class NetworkChangeTests(SimpleTestCase):
         net.net.update.assert_not_called()
 
     def test_the_xml_editor_expands_no_entity(self):
-        # a file of the panel's host named by an external entity is not read into the check
+        # a file of the panel's host named by an external entity is not read: no DTD is taken
         net = self.network()
         xml = ('<!DOCTYPE network [<!ENTITY name SYSTEM "file:///etc/hostname">]>'
                "<network><name>&name;</name></network>")
-        with self.assertRaisesRegex(OperationError, "must define network lab"):
+        with self.assertRaisesRegex(OperationError, "may not declare a DTD"):
             net.edit_network(xml)
 
     def test_the_xml_editor_takes_an_encoding_declaration(self):

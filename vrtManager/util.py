@@ -102,6 +102,19 @@ def compareMAC(p, q):
     return 0
 
 
+def parse_xml(xml):
+    """XML a user entered, read for the panel's checks: its entities not
+    expanded, nothing fetched and no DTD; libvirt gets the text itself."""
+    parser = etree.XMLParser(resolve_entities=False, no_network=True)
+    try:
+        tree = etree.fromstring(xml.encode(), parser)  # bytes: the XML may declare its encoding
+    except etree.XMLSyntaxError as err:
+        raise OperationError(f"The XML is not valid: {err}") from None
+    if tree.getroottree().docinfo.internalDTD is not None:
+        raise OperationError("The XML may not declare a DTD")
+    return tree
+
+
 def get_xml_path(xml, path=None, func=None):
     """
     Return the content from the passed xml xpath, or return the result

@@ -442,12 +442,7 @@ class wvmNetwork(wvmConnect):
     def edit_network(self, new_xml):
         """Defines this network anew from new_xml: of the same name and, if it
         names one, the same UUID, not another network."""
-        # read for its name and UUID only, its entities not expanded: libvirt gets the text itself
-        parser = etree.XMLParser(resolve_entities=False, no_network=True)
-        try:
-            tree = etree.fromstring(new_xml.encode(), parser)  # bytes: the XML may declare its encoding
-        except etree.XMLSyntaxError as err:
-            raise util.OperationError(f"The XML is not valid: {err}") from None
+        tree = util.parse_xml(new_xml)
         if tree.tag != "network" or tree.findtext("name") != self.net.name():
             raise util.OperationError(f"The XML must define network {self.net.name()}")
         if tree.findtext("uuid") not in (None, self.net.UUIDString()):

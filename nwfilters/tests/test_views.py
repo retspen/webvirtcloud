@@ -1,7 +1,10 @@
+from unittest.mock import patch
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from computes.models import Compute
+from libvirt import libvirtError
 
 
 class NWFiltersTestCase(TestCase):
@@ -28,3 +31,10 @@ class NWFiltersTestCase(TestCase):
             reverse("nwfilter", args=[self.compute.id, "clean-traffic"])
         )
         self.assertEqual(response.status_code, 403)
+
+    def test_a_list_post_to_a_host_not_reached_is_redirected(self):
+        self.client.force_login(User.objects.create_superuser("nwfilter-admin", "a@example.com", "pwd"))
+        url = reverse("nwfilters", args=[self.compute.id])
+        with patch("nwfilters.views.wvmNWFilters", side_effect=libvirtError("unable to connect")):
+            response = self.client.post(url, {"del_nwfilter": "", "nwfiltername": "web"})
+        self.assertRedirects(response, url, fetch_redirect_response=False)

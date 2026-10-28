@@ -1,7 +1,7 @@
 """Network filter changes write rows on the Logs page. libvirt's test driver
 has no filters, so the connection is a mock (as in test_redefine.py)."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
@@ -11,6 +11,8 @@ from django.urls import reverse
 from libvirt import libvirtError
 
 from logs.models import Logs
+from lxml import etree
+from vrtManager.nwfilters import element_text
 
 UUID = "6d1f7a10-0000-4000-8000-00000000c0de"
 XML = (f"<filter name='web' chain='root'><uuid>{UUID}</uuid><filterref filter='clean-traffic'/>"
@@ -31,16 +33,16 @@ class FilterRowTests(TestCase):
         nwfilter.XMLDesc.return_value = XML
         nwfilter.name.return_value = "web"
         nwfilter.UUIDString.return_value = UUID
-        self.wvm.listNWFilters.return_value = ["web"]
+        self.wvm.listNWFilters.return_value = ["web", "clean-traffic", "no-spoofing"]
+        self.wvm.listAllNWFilters.return_value = [nwfilter]
+        self.wvm.listAllDomains.return_value = []
         self.compute = Compute.objects.create(name="c1", hostname="localhost", login="", password="", type=4)
         self.client.force_login(get_user_model().objects.create_superuser("audit-admin", "a@example.com", "pw"))
         Logs.objects.all().delete()  # the login's row
         self.list_url = reverse("nwfilters", args=[self.compute.id])
         self.url = reverse("nwfilter", args=[self.compute.id, "web"])
 
-    @patch("nwfilters.views.wvmInstances")
-    def test_filter_list_actions(self, instances):
-        instances.return_value.get_instances.return_value = []
+    def test_filter_list_actions(self):
         # the list is read again, so the new filter shows
         self.assertRedirects(self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": NEW}),
                              self.list_url, fetch_redirect_response=False)
@@ -61,34 +63,35 @@ class FilterRowTests(TestCase):
         self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": other})
         self.wvm.nwfilterDefineXML.assert_not_called()
         self.assertEqual(rows(), [
-            ("Network filter web: add: name already in use", False),
-            ("Network filter other: add: UUID already in use", False),
+            ("Network filter web: add: A network filter with this name already exists", False),
+            ("Network filter other: add: A network filter with this UUID already exists", False),
         ])
 
     def test_an_unparsable_filter(self):
         self.wvm.nwfilterDefineXML.side_effect = libvirtError("XML error")
         response = self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": "<filter"})
-        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(response, self.list_url, fetch_redirect_response=False)
         [(message, success)] = rows()
         self.assertFalse(success)
-        self.assertTrue(message.startswith("Network filter (no name): add: "), message)
+        self.assertTrue(message.startswith("Network filter (no name): add: The XML is not valid"), message)
+        self.wvm.nwfilterDefineXML.assert_not_called()
 
-    @patch("nwfilters.views.wvmInstance")
-    @patch("nwfilters.views.wvmInstances")
-    def test_a_filter_in_use_is_not_deleted(self, instances, instance):
-        instances.return_value.get_instances.return_value = ["web-1"]
-        instance.return_value.get_filterrefs.return_value = ["web"]
+    def test_a_filter_in_use_is_not_deleted(self):
+        vm = MagicMock(**{"name.return_value": "web-1", "isActive.return_value": False, "XMLDesc.return_value":
+                          "<domain><devices><interface type='network'><filterref filter='web'/></interface></devices></domain>"})
+        self.wvm.listAllDomains.return_value = [vm]
         self.client.post(self.list_url, {"del_nwfilter": "", "nwfiltername": "web"})
         self.wvm.nwfilterLookupByName.return_value.undefine.assert_not_called()
-        self.assertEqual(rows(), [("Network filter web: delete: in use by web-1", False)])
+        self.assertEqual(rows(), [("Network filter web: delete: Filter web is used by VM web-1", False)])
 
     def test_filter_page_actions(self):
         self.client.post(self.url, {"edit_nwfilter": "", "edit_xml": XML})
         self.client.post(self.url, {"add_nwfilter_rule": "",
                                     "nwfilterrule_xml": "<rule action='accept' direction='in' priority='500'><all/></rule>"})
-        self.client.post(self.url, {"del_nwfilter_rule": "", "index": "0", "action": "drop", "direction": "in", "priority": "900"})
+        tree = etree.fromstring(XML)
+        self.client.post(self.url, {"del_nwfilter_rule": "", "index": "0", "rule": element_text(tree.find("rule"))})
         self.client.post(self.url, {"add_nwfilter_ref": "", "nwfilters_select": "no-spoofing"})
-        self.client.post(self.url, {"del_nwfilter_ref": "", "ref": "clean-traffic"})
+        self.client.post(self.url, {"del_nwfilter_ref": "", "index": "0", "ref": element_text(tree.find("filterref"))})
         self.assertEqual(rows(), [
             ("Network filter web: change XML", True),
             ("Network filter web: add rule", True),

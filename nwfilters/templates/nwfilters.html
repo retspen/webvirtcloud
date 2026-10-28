@@ -29,7 +29,7 @@
                             <th scope="col" data-sort-method="number">#</th>
                             <th scope="col">{% trans "UUID" %}</th>
                             <th scope="col">{% trans "Name" %}</th>
-                            <th scope="colgroup" data-sort-method="none" colspan="3">{% trans "Action" %}</th>
+                            <th scope="colgroup" data-sort-method="none" colspan="2">{% trans "Action" %}</th>
                         </tr>
                     </thead>
                     <tbody class="searchable">
@@ -38,29 +38,6 @@
                         <th scope="row">{{ forloop.counter }}</th>
                         <td><a class="link-primary" href="{% url 'nwfilter' compute.id nwfilter.name %} ">{{ nwfilter.uuid }}</a></td>
                         <td>{{ nwfilter.name }}</td>
-                        <td>
-                            <div class="modal fade" id="Show{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="showNWFilter" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">{% trans "Details of NWFilter" %}: <span class="text-danger">{{ nwfilter.name }}</span></h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <textarea rows="10" class="w-100" aria-label="{% trans "Details of NWFilter" %}">
-                                                {{ nwfilter.xml }}
-                                            </textarea>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                        </div>
-                                    </div> <!-- /.modal-content -->
-                                </div> <!-- /.modal-dialog -->
-                            </div> <!-- /.modal -->
-                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Show{{ forloop.counter }}" title="{% trans "Show" %}">
-                                {% bs_icon 'eye' %} 
-                            </button>
-                        </td>
                         <td>
                             <div class="modal fade" id="Clone{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="addNwFilterLabel" aria-hidden="true">
                                 <div class="modal-dialog">
@@ -123,6 +100,7 @@
     editor.getSession().setMode("ace/mode/xml");
 
     var input = $('input[name="nwfilter_xml"]');
+    input.val(editor.getSession().getValue());
     editor.getSession().on("change",function () {
         input.val(editor.getSession().getValue());
     })
