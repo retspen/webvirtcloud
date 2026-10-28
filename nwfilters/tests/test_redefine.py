@@ -4,13 +4,14 @@ refused). A definition libvirt refuses is reported, not undone by an undefine
 and another define. libvirt's test driver has no filters, so the connection
 is a mock."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
+from instances.models import Instance
 from libvirt import libvirtError
 from lxml import etree, html
 from vrtManager.nwfilters import element_text
@@ -133,3 +134,50 @@ class RuleDeleteTests(TestCase):
                 response = self.delete(index, rule)
                 self.assertIn("reload the page", " ".join(str(m) for m in get_messages(response.wsgi_request)))
         self.wvm.nwfilterDefineXML.assert_not_called()
+
+
+class PageTests(TestCase):
+    """The list says what uses each filter, and does not offer to delete one in
+    use; a filter's page links the VMs that use it and shows its references'
+    parameters."""
+
+    def setUp(self):
+        patcher = patch("vrtManager.connection.connection_manager.get_connection")
+        self.wvm = patcher.start().return_value
+        self.addCleanup(patcher.stop)
+        nwfilter = self.wvm.nwfilterLookupByName.return_value
+        nwfilter.XMLDesc.return_value = XML.replace("<filterref filter='clean-traffic'/>",
+                                                    "<filterref filter='clean-traffic'><parameter name='IP' value='192.0.2.10'/></filterref>")
+        nwfilter.name.return_value = "web"
+        nwfilter.UUIDString.return_value = UUID
+        self.wvm.listAllNWFilters.return_value = [nwfilter]
+        self.wvm.listNWFilters.return_value = ["web", "clean-traffic"]
+        vm = MagicMock(**{"name.return_value": "web-1", "isActive.return_value": False, "XMLDesc.return_value":
+                          "<domain><devices><interface type='network'><filterref filter='web'/></interface></devices></domain>"})
+        self.wvm.listAllDomains.return_value = [vm]
+        self.compute = Compute.objects.create(name="nwf", hostname="localhost", login="", password="", type=4)
+        self.client.force_login(get_user_model().objects.create_superuser("nwf", "nwf@example.com", "pw"))
+
+    def test_a_filter_in_use_is_not_offered_for_delete(self):
+        page = html.fromstring(self.client.get(reverse("nwfilters", args=[self.compute.id])).content)
+        [delete] = page.xpath("//button[@name='del_nwfilter']")
+        self.assertIsNotNone(delete.get("disabled"))
+        self.assertIn("1 VM", page.xpath("//tbody/tr/td[6]")[0].text_content())
+
+    def test_the_filter_page_links_its_vms_and_shows_parameters(self):
+        instance = Instance.objects.create(compute=self.compute, name="web-1", uuid="6d1f7a10-0000-4000-8000-00000000a001")
+        page = html.fromstring(self.client.get(reverse("nwfilter", args=[self.compute.id, "web"])).content)
+        self.assertEqual(page.xpath("//a[text()='web-1']/@href"), [reverse("instances:instance", args=[instance.id])])
+        self.assertIn("IP=192.0.2.10", page.text_content())
+
+    def test_without_the_vms_the_list_is_not_shown(self):
+        # it would offer to delete filters in use
+        self.wvm.listAllDomains.side_effect = libvirtError("connection reset")
+        page = html.fromstring(self.client.get(reverse("nwfilters", args=[self.compute.id])).content)
+        self.assertEqual(page.xpath("//button[@name='del_nwfilter']"), [])
+
+    def test_a_reference_to_a_filter_gone_is_not_a_link(self):
+        self.wvm.listNWFilters.return_value = ["web"]
+        page = html.fromstring(self.client.get(reverse("nwfilter", args=[self.compute.id, "web"])).content)
+        self.assertEqual(page.xpath("//a[text()='clean-traffic']"), [])
+        self.assertIn("Missing", page.xpath("//td[contains(., 'clean-traffic')]")[0].text_content())

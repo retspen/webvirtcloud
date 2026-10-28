@@ -3,106 +3,126 @@
 {% load static %}
 {% load bootstrap_icons %}
 
-{% block title %}{% trans "NWFilters" %} - {{ compute.name }}{% endblock %}
+{% block title %}{% trans "Network filters" %} - {{ compute.name }}{% endblock %}
 
-{% block page_heading %}{{ compute.name }} - {% trans "NWFilters" %}{% endblock page_heading %}
+{% block page_heading %}{{ compute.name }} - {% trans "Network filters" %}{% endblock page_heading %}
 
-{% block page_heading_extra %}
-{% include 'create_nwfilter_block.html' %}
-{% include 'search_block.html' %}
-{% endblock page_heading_extra %}
+{% block page_heading_extra %}{% include 'create_nwfilter_block.html' %}{% endblock page_heading_extra %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-lg-12">
-            {% include "computes/host_nav.html" with section="nwfilters" %}
-        </div>
-    </div>
+    {% include "computes/host_nav.html" with section="nwfilters" %}
 
-   <div class="row">
-        <div class="col-lg-12">
-            {% if nwfilters %}
-            <div class="table-responsive">
-                <table align-middle class="table" data-sortable>
+    {% if not nwfilters %}
+        <div class="alert alert-warning shadow-sm">
+            {% bs_icon 'exclamation-triangle' %} {% trans "This host has no network filters." %}
+        </div>
+    {% else %}
+        <div class="card mb-3">
+            <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                <span class="me-auto">{% trans "Filters" %} <span class="badge text-bg-light border">{{ nwfilters|length }}</span></span>
+                <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search filters" %}">
+            </div>
+            <div class="table-responsive position-relative">
+                <table class="table table-hover align-middle mb-0" data-sortable>
                     <thead>
                         <tr>
-                            <th scope="col" data-sort-method="number">#</th>
-                            <th scope="col">{% trans "UUID" %}</th>
                             <th scope="col">{% trans "Name" %}</th>
-                            <th scope="colgroup" data-sort-method="none" colspan="2">{% trans "Action" %}</th>
+                            <th scope="col">{% trans "Chain" %}</th>
+                            <th scope="col" data-sort-method="number">{% trans "Priority" %}</th>
+                            <th scope="col" data-sort-method="number">{% trans "Rules" %}</th>
+                            <th scope="col">{% trans "References" %}</th>
+                            <th scope="col">{% trans "Directly used by" %}</th>
+                            <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                         </tr>
                     </thead>
                     <tbody class="searchable">
-                    {% for nwfilter in nwfilters %}
-                    <tr>
-                        <th scope="row">{{ forloop.counter }}</th>
-                        <td><a class="link-primary" href="{% url 'nwfilter' compute.id nwfilter.name %} ">{{ nwfilter.uuid }}</a></td>
-                        <td>{{ nwfilter.name }}</td>
-                        <td>
-                            <div class="modal fade" id="Clone{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="addNwFilterLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">{% trans "Clone NWFilter" %} <span class="text-danger">{{ nwfilter.name }}</span></h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <form method="post" role="form" aria-label="Clone NWFilter form">{% csrf_token %}
-                                            <div class="modal-body">
-                                                <div class="row">
-                                                    <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                                    <div class="col-sm-6">
-                                                        <input type="text" class="form-control" name="cln_name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
-                                                        <input type="hidden" name="nwfiltername" value="{{ nwfilter.name }}">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                                <button type="submit" class="btn btn-primary" name="cln_nwfilter">{% trans "Clone" %}</button>
-                                            </div>
-                                        </form>
-                                    </div> <!-- /.modal-content -->
-                                </div> <!-- /.modal-dialog -->
-                            </div> <!-- /.modal -->
-                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}">{% bs_icon 'files' %} </button>
-                        </td>
-                        <td>
-                            <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
-                                <input type="hidden" name="nwfiltername" value="{{ nwfilter.name }}">
-                                <button type="submit" class="btn btn-sm btn-secondary" name="del_nwfilter" title="{% trans "Delete" %}" data-confirm="{% blocktrans with name=nwfilter.name %}Delete filter {{ name }}? A filter a VM uses is not deleted.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                    {% bs_icon 'trash' %} 
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
+                    {% for nwf in nwfilters %}
+                        <tr data-search="{{ nwf.name }} {{ nwf.chain|default:"" }}{% for ref in nwf.refs %} {{ ref }}{% endfor %}{% for vm in nwf.vms %} {{ vm }}{% endfor %}">
+                            <td class="text-nowrap"><a href="{% url 'nwfilter' compute.id nwf.name %}">{{ nwf.name }}</a></td>
+                            <td class="font-monospace text-nowrap">{{ nwf.chain|default:"–" }}</td>
+                            <td>{% if nwf.priority is not None %}{{ nwf.priority }}{% else %}–{% endif %}</td>
+                            <td>{{ nwf.rules }}</td>
+                            <td class="small">{{ nwf.refs|join:", "|default:"–" }}</td>
+                            <td class="small text-nowrap">
+                                {% if nwf.vms or nwf.referenced_by %}
+                                    {% if nwf.vms %}{% blocktrans count counter=nwf.vms|length %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}{% if nwf.vms and nwf.referenced_by %}, {% endif %}
+                                    {% if nwf.referenced_by %}{% blocktrans count counter=nwf.referenced_by|length %}{{ counter }} filter{% plural %}{{ counter }} filters{% endblocktrans %}{% endif %}
+                                {% else %}–{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false"
+                                            data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% blocktrans with name=nwf.name %}Actions for filter {{ name }}{% endblocktrans %}">{% bs_icon 'three-dots' %}</button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                                        <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#CloneNWFilter" data-name="{{ nwf.name }}">{% bs_icon 'files' %} {% trans "Clone" %}</button></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><form method="post">{% csrf_token %}
+                                            <input type="hidden" name="nwfiltername" value="{{ nwf.name }}">
+                                            {# a filter in use is not deleted: a VM using it, or a filter referencing it, would not start #}
+                                            <button type="submit" class="dropdown-item text-danger" name="del_nwfilter"{% if nwf.vms or nwf.referenced_by %} disabled{% endif %}
+                                                    data-confirm="{% blocktrans with name=nwf.name %}Delete filter {{ name }}?{% endblocktrans %}"
+                                                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% if nwf.vms or nwf.referenced_by %}{% trans "Delete (in use)" %}{% else %}{% trans "Delete filter" %}{% endif %}</button>
+                                        </form></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="alert alert-warning shadow-sm">
-                        {% bs_icon 'exclamation-triangle' %}  <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any NWFilters" %}
-                    </div>
-                </div>
+            <div role="status">
+                <div id="no-match" class="text-center text-body-secondary py-3" hidden>{% trans "No filter matches the search." %}</div>
             </div>
-            {% endif %}
         </div>
-    </div>
+
+        {# one dialog for every filter's clone: its row's Clone fills in the filter #}
+        <div class="modal fade" id="CloneNWFilter" tabindex="-1" aria-labelledby="CloneNWFilterLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="post" class="modal-content">{% csrf_token %}
+                    <input type="hidden" name="nwfiltername">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="CloneNWFilterLabel">{% trans "Clone filter" %} <span class="font-monospace" id="clone_source"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label for="clone_name" class="form-label">{% trans "Name of the copy" %}</label>
+                        <input id="clone_name" name="cln_name" class="form-control font-monospace" required pattern="[A-Za-z0-9._\-]+" aria-describedby="clone_name_help">
+                        <div class="form-text" id="clone_name_help">{% trans "Letters, digits, dots, dashes and underscores. The copy has the filter's rules and references." %}</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                        <button type="submit" class="btn btn-primary" name="cln_nwfilter">{% trans "Clone" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block script %}
+{% if nwfilters %}
 <script src="{% static 'js/table_filter.js' %}"></script>
+<script>
+    document.getElementById("CloneNWFilter").addEventListener("show.bs.modal", function (event) {
+        var name = event.relatedTarget.dataset.name;
+        this.querySelector("form").elements.nwfiltername.value = name;
+        document.getElementById("clone_source").textContent = name;
+        document.getElementById("clone_name").value = name + "-copy";
+    });
+</script>
+{% endif %}
 <script src="{% static 'js/ace/ace.js' %}"></script>
 <script>
-    var editor = ace.edit("editor");
+    var editor = ace.edit("create_editor");
     editor.getSession().setMode("ace/mode/xml");
-
+    editor.setOption("textInputAriaLabel", "{{ _('Filter XML')|escapejs }}");
     var input = $('input[name="nwfilter_xml"]');
-    input.val(editor.getSession().getValue());
-    editor.getSession().on("change",function () {
+    input.val(editor.getSession().getValue());  // the starter too, if sent as it is
+    editor.getSession().on("change", function () {
         input.val(editor.getSession().getValue());
-    })
+    });
+    // the editor measures itself when its dialog is shown
+    document.getElementById("AddNWFilter").addEventListener("shown.bs.modal", () => editor.resize());
 </script>
 {% endblock %}

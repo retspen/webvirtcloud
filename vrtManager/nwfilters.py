@@ -34,10 +34,12 @@ def filter_info(nwfilter, tree):
 
 class wvmNWFilters(wvmConnect):
     def get_nwfilters_info(self):
-        """Every filter of the host (filter_info) by name: one listing, one XML
-        read per filter."""
+        """Every filter of the host (filter_info), with the filters that
+        reference it, by name: one listing, one XML read per filter."""
         filters = [filter_info(nwfilter, etree.fromstring(nwfilter.XMLDesc(0)))
                    for nwfilter in self.wvm.listAllNWFilters(0)]
+        for nwfilter in filters:
+            nwfilter["referenced_by"] = [other["name"] for other in filters if nwfilter["name"] in other["refs"]]
         return sorted(filters, key=lambda nwfilter: nwfilter["name"])
 
     def get_users(self):
@@ -101,14 +103,14 @@ class wvmNWFilters(wvmConnect):
         self.get_nwfilter(name).undefine()
 
 
-class wvmNWFilter(wvmConnect):
+class wvmNWFilter(wvmNWFilters):
     """A filter of the host. A page reads its XML once (tree); a change is
     the filter defined again with its UUID, which libvirt does in place, also
     while a VM uses it, and refuses for XML it cannot parse or apply to the
     running VMs' interfaces."""
 
     def __init__(self, host, login, passwd, conn, nwfiltername):
-        wvmConnect.__init__(self, host, login, passwd, conn)
+        wvmNWFilters.__init__(self, host, login, passwd, conn)
         self.nwfilter = self.get_nwfilter(nwfiltername)
 
     @cached_property

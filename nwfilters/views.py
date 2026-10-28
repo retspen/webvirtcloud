@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from instances.models import Instance
 from libvirt import libvirtError
 from logs.audit import audit
 from vrtManager import util
@@ -39,7 +40,11 @@ def nwfilters(request, compute_id):
                     conn.delete_nwfilter(name)
             return HttpResponseRedirect(request.get_full_path())
 
+        # the VMs first: a list without them would offer to delete filters in use
+        users = conn.get_users()
         nwfilters_all = conn.get_nwfilters_info()
+        for nwf in nwfilters_all:
+            nwf["vms"] = users.get(nwf["name"], [])
     except libvirtError as lib_err:  # OperationError too: a name in use, a filter in use
         messages.error(request, lib_err)
         if request.method == "POST":  # a host not reached as well: nothing was changed
@@ -84,9 +89,16 @@ def nwfilter(request, compute_id, nwfltr):
         name = nwfilter.get_name()
         uuid = nwfilter.get_uuid()
         xml = nwfilter.get_xml()
+        chain = nwfilter.tree.get("chain")
+        priority = nwfilter.tree.get("priority")
         rules = nwfilter.get_rules()
         refs = nwfilter.get_refs()
         ref_choices = nwfilter.get_ref_choices()
+        filter_names = nwfilter.get_nwfilters()
+        referenced_by = [nwf["name"] for nwf in nwfilter.get_nwfilters_info() if name in nwf["refs"]]
+        vm_names = nwfilter.get_users().get(name, [])
+        vm_ids = dict(Instance.objects.filter(compute=compute, name__in=vm_names).values_list("name", "id"))
+        vms = [{"name": vm_name, "id": vm_ids.get(vm_name)} for vm_name in vm_names]
     except libvirtError as lib_err:
         messages.error(request, lib_err)
         if request.method == "POST":  # a filter gone meanwhile, a host not reached: nothing was changed

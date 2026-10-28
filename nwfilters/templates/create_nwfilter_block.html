@@ -1,33 +1,39 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% if request.user.is_superuser %}
-    <button type="button" class="btn btn-success mt-1 float-end" title="{% trans "Create New NWFilter" %}" data-bs-toggle="modal" data-bs-target="#AddNWFilter">
-        <span aria-hidden="true">{% bs_icon 'plus' %} </span>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddNWFilter">
+        <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New filter" %}
     </button>
 
-    <!-- Modal Secret -->
-    <div class="modal fade" id="AddNWFilter" tabindex="-1" role="dialog" aria-labelledby="AddNWFilter" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
+    {# the whole filter as XML: its rules, and references with their parameters #}
+    <div class="modal fade" id="AddNWFilter" tabindex="-1" aria-labelledby="AddNWFilterLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
+            <form method="post" class="modal-content">{% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Create New NWFilter" %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="post" role="form" aria-label="Create new NWFilter form">{% csrf_token %}
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-12 xmlheight">
-                            <input type="hidden" name="nwfilter_xml"/>
-                            <textarea id="editor" name="from_xml"></textarea>
-                        </div>
+                    <div>
+                        <h5 class="modal-title" id="AddNWFilterLabel">{% trans "New filter" %}</h5>
+                        <div class="small text-body-secondary">{% blocktrans with host=compute.name %}On {{ host }}{% endblocktrans %}</div>
                     </div>
-                </div> <!-- /.modal-body -->
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-body-secondary" id="create_editor_help">
+                        {% trans "Name it and give its rules and the filters it references; libvirt gives it a UUID. In a rule, in is traffic to the VM, out from it; a lower priority applies first." %}
+                        <a href="https://libvirt.org/formatnwfilter.html" target="_blank" rel="noopener">{% trans "libvirt's filter format" %}</a>
+                    </p>
+                    <input type="hidden" name="nwfilter_xml">
+                    <div class="xmlheight"><textarea id="create_editor" aria-label="{% trans "Filter XML" %}" aria-describedby="create_editor_help">&lt;filter name='web-in' chain='root'&gt;
+  &lt;filterref filter='clean-traffic'/&gt;
+  &lt;rule action='accept' direction='in' priority='500'&gt;
+    &lt;tcp dstportstart='443'/&gt;
+  &lt;/rule&gt;
+&lt;/filter&gt;</textarea></div>
+                </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                    <button type="submit" class="btn btn-primary" name="create_nwfilter">{% trans "Create" %}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="create_nwfilter">{% trans "Create filter" %}</button>
                 </div>
             </form>
-            </div>
-        </div> <!-- /.modal-dialog -->
-    </div><!-- /.modal -->
+        </div>
+    </div>
 {% endif %}

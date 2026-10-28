@@ -3,161 +3,210 @@
 {% load static %}
 {% load bootstrap_icons %}
 
-{% block title %}{% trans "NWFilter" %}: {{ name }}{% endblock %}
+{% block title %}{% trans "Network filter" %} - {{ name }}{% endblock %}
 
-{% block page_heading %}{% trans "NWFilter" %}: {{ name }}{% endblock page_heading %}
+{% block page_heading %}{{ compute.name }} - {% trans "Network filter" %}: {{ name }}{% endblock page_heading %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-lg-12">
-            {% include "computes/host_nav.html" with section="nwfilters" detail=True %}
-        </div>
+    {% include "computes/host_nav.html" with section="nwfilters" detail=True %}
+
+    {% if uuid %}
+    <div class="card mb-3">
+        <div class="card-header">{% trans "Filter" %}</div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "UUID" %}</span><span class="font-monospace text-break text-end">{{ uuid }}</span>
+            </li>
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Chain" %}</span><span class="font-monospace">{{ chain|default:"–" }}</span>
+            </li>
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Priority" %}</span><span>{% if priority is not None %}{{ priority }}{% else %}–{% endif %}</span>
+            </li>
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Directly used by" %}</span>
+                <span class="text-end">{% for vm in vms %}{% if vm.id %}<a href="{% url 'instances:instance' vm.id %}">{{ vm.name }}</a>{% else %}{{ vm.name }}{% endif %}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</span>
+            </li>
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Referenced by" %}</span>
+                <span class="text-end">{% for other in referenced_by %}<a href="{% url 'nwfilter' compute.id other %}">{{ other }}</a>{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</span>
+            </li>
+        </ul>
     </div>
 
-    <dl class="ms-3 row">
-        <dt class="col-4">{% trans "UUID" %}:</dt>
-        <dd class="col-8">{{ uuid }}</dd>
-        <dt class="col-4">{% trans "Name" %}:</dt>
-        <dd class="col-8">{{ name }}</dd>
-    </dl>
-      
-   <div class="row">
-        <div class="d-grid col-lg-12">
-            <button class="btn btn-light mb-3"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
-                <span>{% bs_icon 'chevron-down' %} </span>
-                {% trans 'XML' %}
-            </button>
-            <div class="collapse" id="collapseXML">
-                <div class="card card-body">
-                    <form class="form" method="post" role="form">{% csrf_token %}
-                        <div class="col-12 xmlheight">
-                            <input type="hidden" name="edit_xml"/>
-                            <textarea id="edit_editor">{{ xml }}</textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary float-end" name="edit_nwfilter">
-                            {% trans "Edit" %}
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-lg-12">
-        <h5 class="mb-3 me-auto">{% trans "Filter References" %}
-            <form class="float-end" method="post" role="form" aria-label="Add NWFilter form">{% csrf_token %}
-                <div class="input-group">
-                    <label class="input-group-text" for="nwfilter_select">{% trans "Filter" %}</label>
-                    <select id="nwfilter_select" name="nwfilters_select" class="form-select">
-                        <option value="" selected>{% trans 'None' %}</option>
-                        {% for nwf in ref_choices %}
-                            <option value="{{ nwf }}">{{ nwf }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-success float-end" name="add_nwfilter_ref" title="{% trans "Add" %}">
-                        <span aria-hidden="true">{% bs_icon 'plus-circle-fill' %} </span>
-                    </button>
-                </div>
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <span class="me-auto">{% trans "References" %}</span>
+            {% if ref_choices %}
+            <form method="post" class="d-flex gap-2">{% csrf_token %}
+                <select name="nwfilters_select" class="form-select form-select-sm w-auto" aria-label="{% trans "Filter to reference" %}" required>
+                    {% for choice in ref_choices %}<option value="{{ choice }}">{{ choice }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary text-nowrap" name="add_nwfilter_ref">{% bs_icon 'plus-lg' %} {% trans "Add" %}</button>
             </form>
-        </h5>
+            {% endif %}
         </div>
-    </div>
-
-     <div class="row">
-        <div class="col-12 col-sm-12">
-            <div class="table-responsive">
-                <table class="table table-hover mb-3 align-middle">
-                    <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">{% trans "Reference" %}</th>
-                            <th scope="col">{% trans "Action" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                     {% for ref in refs %}
-                        <tr>
-                            <th scope="row">{{ forloop.counter }}</th>
-                            <td>{{ ref.filter }}{% for param, value in ref.parameters %} <span class="font-monospace small">{{ param }}={{ value }}</span>{% endfor %}</td>
-                            <td style="width:30px;">
-                                <form action="" method="post" role="form" aria-label="Delete NWFilter form">{% csrf_token %}
-                                    <input type="hidden" name="index" value="{{ forloop.counter0 }}">
-                                    <input type="hidden" name="ref" value="{{ ref.text }}">
-                                    <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_ref" title="{% trans "Delete" %}" data-confirm="{% blocktrans with ref=ref.filter %}Remove the reference to {{ ref }}? Its rules no longer apply through this filter.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                        {% bs_icon 'trash' %}
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-
-    {% include 'add_nwf_rule.html' %}
-    <h5 class="mb-3">{% trans "Rules" %}</h5>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
+        {% if refs %}
+        <div class="table-responsive position-relative">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th scope="col">{% trans "Rule" %}</th>
-                        <th scope="col" class="text-nowrap">{% trans "Action Type" %}</th>
+                        <th scope="col">{% trans "Filter" %}</th>
+                        <th scope="col">{% trans "Parameters" %}</th>
+                        <th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ref in refs %}
+                    <tr>
+                        <td class="text-nowrap">
+                            {% if ref.filter in filter_names %}<a href="{% url 'nwfilter' compute.id ref.filter %}">{{ ref.filter }}</a>
+                            {% else %}{{ ref.filter }} <span class="badge bg-danger-subtle text-danger-emphasis">{% trans "Missing" %}</span>{% endif %}
+                        </td>
+                        <td class="font-monospace small">{% for param, value in ref.parameters %}<div>{{ param }}={{ value }}</div>{% empty %}–{% endfor %}</td>
+                        <td class="text-end">
+                            <form method="post">{% csrf_token %}
+                                <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                                <input type="hidden" name="ref" value="{{ ref.text }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" name="del_nwfilter_ref" aria-label="{% blocktrans with ref=ref.filter %}Remove the reference to {{ ref }}{% endblocktrans %}"
+                                        data-confirm="{% blocktrans with ref=ref.filter %}Remove the reference to {{ ref }}? Its rules no longer apply through this filter.{% endblocktrans %}"
+                                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "It references no other filter." %}</div>
+        {% endif %}
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <span class="me-auto">{% trans "Rules" %}</span>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#AddNWFilterRule">{% bs_icon 'plus-lg' %} {% trans "Add rule" %}</button>
+        </div>
+        {% if rules %}
+        <div class="table-responsive position-relative">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">{% trans "Action" %}</th>
                         <th scope="col">{% trans "Direction" %}</th>
                         <th scope="col">{% trans "Priority" %}</th>
-                        <th scope="col">{% trans "Statematch" %}</th>
-                        <th scope="col">{% trans "Directives" %}</th>
-                        <th scope="col" style="width:30px;">{% trans "Action" %}</th>
+                        <th scope="col">{% trans "Matches" %}</th>
+                        <th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                     </tr>
                 </thead>
                 <tbody>
                 {% for rule in rules %}
                     <tr>
                         <th scope="row">{{ forloop.counter }}</th>
-                        <td>{{ rule.action }}</td>
-                        <td>{{ rule.direction }}</td>
-                        <td>{{ rule.priority }}</td>
-                        <td>{{ rule.statematch }}</td>
-                        <td class="font-monospace small">{% for protocol in rule.protocols %}<div>{{ protocol.name }}{% for attribute, value in protocol.attributes %} {{ attribute }}={{ value }}{% endfor %}</div>{% endfor %}</td>
                         <td>
-                            <form action="" method="post" role="form" aria-label="Delete NWFilter rule">{% csrf_token %}
+                            {% if rule.action == "accept" %}<span class="badge bg-success-subtle text-success-emphasis">{% trans "Accept" %}</span>
+                            {% elif rule.action == "drop" or rule.action == "reject" %}<span class="badge bg-danger-subtle text-danger-emphasis">{{ rule.action|capfirst }}</span>
+                            {% else %}<span class="badge text-bg-light border">{{ rule.action|capfirst }}</span>{% endif %}
+                        </td>
+                        <td class="text-nowrap">{% if rule.direction == "in" %}{% trans "To the VM" %}{% elif rule.direction == "out" %}{% trans "From the VM" %}{% elif rule.direction == "inout" %}{% trans "Both ways" %}{% else %}{{ rule.direction }}{% endif %}</td>
+                        <td>{% if rule.priority is not None %}{{ rule.priority }}{% else %}500{% endif %}</td>
+                        <td class="small">
+                            {% for protocol in rule.protocols %}
+                            <div><span class="badge text-bg-light border">{{ protocol.name }}</span>{% for attribute, value in protocol.attributes %} <span class="font-monospace">{{ attribute }}={{ value }}</span>{% endfor %}</div>
+                            {% empty %}
+                            <span class="text-body-secondary">{% trans "Any traffic of the chain" %}</span>
+                            {% endfor %}
+                            {% if rule.statematch == "false" or rule.statematch == "0" %}<div class="text-body-secondary">{% trans "Without connection tracking" %}</div>{% endif %}
+                        </td>
+                        <td class="text-end">
+                            <form method="post">{% csrf_token %}
                                 <input type="hidden" name="index" value="{{ forloop.counter0 }}">
                                 <input type="hidden" name="rule" value="{{ rule.text }}">
-                                <button type="submit" class="btn btn-sm btn-danger" name="del_nwfilter_rule" title="{% trans 'Delete' %}" data-confirm="{% trans "Delete this rule? Interfaces that use the filter no longer get it." %}" onclick="return confirm(this.dataset.confirm)">
-                                    {% bs_icon 'trash' %} 
-                                </button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" name="del_nwfilter_rule" aria-label="{% blocktrans with number=forloop.counter %}Delete rule {{ number }}{% endblocktrans %}"
+                                        data-confirm="{% trans "Delete this rule? Interfaces that use the filter no longer get it." %}"
+                                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
                             </form>
                         </td>
                     </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "The filter has no rules of its own." %}</div>
+        {% endif %}
+    </div>
+
+    <section class="accordion mb-3" aria-labelledby="xml-heading">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="xml-heading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nwfilter-xml" aria-expanded="false" aria-controls="nwfilter-xml">
+                    {% trans "XML definition" %}
+                </button>
+            </h2>
+            <div class="accordion-collapse collapse" id="nwfilter-xml">
+                <form method="post" class="accordion-body" aria-label="{% trans "Change the filter's XML" %}">{% csrf_token %}
+                    <p class="small text-body-secondary">{% trans "A change applies at once, also to the running VMs that use the filter; it keeps the filter's name and UUID." %}</p>
+                    <input type="hidden" name="edit_xml">
+                    <div class="xmlheight mb-3"><textarea id="edit_editor" aria-label="{% trans "Filter XML" %}">{{ xml }}</textarea></div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" name="edit_nwfilter">{% trans "Save" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade" id="AddNWFilterRule" tabindex="-1" aria-labelledby="AddNWFilterRuleLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
+            <form method="post" class="modal-content">{% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="AddNWFilterRuleLabel">{% trans "Add rule" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-body-secondary" id="rule_editor_help">
+                        {% trans "One rule: in is traffic to the VM, out from it; a lower priority applies first (500 if none is given)." %}
+                        <a href="https://libvirt.org/formatnwfilter.html#supported-protocols" target="_blank" rel="noopener">{% trans "The protocols and their attributes" %}</a>
+                    </p>
+                    <input type="hidden" name="nwfilterrule_xml">
+                    <div class="xmlheight"><textarea id="rule_editor" aria-label="{% trans "Rule XML" %}" aria-describedby="rule_editor_help">&lt;rule action='accept' direction='in' priority='500'&gt;
+  &lt;tcp dstportstart='443'/&gt;
+&lt;/rule&gt;</textarea></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="add_nwfilter_rule">{% trans "Add rule" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/ace/ace.js' %}"></script>
-    <script>
-        var editor = ace.edit("edit_editor");
+{% if uuid %}
+<script src="{% static 'js/ace/ace.js' %}"></script>
+<script>
+    // each editor's text goes in its form's hidden field, the starter too if sent as it is,
+    // and it measures itself when its section or dialog is shown
+    function xmlEditor(textareaId, fieldName, shownBy, shownEvent) {
+        var textarea = document.getElementById(textareaId);
+        var form = textarea.closest("form");
+        var editor = ace.edit(textareaId);
         editor.getSession().setMode("ace/mode/xml");
-
-        var edit_input = $('input[name="edit_xml"]');
-        edit_input.val(editor.getSession().getValue());
-        editor.getSession().on("change",function () {
-        edit_input.val(editor.getSession().getValue());
+        editor.setOption("textInputAriaLabel", textarea.getAttribute("aria-label"));
+        var field = form.elements[fieldName];
+        field.value = editor.getSession().getValue();
+        editor.getSession().on("change", function () {
+            field.value = editor.getSession().getValue();
         });
-
-        var rule_editor = ace.edit("rule_editor");
-        rule_editor.getSession().setMode("ace/mode/xml");
-
-        var rule_input = $('input[name="nwfilterrule_xml"]');
-        rule_input.val(rule_editor.getSession().getValue());
-        rule_editor.getSession().on("change",function () {
-        rule_input.val(rule_editor.getSession().getValue());
-        });
-    </script>
-
+        document.getElementById(shownBy).addEventListener(shownEvent, () => editor.resize());
+    }
+    xmlEditor("edit_editor", "edit_xml", "nwfilter-xml", "shown.bs.collapse");
+    xmlEditor("rule_editor", "nwfilterrule_xml", "AddNWFilterRule", "shown.bs.modal");
+</script>
+{% endif %}
 {% endblock %}
