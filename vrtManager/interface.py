@@ -1,12 +1,106 @@
+import contextlib
+from functools import cached_property
 from xml.etree import ElementTree
 
-from libvirt import VIR_ERR_NO_INTERFACE, VIR_INTERFACE_XML_INACTIVE, libvirtError
+from libvirt import (
+    VIR_ERR_NO_INTERFACE,
+    VIR_ERR_XML_ERROR,
+    VIR_INTERFACE_XML_INACTIVE,
+    libvirtError,
+)
 
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 
+# a link speed the kernel gives when it does not know one
+UNKNOWN_SPEEDS = ("0", "4294967295", "-1")
+
+
+@contextlib.contextmanager
+def changes(conn):
+    """The host's interface configuration changed as one: what fails in the
+    block, or its commit, is rolled back (libvirt's interface change
+    transaction). A rollback that fails too is told with the failure."""
+    conn.changeBegin(0)
+    try:
+        yield
+        conn.changeCommit(0)
+    except BaseException as err:
+        try:
+            conn.changeRollback(0)
+        except libvirtError as rollback_err:
+            raise util.OperationError(f"{err}; rolling the change back failed too, "
+                                      f"the host's configuration may be changed: {rollback_err}") from err
+        raise
+
+
+def running_xml(iface):
+    """The interface's running XML, or its saved one when libvirt cannot give
+    that: netcf writes a link speed of -1 for a device that has none (a
+    virtio card), then refuses its own XML."""
+    try:
+        return iface.XMLDesc(0)
+    except libvirtError as err:
+        if err.get_error_code() != VIR_ERR_XML_ERROR:
+            raise
+        return iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE)
+
+
+def link_of(element):
+    """An interface's or member's link state and speed in Mb/s, as libvirt
+    reports them: None for what it does not."""
+    link = element.find("link")
+    if link is None:
+        return None, None
+    speed = link.get("speed")
+    return link.get("state"), None if speed in (None, *UNKNOWN_SPEEDS) else speed
+
+
+def attribute(element, path, name):
+    """The attribute name of the child at path, or None."""
+    child = element.find(path)
+    return child.get(name) if child is not None else None
+
+
+def interface_info(iface, tree):
+    """What an interface (its libvirt object, which holds its name and MAC)
+    and its XML tell: type, MAC, MTU, link state and speed, and the members
+    of a bridge or bond, or a VLAN's device, as reported."""
+    state, speed = link_of(tree)
+    members = []
+    for member in tree.findall("bridge/interface") + tree.findall("bond/interface") + tree.findall("vlan/interface"):
+        member_state, member_speed = link_of(member)
+        members.append({"name": member.get("name"), "type": member.get("type"), "mac": attribute(member, "mac", "address"),
+                        "link": member_state, "speed": member_speed})
+    return {"name": iface.name(), "type": tree.get("type"), "mac": iface.MACString() or None,
+            "mtu": attribute(tree, "mtu", "size"), "link": state, "speed": speed, "members": members}
+
 
 class wvmInterfaces(wvmConnect):
+    def get_ifaces_info(self):
+        """Every interface of the host (interface_info) and whether libvirt
+        has it active: one listing, two calls per interface."""
+        ifaces = []
+        for iface in self.wvm.listAllInterfaces(0):
+            info = interface_info(iface, ElementTree.fromstring(running_xml(iface)))
+            info["state"] = iface.isActive()
+            ifaces.append(info)
+        return sorted(ifaces, key=lambda iface: iface["name"])
+
+    def get_member_candidates(self, netdevs):
+        """The devices of netdevs a new bridge can take: not the loopback, a
+        bridge, bond or VLAN of the host nor a device in one as configured, at
+        any depth (a bridge's bond's devices), not the bridge of a libvirt
+        network and not a VM's tap (libvirt names them vnetN and macvtapN)."""
+        taken = {"lo"}
+        for iface in self.wvm.listAllInterfaces(0):
+            tree = ElementTree.fromstring(iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE))
+            if tree.get("type") in ("bridge", "bond", "vlan"):
+                taken.update(element.get("name") for element in tree.iter("interface"))
+        for net in self.wvm.listAllNetworks(0):
+            taken.add(util.get_xml_path(net.XMLDesc(0), "/network/bridge/@name"))
+        return [dev for dev in netdevs if dev not in taken and not dev.startswith(("vnet", "macvtap"))]
+
     def define_iface(self, xml, flag=0):
         return self.wvm.interfaceDefineXML(xml, flag)
 
@@ -69,131 +163,56 @@ class wvmInterfaces(wvmConnect):
                         {self.bridge_member_xml(netdev)}
                       </bridge>"""
         xml += """</interface>"""
-        # the form refuses a name the host defines, so nothing is replaced
-        iface = self.define_iface(xml)
-        try:
-            iface.create()
-        except libvirtError:  # the name stays free for another try
-            iface.undefine()
-            raise
+        # the form refuses a name the host defines, so nothing is replaced;
+        # one that does not start leaves the host as it was, its member's
+        # own configuration too
+        with changes(self.wvm):
+            self.define_iface(xml).create()
 
 
 class wvmInterface(wvmConnect):
+    """An interface of the host. A page reads its running definition (tree)
+    and its saved one (saved) once each."""
+
     def __init__(self, host, login, passwd, conn, iface):
         wvmConnect.__init__(self, host, login, passwd, conn)
         self.iface = self.get_iface(iface)
 
-    def _XMLDesc(self, flags=0):
-        return self.iface.XMLDesc(flags)
+    @cached_property
+    def tree(self):
+        return ElementTree.fromstring(running_xml(self.iface))
 
-    def get_start_mode(self):
-        try:
-            xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
-            return util.get_xml_path(xml, "/interface/start/@mode")
-        except Exception:
-            return None
+    @cached_property
+    def saved(self):
+        """The saved definition: its start mode and addressing."""
+        return ElementTree.fromstring(self.iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE))
 
     def is_active(self):
         return self.iface.isActive()
 
-    def get_mac(self):
-        mac = self.iface.MACString()
-        return mac or None
-
     def get_type(self):
-        xml = self._XMLDesc()
-        return util.get_xml_path(xml, "/interface/@type")
+        return self.tree.get("type")
 
-    def get_ipv4_type(self):
-        try:
-            xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
-            ipaddr = util.get_xml_path(
-                xml, "/interface/protocol[@family='ipv4']/ip/@address"
-            )
-            return "static" if ipaddr else "dhcp"
-        except Exception:
-            return None
-
-    def get_ipv4(self):
-        xml = self._XMLDesc()
-        int_ipv4_ip = util.get_xml_path(
-            xml, "/interface/protocol[@family='ipv4']/ip/@address"
-        )
-        int_ipv4_mask = util.get_xml_path(
-            xml, "/interface/protocol[@family='ipv4']/ip/@prefix"
-        )
-        if not int_ipv4_ip or not int_ipv4_mask:
-            return None
-        else:
-            return f"{int_ipv4_ip}/{int_ipv4_mask}"
-
-    def get_ipv6_type(self):
-        try:
-            xml = self._XMLDesc(VIR_INTERFACE_XML_INACTIVE)
-            ipaddr = util.get_xml_path(
-                xml, "/interface/protocol[@family='ipv6']/ip/@address"
-            )
-            return "static" if ipaddr else "dhcp"
-        except Exception:
-            return None
-
-    def get_ipv6(self):
-        xml = self._XMLDesc()
-        int_ipv6_ip = util.get_xml_path(
-            xml, "/interface/protocol[@family='ipv6']/ip/@address"
-        )
-        int_ipv6_mask = util.get_xml_path(
-            xml, "/interface/protocol[@family='ipv6']/ip/@prefix"
-        )
-        if not int_ipv6_ip or not int_ipv6_mask:
-            return None
-        else:
-            return f"{int_ipv6_ip}/{int_ipv6_mask}"
-
-    def get_bridge(self):
-        bridge = None
-        if self.get_type() != "bridge":
-            return None
-        bridge = util.get_xml_path(self._XMLDesc(), "/interface/bridge/interface/@name")
-        for iface in self.get_bridge_slave_ifaces():
-            if iface.get("state") == "up" and iface.get("speed") != "unknown":
-                bridge = iface.get("name")
-                return bridge
-        return bridge
-
-    def get_bridge_slave_ifaces(self):
-        if self.get_type() != "bridge":
-            return None
-
-        ifaces = []
-        tree = ElementTree.fromstring(self._XMLDesc())
-        for iface in tree.findall("./bridge/"):
-            address = state = speed = None
-            name = iface.get("name")
-            if_type = iface.get("type")
-            link = iface.find("link")
-            if link is not None:
-                state = link.get("state")
-                speed = link.get("speed")
-            mac = iface.find("mac")
-            if mac is not None:
-                address = mac.get("address")
-            ifaces.append(
-                {
-                    "name": name,
-                    "type": if_type,
-                    "state": state,
-                    "speed": speed,
-                    "mac": address,
-                }
-            )
-        return ifaces
-
-    def get_details(self):
-        mac = self.get_mac()
-        itype = self.get_type()
-        state = self.is_active()
-        return {"name": self.iface.name(), "type": itype, "state": state, "mac": mac}
+    def get_info(self):
+        """interface_info, with its start mode and, per family, how it is
+        addressed (dhcp, autoconf, static or None) and its addresses."""
+        info = interface_info(self.iface, self.tree)
+        info["start_mode"] = attribute(self.saved, "start", "mode")
+        for family in ("ipv4", "ipv6"):
+            config = self.saved.find(f"protocol[@family='{family}']")
+            if config is None:
+                method = None
+            elif config.find("dhcp") is not None:
+                method = "dhcp"
+            elif config.find("autoconf") is not None:
+                method = "autoconf"
+            else:
+                method = "static"
+            # the prefix is optional in libvirt's XML
+            addresses = [ip.get("address") + (f"/{ip.get('prefix')}" if ip.get("prefix") else "")
+                         for ip in self.tree.findall(f"protocol[@family='{family}']/ip")]
+            info[family] = {"method": method, "addresses": addresses}
+        return info
 
     def stop_iface(self):
         self.iface.destroy()
@@ -202,12 +221,21 @@ class wvmInterface(wvmConnect):
         self.iface.create()
 
     def delete_iface(self):
-        """Undefine the interface. netcf removes a bridge's members with it, so
-        each member is defined again on its own, as virsh iface-unbridge does:
-        with the bridge's start mode and, when it is the only one, addresses."""
-        tree = ElementTree.fromstring(self._XMLDesc(VIR_INTERFACE_XML_INACTIVE))
+        """Undefine the interface, stopped first. netcf removes a bridge's
+        members with it, so each member is defined again on its own, as virsh
+        iface-unbridge does: with the bridge's start mode and, when it is the
+        only one, addresses; a bridge with addresses and several members is
+        refused, which of them takes the addresses being the user's choice.
+        All of it is one change of the host's configuration."""
+        if self.iface.isActive():
+            raise util.OperationError(f"Stop interface {self.iface.name()} before deleting it")
+        tree = ElementTree.fromstring(self.iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE))
         members = tree.findall("bridge/interface")
-        self.iface.undefine()
-        for member in members:
-            member.extend(tree.findall("start") + (tree.findall("protocol") if len(members) == 1 else []))
-            self.wvm.interfaceDefineXML(ElementTree.tostring(member, encoding="unicode"), 0)
+        if len(members) > 1 and tree.findall("protocol"):
+            raise util.OperationError(f"Bridge {self.iface.name()} has addresses and several members: "
+                                      "give the addresses to one of them on the host first")
+        with changes(self.wvm):
+            self.iface.undefine()
+            for member in members:
+                member.extend(tree.findall("start") + tree.findall("protocol"))
+                self.wvm.interfaceDefineXML(ElementTree.tostring(member, encoding="unicode"), 0)

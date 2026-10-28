@@ -32,12 +32,14 @@ class AddInterface(forms.Form):
     stp = forms.ChoiceField(required=False, choices=(("on", "on"), ("off", "off")))
     delay = forms.IntegerField(required=False, min_value=0)
 
-    def __init__(self, *args, netdevs=(), defined=(), **kwargs):
-        # The host's network devices: a bridge member, or the device an
-        # ethernet interface configures, must be one of them. The interfaces
-        # the host defines: defining one again would replace its configuration.
+    def __init__(self, *args, netdevs=(), members=(), defined=(), **kwargs):
+        # The host's network devices. members: those a bridge can take
+        # (wvmInterfaces.get_member_candidates); an ethernet interface
+        # configures one of them too. The interfaces the host defines:
+        # defining one again would replace its configuration.
         super().__init__(*args, **kwargs)
         self.netdevs = set(netdevs)
+        self.members = set(members)
         self.defined = set(defined)
 
     def clean_ipv4_addr(self):
@@ -122,8 +124,10 @@ class AddInterface(forms.Form):
                 self.add_error("netdev", _("A bridge needs a device"))
             elif netdev and netdev not in self.netdevs:
                 self.add_error("netdev", _("The device is not on this host"))
+            elif netdev and netdev not in self.members:
+                self.add_error("netdev", _("The device is a bridge, bond or VLAN, a member of one, or a VM's"))
             elif netdev and netdev == name:
                 self.add_error("netdev", _("A bridge cannot contain itself"))
-        elif cleaned.get("itype") == "ethernet" and name and name not in self.netdevs:
-            self.add_error("name", _("An ethernet interface configures a device of this host"))
+        elif cleaned.get("itype") == "ethernet" and name and name not in self.members:
+            self.add_error("name", _("An ethernet interface configures a device of this host in no bridge, bond or VLAN"))
         return cleaned

@@ -558,15 +558,8 @@ class wvmConnect(object):
         return virtnet
 
     def get_ifaces(self):
-        """
-        :return: list of host interfaces
-        """
-        interface = []
-        for inface in self.wvm.listInterfaces():
-            interface.append(inface)
-        for inface in self.wvm.listDefinedInterfaces():
-            interface.append(inface)
-        return interface
+        """The names of the host's interfaces, in every state."""
+        return [iface.name() for iface in self.wvm.listAllInterfaces(0)]
 
     def get_nwfilters(self):
         """
@@ -1052,14 +1045,19 @@ class wvmConnect(object):
         return instance
 
     def can_change_interfaces(self):
-        """False when the host's libvirt cannot define interfaces (the udev
-        backend only reads them). The definition sent is invalid, so nothing is
-        defined: a backend without define refuses it with VIR_ERR_NO_SUPPORT,
-        one with define with an XML error."""
+        """Whether the host's libvirt can define interfaces: the udev backend
+        only reads them. The definition sent is invalid, so nothing is
+        defined: a backend without define refuses it as unsupported, one with
+        define as bad XML. Any other refusal, of the connection say, is not an
+        answer and is raised; one the host's access rules give is a no."""
         try:
             self.wvm.interfaceDefineXML("<interface/>", 0)
         except libvirtError as err:
-            return err.get_error_code() != libvirt.VIR_ERR_NO_SUPPORT
+            if err.get_error_code() in (libvirt.VIR_ERR_NO_SUPPORT, libvirt.VIR_ERR_OPERATION_DENIED):
+                return False
+            if err.get_error_code() in (libvirt.VIR_ERR_XML_ERROR, libvirt.VIR_ERR_XML_DETAIL):
+                return True
+            raise
         return True
 
     def get_net_devices(self):

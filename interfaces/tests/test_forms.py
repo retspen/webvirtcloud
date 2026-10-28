@@ -25,7 +25,7 @@ NETDEVS = ["eth0", "eth1", "enp129s0f0np0", "eth0.100", "bond-lan"]
 
 
 def form(**values):
-    return AddInterface(data={**BASE, **values}, netdevs=NETDEVS)
+    return AddInterface(data={**BASE, **values}, netdevs=NETDEVS, members=NETDEVS)
 
 
 class DefinedNameTestCase(SimpleTestCase):
@@ -33,9 +33,9 @@ class DefinedNameTestCase(SimpleTestCase):
         defined = ["br0", "bond-lan"]  # as libvirt lists them
         for values in ({"name": "br0"}, {"name": "bond-lan", "itype": "ethernet", "netdev": ""}):
             with self.subTest(**values):
-                f = AddInterface(data={**BASE, **values}, netdevs=NETDEVS, defined=defined)
+                f = AddInterface(data={**BASE, **values}, netdevs=NETDEVS, members=NETDEVS, defined=defined)
                 self.assertEqual(f.errors["name"], [f"The host already defines interface {values['name']}"])
-        self.assertTrue(AddInterface(data={**BASE, "ipv6_type": "none"}, netdevs=NETDEVS, defined=defined).is_valid())
+        self.assertTrue(AddInterface(data={**BASE, "ipv6_type": "none"}, netdevs=NETDEVS, members=NETDEVS, defined=defined).is_valid())
 
 
 class Ipv6FormTestCase(SimpleTestCase):
@@ -74,6 +74,7 @@ class Ipv6FormTestCase(SimpleTestCase):
 class Ipv6XmlTestCase(SimpleTestCase):
     def xml(self, gw):
         conn = wvmInterfaces.__new__(wvmInterfaces)
+        conn.wvm = MagicMock()
         conn.define_iface = MagicMock()
         conn.get_iface = MagicMock()
         conn.get_iface.return_value.XMLDesc.return_value = "<interface type='ethernet' name='eth1'/>"
@@ -158,6 +159,7 @@ class InterfaceNameTestCase(SimpleTestCase):
 class Ipv4XmlTestCase(SimpleTestCase):
     def xml(self, addr, gw):
         conn = wvmInterfaces.__new__(wvmInterfaces)
+        conn.wvm = MagicMock()
         conn.define_iface = MagicMock()
         conn.get_iface = MagicMock()
         conn.get_iface.return_value.XMLDesc.return_value = "<interface type='ethernet' name='eth1'/>"
@@ -192,6 +194,13 @@ class HostDeviceTestCase(SimpleTestCase):
         self.assertFalse(f.is_valid())
         self.assertIn("name", f.errors)
 
+    def test_an_ethernet_interface_is_no_device_of_another_interface(self):
+        # netcf lists a bridge, not its members: eth1 is in br0 here
+        f = AddInterface(data={**BASE, "itype": "ethernet", "name": "eth1", "ipv6_type": "none"},
+                         netdevs=NETDEVS, members=["eth0"], defined=["br0"])
+        self.assertFalse(f.is_valid())
+        self.assertIn("name", f.errors)
+
 
 def no_interface(name):
     err = libvirt.libvirtError("Interface not found: no interface with matching name '%s'" % name)
@@ -205,6 +214,7 @@ class BridgeMemberXmlTestCase(SimpleTestCase):
 
     def member(self, host_xml):
         conn = wvmInterfaces.__new__(wvmInterfaces)
+        conn.wvm = MagicMock()
         conn.define_iface = MagicMock()
 
         def get_iface(name):
@@ -253,6 +263,7 @@ class BridgeMemberXmlTestCase(SimpleTestCase):
 
     def test_other_lookup_errors_are_not_hidden(self):
         conn = wvmInterfaces.__new__(wvmInterfaces)
+        conn.wvm = MagicMock()
         conn.define_iface = MagicMock()
         err = libvirt.libvirtError("cannot recv data")
         err.err = (libvirt.VIR_ERR_SYSTEM_ERROR, libvirt.VIR_FROM_RPC, str(err), 2, None, None, None, 0, 0)
@@ -261,14 +272,17 @@ class BridgeMemberXmlTestCase(SimpleTestCase):
             conn.create_iface("br1", "bridge", "onboot", "bond0", "none", "", "", "none", "", "", "on", 0)
         self.assertFalse(conn.define_iface.called)
 
-    def test_an_interface_that_does_not_start_is_undefined(self):
+    def test_an_interface_that_does_not_start_is_rolled_back(self):
+        # the definition, and the member's own configuration it changed, as they were
         conn = wvmInterfaces.__new__(wvmInterfaces)
+        conn.wvm = MagicMock()
         conn.define_iface = MagicMock()
         iface = conn.define_iface.return_value
         iface.create.side_effect = libvirt.libvirtError("failed to bring up br1")
         with self.assertRaises(libvirt.libvirtError):
             conn.create_iface("br1", "ethernet", "onboot", "", "none", "", "", "none", "", "", "on", 0)
-        iface.undefine.assert_called_once_with()
+        conn.wvm.changeRollback.assert_called_once_with(0)
+        conn.wvm.changeCommit.assert_not_called()
 
 
 class BridgeSettingsTestCase(SimpleTestCase):
@@ -310,9 +324,10 @@ class CreateViewTestCase(TestCase):
         for netdev, created in (("eth9", False), ("eth0", True)):
             with self.subTest(netdev=netdev), patch("interfaces.views.wvmInterfaces") as conn_cls:
                 conn = conn_cls.return_value
-                conn.get_ifaces.return_value = []
+                conn.get_ifaces_info.return_value = []
                 conn.can_change_interfaces.return_value = True
                 conn.get_net_devices.return_value = ["eth0", "eth1"]
+                conn.get_member_candidates.return_value = ["eth0", "eth1"]
                 self.client.post(
                     reverse("interfaces", args=[compute.id]),
                     {**BASE, "netdev": netdev, "ipv6_type": "none", "create": ""},
@@ -325,7 +340,7 @@ class CreateViewTestCase(TestCase):
         self.client.force_login(admin)
         with patch("interfaces.views.wvmInterfaces") as conn_cls:
             conn = conn_cls.return_value
-            conn.get_ifaces.return_value = []
+            conn.get_ifaces_info.return_value = []
             conn.can_change_interfaces.return_value = True
             conn.get_net_devices.side_effect = RuntimeError("nodedev driver not running")
             response = self.client.post(
@@ -351,7 +366,7 @@ class UnchangeableHostTestCase(TestCase):
     def interfaces_page(self, changeable, post=None):
         with patch("interfaces.views.wvmInterfaces") as conn_cls:
             conn = conn_cls.return_value
-            conn.get_ifaces.return_value = []
+            conn.get_ifaces_info.return_value = []
             conn.can_change_interfaces.return_value = changeable
             conn.get_net_devices.return_value = ["eth0", "eth1"]
             url = reverse("interfaces", args=[self.compute.id])
@@ -377,7 +392,6 @@ class UnchangeableHostTestCase(TestCase):
             conn = conn_cls.return_value
             conn.can_change_interfaces.return_value = changeable
             conn.is_active.return_value = state
-            conn.get_bridge_slave_ifaces.return_value = []
             url = reverse("interface", args=[self.compute.id, "br0"])
             response = self.client.post(url, post) if post else self.client.get(url)
         return conn, response
@@ -395,11 +409,12 @@ class UnchangeableHostTestCase(TestCase):
         _conn, response = self.interface_page(True, 0)
         self.assertIn('name="start"', response.content.decode())
 
-    def test_a_host_that_could_not_be_read_keeps_the_page_as_it_was(self):
+    def test_a_host_that_could_not_be_read_offers_nothing(self):
+        # not knowing whether the host can change interfaces is not a yes
         with patch("interfaces.views.wvmInterface", side_effect=libvirt.libvirtError("unreachable")):
             page = self.client.get(reverse("interface", args=[self.compute.id, "br0"])).content.decode()
         self.assertNotIn(self.NOTE, page)
-        self.assertIn("Interface start/stop/delete form", page)
+        self.assertNotIn("Interface start/stop/delete form", page)
 
     def test_start_stop_and_delete_posts_change_nothing(self):
         for action in ("start", "stop", "delete"):

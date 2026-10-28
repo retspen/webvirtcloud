@@ -21,7 +21,8 @@ class InterfaceRowTests(TestCase):
     def test_interface_actions(self, ifaces, iface):
         ifaces.return_value.can_change_interfaces.return_value = True
         ifaces.return_value.get_net_devices.return_value = ["eth0"]
-        ifaces.return_value.get_ifaces.return_value = []
+        ifaces.return_value.get_member_candidates.return_value = ["eth0"]
+        ifaces.return_value.get_ifaces_info.return_value = []
         iface.return_value.can_change_interfaces.return_value = True
         self.client.post(reverse("interfaces", args=[self.compute.id]), {
             "create": "", "name": "br1", "itype": "bridge", "start_mode": "onboot", "netdev": "eth0",

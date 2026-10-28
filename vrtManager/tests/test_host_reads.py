@@ -21,6 +21,7 @@ from libvirt import (
     VIR_ERR_NO_STORAGE_VOL,
     VIR_ERR_NO_SUPPORT,
     VIR_ERR_OPERATION_DENIED,
+    VIR_ERR_SYSTEM_ERROR,
     VIR_ERR_XML_ERROR,
     libvirtError,
 )
@@ -136,13 +137,16 @@ class ChangeInterfacesTestCase(unittest.TestCase):
 
     def test_a_backend_without_define_cannot_change_interfaces(self):
         conn = connection()
-        # any other refusal (access denied, ...) leaves the page as it was
-        for code, changeable in ((VIR_ERR_NO_SUPPORT, False), (VIR_ERR_XML_ERROR, True), (VIR_ERR_OPERATION_DENIED, True)):
+        for code, changeable in ((VIR_ERR_NO_SUPPORT, False), (VIR_ERR_OPERATION_DENIED, False), (VIR_ERR_XML_ERROR, True)):
             with self.subTest(code=code):
                 conn.wvm.interfaceDefineXML = MagicMock(side_effect=self.error(code))
                 self.assertIs(conn.can_change_interfaces(), changeable)
                 # an invalid definition: nothing can be defined by asking
                 conn.wvm.interfaceDefineXML.assert_called_once_with("<interface/>", 0)
+        # any other refusal (the connection, the login) is no answer
+        conn.wvm.interfaceDefineXML = MagicMock(side_effect=self.error(VIR_ERR_SYSTEM_ERROR))
+        with self.assertRaises(libvirtError):
+            conn.can_change_interfaces()
 
 
 class CapacityTestCase(unittest.TestCase):

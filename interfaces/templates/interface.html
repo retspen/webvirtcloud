@@ -16,44 +16,42 @@
     {% if changeable is False %}{% include 'interfaces_unchangeable.html' %}{% endif %}
     <div class="row">
         <div class="col-12">
+            {% if info %}
             <dl class="ms-3 row">
                 <dt class="col-4">{% trans "Interface" %}</dt>
                 <dd class="col-8"><strong>{{ iface }}</strong></dd>
-                <dt class="col-4">{% trans "IPv4" %} ({% if ipv4 == None %}{% trans 'None' %}{% else %}{{ ipv4_type }}{% endif %})</dt>
-                <dd class="col-8">{{ ipv4 }}</dd>
-                <dt class="col-4">{% trans "IPv6" %} ({% if ipv6 == None %}{% trans 'None' %}{% else %}{{ ipv6_type }}{% endif %})</dt>
-                <dd class="col-8">{{ ipv6 }}</dd>
+                <dt class="col-4">{% trans "IPv4" %}{% if info.ipv4.method %} ({{ info.ipv4.method }}){% endif %}</dt>
+                <dd class="col-8">{{ info.ipv4.addresses|join:", "|default:"–" }}</dd>
+                <dt class="col-4">{% trans "IPv6" %}{% if info.ipv6.method %} ({{ info.ipv6.method }}){% endif %}</dt>
+                <dd class="col-8">{{ info.ipv6.addresses|join:", "|default:"–" }}</dd>
                 <dt class="col-4">{% trans "MAC" %}</dt>
-                <dd class="col-8">{{ mac }}</dd>
+                <dd class="col-8">{{ info.mac|default:"–" }}</dd>
                 <dt class="col-4">{% trans "Interface Type" %}</dt>
-                <dd class="col-8">{{ itype }}</dd>
-                {% if itype == 'bridge' %}
-                    <dt class="col-4">{% trans "Bridge Device" %}</dt>
-                    <dd class="col-8">{{ bridge }}</dd>
-                {% endif %}
+                <dd class="col-8">{{ info.type }}</dd>
                 <dt class="col-4">{% trans "Boot Mode" %}</dt>
-                <dd class="col-8">{{ start_mode }}</dd>
+                <dd class="col-8">{{ info.start_mode|default:"–" }}</dd>
                 <dt class="col-4">{% trans "State" %}</dt>
                 <dd class="col-8">
-                    {% if changeable is False %}
-                        {% if state == 0 %}{% trans "Inactive" %}{% else %}{% trans "Active" %}{% endif %}
-                    {% else %}
+                    {% if changeable %}
                     <form action="" method="post" role="form" aria-label="Interface start/stop/delete form">{% csrf_token %}
                         {% if state == 0 %}
                             <input type="submit" class="btn btn-sm btn-primary" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" data-confirm="{% blocktrans with name=iface %}Delete interface {{ name }}? Its definition is removed from the host.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
+                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" data-confirm="{% blocktrans with name=iface %}Delete interface {{ name }}? Its definition is removed from the host; a bridge's members are defined again on their own, its addresses going to its only member.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% else %}
                             <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" data-confirm="{% blocktrans with name=iface %}Stop interface {{ name }}? The host and its VMs lose their connections through it at once; if you reach the host through it, you lose the host.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                         {% endif %}
                     </form>
+                    {% else %}
+                        {% if state == 0 %}{% trans "Inactive" %}{% else %}{% trans "Active" %}{% endif %}
                     {% endif %}
                 </dd>
             </dl>
+            {% endif %}
         </div>
 
+        {% if info.members %}
         <div class="col-sm-12">
-            <h5>{% trans 'Slaves' %}</h5>
-            {% if itype == 'bridge' %}
+            <h5>{% trans 'Members' %}</h5>
             <div class="table-responsive">
                 <table class="table table-bordered align-middle">
                     <thead>
@@ -66,20 +64,20 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for iface in slave_ifaces %}
+                    {% for member in info.members %}
                         <tr>
-                            <td>{{ iface.mac }}</td>
-                            <td>{{ iface.name }}</td>
-                            <td>{{ iface.type }}</td>
-                            <td>{{ iface.speed }}</td>
-                            <td>{{ iface.state }}</td>
+                            <td>{{ member.mac|default:"–" }}</td>
+                            <td>{{ member.name }}</td>
+                            <td>{{ member.type }}</td>
+                            <td>{{ member.speed|default:"–" }}</td>
+                            <td>{{ member.link|default:"–" }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 
 {% endblock %}
