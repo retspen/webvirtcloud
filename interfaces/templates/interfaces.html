@@ -12,71 +12,64 @@
 {% endblock page_heading_extra %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-lg-12">
-            {% include "computes/host_nav.html" with section="interfaces" %}
-        </div>
-    </div>
+    {% include "computes/host_nav.html" with section="interfaces" %}
 
     {% if changeable is False %}{% include 'interfaces_unchangeable.html' %}{% endif %}
-    <div class="row">
-        {% if not  ifaces_all %}
-            <div class="col-lg-12">
-                <div class="alert alert-warning shadow-sm">
-                    {% bs_icon 'exclamation-triangle' %} <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Interfaces" %}
+    {% if not ifaces_all %}
+        <div class="alert alert-warning shadow-sm">
+            {% bs_icon 'exclamation-triangle' %} {% trans "libvirt lists no interfaces of this host." %}
+        </div>
+    {% else %}
+        <input id="filter" class="form-control w-auto mb-3" type="search" placeholder="{% trans "Search interfaces" %}" aria-label="{% trans "Search interfaces" %}">
+        {# a card per interface, as the networks', under its type; a type's heading shows while any of its cards does #}
+        {% for title, ifaces in iface_groups %}{% if ifaces %}
+        <section class="searchable">
+        <h2 class="h5 mb-3" data-group-header>{{ title }} <span class="badge text-bg-light border align-middle">{{ ifaces|length }}</span></h2>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
+        {% for iface in ifaces %}
+            <div class="col" data-search="{{ iface.name }} {{ iface.mac|default:"" }}{% for net in iface.networks %} {{ net }}{% endfor %}">
+                <div class="card h-100">
+                    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                        <a class="fw-semibold me-auto text-break" href="{% url 'interface' compute.id iface.name %}">{{ iface.name }}</a>
+                        {% include "link_badge.html" with link=iface.link %}
+                    </div>
+                    <ul class="list-group list-group-flush flex-grow-1">
+                        {# the same rows on every card of a type, a dash for what is not known #}
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "MAC" %}</span>
+                            <span class="font-monospace text-break text-end">{{ iface.mac|default:"–" }}</span>
+                        </li>
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "MTU" %}</span><span>{{ iface.mtu|default:"–" }}</span>
+                        </li>
+                        {% if iface.type == "ethernet" or iface.type == "bond" %}
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Speed" %}</span><span>{% if iface.speed %}{{ iface.speed }} Mb/s{% else %}–{% endif %}</span>
+                        </li>
+                        {% endif %}
+                        {% if iface.type != "ethernet" %}
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Members" %}</span>
+                            <span>{% if iface.members %}{% blocktrans count counter=iface.members|length %}{{ counter }} reported{% plural %}{{ counter }} reported{% endblocktrans %}{% else %}–{% endif %}</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Used by" %}</span>
+                            <span class="text-end">{% for net in iface.networks %}<a href="{% url 'network' compute.id net %}">{% blocktrans %}network {{ net }}{% endblocktrans %}</a>{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
-        {% else %}
-            {% for iface in ifaces_all %}
-                <div class="col-12 col-sm-4">
-                    <div class="mb-3 card {% if iface.state == 1 %}border-success{% else %}border-danger{% endif %} shadow-sm">
-                        <div class="card-header {% if iface.state == 1 %}bg-success-subtle{% else %}bg-danger-subtle{% endif %}">
-                            <h6 class="my-0 card-title">
-                                <a class="card-link {% if iface.state == 1 %}text-success-emphasis{% else %}text-danger-emphasis{% endif %}" href="{% url 'interface' compute.id iface.name %}">{{ iface.name }}</a>
-                            </h6>
-                        </div>
-                        <div class="ps-0 pe-0 card-body">
-                            <div class="row">
-                                <div class="col-3 col-sm-4">
-                                    <p><strong>{% trans "Type" %}:</strong></p>
-                                    <p><strong>{% trans "MAC" %}:</strong></p>
-                                </div>
-                                <div class="col-9 col-sm-8">
-                                    <p>{{ iface.type }}</p>
-                                    <p>{{ iface.mac }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-    </div>
+        {% endfor %}
+        </div>
+        </section>
+        {% endif %}{% endfor %}
+        <div role="status">
+            <div id="no-match" class="text-center text-body-secondary py-4" hidden>{% trans "No interface matches the search." %}</div>
+        </div>
+    {% endif %}
 {% endblock %}
+
 {% block script %}
-<script>
-    $(document).ready(function () {
-        $('#itype').change(function (eventObject) {
-            if ($(this).val() == 'bridge') {
-                $('.bridge_name_form_group').show();
-            } else {
-                $('.bridge_name_form_group').hide();
-            }
-        }).change();
-        $('#ipv4').change(function (eventObject) {
-            if ($(this).val() == 'static') {
-                $('.static_ipv4_form_group').show();
-            } else {
-                $('.static_ipv4_form_group').hide();
-            }
-        }).change();
-        $('#ipv6').change(function (eventObject) {
-            if ($(this).val() == 'static') {
-                $('.static_ipv6_form_group').show();
-            } else {
-                $('.static_ipv6_form_group').hide();
-            }
-        }).change();
-    });
-</script>
+    {% if ifaces_all %}<script src="{% static 'js/table_filter.js' %}"></script>{% endif %}
 {% endblock %}

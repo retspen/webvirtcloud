@@ -39,4 +39,4 @@ class LiveInterfacesTestCase(TestCase):
                 )
                 page = self.client.get(reverse("interfaces", args=[compute.id])).content.decode()
                 self.assertEqual("#AddInterface" in page, changeable)
-                self.assertEqual("does not support changing network interfaces" in page, not changeable)
+                self.assertEqual("only reads network interfaces" in page, not changeable)

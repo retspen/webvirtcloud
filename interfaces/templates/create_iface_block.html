@@ -1,150 +1,168 @@
 {% load i18n %}
+{% load static %}
 {% load bootstrap_icons %}
+{% load form_fields %}
 {% if request.user.is_superuser %}
-    <a href="#AddInterface" type="button" class="btn btn-success float-end" title="{% trans "Create New Interface" %}" data-bs-toggle="modal">
-        <span aria-hidden="true">{% bs_icon 'plus' %} </span>
-    </a>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddInterface">
+        <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New interface" %}
+    </button>
 
-    <!-- Modal Secret -->
-    <div class="modal fade" id="AddInterface" tabindex="-1" role="dialog" aria-labelledby="AddInterface" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
+    {# one form: a card per type, the fields of the chosen one (the others hidden and disabled, so not sent) #}
+    <div class="modal fade" id="AddInterface" tabindex="-1" aria-labelledby="AddInterfaceLabel" aria-hidden="true"
+         {% if form.errors %}data-open{% endif %}>
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+            <form method="post" class="modal-content" id="interface-form">{% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Create New Interface" %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div>
+                        <h5 class="modal-title" id="AddInterfaceLabel">{% trans "New interface" %}</h5>
+                        <div class="small text-body-secondary">{% blocktrans with host=compute.name %}On {{ host }}{% endblocktrans %}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
-                <form method="post" action="" role="form" aria-label="Create New Interface form">{% csrf_token %}
-                    <div class="modal-body">
-                        <div class="row">
-                            <label for="iface_name" class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                            <div class="col-sm-6">
-                                <input id="iface_name" type="text" name="name" class="form-control" placeholder="br0" maxlength="15" required pattern="[A-Za-z0-9_.\-]+"/>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="iface_start_mode" class="col-sm-3 col-form-label">{% trans "Start mode" %}</label>
-                            <div class="col-sm-6">
-                                <select id="iface_start_mode" name="start_mode" class="form-select">
-                                    <option value="none">{% trans "none" %}</option>
-                                    <option value="onboot">{% trans "onboot" %}</option>
-                                    <option value="hotplug">{% trans "hotplug" %}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="iface_netdev" class="col-sm-3 col-form-label">{% trans "Device" %}</label>
-                            <div class="col-sm-6">
-                                <select id="iface_netdev" name="netdev" class="form-select">
-                                    {% for dev in netdevs %}
-                                        <option value="{{ dev }}">{{ dev }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label for="itype" class="col-sm-3 col-form-label">{% trans "Type" %}</label>
-                            <div class="col-sm-6">
-                                <select name="itype" class="form-select" id="itype">
-                                    <option value="bridge">{% trans "bridge" %}</option>
-                                    <option value="ethernet">{% trans "ethernet" %}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row bridge_name_form_group">
-                            <label for="iface_stp" class="col-sm-3 col-form-label">{% trans "STP" %}</label>
+                <div class="modal-body">
+                    {% include "instances/form_errors.html" %}
 
+                    <fieldset class="mb-3">
+                        <legend class="form-label fs-6">{% trans "Type" %}</legend>
+                        <div class="row row-cols-1 row-cols-sm-2 g-2">
+                            {% trans "Bridge" as title %}{% trans "A new bridge over a device of the host; VMs can join it." as help %}
+                            {% include "radio_card.html" with name="itype" value="bridge" chosen=if_kind %}
+                            {% trans "Ethernet" as title %}{% trans "A device of the host, configured and started by libvirt." as help %}
+                            {% include "radio_card.html" with name="itype" value="ethernet" chosen=if_kind %}
+                        </div>
+                    </fieldset>
+
+                    <fieldset data-kinds="bridge">
+                        <legend class="visually-hidden">{% trans "Bridge" %}</legend>
+                        <div class="row g-3 mb-3">
                             <div class="col-sm-6">
+                                <label for="iface_name" class="form-label">{% trans "Bridge name" %}</label>
+                                <input id="iface_name" type="text" name="name" class="form-control font-monospace{% if if_kind == "bridge" %}{{ form.name|invalid }}{% endif %}"
+                                       value="{% if if_kind == "bridge" %}{{ form.name.value|default:"" }}{% endif %}" placeholder="br0" maxlength="15" required pattern="[A-Za-z0-9_.\-]+"
+                                       {% if if_kind == "bridge" %}{% error_attrs form.name "iface_name" %}{% endif %}>
+                                {% if if_kind == "bridge" %}{% field_error form.name "iface_name" %}{% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="iface_netdev" class="form-label">{% trans "Member device" %}</label>
+                                <select id="iface_netdev" name="netdev" class="form-select{{ form.netdev|invalid }}" required {% error_attrs form.netdev "iface_netdev" "iface_netdev_help" %}>
+                                    {# a device taken meanwhile is chosen again, not swapped for the first one #}
+                                    {% if form.netdev.value and form.netdev.value not in members %}<option value="" selected>{% trans "Choose a device" %}</option>{% endif %}
+                                    {% for dev in members %}<option value="{{ dev }}"{% if dev == form.netdev.value %} selected{% endif %}>{{ dev }}</option>{% endfor %}
+                                </select>
+                                <div class="form-text" id="iface_netdev_help">{% trans "Devices in no bridge, bond or VLAN." %}</div>
+                                {% field_error form.netdev "iface_netdev" %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="iface_stp" class="form-label">{% trans "Spanning tree (STP)" %}</label>
                                 <select id="iface_stp" name="stp" class="form-select">
-                                    <option value="on">{% trans "on" %}</option>
-                                    <option value="off">{% trans "off" %}</option>
+                                    <option value="off"{% if form.stp.value == "off" %} selected{% endif %}>{% trans "Off" %}</option>
+                                    <option value="on"{% if form.stp.value == "on" %} selected{% endif %}>{% trans "On" %}</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="row bridge_name_form_group">
-                            <label for="iface_delay" class="col-sm-3 col-form-label">{% trans "Delay" %}</label>
                             <div class="col-sm-6">
-                                <input id="iface_delay" type="text" name="delay" class="form-control" value="0" maxlength="3" required pattern="[0-9]+"/>
+                                <label for="iface_delay" class="form-label">{% trans "Forward delay (s)" %}</label>
+                                <input id="iface_delay" type="number" name="delay" min="0" class="form-control{{ form.delay|invalid }}" value="{{ form.delay.value|default:"0" }}" required
+                                       {% error_attrs form.delay "iface_delay" %}>
+                                {% field_error form.delay "iface_delay" %}
                             </div>
                         </div>
-                        <div class="tabbable">
-                            <ul class="nav nav-tabs" aria-label="IP types">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ipv4tab" type="button" role="tab" aria-controls="ipv4tab" aria-selected="true">
-                                        {% trans "IPv4" %}
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ipv6tab" type="button" role="tab" aria-controls="ipv6tab" aria-selected="false">
-                                        {% trans "IPv6" %}
-                                    </button>
-                                </li>
-                            </ul>
+                        <div class="alert alert-warning small">
+                            {% bs_icon 'exclamation-triangle' %} {% trans "The device's own addresses go: the bridge takes the ones below, and connections through the device drop while it is rebuilt." %}
                         </div>
-                        <div class="tab-content">
-                            <div class="tab-pane active" id="ipv4tab">
-                                <div class="modal-body">
-                                    <div class="row">
-                                        <label for="ipv4" class="col-sm-3 col-form-label">{% trans "IPv4 Mode" %}</label>
-                                        <div class="col-sm-6">
-                                            <select name="ipv4_type" class="form-select" id="ipv4">
-                                                <option value="dhcp">{% trans "DHCP" %}</option>
-                                                <option value="static">{% trans "Static" %}</option>
-                                                <option value="none">{% trans "No configuration" %}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="row static_ipv4_form_group">
-                                        <label for="iface_ipv4_addr" class="col-sm-3 col-form-label">{% trans "IPv4 Address" %}</label>
-                                        <div class="col-sm-6">
-                                            <input id="iface_ipv4_addr" type="text" class="form-control" name="ipv4_addr" maxlength="31" pattern="[0-9\.\/]+|^$">
-                                        </div>
-                                    </div>
-                                    <div class="row static_ipv4_form_group">
-                                        <label for="iface_ipv4_gw" class="col-sm-3 col-form-label">{% trans "IPv4 Gateway" %}</label>
-                                        <div class="col-sm-6">
-                                            <input id="iface_ipv4_gw" type="text" class="form-control" name="ipv4_gw" maxlength="16" pattern="[0-9\.]+|^$">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="tab-pane" id="ipv6tab">
-                                <div class="modal-body">
-                                    <div class="row">
-                                        <label for="ipv6" class="col-sm-3 col-form-label">{% trans "IPv6 Mode" %}</label>
-                                        <div class="col-sm-6">
-                                            <select name="ipv6_type" class="form-select" id="ipv6">
-                                                <option value="none">{% trans "No configuration" %}</option>
-                                                <option value="dhcp">{% trans "DHCP" %}</option>
-                                                <option value="static">{% trans "Static" %}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="row static_ipv6_form_group">
-                                        <label for="iface_ipv6_addr" class="col-sm-3 col-form-label">{% trans "IPv6 Address" %}</label>
-                                        <div class="col-sm-6">
-                                            <input id="iface_ipv6_addr" type="text" class="form-control" name="ipv6_addr" maxlength="100" pattern="[0-9a-fA-F\:\/]+|^$">
-                                        </div>
-                                    </div>
-                                    <div class="row static_ipv6_form_group">
-                                        <label for="iface_ipv6_gw" class="col-sm-3 col-form-label">{% trans "IPv6 Gateway" %}</label>
-                                        <div class="col-sm-6">
-                                            <input id="iface_ipv6_gw" type="text" class="form-control" name="ipv6_gw" maxlength="100" pattern="[0-9a-fA-F\:]+|^$">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    </fieldset>
+
+                    <fieldset data-kinds="ethernet">
+                        <legend class="visually-hidden">{% trans "Ethernet" %}</legend>
+                        {% if ethernet_devices %}
+                        <div class="mb-3">
+                            <label for="iface_device" class="form-label">{% trans "Device" %}</label>
+                            <select id="iface_device" name="name" class="form-select{% if if_kind == "ethernet" %}{{ form.name|invalid }}{% endif %}" required
+                                    {% if if_kind == "ethernet" %}{% error_attrs form.name "iface_device" %}{% endif %}>
+                                {% if if_kind == "ethernet" and form.name.value and form.name.value not in ethernet_devices %}<option value="" selected>{% trans "Choose a device" %}</option>{% endif %}
+                                {% for dev in ethernet_devices %}<option value="{{ dev }}"{% if dev == form.name.value %} selected{% endif %}>{{ dev }}</option>{% endfor %}
+                            </select>
+                            {% if if_kind == "ethernet" %}{% field_error form.name "iface_device" %}{% endif %}
                         </div>
+                        {% else %}
+                        <div class="alert alert-secondary small">{% trans "The host has every device defined already; a device's page shows it." %}</div>
+                        {% endif %}
+                    </fieldset>
+
+                    <div class="mb-3">
+                        <label for="iface_ipv4" class="form-label">IPv4</label>
+                        <select id="iface_ipv4" name="ipv4_type" class="form-select" data-static="#iface_ipv4_static">
+                            <option value="none"{% if form.ipv4_type.value == "none" %} selected{% endif %}>{% trans "None" %}</option>
+                            <option value="dhcp"{% if form.ipv4_type.value == "dhcp" or not form.is_bound and "dhcp" == "dhcp" %} selected{% endif %}>DHCP</option>
+                            <option value="static"{% if form.ipv4_type.value == "static" %} selected{% endif %}>{% trans "Static" %}</option>
+                        </select>
+                    </div>
+                    <fieldset class="row g-3 mb-3" id="iface_ipv4_static">
+                        <legend class="visually-hidden">IPv4</legend>
+                        <div class="col-sm-6">
+                            <label for="iface_ipv4_addr" class="form-label">{% trans "Address/prefix" %}</label>
+                            <input id="iface_ipv4_addr" name="ipv4_addr" class="form-control font-monospace{{ form.ipv4_addr|invalid }}" value="{{ form.ipv4_addr.value|default:"" }}"
+                                   placeholder="192.0.2.10/24" required {% error_attrs form.ipv4_addr "iface_ipv4_addr" %}>
+                            {% field_error form.ipv4_addr "iface_ipv4_addr" %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="iface_ipv4_gw" class="form-label">{% trans "Gateway" %}</label>
+                            <input id="iface_ipv4_gw" name="ipv4_gw" class="form-control font-monospace{{ form.ipv4_gw|invalid }}" value="{{ form.ipv4_gw.value|default:"" }}"
+                                   placeholder="192.0.2.1" {% error_attrs form.ipv4_gw "iface_ipv4_gw" %}>
+                            {% field_error form.ipv4_gw "iface_ipv4_gw" %}
+                        </div>
+                    </fieldset>
+                    <div class="mb-3">
+                        <label for="iface_ipv6" class="form-label">IPv6</label>
+                        <select id="iface_ipv6" name="ipv6_type" class="form-select" data-static="#iface_ipv6_static">
+                            <option value="none"{% if form.ipv6_type.value == "none" %} selected{% endif %}>{% trans "None" %}</option>
+                            <option value="dhcp"{% if form.ipv6_type.value == "dhcp" or not form.is_bound and "none" == "dhcp" %} selected{% endif %}>DHCP</option>
+                            <option value="static"{% if form.ipv6_type.value == "static" %} selected{% endif %}>{% trans "Static" %}</option>
+                        </select>
+                    </div>
+                    <fieldset class="row g-3 mb-3" id="iface_ipv6_static">
+                        <legend class="visually-hidden">IPv6</legend>
+                        <div class="col-sm-6">
+                            <label for="iface_ipv6_addr" class="form-label">{% trans "Address/prefix" %}</label>
+                            <input id="iface_ipv6_addr" name="ipv6_addr" class="form-control font-monospace{{ form.ipv6_addr|invalid }}" value="{{ form.ipv6_addr.value|default:"" }}"
+                                   placeholder="2001:db8::10/64" required {% error_attrs form.ipv6_addr "iface_ipv6_addr" %}>
+                            {% field_error form.ipv6_addr "iface_ipv6_addr" %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="iface_ipv6_gw" class="form-label">{% trans "Gateway" %}</label>
+                            <input id="iface_ipv6_gw" name="ipv6_gw" class="form-control font-monospace{{ form.ipv6_gw|invalid }}" value="{{ form.ipv6_gw.value|default:"" }}"
+                                   placeholder="2001:db8::1" {% error_attrs form.ipv6_gw "iface_ipv6_gw" %}>
+                            {% field_error form.ipv6_gw "iface_ipv6_gw" %}
+                        </div>
+                    </fieldset>
+                    <div class="mb-3">
+                        <label for="iface_start_mode" class="form-label">{% trans "Starts" %}</label>
+                        <select id="iface_start_mode" name="start_mode" class="form-select">
+                            <option value="onboot"{% if form.start_mode.value == "onboot" %} selected{% endif %}>{% trans "On boot" %}</option>
+                            <option value="hotplug"{% if form.start_mode.value == "hotplug" %} selected{% endif %}>{% trans "When plugged in" %}</option>
+                            <option value="none"{% if form.start_mode.value == "none" %} selected{% endif %}>{% trans "Only by hand" %}</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        {% trans "Close" %}
-                    </button>
-                    <button type="submit" class="btn btn-primary" name="create">
-                        {% trans "Create" %}
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="create">{% trans "Create interface" %}</button>
                 </div>
-                </form>
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-    </div><!-- /.modal -->
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'js/choice_dialog.js' %}"></script>
+    <script>
+        // a static address's fields show with its choice (after the page's
+        // scripts, Bootstrap's among them)
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('interface-form');
+            form.querySelectorAll('select[data-static]').forEach(function (method) {
+                var fields = form.querySelector(method.dataset.static);
+                function show() { fields.hidden = fields.disabled = method.value !== 'static'; }
+                method.addEventListener('change', show);
+                show();
+            });
+            choiceDialog(document.getElementById('AddInterface'), 'itype', function () {});
+        });
+    </script>
 {% endif %}

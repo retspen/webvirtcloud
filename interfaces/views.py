@@ -5,9 +5,10 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from computes.models import Compute
+from instances.models import Instance
 from interfaces.forms import AddInterface
 from logs.audit import audit
-from vrtManager.interface import wvmInterface, wvmInterfaces
+from vrtManager.interface import networks_by_device, wvmInterface, wvmInterfaces
 from admin.decorators import superuser_only
 
 
@@ -19,7 +20,18 @@ def interfaces(request, compute_id):
     try:
         conn = wvmInterfaces(compute.hostname, compute.login, compute.password, compute.type)
         ifaces_all = conn.get_ifaces_info()
+        defined_names = [iface["name"] for iface in ifaces_all]
         changeable = conn.can_change_interfaces()
+        used_by = networks_by_device(conn.wvm)
+        for iface in ifaces_all:
+            iface["networks"] = used_by.get(iface["name"], [])
+        # the list by type, in libvirt's four, a type the host has none of left out
+        iface_groups = [(title, [iface for iface in ifaces_all if iface["type"] == kind])
+                        for kind, title in (("bridge", _("Bridges")), ("bond", _("Bonds")),
+                                            ("vlan", _("VLANs")), ("ethernet", _("Ethernet")))]
+        form = AddInterface()
+        # the new interface dialog's type: the one sent back after a refusal
+        if_kind = request.POST.get("itype", "bridge")
 
         # the host's devices are only the create form's choices
         netdevs, members, netdev_error = [], [], None
@@ -27,6 +39,7 @@ def interfaces(request, compute_id):
             try:
                 netdevs = conn.get_net_devices()
                 members = conn.get_member_candidates(netdevs)
+                ethernet_devices = [dev for dev in members if dev not in defined_names]
             except Exception as err:  # a host without the node device driver too
                 netdev_error = err
                 messages.error(request, _("The network devices of this host could not be read: %(error)s") % {"error": err})
@@ -35,19 +48,21 @@ def interfaces(request, compute_id):
         # interfaces; without the host's devices nothing can be checked
         if request.method == "POST" and "create" in request.POST and changeable and netdev_error is None:
             form = AddInterface(request.POST, netdevs=netdevs, members=members,
-                                defined=[iface["name"] for iface in ifaces_all])
+                                defined=defined_names)
             if form.is_valid():
                 data = form.cleaned_data
-                with audit(request, compute, f"Interface {data['name']}", "add"):
-                    conn.create_iface(
-                        data["name"], data["itype"], data["start_mode"], data["netdev"],
-                        data["ipv4_type"], data["ipv4_addr"], data["ipv4_gw"],
-                        data["ipv6_type"], data["ipv6_addr"], data["ipv6_gw"],
-                        data["stp"], data["delay"],
-                    )
-                return HttpResponseRedirect(reverse("interfaces", args=[compute_id]))
-            for msg_err in form.errors.values():
-                messages.error(request, msg_err.as_text())
+                try:
+                    with audit(request, compute, f"Interface {data['name']}", "add"):
+                        conn.create_iface(
+                            data["name"], data["itype"], data["start_mode"], data["netdev"],
+                            data["ipv4_type"], data["ipv4_addr"], data["ipv4_gw"],
+                            data["ipv6_type"], data["ipv6_addr"], data["ipv6_gw"],
+                            data["stp"], data["delay"],
+                        )
+                except libvirtError as err:  # shown in the dialog, which opens again
+                    form.add_error(None, str(err))
+                else:
+                    return HttpResponseRedirect(reverse("interface", args=[compute_id, data["name"]]))
         conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
@@ -86,7 +101,14 @@ def interface(request, compute_id, iface):
                 return HttpResponseRedirect(here)
 
         info = conn.get_info()
+        info["addressing"] = [("IPv4", info["ipv4"]), ("IPv6", info["ipv6"])]
         state = conn.is_active()
+        networks = networks_by_device(conn.wvm).get(iface, [])
+        if info["type"] == "bridge":
+            vms = conn.get_vms(networks)
+            vm_ids = dict(Instance.objects.filter(compute=compute, name__in=[vm["vm"] for vm in vms]).values_list("name", "id"))
+            for vm in vms:
+                vm["id"] = vm_ids.get(vm["vm"])
         conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)

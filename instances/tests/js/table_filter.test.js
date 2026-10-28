@@ -16,7 +16,7 @@ function plainRow(text) {
     return {textContent: text, dataset: {}, hidden: false, hasAttribute: () => false, querySelector: () => null};
 }
 function group(rows, host) {
-    return {dataset: host ? {host} : {}, querySelectorAll: (s) => (s === "tr" ? rows : [])};
+    return {dataset: host ? {host} : {}, querySelectorAll: (s) => (s === "tr, [data-search], [data-group-header]" ? rows : [])};
 }
 function page(groups, text, state, noMatch, extra = {}) {
     // a list without a state list (state undefined) has no such element
@@ -56,6 +56,13 @@ filterInstances(page(groups, "host-a", "Off"));
 assert.deepStrictEqual(visible(a), ["host-a Connected", "db-1 Off"], "the state applies to a host's VMs too");
 filterInstances(page(groups, "Connected", ""));
 assert.deepStrictEqual(visible(a), [], "a host row's other text is not its name");
+
+// the interfaces list: a type's heading shows while any of its cards does
+const bridges = [hostRow("Bridges 2"), vm("x", undefined, "br-v101"), vm("x", undefined, "br-v102")];
+const vlans = [hostRow("VLANs 1"), vm("x", undefined, "bond1.101")];
+filterInstances(page([group(bridges), group(vlans)], "v102"));
+assert.deepStrictEqual(bridges.map((r) => r.hidden), [false, true, false], "a card is found by its data-search");
+assert.deepStrictEqual(vlans.map((r) => r.hidden), [true, true], "a type without a match is hidden, its heading too");
 
 // any other list: no state list, no groups; its rows are filtered by their text
 const plain = [plainRow("alice Active"), plainRow("bob (vda) Blocked"), plainRow("carol Active")];

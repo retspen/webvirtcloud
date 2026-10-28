@@ -3,6 +3,8 @@ from functools import cached_property
 from xml.etree import ElementTree
 
 from libvirt import (
+    VIR_CONNECT_LIST_DOMAINS_ACTIVE,
+    VIR_ERR_NO_DOMAIN,
     VIR_ERR_NO_INTERFACE,
     VIR_ERR_XML_ERROR,
     VIR_INTERFACE_XML_INACTIVE,
@@ -64,8 +66,8 @@ def attribute(element, path, name):
 
 def interface_info(iface, tree):
     """What an interface (its libvirt object, which holds its name and MAC)
-    and its XML tell: type, MAC, MTU, link state and speed, and the members
-    of a bridge or bond, or a VLAN's device, as reported."""
+    and its XML tell: type, MAC, MTU, link state and speed, the members of a
+    bridge or bond, or a VLAN's device, as reported, and a bridge's STP."""
     state, speed = link_of(tree)
     members = []
     for member in tree.findall("bridge/interface") + tree.findall("bond/interface") + tree.findall("vlan/interface"):
@@ -73,7 +75,24 @@ def interface_info(iface, tree):
         members.append({"name": member.get("name"), "type": member.get("type"), "mac": attribute(member, "mac", "address"),
                         "link": member_state, "speed": member_speed})
     return {"name": iface.name(), "type": tree.get("type"), "mac": iface.MACString() or None,
-            "mtu": attribute(tree, "mtu", "size"), "link": state, "speed": speed, "members": members}
+            "mtu": attribute(tree, "mtu", "size"), "link": state, "speed": speed, "members": members,
+            "stp": attribute(tree, "bridge", "stp")}
+
+
+def networks_by_device(conn):
+    """The host's libvirt networks by the devices they use: their bridge, or
+    every interface or physical function they forward to. One listing, one
+    XML read per network."""
+    by_device = {}
+    for net in conn.listAllNetworks(0):
+        tree = ElementTree.fromstring(net.XMLDesc(0))
+        devices = {attribute(tree, "bridge", "name")}
+        for forward in tree.findall("forward/interface") + tree.findall("forward/pf"):
+            devices.add(forward.get("dev"))
+        devices.discard(None)
+        for device in devices:
+            by_device.setdefault(device, []).append(net.name())
+    return by_device
 
 
 class wvmInterfaces(wvmConnect):
@@ -213,6 +232,25 @@ class wvmInterface(wvmConnect):
                          for ip in self.tree.findall(f"protocol[@family='{family}']/ip")]
             info[family] = {"method": method, "addresses": addresses}
         return info
+
+    def get_vms(self, networks=()):
+        """The running VMs' network cards on this bridge, directly or through
+        the libvirt networks of networks (which use it): VM, tap device and
+        the VM's MAC. One listing, one XML read per running VM."""
+        name = self.iface.name()
+        cards = []
+        for dom in self.wvm.listAllDomains(VIR_CONNECT_LIST_DOMAINS_ACTIVE):
+            try:
+                tree = ElementTree.fromstring(dom.XMLDesc(0))
+            except libvirtError as err:  # a VM stopped or undefined meanwhile is not on it
+                if err.get_error_code() != VIR_ERR_NO_DOMAIN:
+                    raise
+                continue
+            for card in tree.findall("devices/interface"):
+                source = card.find("source")
+                if source is not None and (source.get("bridge") == name or source.get("network") in networks):
+                    cards.append({"vm": dom.name(), "tap": attribute(card, "target", "dev"), "mac": attribute(card, "mac", "address")})
+        return sorted(cards, key=lambda card: (card["vm"], card["tap"] or ""))
 
     def stop_iface(self):
         self.iface.destroy()

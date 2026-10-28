@@ -1,5 +1,5 @@
 {% load i18n %}
 {% load bootstrap_icons %}
-<div class="alert alert-info shadow-sm">
-    {% bs_icon 'info-circle' %} {% trans "This host's libvirt does not support changing network interfaces. Configure them directly on the host, for example with NetworkManager." %}
+<div class="alert alert-secondary small">
+    {% bs_icon 'info-circle' %} {% trans "This host's libvirt only reads network interfaces and does not tell their addresses: change them on the host, for example with NetworkManager." %}
 </div>

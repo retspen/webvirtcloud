@@ -1,8 +1,9 @@
 // The search box of a list page, and the instance list's state list.
 //
-// A row shows when its text contains the search, in any case: plain text,
-// not a pattern. A row with data-search is searched in that text only, not
-// in its buttons and menus. With a state list, the row's [data-state] must
+// A row (a table row, or another element with data-search, such as a card)
+// shows when its text contains the search, in any case: plain text, not a
+// pattern. A row with data-search is searched in that text only, not in its
+// buttons and menus. With a state list, the row's [data-state] must
 // be the chosen state too. In a grouped list a search for a group's host
 // shows all of its rows, and its header row (data-group-header) shows while
 // any of its rows does. A page's #no-match shows while no row does. The
@@ -23,7 +24,7 @@ function filterTable(doc) {
         var host = group.dataset.host;
         var hostMatches = host !== undefined && host.toLowerCase().includes(text);
         var header = null, shown = false;
-        group.querySelectorAll("tr").forEach(function (row) {
+        group.querySelectorAll("tr, [data-search], [data-group-header]").forEach(function (row) {
             if (row.hasAttribute("data-group-header")) {
                 header = row;
                 return;

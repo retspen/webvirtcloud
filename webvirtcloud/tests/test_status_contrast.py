@@ -1,7 +1,7 @@
-"""Status colours keep their contrast on every theme: an interface card's
-header, and a status word, is the theme's pale status background with its
-dark status text, a pair that does not depend on the page's background
-(dark themes keep light-mode emphasis colours)."""
+"""Status colours keep their contrast on every theme: a status word is the
+theme's pale status background with its dark status text, a pair that does
+not depend on the page's background (dark themes keep light-mode emphasis
+colours)."""
 
 from unittest.mock import PropertyMock, patch
 
@@ -25,17 +25,6 @@ class StatusContrastTests(TestCase):
             response = self.client.get(reverse(name, args=[self.compute.id, *args] if compute else args))
         self.assertEqual(response.status_code, 200)
         return html.fromstring(response.content)
-
-    def test_card_headers_are_pale_with_dark_text(self):
-        for name in ("interfaces",):
-            with self.subTest(page=name):
-                headers = self.page(name).xpath("//div[contains(@class, 'card-header')]")
-                self.assertTrue(headers)
-                for header in headers:
-                    classes = header.get("class").split()
-                    self.assertTrue({"bg-success-subtle", "bg-danger-subtle"} & set(classes), classes)
-                    link = header.xpath(".//a")[0].get("class").split()
-                    self.assertTrue({"text-success-emphasis", "text-danger-emphasis"} & set(link), link)
 
     def test_status_words_are_pale_badges_with_dark_text(self):
         # the test driver has no node memory statistics for the host row

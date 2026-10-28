@@ -4,80 +4,174 @@
 
 {% block title %}{% trans "Interface" %} - {{ iface }}{% endblock %}
 
-{% block page_heading %}{% trans "Interface" %}: {{ iface }}{% endblock page_heading %}
+{% block page_heading %}{{ compute.name }} - {% trans "Interface" %}: {{ iface }}{% endblock page_heading %}
+
+{% block page_heading_extra %}
+{% if changeable and info %}
+{# the interface's own actions where the host's libvirt can change interfaces: start or stop, and delete a stopped one #}
+<div class="btn-group" role="group" aria-label="{% blocktrans %}Actions for interface {{ iface }}{% endblocktrans %}">
+    <form method="post" class="btn-group">{% csrf_token %}
+        {% if state %}
+        <button type="submit" class="btn btn-outline-secondary" name="stop"
+                data-confirm="{% blocktrans with name=iface %}Stop interface {{ name }}? The host and its VMs lose their connections through it at once; if you reach the host through it, you lose the host.{% endblocktrans %}"
+                onclick="return confirm(this.dataset.confirm)">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
+        {% else %}
+        <button type="submit" class="btn btn-outline-secondary" name="start">{% bs_icon 'play-fill' %} {% trans "Start" %}</button>
+        {% endif %}
+    </form>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{% trans "More actions" %}">{% bs_icon 'three-dots' %}</button>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+            <li><form method="post">{% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger" name="delete"{% if state %} disabled{% endif %}
+                        data-confirm="{% blocktrans with name=iface %}Delete interface {{ name }}? Its definition is removed from the host; a bridge's members are defined again on their own, its addresses going to its only member.{% endblocktrans %}"
+                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% if state %}{% trans "Delete (stop it first)" %}{% else %}{% trans "Delete interface" %}{% endif %}</button>
+            </form></li>
+        </ul>
+    </div>
+</div>
+{% endif %}
+{% endblock page_heading_extra %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-lg-12">
-            {% include "computes/host_nav.html" with section="interfaces" detail=True %}
-        </div>
-    </div>
+    {% include "computes/host_nav.html" with section="interfaces" detail=True %}
 
     {% if changeable is False %}{% include 'interfaces_unchangeable.html' %}{% endif %}
-    <div class="row">
-        <div class="col-12">
-            {% if info %}
-            <dl class="ms-3 row">
-                <dt class="col-4">{% trans "Interface" %}</dt>
-                <dd class="col-8"><strong>{{ iface }}</strong></dd>
-                <dt class="col-4">{% trans "IPv4" %}{% if info.ipv4.method %} ({{ info.ipv4.method }}){% endif %}</dt>
-                <dd class="col-8">{{ info.ipv4.addresses|join:", "|default:"–" }}</dd>
-                <dt class="col-4">{% trans "IPv6" %}{% if info.ipv6.method %} ({{ info.ipv6.method }}){% endif %}</dt>
-                <dd class="col-8">{{ info.ipv6.addresses|join:", "|default:"–" }}</dd>
-                <dt class="col-4">{% trans "MAC" %}</dt>
-                <dd class="col-8">{{ info.mac|default:"–" }}</dd>
-                <dt class="col-4">{% trans "Interface Type" %}</dt>
-                <dd class="col-8">{{ info.type }}</dd>
-                <dt class="col-4">{% trans "Boot Mode" %}</dt>
-                <dd class="col-8">{{ info.start_mode|default:"–" }}</dd>
-                <dt class="col-4">{% trans "State" %}</dt>
-                <dd class="col-8">
-                    {% if changeable %}
-                    <form action="" method="post" role="form" aria-label="Interface start/stop/delete form">{% csrf_token %}
-                        {% if state == 0 %}
-                            <input type="submit" class="btn btn-sm btn-primary" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" data-confirm="{% blocktrans with name=iface %}Delete interface {{ name }}? Its definition is removed from the host; a bridge's members are defined again on their own, its addresses going to its only member.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                        {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" data-confirm="{% blocktrans with name=iface %}Stop interface {{ name }}? The host and its VMs lose their connections through it at once; if you reach the host through it, you lose the host.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                        {% endif %}
-                    </form>
-                    {% else %}
-                        {% if state == 0 %}{% trans "Inactive" %}{% else %}{% trans "Active" %}{% endif %}
-                    {% endif %}
-                </dd>
-            </dl>
+    {% if info %}
+    <div class="card mb-3">
+        <div class="card-header">{% trans "Interface" %}</div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Type" %}</span><span class="badge text-bg-light border">{{ info.type|capfirst }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "State" %}</span>
+                <span class="d-flex flex-wrap justify-content-end gap-1">
+                    {# libvirt's own state where it manages the interface; the link as the kernel reports it everywhere #}
+                    {% if changeable %}{% if state %}<span class="badge text-bg-success">{% trans "Active" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Inactive" %}</span>{% endif %}{% endif %}
+                    {% include "link_badge.html" with link=info.link %}
+                </span>
+            </li>
+            {% if info.start_mode %}
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Starts" %}</span>
+                <span>{% if info.start_mode == "onboot" %}{% trans "On boot" %}{% elif info.start_mode == "hotplug" %}{% trans "When plugged in" %}{% else %}{% trans "Only by hand" %}{% endif %}</span>
+            </li>
             {% endif %}
-        </div>
-
-        {% if info.members %}
-        <div class="col-sm-12">
-            <h5>{% trans 'Members' %}</h5>
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle">
-                    <thead>
-                    <tr>
-                        <th scope="col">{% trans 'MAC' %}</th>
-                        <th scope="col">{% trans 'Name' %}</th>
-                        <th scope="col">{% trans 'Type' %}</th>
-                        <th scope="col">{% trans 'Speed' %}</th>
-                        <th scope="col">{% trans 'State' %}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for member in info.members %}
-                        <tr>
-                            <td>{{ member.mac|default:"–" }}</td>
-                            <td>{{ member.name }}</td>
-                            <td>{{ member.type }}</td>
-                            <td>{{ member.speed|default:"–" }}</td>
-                            <td>{{ member.link|default:"–" }}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% endif %}
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "MAC" %}</span><span class="font-monospace text-break text-end">{{ info.mac|default:"–" }}</span>
+            </li>
+            {% if info.mtu %}
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "MTU" %}</span><span>{{ info.mtu }}</span>
+            </li>
+            {% endif %}
+            {% if info.speed %}
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Speed" %}</span><span>{{ info.speed }} Mb/s</span>
+            </li>
+            {% endif %}
+            {% if info.stp %}
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Spanning tree" %}</span>
+                {# not its delay: netcf tells it in seconds, the udev backend in hundredths #}
+                <span>{% if info.stp == "on" %}{% trans "On" %}{% else %}{% trans "Off" %}{% endif %}</span>
+            </li>
+            {% endif %}
+            {% if networks %}
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Used by" %}</span>
+                <span class="text-end">{% for net in networks %}<a href="{% url 'network' compute.id net %}">{% blocktrans %}network {{ net }}{% endblocktrans %}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+            </li>
+            {% endif %}
+        </ul>
     </div>
 
+    {% if changeable %}
+    <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
+        {% for family, addressing in info.addressing %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">{{ family }}</div>
+                <ul class="list-group list-group-flush flex-grow-1">
+                    <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <span class="text-body-secondary">{% trans "Configured" %}</span>
+                        <span>{% if addressing.method == "dhcp" %}DHCP{% elif addressing.method == "autoconf" %}{% trans "Automatic (SLAAC)" %}{% elif addressing.method == "static" %}{% trans "Static" %}{% else %}{% trans "None" %}{% endif %}</span>
+                    </li>
+                    {% for address in addressing.addresses %}
+                    <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <span class="text-body-secondary">{% trans "Address" %}</span><span class="font-monospace text-break text-end">{{ address }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if info.type == "bridge" or info.type == "bond" or info.type == "vlan" %}
+    <div class="card mb-3">
+        <div class="card-header">{% if info.type == "vlan" %}{% trans "Device" %}{% else %}{% trans "Members" %}{% endif %}</div>
+        {% if info.members %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "Name" %}</th>
+                        <th scope="col">{% trans "Type" %}</th>
+                        <th scope="col">{% trans "MAC" %}</th>
+                        <th scope="col">{% trans "Link" %}</th>
+                        <th scope="col">{% trans "Speed" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for member in info.members %}
+                    <tr>
+                        <td class="font-monospace text-nowrap">{{ member.name }}</td>
+                        <td>{{ member.type|default:"–" }}</td>
+                        <td class="font-monospace text-nowrap">{{ member.mac|default:"–" }}</td>
+                        <td>{% include "link_badge.html" with link=member.link %}</td>
+                        <td class="text-nowrap">{% if member.speed %}{{ member.speed }} Mb/s{% else %}–{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "libvirt reports no members." %}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if info.type == "bridge" %}
+    <div class="card mb-3">
+        <div class="card-header">{% trans "Connected VM interfaces" %}</div>
+        {% if vms %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "VM" %}</th>
+                        <th scope="col">{% trans "Tap" %}</th>
+                        <th scope="col">{% trans "VM's MAC" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for vm in vms %}
+                    <tr>
+                        <td>{% if vm.id %}<a href="{% url 'instances:instance' vm.id %}">{{ vm.vm }}</a>{% else %}{{ vm.vm }}{% endif %}</td>
+                        <td class="font-monospace">{{ vm.tap|default:"–" }}</td>
+                        <td class="font-monospace text-nowrap">{{ vm.mac|default:"–" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "No running VM is on this bridge." %}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
 {% endblock %}

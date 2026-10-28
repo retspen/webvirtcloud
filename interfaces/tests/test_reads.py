@@ -90,3 +90,30 @@ class ReadTests(SimpleTestCase):
         xml = "<interface type='ethernet' name='eth0'><protocol family='ipv4'><ip address='192.0.2.10'/></protocol></interface>"
         conn.iface = MagicMock(**{"name.return_value": "eth0", "MACString.return_value": "", "XMLDesc.return_value": xml})
         self.assertEqual(conn.get_info()["ipv4"]["addresses"], ["192.0.2.10"])
+
+
+class BridgeUseTests(SimpleTestCase):
+    def test_networks_and_running_vms_on_a_bridge(self):
+        from vrtManager.interface import networks_by_device
+
+        nets = [MagicMock(**{"name.return_value": name, "XMLDesc.return_value": xml}) for name, xml in (
+            ("default", "<network><bridge name='virbr0'/></network>"),
+            ("lan", "<network><forward mode='bridge'/><bridge name='br0'/></network>"),
+            ("direct", "<network><forward mode='bridge'><interface dev='eth0'/><interface dev='eth1'/></forward></network>"),
+            ("sriov", "<network><forward mode='hostdev'><pf dev='eth2'/></forward></network>"))]
+        self.assertEqual(networks_by_device(MagicMock(**{"listAllNetworks.return_value": nets})),
+                         {"virbr0": ["default"], "br0": ["lan"], "eth0": ["direct"], "eth1": ["direct"], "eth2": ["sriov"]})
+        doms = [MagicMock(**{"name.return_value": name, "XMLDesc.return_value": xml}) for name, xml in (
+            ("web", "<domain><devices><interface type='bridge'><mac address='52:54:00:00:00:01'/><source bridge='br0'/>"
+                    "<target dev='vnet3'/></interface></devices></domain>"),
+            ("db", "<domain><devices><interface type='network'><mac address='52:54:00:00:00:02'/><source network='lan'/>"
+                   "<target dev='vnet7'/></interface></devices></domain>"),
+            ("other", "<domain><devices><interface type='network'><source network='default'/><target dev='vnet9'/>"
+                      "</interface></devices></domain>"))]
+        conn = wvmInterface.__new__(wvmInterface)
+        conn.iface = MagicMock(**{"name.return_value": "br0"})
+        conn.wvm = MagicMock(**{"listAllDomains.return_value": doms})
+        self.assertEqual(conn.get_vms(["lan"]), [
+            {"vm": "db", "tap": "vnet7", "mac": "52:54:00:00:00:02"},
+            {"vm": "web", "tap": "vnet3", "mac": "52:54:00:00:00:01"},
+        ])

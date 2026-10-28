@@ -8,7 +8,7 @@ from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
-from lxml import etree, html
+from lxml import etree
 from vrtManager.interface import wvmInterfaces
 
 from interfaces.forms import AddInterface
@@ -334,6 +334,24 @@ class CreateViewTestCase(TestCase):
                 )
                 self.assertEqual(conn.create_iface.called, created)
 
+    def test_a_device_taken_meanwhile_is_chosen_again(self):
+        # not swapped for the first device the dialog still offers
+        admin = get_user_model().objects.create_superuser("iface_admin3", "c@example.com", "x")
+        compute = Compute.objects.create(name="iface-c3", hostname="127.0.0.1:1", login="root", password="", type=1)
+        self.client.force_login(admin)
+        for select, values in (("iface_netdev", {"netdev": "eth1"}), ("iface_device", {"itype": "ethernet", "name": "eth1", "netdev": "eth0"})):
+            with self.subTest(**values), patch("interfaces.views.wvmInterfaces") as conn_cls:
+                conn = conn_cls.return_value
+                conn.get_ifaces_info.return_value = []
+                conn.can_change_interfaces.return_value = True
+                conn.get_net_devices.return_value = ["eth0", "eth1"]
+                conn.get_member_candidates.return_value = ["eth0"]
+                page = self.client.post(reverse("interfaces", args=[compute.id]),
+                                        {**BASE, **values, "ipv6_type": "none", "create": ""}).content.decode()
+                self.assertFalse(conn.create_iface.called)
+                chosen = etree.HTML(page).xpath(f"//select[@id='{select}']/option[@selected]/@value")
+                self.assertEqual(chosen, [""])
+
     def test_unreadable_host_devices_are_reported_not_blamed_on_the_input(self):
         admin = get_user_model().objects.create_superuser("iface_admin2", "b@example.com", "x")
         compute = Compute.objects.create(name="iface-c2", hostname="127.0.0.1:1", login="root", password="", type=1)
@@ -353,11 +371,25 @@ class CreateViewTestCase(TestCase):
         self.assertFalse(any("not on this host" in m for m in messages), messages)
 
 
+class InterfaceListTestCase(TestCase):
+    def test_the_interfaces_are_grouped_by_type(self):
+        self.client.force_login(get_user_model().objects.create_superuser("iface_list", "l@example.com", "x"))
+        compute = Compute.objects.create(name="iface-list", hostname="127.0.0.1:1", login="root", password="", type=1)
+        ifaces = [{"name": name, "type": kind, "mac": None, "link": "up", "members": []}
+                  for name, kind in (("br0", "bridge"), ("eth0", "ethernet"), ("eth1", "ethernet"))]
+        with patch("interfaces.views.wvmInterfaces") as conn_cls:
+            conn_cls.return_value.get_ifaces_info.return_value = ifaces
+            conn_cls.return_value.can_change_interfaces.return_value = False
+            page = etree.HTML(self.client.get(reverse("interfaces", args=[compute.id])).content.decode())
+        # no heading for a type the host has none of
+        self.assertEqual([" ".join(h.itertext()).split() for h in page.xpath("//h2")], [["Bridges", "1"], ["Ethernet", "2"]])
+
+
 class UnchangeableHostTestCase(TestCase):
     """A host whose libvirt cannot change interfaces (udev backend) gets no
     create form and no start/stop/delete, only a note; posts change nothing."""
 
-    NOTE = "does not support changing network interfaces"
+    NOTE = "only reads network interfaces"
 
     def setUp(self):
         self.client.force_login(get_user_model().objects.create_superuser("iface_ro", "ro@example.com", "x"))
@@ -397,17 +429,19 @@ class UnchangeableHostTestCase(TestCase):
         return conn, response
 
     def test_the_interface_page_shows_the_state_without_actions(self):
-        for state, shown in ((1, "Active"), (0, "Inactive")):
+        # libvirt's own state is told where it manages the interface only; the link always
+        for state in (1, 0):
             with self.subTest(state=state):
-                _conn, response = self.interface_page(False, state)
+                conn, response = self.interface_page(False, state)
                 page = response.content.decode()
                 self.assertNotIn('name="start"', page)
                 self.assertNotIn('name="stop"', page)
-                state_cell = html.fromstring(page).xpath("//dt[normalize-space()='State']/following-sibling::dd[1]")[0]
-                self.assertEqual(state_cell.text_content().strip(), shown)
+                self.assertNotIn(">Active<", page)
                 self.assertIn(self.NOTE, page)
         _conn, response = self.interface_page(True, 0)
-        self.assertIn('name="start"', response.content.decode())
+        page = response.content.decode()
+        self.assertIn('name="start"', page)
+        self.assertIn(">Inactive<", page)
 
     def test_a_host_that_could_not_be_read_offers_nothing(self):
         # not knowing whether the host can change interfaces is not a yes
