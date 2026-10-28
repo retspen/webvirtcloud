@@ -35,15 +35,15 @@
                         {% if pool.autostart %}<span class="badge text-bg-light border">{% trans "Autostart" %}</span>{% endif %}
                     </div>
                     <ul class="list-group list-group-flush flex-grow-1">
-                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "Type" %}</span>
                             <span class="badge text-bg-light border">{{ pool.type|upper }}</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "Path" %}</span>
                             <span class="small font-monospace text-end text-break">{{ pool.path|default:"–" }}</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "Volumes" %}</span>
                             <span class="fw-semibold">{% if pool.status %}{{ pool.volumes }}{% else %}–{% endif %}</span>
                         </li>

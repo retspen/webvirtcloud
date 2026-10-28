@@ -50,23 +50,23 @@
     <div class="card mb-3">
         <div class="card-header">{% trans "Network" %}</div>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "State" %}</span>
                 <span class="d-flex flex-wrap justify-content-end gap-1">
                     {% if state %}<span class="badge text-bg-success">{% trans "Active" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Stopped" %}</span>{% endif %}
                     {% if autostart %}<span class="badge text-bg-light border">{% trans "Autostart" %}</span>{% endif %}
                 </span>
             </li>
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "Type" %}</span>
                 <span class="badge text-bg-light border">{{ mode_label }}</span>
             </li>
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% if mode == "macvtap" %}{% trans "Host interface" %}{% elif mode == "bridge" %}{% trans "Host bridge" %}{% else %}{% trans "Bridge" %}{% endif %}</span>
                 <span class="font-monospace text-break text-end">{{ device|default:"–" }}</span>
             </li>
             {% if net_mac %}
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "MAC" %}</span>
                 <span class="font-monospace">{{ net_mac }}</span>
             </li>
@@ -94,13 +94,13 @@
                         {% endif %}
                     </div>
                     <ul class="list-group list-group-flush flex-grow-1">
-                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "Subnet" %}</span><span class="font-monospace text-break text-end">{{ ip.subnet|default:"–" }}</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "Host's address" %}</span><span class="font-monospace text-break text-end">{{ ip.address }}</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                        <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "DHCP" %}</span>
                             <span class="text-end">
                                 {% if ip.range %}<span class="font-monospace text-break">{{ ip.range.0 }} – {{ ip.range.1 }}</span>
@@ -196,7 +196,7 @@
         {% if vms %}
         <ul class="list-group list-group-flush">
             {% for vm in vms %}
-            <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-center gap-3">
                 {% if vm.id %}<a href="{% url 'instances:instance' vm.id %}">{{ vm.name }}</a>{% else %}<span>{{ vm.name }}</span>{% endif %}
                 {% if vm.connected %}<span class="badge text-bg-success">{% trans "Connected" %}</span>{% else %}<span class="badge text-bg-light border">{% trans "Configured" %}</span>{% endif %}
             </li>

@@ -118,35 +118,35 @@
         <div class="card h-100">
             <div class="card-header">{% bs_icon 'cpu' %} {% trans "Hardware" %}</div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Processor" %}</span>
                     <span class="text-end text-break">{{ host.processor|default:"–" }}</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Architecture" %}</span>
                     <span class="text-end text-break">{{ host.arch }}</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Logical CPUs" %}</span>
                     <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.cpus }}</span></span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Physical cores" %}</span>
                     <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.cores|default:"–" }}</span></span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Sockets" %}</span>
                     <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.sockets|default:"–" }}</span></span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "NUMA nodes" %}</span>
                     <span class="text-end text-break"><span class="fw-semibold">{{ host.topology.nodes|default:"–" }}</span></span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Clock" %}</span>
                     <span class="text-end text-break">{{ host.ghz }} GHz</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Memory" %}</span>
                     <span class="text-end text-break"><span class="fw-semibold">{{ host.memory|filesizeformat }}</span></span>
                 </li>
@@ -157,27 +157,27 @@
         <div class="card h-100">
             <div class="card-header">{% bs_icon 'layers' %} {% trans "Software and connection" %}</div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Hostname" %}</span>
                     <span class="text-end text-break">{{ host.hostname }}</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{{ host.hypervisor }}</span>
                     <span class="text-end text-break"><span class="badge text-bg-primary">{{ host.hypervisor_version }}</span></span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">libvirt</span>
                     <span class="text-end text-break"><span class="badge text-bg-primary">{{ host.libvirt_version }}</span></span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Guest architectures" %}</span>
                     <span class="text-end text-break">{% for arch, types in host.guest_archs.items %}<span class="badge text-bg-light border ms-1">{{ arch }} <span class="fw-normal text-body-secondary">{{ types|join:" · " }}</span></span>{% endfor %}</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Emulator" %}</span>
                     <span class="text-end text-break"><code>{{ host.emulator|default:"–" }}</code></span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Connection" %}</span>
                     <span class="text-end text-break"><code>{{ host.uri }}</code></span>
                 </li>

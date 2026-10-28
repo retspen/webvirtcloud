@@ -41,10 +41,10 @@
     <div class="card mb-3">
         <div class="card-header">{% trans "Interface" %}</div>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "Type" %}</span><span class="badge text-bg-light border">{{ info.type|capfirst }}</span>
             </li>
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "State" %}</span>
                 <span class="d-flex flex-wrap justify-content-end gap-1">
                     {# libvirt's own state where it manages the interface; the link as the kernel reports it everywhere #}
@@ -53,33 +53,33 @@
                 </span>
             </li>
             {% if info.start_mode %}
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "Starts" %}</span>
                 <span>{% if info.start_mode == "onboot" %}{% trans "On boot" %}{% elif info.start_mode == "hotplug" %}{% trans "When plugged in" %}{% else %}{% trans "Only by hand" %}{% endif %}</span>
             </li>
             {% endif %}
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "MAC" %}</span><span class="font-monospace text-break text-end">{{ info.mac|default:"–" }}</span>
             </li>
             {% if info.mtu %}
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "MTU" %}</span><span>{{ info.mtu }}</span>
             </li>
             {% endif %}
             {% if info.speed %}
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "Speed" %}</span><span>{{ info.speed }} Mb/s</span>
             </li>
             {% endif %}
             {% if info.stp %}
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "Spanning tree" %}</span>
                 {# not its delay: netcf tells it in seconds, the udev backend in hundredths #}
                 <span>{% if info.stp == "on" %}{% trans "On" %}{% else %}{% trans "Off" %}{% endif %}</span>
             </li>
             {% endif %}
             {% if networks %}
-            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+            <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                 <span class="text-body-secondary">{% trans "Used by" %}</span>
                 <span class="text-end">{% for net in networks %}<a href="{% url 'network' compute.id net %}">{% blocktrans %}network {{ net }}{% endblocktrans %}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
             </li>
@@ -94,12 +94,12 @@
             <div class="card h-100">
                 <div class="card-header">{{ family }}</div>
                 <ul class="list-group list-group-flush flex-grow-1">
-                    <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                         <span class="text-body-secondary">{% trans "Configured" %}</span>
                         <span>{% if addressing.method == "dhcp" %}DHCP{% elif addressing.method == "autoconf" %}{% trans "Automatic (SLAAC)" %}{% elif addressing.method == "static" %}{% trans "Static" %}{% else %}{% trans "None" %}{% endif %}</span>
                     </li>
                     {% for address in addressing.addresses %}
-                    <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                    <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                         <span class="text-body-secondary">{% trans "Address" %}</span><span class="font-monospace text-break text-end">{{ address }}</span>
                     </li>
                     {% endfor %}
