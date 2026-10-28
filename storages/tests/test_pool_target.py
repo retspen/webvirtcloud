@@ -67,11 +67,12 @@ class PoolTargetTests(SimpleTestCase):
     def test_the_create_form_leaves_the_path_check_to_the_server(self):
         # a stricter pattern or a shorter maxlength in the page refuses paths the form accepts
         superuser = SimpleNamespace(user=SimpleNamespace(is_superuser=True))
-        page = html.fromstring(render_to_string("create_stg_block.html", {"request": superuser}))
+        ceph = [{"uuid": "00000000-0000-0000-0000-000000000001", "usage": "client.libvirt"}]
+        page = html.fromstring(render_to_string("create_stg_block.html", {"request": superuser, "ceph_secrets": ceph}))
         fields = page.xpath("//input[@name='target' or @name='source']")
-        self.assertEqual(len(fields), 5)
+        self.assertEqual(len(fields), 5)  # directory, LVM device, share, its mount point, ISO directory
         for field in fields:
-            with self.subTest(form=field.xpath("string(ancestor::form//input[@name='stg_type']/@value)"), name=field.name):
+            with self.subTest(id=field.get("id")):
                 self.assertIsNone(field.get("pattern"))
                 self.assertGreaterEqual(int(field.get("maxlength", 100)), 100)
         for name in ("netfs_host", "ceph_host"):  # a host name is up to 253 characters

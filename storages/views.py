@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from libvirt import libvirtError
+from libvirt import VIR_SECRET_USAGE_TYPE_CEPH, libvirtError
 from operations import claims, jobs
 from operations.utils import busy_message
 from logs.audit import audit, failed
@@ -68,71 +68,43 @@ def storages(request, compute_id):
     """
 
     compute = get_object_or_404(Compute, pk=compute_id)
-    errors = False
+    form = AddStgPool()
+    # the new pool dialog's type: its radio cards tell the ISO pool from another directory
+    pool_kind = request.POST.get("pool_kind", "dir")
 
     try:
         conn = wvmStorages(
             compute.hostname, compute.login, compute.password, compute.type
         )
         storages = conn.get_storages_info()
-        secrets = conn.get_secrets()
+        iso_pool = next((pool for pool in storages if pool["name"] == "iso"), None)
+        # the secrets an RBD pool can use, by the name they were given
+        ceph_secrets = []
+        for uuid in conn.get_secrets():
+            secret = conn.get_secret(uuid)
+            if secret.usageType() == VIR_SECRET_USAGE_TYPE_CEPH:
+                ceph_secrets.append({"uuid": uuid, "usage": secret.usageID()})
 
-        if request.method == "POST":
-            if "create" in request.POST:
-                form = AddStgPool(request.POST)
-                if form.is_valid():
-                    data = form.cleaned_data
-                    if data["name"] in [stg["name"] for stg in storages]:
-                        msg = _("Pool name already use")
-                        messages.error(request, msg)
-                        failed(request, compute, f"Storage pool {data['name']}", "add", "name already in use")
-                        errors = True
-                    if data["stg_type"] == "rbd":
-                        if not data["secret"]:
-                            msg = _("You need create secret for pool")
-                            messages.error(request, msg)
-                            errors = True
-                        if (
-                            not data["ceph_pool"]
-                            and not data["ceph_host"]
-                            and not data["ceph_user"]
-                        ):
-                            msg = _("You need input all fields for creating ceph pool")
-                            messages.error(request, msg)
-                            errors = True
-                    if not errors:
-                        with audit(request, compute, f"Storage pool {data['name']}", "add"):
-                            if data["stg_type"] == "rbd":
-                                conn.create_storage_ceph(
-                                    data["stg_type"],
-                                    data["name"],
-                                    data["ceph_pool"],
-                                    data["ceph_host"],
-                                    data["ceph_user"],
-                                    data["secret"],
-                                )
-                            elif data["stg_type"] == "netfs":
-                                conn.create_storage_netfs(
-                                    data["stg_type"],
-                                    data["name"],
-                                    data["netfs_host"],
-                                    data["source"],
-                                    data["source_format"],
-                                    data["target"],
-                                )
-                            else:
-                                conn.create_storage(
-                                    data["stg_type"],
-                                    data["name"],
-                                    data["source"],
-                                    data["target"],
-                                )
-                        return HttpResponseRedirect(
-                            reverse("storage", args=[compute_id, data["name"]])
-                        )
+        if request.method == "POST" and "create" in request.POST:
+            form = AddStgPool(request.POST, pools=storages, ceph_secrets=[s["uuid"] for s in ceph_secrets])
+            if form.is_valid():
+                data = form.cleaned_data
+                try:
+                    with audit(request, compute, f"Storage pool {data['name']}", "add"):
+                        if data["stg_type"] == "rbd":
+                            conn.create_storage_ceph(data["stg_type"], data["name"], data["ceph_pool"],
+                                                     data["ceph_host"], data["ceph_user"], data["secret"])
+                        elif data["stg_type"] == "netfs":
+                            conn.create_storage_netfs(data["stg_type"], data["name"], data["netfs_host"],
+                                                      data["source"], data["source_format"], data["target"])
+                        else:
+                            conn.create_storage(data["stg_type"], data["name"], data["source"], data["target"])
+                except libvirtError as err:  # shown in the dialog, which opens again
+                    form.add_error(None, str(err))
                 else:
-                    for msg_err in form.errors.values():
-                        messages.error(request, msg_err.as_text())
+                    return HttpResponseRedirect(reverse("storage", args=[compute_id, data["name"]]))
+            elif form.has_error("name", "taken"):
+                failed(request, compute, f"Storage pool {form.data['name'].strip()}", "add", "name already in use")
         conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
@@ -179,7 +151,7 @@ def storage(request, compute_id, pool):
     except libvirtError:  # both read the pool's info: the page says it could not be read
         size = free = used = percent = status = None
 
-    path = conn.get_target_path()
+    path = conn.get_target_path() or conn.get_source_name()  # an RBD pool: its Ceph pool
     type = conn.get_type()
     autostart = conn.get_autostart()
 

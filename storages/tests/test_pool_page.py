@@ -79,6 +79,18 @@ class PoolPageTests(TestCase):
         self.assertEqual(clone, {"data.img": True, "install.iso": False, "Boot.ISO": False})
         self.assertTrue(page.xpath("//div[@id='no-match'][@hidden]"))
 
+    def test_the_heading_offers_what_the_pool_state_allows(self):
+        # an active pool is stopped, a stopped one started or deleted; autostart either way
+        self.conn.get_size.return_value = (10, 4)
+        url = reverse("storage", args=[self.compute.pk, "default"])
+        for active, names in ((True, ["stop", "set_autostart"]), (False, ["start", "set_autostart", "delete"])):
+            with self.subTest(active=active):
+                self.conn.is_active.return_value = active
+                self.conn.get_autostart.return_value = 0
+                page = html.fromstring(self.client.get(url).content)
+                group = page.xpath("//div[@aria-label='Actions for pool default']")[0]
+                self.assertEqual(group.xpath(".//button[@type='submit']/@name"), names)
+
 
 class PoolApiTests(TestCase):
     """The API's pool, like the page, is measured after its refresh; a stopped pool lists no volumes."""
@@ -110,3 +122,30 @@ class PoolApiTests(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIsNone(response.json()["volumes"])
         self.conn.update_volumes.assert_not_called()
+
+class PoolListTests(TestCase):
+    """The pool list: a card per pool with its state, autostart, path and space; a stopped pool's space is not zero."""
+
+    def test_cards(self):
+        compute = Compute.objects.create(name="pl", hostname="192.0.2.23", login="root", password="", type=1)
+        self.client.force_login(get_user_model().objects.create_superuser("pl-admin", "pl@example.com", "pw"))
+        pools = [
+            {"name": "default", "status": 1, "autostart": 1, "type": "dir", "path": "/var/lib/libvirt/images",
+             "volumes": 3, "size": 100, "free": 60, "used_percent": 40.0},
+            {"name": "ceph-vms", "status": 1, "autostart": 0, "type": "rbd", "path": "vms",
+             "volumes": 9, "size": 100, "free": 5, "used_percent": 95.0},
+            {"name": "backup", "status": 0, "autostart": 0, "type": "dir", "path": "/srv/backup",
+             "volumes": None, "size": 0, "free": 0, "used_percent": 0},
+        ]
+        with patch("storages.views.wvmStorages") as storages:
+            storages.return_value.get_storages_info.return_value = pools
+            storages.return_value.get_secrets.return_value = []
+            page = html.fromstring(self.client.get(reverse("storages", args=[compute.pk])).content)
+        cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
+        self.assertEqual(cards, [
+            "default Active Autostart Type DIR Path /var/lib/libvirt/images Volumes 3 60 bytes free of 100 bytes",
+            "ceph-vms Active Type RBD Path vms Volumes 9 5 bytes free of 100 bytes",
+            "backup Stopped Type DIR Path /srv/backup Volumes – Space unavailable while stopped",
+        ])
+        self.assertEqual(page.xpath("//div[contains(@class,'progress-bar')]/@class"),
+                         ["progress-bar ", "progress-bar bg-danger"])

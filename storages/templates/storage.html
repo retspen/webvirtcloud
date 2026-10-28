@@ -7,7 +7,47 @@
 
 {% block page_heading %}{{ compute }} - {% trans "Storage" %}: {{ pool }}{% endblock page_heading %}
 
-{% block page_heading_extra %}{% include 'create_stg_vol_block.html' %}{% endblock page_heading_extra %}
+{% block page_heading_extra %}
+<div class="d-flex flex-wrap gap-2">
+    {% include 'create_stg_vol_block.html' %}
+    {# the pool's own actions: starting or stopping it, the others in a menu #}
+    <div class="btn-group" role="group" aria-label="{% blocktrans %}Actions for pool {{ pool }}{% endblocktrans %}">
+        {% if state %}
+        <form method="post" class="btn-group">{% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary" name="stop"
+                    data-confirm="{% blocktrans with name=pool %}Stop pool {{ name }}? Its files stay, but until it is started again its volumes cannot be managed and VMs with disks in it may not start.{% endblocktrans %}"
+                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
+        </form>
+        {% else %}
+        <form method="post" class="btn-group">{% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary" name="start">{% bs_icon 'play-fill' %} {% trans "Start" %}</button>
+        </form>
+        {% endif %}
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{% trans "More actions" %}">{% bs_icon 'three-dots' %}</button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li><form method="post">{% csrf_token %}
+                    {% if autostart %}
+                    <button type="submit" class="dropdown-item" name="unset_autostart"
+                            data-confirm="{% blocktrans with name=pool %}Disable autostart of pool {{ name }}? After the host restarts it stays stopped.{% endblocktrans %}"
+                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'toggle-off' %} {% trans "Disable autostart" %}</button>
+                    {% else %}
+                    <button type="submit" class="dropdown-item" name="set_autostart">{% bs_icon 'toggle-on' %} {% trans "Enable autostart" %}</button>
+                    {% endif %}
+                </form></li>
+                {% if not state %}
+                <li><hr class="dropdown-divider"></li>
+                <li><form method="post">{% csrf_token %}
+                    <button type="submit" class="dropdown-item text-danger" name="delete"
+                            data-confirm="{% blocktrans with name=pool %}Delete pool {{ name }}? Only its definition goes; its volumes and their files stay.{% endblocktrans %}"
+                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete pool" %}</button>
+                </form></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock page_heading_extra %}
 
 {% block content %}
     <div id="job-panel" aria-live="polite"></div>
@@ -17,103 +57,107 @@
             {% include "computes/host_nav.html" with section="storages" detail=True %}
         </div>
     </div>
-    <div class="row">
-        <div class="col-lg-12">
-            <dl class="row">
-                <dt class="col-6">{% trans "Pool name" %}</dt>
-                <dd class="col-6">{{ pool }}</dd>
-                <dt class="col-6">{% trans "Pool type" %}</dt>
-                <dd class="col-6">{% if not type %}{% trans "None" %}{% else %}{{ type }}{% endif %}</dd>
-                <dt class="col-6">{% trans "Pool path" %}</dt>
-                <dd class="col-6">{% if not path %}{% trans "None" %}{% else %}{{ path }}{% endif %}</dd>
-                <dt class="col-6">{% trans "Pool status" %}</dt>
-                <dd class="col-6">{% if not status %}{% trans "None" %}{% else %}{{ status }}{% endif %}</dd>
-                {% if not state %}
-                <dt class="col-6">{% trans "Size" %}</dt>
-                <dd class="col-6">{% trans "Unavailable while the pool is stopped." %}</dd>
-                {% elif size is None %}
-                <dt class="col-6">{% trans "Size" %}</dt>
-                <dd class="col-6">{% trans "The pool's space could not be read." %}</dd>
-                {% else %}
-                <dt class="col-6">{% trans "Size" %} </dt>
-                <dd class="col-6">{{size|filesizeformat }}</dd>
-                <dt class="col-6">{% trans "Usage" %} ({{ percent }}%)</dt>
-                <dd class="col-6">{{ used|filesizeformat }}</dd>
-                {% endif %}
-                <dt class="col-6">{% trans "State" %}</dt>
-                <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Storage start/stop form">{% csrf_token %}
-                        {% if state == 0 %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}"
-                                   data-confirm="{% blocktrans with name=pool %}Delete pool {{ name }}? Only its definition goes; its volumes and their files stay.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                        {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}"
-                                   data-confirm="{% blocktrans with name=pool %}Stop pool {{ name }}? Its files stay, but until it is started again its volumes cannot be managed and VMs with disks in it may not start.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                        {% endif %}
-                    </form>
-                </dd>
-                <dt class="col-6">{% trans "Autostart" %}</dt>
-                <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form">{% csrf_token %}
-                    {% if autostart == 0 %}
-                        <input type="submit" class="btn btn-sm btn-secondary" name="set_autostart"
-                                value="{% trans "Enable" %}">
-                        {% else %}
-                        <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart"
-                                value="{% trans "Disable" %}"
-                                data-confirm="{% blocktrans with name=pool %}Disable autostart of pool {{ name }}? After the host restarts it stays stopped.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card h-100">
+                <div class="card-header">{% trans "Space" %}</div>
+                <div class="card-body">
+                    {% if not state %}
+                        <div class="text-body-secondary">{% trans "Unavailable while the pool is stopped." %}</div>
+                    {% elif size is None %}
+                        <div class="text-body-secondary">{% trans "The pool's space could not be read." %}</div>
+                    {% elif not size %}
+                        <div class="text-body-secondary">{% trans "The pool has no size." %}</div>
+                    {% else %}
+                        <div class="fs-4 lh-sm">{{ percent }} %</div>
+                        <div class="small text-body-secondary">
+                            {% blocktrans with used=used|filesizeformat size=size|filesizeformat %}{{ used }} used of {{ size }}{% endblocktrans %}
+                            {# what the space is the space of: other pools may share it #}
+                            {% if type == "dir" or type == "fs" or type == "netfs" %}· {% trans "the filesystem of its path" %}
+                            {% elif type == "logical" %}· {% trans "its volume group" %}
+                            {% elif type == "rbd" %}· {% trans "the Ceph cluster" %}{% endif %}
+                        </div>
+                        <div class="progress my-2" role="progressbar" style="--bs-progress-height: 0.3rem;" aria-label="{% trans "Space used" %}"
+                             aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar {% if percent > 90 %}bg-danger{% elif percent > 75 %}bg-warning{% endif %}" style="width: {{ percent }}%"></div>
+                        </div>
+                        <div class="small text-body-secondary">{% blocktrans with free=free|filesizeformat %}{{ free }} free{% endblocktrans %}</div>
                     {% endif %}
-                </form>
-                </dd>
-            </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card h-100">
+                <div class="card-header">{% trans "Pool" %}</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span class="text-body-secondary">{% trans "State" %}</span>
+                        <span class="d-flex flex-wrap justify-content-end gap-1">
+                            {% if state %}<span class="badge text-bg-success">{% trans "Active" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Stopped" %}</span>{% endif %}
+                            {% if status == "Running degraded" %}<span class="badge text-bg-warning">{% trans "Degraded" %}</span>{% endif %}
+                            {% if autostart %}<span class="badge text-bg-light border">{% trans "Autostart" %}</span>{% endif %}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span class="text-body-secondary">{% trans "Type" %}</span><span>{{ type|default:"—" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span class="text-body-secondary">{% trans "Path" %}</span>
+                        <span class="font-monospace text-break text-end">{{ path|default:"—" }}</span>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
-    
     {% if not state %}
         <div class="alert alert-secondary">
             {% bs_icon 'info-circle' %} {% trans "This pool is stopped: its volumes cannot be listed or managed until it is started. Their files stay." %}
         </div>
     {% elif volumes %}
-        <div class="clearfix">
-            {% include 'search_block.html' %}
-            <h5 class="mb-3">{% trans "Volumes" %}</h5>
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <h5 class="me-auto mb-0">{% trans "Volumes" %}</h5>
+            <input id="filter" class="form-control w-auto" type="search" placeholder="{% trans "Search volumes" %}" aria-label="{% trans "Search volumes" %}">
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle" data-sortable>
                 <thead>
                 <tr>
                     <th scope="col">{% trans "Name" %}</th>
-                    <th scope="col" data-sort-method="number">{% trans "Allocated" %}</th>
-                    <th scope="col" data-sort-method="number">{% trans "Size" %}</th>
                     <th scope="col">{% trans "Format" %}</th>
-                    <th scope="colgroup" data-sort-method="none" colspan="2">{% trans "Action" %}</th>
+                    <th scope="col" class="d-none d-sm-table-cell" data-sort-method="number">{% trans "Capacity" %}</th>
+                    <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                 </tr>
                 </thead>
                 <tbody class="searchable">
                 {% for volume in volumes %}
                 <tr data-search="{{ volume.name }}">
                     <td class="text-break">{{ volume.name }}</td>
-                    <td data-sort="{{ volume.allocation }}">{{ volume.allocation|filesizeformat }}</td>
-                    <td data-sort="{{ volume.size }}">{{ volume.size|filesizeformat }}</td>
-                    <td>{{ volume.type }}</td>
-                    <td>
-                        {# an ISO image is uploaded, not cloned (storages.jobs.is_iso) #}
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#CloneVolume" data-volume="{{ volume.name }}"
-                                title="{% trans "Clone" %}" aria-label="{% blocktrans with name=volume.name %}Clone {{ name }}{% endblocktrans %}"{% if volume.iso %} disabled{% endif %}>
-                            {% bs_icon 'files' %}
-                        </button>
+                    <td><span class="badge text-bg-light border">{{ volume.type }}</span></td>
+                    {# capacity: what the guest sees; allocated: what it takes on the storage now #}
+                    <td class="d-none d-sm-table-cell" data-sort="{{ volume.size }}">
+                        <div>{{ volume.size|filesizeformat }}</div>
+                        <div class="small text-body-secondary">{% blocktrans with allocated=volume.allocation|filesizeformat %}{{ allocated }} allocated{% endblocktrans %}</div>
                     </td>
-                    <td>
-                        <form action="" method="post" aria-label="{% trans "Delete volume" %}">{% csrf_token %}
-                            <input type="hidden" name="volname" value="{{ volume.name }}">
-                            <button type="submit" class="btn btn-sm btn-secondary" name="del_volume" title="{% trans "Delete" %}"
-                                    aria-label="{% blocktrans with name=volume.name %}Delete {{ name }}{% endblocktrans %}"
-                                    data-confirm="{% blocktrans with name=volume.name %}Delete volume {{ name }}? Its file and data are removed; a volume a VM uses is not deleted.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                {% bs_icon 'trash' %}
-                            </button>
-                        </form>
+                    <td class="text-end text-nowrap">
+                        <div class="btn-group" role="group" aria-label="{% blocktrans with name=volume.name %}Actions for {{ name }}{% endblocktrans %}">
+                            {# an ISO image is uploaded, not cloned (storages.jobs.is_iso) #}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#CloneVolume" data-volume="{{ volume.name }}"
+                                    aria-label="{% trans "Clone" %}"{% if volume.iso %} disabled{% endif %}>{% bs_icon 'files' %} <span class="d-none d-sm-inline">{% trans "Clone" %}</span></button>
+                            <div class="btn-group">
+                                {# fixed: the menu would be cut off by the table's scrolling box #}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false"
+                                        data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% trans "More actions" %}">{% bs_icon 'three-dots' %}</button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                    <li><form method="post">{% csrf_token %}
+                                        <input type="hidden" name="volname" value="{{ volume.name }}">
+                                        <button type="submit" class="dropdown-item text-danger" name="del_volume"
+                                                data-confirm="{% blocktrans with name=volume.name %}Delete volume {{ name }}? Its file and data are removed; a volume a VM uses is not deleted.{% endblocktrans %}"
+                                                onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete" %}</button>
+                                    </form></li>
+                                </ul>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -174,9 +218,7 @@
             </div>
         </div>
     {% else %}
-        <div class="alert alert-warning shadow-sm">
-            {% bs_icon 'exclamation-triangle' %} {% trans "This pool has no volumes." %}
-        </div>
+        <div class="text-center text-body-secondary py-4">{% trans "This pool has no volumes." %}</div>
     {% endif %}
 
 {% endblock %}

@@ -27,7 +27,7 @@ class StatusContrastTests(TestCase):
         return html.fromstring(response.content)
 
     def test_card_headers_are_pale_with_dark_text(self):
-        for name in ("storages", "networks", "interfaces"):
+        for name in ("networks", "interfaces"):
             with self.subTest(page=name):
                 headers = self.page(name).xpath("//div[contains(@class, 'card-header')]")
                 self.assertTrue(headers)

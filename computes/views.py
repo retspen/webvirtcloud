@@ -64,8 +64,6 @@ def host_pools(compute):
     except libvirtError:
         return None
     pools.sort(key=lambda pool: (pool["name"] != "default", pool["name"]))
-    for pool in pools:
-        pool["used_percent"] = (pool["size"] - pool["free"]) * 100 / pool["size"] if pool["size"] else 0
     return {"pool": pools[0] if pools else None, "more_pools": pools[1:]}
 
 

@@ -65,6 +65,23 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
     }
 }
 
+/* a choice shown as a card around its radio button (the VM's disk source,
+   a new pool's type): the chosen card by its border only, as the
+   Bootswatch dark themes keep light "subtle" backgrounds */
+.source-option {
+    cursor: pointer;
+}
+
+.source-option:has(input:checked) {
+    border-color: var(--bs-primary) !important;
+    box-shadow: inset 0 0 0 1px var(--bs-primary);
+}
+
+.source-option:has(input:focus-visible) {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
 .host-collapsed tr[host] {
     display: none;
 }

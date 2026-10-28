@@ -1,5 +1,6 @@
 {% load i18n %}
-<div class="small">{{ pool.name }}</div>
+{# a pool's space; hide_name: the page names the pool next to it #}
+{% if not hide_name %}<div class="small">{{ pool.name }}</div>{% endif %}
 <div class="progress my-1" role="progressbar" style="--bs-progress-height: 0.3rem;"
      aria-label="{% blocktrans with name=pool.name %}{{ name }} used{% endblocktrans %}" aria-valuenow="{{ pool.used_percent|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
     <div class="progress-bar {% if pool.used_percent > 90 %}bg-danger{% elif pool.used_percent > 75 %}bg-warning{% endif %}" style="width: {{ pool.used_percent|stringformat:".1f" }}%"></div>

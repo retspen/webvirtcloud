@@ -167,12 +167,14 @@ class PoolAndVolumeRowTests(TransactionTestCase):
         url = reverse("storages", args=[self.compute.pk])
         self.client.post(url, {"create": "1", "name": "audit-pool", "stg_type": "dir", "target": "/srv/audit-pool"})
         self.client.post(url, {"create": "1", "name": "bad name!", "stg_type": "dir", "target": "/srv/x"})  # invalid
-        self.pools.get_storages_info.return_value = [{"name": "default"}]
+        self.pools.get_storages_info.return_value = [{"name": "default", "type": "dir", "path": "/var/lib/libvirt/images"}]
         self.pools.create_storage.reset_mock()
         self.client.post(url, {"create": "1", "name": "default", "stg_type": "dir", "target": "/srv/default"})
+        self.client.post(url, {"create": "1", "name": " default ", "stg_type": "dir", "target": "/srv/default"})  # trimmed
         self.pools.create_storage.assert_not_called()
         self.assertEqual(rows(), [
             ("Storage pool audit-pool: add", True),
+            ("Storage pool default: add: name already in use", False),
             ("Storage pool default: add: name already in use", False),
         ])
 

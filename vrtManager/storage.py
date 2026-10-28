@@ -7,8 +7,9 @@ from vrtManager.connection import wvmConnect
 
 class wvmStorages(wvmConnect):
     def get_storages_info(self):
-        """Each pool's state, type, volume count, size and free space. An active
-        pool is refreshed first: libvirt measures its space only when it is
+        """Each pool's state, autostart, type, path (an RBD pool's Ceph pool),
+        volume count, size, free space and the percent used. An active pool
+        is refreshed first: libvirt measures its space only when it is
         refreshed, so two hosts sharing a pool's storage told different free
         space, each as of its own last refresh."""
         get_storages = self.get_storages()
@@ -19,17 +20,20 @@ class wvmStorages(wvmConnect):
             if stg_status:
                 with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in it
                     stg.refresh(0)
-            stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
+            xml = stg.XMLDesc(0)
             stg_vol = len(stg.listVolumes()) if stg_status else None
             _state, stg_size, _allocation, stg_free = stg.info()
             storages.append(
                 {
                     "name": pool,
                     "status": stg_status,
-                    "type": stg_type,
+                    "autostart": stg.autostart(),
+                    "type": util.get_xml_path(xml, "/pool/@type"),
+                    "path": util.get_xml_path(xml, "/pool/target/path") or util.get_xml_path(xml, "/pool/source/name"),
                     "volumes": stg_vol,
                     "size": stg_size,
                     "free": stg_free,
+                    "used_percent": (stg_size - stg_free) * 100 / stg_size if stg_size else 0,
                 }
             )
         return storages

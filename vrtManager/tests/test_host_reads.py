@@ -195,7 +195,7 @@ class StoragesInfoTestCase(unittest.TestCase):
         conn.get_storages = lambda: ["default"]
         conn.get_storage = lambda name: pool
         (info,) = conn.get_storages_info()
-        self.assertEqual((info["name"], info["size"], info["free"]), ("default", 500, 120))
+        self.assertEqual((info["name"], info["size"], info["free"], info["used_percent"]), ("default", 500, 120, 76))
         # measured now: libvirt keeps a pool's space as of its last refresh
         self.assertEqual([c[0] for c in pool.mock_calls[:2]], ["isActive", "refresh"])
 

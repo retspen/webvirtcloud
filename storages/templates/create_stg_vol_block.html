@@ -4,16 +4,16 @@
 {% if request.user.is_superuser %}
     {% if state != 0 %}
         {% if pool == "iso" %}
-            <a href="#IsoUpload" class="btn btn-success float-end" data-bs-toggle="modal">
-                <span aria-hidden="true">{% bs_icon 'plus-circle-fill' %} </span>
-            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#IsoUpload">
+                <span aria-hidden="true">{% bs_icon 'upload' %}</span> {% trans "Upload ISO" %}
+            </button>
 
             <!-- Modal Upload -->
             <div class="modal fade" id="IsoUpload" tabindex="-1" role="dialog" aria-labelledby="IsoUploadLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">{% trans "Upload ISO Image" %}</h5>
+                            <h5 class="modal-title" id="IsoUploadLabel">{% trans "Upload ISO Image" %}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <form id="isoUploadForm" enctype="multipart/form-data" method="post" role="form" aria-label="Upload iso form">{% csrf_token %}
@@ -41,16 +41,16 @@
                 </div> <!-- /.modal-dialog -->
             </div> <!-- /.modal -->
         {% else %}
-            <a href="#AddImage" class="btn btn-success float-end" title="{% trans "Add New Volume" %}" data-bs-toggle="modal">
-                <span aria-hidden="true">{% bs_icon 'plus-circle-fill' %} </span>
-            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddImage">
+                <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New volume" %}
+            </button>
 
             <!-- Modal Image -->
             <div class="modal fade" id="AddImage" tabindex="-1" role="dialog" aria-labelledby="AddImageLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">{% trans "Add New Volume" %}</h5>
+                            <h5 class="modal-title" id="AddImageLabel">{% trans "Add New Volume" %}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">

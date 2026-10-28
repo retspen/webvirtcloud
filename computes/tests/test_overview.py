@@ -18,7 +18,8 @@ GIVEN = {"cpus": 8, "memory": 32 * GIB, "vcpus": {"all": 12, "running": 6},
 
 
 def pool(name, size_gib, free_gib, status=1):
-    return {"name": name, "status": status, "size": size_gib * GIB, "free": free_gib * GIB}
+    return {"name": name, "status": status, "size": size_gib * GIB, "free": free_gib * GIB,
+            "used_percent": (size_gib - free_gib) * 100 / size_gib}
 
 
 def text(page, xpath):
