@@ -8,6 +8,7 @@ from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
+from networks.tests.driver import without_inactive_flag
 from django.urls import reverse
 
 from logs.models import Logs
@@ -34,6 +35,7 @@ class NetworkRowTests(TestCase):
         patcher = patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn)
         patcher.start()
         self.addCleanup(patcher.stop)
+        without_inactive_flag(self)
         self.compute = Compute.objects.create(name="c1", hostname="localhost", login="", password="", type=4)
         self.client.force_login(get_user_model().objects.create_superuser("audit-admin", "a@example.com", "pw"))
         Logs.objects.all().delete()  # the login's row
@@ -45,13 +47,13 @@ class NetworkRowTests(TestCase):
     def test_network_actions(self):
         xml = self.conn.networkLookupByName("lab").XMLDesc(0)
         self.post({"stop": ""})
-        self.post({"modify_dhcp_range": "", "range_start": "192.0.2.30", "range_end": "192.0.2.40", "family": "ipv4"})
+        self.post({"modify_dhcp_range": "", "range_start": "192.0.2.30", "range_end": "192.0.2.40", "ip_index": "0"})
         self.post({"start": ""})
         self.post({"set_autostart": ""})
         self.post({"unset_autostart": ""})
         self.post({"modify_fixed_address": "", "name": "web-1", "address": "192.0.2.31",
-                   "mac": "52:54:00:00:00:31", "family": "ipv4"})
-        self.post({"delete_fixed_address": "", "address": "192.0.2.31", "family": "ipv4"})
+                   "mac": "52:54:00:00:00:31", "ip_index": "0"})
+        self.post({"delete_fixed_address": "", "original": "192.0.2.31", "ip_index": "0"})
         self.post({"set_qos": "", "qos_direction": "inbound", "qos_average": "100"})
         self.post({"unset_qos": "", "qos_direction": "inbound"})
         self.post({"edit_network": "", "edit_xml": xml})
@@ -59,7 +61,7 @@ class NetworkRowTests(TestCase):
         self.post({"delete": ""})
         self.assertEqual(rows(), [
             ("Network lab: stop", True),
-            ("Network lab: set DHCP range IPV4", True),
+            ("Network lab: set DHCP range", True),
             ("Network lab: start", True),
             ("Network lab: autostart on", True),
             ("Network lab: autostart off", True),
@@ -94,5 +96,5 @@ class NetworkRowTests(TestCase):
                                "dhcp4": "on"})
         self.client.post(url, {"create": "", "name": "bad name!", "forward": "nat"})  # invalid form
         response = self.client.post(url, {"create": "", "name": "lab", "forward": "nat", "subnet": "203.0.113.0/24"})
-        self.assertIn("Network pool name already in use", [str(m) for m in get_messages(response.wsgi_request)])
+        self.assertIn("* This host has a network of that name", [str(m) for m in get_messages(response.wsgi_request)])
         self.assertEqual(rows(), [("Network audit-net: add", True), ("Network lab: add: name already in use", False)])

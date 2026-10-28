@@ -9,6 +9,7 @@ import libvirt
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from networks.tests.driver import without_inactive_flag
 from django.urls import reverse
 from lxml import html
 
@@ -17,6 +18,7 @@ class StatusContrastTests(TestCase):
     def setUp(self):
         self.conn = libvirt.open("test:///default")
         self.addCleanup(self.conn.close)
+        without_inactive_flag(self)
         self.compute = Compute.objects.create(name="contrast", hostname="localhost", login="", password="", type=4)
         self.client.force_login(get_user_model().objects.create_superuser("contrast", "c@example.com", "pw"))
 

@@ -12,7 +12,8 @@ except ImportError:
     sys.modules["django"] = django_mock
     sys.modules["django.conf"] = django_mock.conf
 
-from vrtManager.network import network_size, wvmNetwork
+from lxml import etree
+from vrtManager.network import ip_networks, network_size
 
 
 class TestNetworkSize(unittest.TestCase):
@@ -75,23 +76,8 @@ class TestNetworkSize(unittest.TestCase):
             network_size("invalid.subnet/99")
 
 
-class DummyNetwork(wvmNetwork):
-    """Subclass of wvmNetwork with mock XML for isolated IP method testing."""
-
-    def __init__(self, xml_content):
-        self._xml = xml_content
-        self.parent_count = 2
-        self.updates = []
-
-    def _XMLDesc(self, flags):
-        return self._xml
-
-    def update(self, command, section, xml, parent_index, flags):
-        self.updates.append((command, section, xml, parent_index, flags))
-
-
-class TestWvmNetworkIPOperations(unittest.TestCase):
-    """Unit tests for IP parsing, DHCP ranges, and host addresses in wvmNetwork."""
+class TestIpNetworks(unittest.TestCase):
+    """A network's addresses (ip_networks): subnet, DHCP range and fixed addresses of each family."""
 
     DUAL_STACK_XML = """<network>
       <name>default</name>
@@ -109,60 +95,15 @@ class TestWvmNetworkIPOperations(unittest.TestCase):
       </ip>
     </network>"""
 
-    NO_IP_XML = """<network>
-      <name>isolated</name>
-      <bridge name="virbr1"/>
-    </network>"""
+    def test_dual_stack(self):
+        v4, v6 = ip_networks(etree.fromstring(self.DUAL_STACK_XML))
+        self.assertEqual((str(v4["subnet"]), v4["range"]), ("192.168.100.0/24", ("192.168.100.2", "192.168.100.254")))
+        self.assertEqual(v4["hosts"], [{"ip": "192.168.100.50", "mac": "52:54:00:12:34:56", "id": None, "name": "vm1"}])
+        self.assertEqual((str(v6["subnet"]), v6["range"]), ("2001:db8:ca2:2::/64", ("2001:db8:ca2:2::100", "2001:db8:ca2:2::1ff")))
+        self.assertEqual(v6["hosts"][0]["id"], "0:1:0:1")
 
-    def test_get_ip_networks_dual_stack(self):
-        net = DummyNetwork(self.DUAL_STACK_XML)
-        ip_networks = net.get_ip_networks()
-        self.assertIn("ipv4", ip_networks)
-        self.assertIn("ipv6", ip_networks)
-        self.assertEqual(str(ip_networks["ipv4"]), "192.168.100.0/24")
-        self.assertEqual(str(ip_networks["ipv6"]), "2001:db8:ca2:2::/64")
-
-    def test_get_ip_networks_no_ip(self):
-        net = DummyNetwork(self.NO_IP_XML)
-        ip_networks = net.get_ip_networks()
-        self.assertEqual(ip_networks, {})
-
-    def test_get_dhcp_range_ipv4(self):
-        net = DummyNetwork(self.DUAL_STACK_XML)
-        dhcp = net.get_dhcp_range("ipv4")
-        self.assertIsNotNone(dhcp)
-        self.assertEqual(len(dhcp), 2)
-        self.assertEqual(str(dhcp[0]), "192.168.100.2")
-        self.assertEqual(str(dhcp[1]), "192.168.100.254")
-
-    def test_get_dhcp_range_ipv6(self):
-        net = DummyNetwork(self.DUAL_STACK_XML)
-        dhcp = net.get_dhcp_range("ipv6")
-        self.assertIsNotNone(dhcp)
-        self.assertEqual(len(dhcp), 2)
-        self.assertEqual(str(dhcp[0]), "2001:db8:ca2:2::100")
-        self.assertEqual(str(dhcp[1]), "2001:db8:ca2:2::1ff")
-
-    def test_get_dhcp_range_empty(self):
-        net = DummyNetwork(self.NO_IP_XML)
-        self.assertIsNone(net.get_dhcp_range("ipv4"))
-        self.assertIsNone(net.get_dhcp_range("ipv6"))
-
-    def test_get_dhcp_range_start_and_end(self):
-        net = DummyNetwork(self.DUAL_STACK_XML)
-        self.assertEqual(str(net.get_dhcp_range_start("ipv4")), "192.168.100.2")
-        self.assertEqual(str(net.get_dhcp_range_end("ipv4")), "192.168.100.254")
-        self.assertEqual(str(net.get_dhcp_range_start("ipv6")), "2001:db8:ca2:2::100")
-        self.assertEqual(str(net.get_dhcp_range_end("ipv6")), "2001:db8:ca2:2::1ff")
-
-    def test_modify_fixed_address_validation(self):
-        net = DummyNetwork(self.DUAL_STACK_XML)
-        # Invalid IP address must raise ValueError
-        with self.assertRaises(ValueError):
-            net.modify_fixed_address("bad_host", "999.999.999.999", "52:54:00:11:22:33", family="ipv4")
-
-        with self.assertRaises(ValueError):
-            net.modify_fixed_address("bad_host", "not-an-ip", "0:1:0:2", family="ipv6")
+    def test_no_address(self):
+        self.assertEqual(ip_networks(etree.fromstring("<network><name>isolated</name><bridge name='virbr1'/></network>")), [])
 
 
 if __name__ == "__main__":

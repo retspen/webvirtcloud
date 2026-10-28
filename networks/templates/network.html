@@ -86,27 +86,27 @@
             {% endif %}
         </dd>
         <dt class="col-6">{% trans "Network" %}</dt>
-        <dd class="col-6">{{ ipv4_network|default:"-"  }}</dd>
+        <dd class="col-6">{{ ipv4.subnet|default:"-" }}</dd>
         <dt class="col-6">{% trans "DHCP" %}:</dt>
         <dd class="col-6">
-            {% if ipv4_dhcp_range_start and ipv4_dhcp_range_end %}
+            {% if ipv4.dhcp %}
                 <span class="badge bg-success-subtle text-success-emphasis">{% trans "ON" %}</span>
             {% else %}
                 <span class="badge bg-danger-subtle text-danger-emphasis">{% trans "OFF" %}</span>
             {% endif %}
         </dd>
-        {% if ipv4_dhcp_range_start and ipv4_dhcp_range_end %}
+        {% if ipv4.range %}
             {% if state %}
                 <dt class="col-6">{% trans "Start" %}</dt>
-                <dd class="col-6">{{ ipv4_dhcp_range_start }}</dd>
+                <dd class="col-6">{{ ipv4.range.0 }}</dd>
                 <dt class="col-6">{% trans "End" %}</dt>
-                <dd class="col-6">{{ ipv4_dhcp_range_end }}</dd>
+                <dd class="col-6">{{ ipv4.range.1 }}</dd>
             {%  else %}
                 <form class="col-lg-12 ps-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
                     <dt class="col-6">{% trans "Start" %}</dt>
-                    <dd class="col-6"><input name="range_start" value="{{ ipv4_dhcp_range_start }}"/></dd>
+                    <dd class="col-6"><input name="range_start" value="{{ ipv4.range.0 }}"/></dd>
                     <dt class="col-6">{% trans "End" %}</dt>
-                    <dd class="col-6"><input  name="range_end" value="{{ ipv4_dhcp_range_end }}"/></dd>
+                    <dd class="col-6"><input  name="range_end" value="{{ ipv4.range.1 }}"/></dd>
                     <dt class="col-6"></dt>
                     <dd class="col-6 ">
                         <input type="submit"
@@ -116,22 +116,20 @@
                                title="{% trans "Edit DHCP Range" %}"
 />
                     </dd>
-                    <input hidden name="family" value="ipv4"/>
+                    <input hidden name="ip_index" value="{{ ipv4.index }}"/>
                 </form>
             {% endif %}
         {% endif %}
     </dl>
     
-    {% if ipv4_dhcp_range_start and ipv4_dhcp_range_end %}
-        {% if state %}
-            {% include 'modify_ipv4_fixed_address.html' %}
-        {% endif %}
+    {% if ipv4.dhcp %}
+        {% include 'modify_ipv4_fixed_address.html' %}
 
         <h5 class="mb-3">{% trans "IPv4 Fixed Addresses" %}</h5>
 
     {% endif %}
     
-    {% if ipv4_fixed_address %}
+    {% if ipv4.hosts %}
         
         <div class="d-grid col-12">
             <button class="btn btn-light"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv4fix" aria-expanded="true" aria-controls="collapseXML">
@@ -158,14 +156,15 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for fix4 in ipv4_fixed_address %}
+                        {% for fix4 in ipv4.hosts %}
                             <tr>
                             <form method="post" role="form" aria-label="IPv4 edit/delete form">{% csrf_token %}
                                 <td><input class="form-control" value="{{ fix4.mac|default_if_none:"" }}" name="mac" readonly/></td>
                                 <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
                                 <td><input class="form-control" value="{{ fix4.name }}" name="name" /></td>
                                 <td class="text-nowrap">
-                                    <input hidden name="family" value="ipv4"/>
+                                    <input hidden name="ip_index" value="{{ ipv4.index }}"/>
+                                    <input hidden name="original" value="{{ fix4.ip }}"/>
                                     {% if fix4.mac %}{# an entry is changed by its MAC #}
                                     <button type="submit" class="btn btn-sm btn-primary"
                                             name="modify_fixed_address"
@@ -194,35 +193,37 @@
     <dl class="ms-3 row">
         <dt class="col-6">{% trans "IPv6 Forwarding" %}</dt>
         <dd class="col-6">
-            {% if not net_forward.0 %}
+            {% if not net_forward.0 or net_forward.0 == "none" %}
                 {% trans "ISOLATE" %}
-            {% else %}
+            {% elif net_forward.0 == "nat" or net_forward.0 == "route" or net_forward.0 == "open" %}
                 {% trans "ROUTE" %}
+            {% else %}
+                {% trans "From the outside network" %}
             {% endif %}
         </dd>
         <dt class="col-6">{% trans "Network" %}</dt>
-        <dd class="col-6">{{ ipv6_network|default:"-" }}</dd>        
+        <dd class="col-6">{{ ipv6.subnet|default:"-" }}</dd>        
         <dt class="col-6">{% trans "DHCP" %}</dt>
         
         <dd class="col-6">
-            {% if ipv6_dhcp_range_start and ipv6_dhcp_range_end %}
+            {% if ipv6.dhcp %}
                 <span class="badge bg-success-subtle text-success-emphasis">{% trans "ON" %}</span>
             {% else %}
                 <span class="badge bg-danger-subtle text-danger-emphasis">{% trans "OFF" %}</span>
             {% endif %}
         </dd>
-        {% if ipv6_dhcp_range_start and ipv6_dhcp_range_end %}
+        {% if ipv6.range %}
             {% if state %}
                 <dt class="col-6">{% trans "Start" %}</dt>
-                <dd class="col-6">{{ ipv6_dhcp_range_start }}</dd>
+                <dd class="col-6">{{ ipv6.range.0 }}</dd>
                 <dt class="col-6">{% trans "End" %}</dt>
-                <dd class="col-6">{{ ipv6_dhcp_range_end }}</dd>
+                <dd class="col-6">{{ ipv6.range.1 }}</dd>
             {%  else %}
                 <form class="col-lg-12 ps-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
                     <dt class="col-6">{% trans "Start" %}</dt>
-                    <dd class="col-6"><input name="range_start" value="{{ ipv6_dhcp_range_start }}"/></dd>
+                    <dd class="col-6"><input name="range_start" value="{{ ipv6.range.0 }}"/></dd>
                     <dt class="col-6">{% trans "End" %}</dt>
-                    <dd class="col-6"><input  name="range_end" value="{{ ipv6_dhcp_range_end }}"/></dd>
+                    <dd class="col-6"><input  name="range_end" value="{{ ipv6.range.1 }}"/></dd>
                     <dt class="col-6"></dt>
                     <dd class="d-grid col-6">
                         <input 
@@ -233,20 +234,18 @@
                             title="{% trans "Edit DHCP Range" %}" 
 />
                     </dd>
-                    <input hidden name="family" value="ipv6"/>
+                    <input hidden name="ip_index" value="{{ ipv6.index }}"/>
                 </form>
             {% endif %}
         {% endif %}
     </dl>
 
-    {% if ipv6_dhcp_range_start and ipv6_dhcp_range_end %}
-        {% if state %}
-            {% include 'modify_ipv6_fixed_address.html' %}
-        {% endif %}
+    {% if ipv6.dhcp %}
+        {% include 'modify_ipv6_fixed_address.html' %}
         <h5 class="mb-3">{% trans "IPv6 Fixed Addresses" %}</h5>
     {% endif %}
 
-    {% if ipv6_fixed_address %}
+    {% if ipv6.hosts %}
         <div class="d-grid col-12">
             <button class="btn btn-light" role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv6fix" aria-expanded="true" aria-controls="collapseipv6fix">
                 <span>{% bs_icon 'chevron-down' %} </span>
@@ -271,14 +270,15 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for fix6 in ipv6_fixed_address %}
+                        {% for fix6 in ipv6.hosts %}
                             <tr>
                                 <form method="post" role="form" aria-label="IP v6 edit/delete form">{% csrf_token %}
                                     <td><input class="form-control" value="{{ fix6.id|default_if_none:"" }}" name="id" readonly/></td>
                                     <td><input class="form-control" value="{{ fix6.ip }}" name="address" /></td>
                                     <td><input class="form-control" value="{{ fix6.name }}" name="name" /></td>
                                     <td class="text-nowrap">
-                                        <input hidden name="family" value="ipv6"/>
+                                        <input hidden name="ip_index" value="{{ ipv6.index }}"/>
+                                        <input hidden name="original" value="{{ fix6.ip }}"/>
                                         {% if fix6.id %}{# an entry is changed by its DUID #}
                                         <button type="submit" class="btn btn-sm btn-primary"
                                                 name="modify_fixed_address"

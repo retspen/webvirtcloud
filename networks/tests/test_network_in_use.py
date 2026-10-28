@@ -11,6 +11,7 @@ from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
+from networks.tests.driver import without_inactive_flag
 from django.urls import reverse
 
 NODE = """<node>
@@ -31,6 +32,7 @@ class NetworkInUseTests(TestCase):
         patcher = patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn)
         patcher.start()
         self.addCleanup(patcher.stop)
+        without_inactive_flag(self)
         compute = Compute.objects.create(name="net-use", hostname="localhost", login="", password="", type=4)
         self.client.force_login(get_user_model().objects.create_superuser("net-use", "nu@example.com", "pw"))
         self.url = reverse("network", args=[compute.id, "lab"])

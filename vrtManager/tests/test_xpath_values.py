@@ -1,6 +1,7 @@
 """Values from requests do not change the XPath queries they are used in."""
 
 import unittest
+from unittest.mock import Mock
 
 from django.conf import settings
 
@@ -57,7 +58,7 @@ class XPathValueTests(unittest.TestCase):
     def test_qos_direction_must_be_known(self):
         net = wvmNetwork.__new__(wvmNetwork)
         net.wvm = FakeConn()
-        net._XMLDesc = lambda flags: "<network><bandwidth><inbound average='1'/><outbound average='2'/></bandwidth></network>"
+        net.net = Mock(**{"XMLDesc.return_value": "<network><bandwidth><inbound average='1'/><outbound average='2'/></bandwidth></network>"})
         with self.assertRaises(ValueError):
             net.unset_qos("*")
         net.unset_qos("inbound")

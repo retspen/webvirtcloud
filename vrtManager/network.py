@@ -1,13 +1,18 @@
+import copy
+import ipaddress
+from functools import cached_property
+
 from libvirt import (
     VIR_NETWORK_SECTION_IP_DHCP_HOST,
     VIR_NETWORK_UPDATE_AFFECT_CONFIG,
     VIR_NETWORK_UPDATE_AFFECT_LIVE,
     VIR_NETWORK_UPDATE_COMMAND_ADD_LAST,
     VIR_NETWORK_UPDATE_COMMAND_DELETE,
-    VIR_NETWORK_UPDATE_COMMAND_MODIFY, libvirtError)
+    VIR_NETWORK_XML_INACTIVE,
+    libvirtError,
+)
 from lxml import etree
 from vrtManager import util
-import ipaddress
 
 from vrtManager.connection import wvmConnect
 
@@ -28,26 +33,59 @@ def network_size(subnet, dhcp=None):
     return (gateway, mask, dhcp_pool) if dhcp else (gateway, mask, None)
 
 
+def default_prefix(address):
+    """The prefix libvirt gives an address written without one: IPv6 /64, IPv4
+    its class's (A /8, B /16, C /24)."""
+    address = ipaddress.ip_address(address)
+    if address.version == 6:
+        return 64
+    first = int(address) >> 24
+    return 8 if first < 128 else 16 if first < 192 else 24
+
+
+def ip_networks(tree):
+    """Each <ip> of a network's XML, in order: its index is libvirt's parentIndex
+    for changes to it. Its family, address (the host's on the network), subnet
+    (by its netmask or prefix, or libvirt's default one), whether it serves
+    DHCP (a <dhcp>, with or without a range: fixed addresses alone are DHCP
+    too), its first range and its fixed addresses."""
+    ips = []
+    for index, ip in enumerate(tree.findall("ip")):
+        address = ip.get("address")
+        mask = ip.get("prefix") or ip.get("netmask") or (default_prefix(address) if address else None)
+        dhcp = ip.find("dhcp")
+        first = dhcp.find("range") if dhcp is not None else None
+        ips.append({
+            "index": index,
+            "family": ip.get("family", "ipv4"),
+            "address": address,
+            "subnet": ipaddress.ip_network(f"{address}/{mask}", strict=False) if mask else None,
+            "dhcp": dhcp is not None,
+            "range": (first.get("start"), first.get("end")) if first is not None else None,
+            "hosts": [{"ip": host.get("ip"), "mac": host.get("mac"), "id": host.get("id"), "name": host.get("name", "")}
+                      for host in (dhcp.findall("host") if dhcp is not None else [])],
+        })
+    return ips
+
+
 class wvmNetworks(wvmConnect):
     def get_networks_info(self):
-        get_networks = self.get_networks()
+        """Each network's state, autostart, device (its bridge, or a macvtap
+        network's interface), forward mode and addresses (ip_networks): its
+        XML is read once."""
         networks = []
-        for network in get_networks:
-            net = self.get_network(network)
-            net_status = net.isActive()
-            try:
-                net_bridge = net.bridgeName()
-            except libvirtError:
-                net_bridge = util.get_xml_path(net.XMLDesc(0), "/network/forward/interface/@dev")
-
-            net_forward = util.get_xml_path(net.XMLDesc(0), "/network/forward/@mode")
+        for name in self.get_networks():
+            net = self.get_network(name)
+            tree = etree.fromstring(net.XMLDesc(0))
+            forward = tree.find("forward")
             networks.append({
-                "name": network, 
-                "status": net_status, 
-                "device": net_bridge, 
-                "forward": net_forward
-                })
-
+                "name": name,
+                "status": net.isActive(),
+                "autostart": net.autostart(),
+                "device": tree.xpath("string(bridge/@name)") or tree.xpath("string(forward/interface/@dev)"),
+                "forward": forward.get("mode") if forward is not None else None,
+                "ips": ip_networks(tree),
+            })
         return networks
 
     def create_network(
@@ -64,7 +102,6 @@ class wvmNetworks(wvmConnect):
         dhcp6,
         bridge,
         openvswitch,
-        fixed=False,
     ):
         esc_name = util.xml_escape(str(name))
         esc_forward = util.xml_escape(str(forward)) if forward else ""
@@ -99,12 +136,8 @@ class wvmNetworks(wvmConnect):
                     dhcp4_0 = util.xml_escape(str(dhcp4[0]))
                     dhcp4_1 = util.xml_escape(str(dhcp4[1]))
                     xml += f"""<dhcp>
-                                <range start='{dhcp4_0}' end='{dhcp4_1}' />"""
-                    if fixed:
-                        first, last = (int(ipaddress.IPv4Address(ip)) for ip in dhcp4)
-                        for ip in range(first, last + 1):
-                            xml += f"""<host mac='{util.randomMAC()}' ip='{ipaddress.IPv4Address(ip)}' />"""
-                    xml += """</dhcp>"""
+                                <range start='{dhcp4_0}' end='{dhcp4_1}' />
+                               </dhcp>"""
                 xml += """</ip>"""
             if ipv6:
                 xml += f"""<ip family='ipv6' address='{esc_gateway6}' prefix='{esc_prefix6}'>"""
@@ -126,17 +159,31 @@ class wvmNetworks(wvmConnect):
 
 
 class wvmNetwork(wvmConnect):
+    """A network of the host. A page reads its running definition once (tree);
+    a change starts from its saved definition read anew (config), so that two
+    changes in a row do not undo each other, and forgets what the page read."""
+
     def __init__(self, host, login, passwd, conn, net):
         wvmConnect.__init__(self, host, login, passwd, conn)
-        self.leases = None
         self.net = self.get_network(net)
-        self.parent_count = len(self.get_ip_networks())
+
+    @cached_property
+    def tree(self):
+        return etree.fromstring(self.net.XMLDesc(0))
+
+    def config(self):
+        return etree.fromstring(self.net.XMLDesc(VIR_NETWORK_XML_INACTIVE))
+
+    def config_xml(self):
+        """The saved definition, the one the XML editor changes."""
+        return self.net.XMLDesc(VIR_NETWORK_XML_INACTIVE)
+
+    def _define(self, tree):
+        self.wvm.networkDefineXML(etree.tostring(tree).decode())
+        self.__dict__.pop("tree", None)
 
     def get_name(self):
         return self.net.name()
-
-    def _XMLDesc(self, flags):
-        return self.net.XMLDesc(flags)
 
     def get_autostart(self):
         return self.net.autostart()
@@ -147,14 +194,9 @@ class wvmNetwork(wvmConnect):
     def is_active(self):
         return self.net.isActive()
 
-    def get_uuid(self):
-        return self.net.UUIDString()
-
     def get_bridge_device(self):
-        try:
-            return self.net.bridgeName()
-        except Exception:
-            return util.get_xml_path(self._XMLDesc(0), "/network/forward/interface/@dev")
+        """Its bridge, or a macvtap network's interface."""
+        return self.tree.xpath("string(bridge/@name)") or self.tree.xpath("string(forward/interface/@dev)")
 
     def start(self):
         self.net.create()
@@ -183,231 +225,172 @@ class wvmNetwork(wvmConnect):
     def update(self, command, section, xml, parentIndex):
         """Changes the network's configuration and, while it runs, the running
         network too (libvirt refuses a live change on a stopped one)."""
-        flags = VIR_NETWORK_UPDATE_AFFECT_CONFIG | (VIR_NETWORK_UPDATE_AFFECT_LIVE if self.is_active() else 0)
-        return self.net.update(command, section, parentIndex, xml, flags)
+        active = self.is_active()
+        if active and self._addresses(self.tree) != self._addresses(self.config()):
+            # parentIndex names the same <ip> in both only when they list the same addresses
+            raise util.OperationError(f"Network {self.net.name()} runs with other addresses than it has saved; "
+                                      "stop and start it first")
+        flags = VIR_NETWORK_UPDATE_AFFECT_CONFIG | (VIR_NETWORK_UPDATE_AFFECT_LIVE if active else 0)
+        self.net.update(command, section, parentIndex, xml, flags)
+        self.__dict__.pop("tree", None)
+
+    @staticmethod
+    def _addresses(tree):
+        return [(ip.get("family", "ipv4"), ip.get("address")) for ip in tree.findall("ip")]
 
     def get_ip_networks(self):
-        ip_networks = {}
-        xml = self._XMLDesc(0)
-        if util.get_xml_path(xml, "/network/ip") is None:
-            return ip_networks
-        tree = etree.fromstring(xml)
-        ips = tree.findall(".ip")
-        for ip in ips:
-            address_str = ip.get("address")
-            netmask_str = ip.get("netmask")
-            prefix = ip.get("prefix")
-            family = ip.get("family", "ipv4")
-            mask = prefix if prefix is not None else netmask_str
-            if address_str and mask:
-                ret = ipaddress.ip_network(f"{address_str}/{mask}", strict=False)
-            elif address_str:
-                ret = ipaddress.ip_address(address_str)
-            else:
-                continue
-            ip_networks[family] = ret
-        return ip_networks
+        return ip_networks(self.tree)
 
     def get_network_mac(self):
-        xml = self._XMLDesc(0)
-        return util.get_xml_path(xml, "/network/mac/@address")
+        return self.tree.xpath("string(mac/@address)")
 
     def get_network_forward(self):
-        xml = self._XMLDesc(0)
-        fw = util.get_xml_path(xml, "/network/forward/@mode")
-        forward_dev = util.get_xml_path(xml, "/network/forward/@dev")
-        return [fw, forward_dev]
+        """Its forward mode (None: isolated) and the device it forwards through."""
+        forward = self.tree.find("forward")
+        return [forward.get("mode"), forward.get("dev")] if forward is not None else [None, None]
 
-    def get_dhcp_range(self, family="ipv4"):
-        xml = self._XMLDesc(0)
-        if family == "ipv4":
-            dhcpstart = util.get_xml_path(xml, "/network/ip[not(@family='ipv6')]/dhcp/range[1]/@start")
-            dhcpend = util.get_xml_path(xml, "/network/ip[not(@family='ipv6')]/dhcp/range[1]/@end")
-        if family == "ipv6":
-            dhcpstart = util.get_xml_path(xml, "/network/ip[@family='ipv6']/dhcp/range[1]/@start")
-            dhcpend = util.get_xml_path(xml, "/network/ip[@family='ipv6']/dhcp/range[1]/@end")
+    def _ip(self, index):
+        """The saved <ip> of that index, and what ip_networks tells of it."""
+        tree = self.config()
+        ips = tree.findall("ip")
+        if not 0 <= index < len(ips):
+            raise util.OperationError(f"Network {self.net.name()} has no such address")
+        return tree, ips[index], ip_networks(tree)[index]
 
-        return None if not dhcpstart or not dhcpend else [ipaddress.ip_address(dhcpstart), ipaddress.ip_address(dhcpend)]
+    def _checked_address(self, ip, address, what):
+        """address as an address of the <ip> ip (ip_networks): of its family and
+        subnet, and not the host's own."""
+        try:
+            address = ipaddress.ip_address(address)
+        except ValueError:
+            raise util.OperationError(f"{address} is not an IP address") from None
+        if ip["subnet"] is None or address not in ip["subnet"]:
+            raise util.OperationError(f"The {what} {address} is not in {ip['subnet'] or 'the network'}")
+        if address == ipaddress.ip_address(ip["address"]):
+            raise util.OperationError(f"{address} is the host's own address on the network")
+        return address
 
-    def get_dhcp_range_start(self, family="ipv4"):
-        dhcp = self.get_dhcp_range(family)
-        return dhcp[0] if dhcp else None
-
-    def get_dhcp_range_end(self, family="ipv4"):
-        dhcp = self.get_dhcp_range(family)
-        return dhcp[1] if dhcp else None
-
-    def can_pxe(self):
-        xml = self._XMLDesc(0)
-        forward = self.get_network_forward()[0]
-        if forward and forward != "nat":
-            return True
-        return bool(util.get_xml_path(xml, "/network/ip/dhcp/bootp/@file"))
-
-    def get_dhcp_host_addr(self, family="ipv4"):
-        result = []
-        tree = etree.fromstring(self._XMLDesc(0))
-        for ipdhcp in tree.findall("./ip"):
-            if family == "ipv4":
-                if ipdhcp.get("family") is not None:
-                    continue
-                hosts = ipdhcp.findall("./dhcp/host")
-                for host in hosts:
-                    host_ip = host.get("ip")
-                    mac = host.get("mac")
-                    name = host.get("name", "")
-                    result.append({"ip": host_ip, "mac": mac, "name": name})
-                return result
-            if family == "ipv6":
-                hosts = tree.xpath("./ip[@family='ipv6']/dhcp/host")
-                for host in hosts:
-                    host_ip = host.get("ip")
-                    host_id = host.get("id")
-                    name = host.get("name", "")
-                    result.append({"ip": host_ip, "id": host_id, "name": name})
-                return result
-
-    def modify_dhcp_range(self, range_start, range_end, family="ipv4"):
+    def modify_dhcp_range(self, index, range_start, range_end):
         """Refused while the network runs: the running network would keep the old range."""
         if self.is_active():
             raise util.OperationError(f"Stop network {self.net.name()} to change its DHCP range")
-        tree = etree.fromstring(self._XMLDesc(0))
-        ip = {"ipv4": "ip[not(@family='ipv6')]", "ipv6": "ip[@family='ipv6']"}.get(family)
-        dhcp_range = tree.xpath(f"{ip}/dhcp/range") if ip else []
-        if not dhcp_range:
-            raise util.OperationError(f"Network {self.net.name()} has no {family} DHCP range")
-        dhcp_range[0].set("start", range_start)
-        dhcp_range[0].set("end", range_end)
-        self.wvm.networkDefineXML(etree.tostring(tree).decode())
+        tree, ip, info = self._ip(index)
+        dhcp_range = ip.find("dhcp/range")
+        if dhcp_range is None:
+            raise util.OperationError(f"This address of network {self.net.name()} has no DHCP range")
+        start = self._checked_address(info, range_start, "range start")
+        end = self._checked_address(info, range_end, "range end")
+        if start > end:
+            raise util.OperationError(f"The range starts at {start}, after its end {end}")
+        if start <= ipaddress.ip_address(info["address"]) <= end:
+            raise util.OperationError(f"The range takes in {info['address']}, the host's own address")
+        dhcp_range.set("start", str(start))
+        dhcp_range.set("end", str(end))
+        self._define(tree)
 
-    def delete_fixed_address(self, ip, family="ipv4"):
-        tree = etree.fromstring(self._XMLDesc(0))
-        if family == "ipv4":
-            hosts = tree.xpath("/network/ip[not(@family='ipv6')]/dhcp/host")
-            parent_index = self.parent_count - 2
-        if family == "ipv6":
-            hosts = tree.xpath("/network/ip[@family='ipv6']/dhcp/host")
-            parent_index = self.parent_count - 1
-        for h in hosts:
-            if h.get("ip") == ip:
-                # the host as it is: a host may have only a name and an address
-                new_xml = etree.tostring(h, with_tail=False).decode()
-                self.update(
-                    VIR_NETWORK_UPDATE_COMMAND_DELETE,
-                    VIR_NETWORK_SECTION_IP_DHCP_HOST,
-                    new_xml,
-                    parent_index,
-                )
-                break
-
-    def modify_fixed_address(self, name, address, mac_duid, family="ipv4"):
-        tree = etree.fromstring(self._XMLDesc(0))
-        name_esc = util.xml_escape(name) if name else ""
-        name_attr = f' name="{name_esc}"' if name else ""
-        mac_esc = util.xml_escape(mac_duid)
-        ip_addr = ipaddress.ip_address(address)
-        if family == "ipv4":
-            new_xml = f'<host mac="{mac_esc}"{name_attr} ip="{ip_addr}"/>'
-            hosts = tree.xpath("./ip[not(@family='ipv6')]/dhcp/host")
-            compare_var = "mac"
-            parent_index = self.parent_count - 2
-        if family == "ipv6":
-            new_xml = f'<host id="{mac_esc}"{name_attr} ip="{ip_addr}"/>'
-            hosts = tree.xpath("./ip[@family='ipv6']/dhcp/host")
-            compare_var = "id"
-            parent_index = self.parent_count - 1
-        new_host_xml = etree.fromstring(new_xml)
-        host = next((h for h in hosts if h.get(compare_var) == mac_duid), None)
+    def delete_fixed_address(self, index, address):
+        _tree, ip, _info = self._ip(index)
+        host = next((h for h in ip.findall("dhcp/host") if h.get("ip") == address), None)
         if host is None:
-            self.update(
-                VIR_NETWORK_UPDATE_COMMAND_ADD_LAST,
-                VIR_NETWORK_SECTION_IP_DHCP_HOST,
-                new_xml,
-                parent_index,
-            )
-        else:
-            # change the host
-            if host.get("name") == new_host_xml.get("name") and host.get("ip") == new_host_xml.get("ip"):
-                return False
-            else:
-                self.update(
-                    VIR_NETWORK_UPDATE_COMMAND_MODIFY,
-                    VIR_NETWORK_SECTION_IP_DHCP_HOST,
-                    new_xml,
-                    parent_index,
-                )
+            raise util.OperationError(f"Network {self.net.name()} has no fixed address {address}")
+        # the host as it is: a host may have only a name and an address
+        self.update(VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_SECTION_IP_DHCP_HOST,
+                    etree.tostring(host, with_tail=False).decode(), index)
+
+    def modify_fixed_address(self, index, original, name, address, mac_duid):
+        """Adds a fixed address, or changes the one that had the address
+        original, keeping what the page does not show of it (a client id, a
+        lease time). The address must be of the subnet, not the host's, and
+        neither it, the MAC (IPv4) or DUID (IPv6) nor the name another entry's.
+        A change deletes the entry and adds it anew, put back if that fails:
+        libvirt's own change finds an entry by any of its MAC, address or name,
+        another entry's too, and an IPv6 one never by its DUID. Returns False
+        when nothing changes."""
+        _tree, ip, info = self._ip(index)
+        address = self._checked_address(info, address, "fixed address")
+        key = "mac" if info["family"] == "ipv4" else "id"
+        hosts = ip.findall("dhcp/host")
+        old = None
+        if original:
+            old = next((h for h in hosts if h.get("ip") == original), None)
+            if old is None:
+                raise util.OperationError(f"The fixed address {original} is gone meanwhile; reload the page")
+        for other in hosts:
+            if other is old:
+                continue
+            if other.get("ip") == str(address):
+                raise util.OperationError(f"{address} is another entry's fixed address")
+            if mac_duid and other.get(key, "").lower() == mac_duid.lower():
+                raise util.OperationError(f"{mac_duid} has another fixed address, {other.get('ip')}")
+            if name and other.get("name") == name:
+                raise util.OperationError(f"The name {name} has another fixed address, {other.get('ip')}")
+        new = copy.deepcopy(old) if old is not None else etree.Element("host")
+        new.tail = None
+        for attribute, value in ((key, mac_duid), ("name", name), ("ip", str(address))):
+            if value:
+                new.set(attribute, value)
+            elif attribute in new.attrib:
+                del new.attrib[attribute]
+        new_xml = etree.tostring(new).decode()
+        if old is None:
+            self.update(VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_SECTION_IP_DHCP_HOST, new_xml, index)
+            return True
+        old_xml = etree.tostring(old, with_tail=False).decode()
+        if new_xml == old_xml:
+            return False
+        self.update(VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_SECTION_IP_DHCP_HOST, old_xml, index)
+        try:
+            self.update(VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_SECTION_IP_DHCP_HOST, new_xml, index)
+        except libvirtError:
+            self.update(VIR_NETWORK_UPDATE_COMMAND_ADD_LAST, VIR_NETWORK_SECTION_IP_DHCP_HOST, old_xml, index)
+            raise
+        return True
 
     def get_qos(self):
         qos_values = {}
-        tree = etree.fromstring(self._XMLDesc(0))
-        qos = tree.xpath("/network/bandwidth")
-        if qos:
-            qos = qos[0]
-
-            in_qos = qos.find("inbound")
-            if in_qos is not None:
-                in_av = in_qos.get("average")
-                in_peak = in_qos.get("peak")
-                in_burst = in_qos.get("burst")
-                qos_values["inbound"] = {"average": in_av, "peak": in_peak, "burst": in_burst}
-
-            out_qos = qos.find("outbound")
-            if out_qos is not None:
-                out_av = out_qos.get("average")
-                out_peak = out_qos.get("peak")
-                out_burst = out_qos.get("burst")
-                qos_values["outbound"] = {"average": out_av, "peak": out_peak, "burst": out_burst}
+        for direction in ("inbound", "outbound"):
+            limit = self.tree.find(f"bandwidth/{direction}")
+            if limit is not None:
+                qos_values[direction] = {"average": limit.get("average"), "peak": limit.get("peak"),
+                                         "burst": limit.get("burst")}
         return qos_values
 
     def set_qos(self, direction, average, peak, burst):
         if direction not in ("inbound", "outbound"):
             raise ValueError("Direction must be inbound or outbound")
-
         try:
             average, peak, burst = int(average), int(peak), int(burst)
         except ValueError:
             raise ValueError("QoS rates must be whole numbers")
-
-        xml = f"<{direction} average='{average}' peak='{peak}' burst='{burst}'/>"
-        tree = etree.fromstring(self._XMLDesc(0))
-
-        band = tree.xpath("/network/bandwidth")
-        if len(band) == 0:
-            xml = f"<bandwidth>{xml}</bandwidth>"
-            tree.append(etree.fromstring(xml))
-        else:
-            direct = band[0].find(direction)
-            if direct is not None:
-                parent = direct.getparent()
-                parent.remove(direct)
-                parent.append(etree.fromstring(xml))
-            else:
-                band[0].append(etree.fromstring(xml))
-        new_xml = etree.tostring(tree).decode()
-        self.wvm.networkDefineXML(new_xml)
+        tree = self.config()
+        band = tree.find("bandwidth")
+        if band is None:
+            band = etree.SubElement(tree, "bandwidth")
+        for old in band.findall(direction):
+            band.remove(old)
+        etree.SubElement(band, direction, average=str(average), peak=str(peak), burst=str(burst))
+        self._define(tree)
 
     def unset_qos(self, direction):
-        # direction goes into the XPath below
         if direction not in ("inbound", "outbound"):
             raise ValueError("Direction must be inbound or outbound")
-        tree = etree.fromstring(self._XMLDesc(0))
-        for direct in tree.xpath(f"/network/bandwidth/{direction}"):
-            parent = direct.getparent()
-            parent.remove(direct)
-
-        self.wvm.networkDefineXML(etree.tostring(tree).decode())
+        tree = self.config()
+        for limit in tree.findall(f"bandwidth/{direction}"):
+            limit.getparent().remove(limit)
+        self._define(tree)
 
     def edit_network(self, new_xml):
-        self.wvm.networkDefineXML(new_xml)
-
-    def refresh_dhcp_leases(self):
+        """Defines this network anew from new_xml: of the same name and, if it
+        names one, the same UUID, not another network."""
+        # read for its name and UUID only, its entities not expanded: libvirt gets the text itself
+        parser = etree.XMLParser(resolve_entities=False, no_network=True)
         try:
-            self.leases = self.net.DHCPLeases()
-        except Exception as e:
-            self.leases = []
-            raise util.OperationError(f"Error getting {self} DHCP leases: {e}") from e
-
-    def get_dhcp_leases(self):
-        if self.leases is None:
-            self.refresh_dhcp_leases()
-        return self.leases
+            tree = etree.fromstring(new_xml.encode(), parser)  # bytes: the XML may declare its encoding
+        except etree.XMLSyntaxError as err:
+            raise util.OperationError(f"The XML is not valid: {err}") from None
+        if tree.tag != "network" or tree.findtext("name") != self.net.name():
+            raise util.OperationError(f"The XML must define network {self.net.name()}")
+        if tree.findtext("uuid") not in (None, self.net.UUIDString()):
+            raise util.OperationError("The XML must keep the network's UUID")
+        self.wvm.networkDefineXML(new_xml)
+        self.__dict__.pop("tree", None)

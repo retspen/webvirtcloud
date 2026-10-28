@@ -1,8 +1,8 @@
 """A network's DHCP range is changed while the network is stopped, and the
 page says so only when it was: a running network, a network without a
-range or an unknown address family is refused with the reason. Runs on a
-private libvirt test driver: "test:///default" is shared by the whole
-process."""
+range, an address it does not have or a range outside its subnet is
+refused with the reason. Runs on a private libvirt test driver:
+"test:///default" is shared by the whole process."""
 
 import tempfile
 from unittest.mock import patch
@@ -12,6 +12,7 @@ from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
+from networks.tests.driver import without_inactive_flag
 from django.urls import reverse
 from lxml import etree
 
@@ -34,12 +35,13 @@ class DhcpRangeTests(TestCase):
         patcher = patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn)
         patcher.start()
         self.addCleanup(patcher.stop)
+        without_inactive_flag(self)
         self.compute = Compute.objects.create(name="dhcp", hostname="localhost", login="", password="", type=4)
         self.client.force_login(get_user_model().objects.create_superuser("dhcp", "dhcp@example.com", "pw"))
 
-    def change(self, network, family="ipv4"):
+    def change(self, network, index="0", start="192.0.2.30", end="192.0.2.40"):
         response = self.client.post(reverse("network", args=[self.compute.id, network]), {
-            "modify_dhcp_range": "", "range_start": "192.0.2.30", "range_end": "192.0.2.40", "family": family})
+            "modify_dhcp_range": "", "range_start": start, "range_end": end, "ip_index": index})
         return [str(m) for m in get_messages(response.wsgi_request)]
 
     def dhcp_range(self, network):
@@ -48,7 +50,7 @@ class DhcpRangeTests(TestCase):
 
     def test_a_stopped_network_gets_the_new_range(self):
         self.conn.networkLookupByName("lab").destroy()
-        self.assertEqual(self.change("lab"), ["IPV4 DHCP Range is Changed."])
+        self.assertEqual(self.change("lab"), ["The DHCP range is changed"])
         self.assertEqual(self.dhcp_range("lab"), ["192.0.2.30", "192.0.2.40"])
 
     def test_a_running_network_is_refused(self):
@@ -59,6 +61,14 @@ class DhcpRangeTests(TestCase):
     def test_a_network_without_a_range_or_an_unknown_family_is_refused(self):
         self.conn.networkLookupByName("lab").destroy()
         self.conn.networkLookupByName("plain").destroy()
-        self.assertEqual(self.change("plain"), ["Network plain has no ipv4 DHCP range"])
-        self.assertEqual(self.change("lab", family="ipx"), ["Network lab has no ipx DHCP range"])
+        self.assertEqual(self.change("plain")[-1], "This address of network plain has no DHCP range")
+        self.assertEqual(self.change("lab", index="1")[-1], "Network lab has no such address")
+        self.assertEqual(self.change("lab", index="x")[-1], "Network lab has no such address")
+        self.assertEqual(self.dhcp_range("lab"), ["192.0.2.10", "192.0.2.20"])
+
+    def test_a_range_outside_the_subnet_or_backwards_is_refused(self):
+        self.conn.networkLookupByName("lab").destroy()
+        self.assertEqual(self.change("lab", end="198.51.100.9")[-1], "The range end 198.51.100.9 is not in 192.0.2.0/24")
+        self.assertEqual(self.change("lab", start="192.0.2.1")[-1], "192.0.2.1 is the host's own address on the network")
+        self.assertEqual(self.change("lab", start="192.0.2.50")[-1], "The range starts at 192.0.2.50, after its end 192.0.2.40")
         self.assertEqual(self.dhcp_range("lab"), ["192.0.2.10", "192.0.2.20"])

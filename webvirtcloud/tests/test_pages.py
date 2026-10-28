@@ -8,6 +8,7 @@ import libvirt
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from networks.tests.driver import without_inactive_flag
 from django.urls import NoReverseMatch, URLPattern, URLResolver, get_resolver, reverse
 from instances.models import Flavor, Instance
 from lxml import html
@@ -27,6 +28,7 @@ class PageTests(TestCase):
         """(URL name, parsed page) for every HTML page; asserts the main ones are among them."""
         conn = libvirt.open("test:///default")
         self.addCleanup(conn.close)
+        without_inactive_flag(self)
         compute = Compute.objects.create(name="testdrv", hostname="localhost", login="", password="", type=4)
         vm = Instance.objects.create(compute=compute, name="test", uuid=conn.lookupByName("test").UUIDString())
         Flavor.objects.create(label="second", memory=512, vcpu=1, disk=10)  # the flavor modals repeat per flavor

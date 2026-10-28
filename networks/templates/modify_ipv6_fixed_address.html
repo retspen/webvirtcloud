@@ -18,7 +18,7 @@
                     <div class="row">
                         <label for="ipv6_fixed_subnet" class="col-sm-4 col-form-label">{% trans "Subnet Pool" %}</label>
                         <div class="col-sm-6">
-                            <input id="ipv6_fixed_subnet" type="text" readonly class="form-control" name="subnet" value="{{ ipv6_network }}" required pattern="[0-9\/\.]+">
+                            <input id="ipv6_fixed_subnet" type="text" readonly class="form-control" name="subnet" value="{{ ipv6.subnet }}" required pattern="[0-9\/\.]+">
                         </div>
                     </div>
                     <div class="row">
@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <input name="family" value="ipv6" hidden/>
+                    <input name="ip_index" value="{{ ipv6.index }}" hidden/>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                     <button type="submit" class="btn btn-primary" name="modify_fixed_address">{% trans "Create" %}</button>
                 </div>
