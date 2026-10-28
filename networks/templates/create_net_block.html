@@ -1,88 +1,151 @@
 {% load i18n %}
+{% load static %}
 {% load bootstrap_icons %}
+{% load form_fields %}
 {% if request.user.is_superuser %}
-    <a href="#AddNetPool" type="button" class="btn btn-success float-end" title="{% trans "Add New Network" %}" data-bs-toggle="modal">
-        <span aria-hidden="true">{% bs_icon 'plus' %} </span>
-    </a>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddNetPool">
+        <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New network" %}
+    </button>
 
-    <!-- Modal pool -->
-    <div class="modal fade" id="AddNetPool" tabindex="-1" role="dialog" aria-labelledby="AddNetPoolLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
+    {# one form: a card per mode, the fields of the chosen one (the others hidden and disabled, so not sent) #}
+    <div class="modal fade" id="AddNetPool" tabindex="-1" aria-labelledby="AddNetPoolLabel" aria-hidden="true"
+         {% if form.errors %}data-open{% endif %}>
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+            <form method="post" class="modal-content" id="network-form">{% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Add New Network" %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div>
+                        <h5 class="modal-title" id="AddNetPoolLabel">{% trans "New network" %}</h5>
+                        <div class="small text-body-secondary">{% blocktrans with host=compute.name %}On {{ host }}{% endblocktrans %}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
-                <form method="post" action="" role="form" aria-label="Add New Network form" novalidate>{% csrf_token %}
-                    <div class="modal-body">
-                        <div class="row">
-                            <label for="net_name" class="col-sm-4 col-form-label">{% trans "Name" %}</label>
+                <div class="modal-body">
+                    {% include "instances/form_errors.html" %}
+
+                    <fieldset class="mb-3">
+                        <legend class="form-label fs-6">{% trans "Type" %}</legend>
+                        <div class="row row-cols-1 row-cols-sm-2 g-2">
+                            {% trans "NAT" as title %}{% trans "VMs reach out through the host's address, on a private subnet." as help %}
+                            {% include "radio_card.html" with name="forward" value="nat" chosen=net_mode %}
+                            {% trans "Routed" as title %}{% trans "The host routes the subnet; the upstream router needs a route back." as help %}
+                            {% include "radio_card.html" with name="forward" value="route" chosen=net_mode %}
+                            {% trans "Isolated" as title %}{% trans "VMs reach each other and the host only." as help %}
+                            {% include "radio_card.html" with name="forward" value="none" chosen=net_mode %}
+                            {% trans "Bridge" as title %}{% trans "VMs join a bridge of the host, on its outside network." as help %}
+                            {% include "radio_card.html" with name="forward" value="bridge" chosen=net_mode %}
+                            {% trans "Macvtap" as title %}{% trans "VMs share an interface of the host; the host cannot reach them through it." as help %}
+                            {% include "radio_card.html" with name="forward" value="macvtap" chosen=net_mode %}
+                        </div>
+                    </fieldset>
+
+                    <div class="mb-3">
+                        <label for="net_name" class="form-label">{% trans "Network name" %}</label>
+                        <input id="net_name" type="text" class="form-control{{ form.name|invalid }}" name="name" value="{{ form.name.value|default:"" }}"
+                               placeholder="lab-net" maxlength="20" required pattern="[a-zA-Z0-9._\-]+" {% error_attrs form.name "net_name" "net_name_help" %}>
+                        <div class="form-text" id="net_name_help">{% trans "Letters, digits, dots, dashes and underscores; up to 20." %}</div>
+                        {% field_error form.name "net_name" %}
+                    </div>
+
+                    <fieldset data-kinds="nat route none">
+                        <legend class="visually-hidden">{% trans "Addresses" %}</legend>
+                        <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <input id="net_name" type="text" class="form-control" name="name" placeholder="{% trans "default" %}" required pattern="[a-zA-Z0-9_]+">
+                                <label for="net_subnet" class="form-label">{% trans "IPv4 subnet" %}</label>
+                                <input id="net_subnet" type="text" class="form-control font-monospace{{ form.subnet|invalid }}" name="subnet" value="{{ form.subnet.value|default:"" }}"
+                                       placeholder="192.168.100.0/24" {% error_attrs form.subnet "net_subnet" "net_subnet_help" %}>
+                                <div class="form-text" id="net_subnet_help">{% trans "The host takes its first address." %}</div>
+                                {% field_error form.subnet "net_subnet" %}
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="form-label d-block">{% trans "DHCP" %}</span>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="net_dhcp4" name="dhcp4" value="true"{% if not form.is_bound or form.dhcp4.value %} checked{% endif %}>
+                                    <label class="form-check-label" for="net_dhcp4">{% trans "Give the VMs addresses from the subnet" %}</label>
+                                </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <label for="forward_select" class="col-sm-4 col-form-label">{% trans "Type forwarding" %}</label>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="net_ipv6" name="enable_ipv6" value="true"{% if form.enable_ipv6.value %} checked{% endif %}>
+                            <label class="form-check-label" for="net_ipv6">{% trans "IPv6 too" %}</label>
+                        </div>
+                        <div class="row g-3 mb-3" id="net_ipv6_fields">
                             <div class="col-sm-6">
-                                <select id="forward_select" class="form-select" name="forward">
-                                    <option value="nat">{% trans "NAT" %}</option>
-                                    <option value="route">{% trans "ROUTE" %}</option>
-                                    <option value="none">{% trans "ISOLATE" %}</option>
-                                    <option value="bridge">{% trans "BRIDGE" %}</option>
-                                    <option value="macvtap">{% trans "MACVTAP" %}</option>
-                                </select>
+                                <label for="net_subnet6" class="form-label">{% trans "IPv6 subnet" %}</label>
+                                <input id="net_subnet6" type="text" class="form-control font-monospace{{ form.subnet6|invalid }}" name="subnet6" value="{{ form.subnet6.value|default:"" }}"
+                                       placeholder="fd00:dead:baba:1::/64" {% error_attrs form.subnet6 "net_subnet6" "net_subnet6_help" %}>
+                                <div class="form-text" id="net_subnet6_help">{% trans "A /64." %}</div>
+                                {% field_error form.subnet6 "net_subnet6" %}
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="form-label d-block">{% trans "DHCPv6" %}</span>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="net_dhcp6" name="dhcp6" value="true"{% if form.dhcp6.value %} checked{% endif %}>
+                                    <label class="form-check-label" for="net_dhcp6">{% trans "Give the VMs IPv6 addresses" %}</label>
+                                </div>
                             </div>
                         </div>
-                        <div class="row bridge_name_form_group_dhcp">
-                            <label for="net_subnet" class="col-sm-4 col-form-label">{% trans "IPv4 Subnet pool" %}</label>
-                            <div class="col-sm-6">
-                                <input id="net_subnet" type="text" class="form-control" name="subnet" value="" placeholder="192.168.100.0/24" required pattern="[0-9\/\.]+">
-                            </div>
+                    </fieldset>
+
+                    <fieldset data-kinds="bridge">
+                        <legend class="visually-hidden">{% trans "Bridge" %}</legend>
+                        <div class="mb-3">
+                            <label for="net_bridge" class="form-label">{% trans "Host bridge" %}</label>
+                            <input id="net_bridge" type="text" class="form-control font-monospace{% if net_mode == "bridge" %}{{ form.bridge_name|invalid }}{% endif %}" name="bridge_name"
+                                   value="{% if net_mode == "bridge" %}{{ form.bridge_name.value|default:"" }}{% endif %}" list="host-bridges" placeholder="br0" maxlength="20" required
+                                   {% if net_mode == "bridge" %}{% error_attrs form.bridge_name "net_bridge" "net_bridge_help" %}{% else %}aria-describedby="net_bridge_help"{% endif %}>
+                            <datalist id="host-bridges">
+                                {% for iface in host_ifaces %}{% if iface.type == "bridge" %}<option value="{{ iface.name }}">{% endif %}{% endfor %}
+                            </datalist>
+                            <div class="form-text" id="net_bridge_help">{% trans "A bridge the host already has; the field suggests the ones libvirt lists." %}</div>
+                            {% if net_mode == "bridge" %}{% field_error form.bridge_name "net_bridge" %}{% endif %}
                         </div>
-                        <div class="row bridge_name_form_group_dhcp">
-                            <label for="net_dhcp4" class="col-sm-4 col-form-label">{% trans "DHCPv4" %}</label>
-                            <div class="col-sm-6">
-                                <input id="net_dhcp4" type="checkbox" name="dhcp4" value="true" checked>
-                            </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="net_ovs" name="openvswitch" value="true"{% if form.openvswitch.value %} checked{% endif %}>
+                            <label class="form-check-label" for="net_ovs">{% trans "It is an Open vSwitch bridge" %}</label>
                         </div>
-                        <div class="row bridge_name_form_group_dhcp">
-                            <label for="enable_ipv6" class="col-sm-4 col-form-label">{% trans "Enable IPv6" %}</label>
-                            <div class="col-sm-6">
-                                <input type="checkbox" id="enable_ipv6" name="enable_ipv6" value="true">
-                            </div>
+                    </fieldset>
+
+                    <fieldset data-kinds="macvtap">
+                        <legend class="visually-hidden">{% trans "Macvtap" %}</legend>
+                        <div class="mb-3">
+                            <label for="net_iface" class="form-label">{% trans "Host interface" %}</label>
+                            <input id="net_iface" type="text" class="form-control font-monospace{% if net_mode == "macvtap" %}{{ form.bridge_name|invalid }}{% endif %}" name="bridge_name"
+                                   value="{% if net_mode == "macvtap" %}{{ form.bridge_name.value|default:"" }}{% endif %}" list="host-ifaces" placeholder="eth0" maxlength="20" required
+                                   {% if net_mode == "macvtap" %}{% error_attrs form.bridge_name "net_iface" "net_iface_help" %}{% else %}aria-describedby="net_iface_help"{% endif %}>
+                            <datalist id="host-ifaces">
+                                {% for iface in host_ifaces %}{% if iface.type != "bridge" %}<option value="{{ iface.name }}">{% endif %}{% endfor %}
+                            </datalist>
+                            <div class="form-text" id="net_iface_help">{% trans "The interface the VMs share, such as the host's uplink." %}</div>
+                            {% if net_mode == "macvtap" %}{% field_error form.bridge_name "net_iface" %}{% endif %}
                         </div>
-                        <div class="row ipv6_group">
-                            <label for="net_subnet6" class="col-sm-4 col-form-label">{% trans "IPv6 Subnet pool" %}</label>
-                            <div class="col-sm-6">
-                                <input id="net_subnet6" type="text" class="form-control" name="subnet6" value="" placeholder="fd00:dead:baba:1::/64" required pattern="[0-9a-fA-F:\/]+">
-                            </div>
-                        </div>
-                        <div class="row ipv6_group">
-                            <label for="net_dhcp6" class="col-sm-4 col-form-label">{% trans "DHCPv6" %}</label>
-                            <div class="col-sm-6">
-                                <input id="net_dhcp6" type="checkbox" name="dhcp6" value="true">
-                            </div>
-                        </div>
-                        <div class="row bridge_name_form_group">
-                            <label for="bridge_name" class="col-sm-4 col-form-label" id="bridge_label">{% trans "Bridge Name" %}</label>
-                            <div class="col-sm-6">
-                                <input type="text" class="form-control" name="bridge_name" id="bridge_name" placeholder="br0" pattern="[a-z0-9\-_:]+">
-                            </div>
-                        </div>
-                        <div class="row bridge_name_form_group openvswitch">
-                            <label for="net_openvswitch" class="col-sm-4 col-form-label">{% trans "Open vSwitch" %}</label>
-                            <div class="col-sm-6">
-                                <input id="net_openvswitch" type="checkbox" name="openvswitch" value="true">
-                            </div>
-                        </div>
+                    </fieldset>
+
+                    <p class="small text-body-secondary mb-0">{% bs_icon 'info-circle' %} {% trans "The network starts at once, and with the host from then on." %}</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                    <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="create">{% trans "Create network" %}</button>
                 </div>
-                    </form>
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-    </div> <!-- /.modal -->
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'js/choice_dialog.js' %}"></script>
+    <script>
+        // the IPv6 fields show with their box; a NAT or routed network needs a
+        // subnet (after the page's scripts, Bootstrap's among them)
+        document.addEventListener('DOMContentLoaded', function () {
+            var ipv6 = document.getElementById('net_ipv6');
+            function showIpv6() {
+                var fields = document.getElementById('net_ipv6_fields');
+                fields.hidden = !ipv6.checked;
+                fields.querySelectorAll('input').forEach(function (input) { input.disabled = !ipv6.checked; });
+                document.getElementById('net_subnet6').required = ipv6.checked;
+            }
+            ipv6.addEventListener('change', showIpv6);
+            choiceDialog(document.getElementById('AddNetPool'), 'forward', function (mode) {
+                document.getElementById('net_subnet').required = mode === 'nat' || mode === 'route';
+                showIpv6();
+            });
+        });
+    </script>
 {% endif %}
-

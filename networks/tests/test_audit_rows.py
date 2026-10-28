@@ -96,5 +96,5 @@ class NetworkRowTests(TestCase):
                                "dhcp4": "on"})
         self.client.post(url, {"create": "", "name": "bad name!", "forward": "nat"})  # invalid form
         response = self.client.post(url, {"create": "", "name": "lab", "forward": "nat", "subnet": "203.0.113.0/24"})
-        self.assertIn("* This host has a network of that name", [str(m) for m in get_messages(response.wsgi_request)])
+        self.assertContains(response, "This host has a network of that name")  # in the dialog, open again
         self.assertEqual(rows(), [("Network audit-net: add", True), ("Network lab: add: name already in use", False)])

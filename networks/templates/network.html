@@ -5,435 +5,432 @@
 
 {% block title %}{% trans "Network" %} - {{ pool }}{% endblock %}
 
-{% block page_heading %}{% trans "Network" %}: {{ pool }}{% endblock page_heading %}
+{% block page_heading %}{{ compute.name }} - {% trans "Network" %}: {{ pool }}{% endblock page_heading %}
+
+{% block page_heading_extra %}
+{# the network's own actions: starting or stopping it, the others in a menu #}
+<div class="btn-group" role="group" aria-label="{% blocktrans %}Actions for network {{ pool }}{% endblocktrans %}">
+    <form method="post" class="btn-group">{% csrf_token %}
+        {% if state %}
+        <button type="submit" class="btn btn-outline-secondary" name="stop"
+                data-confirm="{% blocktrans with name=pool %}Stop network {{ name }}? Running VMs on it lose their connection through it at once.{% endblocktrans %}"
+                onclick="return confirm(this.dataset.confirm)">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
+        {% else %}
+        <button type="submit" class="btn btn-outline-secondary" name="start">{% bs_icon 'play-fill' %} {% trans "Start" %}</button>
+        {% endif %}
+    </form>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{% trans "More actions" %}">{% bs_icon 'three-dots' %}</button>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+            <li><form method="post">{% csrf_token %}
+                {% if autostart %}
+                <button type="submit" class="dropdown-item" name="unset_autostart"
+                        data-confirm="{% blocktrans with name=pool %}Disable autostart of network {{ name }}? After the host restarts it stays stopped, and VMs that use it do not start.{% endblocktrans %}"
+                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'toggle-off' %} {% trans "Disable autostart" %}</button>
+                {% else %}
+                <button type="submit" class="dropdown-item" name="set_autostart">{% bs_icon 'toggle-on' %} {% trans "Enable autostart" %}</button>
+                {% endif %}
+            </form></li>
+            {% if not state %}
+            <li><hr class="dropdown-divider"></li>
+            <li><form method="post">{% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger" name="delete"
+                        data-confirm="{% blocktrans with name=pool %}Delete network {{ name }}? VMs that use it no longer start.{% endblocktrans %}"
+                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete network" %}</button>
+            </form></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endblock page_heading_extra %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-lg-12">
-            {% include "computes/host_nav.html" with section="networks" detail=True %}
+    {% include "computes/host_nav.html" with section="networks" detail=True %}
 
-        </div>
+    <div class="card mb-3">
+        <div class="card-header">{% trans "Network" %}</div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "State" %}</span>
+                <span class="d-flex flex-wrap justify-content-end gap-1">
+                    {% if state %}<span class="badge text-bg-success">{% trans "Active" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Stopped" %}</span>{% endif %}
+                    {% if autostart %}<span class="badge text-bg-light border">{% trans "Autostart" %}</span>{% endif %}
+                </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "Type" %}</span>
+                <span class="badge text-bg-light border">{{ mode_label }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% if mode == "macvtap" %}{% trans "Host interface" %}{% elif mode == "bridge" %}{% trans "Host bridge" %}{% else %}{% trans "Bridge" %}{% endif %}</span>
+                <span class="font-monospace text-break text-end">{{ device|default:"–" }}</span>
+            </li>
+            {% if net_mac %}
+            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                <span class="text-body-secondary">{% trans "MAC" %}</span>
+                <span class="font-monospace">{{ net_mac }}</span>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="card-footer small text-body-secondary">{{ mode_help }}</div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <dl class="ms-3 row">
-                <dt class="col-6">{% trans "Network name" %}</dt>
-                <dd class="col-6">{{ pool }}</dd>
-                <dt class="col-6">{% trans "Device" %}</dt>
-                <dd class="col-6">{{ device }}</dd>
-                <dt class="col-6">{% trans "State" %}</dt>
-                <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Network start/stop/delete form">{% csrf_token %}
-                        {% if state == 0 %}
-                            <input type="submit" class="btn btn-sm btn-success" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}" data-confirm="{% blocktrans with name=pool %}Delete network {{ name }}? VMs that use it no longer start.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                        {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}" data-confirm="{% blocktrans with name=pool %}Stop network {{ name }}? Running VMs on it lose their connection through it at once.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
+    {% if external %}
+        <div class="alert alert-secondary">{% bs_icon 'info-circle' %} {% trans "The VMs on this network take their addresses from the outside network: libvirt gives none." %}</div>
+    {% else %}
+        <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
+            {% for ip in ip_networks %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                        <span class="me-auto">{% if ip.family == "ipv6" %}IPv6{% else %}IPv4{% endif %}</span>
+                        {% if ip.range %}
+                        {# a running network keeps its range: libvirt changes it while it is stopped #}
+                        <span {% if state %}title="{% trans "Stop the network to change its range" %}"{% endif %}>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#DhcpRange"
+                                    data-ip-index="{{ ip.index }}" data-start="{{ ip.range.0 }}" data-end="{{ ip.range.1 }}" data-subnet="{{ ip.subnet }}"
+                                    {% if state %}disabled{% endif %}>{% bs_icon 'pencil' %} {% trans "DHCP range" %}</button>
+                        </span>
                         {% endif %}
-                    </form>
-                </dd>
-                <dt class="col-6">{% trans "Autostart" %}</dt>
-                <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Network enable/disable autostart form">{% csrf_token %}
-                        {% if autostart == 0 %}
-                            <input type="submit" class="btn btn-sm btn-success" name="set_autostart" value="{% trans "Enable" %}">
-                        {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart" data-confirm="{% blocktrans with name=pool %}Disable autostart of network {{ name }}? After the host restarts it stays stopped, and VMs that use it do not start.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)" value="{% trans "Disable" %}">
-                        {% endif %}
-                    </form>
-                </dd>
-            </dl>
-        </div>
-    </div>
-
-    <div class="d-grid col-lg-12">
-        <button class="btn btn-light"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseXML" aria-expanded="true" aria-controls="collapseXML">
-            <span>{% bs_icon 'chevron-down' %} </span>
-            {% trans 'XML' %}
-        </button>
-        <div class="collapse" id="collapseXML">
-            <div class="card card-body">
-                <form method="post" role="form" aria-label="Network edit with XML form">{% csrf_token %}
-                    <div class="xmlheight">
-                        <input type="hidden" name="edit_xml"/>
-                        <textarea id="edit_editor">{{ xml }}</textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary float-end" name="edit_network">
-                        {% trans "Edit" %}
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <h5 class="mb-3">{% trans "IPv4 Configuration" %}</h5>
-    
-    <dl class="ms-3 row">
-        <dt class="col-6">{% trans "IPv4 Forwarding" %}</dt>
-        <dd class="col-6">
-             {% if net_forward.0 == 'nat' %}
-                {% trans "NAT" %}
-            {% endif %}
-            {% if net_forward.0 == 'route' %}
-                {% trans "ROUTE" %}
-            {% endif %}
-            {% if net_forward.0 == 'bridge' %}
-                {% trans "BRIDGE" %}
-            {% endif %}
-            {% if not net_forward.0 %}
-                {% trans "ISOLATE" %}
-            {% endif %}
-        </dd>
-        <dt class="col-6">{% trans "Network" %}</dt>
-        <dd class="col-6">{{ ipv4.subnet|default:"-" }}</dd>
-        <dt class="col-6">{% trans "DHCP" %}:</dt>
-        <dd class="col-6">
-            {% if ipv4.dhcp %}
-                <span class="badge bg-success-subtle text-success-emphasis">{% trans "ON" %}</span>
-            {% else %}
-                <span class="badge bg-danger-subtle text-danger-emphasis">{% trans "OFF" %}</span>
-            {% endif %}
-        </dd>
-        {% if ipv4.range %}
-            {% if state %}
-                <dt class="col-6">{% trans "Start" %}</dt>
-                <dd class="col-6">{{ ipv4.range.0 }}</dd>
-                <dt class="col-6">{% trans "End" %}</dt>
-                <dd class="col-6">{{ ipv4.range.1 }}</dd>
-            {%  else %}
-                <form class="col-lg-12 ps-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
-                    <dt class="col-6">{% trans "Start" %}</dt>
-                    <dd class="col-6"><input name="range_start" value="{{ ipv4.range.0 }}"/></dd>
-                    <dt class="col-6">{% trans "End" %}</dt>
-                    <dd class="col-6"><input  name="range_end" value="{{ ipv4.range.1 }}"/></dd>
-                    <dt class="col-6"></dt>
-                    <dd class="col-6 ">
-                        <input type="submit"
-                               class="btn btn-primary"
-                               value="Apply"
-                               name="modify_dhcp_range"
-                               title="{% trans "Edit DHCP Range" %}"
-/>
-                    </dd>
-                    <input hidden name="ip_index" value="{{ ipv4.index }}"/>
-                </form>
-            {% endif %}
-        {% endif %}
-    </dl>
-    
-    {% if ipv4.dhcp %}
-        {% include 'modify_ipv4_fixed_address.html' %}
-
-        <h5 class="mb-3">{% trans "IPv4 Fixed Addresses" %}</h5>
-
-    {% endif %}
-    
-    {% if ipv4.hosts %}
-        
-        <div class="d-grid col-12">
-            <button class="btn btn-light"  role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv4fix" aria-expanded="true" aria-controls="collapseXML">
-                <span>{% bs_icon 'chevron-down' %} </span>
-                {% trans 'Show' %}
-            </button>
-            <div id="collapseipv4fix" class="collapse">
-                <div class="col-4 float-end mt-2">
-                    <div class="input-group ">
-                        <input type="text" class="form-control" id="filter_input">
-                        <input type="button" class="btn btn-secondary" id="filter_button" value="Filter">
-                        <button type="button" class="btn btn-secondary" id="filter_clear">{% trans 'Clear' %}</button>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table id="ipv4_table" class="table table-hover">
-                        <thead>
-                        <tr>
-                            <th scope="col">{% trans "MAC" %}</th>
-                            <th scope="col">{% trans "Address" %}</th>
-                            <th scope="col">{% trans "Name" %}</th>
-                            <th scope="col">{% trans "Actions" %}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for fix4 in ipv4.hosts %}
-                            <tr>
-                            <form method="post" role="form" aria-label="IPv4 edit/delete form">{% csrf_token %}
-                                <td><input class="form-control" value="{{ fix4.mac|default_if_none:"" }}" name="mac" readonly/></td>
-                                <td><input class="form-control" value="{{ fix4.ip }}" name="address" /></td>
-                                <td><input class="form-control" value="{{ fix4.name }}" name="name" /></td>
-                                <td class="text-nowrap">
-                                    <input hidden name="ip_index" value="{{ ipv4.index }}"/>
-                                    <input hidden name="original" value="{{ fix4.ip }}"/>
-                                    {% if fix4.mac %}{# an entry is changed by its MAC #}
-                                    <button type="submit" class="btn btn-sm btn-primary"
-                                            name="modify_fixed_address"
-                                            title="{% trans "Edit entry" %}">
-                                            {% bs_icon 'save' %}
-                                    </button>
-                                    {% endif %}
-                                    <button type="submit" class="btn btn-sm btn-danger"
-                                            name="delete_fixed_address"
-                                            title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with mac=fix4.mac|default:fix4.ip %}Delete the fixed address of {{ mac }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                            {% bs_icon 'trash' %}
-                                    </button>
-                                </td>
-                            </form>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div> 
-        </div>
-    {% endif %}
-   
-    <h5 class="mb-3">{% trans "IPv6 Configuration" %}</h5>
-
-    <dl class="ms-3 row">
-        <dt class="col-6">{% trans "IPv6 Forwarding" %}</dt>
-        <dd class="col-6">
-            {% if not net_forward.0 or net_forward.0 == "none" %}
-                {% trans "ISOLATE" %}
-            {% elif net_forward.0 == "nat" or net_forward.0 == "route" or net_forward.0 == "open" %}
-                {% trans "ROUTE" %}
-            {% else %}
-                {% trans "From the outside network" %}
-            {% endif %}
-        </dd>
-        <dt class="col-6">{% trans "Network" %}</dt>
-        <dd class="col-6">{{ ipv6.subnet|default:"-" }}</dd>        
-        <dt class="col-6">{% trans "DHCP" %}</dt>
-        
-        <dd class="col-6">
-            {% if ipv6.dhcp %}
-                <span class="badge bg-success-subtle text-success-emphasis">{% trans "ON" %}</span>
-            {% else %}
-                <span class="badge bg-danger-subtle text-danger-emphasis">{% trans "OFF" %}</span>
-            {% endif %}
-        </dd>
-        {% if ipv6.range %}
-            {% if state %}
-                <dt class="col-6">{% trans "Start" %}</dt>
-                <dd class="col-6">{{ ipv6.range.0 }}</dd>
-                <dt class="col-6">{% trans "End" %}</dt>
-                <dd class="col-6">{{ ipv6.range.1 }}</dd>
-            {%  else %}
-                <form class="col-lg-12 ps-0" method="post" role="form" aria-label="Edit dhcp range form">{% csrf_token %}
-                    <dt class="col-6">{% trans "Start" %}</dt>
-                    <dd class="col-6"><input name="range_start" value="{{ ipv6.range.0 }}"/></dd>
-                    <dt class="col-6">{% trans "End" %}</dt>
-                    <dd class="col-6"><input  name="range_end" value="{{ ipv6.range.1 }}"/></dd>
-                    <dt class="col-6"></dt>
-                    <dd class="d-grid col-6">
-                        <input 
-                            type="submit" 
-                            class="btn btn-primary" 
-                            value="Apply"
-                            name="modify_dhcp_range"
-                            title="{% trans "Edit DHCP Range" %}" 
-/>
-                    </dd>
-                    <input hidden name="ip_index" value="{{ ipv6.index }}"/>
-                </form>
-            {% endif %}
-        {% endif %}
-    </dl>
-
-    {% if ipv6.dhcp %}
-        {% include 'modify_ipv6_fixed_address.html' %}
-        <h5 class="mb-3">{% trans "IPv6 Fixed Addresses" %}</h5>
-    {% endif %}
-
-    {% if ipv6.hosts %}
-        <div class="d-grid col-12">
-            <button class="btn btn-light" role="button" data-bs-toggle="collapse" data-bs-target="#collapseipv6fix" aria-expanded="true" aria-controls="collapseipv6fix">
-                <span>{% bs_icon 'chevron-down' %} </span>
-                {% trans 'Show' %}
-            </button>
-            <div id="collapseipv6fix" class="collapse">
-                <div class="col-4 float-end mt-2">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="filter_input_ipv6">
-                        <input type="button" class="btn btn-secondary" id="filter_button_ipv6" value="Filter">
-                        <button type="button" class="btn btn-secondary" id="filter_clear_ipv6">{% trans 'Clear' %}</button>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table id="ipv6_table" class="table table-hover">
-                        <thead>
-                        <tr>
-                            <th scope="col">{% trans "ID" %}</th>
-                            <th scope="col">{% trans "Address" %}</th>
-                            <th scope="col">{% trans "Name" %}</th>
-                            <th scope="col">{% trans "Actions" %}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for fix6 in ipv6.hosts %}
-                            <tr>
-                                <form method="post" role="form" aria-label="IP v6 edit/delete form">{% csrf_token %}
-                                    <td><input class="form-control" value="{{ fix6.id|default_if_none:"" }}" name="id" readonly/></td>
-                                    <td><input class="form-control" value="{{ fix6.ip }}" name="address" /></td>
-                                    <td><input class="form-control" value="{{ fix6.name }}" name="name" /></td>
-                                    <td class="text-nowrap">
-                                        <input hidden name="ip_index" value="{{ ipv6.index }}"/>
-                                        <input hidden name="original" value="{{ fix6.ip }}"/>
-                                        {% if fix6.id %}{# an entry is changed by its DUID #}
-                                        <button type="submit" class="btn btn-sm btn-primary"
-                                                name="modify_fixed_address"
-                                                title="{% trans "Edit entry" %}">
-                                            <span>{% bs_icon 'save' %} </span>
-                                        </button>
-                                        {% endif %}
-                                        <button type="submit" class="btn btn-sm btn-danger"
-                                                name="delete_fixed_address"
-                                                title="{% trans "Delete entry" %}" data-confirm="{% blocktrans with id=fix6.id|default:fix6.ip %}Delete the fixed address of {{ id }}? The VM may get another address when its lease ends.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                            <span>{% bs_icon 'trash' %} </span>
-                                        </button>
-                                    </td>
-                                </form>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <ul class="list-group list-group-flush flex-grow-1">
+                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Subnet" %}</span><span class="font-monospace text-break text-end">{{ ip.subnet|default:"–" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Host's address" %}</span><span class="font-monospace text-break text-end">{{ ip.address }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "DHCP" %}</span>
+                            <span class="text-end">
+                                {% if ip.range %}<span class="font-monospace text-break">{{ ip.range.0 }} – {{ ip.range.1 }}</span>
+                                {% elif ip.dhcp %}{% trans "Fixed addresses only" %}
+                                {% else %}<span class="badge text-bg-secondary">{% trans "Off" %}</span>{% endif %}
+                            </span>
+                        </li>
+                    </ul>
                 </div>
             </div>
+            {% empty %}
+            <div class="col">
+                <div class="card h-100"><div class="card-body small text-body-secondary">{% trans "The network has no address of the host: its VMs reach each other only." %}</div></div>
+            </div>
+            {% endfor %}
+            {% if ip_networks and "ipv6" not in families %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header">IPv6</div>
+                    <div class="card-body small text-body-secondary">{% trans "The network has no IPv6 address; the XML definition below can give it one." %}</div>
+                </div>
+            </div>
+            {% endif %}
         </div>
-    {% endif %}
 
-    {% if net_forward.0 == 'route' or net_forward.0 == 'nat' or not net_forward.0 %}{# an isolated network has no forward #}
-        {% if state == 0 and qos.items|length != 2%}
-            <form method="post" name="set_qos" role="form" aria-label="Create network qos form">{% csrf_token %}
-                {% include 'add_network_qos.html' %}
-            </form>
-        {% endif %}
-        <h5 class="mb-3">{% trans "QoS Configuration" %}</h5>
-
-        <div class="col-sm-12">
+        <div class="card mb-3">
+            <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                <span class="me-auto">{% trans "Fixed addresses" %}</span>
+                {% if fixed_addresses %}
+                <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search fixed addresses" %}">
+                {% endif %}
+                {% if dhcp_networks %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#FixedAddress">
+                    {% bs_icon 'plus-lg' %} {% trans "Add" %}
+                </button>
+                {% endif %}
+            </div>
+            {% if fixed_addresses %}
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle mb-0" data-sortable>
                     <thead>
                         <tr>
-                            <th scope="col">{% trans "Direction" %}</th>
-                            <th scope="col">{% trans "Average" %}</th>
-                            <th scope="col">{% trans "Peak" %}</th>
-                            <th scope="col">{% trans "Burst" %}</th>
-                            <th scope="col">{% trans "Actions" %}</th>
+                            <th scope="col">{% trans "Address" %}</th>
+                            <th scope="col">{% trans "MAC / DUID" %}</th>
+                            <th scope="col">{% trans "Name" %}</th>
+                            <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                         </tr>
                     </thead>
-                    <tbody>
-                    {% for q, att in qos.items %}
-                    <form method="post" role="form" aria-label="QoS configuration form">{% csrf_token %}
-                        <tr>
-                            <td><label class="col-form-label">{{ q | capfirst }}</label></td>
-                            <td><input id="qos_average" class="form-control" name="qos_average"
-                                        value="{{ att.average|default:'' }}"/>
-                            </td>
-                            <td><input id="qos_peak" class="form-control" name="qos_peak"
-                                        value="{{ att.peak|default:'' }}"/>
-                            </td>
-                            <td><input id="qos_burst" class="form-control" name="qos_burst"
-                                        value="{{ att.burst|default:'' }}"/>
-                            </td>
-                            <td class="text-nowrap">
-                                <input name="qos_direction" value="{{ q }}" hidden/>
-                                <button type="submit" class="btn btn-sm btn-primary"
-                                        name="set_qos"
-                                        title="{% trans "Edit QoS" %}">
-                                        {% bs_icon 'save' %}
-                                </button>
-                                <button type="submit" class="btn btn-sm btn-danger"
-                                        name="unset_qos"
-                                        title="{% trans "Delete QoS" %}" data-confirm="{% blocktrans with direction=q name=pool %}Remove the {{ direction }} limit of network {{ name }}? It stays in force until the network is stopped and started.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                        {% bs_icon 'trash' %}
-                                </button>
+                    <tbody class="searchable">
+                    {% for host in fixed_addresses %}
+                        <tr data-search="{{ host.ip }} {{ host.mac|default:"" }}{{ host.id|default:"" }} {{ host.name }}">
+                            <td class="font-monospace text-nowrap">{{ host.ip }}</td>
+                            <td class="font-monospace text-nowrap">{{ host.mac|default:host.id|default:"–" }}</td>
+                            <td class="text-break">{{ host.name|default:"–" }}</td>
+                            <td class="text-end text-nowrap">
+                                <div class="btn-group" role="group" aria-label="{% blocktrans with address=host.ip %}Actions for {{ address }}{% endblocktrans %}">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#FixedAddress"
+                                            data-ip-index="{{ host.ip_index }}" data-original="{{ host.ip }}" data-address="{{ host.ip }}"
+                                            data-mac="{{ host.mac|default:host.id|default:"" }}" data-name="{{ host.name }}" aria-label="{% trans "Edit" %}">{% bs_icon 'pencil' %} <span class="d-none d-sm-inline">{% trans "Edit" %}</span></button>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false"
+                                                data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% trans "More actions" %}">{% bs_icon 'three-dots' %}</button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                                            <li><form method="post">{% csrf_token %}
+                                                <input type="hidden" name="ip_index" value="{{ host.ip_index }}">
+                                                <input type="hidden" name="original" value="{{ host.ip }}">
+                                                <button type="submit" class="dropdown-item text-danger" name="delete_fixed_address"
+                                                        data-confirm="{% blocktrans with address=host.ip %}Delete the fixed address {{ address }}? The VM may get another address when its lease ends.{% endblocktrans %}"
+                                                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete" %}</button>
+                                            </form></li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
-                    </form>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
+            <div role="status">
+                <div id="no-match" class="text-center text-body-secondary py-3" hidden>{% trans "No fixed address matches the search." %}</div>
+            </div>
+            {% elif dhcp_networks %}
+            <div class="card-body small text-body-secondary">{% trans "No fixed addresses: every VM gets one from the DHCP range." %}</div>
+            {% else %}
+            <div class="card-body small text-body-secondary">{% trans "The network serves no DHCP, so it has no fixed addresses." %}</div>
+            {% endif %}
         </div>
     {% endif %}
+
+    <div class="card mb-3">
+        <div class="card-header">{% trans "VMs on this network" %}</div>
+        {% if vms %}
+        <ul class="list-group list-group-flush">
+            {% for vm in vms %}
+            <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                {% if vm.id %}<a href="{% url 'instances:instance' vm.id %}">{{ vm.name }}</a>{% else %}<span>{{ vm.name }}</span>{% endif %}
+                {% if vm.connected %}<span class="badge text-bg-success">{% trans "Connected" %}</span>{% else %}<span class="badge text-bg-light border">{% trans "Configured" %}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "No VM is defined on this network." %}</div>
+        {% endif %}
+    </div>
+
+    {% if qos_supported %}
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <span class="me-auto">{% trans "Bandwidth limits" %}</span>
+            {% if qos.items|length < 2 %}
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#QosLimit">{% bs_icon 'plus-lg' %} {% trans "Add limit" %}</button>
+            {% endif %}
+        </div>
+        {% if qos %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "Direction" %}</th>
+                        <th scope="col">{% trans "Average" %}</th>
+                        <th scope="col">{% trans "Peak" %}</th>
+                        <th scope="col">{% trans "Burst" %}</th>
+                        <th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for direction, limit in qos.items %}
+                    <tr>
+                        <td>{% if direction == "inbound" %}{% trans "Inbound" %}{% else %}{% trans "Outbound" %}{% endif %}</td>
+                        <td>{% if limit.average %}{{ limit.average }} KiB/s{% else %}–{% endif %}</td>
+                        <td>{% if limit.peak %}{{ limit.peak }} KiB/s{% else %}–{% endif %}</td>
+                        <td>{% if limit.burst %}{{ limit.burst }} KiB{% else %}–{% endif %}</td>
+                        <td class="text-end text-nowrap">
+                            <div class="btn-group" role="group" aria-label="{% trans "Actions for the limit" %}">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#QosLimit"
+                                        data-direction="{{ direction }}" data-average="{{ limit.average|default:"" }}" data-peak="{{ limit.peak|default:"" }}"
+                                        data-burst="{{ limit.burst|default:"" }}" aria-label="{% trans "Edit" %}">{% bs_icon 'pencil' %} <span class="d-none d-sm-inline">{% trans "Edit" %}</span></button>
+                                <form method="post" class="btn-group">{% csrf_token %}
+                                    <input type="hidden" name="qos_direction" value="{{ direction }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" name="unset_qos" aria-label="{% trans "Remove" %}"
+                                            data-confirm="{% blocktrans with name=pool %}Remove the {{ direction }} limit of network {{ name }}? It stays in force until the network is stopped and started.{% endblocktrans %}"
+                                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "No limits: the network's VMs share the host's bandwidth freely." %}</div>
+        {% endif %}
+        {% if state %}
+        <div class="card-footer small text-body-secondary">{% trans "A change takes effect when the network is stopped and started again." %}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <section class="accordion mb-3" aria-labelledby="xml-heading">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="xml-heading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#network-xml" aria-expanded="false" aria-controls="network-xml">
+                    {% trans "XML definition" %}
+                </button>
+            </h2>
+            <div class="accordion-collapse collapse" id="network-xml">
+                <form method="post" class="accordion-body" aria-label="{% trans "Change the network's XML" %}">{% csrf_token %}
+                    <p class="small text-body-secondary">{% trans "The saved definition: a running network takes a change when it is stopped and started again." %}</p>
+                    <input type="hidden" name="edit_xml">
+                    <div class="xmlheight mb-3"><textarea id="edit_editor" aria-label="{% trans "Network XML" %}">{{ xml }}</textarea></div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" name="edit_network">{% trans "Save" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    {# one dialog for every fixed address: Add opens it empty, a row's Edit with its entry, which stays on its subnet #}
+    {% if dhcp_networks %}
+    <div class="modal fade" id="FixedAddress" tabindex="-1" aria-labelledby="FixedAddressLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="post" class="modal-content">{% csrf_token %}
+                <input type="hidden" name="original">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="FixedAddressLabel">{% trans "Fixed address" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3" id="fixed_subnet_row">
+                        <label for="fixed_ip_index" class="form-label">{% trans "Subnet" %}</label>
+                        <select id="fixed_ip_index" name="ip_index" class="form-select">
+                            {% for ip in dhcp_networks %}<option value="{{ ip.index }}">{{ ip.subnet }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fixed_address" class="form-label">{% trans "Address" %}</label>
+                        <input id="fixed_address" name="address" class="form-control font-monospace" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fixed_mac" class="form-label">{% trans "MAC (IPv4) or DUID (IPv6)" %}</label>
+                        <input id="fixed_mac" name="mac" class="form-control font-monospace" pattern="[0-9a-fA-F:]+" aria-describedby="fixed_mac_help">
+                        <div class="form-text" id="fixed_mac_help">{% trans "The VM's network card; without it, the VM is known by its name." %}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fixed_name" class="form-label">{% trans "Name" %}</label>
+                        <input id="fixed_name" name="name" class="form-control" pattern="[a-zA-Z0-9_.\-]+">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="modify_fixed_address">{% trans "Save" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="modal fade" id="DhcpRange" tabindex="-1" aria-labelledby="DhcpRangeLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="post" class="modal-content">{% csrf_token %}
+                <input type="hidden" name="ip_index">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="DhcpRangeLabel">{% trans "DHCP range" %} <span class="text-body-secondary font-monospace" id="dhcp_subnet"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <div class="col-sm-6">
+                        <label for="range_start" class="form-label">{% trans "From" %}</label>
+                        <input id="range_start" name="range_start" class="form-control font-monospace" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="range_end" class="form-label">{% trans "To" %}</label>
+                        <input id="range_end" name="range_end" class="form-control font-monospace" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="modify_dhcp_range">{% trans "Save" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if qos_supported %}
+    <div class="modal fade" id="QosLimit" tabindex="-1" aria-labelledby="QosLimitLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="post" class="modal-content">{% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="QosLimitLabel">{% trans "Bandwidth limit" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <div class="col-12">
+                        <label for="qos_direction" class="form-label">{% trans "Direction" %}</label>
+                        <select id="qos_direction" name="qos_direction" class="form-select">
+                            {# a direction with a limit is changed by its own Edit button #}
+                            <option value="inbound"{% if "inbound" in qos %} data-taken{% endif %}>{% trans "Inbound: to the VMs" %}</option>
+                            <option value="outbound"{% if "outbound" in qos %} data-taken{% endif %}>{% trans "Outbound: from the VMs" %}</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="qos_average" class="form-label">{% trans "Average (KiB/s)" %}</label>
+                        <input id="qos_average" name="qos_average" type="number" min="1" class="form-control" required>
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="qos_peak" class="form-label">{% trans "Peak (KiB/s)" %}</label>
+                        <input id="qos_peak" name="qos_peak" type="number" min="0" class="form-control" aria-describedby="qos_peak_help">
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="qos_burst" class="form-label">{% trans "Burst (KiB)" %}</label>
+                        <input id="qos_burst" name="qos_burst" type="number" min="0" class="form-control">
+                    </div>
+                    <div class="col-12 form-text mt-1" id="qos_peak_help">{% trans "Linux applies a peak to inbound traffic only." %}</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="set_qos">{% trans "Save" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}
+
 {% block script %}
-<script>
-    $.expr[':'].Contains = $.expr.createPseudo(function (arg) {
-        return function (elem) {
-            return $(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
-        };
-    });
-
-    $(document).ready(function () {
-        // add event button labeled "filter"
-        $('#filter_button').click(function (event) {
-            // get value
-            let filter_val = $('#filter_input').val();
-            if (filter_val == '') {
-                // show all
-                $('#ipv4_table tbody tr').show();
-            } else {
-                // hide non-matching items
-                let row_not_contains4 = $('#ipv4_table tbody tr input:not([value*=\'' + filter_val + '\'])');
-                row_not_contains4.closest('tr').hide();
-                // show only matches
-                let row_contains4 =  $('#ipv4_table tbody tr input[value*=\'' + filter_val + '\']');
-                row_contains4.closest('tr').show();
-            }
-        });
-        // add event button labeled "clear"
-        $('#filter_clear').click(function (event) {
-            $('#filter_input').val('');
-            $('#filter_button').click();
-        });
-
-        // trigger filter when enter key pressed
-        $('#filter_input').keyup(function (event) {
-            if (event.keyCode == 13) {
-                $('#filter_button').click();
-            }
-        });
-
-        // add event button labeled "filter"
-        $('#filter_button_ipv6').click(function (event) {
-            // get value
-            let filter_val = $('#filter_input_ipv6').val();
-            if (filter_val == '') {
-                // show all
-                $('#ipv6_table tbody tr').show();
-            } else {
-                // hide non-matching items
-                let row_not_contains6 = $('#ipv6_table tbody tr input:not([value*=\'' + filter_val + '\'])');
-                row_not_contains6.closest('tr').hide();
-                // show only matches
-                let row_contains6 =  $('#ipv6_table tbody tr input[value*=\'' + filter_val + '\']');
-                row_contains6.closest('tr').show();
-            }
-        });
-        // add event button labeled "clear"
-        $('#filter_clear_ipv6').click(function (event) {
-            $('#filter_input_ipv6').val('');
-            $('#filter_button_ipv6').click();
-        });
-
-        // trigger filter when enter key pressed
-        $('#filter_input_ipv6').keyup(function (event) {
-            if (event.keyCode == 13) {
-                $('#filter_button_ipv6').click();
-            }
-        });
-    });
-</script>
+{% if fixed_addresses %}<script src="{% static 'js/table_filter.js' %}"></script>{% endif %}
 <script src="{% static "js/ace/ace.js" %}"></script>
 <script>
     var editor = ace.edit("edit_editor");
     editor.getSession().setMode("ace/mode/xml");
-
-    var edit_input = $('input[name="edit_xml"]');
+    var editInput = $('input[name="edit_xml"]');
     editor.getSession().on("change", function () {
-        edit_input.val(editor.getSession().getValue());
+        editInput.val(editor.getSession().getValue());
+    });
+    // the editor measures itself when its section is shown
+    document.getElementById("network-xml").addEventListener("shown.bs.collapse", () => editor.resize());
+
+    // a dialog opened by a row's button gets that row's values, one opened by an Add button starts empty
+    function fillFrom(dialogId, fill) {
+        var dialog = document.getElementById(dialogId);
+        if (dialog) dialog.addEventListener("show.bs.modal", function (event) {
+            fill(dialog.querySelector("form"), event.relatedTarget.dataset);
+        });
+    }
+    fillFrom("FixedAddress", function (form, data) {
+        form.elements.original.value = data.original || "";
+        form.elements.address.value = data.address || "";
+        form.elements.mac.value = data.mac || "";
+        form.elements.name.value = data.name || "";
+        if (data.ipIndex) form.elements.ip_index.value = data.ipIndex;
+        document.getElementById("fixed_subnet_row").hidden = Boolean(data.original);
+    });
+    fillFrom("DhcpRange", function (form, data) {
+        form.elements.ip_index.value = data.ipIndex;
+        form.elements.range_start.value = data.start;
+        form.elements.range_end.value = data.end;
+        document.getElementById("dhcp_subnet").textContent = data.subnet;
+    });
+    fillFrom("QosLimit", function (form, data) {
+        var direction = form.elements.qos_direction;
+        direction.querySelectorAll("option").forEach(function (option) {
+            option.disabled = data.direction ? option.value !== data.direction : option.hasAttribute("data-taken");
+        });
+        direction.value = data.direction || direction.querySelector("option:not(:disabled)").value;
+        form.elements.qos_average.value = data.average || "";
+        form.elements.qos_peak.value = data.peak || "";
+        form.elements.qos_burst.value = data.burst || "";
     });
 </script>
 {% endblock %}

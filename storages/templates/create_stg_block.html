@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load static %}
 {% load bootstrap_icons %}
 {% load form_fields %}
 {% if request.user.is_superuser %}
@@ -26,13 +27,13 @@
                         <legend class="form-label fs-6">{% trans "Storage type" %}</legend>
                         <div class="row row-cols-1 row-cols-sm-2 g-2">
                             {% trans "Directory" as title %}{% trans "Image files in a directory of the host." as help %}
-                            {% include "storages/pool_kind.html" with kind="dir" %}
+                            {% include "radio_card.html" with name="pool_kind" value="dir" chosen=pool_kind %}
                             {% trans "LVM" as title %}{% trans "Logical volumes of a volume group made on a device." as help %}
-                            {% include "storages/pool_kind.html" with kind="logical" %}
+                            {% include "radio_card.html" with name="pool_kind" value="logical" chosen=pool_kind %}
                             {% trans "Ceph RBD" as title %}{% trans "Images of a pool of an existing Ceph cluster." as help %}
-                            {% include "storages/pool_kind.html" with kind="rbd" %}
+                            {% include "radio_card.html" with name="pool_kind" value="rbd" chosen=pool_kind %}
                             {% trans "Network filesystem" as title %}{% trans "Image files on a server's share, mounted on the host." as help %}
-                            {% include "storages/pool_kind.html" with kind="netfs" %}
+                            {% include "radio_card.html" with name="pool_kind" value="netfs" chosen=pool_kind %}
                             {% if iso_pool %}
                             {# the upload button is on the page of the pool named iso only #}
                             <div class="col">
@@ -47,7 +48,7 @@
                             </div>
                             {% else %}
                             {% trans "ISO images" as title %}{% trans "The directory pool named iso, for uploaded ISO images." as help %}
-                            {% include "storages/pool_kind.html" with kind="iso" %}
+                            {% include "radio_card.html" with name="pool_kind" value="iso" chosen=pool_kind %}
                             {% endif %}
                         </div>
                     </fieldset>
@@ -60,7 +61,7 @@
                         {% field_error form.name "pool_name" %}
                     </div>
 
-                    <fieldset data-kind="dir">
+                    <fieldset data-kinds="dir">
                         <legend class="visually-hidden">{% trans "Directory" %}</legend>
                         <div class="mb-3">
                             <label for="pool_dir_target" class="form-label">{% trans "Directory" %}</label>
@@ -71,7 +72,7 @@
                         </div>
                     </fieldset>
 
-                    <fieldset data-kind="logical">
+                    <fieldset data-kinds="logical">
                         <legend class="visually-hidden">{% trans "LVM" %}</legend>
                         <div class="mb-3">
                             <label for="pool_lvm_source" class="form-label">{% trans "Device" %}</label>
@@ -89,7 +90,7 @@
                         </div>
                     </fieldset>
 
-                    <fieldset data-kind="rbd">
+                    <fieldset data-kinds="rbd">
                         <legend class="visually-hidden">{% trans "Ceph RBD" %}</legend>
                         {% if ceph_secrets %}
                         <div class="row g-3 mb-3">
@@ -131,7 +132,7 @@
                         {% endif %}
                     </fieldset>
 
-                    <fieldset data-kind="netfs">
+                    <fieldset data-kinds="netfs">
                         <legend class="visually-hidden">{% trans "Network filesystem" %}</legend>
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
@@ -165,7 +166,7 @@
                     </fieldset>
 
                     {% if not iso_pool %}
-                    <fieldset data-kind="iso">
+                    <fieldset data-kinds="iso">
                         <legend class="visually-hidden">{% trans "ISO images" %}</legend>
                         <div class="mb-3">
                             <label for="pool_iso_target" class="form-label">{% trans "Directory" %}</label>
@@ -185,64 +186,37 @@
             </form>
         </div>
     </div>
+    <script src="{% static 'js/choice_dialog.js' %}"></script>
     <script>
-        // the chosen type's fields show; the ISO pool is a directory named iso;
-        // a path follows the pool's name until it is edited (after the page's
-        // scripts, Bootstrap's among them, have loaded)
+        // the ISO pool is a directory named iso; a path follows the pool's name
+        // until it is edited (after the page's scripts, Bootstrap's among them)
         document.addEventListener('DOMContentLoaded', function () {
             var form = document.getElementById('pool-form');
             var name = form.elements.namedItem('name');
             var otherName = name.value;
             var hasCephSecrets = {{ ceph_secrets|yesno:"true,false" }};
-            function choose(kind) {
-                var iso = kind === 'iso';
-                if (!name.readOnly) otherName = name.value;
-                name.value = iso ? 'iso' : otherName;
-                name.readOnly = iso;
-                form.elements.namedItem('stg_type').value = iso ? 'dir' : kind;
-                form.querySelectorAll('fieldset[data-kind]').forEach(function (fields) {
-                    fields.hidden = fields.disabled = fields.dataset.kind !== kind;
-                });
-                form.querySelector('button[name=create]').disabled = kind === 'rbd' && !hasCephSecrets;
-            }
-            function follow() {
+            form.querySelectorAll('[data-follow-name]').forEach(function (path) {
+                path.dataset.derived = name.value ? path.dataset.followName + name.value : '';
+            });
+            name.addEventListener('input', function () {
                 form.querySelectorAll('[data-follow-name]').forEach(function (path) {
                     var derived = name.value ? path.dataset.followName + name.value : '';
                     if (!path.value || path.value === path.dataset.derived) path.value = derived;
                     path.dataset.derived = derived;
                 });
-            }
-            form.querySelectorAll('input[name=pool_kind]').forEach(function (radio) {
-                radio.addEventListener('change', function () { choose(radio.value); });
             });
-            name.addEventListener('input', follow);
             // a new device or name: the erasing is agreed to again
             form.querySelectorAll('#pool_lvm_source, #pool_name').forEach(function (field) {
                 field.addEventListener('input', function () { document.getElementById('pool_lvm_erase').checked = false; });
             });
-            form.querySelectorAll('[data-follow-name]').forEach(function (path) {
-                path.dataset.derived = name.value ? path.dataset.followName + name.value : '';
+            choiceDialog(document.getElementById('AddStgPool'), 'pool_kind', function (kind) {
+                var iso = kind === 'iso';
+                if (!name.readOnly) otherName = name.value;
+                name.value = iso ? 'iso' : otherName;
+                name.readOnly = iso;
+                form.elements.namedItem('stg_type').value = iso ? 'dir' : kind;
+                form.querySelector('button[name=create]').disabled = kind === 'rbd' && !hasCephSecrets;
             });
-            // the type sent back, or the first when it is offered no more (an iso pool made meanwhile)
-            var chosen = form.querySelector('input[name=pool_kind]:checked') || form.querySelector('input[name=pool_kind]');
-            chosen.checked = true;
-            choose(chosen.value);
-            // a refused pool: the dialog opens again with what was entered and why,
-            // the first refused field focused, or the reasons when none is shown
-            var dialog = document.getElementById('AddStgPool');
-            if (dialog.hasAttribute('data-open')) {
-                dialog.addEventListener('shown.bs.modal', function () {
-                    var refused = form.querySelector('fieldset:not([hidden]) [aria-invalid=true], #pool_name[aria-invalid=true]');
-                    var reasons = form.querySelector('.form-errors');
-                    if (refused) {
-                        refused.focus();
-                    } else if (reasons) {
-                        reasons.tabIndex = -1;
-                        reasons.focus();
-                    }
-                }, {once: true});
-                bootstrap.Modal.getOrCreateInstance(dialog).show();
-            }
         });
     </script>
 {% endif %}

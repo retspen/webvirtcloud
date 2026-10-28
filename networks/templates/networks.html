@@ -9,60 +9,65 @@
 {% block page_heading_extra %}{% include 'create_net_block.html' %}{% endblock page_heading_extra %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-lg-12">
-            {% include "computes/host_nav.html" with section="networks" %}
-        </div>
-    </div>
+    {% include "computes/host_nav.html" with section="networks" %}
 
-    <div class="row">
-        {% if not networks %}
-            <div class="col-lg-12">
-                <div class="alert alert-warning shadow-sm">
-                    {% bs_icon 'exclamation-triangle' %} <strong>{% trans "Warning" %} :</strong> {% trans "Hypervisor doesn't have any Network" %}
+    {% if not networks %}
+        <div class="alert alert-warning shadow-sm">
+            {% bs_icon 'exclamation-triangle' %} {% trans "This host has no networks." %}
+        </div>
+    {% else %}
+        {# a card per network, as the host Overview's Hardware and Software cards #}
+        <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+        {% for net in networks %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                        <a class="fw-semibold me-auto text-break" href="{% url 'network' compute.id net.name %}">{{ net.name }}</a>
+                        {% if net.status %}
+                            <span class="badge text-bg-success">{% trans "Active" %}</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">{% trans "Stopped" %}</span>
+                        {% endif %}
+                        {% if net.autostart %}<span class="badge text-bg-light border">{% trans "Autostart" %}</span>{% endif %}
+                    </div>
+                    <ul class="list-group list-group-flush flex-grow-1">
+                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Type" %}</span>
+                            <span class="badge text-bg-light border">{{ net.mode_label }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Device" %}</span>
+                            <span class="font-monospace text-break text-end">{{ net.device|default:"–" }}</span>
+                        </li>
+                        {% if net.external %}
+                        <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                            <span class="text-body-secondary">{% trans "Addresses" %}</span>
+                            <span class="text-body-secondary text-end">{% trans "from the outside network" %}</span>
+                        </li>
+                        {% else %}
+                            {% for ip in net.ips %}
+                            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                                <span class="text-body-secondary">{% if ip.family == "ipv6" %}IPv6{% else %}IPv4{% endif %}</span>
+                                <span class="text-end">
+                                    <span class="font-monospace text-break">{{ ip.subnet|default:ip.address }}</span>
+                                    <span class="d-block small text-body-secondary">
+                                        {% if ip.range %}{% blocktrans with start=ip.range.0 end=ip.range.1 %}DHCP {{ start }} – {{ end }}{% endblocktrans %}
+                                        {% elif ip.dhcp %}{% trans "DHCP: fixed addresses only" %}
+                                        {% else %}{% trans "No DHCP" %}{% endif %}
+                                    </span>
+                                </span>
+                            </li>
+                            {% empty %}
+                            <li class="list-group-item d-flex justify-content-between align-items-baseline gap-3">
+                                <span class="text-body-secondary">{% trans "Addresses" %}</span>
+                                <span class="text-body-secondary text-end">{% trans "none" %}</span>
+                            </li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
-        {% else %}
-            {% for pool in networks %}
-            <div class="col-6 col-md-4">
-                <div class="mb-3 card {% if pool.status %}border-success{% else %}border-danger{% endif %} shadow-sm">
-                    <div class="card-header {% if pool.status %}bg-success-subtle{% else %}bg-danger-subtle{% endif %}">
-                        <h6 class="my-0 card-title">
-                            <a class="card-link {% if pool.status %}text-success-emphasis{% else %}text-danger-emphasis{% endif %}" href="{% url 'network' compute.id pool.name %}">{{ pool.name }}</a></h6>
-                    </div>
-                    <div class="px-1 card-body">
-                        <dl class="row">
-                            <dt class="col-6">{% trans "Device" %}</dt>
-                            <dd class="col-6">{{ pool.device }}</dd>
-                            <dt class="col-6">{% trans "Forward" %}</dt>
-                            <dd class="col-6">{{ pool.forward|upper }}</dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        {% endif %}
-    </div>
-{% endblock %}
-{% block script %}
-<script>
-    $(document).ready(function () {
-        // a hidden field is disabled: the browser neither checks nor sends it
-        function show(rows, on) {
-            $(rows).toggle(on).find(':input').prop('disabled', !on);
-        }
-        function update() {
-            var forward = $('#forward_select').val();
-            var bridged = forward == 'bridge' || forward == 'macvtap';
-            show('.bridge_name_form_group', bridged);
-            show('.openvswitch', forward == 'bridge');
-            show('.bridge_name_form_group_dhcp', !bridged);
-            show('.ipv6_group', !bridged && $('#enable_ipv6').is(':checked'));
-            $('#bridge_label').text(forward == 'macvtap' ? "{% trans 'Dev Name'|escapejs %}" : "{% trans 'Bridge Name'|escapejs %}");
-            $('#bridge_name').attr('placeholder', forward == 'macvtap' ? 'eth0' : 'br0');
-        }
-        $('#forward_select, #enable_ipv6').change(update);
-        update();
-    });
-</script>
+        {% endfor %}
+        </div>
+    {% endif %}
 {% endblock %}

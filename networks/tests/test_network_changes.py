@@ -1,10 +1,10 @@
-"""A network's addresses are read from its XML however libvirt writes it,
-each <ip> by its own index; a change starts from the saved definition, so
-two in a row keep each other; a fixed address is found by the address it
-had and checked against its subnet; the XML editor defines only this
-network; a network that does not start is not left defined. Runs on a
-private libvirt test driver: "test:///default" is shared by the whole
-process."""
+"""A network's addresses are read from its XML however libvirt writes it, each
+<ip> by its own index; a page reads each definition once; a change starts
+from the saved definition, so two in a row keep each other; a fixed address
+is found by the address it had and checked against its subnet; the XML
+editor defines only this network; a network that does not start is not left
+defined. Runs on a private libvirt test driver: "test:///default" is shared
+by the whole process."""
 
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -61,12 +61,13 @@ class NetworkChangeTests(SimpleTestCase):
     def saved(self):
         return etree.fromstring(self.conn.networkLookupByName("lab").XMLDesc(libvirt.VIR_NETWORK_XML_INACTIVE))
 
-    def test_the_page_reads_the_xml_once(self):
+    def test_the_page_reads_each_definition_once(self):
+        # the running one for its addresses, the saved one for its limits and the XML editor
         net = self.network()
         with patch.object(net.net, "XMLDesc", wraps=net.net.XMLDesc) as xml:
             net.get_ip_networks(), net.get_network_forward(), net.get_network_mac(), net.get_qos()
-            net.get_bridge_device()
-        self.assertEqual(xml.call_count, 1)
+            net.get_bridge_device(), net.get_mode(), net.saved_xml
+        self.assertEqual(xml.call_count, 2)
 
     def test_the_ipv4_address_after_an_ipv6_one_keeps_its_index(self):
         ipv6, ipv4 = self.network().get_ip_networks()
@@ -151,7 +152,7 @@ class NetworkChangeTests(SimpleTestCase):
     def test_the_xml_editor_takes_an_encoding_declaration(self):
         self.conn.networkLookupByName("lab").destroy()
         net = self.network()
-        net.edit_network('<?xml version="1.0" encoding="UTF-8"?>\n' + net.config_xml().replace("virbr9", "virbr6"))
+        net.edit_network('<?xml version="1.0" encoding="UTF-8"?>\n' + net.saved_xml.replace("virbr9", "virbr6"))
         self.assertEqual(self.saved().xpath("bridge/@name"), ["virbr6"])
 
     def test_a_fixed_address_is_of_the_subnet_and_its_own(self):
@@ -165,7 +166,7 @@ class NetworkChangeTests(SimpleTestCase):
     def test_the_xml_editor_defines_this_network_only(self):
         self.conn.networkLookupByName("lab").destroy()  # its definition read back at once
         net = self.network()
-        xml = net.config_xml()
+        xml = net.saved_xml
         for other, why in ((xml.replace("<name>lab</name>", "<name>other</name>"), "must define network lab"),
                            (xml.replace(net.net.UUIDString(), "11111111-2222-3333-4444-555555555555"), "keep the network's UUID"),
                            ("<network>", "not valid")):

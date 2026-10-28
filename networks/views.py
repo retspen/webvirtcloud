@@ -1,5 +1,6 @@
 from admin.decorators import superuser_only
 from computes.models import Compute
+from instances.models import Instance
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
@@ -13,6 +14,20 @@ from vrtManager.util import OperationError
 from networks.forms import AddNetPool
 
 
+# a network's mode (vrtManager.network.network_mode): its name, and what it does
+MODES = {
+    "isolated": (_("Isolated"), _("VMs reach each other and the host only.")),
+    "nat": (_("NAT"), _("VMs reach out through the host's address; IPv6, when set, is routed.")),
+    "route": (_("Routed"), _("The host routes the subnet; the upstream router needs a route back to it.")),
+    "open": (_("Open"), _("The host routes the subnet and adds no firewall rules for it.")),
+    "bridge": (_("Bridge"), _("VMs join a bridge of the host and take their addresses from its network.")),
+    "macvtap": (_("Macvtap"), _("VMs share an interface of the host; the host cannot reach them through it.")),
+    "hostdev": (_("SR-IOV"), _("VMs get a virtual function of the host's network card.")),
+}
+# the modes libvirt gives no addresses of its own: the outside network does
+EXTERNAL = ("bridge", "macvtap", "hostdev")
+
+
 @superuser_only
 def networks(request, compute_id):
     """
@@ -22,6 +37,9 @@ def networks(request, compute_id):
     """
 
     compute = get_object_or_404(Compute, pk=compute_id)
+    form = AddNetPool()
+    # the new network dialog's mode: the one sent back after a refusal
+    net_mode = request.POST.get("forward", "nat")
 
     try:
         conn = wvmNetworks(
@@ -31,6 +49,12 @@ def networks(request, compute_id):
             compute.type,
         )
         networks = conn.get_networks_info()
+        for net in networks:
+            net["mode_label"] = MODES.get(net["mode"], (net["mode"], ""))[0]
+            net["external"] = net["mode"] in EXTERNAL
+        # suggestions for a bridge or macvtap network: not the bridges libvirt made for its own networks
+        taken = {net["device"] for net in networks if not net["external"]}
+        host_ifaces = [iface for iface in conn.get_host_interfaces() if iface["name"] not in taken]
 
         if request.method == "POST" and "create" in request.POST:
             form = AddNetPool(request.POST, networks=networks)
@@ -41,18 +65,20 @@ def networks(request, compute_id):
                     gateway4, netmask4, dhcp4 = network_size(data["subnet"], data["dhcp4"])
                 if data["subnet6"]:
                     gateway6, prefix6, dhcp6 = network_size(data["subnet6"], data["dhcp6"])
-                with audit(request, compute, f"Network {data['name']}", "add"):
-                    conn.create_network(
-                        data["name"], data["forward"],
-                        bool(data["subnet"]), gateway4, netmask4, dhcp4,
-                        bool(data["subnet6"]), gateway6, prefix6, dhcp6,
-                        data["bridge_name"], data["openvswitch"],
-                    )
-                return HttpResponseRedirect(reverse("network", args=[compute_id, data["name"]]))
-            if form.has_error("name", "taken"):
+                try:
+                    with audit(request, compute, f"Network {data['name']}", "add"):
+                        conn.create_network(
+                            data["name"], data["forward"],
+                            bool(data["subnet"]), gateway4, netmask4, dhcp4,
+                            bool(data["subnet6"]), gateway6, prefix6, dhcp6,
+                            data["bridge_name"], data["openvswitch"],
+                        )
+                except libvirtError as err:  # shown in the dialog, which opens again
+                    form.add_error(None, str(err))
+                else:
+                    return HttpResponseRedirect(reverse("network", args=[compute_id, data["name"]]))
+            elif form.has_error("name", "taken"):
                 failed(request, compute, f"Network {form.data['name'].strip()}", "add", "name already in use")
-            for msg_err in form.errors.values():
-                messages.error(request, msg_err.as_text())
         conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
@@ -79,18 +105,6 @@ def network(request, compute_id, pool):
             compute.type,
             pool,
         )
-        networks = conn.get_networks()
-        state = conn.is_active()
-        device = conn.get_bridge_device()
-        autostart = conn.get_autostart()
-        net_mac = conn.get_network_mac()
-        net_forward = conn.get_network_forward()
-        qos = conn.get_qos()
-        ip_networks = conn.get_ip_networks()
-        # the page shows the first address of each family
-        ipv4 = next((ip for ip in ip_networks if ip["family"] == "ipv4"), None)
-        ipv6 = next((ip for ip in ip_networks if ip["family"] == "ipv6"), None)
-        xml = conn.config_xml()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
         return HttpResponseRedirect(reverse("networks", args=[compute_id]))
@@ -239,6 +253,32 @@ def network(request, compute_id, pool):
                     _("%(qos_dir)s QoS is deleted") % {"qos_dir": qos_dir.capitalize()},
                 )
             return HttpResponseRedirect(here)
+    # read only for the page: every action above redirects
+    try:
+        state = conn.is_active()
+        device = conn.get_bridge_device()
+        autostart = conn.get_autostart()
+        net_mac = conn.get_network_mac()
+        qos = conn.get_qos()
+        ip_networks = conn.get_ip_networks()
+        mode = conn.get_mode()
+        mode_label, mode_help = MODES.get(mode, (mode, ""))
+        external = mode in EXTERNAL
+        # libvirt limits the bandwidth of routed, isolated and host bridge networks, not of macvtap or SR-IOV ones
+        qos_supported = mode in ("isolated", "nat", "route", "open", "bridge")
+        families = {ip["family"] for ip in ip_networks}
+        # every fixed address, with the address of the network it belongs to
+        fixed_addresses = [{**host, "ip_index": ip["index"], "subnet": ip["subnet"]}
+                           for ip in ip_networks for host in ip["hosts"]]
+        dhcp_networks = [ip for ip in ip_networks if ip["dhcp"]]
+        vms = conn.get_vms()
+        vm_ids = dict(Instance.objects.filter(compute=compute, name__in=[vm["name"] for vm in vms]).values_list("name", "id"))
+        for vm in vms:
+            vm["id"] = vm_ids.get(vm["name"])
+        xml = conn.saved_xml
+    except libvirtError as lib_err:
+        messages.error(request, lib_err)
+        return HttpResponseRedirect(reverse("networks", args=[compute_id]))
     conn.close()
 
     return render(request, "network.html", locals())

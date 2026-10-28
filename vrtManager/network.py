@@ -3,6 +3,8 @@ import ipaddress
 from functools import cached_property
 
 from libvirt import (
+    VIR_DOMAIN_XML_INACTIVE,
+    VIR_ERR_NO_DOMAIN,
     VIR_NETWORK_SECTION_IP_DHCP_HOST,
     VIR_NETWORK_UPDATE_AFFECT_CONFIG,
     VIR_NETWORK_UPDATE_AFFECT_LIVE,
@@ -68,6 +70,17 @@ def ip_networks(tree):
     return ips
 
 
+def network_mode(tree):
+    """What kind of network the XML defines: isolated, nat, route, open,
+    bridge (a bridge of the host), macvtap (a host interface, its bridge,
+    private, VEPA or passthrough mode) or hostdev (SR-IOV functions)."""
+    forward = tree.find("forward")
+    mode = forward.get("mode", "nat") if forward is not None else "none"
+    if mode in ("private", "vepa", "passthrough") or (mode == "bridge" and tree.find("bridge") is None):
+        return "macvtap"
+    return "isolated" if mode == "none" else mode
+
+
 class wvmNetworks(wvmConnect):
     def get_networks_info(self):
         """Each network's state, autostart, device (its bridge, or a macvtap
@@ -84,9 +97,25 @@ class wvmNetworks(wvmConnect):
                 "autostart": net.autostart(),
                 "device": tree.xpath("string(bridge/@name)") or tree.xpath("string(forward/interface/@dev)"),
                 "forward": forward.get("mode") if forward is not None else None,
+                "mode": network_mode(tree),
                 "ips": ip_networks(tree),
             })
         return networks
+
+    def get_host_interfaces(self):
+        """The host's interfaces a bridge or macvtap network can use: name and
+        type (bridge, ethernet, bond, vlan...), not the loopback; empty when
+        the host's libvirt does not list interfaces. One listing and one XML
+        read per interface."""
+        try:
+            ifaces = self.wvm.listAllInterfaces(0)
+        except libvirtError:
+            return []
+        found = []
+        for iface in ifaces:
+            if iface.name() != "lo":
+                found.append({"name": iface.name(), "type": etree.fromstring(iface.XMLDesc(0)).get("type")})
+        return sorted(found, key=lambda iface: iface["name"])
 
     def create_network(
         self,
@@ -159,9 +188,10 @@ class wvmNetworks(wvmConnect):
 
 
 class wvmNetwork(wvmConnect):
-    """A network of the host. A page reads its running definition once (tree);
-    a change starts from its saved definition read anew (config), so that two
-    changes in a row do not undo each other, and forgets what the page read."""
+    """A network of the host. A page reads its running definition (tree) and
+    its saved one (saved) once each; a change starts from the saved
+    definition read anew (config), so that two changes in a row do not undo
+    each other, and forgets what the page read."""
 
     def __init__(self, host, login, passwd, conn, net):
         wvmConnect.__init__(self, host, login, passwd, conn)
@@ -171,16 +201,21 @@ class wvmNetwork(wvmConnect):
     def tree(self):
         return etree.fromstring(self.net.XMLDesc(0))
 
-    def config(self):
-        return etree.fromstring(self.net.XMLDesc(VIR_NETWORK_XML_INACTIVE))
-
-    def config_xml(self):
+    @cached_property
+    def saved_xml(self):
         """The saved definition, the one the XML editor changes."""
         return self.net.XMLDesc(VIR_NETWORK_XML_INACTIVE)
 
+    def config(self):
+        return etree.fromstring(self.net.XMLDesc(VIR_NETWORK_XML_INACTIVE))
+
+    def _forget(self):
+        for read in ("tree", "saved_xml"):
+            self.__dict__.pop(read, None)
+
     def _define(self, tree):
         self.wvm.networkDefineXML(etree.tostring(tree).decode())
-        self.__dict__.pop("tree", None)
+        self._forget()
 
     def get_name(self):
         return self.net.name()
@@ -200,6 +235,29 @@ class wvmNetwork(wvmConnect):
 
     def start(self):
         self.net.create()
+
+    def get_mode(self):
+        return network_mode(self.tree)
+
+    def get_vms(self):
+        """The VMs whose definition names this network, by name, and whether
+        each is running on it now: one listing, and one XML read per stopped
+        VM, two per running one (its running and its saved definition)."""
+        name = self.net.name()
+
+        def on_it(xml):
+            return etree.fromstring(xml).xpath("devices/interface[@type='network']/source[@network=$name]", name=name)
+
+        vms = []
+        for dom in self.wvm.listAllDomains():
+            try:
+                connected = dom.isActive() and bool(on_it(dom.XMLDesc(0)))
+                if connected or on_it(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE)):
+                    vms.append({"name": dom.name(), "connected": connected})
+            except libvirtError as err:  # a VM undefined meanwhile is not on it
+                if err.get_error_code() != VIR_ERR_NO_DOMAIN:
+                    raise
+        return sorted(vms, key=lambda vm: vm["name"])
 
     def _vms_on_it(self, running_only):
         name = self.net.name()
@@ -232,7 +290,7 @@ class wvmNetwork(wvmConnect):
                                       "stop and start it first")
         flags = VIR_NETWORK_UPDATE_AFFECT_CONFIG | (VIR_NETWORK_UPDATE_AFFECT_LIVE if active else 0)
         self.net.update(command, section, parentIndex, xml, flags)
-        self.__dict__.pop("tree", None)
+        self._forget()
 
     @staticmethod
     def _addresses(tree):
@@ -347,9 +405,11 @@ class wvmNetwork(wvmConnect):
         return True
 
     def get_qos(self):
+        """The saved bandwidth limits: a running network takes them when it is started again."""
         qos_values = {}
+        saved = etree.fromstring(self.saved_xml)
         for direction in ("inbound", "outbound"):
-            limit = self.tree.find(f"bandwidth/{direction}")
+            limit = saved.find(f"bandwidth/{direction}")
             if limit is not None:
                 qos_values[direction] = {"average": limit.get("average"), "peak": limit.get("peak"),
                                          "burst": limit.get("burst")}
@@ -393,4 +453,4 @@ class wvmNetwork(wvmConnect):
         if tree.findtext("uuid") not in (None, self.net.UUIDString()):
             raise util.OperationError("The XML must keep the network's UUID")
         self.wvm.networkDefineXML(new_xml)
-        self.__dict__.pop("tree", None)
+        self._forget()
