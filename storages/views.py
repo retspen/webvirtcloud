@@ -136,24 +136,6 @@ def storage(request, compute_id, pool):
 
     storages = conn.get_storages()
     state = conn.is_active()
-    # first: it refreshes the pool, and libvirt measures a pool's space only then
-    volumes = conn.update_volumes() if state else None
-    for volume in volumes or []:
-        volume["iso"] = is_iso(volume["name"])
-    try:
-        size, free = conn.get_size()
-        status = conn.get_status()
-        used = size - free
-        if state and size:  # an iSCSI pool without LUNs has no size
-            percent = (used * 100) // size
-        else:
-            percent = 0
-    except libvirtError:  # both read the pool's info: the page says it could not be read
-        size = free = used = percent = status = None
-
-    path = conn.get_target_path() or conn.get_source_name()  # an RBD pool: its Ceph pool
-    type = conn.get_type()
-    autostart = conn.get_autostart()
 
     if request.method == "POST":
         subject = f"Storage pool {pool}"
@@ -222,6 +204,25 @@ def storage(request, compute_id, pool):
                     messages.error(request, msg_err.as_text())
             return redirect(reverse("storage", args=[compute.id, pool]))
 
+    # read only for the page: every action above redirects
+    # first: it refreshes the pool, and libvirt measures a pool's space only then
+    volumes = conn.update_volumes() if state else None
+    for volume in volumes or []:
+        volume["iso"] = is_iso(volume["name"])
+    try:
+        size, free = conn.get_size()
+        status = conn.get_status()
+        used = size - free
+        if state and size:  # an iSCSI pool without LUNs has no size
+            percent = (used * 100) // size
+        else:
+            percent = 0
+    except libvirtError:  # both read the pool's info: the page says it could not be read
+        size = free = used = percent = status = None
+
+    path = conn.get_target_path() or conn.get_source_name()  # an RBD pool: its Ceph pool
+    type = conn.get_type()
+    autostart = conn.get_autostart()
     job_resource = claims.pool_key(compute.id, pool)
     conn.close()
 

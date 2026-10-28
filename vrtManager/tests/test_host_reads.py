@@ -18,6 +18,7 @@ from libvirt import (
     VIR_DOMAIN_PAUSED,
     VIR_DOMAIN_RUNNING,
     VIR_DOMAIN_SHUTOFF,
+    VIR_ERR_NO_STORAGE_VOL,
     VIR_ERR_NO_SUPPORT,
     VIR_ERR_OPERATION_DENIED,
     VIR_ERR_XML_ERROR,
@@ -25,7 +26,7 @@ from libvirt import (
 )
 from vrtManager.connection import wvmConnect
 from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.storage import wvmStorages
+from vrtManager.storage import wvmStorage, wvmStorages
 
 CAPABILITIES = """<capabilities><host><cpu><arch>x86_64</arch></cpu></host>
 <guest><os_type>hvm</os_type><arch name='x86_64'><emulator>/usr/bin/qemu-kvm</emulator>
@@ -217,3 +218,55 @@ class StoragesInfoTestCase(unittest.TestCase):
         conn.get_storage = lambda name: pool
         conn.get_storages_info()
         pool.refresh.assert_not_called()
+
+
+def volume(name, capacity, allocation, fmt=None, error=None):
+    target = f"<target><format type='{fmt}'/></target>" if fmt else "<target/>"
+    xml = (f"<volume type='file'><name>{name}</name><capacity unit='bytes'>{capacity}</capacity>"
+           f"<allocation unit='bytes'>{allocation}</allocation>{target}</volume>")
+    return MagicMock(**{"XMLDesc.side_effect": error} if error else {"XMLDesc.return_value": xml})
+
+
+def gone(code):
+    err = libvirtError("no storage vol")
+    err.get_error_code = lambda: code
+    return err
+
+
+class VolumesTestCase(unittest.TestCase):
+    """A pool's volumes are read with one call each, their XML, after one listing."""
+
+    def storage(self, volumes):
+        stg = wvmStorage.__new__(wvmStorage)  # no libvirt connection: only the pool's calls
+        stg.pool = MagicMock(**{"listAllVolumes.return_value": volumes})
+        return stg
+
+    def test_each_volume_is_one_call(self):
+        vols = [volume("b.qcow2", 2048, 512, "qcow2"), volume("a-lv", 1024, 1024)]
+        stg = self.storage(vols)
+        self.assertEqual(stg.update_volumes(), [
+            {"name": "a-lv", "size": 1024, "allocation": 1024, "type": None},  # a logical volume has no format
+            {"name": "b.qcow2", "size": 2048, "allocation": 512, "type": "qcow2"},
+        ])
+        self.assertEqual([c[0] for c in stg.pool.mock_calls], ["refresh", "listAllVolumes"])
+        for vol in vols:
+            self.assertEqual([c[0] for c in vol.mock_calls], ["XMLDesc"])
+
+    def test_a_volume_deleted_meanwhile_is_left_out(self):
+        stg = self.storage([volume("a.img", 1, 1, "raw"), volume("b.img", 1, 1, error=gone(VIR_ERR_NO_STORAGE_VOL))])
+        self.assertEqual([v["name"] for v in stg.update_volumes()], ["a.img"])
+        # any other failure is not hidden
+        stg = self.storage([volume("c.img", 1, 1, error=gone(VIR_ERR_OPERATION_DENIED))])
+        with self.assertRaises(libvirtError):
+            stg.update_volumes()
+
+    def test_a_refused_refresh_still_lists(self):
+        # libvirt refuses to refresh a pool while a volume is cloned in it
+        stg = self.storage([volume("a.img", 1, 1, "raw")])
+        stg.pool.refresh.side_effect = libvirtError("pool has asynchronous jobs running")
+        self.assertEqual(len(stg.update_volumes()), 1)
+
+    def test_one_volume(self):
+        stg = self.storage([])
+        stg.pool.storageVolLookupByName.return_value = volume("a.img", 4096, 0, "raw")
+        self.assertEqual(stg.get_volume_details("a.img"), {"name": "a.img", "size": 4096, "allocation": 0, "type": "raw"})

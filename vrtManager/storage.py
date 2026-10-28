@@ -5,6 +5,20 @@ from vrtManager import util
 from vrtManager.connection import wvmConnect
 
 
+def volume_details(vol):
+    """A volume's name, capacity (size), allocation and format, from its XML:
+    one libvirt call, which refreshes the volume as info() does. Logical and
+    iSCSI volumes have no format (None)."""
+    def read(doc):
+        return {
+            "name": util.get_xpath(doc, "/volume/name"),
+            "size": int(util.get_xpath(doc, "/volume/capacity")),
+            "allocation": int(util.get_xpath(doc, "/volume/allocation")),
+            "type": util.get_xpath(doc, "/volume/target/format/@type"),
+        }
+    return util.get_xml_path(vol.XMLDesc(0), func=read)
+
+
 class wvmStorages(wvmConnect):
     def get_storages_info(self):
         """Each pool's state, autostart, type, path (an RBD pool's Ceph pool),
@@ -255,14 +269,6 @@ class wvmStorage(wvmConnect):
     def get_volume(self, name):
         return self.pool.storageVolLookupByName(name)
 
-    def get_volume_size(self, name):
-        vol = self.get_volume(name)
-        return vol.info()[1]
-
-    def get_volume_allocation(self, name):
-        vol = self.get_volume(name)
-        return vol.info()[2]
-
     def _vol_XMLDesc(self, name):
         vol = self.get_volume(name)
         return vol.XMLDesc(0)
@@ -286,28 +292,25 @@ class wvmStorage(wvmConnect):
         return self.pool.refresh(0)
 
     def get_volume_details(self, volname):
-        with contextlib.suppress(Exception):
+        """The volume's details (volume_details), the pool refreshed first."""
+        with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in the pool
             self.refresh()
-        return {
-            "name": volname,
-            "size": self.get_volume_size(volname),
-            "allocation": self.get_volume_allocation(volname),
-            "type": self.get_volume_format_type(volname),
-        }
+        return volume_details(self.get_volume(volname))
 
     def update_volumes(self):
-        with contextlib.suppress(Exception):
+        """Every volume's details (volume_details) by name, the pool refreshed
+        first: two calls and one per volume, where a lookup, info() and the
+        XML of each took six. A volume deleted meanwhile is left out."""
+        with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in the pool
             self.refresh()
-        vols = self.get_volumes()
-        return [
-            {
-                "name": volname,
-                "size": self.get_volume_size(volname),
-                "allocation": self.get_volume_allocation(volname),
-                "type": self.get_volume_format_type(volname),
-            }
-            for volname in vols
-        ]
+        volumes = []
+        for vol in self.pool.listAllVolumes(0):
+            try:
+                volumes.append(volume_details(vol))
+            except libvirt.libvirtError as err:
+                if err.get_error_code() != libvirt.VIR_ERR_NO_STORAGE_VOL:
+                    raise
+        return sorted(volumes, key=lambda volume: volume["name"])
 
     def create_volume(
         self,
