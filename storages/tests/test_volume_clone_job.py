@@ -49,6 +49,21 @@ class VolumeCloneJobTestCase(TransactionTestCase):
         self.assertEqual(op.intent["created"], "copy.qcow2")
         self.assertIn(f"key=pool%3A{self.compute.pk}%3Apool-a", self.client.get(url).content.decode())
 
+    @patch("storages.views.wvmStorage")
+    def test_a_refused_copy_is_a_message(self, page):
+        # a name in use, an ISO image: the job's plan refuses, the page says why
+        page.return_value.is_active.return_value = False
+        page.return_value.get_size.return_value = (1, 1)
+        url = reverse("storage", args=[self.compute.pk, "pool-a"])
+        self.stg.get_volumes.return_value = ["base.qcow2", "copy.qcow2", "install.ISO"]
+        for key, image, why in (("key-vol00002", "base.qcow2", "Name of volume already in use"),
+                                ("key-vol00003", "install.ISO", "An ISO image is not cloned")):
+            with self.subTest(image=image):
+                response = self.client.post(url, {"cln_volume": "1", "image": image, "name": "copy",
+                                                  "submission_key": key}, follow=True)
+                self.assertContains(response, why)
+        self.assertFalse(Operation.objects.exists())
+
     def test_recovery(self):
         self.stg.get_volumes.return_value = ["base.qcow2", "copy.qcow2"]
         op = Operation(params={"compute": self.compute.pk, "pool": "pool-a"}, intent={"target": "copy.qcow2"})

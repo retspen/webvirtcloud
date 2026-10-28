@@ -49,15 +49,20 @@ class StorageViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
 
+        state = conn.is_active()
+        # first: it refreshes the pool, and libvirt measures a pool's space only then;
+        # a stopped pool lists none
+        volumes = conn.update_volumes() if state else None
+        size, free = conn.get_size()
         infoset = {
-            "state": conn.is_active(),
-            "size": conn.get_size()[0],
-            "free": conn.get_size()[1],
+            "state": state,
+            "size": size,
+            "free": free,
             "status": conn.get_status(),
             "path": conn.get_target_path(),
             "type": conn.get_type(),
             "autostart": conn.get_autostart(),
-            "volumes": conn.update_volumes(),
+            "volumes": volumes,
         }
 
         serializer = StorageSerializer(

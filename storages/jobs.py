@@ -26,6 +26,11 @@ def _log(op, state, action):
     return compute, "", "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
 
 
+def is_iso(name):
+    """An ISO image, by its name: libvirt calls its format raw. It is uploaded, not cloned."""
+    return name.lower().endswith(".iso")
+
+
 def _storage(params):
     c = Compute.objects.get(pk=params["compute"])
     return c, wvmStorage(c.hostname, c.login, c.password, c.type, params["pool"])
@@ -51,6 +56,8 @@ class CloneVolume(Kind):
         volumes = stg.get_volumes()
         if params["image"] not in volumes:
             raise util.OperationError(f"The pool has no volume named {params['image']}")
+        if is_iso(params["image"]):
+            raise util.OperationError("An ISO image is not cloned")
         target = stg.clone_name(params["name"], params["format"] or stg.get_volume_format_type(params["image"]))
         if target in volumes:
             raise util.OperationError("Name of volume already in use")
@@ -102,7 +109,7 @@ class UploadVolume(Kind):
         name = params["name"]
         if not name or name in (".", "..") or "\x00" in name:
             raise ValueError("Invalid file name")
-        if len(name) <= 4 or not name.lower().endswith(".iso"):
+        if len(name) <= 4 or not is_iso(name):
             raise ValueError("Only .iso files can be uploaded")
         if params["size"] <= 0:
             raise ValueError("Invalid file size")

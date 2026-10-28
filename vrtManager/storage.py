@@ -281,21 +281,6 @@ class wvmStorage(wvmConnect):
     def refresh(self):
         return self.pool.refresh(0)
 
-    def get_volumes_details(self):
-        with contextlib.suppress(Exception):
-            self.refresh()
-
-        vols = self.get_volumes()
-        return [
-            {
-                "name": volname,
-                "size": self.get_volume_size(volname),
-                "allocation": self.get_volume_allocation(volname),
-                "type": self.get_volume_format_type(volname),
-            }
-            for volname in vols
-        ]
-
     def get_volume_details(self, volname):
         with contextlib.suppress(Exception):
             self.refresh()

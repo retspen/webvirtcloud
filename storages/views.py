@@ -19,6 +19,7 @@ from vrtManager.util import OperationError
 from vrtManager.storage import wvmStorage, wvmStorages
 
 from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
+from storages.jobs import is_iso
 from storages.upload import write_chunk
 
 
@@ -163,25 +164,24 @@ def storage(request, compute_id, pool):
 
     storages = conn.get_storages()
     state = conn.is_active()
+    # first: it refreshes the pool, and libvirt measures a pool's space only then
+    volumes = conn.update_volumes() if state else None
+    for volume in volumes or []:
+        volume["iso"] = is_iso(volume["name"])
     try:
         size, free = conn.get_size()
+        status = conn.get_status()
         used = size - free
         if state and size:  # an iSCSI pool without LUNs has no size
             percent = (used * 100) // size
         else:
             percent = 0
-    except libvirtError:
-        size, free, used, percent = 0, 0, 0, 0
+    except libvirtError:  # both read the pool's info: the page says it could not be read
+        size = free = used = percent = status = None
 
-    status = conn.get_status()
     path = conn.get_target_path()
     type = conn.get_type()
     autostart = conn.get_autostart()
-
-    if state:
-        volumes = conn.update_volumes()
-    else:
-        volumes = None
 
     if request.method == "POST":
         subject = f"Storage pool {pool}"
@@ -240,7 +240,7 @@ def storage(request, compute_id, pool):
                         entry.skip = True  # the job writes its row when it ends
                 except claims.Busy as busy:
                     messages.error(request, busy_message(busy, request.user))
-                except (jobs.SubmissionConflict, libvirtError) as err:
+                except (jobs.SubmissionConflict, OperationError, libvirtError) as err:
                     messages.error(request, str(err))
                 else:
                     messages.info(request, _("The volume is being cloned; follow it in the job panel."))
