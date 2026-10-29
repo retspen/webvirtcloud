@@ -90,3 +90,15 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 .chart {
     height: 160px;
 }
+
+/* the host's sections (computes/host_nav.html) on one line in every theme:
+   one font size, and the divider spaced alike on its two sides (Zephyr
+   doubles the space after it) */
+.host-nav .breadcrumb {
+    --bs-breadcrumb-item-padding-x: .5rem;
+    font-size: .875rem;
+}
+
+.host-nav .breadcrumb-item + .breadcrumb-item::before {
+    padding-right: var(--bs-breadcrumb-item-padding-x);
+}

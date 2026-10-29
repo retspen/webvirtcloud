@@ -18,7 +18,7 @@ class HostNavTestCase(TestCase):
     def test_the_section_s_own_page_is_the_current_page(self):
         items = self.items(section="storages")
         self.assertEqual(len(items), 8)
-        self.assertEqual(items["Storages"], ("span", "page"))
+        self.assertEqual(items["Storage"], ("span", "page"))
         self.assertEqual(items["Overview"], ("a", None))
 
     def test_an_item_of_a_section_links_the_section_as_where_it_is(self):
