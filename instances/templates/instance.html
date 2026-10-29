@@ -7,115 +7,92 @@
 
 {% block title %}{% trans "Instance" %} - {{ instance.name }}{% endblock %}
 
-{% block page_heading %}
-{{ instance.name }}{% if instance.title %} ({{ instance.title }}){% endif %}
-{% endblock page_heading %}
+{% block page_header %}{% endblock page_header %}{# the card below has the heading #}
 
 {% block content %}
     {% include 'pleasewaitdialog.html' %}
-     <div>
-        <div>
-            {% vm_state instance.status as state %}
-            <span class="badge text-bg-{{ state.1 }}">{{ state.0 }}</span>
-            |
-            <span 
-                {%if instance.guest_agent %}
+    {# the VM at a glance in one card: who and where it is, what it has, and its sections as the card's footer #}
+    <section class="card mb-3" aria-labelledby="vm-name">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h1 class="h4 mb-0" id="vm-name">{{ instance.name }}</h1>
+                        {% vm_state instance.status as state %}
+                        <span class="badge text-bg-{{ state.1 }}">{{ state.0 }}</span>
+                    </div>
+                    {% if instance.title %}<p class="text-body-secondary mb-1">{{ instance.title }}</p>{% endif %}
+                    {% include 'instances/host_link.html' %}
+                </div>
+                <div class="d-flex gap-2">
                     {% if instance.guest_agent_ready %}
-                        class="badge bg-success"
-                        title="{% trans "Guest Agent Enabled & Connected" %}"
-                    {% else %}
-                        class="badge bg-warning"
-                        title="{% trans "Guest Agent Enabled but not Connected" %}"
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="get_osinfo();">{% bs_icon 'info-circle' %} {% trans "OS details" %}</button>
                     {% endif %}
+                    <a class="btn btn-sm btn-secondary" href="{% url 'instances:instance' instance.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh" %}</a>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap column-gap-3 row-gap-1 small mt-2">
+                {% if not instance.guest_agent %}
+                    <span>{% bs_icon 'dash-circle' %} {% trans "Guest agent off" %}</span>
+                {% elif instance.guest_agent_ready %}
+                    <span><span class="text-success">{% bs_icon 'check-circle' %}</span> {% trans "Guest agent connected" %}</span>
                 {% else %}
-                    class="badge bg-danger"
-                    title="{% trans "Guest Agent Not Enabled & Not Connected" %}"
-                {% endif %}>{% bs_icon 'broadcast' size='1em' %}
-            </span>
-            |
-            {% if instance.snapshots %}
-                {% bs_icon 'camera'%} <i title="There are {{ instance.snapshots|length }} snapshot(s)"></i>
-            |
-            {% endif %}
-            {% if instance.cur_vcpu %}
-                {{ instance.cur_vcpu }} {% trans "VCPU" %}
-            {% else %}
-                {{ instance.vcpu }} {% trans "VCPU" %}
-            {% endif %}
-            |
-            {{ instance.cur_memory }} {% trans "MB" %} {% trans "RAM" %}
-            |
-            {% for disk in instance.disks %}
-                {{ disk.size|filesizeformat }} {% trans "Disk" %} |
-            {% endfor %}
-            {% for net in instance.networks %}
-               {% for ipv4 in net.ipv4 %}
-                   {{ ipv4 }} |
-               {% endfor %}
-            {% endfor %}
-            {% if instance.guest_agent_ready %}
-            <a class="link-warning" title="{% trans 'Show Instance OS details' %}" onclick="get_osinfo();">
-                <span>{% bs_icon 'info-circle' %} </span>
-            </a>
-            {% endif %}
-            <a class="link-success" href="{% url 'instances:instance' instance.id %}" title="{% trans 'Refresh instance info' %}">
-                <span>{% bs_icon 'repeat'%} </span>
-            </a>
+                    <span><span class="text-warning">{% bs_icon 'exclamation-circle' %}</span> {% trans "Guest agent not connected" %}</span>
+                {% endif %}
+                <span>{% bs_icon 'camera' %} {% blocktrans count counter=instance.snapshots|length %}{{ counter }} snapshot{% plural %}{{ counter }} snapshots{% endblocktrans %}</span>
+            </div>
+            <dl class="row g-2 small mb-0 mt-1">
+                <div class="col-6 col-lg-2">
+                    <dt class="fw-normal text-body-secondary">{% trans "CPU" %}</dt>
+                    <dd class="mb-0">{% firstof instance.cur_vcpu instance.vcpu %} {% trans "of" %} {{ instance.vcpu }} {% trans "vCPU" %}</dd>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <dt class="fw-normal text-body-secondary">{% trans "Memory" %}</dt>
+                    <dd class="mb-0">{{ instance.cur_memory }} {% trans "MB" %}</dd>
+                </div>
+                <div class="col-6 col-lg-5">
+                    <dt class="fw-normal text-body-secondary">{% trans "Disks" %}</dt>
+                    <dd class="mb-0">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|filesizeformat }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <dt class="fw-normal text-body-secondary">{% trans "IPv4" %}</dt>
+                    <dd class="mb-0 font-monospace">{{ ipv4_addresses|join:", "|default:"—" }}</dd>
+                </div>
+            </dl>
         </div>
-        <hr>
-    </div>
+        <div class="card-footer p-2">
+            <ul class="nav nav-pills flex-wrap flex-lg-nowrap gap-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap active" id="power-tab" aria-controls="power" data-bs-toggle="pill" data-bs-target="#power" type="button" role="tab" aria-selected="true">{% bs_icon 'power' %} {% trans "Power" %}</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap" id="access-tab" aria-controls="access" data-bs-toggle="pill" data-bs-target="#access" type="button" role="tab" aria-selected="false">{% bs_icon 'lock' %} {% trans "Access" %}</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap" id="resize-tab" aria-controls="resize" data-bs-toggle="pill" data-bs-target="#resize" type="button" role="tab" aria-selected="false">{% bs_icon 'arrows-angle-expand' %} {% trans "Resize" %}</button>
+                </li>
+                {% if can_snapshot %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">{% bs_icon 'camera' %} {% trans "Snapshot" %}</button>
+                </li>
+                {% endif %}
+                {% if show_settings %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap" id="settings-tab" aria-controls="settings" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab" aria-selected="false">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</button>
+                </li>
+                {% endif %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">{% bs_icon 'bar-chart-line' %} {% trans "Stats" %}</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">{% bs_icon 'trash' %} {% trans "Destroy" %}</button>
+                </li>
+            </ul>
+        </div>
+    </section>
 
     <div id="job-panel" aria-live="polite"></div>
     <div id="mainTabMenu">
-        <!-- Nav tabs -->
-        <ul class="nav nav-pills nav-fill" id="navbtn" role="tablist" aria-label="Instance actions">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-center active" id="power-tab" aria-controls="power" data-bs-toggle="pill" data-bs-target="#power" type="button" role="tab" aria-selected="true">
-                    <span class="d-block py-2" aria-hidden="true">{% bs_icon 'power' size='2em'%} </span>
-                    {% trans "Power" %}
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-center" id="access-tab" aria-controls="access" data-bs-toggle="pill" data-bs-target="#access" type="button" role="tab" aria-selected="false">
-                    <span class="d-block py-2" aria-hidden="true">{% bs_icon 'lock' size='2em'%} </span>
-                    {% trans "Access" %}
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-center" id="resize-tab" aria-controls="resize" data-bs-toggle="pill" data-bs-target="#resize" type="button" role="tab" aria-selected="false">
-                    <span class="d-block py-2" aria-hidden="true">{% bs_icon 'arrows-angle-expand' size='2em'%} </span>
-                    {% trans "Resize" %}
-                </button>
-            </li>
-            {% if can_snapshot %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-center" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">
-                    <span class="d-block py-2" aria-hidden="true">{% bs_icon 'camera' size='2em'%} </span>
-                    {% trans "Snapshot" %}
-                </button>
-            </li>
-            {% endif %}
-            {% if show_settings %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-center" id="settings-tab" aria-controls="settings" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab" aria-selected="false">
-                    <span class="d-block py-2" aria-hidden="true">{% bs_icon 'gear-wide-connected' size='2em'%} </span>
-                    {% trans "Settings" %}
-                </button>
-            </li>
-            {% endif %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-center" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">
-                    <span class="d-block py-2" aria-hidden="true">{% bs_icon 'bar-chart-line' size='2em'%} </span>
-                    {% trans "Stats" %}
-                </button>
-            </li>
-                <li class="nav-item" role="presentation">
-                <button class="nav-link text-center" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">
-                    <span class="d-block py-2" aria-hidden="true">{% bs_icon 'trash' size='2em'%} </span>
-                    {% trans "Destroy" %}
-                </button>
-            </li>
-        </ul>
         <!-- Tab panes -->
         <div class="tab-content" id=mainTabMenuContent>
             {% include 'instances/power_tab.html' %}
@@ -127,10 +104,6 @@
             {% include 'instances/destroy_tab.html' %}
         </div>
     </div>
-
-    {% if app_settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR == 'True' %}
-        {% include 'bottom_bar.html' %}
-    {% endif %}
 
 {% endblock %}
 {% block script %}

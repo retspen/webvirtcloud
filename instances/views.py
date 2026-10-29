@@ -249,7 +249,7 @@ def _instance_page(request, pk, instance, compute):
     if can_manage_console:
         console_form = ConsoleForm(instance=instance, can_set_listener=request.user.is_superuser)
     console_listener_addresses = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
-    bottom_bar = app_settings.VIEW_INSTANCE_DETAIL_BOTTOM_BAR
+    ipv4_addresses = [address for net in instance.networks for address in net["ipv4"] or []]
     try:
         userinstance = UserInstance.objects.get(
             instance__compute_id=compute.id,

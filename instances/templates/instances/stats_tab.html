@@ -1,8 +1,10 @@
 {% load i18n %}
 {% load bootstrap_icons %}
-<div class="tab-pane mt-3" id="graphics" role="tabpanel" >
+<div class="tab-pane" id="graphics" role="tabpanel" >
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist" aria-label="Instance graphs and logs menu">
+    <div class="card">
+    <div class="card-header bg-transparent pb-0">
+    <ul class="nav nav-underline small" role="tablist" aria-label="Instance graphs and logs menu">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#graphs" type="button" role="tab" aria-controls="graphs" aria-selected="true">
                 {% trans "Real Time" %}
@@ -14,10 +16,11 @@
             </button>
         </li>
     </ul>
+    </div>
     <!-- Tab panes -->
-    <div class="tab-content">
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="graphs">
-            <div class="mb-1 card border-success">
+    <div class="tab-content card-body">
+        <div role="tabpanel" class="tab-pane active" id="graphs">
+            <div class="mb-3 card">
                 <div class="card-header">
                     <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "CPU Usage" %}
@@ -27,7 +30,7 @@
                     <div class="chart position-relative"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU Usage" %}"></canvas></div>
                 </div>
             </div>
-            <div class="mb-1 card border-danger">
+            <div class="mb-3 card">
                 <div class="card-header">
                     <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "Memory Usage" %}
@@ -38,7 +41,7 @@
                 </div>
             </div>
             {% for net in instance.networks %}
-            <div class="mb-1 card border-info">
+            <div class="mb-3 card">
                 <div class="card-header">
                     <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}
@@ -50,7 +53,7 @@
             </div>
             {% endfor %}
             {% for disk in instance.disks %}
-            <div class="mb-1 card border-warning">
+            <div class="mb-3 card">
                 <div class="card-header">
                     <h5 class="card-title">{% bs_icon 'arrow-right' %} 
                         {% trans "Disk I/O device" %}: {{ disk.dev }}
@@ -63,7 +66,7 @@
             {% endfor %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="logs">
+        <div role="tabpanel" class="tab-pane" id="logs">
             <div class="table-responsive">
                 <table class="table table-striped align-middle" id="logs_table">
                     <thead>
@@ -83,6 +86,7 @@
             </div>
             <div class="clearfix"></div>
         </div>
+    </div>
     </div>
 </div>
 <script>

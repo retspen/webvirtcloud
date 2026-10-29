@@ -46,8 +46,7 @@ GROUPS = [
     (_("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
                                "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
     (_("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
-    (_("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VIEW_INSTANCE_DETAIL_BOTTOM_BAR", "VM_DRBD_STATUS",
-                            "LOGS_PER_PAGE"]),
+    (_("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE"]),
 ]
 
 

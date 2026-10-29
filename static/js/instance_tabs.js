@@ -23,7 +23,7 @@ function restoreInstanceTab(doc, hash, show, loadInfo) {
         }
     }
     var settings = doc.getElementById("settings");
-    var tabs = settings ? settings.querySelector(".nav-tabs") : null;
+    var tabs = settings ? settings.querySelector("[role=tablist]") : null;
     if (tabs && !tabs.querySelector(".nav-link.active")) {
         var first = tabs.querySelector(".nav-link:not(#osinfo-tab)");
         if (first) {

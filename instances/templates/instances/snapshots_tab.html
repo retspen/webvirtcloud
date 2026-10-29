@@ -3,10 +3,12 @@
 {% get_current_timezone as TIME_ZONE %}
 {% load bootstrap_icons %}
 {% load operations %}
-<div class="tab-pane mt-3" id="snapshots" role="tabpanel">
+<div class="tab-pane" id="snapshots" role="tabpanel">
     {% with busy=instance.snapshot_jobs held=instance.held_by_job %}
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist" aria-label="Instance snapshot menu">
+    <div class="card">
+    <div class="card-header bg-transparent pb-0">
+    <ul class="nav nav-underline small" role="tablist" aria-label="Instance snapshot menu">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#takesnapshot" type="button" role="tab" aria-controls="takesnapshot" aria-selected="true">
                 {% trans "Take Snapshot - Internal" %}
@@ -23,14 +25,15 @@
             </button>
         </li>
     </ul>
+    </div>
     <!-- Tab panes -->
-    <div class="tab-content">
+    <div class="tab-content card-body">
         {% if busy %}
             <div class="alert alert-warning mt-3" role="status">
                 {% trans "A disk job is running on this VM; snapshot actions are unavailable until it ends." %}
             </div>
         {% endif %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="takesnapshot">
+        <div role="tabpanel" class="tab-pane active" id="takesnapshot">
             {% if instance.status != 5 %}
             <p>{% trans "With running machine, internal snapshots may take more than an hour, depending on how much memory has on your instance and how large the disk is." %} </p>
                 <p class="text-danger">{% trans "The VM is paused while its memory is saved." %}</p>
@@ -44,15 +47,15 @@
                         <span class="input-group-text">|</span>
                         <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
                         {% if instance.external_snapshots or busy or held %}
-                            <button type="submit" class="btn btn-lg btn-success float-end" name="snapshot" disabled>{% trans "Take Snapshot" %}</button>
+                            <button type="submit" class="btn btn-primary float-end" name="snapshot" disabled>{% trans "Take Snapshot" %}</button>
                         {% else %}
-                            <button type="submit" class="btn btn-lg btn-success float-end" name="snapshot">{% trans "Take Snapshot" %}</button>
+                            <button type="submit" class="btn btn-primary float-end" name="snapshot">{% trans "Take Snapshot" %}</button>
                         {% endif %}
                     </div>
             </form>
             <div class="clearfix"></div>
         </div> <!-- Tab pane - takesnapshot -->
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="takeextsnapshot">
+        <div role="tabpanel" class="tab-pane" id="takeextsnapshot">
             <p>{% trans "Create an external snapshot. Each disk keeps its state in a new file next to it." %}</p>
             <form action="{% url 'instances:create_external_snapshot' instance.id %}" method="post" role="form" aria-label="Create external snapshot form">
                 {% csrf_token %}{% submission_key %}
@@ -61,9 +64,9 @@
                     <span class="input-group-text">|</span>
                     <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
                     {% if instance.internal_snapshots or busy or held %}
-                        <button type="submit" class="btn btn-lg btn-success float-end" name="snapshot" disabled>{% trans "Take Snapshot" %}</button>
+                        <button type="submit" class="btn btn-primary float-end" name="snapshot" disabled>{% trans "Take Snapshot" %}</button>
                     {% else %}
-                        <button type="submit" class="btn btn-lg btn-success float-end" name="snapshot">{% trans "Take Snapshot" %}</button>
+                        <button type="submit" class="btn btn-primary float-end" name="snapshot">{% trans "Take Snapshot" %}</button>
                     {% endif %}
                 </div>
                 <div class="form-check mb-3">
@@ -83,7 +86,7 @@
             </form>
             <div class="clearfix"></div>
         </div> <!--tab pane takeextsnapshot-->
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="managesnapshot">
+        <div role="tabpanel" class="tab-pane" id="managesnapshot">
             {% if instance.internal_snapshots or instance.external_snapshots %}
                 <p>{% trans "Choose a snapshot for restore/delete" %}</p>
                 {% if instance.internal_snapshots %}
@@ -188,5 +191,6 @@
             {% endif %}
         </div> <!--tab pane managesnapshot-->
     </div> <!-- Tab content-->
+    </div>
     {% endwith %}
 </div> <!-- Tab panel-->

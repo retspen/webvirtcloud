@@ -142,7 +142,8 @@ class SnapshotTabTestCase(TestCase):
         self.assertEqual(
             flags, sorted([libvirt.VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL, libvirt.VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL])
         )
-        self.assertEqual(doc.xpath("//i[contains(@title, 'snapshot(s)')]/@title"), ["There are 2 snapshot(s)"])
+        self.assertEqual(doc.xpath("normalize-space(//span[contains(., ' snapshots')][not(*[contains(., ' snapshots')])])"),
+                         "2 snapshots")
 
     def test_a_failed_job_query_still_renders_the_tab(self):
         # the actions themselves check for jobs again and refuse if that fails

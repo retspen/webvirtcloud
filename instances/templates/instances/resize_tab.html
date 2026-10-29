@@ -1,7 +1,9 @@
 {% load i18n %}
-<div class="tab-pane mt-3" id="resize" role="tabpanel">
+<div class="tab-pane" id="resize" role="tabpanel">
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist" aria-label="Instance resize options">
+    <div class="card">
+    <div class="card-header bg-transparent pb-0">
+    <ul class="nav nav-underline small" role="tablist" aria-label="Instance resize options">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#resizevm_cpu" type="button" role="tab" aria-controls="resizevm_cpu" aria-selected="true">
                 {% trans "CPU" %}
@@ -18,9 +20,10 @@
             </button>
         </li>
     </ul>
+    </div>
     <!-- Tab panes -->
-    <div class="tab-content">
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="resizevm_cpu">
+    <div class="tab-content card-body">
+        <div role="tabpanel" class="tab-pane active" id="resizevm_cpu">
             {% if can_change %}
                 {% if instance.status == 5 or not instance.vcpus %}
                 <form action="{% url 'instances:resizevm_cpu' instance.id %}" method="post" role="form" aria-label="Resize instance cpu form">{% csrf_token %}
@@ -47,9 +50,9 @@
                     </div>
 
                     {% if instance.status == 5 %}
-                        <button type="submit" class="btn btn-lg btn-success float-end" name="resizevm_cpu">{% trans "Resize" %}</button>
+                        <button type="submit" class="btn btn-primary float-end" name="resizevm_cpu">{% trans "Resize" %}</button>
                     {% else %}
-                        <button class="btn btn-lg btn-success float-end disabled" disabled>{% trans "Resize" %}</button>
+                        <button class="btn btn-primary float-end disabled" disabled>{% trans "Resize" %}</button>
                     {% endif %}
                 </form>
                 <div class="clearfix"></div>
@@ -63,7 +66,7 @@
                             <div class="d-grid col-sm-3">
                                 <input name="id" value="{{ id }}" hidden/>
                                 {% if vcpu.enabled == 'yes' and vcpu.hotpluggable == "yes" %}
-                                        <button type="submit" class="btn btn-success" value="False" name="set_vcpu" title="{% trans "Disable" %}">{{ id }}</button>
+                                        <button type="submit" class="btn btn-primary" value="False" name="set_vcpu" title="{% trans "Disable" %}">{{ id }}</button>
                                 {% elif vcpu.enabled == 'yes' and vcpu.hotpluggable == "no" %}
                                         <button type="button" class="btn btn-info" title="{% trans "Constant" %}">{{ id }}</button>
                                 {% else %}
@@ -78,11 +81,11 @@
                 {% endif %}
             {% else %}
                 {% trans "You don't have permission for resizing instance" %}
-                <button class="btn btn-lg btn-success float-end disabled" disabled>{% trans "Resize" %}</button>
+                <button class="btn btn-primary float-end disabled" disabled>{% trans "Resize" %}</button>
             {% endif %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="resizevm_mem">
+        <div role="tabpanel" class="tab-pane" id="resizevm_mem">
             {% if can_change %}
                 <form action="{% url 'instances:resize_memory' instance.id %}" method="post" role="form" aria-label="Resize instance memory form">
                     {% csrf_token %}
@@ -120,15 +123,15 @@
                             {% endif %}
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-lg btn-success float-end" name="resizevm_mem">{% trans "Resize" %}</button>
+                    <button type="submit" class="btn btn-primary float-end" name="resizevm_mem">{% trans "Resize" %}</button>
                 </form>
             {% else %}
                 {% trans "You don't have permission for resizing instance" %}
-                <button class="btn btn-lg btn-success float-end disabled" disabled>{% trans "Resize" %}</button>
+                <button class="btn btn-primary float-end disabled" disabled>{% trans "Resize" %}</button>
             {% endif %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="resizevm_disk">
+        <div role="tabpanel" class="tab-pane" id="resizevm_disk">
             {% if can_change %}
                 <form action="{% url 'instances:resize_disk' instance.id %}" method="post" role="form" aria-label="Resize instance disk form">
                     {% csrf_token %}
@@ -152,16 +155,17 @@
                     </div>
                     {% endfor %}
                     {% if instance.status == 1 or instance.status == 3 or instance.status == 5 %}
-                        <button type="submit" class="btn btn-lg btn-success float-end" name="resizevm_disk">{% trans "Resize" %}</button>
+                        <button type="submit" class="btn btn-primary float-end" name="resizevm_disk">{% trans "Resize" %}</button>
                     {% else %}
-                        <button class="btn btn-lg btn-success float-end disabled" disabled>{% trans "Resize" %}</button>
+                        <button class="btn btn-primary float-end disabled" disabled>{% trans "Resize" %}</button>
                     {% endif %}
                 </form>
             {% else %}
                 {% trans "You don't have permission for resizing instance" %}
-                <button class="btn btn-lg btn-success float-end disabled" disabled>{% trans "Resize" %}</button>
+                <button class="btn btn-primary float-end disabled" disabled>{% trans "Resize" %}</button>
             {% endif %}
             <div class="clearfix"></div>
         </div>
+    </div>
     </div>
 </div>

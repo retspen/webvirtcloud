@@ -102,14 +102,3 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 .host-nav .breadcrumb-item + .breadcrumb-item::before {
     padding-right: var(--bs-breadcrumb-item-padding-x);
 }
-
-/* a VM's settings tabs (instances/settings_tab.html) on one line in every
-   theme: the themes' tab font sizes and spacing differ by up to a tab */
-.vm-settings-tabs {
-    font-size: .875rem;
-}
-
-.vm-settings-tabs .nav-link {
-    padding-left: .75rem;
-    padding-right: .75rem;
-}

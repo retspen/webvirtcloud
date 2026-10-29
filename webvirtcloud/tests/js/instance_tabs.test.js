@@ -21,7 +21,7 @@ function* walk(node) {
 }
 
 function matches(node, selector) {
-    if (selector === ".nav-tabs") return node.classList.has("nav-tabs");
+    if (selector === "[role=tablist]") return node.attrs.role === "tablist";
     if (selector === ".nav-link.active") return node.classList.has("nav-link") && node.classList.has("active");
     if (selector === ".nav-link:not(#osinfo-tab)") return node.classList.has("nav-link") && node.id !== "osinfo-tab";
     if (selector === "#osinfo-tab") return node.id === "osinfo-tab";
@@ -40,7 +40,7 @@ function link(target, extra = []) {
 // The VM page: top-level panes, Settings with its own tabs and panes.
 function page(settingsLinks) {
     const settings = el("settings", ["tab-pane"], [
-        el("", ["nav-tabs"], settingsLinks),
+        el("", ["nav", "nav-underline"], settingsLinks, {role: "tablist"}),
         el("", ["tab-content"], [el("osinfo", ["tab-pane"]), el("options", ["tab-pane"]), el("vncsettings", ["tab-pane"])]),
     ]);
     const root = el("", [], [el("", ["tab-content"], [el("power", ["tab-pane", "active"]), el("access", ["tab-pane"]), settings])]);

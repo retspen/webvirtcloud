@@ -34,7 +34,7 @@ SUPERUSER_ONLY = {"vcpu hotplug", "video model", "guest agent"}
 class PageControls:
     def setUp(self):
         AppSettings.objects.filter(
-            key__in=["SHOW_ACCESS_ROOT_PASSWORD", "SHOW_ACCESS_SSH_KEYS", "VIEW_INSTANCE_DETAIL_BOTTOM_BAR"]
+            key__in=["SHOW_ACCESS_ROOT_PASSWORD", "SHOW_ACCESS_SSH_KEYS"]
         ).update(value="True")
         self.compute = Compute.objects.create(
             name="ctl-compute", hostname="127.0.0.1:1", login="root", password="", type=1
@@ -123,6 +123,24 @@ class PageControlsTestCase(PageControls, TestCase):
                         ["node", "--check", "-"], input=script, capture_output=True, text=True, timeout=30
                     )
                     self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_the_header_names_the_vm_its_place_and_resources(self):
+        """Host links for administrators, the VM list for its owner; the
+        guest agent's state in words; each disk with its device name."""
+        disks = [{"dev": "vda", "size": 2 << 30}, {"dev": "vdb", "size": 1 << 30}]
+        with patch.object(Instance, "disks", new_callable=PropertyMock, return_value=disks), \
+                patch.object(Instance, "guest_agent", new_callable=PropertyMock, return_value=True), \
+                patch.object(Instance, "guest_agent_ready", new_callable=PropertyMock, return_value=False):
+            self.controls(get_user_model().objects.create_superuser("hdr-admin", "a@example.com", "x"))
+            admin_page = lxml_html.fromstring(self.last_page)
+            self.controls(self.user("hdr-owner", owner={}))
+            owner_page = lxml_html.fromstring(self.last_page)
+        links = "//nav[@aria-label='Location']/a"
+        self.assertEqual([a.text_content().strip() for a in admin_page.xpath(links)], ["ctl-compute", "Instances"])
+        self.assertEqual([a.text_content().strip() for a in owner_page.xpath(links)], ["Instances"])
+        self.assertIn("Guest agent not connected", self.last_page)
+        self.assertIn("vda 2.0\xa0GB · vdb 1.0\xa0GB", self.last_page)
+        self.assertEqual(owner_page.xpath("normalize-space(//dt[.='IPv4']/following-sibling::dd)"), "—")
 
     def test_superuser_sees_every_control(self):
         superuser = get_user_model().objects.create_superuser("ctl_super", "ctl_super@example.com", "x")

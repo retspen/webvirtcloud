@@ -41,6 +41,7 @@
     {% endif %}
 
     <div role="main" class="container">
+      {% block page_header %}{# a page with a heading of its own leaves it out #}
       <div>
         <div>
           <div class="float-end">
@@ -53,6 +54,7 @@
           </h3>
         </div>
       </div>
+      {% endblock page_header %}
       <div id="messages">{% bootstrap_messages %}</div>
       {% block content %}{% endblock %}
     </div>

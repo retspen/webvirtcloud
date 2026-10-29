@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% if request.user.is_superuser %}
-    <a href="#addvol" type="button" class="btn btn-success float-end" data-bs-toggle="modal" title="{% trans "Add Volume" %}">
+    <a href="#addvol" type="button" class="btn btn-primary float-end" data-bs-toggle="modal" title="{% trans "Add Volume" %}">
         <span aria-hidden="true">{% bs_icon 'plus'%} </span>
     </a>
 
@@ -93,7 +93,7 @@
                             </div> <!-- /.modal-body -->
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                <button type="submit" class="btn btn-success" name="add_new_vol">{% trans "Add Volume" %}</button>
+                                <button type="submit" class="btn btn-primary" name="add_new_vol">{% trans "Add Volume" %}</button>
                             </div>
                         </form>
                     </div>
@@ -147,7 +147,7 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                    <button type="submit" class="btn btn-success">{% trans "Add Volume" %}</button>
+                                    <button type="submit" class="btn btn-primary">{% trans "Add Volume" %}</button>
                                 </div>
                             </form>
                         </div>

@@ -95,10 +95,13 @@ descriptions = importlib.import_module("appsettings.migrations.0021_setting_desc
 class DescriptionsTestCase(TestCase):
     def test_every_setting_says_what_it_does_within_its_column(self):
         limit = AppSettings._meta.get_field("description").max_length
+        removed = {"VIEW_INSTANCE_DETAIL_BOTTOM_BAR"}  # by 0023
         for key, text in descriptions.DESCRIPTIONS.items():
             with self.subTest(key=key):
                 self.assertLessEqual(len(text), limit)
-                self.assertEqual(AppSettings.objects.get(key=key).description, text)
+                if key not in removed:
+                    self.assertEqual(AppSettings.objects.get(key=key).description, text)
+        self.assertFalse(AppSettings.objects.filter(key__in=removed).exists())
 
 
 cpu_mode = importlib.import_module("appsettings.migrations.0022_cpu_mode_choices")

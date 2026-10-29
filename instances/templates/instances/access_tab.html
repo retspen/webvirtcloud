@@ -1,7 +1,9 @@
 {% load i18n %}
-<div class="tab-pane mt-3" id="access" role="tabpanel" aria-label="Instance access options">
+<div class="tab-pane" id="access" role="tabpanel" aria-label="Instance access options">
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist">
+    <div class="card">
+    <div class="card-header bg-transparent pb-0">
+    <ul class="nav nav-underline small" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#vnconsole" type="button" role="tab" aria-controls="vnconsole" aria-selected="true">
                 {% trans "Console" %}
@@ -29,9 +31,10 @@
         </li>
         {% endif %}
     </ul>
+    </div>
     <!-- Tab panes -->
-    <div class="tab-content">
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="vnconsole">
+    <div class="tab-content card-body">
+        <div role="tabpanel" class="tab-pane active" id="vnconsole">
             <p>{% blocktrans with type=instance.console_type|upper %} This action opens a new window with a {{ type }} connection to the console of the instance.{% endblocktrans %}
             </p>
             {% if not can_open_console %}
@@ -39,17 +42,17 @@
             {% else %}
             {% if instance.status == 1 %}
             {# one window per VM: opening it again reloads it #}
-            <button type="button" class="btn btn-lg btn-success float-end" id="console_button"
+            <button type="button" class="btn btn-primary float-end" id="console_button"
                 data-url="{% url 'console' compute.id instance.uuid %}" data-window="console-{{ instance.uuid }}"
                 onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')">{% trans "Console" %}</button>
             {% else %}
-            <button class="btn btn-lg btn-success float-end disabled">{% trans "Console" %}</button>
+            <button class="btn btn-primary float-end disabled">{% trans "Console" %}</button>
             {% endif %}
             {% endif %}
             <div class="clearfix"></div>
         </div>
         {% if app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' and can_change %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="rootpasswd">
+        <div role="tabpanel" class="tab-pane" id="rootpasswd">
             <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and enter a new root password." %}</p>
             <form action="{% url 'instances:rootpasswd' instance.id %}" method="post"
                 role="form" aria-label="Add root password to instance form">
@@ -61,18 +64,18 @@
                     </div>
                 </div>
                 {% if instance.status == 5 or instance.status == 1 and instance.guest_agent_ready %}
-                <input type="submit" class="btn btn-lg btn-success float-end" name="rootpasswd"
+                <input type="submit" class="btn btn-primary float-end" name="rootpasswd"
                     value="{% trans "Reset Root Password" %}">
                 {% else %}
                 <button
-                    class="btn btn-lg btn-success float-end disabled">{% trans "Reset Root Password" %}</button>
+                    class="btn btn-primary float-end disabled">{% trans "Reset Root Password" %}</button>
                 {% endif %}
             </form>
             <div class="clearfix"></div>
         </div>
         {% endif %}
         {% if app_settings.SHOW_ACCESS_SSH_KEYS == 'True' and can_change %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="sshkeys">
+        <div role="tabpanel" class="tab-pane" id="sshkeys">
             <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and choose your public key. The key is added to root's keys." %}</p>
             <form action="{% url 'instances:add_public_key' instance.id %}"method="post"
                 role="form" aria-label="Add public key to instance form">
@@ -91,27 +94,28 @@
                     </div>
                 </div>
                 {% if instance.status == 5 or instance.status == 1 and instance.guest_agent_ready %}
-                <input type="submit" class="btn btn-lg btn-success float-end" name="addpublickey"
+                <input type="submit" class="btn btn-primary float-end" name="addpublickey"
                     value="{% trans "Add Public Key" %}">
                 {% else %}
-                <button class="btn btn-lg btn-success float-end disabled">{% trans "Add Public Key" %}</button>
+                <button class="btn btn-primary float-end disabled">{% trans "Add Public Key" %}</button>
                 {% endif %}
             </form>
             <div class="clearfix"></div>
         </div>
         {% endif %}
         {% if instance.status == 1 and can_open_console %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="vdiconsole">
+        <div role="tabpanel" class="tab-pane" id="vdiconsole">
             <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
             <div class="input-group">
                 <input type="text" class="input-lg disabled form-control" disabled id="vdi_url_input" />
-                <a href="#" class="btn btn-success" id="vdi_url">{% trans "VDI" %}</a>
+                <a href="#" class="btn btn-primary" id="vdi_url">{% trans "VDI" %}</a>
             </div>
             <p>{% trans "To download console.vv file for virt-viewer." %}</p>
-            <a href="{% url 'instances:getvvfile' instance.id %}" class="btn btn-lg btn-success float-end">{% trans "Get console.vv" %}</a>
+            <a href="{% url 'instances:getvvfile' instance.id %}" class="btn btn-primary float-end">{% trans "Get console.vv" %}</a>
 
             <div class="clearfix"></div>
         </div>
         {% endif %}
+    </div>
     </div>
 </div>

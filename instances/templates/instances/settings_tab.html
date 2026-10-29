@@ -2,9 +2,11 @@
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 {% load operations %}
-<div class="tab-pane mt-3" id="settings" role="tabpanel">
+<div class="tab-pane" id="settings" role="tabpanel">
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs vm-settings-tabs" role="tablist" aria-label="Instance settings">
+    <div class="card">
+    <div class="card-header bg-transparent pb-0">
+    <ul class="nav nav-underline small" role="tablist" aria-label="Instance settings">
         {% if instance.guest_agent_ready %}
             <li class="nav-item" role="presentation">
                 <button class="px-1 nav-link" data-bs-toggle="tab" id="osinfo-tab" data-bs-target="#osinfo" type="button" role="tab" aria-controls="osinfo" aria-selected="false" onclick="get_osinfo();">
@@ -79,23 +81,24 @@
             </li>
         {% endif %}
     </ul>
+    </div>
     {% if instance.status != 5 %}
-        <p class="small text-muted my-2" id="next-start-note">{% trans "While the VM runs, most settings here apply at its next start." %}</p>
+        <p class="small text-body-secondary px-3 pt-3 mb-0" id="next-start-note">{% trans "While the VM runs, most settings here apply at its next start." %}</p>
     {% endif %}
     <!-- Tab panes -->
-    <div class="tab-content">
+    <div class="tab-content card-body">
         {% if instance.guest_agent_ready %}
         {% include 'instances/info_tab.html' %}
         {% endif %}
         {% if request.user.is_superuser %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3 active" id="boot_opt">
+        <div role="tabpanel" class="tab-pane active" id="boot_opt">
             <p class="fw-bold">{% trans 'Autostart' %}</p>
                 <div class="row">
                     <div class="col-sm-12 text-center">
                     <p>{% trans "Autostart your instance when host server is power on " %}</p>
                         {% if instance.autostart == 0 %}
                             <form action="{% url 'instances:set_autostart' instance.id %}" method="post" class="d-inline">{% csrf_token %}
-                                <button type="submit" class="btn btn-success">{% trans "Enable" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Enable" %}</button>
                             </form>
                         {% else %}
                             <form action="{% url 'instances:unset_autostart' instance.id %}" method="post" class="d-inline">{% csrf_token %}
@@ -111,7 +114,7 @@
                         <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
                         {% if instance.config_bootmenu == 0 %}
                             <form action="{% url 'instances:set_bootmenu' instance.id %}" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
-                                <input type="submit" class="btn btn-success" name="set_bootmenu" title="{% trans 'Show boot menu' %}" value="{% trans "Enable" %}">
+                                <input type="submit" class="btn btn-primary" name="set_bootmenu" title="{% trans 'Show boot menu' %}" value="{% trans "Enable" %}">
                             </form>
                         {% else %}
                             <form action="{% url 'instances:unset_bootmenu' instance.id %}" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
@@ -159,18 +162,18 @@
                     </div>
                     <div class="d-flex justify-content-center">
                         <div class="d-grid col-sm-6">
-                            <input type="submit" class="btn btn-success" name="set_bootorder" value="{% trans "Apply" %}">
+                            <input type="submit" class="btn btn-primary" name="set_bootorder" value="{% trans "Apply" %}">
                         </div>
                     </div>
                 </form>
             {% endif %}
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="disks">
+        <div role="tabpanel" class="tab-pane" id="disks">
                 <form action="{% url 'instances:add_cdrom' instance.id %}" method="post" role="form" aria-label="Add CD-ROM form">{% csrf_token %}
                     <p class="fw-bold">
                         {% trans "Instance Media" %}
-                        <button class="btn btn-success float-end"
+                        <button class="btn btn-primary float-end"
                                 type="submit"
                                 title="{% trans 'Add CD-ROM' %}"
                                 {% if instance.status != 5 %} disabled {% endif %}>
@@ -209,9 +212,9 @@
                                     </select>
                                     
                                     {% if instance.media_iso %}
-                                        <button type="submit" class="btn btn-sm btn-success" name="mount_iso" value="{{ cd.dev }}">{% trans "Mount" %}</button>
+                                        <button type="submit" class="btn btn-sm btn-primary" name="mount_iso" value="{{ cd.dev }}">{% trans "Mount" %}</button>
                                     {% else %}
-                                        <button class="btn btn-sm btn-success disabled" disabled>{% trans "Mount" %}</button>
+                                        <button class="btn btn-sm btn-primary disabled" disabled>{% trans "Mount" %}</button>
                                     {% endif %}
                                     {% if instance.status == 5 %}
                                         <button type="submit" class="btn btn-sm btn-danger float-end" formaction="{% url 'instances:detach_cdrom' instance.id cd.dev %}" formmethod="post" title="{% trans "Detach CD-ROM (remove device)" %}">
@@ -239,7 +242,7 @@
                                     </a>
                                     <input type="text" class="form-control" value="{{ cd.image }}" disabled/>
                                     <input type="hidden" name="path" value="{{ cd.path }}">
-                                    <button type="submit" class="btn btn-sm btn-success" value="{{ cd.dev }}" name="umount_iso">{% trans "Unmount" %}</button>
+                                    <button type="submit" class="btn btn-sm btn-primary" value="{{ cd.dev }}" name="umount_iso">{% trans "Unmount" %}</button>
                                 </div>
                             </form>
                         {% endif %}
@@ -353,7 +356,7 @@
                 </div>
                 <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="network">
+        <div role="tabpanel" class="tab-pane" id="network">
             <div class="mb-3">
                 {% trans "Add a network device" %}
                 {% include 'add_instance_network_block.html' %}
@@ -471,7 +474,7 @@
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">{% trans 'Close' %}</button>
-                                                        <button class="btn btn-success" name="change_network" title="{% trans "Apply network changes" %}">{% trans "Apply" %}</button>
+                                                        <button class="btn btn-primary" name="change_network" title="{% trans "Apply network changes" %}">{% trans "Apply" %}</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -596,7 +599,7 @@
             <div class="clearfix"></div>
         </div>
         {% if show_hostdevs %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="hostdevs">
+        <div role="tabpanel" class="tab-pane" id="hostdevs">
             <p class="small text-body-secondary">{% trans "Devices of the host given to the VM. The VM starts only on a host that has them; it is not migrated while it has them, and its clones get none." %}</p>
             {% if request.user.is_superuser %}
             {# the add forms come when the tab opens: their choices scan every VM of the host #}
@@ -685,7 +688,7 @@
             {% endif %}
         </div>
         {% endif %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="migrate">
+        <div role="tabpanel" class="tab-pane" id="migrate">
             <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
             <form action="{% url 'instances:migrate' instance.id %}" class="ms-3 form" method="post" role="form" aria-label="Migrate instance form">
                 {% csrf_token %}{% submission_key %}
@@ -762,14 +765,14 @@
                     </div>
                 </div>
                 {% if computes_count != 1 %}
-                    <button type="submit" class="btn btn-lg btn-success float-end" name="migrate" >{% trans "Migrate" %}</button>
+                    <button type="submit" class="btn btn-primary float-end" name="migrate" >{% trans "Migrate" %}</button>
                 {% else %}
-                    <button class="btn btn-lg btn-success float-end disabled" disabled>{% trans "Migrate" %}</button>
+                    <button class="btn btn-primary float-end disabled" disabled>{% trans "Migrate" %}</button>
                 {% endif %}
             </form>
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="xmledit">
+        <div role="tabpanel" class="tab-pane" id="xmledit">
             {% if instance.status != 5 %}
                 <p id="xml-next-start">{% trans "This is the definition for the VM's next start; a saved change applies then." %}</p>
             {% endif %}
@@ -778,7 +781,7 @@
                 <div class="col-sm-12 xmlheight">
                     <textarea id="editor">{{ instance.inst_xml }}</textarea>
                 </div>
-                <button type="submit" class="btn btn-lg btn-success float-end" name="change_xml">
+                <button type="submit" class="btn btn-primary float-end" name="change_xml">
                     {% trans "Change" %}
                 </button>
             </form>
@@ -798,13 +801,13 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
-                            <button type="button" class="btn btn-success" id="xml-review-save">{% trans "Save" %}</button>
+                            <button type="button" class="btn btn-primary" id="xml-review-save">{% trans "Save" %}</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="users">
+        <div role="tabpanel" class="tab-pane" id="users">
             <div>
             <div class="mb-3">
                 <span class="fw-bold">{% trans "Instance owners" %}</span>
@@ -831,7 +834,7 @@
         </div>
         {% endif %}
         {% if can_manage_console %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="vncsettings">
+        <div role="tabpanel" class="tab-pane" id="vncsettings">
             <form method="post" action="{% url 'instances:update_console' instance.id %}">
                 {% csrf_token %}
                 {% if instance.status != 5 %}
@@ -842,9 +845,9 @@
                 {% bootstrap_form console_form layout='horizontal' %}
                 <div class="float-end">
                     {% if instance.status != 5 %}
-                        <button class="btn btn-success" disabled>{% trans "Update" %}</button>
+                        <button class="btn btn-primary" disabled>{% trans "Update" %}</button>
                     {% else %}
-                        <button type="submit" class="btn btn-success ">{% trans "Update" %}</button>
+                        <button type="submit" class="btn btn-primary ">{% trans "Update" %}</button>
                     {% endif %}
                 </div>
             </form>
@@ -852,7 +855,7 @@
         </div>
         {% endif %}
         {% if can_clone %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="clone">
+        <div role="tabpanel" class="tab-pane" id="clone">
             <p class="fw-bold">{% trans "Create a clone" %}</p>
             {% if usb_hostdevs or pci_hostdevs or other_hostdevs %}<p class="small text-body-secondary">{% trans "The clone gets none of the VM's host devices: one VM holds a device of the host." %}</p>{% endif %}
             <form class="form" action="{% url 'instances:clone' instance.id %}" method="post" role="form" aria-label="Create clone form">{% csrf_token %}{% submission_key %}
@@ -862,7 +865,7 @@
                     <div class="col-sm-6">
                         <div class="input-group">
                             <input id="clone_name" type="text" class="form-control" name="name" value="{{ instance.name }}-clone">
-                            <button type="button" class="btn btn-success" name="guess-clone-name"
+                            <button type="button" class="btn btn-primary" name="guess-clone-name"
                                         onclick="guess_clone_name()">{% trans "Guess" %}</button>
                         </div>
                     </div>
@@ -889,9 +892,9 @@
                             <div class="col-sm-6">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                                    <button type="button" class="btn btn-success" name="random-mac-{{ forloop.counter0 }}"
+                                    <button type="button" class="btn btn-primary" name="random-mac-{{ forloop.counter0 }}"
                                             onclick="random_mac('clone-net-mac-{{ forloop.counter0 }}')">{% trans "Random" %}</button>
-                                    <button type="button" class="btn btn-success" name="guess-mac-{{ forloop.counter0 }}"
+                                    <button type="button" class="btn btn-primary" name="guess-mac-{{ forloop.counter0 }}"
                                             onclick="guess_mac_address('#clone_name', {{ forloop.counter0 }})">{% trans "Guess" %}</button>
                                 </div>
                             </div>
@@ -940,16 +943,16 @@
                     </div>
                 </div>
                 {% if instance.status == 1 or instance.status == 3 or instance.status == 5 %}
-                    <button type="submit" class="btn btn-lg btn-success float-end" name="clone">{% trans "Clone" %}</button>
+                    <button type="submit" class="btn btn-primary float-end" name="clone">{% trans "Clone" %}</button>
                 {% else %}
-                    <button class="btn btn-lg btn-success float-end disabled" disabled name="clone">{% trans "Clone" %}</button>
+                    <button class="btn btn-primary float-end disabled" disabled name="clone">{% trans "Clone" %}</button>
                 {% endif %}
             </form>
             <div class="clearfix"></div>
         </div>
         {% endif %}
         {% if can_change %}
-        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="options">
+        <div role="tabpanel" class="tab-pane" id="options">
             <p>{% trans "To set instance template name description, shutdown the instance." %}</p>
             <form action="{% url 'instances:change_options' instance.id %}" method="post" role="form" aria-label="Set instance template name description form">{% csrf_token %}
                 <div class="row">
@@ -978,9 +981,9 @@
                 <div class="row">
                     <div class="d-grid offset-sm-3 col-sm-6">
                     {% if instance.status == 5 %}
-                        <button type="submit" class="btn btn-success" name="change_options">{% trans "Change" %}</button>
+                        <button type="submit" class="btn btn-primary" name="change_options">{% trans "Change" %}</button>
                     {% else %}
-                        <button class="btn btn-success disabled" disabled name="change_options">{% trans "Change" %}</button>
+                        <button class="btn btn-primary disabled" disabled name="change_options">{% trans "Change" %}</button>
                     {% endif %}
                     </div>
                 </div>
@@ -999,9 +1002,9 @@
                                 {% endfor %}
                             </select>
                             {% if instance.status == 5 %}
-                            <button type="submit" class="btn btn-success" name="set_video_model">{% trans "Set" %}</button>
+                            <button type="submit" class="btn btn-primary" name="set_video_model">{% trans "Set" %}</button>
                             {% else %}
-                            <button class="btn btn-success disabled" disabled name="set_video_model">{% trans "Set" %}</button>
+                            <button class="btn btn-primary disabled" disabled name="set_video_model">{% trans "Set" %}</button>
                             {% endif %}
                         </div>
                     </div>
@@ -1019,9 +1022,9 @@
                                 <option value="False" {% if not instance.vcpus %} selected {% endif %}>{% trans 'Disabled' %}</option>
                             </select>
                             {% if instance.status == 5 %}
-                            <button type="submit" class="btn btn-success" name="set_vcpu_hotplug">{% trans "Set" %}</button>
+                            <button type="submit" class="btn btn-primary" name="set_vcpu_hotplug">{% trans "Set" %}</button>
                             {% else %}
-                            <button class="btn btn-success" name="set_vcpu_hotplug" disabled>{% trans "Set" %}</button>
+                            <button class="btn btn-primary" name="set_vcpu_hotplug" disabled>{% trans "Set" %}</button>
                             {% endif %}
                         </div>
                     </div>
@@ -1047,7 +1050,7 @@
                                 <option value="True" {% if instance.guest_agent %} selected {% endif %}>{% trans 'Enabled' %}</option>
                                 <option value="False" {% if not instance.guest_agent %} selected {% endif %}>{% trans 'Disabled' %}</option>
                             </select>
-                            <button type="submit" class="btn btn-success" name="set_guest_agent">{% trans "Set" %}</button>
+                            <button type="submit" class="btn btn-primary" name="set_guest_agent">{% trans "Set" %}</button>
                         </div>
                     </div>
                 </div>
@@ -1056,5 +1059,6 @@
             <div class="clearfix"></div>
         </div>
         {% endif %}
+    </div>
     </div>
 </div>
