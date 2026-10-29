@@ -75,7 +75,7 @@ class SnapshotViewsTestCase(TestCase):
         op = Operation.objects.get()
         self.assertEqual((op.kind, op.state, op.params),
                          ("snapshot.delete", Operation.QUEUED, {"instance": self.instance.id, "name": "a"}))
-        self.assertTrue(any("being deleted" in m for m in messages), messages)
+        self.assertEqual(messages, [])  # the job panel shows it
         proxy.delete_external_snapshot.assert_not_called()
 
     def test_a_refused_delete_becomes_a_message_and_queues_nothing(self):

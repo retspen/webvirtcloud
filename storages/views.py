@@ -193,7 +193,6 @@ def storage(request, compute_id, pool):
                 except (jobs.SubmissionConflict, OperationError, libvirtError) as err:
                     messages.error(request, str(err))
                 else:
-                    messages.info(request, _("The volume is being cloned; follow it in the job panel."))
                     jobs.remember_job(request, op)
             else:
                 for msg_err in form.errors.values():

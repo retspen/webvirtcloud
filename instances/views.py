@@ -861,7 +861,6 @@ def migrate(request, pk):
     except (jobs.SubmissionConflict, libvirtError) as err:
         messages.error(request, error_text(request, err))
     else:
-        messages.info(request, _("The VM is being migrated; follow it in the job panel."))
         jobs.remember_job(request, op)
     return get_safe_redirect(request, default=reverse("instances:instance", args=[pk]))
 
@@ -1527,8 +1526,7 @@ def mount_iso(request, pk):
 @require_POST
 def snapshot(request, pk):
     return _snapshot_job(request, pk, "snapshot.create",
-                         {"name": request.POST.get("name", ""), "description": request.POST.get("description", "")},
-                         _("The snapshot is being taken; follow it in the job panel."))
+                         {"name": request.POST.get("name", ""), "description": request.POST.get("description", "")})
 
 
 @require_POST
@@ -1548,8 +1546,7 @@ def delete_snapshot(request, pk):
 
 @require_POST
 def revert_snapshot(request, pk):
-    return _snapshot_job(request, pk, "snapshot.revert", {"name": request.POST.get("name", "")},
-                         _("The VM is being reverted; follow it in the job panel."))
+    return _snapshot_job(request, pk, "snapshot.revert", {"name": request.POST.get("name", "")})
 
 
 @require_POST
@@ -1557,18 +1554,16 @@ def create_external_snapshot(request, pk):
     return _snapshot_job(request, pk, "snapshot.create",
                          {"name": request.POST.get("name", ""), "description": request.POST.get("description", ""),
                           "external": True, "memory": request.POST.get("memory") == "on",
-                          "quiesce": request.POST.get("quiesce") == "on"},
-                         _("The snapshot is being taken; follow it in the job panel."))
+                          "quiesce": request.POST.get("quiesce") == "on"})
 
 
 @require_POST
 def revert_external_snapshot(request, pk):
-    return _snapshot_job(request, pk, "snapshot.revert", {"name": request.POST.get("name", ""), "external": True},
-                         _("The VM is being reverted; follow it in the job panel."))
+    return _snapshot_job(request, pk, "snapshot.revert", {"name": request.POST.get("name", ""), "external": True})
 
 
-def _snapshot_job(request, pk, kind, params, queued):
-    """Queue a snapshot job on the VM; refusals become messages."""
+def _snapshot_job(request, pk, kind, params):
+    """Queue a snapshot job on the VM: the job panel shows it; refusals become messages."""
     get_instance(request.user, pk, perm_type="change")
     if not request.user.has_perm("instances.snapshot_instances"):
         raise PermissionDenied
@@ -1581,15 +1576,13 @@ def _snapshot_job(request, pk, kind, params, queued):
     except libvirtError as err:
         messages.error(request, error_text(request, err))
     else:
-        messages.info(request, queued)
         jobs.remember_job(request, op)
     return _back(request, pk, "managesnapshot")
 
 
 @require_POST
 def delete_external_snapshot(request, pk):
-    return _snapshot_job(request, pk, "snapshot.delete", {"name": request.POST.get("name", "")},
-                         _("The snapshot is being deleted; follow it in the job panel."))
+    return _snapshot_job(request, pk, "snapshot.delete", {"name": request.POST.get("name", "")})
 
 
 @require_POST
@@ -2103,7 +2096,6 @@ def clone(request, pk):
     except (jobs.SubmissionConflict, libvirtError, ValueError) as err:
         messages.error(request, error_text(request, err))
     else:
-        messages.info(request, _("The clone is being made; follow it in the job panel."))
         jobs.remember_job(request, op)
     return redirect(reverse("instances:instance", args=[pk]))
 
@@ -2446,7 +2438,6 @@ def create_instance(request, compute_id, arch, machine):
                                     "Changing machine type from '%s' to 'q35' "
                                     "which is required for UEFI secure boot." % machine,
                                 )
-                            messages.info(request, _("The VM is being created; follow it in the job panel."))
                             jobs.remember_job(request, op)
                             return redirect(reverse("instances", args=[compute.id]))
             conn.close()
