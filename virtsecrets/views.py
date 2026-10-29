@@ -3,6 +3,7 @@ from computes.models import Compute
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
+from instances.models import Instance
 from libvirt import libvirtError
 from logs.audit import audit
 from vrtManager.virtsecrets import wvmSecrets
@@ -44,8 +45,13 @@ def secrets(request, compute_id):
         # shown only with their users: a list without them would offer to delete secrets in use
         secrets = conn.get_secrets_info()
         users = conn.get_users(secrets)
+        vm_ids = dict(Instance.objects.filter(compute=compute).values_list("name", "id"))
+        labels = dict(AddSecret.base_fields["usage_type"].choices)
         for secret in secrets:
-            secret.update(users.get(secret["uuid"], {"vms": [], "pools": []}))
+            used = users.get(secret["uuid"], {"vms": [], "pools": []})
+            secret["vms"] = [{"name": name, "id": vm_ids.get(name)} for name in used["vms"]]
+            secret["pools"] = used["pools"]
+            secret["type_label"] = labels.get(secret["usage_type"], secret["usage_type"])
         secrets_all = secrets
     except libvirtError as err:  # OperationError too: a secret in use, a Ceph key not base64
         messages.error(request, err)
