@@ -428,19 +428,19 @@
     });
 </script>
 <script>
-    // the Host devices tab's add form: loaded once, when the tab first opens
-    var hostUsb = document.getElementById("host-usb");
-    if (hostUsb) {
+    // the Host devices tab's add forms: loaded once, when the tab first opens
+    var hostDevices = document.getElementById("host-devices");
+    if (hostDevices) {
         document.querySelector('[data-bs-target="#hostdevs"]').addEventListener("shown.bs.tab", function () {
-            if (hostUsb.dataset.loaded) return;
-            hostUsb.dataset.loaded = "true";
-            fetch(hostUsb.dataset.url).then(function (response) {
+            if (hostDevices.dataset.loaded) return;
+            hostDevices.dataset.loaded = "true";
+            fetch(hostDevices.dataset.url).then(function (response) {
                 if (!response.ok) throw new Error(response.statusText);
                 return response.text();
             }).then(function (html) {
-                hostUsb.innerHTML = html;
+                hostDevices.innerHTML = html;
             }).catch(function () {
-                hostUsb.textContent = "{{ _("The host's USB devices could not be read.")|escapejs }}";
+                hostDevices.textContent = "{{ _("The host's devices could not be read.")|escapejs }}";
             });
         });
     }

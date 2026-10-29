@@ -14,7 +14,7 @@ from django.urls import reverse
 from instances.models import Instance
 from lxml import html
 from vrtManager.connection import wvmConnect
-from vrtManager.nodedevs import node_devices, pci_address
+from vrtManager.nodedevs import hostdev_problems, node_devices, pci_address
 
 
 def pci(slot, product, code, driver=None, group=None):
@@ -71,6 +71,7 @@ def vm(name, hostdevs, saved=None):
     return MagicMock(**{"name.return_value": name, "XMLDesc.side_effect": describe, "isPersistent.return_value": saved is not None})
 
 
+PCI_01 = "<hostdev mode='subsystem' type='pci'><source><address domain='0x0000' bus='0x00' slot='0x01' function='0x0'/></source></hostdev>"
 PCI_0A = "<hostdev mode='subsystem' type='pci'><source><address domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/></source></hostdev>"
 USB_1_3 = "<hostdev mode='subsystem' type='usb'><source><vendor id='0x0627'/><product id='0x0001'/><address bus='1' device='3'/></source></hostdev>"
 USB_MODEL = "<hostdev mode='subsystem' type='usb'><source><vendor id='0x0627'/><product id='0x0001'/></source></hostdev>"
@@ -105,6 +106,18 @@ class NodeDevicesTests(SimpleTestCase):
         # by address: that device; by model only: any device of the model
         self.assertEqual((tablet_3["vms"], tablet_3["by_model"]), (["db-1"], ["kiosk-1"]))
         self.assertEqual((tablet_2["vms"], tablet_2["by_model"]), ([], ["kiosk-1"]))
+
+    def test_a_usb_controller_holds_the_usb_devices_below_it(self):
+        pci_devices, (hub, tablet_2, _) = devices(domains=[vm("kiosk-1", USB_1_3)])
+        controller = [d for d in pci_devices if d["address"] == "0000:00:01.0"][0]
+        # its root hub is no device of the host's; the tablets are, one given to a VM
+        self.assertEqual(controller["resources"], ["USB device 1/2 (QEMU Tablet)", "USB device 1/3 (QEMU Tablet)"])
+        self.assertEqual((hub["controller"], tablet_2["controller"]), ("0000:00:01.0", "0000:00:01.0"))
+
+    def test_a_usb_device_on_a_controller_given_to_a_vm_is_not_given_to_another(self):
+        pci_devices, usb_devices = devices(domains=[vm("db-1", PCI_01)])
+        reasons = hostdev_problems("kiosk-1", pci_devices, usb_devices, set(), [("0x0627", "0x0001", (1, 2))])
+        self.assertIn("USB device 1/2 (QEMU Tablet) is on the PCI controller 0000:00:01.0, given to db-1", reasons)
 
     def test_a_usb_device_is_named_as_libvirt_picks_one(self):
         def named(hostdev):

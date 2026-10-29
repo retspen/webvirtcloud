@@ -38,7 +38,7 @@ def vm(running, saved, active=True, migratable=None):
     the migratable XML marks it), and whose next start is saved."""
     proxy = wvmInstance.__new__(wvmInstance)
     proxy._read_cache = None
-    proxy.instance = MagicMock(**{"isActive.return_value": active})
+    proxy.instance = MagicMock(**{"isActive.return_value": active, "hasManagedSaveImage.return_value": 0})
 
     def describe(flags=0):
         if flags & libvirt.VIR_DOMAIN_XML_INACTIVE:
@@ -53,9 +53,9 @@ class UsbHostdevTests(SimpleTestCase):
         # the running VM writes the address libvirt resolved; only its migratable XML marks it
         proxy = vm(domain(CONTROLLER, by_model("<address bus='1' device='3'/>")), domain(CONTROLLER, by_model()),
                    migratable=domain(CONTROLLER, by_model("<address bus='1' device='3'/>", " autoAddress='yes'")))
-        usb, others = proxy.get_hostdevs()
+        usb, pci, others = proxy.get_hostdevs()
         self.assertEqual(usb, [{"vendor": "0x0627", "product": "0x0001", "address": None, "now": (1, 3), "next": True}])
-        self.assertEqual(others, [])
+        self.assertEqual((pci, others), ([], []))
 
     def test_a_device_is_taken_from_each_definition_as_it_describes_it(self):
         proxy = vm(domain(CONTROLLER, by_model("<address bus='1' device='3'/>")), domain(CONTROLLER, by_model()),
@@ -93,12 +93,37 @@ class UsbHostdevTests(SimpleTestCase):
                        "<address type='pci' domain='0x0000' bus='0x00' slot='0x0c' function='0x1'/></source></actual></interface>")
         mdev = "<hostdev mode='subsystem' type='mdev'><source><address uuid='{}'/></source></hostdev>"
         running = domain(pci, nic, network_nic, mdev.format("00000000-0000-4000-8000-00000000a001"))
-        _, others = vm(running, domain(nic, mdev.format("00000000-0000-4000-8000-00000000a002"))).get_hostdevs()
-        self.assertEqual(others, [{"type": "pci", "address": "0000:00:0a.0", "now": True, "next": False},
-                                  {"type": "nic", "address": "0000:00:0b.0", "now": True, "next": True},
+        _, pci_rows, others = vm(running, domain(nic, mdev.format("00000000-0000-4000-8000-00000000a002"))).get_hostdevs()
+        self.assertEqual(pci_rows, [{"address": "0000:00:0a.0", "now": True, "next": False, "managed": False}])
+        self.assertEqual(others, [{"type": "nic", "address": "0000:00:0b.0", "now": True, "next": True},
                                   {"type": "nic", "address": "0000:00:0c.1", "now": True, "next": False},
                                   {"type": "mdev", "address": "00000000-0000-4000-8000-00000000a001", "now": True, "next": False},
                                   {"type": "mdev", "address": "00000000-0000-4000-8000-00000000a002", "now": False, "next": True}])
+
+    def test_a_pci_device_is_given_and_taken_back_only_while_the_vm_is_shut_off(self):
+        proxy = vm("", domain(), active=False)
+        proxy.add_pci_hostdev("0000:05:00.0")
+        xml, flags = proxy.instance.attachDeviceFlags.call_args.args
+        self.assertEqual(flags, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        self.assertEqual((etree.fromstring(xml).get("managed"), dict(etree.fromstring(xml).find("source/address").attrib)),
+                         ("yes", {"domain": "0x0000", "bus": "0x05", "slot": "0x00", "function": "0x0"}))
+        pci = "<hostdev mode='subsystem' type='pci' managed='yes'><source><address domain='0x0000' bus='0x05' slot='0x00' function='0x0'/></source></hostdev>"
+        proxy = vm("", domain(pci), active=False)
+        proxy.delete_pci_hostdev("0000:05:00.0")
+        self.assertEqual(proxy.instance.detachDeviceFlags.call_args.args[1], libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        with self.assertRaisesRegex(OperationError, "no PCI device 0000:06:00.0"):
+            proxy.delete_pci_hostdev("0000:06:00.0")
+        running = vm(domain(pci), domain(pci))
+        for change in (running.add_pci_hostdev, running.delete_pci_hostdev):
+            with self.assertRaisesRegex(OperationError, "Shut the VM down"):
+                change("0000:05:00.0")
+        running.instance.attachDeviceFlags.assert_not_called()
+        running.instance.detachDeviceFlags.assert_not_called()
+        # a saved state would start the VM without the change
+        saved = vm("", domain(pci), active=False)
+        saved.instance.hasManagedSaveImage.return_value = 1
+        with self.assertRaisesRegex(OperationError, "without a saved state"):
+            saved.add_pci_hostdev("0000:06:00.0")
 
     def test_a_nic_that_is_a_host_device_is_left_to_the_xml_editor(self):
         nic = "<interface type='hostdev'><mac address='52:54:00:00:00:0a'/><source><address type='pci' bus='0x00' slot='0x0a'/></source></interface>"
@@ -142,17 +167,18 @@ class HostUsbViewTests(TestCase):
                              "XMLDesc.return_value": domain(by_model("<address bus='1' device='3'/>"))})
         self.proxy.wvm.listAllDevices.return_value = [node(*n) for n in NODES]
         self.proxy.domain_trees.side_effect = lambda: [("db-1", [etree.fromstring(other.XMLDesc())])]
+        self.proxy.get_hostdevs.return_value = ([], [], [])
 
     def test_the_form_offers_what_can_be_given_and_says_why_not(self):
-        page = html.fromstring(self.client.get(reverse("instances:host_usb", args=[self.instance.id])).content)
-        options = {o.get("value"): (o.get("disabled") is not None, o.text_content()) for o in page.xpath("//option[@value!='']")}
+        page = html.fromstring(self.client.get(reverse("instances:host_devices", args=[self.instance.id])).content)
+        options = {o.get("value"): (o.get("disabled") is not None, o.text_content()) for o in page.xpath("//select[@name='usb_device']/option[@value!='']")}
         self.assertEqual(sorted(options), ["1/1", "1/2", "1/3"])
         self.assertTrue(options["1/1"][0] and "is a hub" in options["1/1"][1])
         self.assertTrue(options["1/3"][0] and "is given to db-1" in options["1/3"][1])
         self.assertFalse(options["1/2"][0])
         # a device the VM has already
         self.proxy.domain_trees.side_effect = lambda: [("kiosk-1", [etree.fromstring(domain(by_model("<address bus='1' device='2'/>")))])]
-        page = html.fromstring(self.client.get(reverse("instances:host_usb", args=[self.instance.id])).content)
+        page = html.fromstring(self.client.get(reverse("instances:host_devices", args=[self.instance.id])).content)
         self.assertEqual(page.xpath("//option[@value='1/2']/@disabled"), ["disabled"])
 
     def test_a_device_is_given_by_address_when_the_host_has_several_of_its_model(self):
@@ -172,6 +198,23 @@ class HostUsbViewTests(TestCase):
         self.client.post(reverse("instances:add_usb_hostdev", args=[self.instance.id]), {"usb_device": "1/2"})
         self.proxy.add_usb_hostdev.assert_called_once_with("0x0627", "0x0001", None)
 
+    def test_a_pci_device_is_given_when_it_can_be(self):
+        url = reverse("instances:add_pci_hostdev", args=[self.instance.id])
+        # the host's own NIC: refused with the reason
+        response = self.client.post(url, {"pci_device": "0000:00:06.0"})
+        self.assertIn("holds the host's eth0", " ".join(str(m) for m in get_messages(response.wsgi_request)))
+        self.proxy.add_pci_hostdev.assert_not_called()
+        self.client.post(url, {"pci_device": "0000:00:0a.0"})  # bound to vfio-pci, alone in its group
+        self.proxy.add_pci_hostdev.assert_called_once_with("0000:00:0a.0")
+        self.client.post(reverse("instances:delete_pci_hostdev", args=[self.instance.id]), {"address": "0000:00:0a.0"})
+        self.proxy.delete_pci_hostdev.assert_called_once_with("0000:00:0a.0")
+
+    def test_the_pci_form_waits_for_a_shut_off_vm(self):
+        self.proxy.instance.isActive.return_value = True
+        page = html.fromstring(self.client.get(reverse("instances:host_devices", args=[self.instance.id])).content)
+        self.assertEqual(page.xpath("//select[@name='pci_device']/@disabled"), ["disabled"])
+        self.assertIn("Shut the VM down", page.text_content())
+
     def test_a_device_is_taken_back_by_its_selector(self):
         url = reverse("instances:delete_usb_hostdev", args=[self.instance.id])
         self.client.post(url, {"vendor": "0x0627", "product": "0x0001", "address": ""})
@@ -181,9 +224,13 @@ class HostUsbViewTests(TestCase):
 
     def test_only_superusers(self):
         self.client.force_login(get_user_model().objects.create_user("hd-user", "u@example.com", "pw"))
-        self.assertEqual(self.client.get(reverse("instances:host_usb", args=[self.instance.id])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("instances:host_devices", args=[self.instance.id])).status_code, 403)
         self.client.post(reverse("instances:add_usb_hostdev", args=[self.instance.id]), {"usb_device": "1/2"})
+        self.client.post(reverse("instances:add_pci_hostdev", args=[self.instance.id]), {"pci_device": "0000:00:0a.0"})
+        self.client.post(reverse("instances:delete_pci_hostdev", args=[self.instance.id]), {"address": "0000:00:0a.0"})
         self.proxy.add_usb_hostdev.assert_not_called()
+        self.proxy.add_pci_hostdev.assert_not_called()
+        self.proxy.delete_pci_hostdev.assert_not_called()
 
 
 class RevertTests(TestCase):

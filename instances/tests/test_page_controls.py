@@ -72,7 +72,7 @@ class PageControls:
                            "get_media_devices", "get_net_devices", "get_snapshot",
                            "get_snapshot_jobs"):
                 getattr(proxy, getter).return_value = []
-            proxy.get_hostdevs.return_value = ([], [])
+            proxy.get_hostdevs.return_value = ([], [], [])
             proxy.get_console_type.return_value = "vnc"
             proxy.get_status.return_value = status
             response = self.client.get(reverse("instances:instance", args=[self.instance.id]))

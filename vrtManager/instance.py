@@ -70,6 +70,7 @@ from vrtManager.storage import wvmStorage, wvmStorages
 PERSISTENT_XML = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE
 
 USB_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='usb']"
+PCI_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='pci']"
 # what of the host a VM holds: host devices, and NICs that are host devices
 HOST_DEVICES = "devices/hostdev | devices/interface[@type='hostdev'] | devices/interface/actual[@type='hostdev']"
 
@@ -2389,25 +2390,31 @@ class wvmInstance(wvmConnect):
         return [(element, usb_selector(mark.find("source"))) for element, mark in zip(elements, marked)]
 
     def get_hostdevs(self):
-        """The VM's USB host devices, each once: its selector (vendor,
-        product, address), whether the running VM has it and the device it
-        holds there, whether its next start has it. And its other host
-        devices (PCI, SCSI, mediated, NICs that are host devices), by type
-        and PCI address, likewise: the panel does not change them."""
-        usb = {}
+        """The VM's host devices, each once, with whether the running VM has
+        it ("now") and whether its next start has it ("next"): USB devices
+        by selector (vendor, product, address) and the device the running
+        VM holds; PCI devices by address, and whether libvirt manages them
+        (takes them from their host drivers); the others (SCSI, mediated, NICs
+        that are host devices) by type and address, which the panel does
+        not change."""
+        usb, pci, others = {}, {}, {}
         for xml_flags, affect in self._definitions():
+            where = "now" if affect == VIR_DOMAIN_AFFECT_LIVE else "next"
             for element, selector in self._usb_hostdevs(xml_flags):
                 row = usb.setdefault(selector, {"vendor": selector[0], "product": selector[1], "address": selector[2],
                                                 "now": None, "next": False})
-                if affect == VIR_DOMAIN_AFFECT_LIVE:
+                if where == "now":
                     held = element.find("source/address")
                     row["now"] = (int(held.get("bus")), int(held.get("device"))) if held is not None else selector[2]
                 else:
                     row["next"] = True
-        others = {}
-        for xml_flags, affect in self._definitions():
             tree = etree.fromstring(self._XMLDesc(xml_flags))
-            for device in tree.xpath("devices/hostdev[not(@type='usb')]"
+            for address in tree.xpath(PCI_HOSTDEVS + "/source/address"):
+                key = pci_address(address.get("domain", "0"), address.get("bus"), address.get("slot"), address.get("function"))
+                row = pci.setdefault(key, {"address": key, "now": False, "next": False, "managed": False})
+                row[where] = True
+                row["managed"] = row["managed"] or address.getparent().getparent().get("managed") == "yes"
+            for device in tree.xpath("devices/hostdev[not(@type='usb' or @type='pci')]"
                                      " | devices/interface[@type='hostdev' or actual/@type='hostdev']"):
                 if device.tag == "interface" and device.get("type") != "hostdev":
                     source = device.find("actual/source")  # a NIC of a network that gives host devices
@@ -2423,8 +2430,42 @@ class wvmInstance(wvmConnect):
                 source_text = " ".join(etree.tostring(source, encoding="unicode").split()) if source is not None else ""
                 row = others.setdefault((kind, label or source_text),
                                         {"type": kind, "address": label, "now": False, "next": False})
-                row["now" if affect == VIR_DOMAIN_AFFECT_LIVE else "next"] = True
-        return list(usb.values()), list(others.values())
+                row[where] = True
+        return list(usb.values()), list(pci.values()), list(others.values())
+
+    def _pci_hostdev(self, address):
+        """The persistent definition's <hostdev> of the PCI device at address, or None."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        for found in tree.xpath(PCI_HOSTDEVS + "/source/address"):
+            if pci_address(found.get("domain", "0"), found.get("bus"), found.get("slot"), found.get("function")) == address:
+                return found.getparent().getparent()
+        return None
+
+    def _check_shut_off_for_pci(self):
+        """PCI devices change in the persistent definition of a shut-off VM;
+        a saved state (managed save) would start the VM without the change."""
+        if self.instance.isActive() or self.instance.hasManagedSaveImage(0):
+            raise util.OperationError("Shut the VM down, without a saved state, to change its PCI devices")
+
+    def add_pci_hostdev(self, address):
+        """Gives the shut-off VM the host's PCI device at address
+        (0000:05:00.0): libvirt binds it to vfio-pci when the VM starts and
+        gives it back to the host when it stops."""
+        self._check_shut_off_for_pci()
+        domain, bus, slot_function = address.split(":")
+        slot, function = slot_function.split(".")
+        hostdev = etree.Element("hostdev", mode="subsystem", type="pci", managed="yes")
+        etree.SubElement(etree.SubElement(hostdev, "source"), "address", domain=f"0x{domain}", bus=f"0x{bus}",
+                         slot=f"0x{slot}", function=f"0x{function}")
+        self.instance.attachDeviceFlags(etree.tostring(hostdev, encoding="unicode"), VIR_DOMAIN_AFFECT_CONFIG)
+
+    def delete_pci_hostdev(self, address):
+        """Takes the PCI device at address from the shut-off VM, also one the host no longer has."""
+        self._check_shut_off_for_pci()
+        hostdev = self._pci_hostdev(address)
+        if hostdev is None:
+            raise util.OperationError(f"The VM has no PCI device {address}")
+        self.instance.detachDeviceFlags(etree.tostring(hostdev, encoding="unicode"), VIR_DOMAIN_AFFECT_CONFIG)
 
     def add_usb_hostdev(self, vendor, product, address=None):
         """Gives the VM the host's USB device of vendor and product, at

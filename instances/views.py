@@ -49,7 +49,7 @@ from vrtManager import util
 from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import USAGE_MAX_WINDOW
 from vrtManager.interface import wvmInterface
-from vrtManager.nodedevs import hostdev_problems, node_devices, usb_names
+from vrtManager.nodedevs import device_names, hostdev_problems, node_devices, pci_problems
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
 
@@ -309,13 +309,15 @@ def _instance_page(request, pk, instance, compute):
         instance.drbd = drbd_status(request, pk)
         instance.save()
 
-    usb_hostdevs, other_hostdevs = instance.proxy.get_hostdevs()
-    if usb_hostdevs:
-        names = usb_names(instance.proxy)
+    usb_hostdevs, pci_hostdevs, other_hostdevs = instance.proxy.get_hostdevs()
+    if usb_hostdevs or pci_hostdevs:
+        names = device_names(instance.proxy)
         for row in usb_hostdevs:
             row["name"] = names.get((row["vendor"], row["product"]), "")
+        for row in pci_hostdevs:
+            row["name"] = names.get(row["address"], "")
     # owners see the devices their VM has; only superusers change them
-    show_hostdevs = request.user.is_superuser or bool(usb_hostdevs or other_hostdevs)
+    show_hostdevs = request.user.is_superuser or bool(usb_hostdevs or pci_hostdevs or other_hostdevs)
     show_settings = show_settings or show_hostdevs
 
     job_resource = claims.instance_key(instance.uuid)
@@ -1795,30 +1797,42 @@ def delete_network(request, pk):
     return _back(request, pk, "network")
 
 
-def _host_usb(instance):
-    """The host's USB devices, each with why it cannot be given to the VM
-    (hostdev_problems; none: it can) and how the VM would name it: by its
-    address when the host has more than one of its model, else by model."""
-    _pci, usb = node_devices(instance.proxy)
+def _host_devices(instance):
+    """The host's PCI and USB devices, each with why it cannot be given to
+    the VM (pci_problems, hostdev_problems; none: it can). A USB device is
+    named by its address when the host has more than one of its model, else
+    by model; a PCI device is checked with the managed PCI devices of the
+    VM's next start, as libvirt takes them from the host along with it."""
+    pci, usb = node_devices(instance.proxy)
+    own_pci = instance.proxy.get_hostdevs()[1]
+    managed = {row["address"] for row in own_pci if row["managed"] and row["next"]}
+    by_address = {device["address"]: device for device in pci}
+    for device in pci:
+        device["problems"] = pci_problems(instance.name, device, by_address, managed | {device["address"]})
+        if device["address"] in {row["address"] for row in own_pci}:
+            device["problems"].append(_("The VM has it"))
     for device in usb:
         address = (device["bus"], device["device"]) if device["same_model"] else None
         device["selector"] = (*device["model"], address)
-        device["problems"] = hostdev_problems(instance.name, [], [device], set(), [device["selector"]])
+        device["problems"] = hostdev_problems(instance.name, pci, [device], set(), [device["selector"]])
         if instance.name in device["vms"]:
             device["problems"].append(_("The VM has it"))
-    return usb
+    return pci, usb
 
 
 @superuser_only
-def host_usb(request, pk):
-    """The add form of the Host devices tab, loaded when the tab opens: its
-    choices scan every VM of the host."""
+def host_devices(request, pk):
+    """The add forms of the Host devices tab, loaded when the tab opens:
+    their choices scan every VM of the host."""
     instance = get_instance(request.user, pk)
     try:
-        context = {"instance": instance, "host_usb": _host_usb(instance)}
+        pci, usb = _host_devices(instance)
+        domain = instance.proxy.instance
+        context = {"instance": instance, "host_pci": pci, "host_usb": usb,
+                   "running": domain.isActive() or domain.hasManagedSaveImage(0)}
     except libvirtError as err:
         context = {"instance": instance, "error": err}
-    return render(request, "instances/host_usb_form.html", context)
+    return render(request, "instances/host_devices_form.html", context)
 
 
 @require_POST
@@ -1829,7 +1843,7 @@ def add_usb_hostdev(request, pk):
     claim, so no other VM gets it meanwhile."""
     instance = get_instance(request.user, pk)
     chosen = request.POST.get("usb_device", "")
-    device = next((d for d in _host_usb(instance) if f"{d['bus']}/{d['device']}" == chosen), None)
+    device = next((d for d in _host_devices(instance)[1] if f"{d['bus']}/{d['device']}" == chosen), None)
     if device is None:
         messages.error(request, _("The host has no USB device %(device)s") % {"device": chosen})
     elif device["problems"]:
@@ -1838,6 +1852,36 @@ def add_usb_hostdev(request, pk):
         vendor, product, address = device["selector"]
         with audit_vm(request, instance, f"add USB device {device['ids']} ({device['product']})"):
             instance.proxy.add_usb_hostdev(vendor, product, address)
+    return _back(request, pk, "hostdevs")
+
+
+@require_POST
+@superuser_only
+@serialize_compute_mutation
+def add_pci_hostdev(request, pk):
+    """Gives the shut-off VM a PCI device of its host; checked under the
+    compute's claim, so no other VM gets it or its IOMMU group meanwhile."""
+    instance = get_instance(request.user, pk)
+    chosen = request.POST.get("pci_device", "")
+    device = next((d for d in _host_devices(instance)[0] if d["address"] == chosen), None)
+    if device is None:
+        messages.error(request, _("The host has no PCI device %(device)s") % {"device": chosen})
+    elif device["problems"]:
+        messages.error(request, "; ".join(device["problems"]))
+    else:
+        with audit_vm(request, instance, f"add PCI device {device['address']} ({device['product']})"):
+            instance.proxy.add_pci_hostdev(device["address"])
+    return _back(request, pk, "hostdevs")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def delete_pci_hostdev(request, pk):
+    instance = get_instance(request.user, pk)
+    address = request.POST.get("address", "")
+    with audit_vm(request, instance, f"remove PCI device {address}"):
+        instance.proxy.delete_pci_hostdev(address)
     return _back(request, pk, "hostdevs")
 
 

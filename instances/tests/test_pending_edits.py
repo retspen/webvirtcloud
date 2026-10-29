@@ -47,7 +47,7 @@ class PendingEditsTestCase(TestCase):
             for getter in ("get_networks", "get_ifaces", "get_storages", "get_media_devices", "get_net_devices",
                            "get_snapshot", "get_snapshot_jobs"):
                 getattr(proxy, getter).return_value = []
-            proxy.get_hostdevs.return_value = ([], [])
+            proxy.get_hostdevs.return_value = ([], [], [])
             proxy.get_disk_devices.side_effect = lambda **kw: config if kw.get("config") else live
             proxy.get_all_qos.side_effect = lambda **kw: qos[1] if kw.get("config") else qos[0]
             proxy.get_console_type.return_value = "vnc"
