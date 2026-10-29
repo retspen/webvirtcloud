@@ -1,15 +1,12 @@
-{% extends "base.html" %}
+{% extends "error.html" %}
 {% load i18n %}
-{% block title %}{% trans "403" %}{% endblock %}
-{% block content %}
-    <div class="row">
-        <div class="col-12 text-center">
-            <h1>{% trans 'Oops!'%}</h1>
 
-            <p class="lead">{% trans "403 Forbidden" %}</p>
+{% block title %}{% trans "Access denied" %}{% endblock %}
+{% block code %}403{% endblock %}
+{% block status_classes %}text-bg-warning{% endblock %}
+{% block icon %}bi-shield-lock{% endblock %}
+{% block heading %}{% trans "Access denied" %}{% endblock %}
 
-            <p>{% trans "You do not have permission to access this page." %}</p>
-            <a class="btn btn-success" href="javascript:history.back()">&larr; {% trans 'Back'%}</a>
-        </div>
-    </div>
+{% block text %}
+    <p class="mb-0">{% trans "Your account does not have the permission for this page or action. Ask an administrator for it." %}</p>
 {% endblock %}

@@ -66,6 +66,8 @@ class ConnectionErrorPageTests(TestCase):
         response, messages = self.handle(self.admin, libvirt_error(libvirt.VIR_FROM_RPC, HOST_DETAIL),
                                          path="/instances/1/", method="get")
         self.assertEqual(response.status_code, 500)
+        self.assertIn(b"Could not load data from the host", response.content)
+        self.assertIn(HOST_DETAIL.encode(), response.content)
         self.assertTrue(messages)
 
     def test_administrators_see_connection_details(self):

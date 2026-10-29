@@ -1,15 +1,18 @@
-{% extends "base.html" %}
+{% extends "error.html" %}
 {% load i18n %}
-{% block title %}{% trans "500" %}{% endblock %}
-{% block content %}
-    <div class="row">
-        <div class="col-12 text-center">
-            <h1>{% trans 'Oops!' %}</h1>
 
-            <p class="lead">{% trans "500 Internal Server Error" %}</p>
+{% block title %}{% if libvirt_error %}{% trans "Could not load data from the host" %}{% else %}{% trans "Server error" %}{% endif %}{% endblock %}
+{% block code %}500{% endblock %}
+{% block status_classes %}text-bg-danger{% endblock %}
+{% block icon %}{% if libvirt_error %}bi-hdd-network{% else %}bi-exclamation-octagon{% endif %}{% endblock %}
+{% block heading %}{% if libvirt_error %}{% trans "Could not load data from the host" %}{% else %}{% trans "Server error" %}{% endif %}{% endblock %}
 
-            <p>{% trans "The server encountered an internal error or misconfiguration and was unable to complete you request." %}</p>
-            <a class="btn btn-success" href="javascript:history.back()">&larr; {% trans 'Back'%}</a>
-        </div>
-    </div>
+{% block text %}
+    {% if libvirt_error %}
+        <p class="mb-3">{% trans "This page needs data from the host, and libvirt returned the error shown above." %}</p>
+        <p class="text-body-secondary mb-0">{% trans "Check that the host is running and reachable, then reload the page." %}</p>
+    {% else %}
+        <p class="mb-3">{% trans "The panel failed while handling this request. This is a fault in the panel, not something you did, and it was written to the panel's log." %}</p>
+        <p class="text-body-secondary mb-0">{% now "Y-m-d H:i:s" as now %}{% blocktrans %}Reload the page to try again. If it keeps happening, tell an administrator the time: {{ now }}.{% endblocktrans %}</p>
+    {% endif %}
 {% endblock %}

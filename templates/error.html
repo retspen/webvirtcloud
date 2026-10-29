@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+    <div class="row justify-content-center py-3 py-sm-4">
+        <div class="col-12 col-lg-10">
+            <section class="card shadow-sm" aria-labelledby="error-heading">
+                <div class="card-body p-4 p-sm-5">
+                    <div class="mb-3">
+                        <span class="badge d-inline-flex align-items-center gap-2 rounded-pill fs-6 px-3 py-2 {% block status_classes %}text-bg-secondary{% endblock %}">
+                            <i class="bi {% block icon %}bi-exclamation-circle{% endblock %}" aria-hidden="true"></i>
+                            <span class="font-monospace">
+                                <span class="visually-hidden">{% trans "HTTP status" %} </span>
+                                {% block code %}{% endblock %}
+                            </span>
+                        </span>
+                    </div>
+
+                    <h1 id="error-heading" class="h3 mb-3">{% block heading %}{% endblock %}</h1>
+
+                    <div class="text-break">
+                        {% block text %}{% endblock %}
+                    </div>
+
+                    <div class="d-grid d-sm-flex gap-2 mt-4">
+                        <a class="btn btn-primary" href="javascript:history.back()">
+                            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                            {% trans "Back" %}
+                        </a>
+                        <a class="btn btn-secondary" href="{% url 'index' %}">
+                            <i class="bi bi-house me-1" aria-hidden="true"></i>
+                            {% trans "Home" %}
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}
