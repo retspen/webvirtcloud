@@ -4,7 +4,7 @@
 {% load operations %}
 <div class="tab-pane mt-3" id="settings" role="tabpanel">
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist" aria-label="Instance settings">
+    <ul class="nav nav-tabs vm-settings-tabs" role="tablist" aria-label="Instance settings">
         {% if instance.guest_agent_ready %}
             <li class="nav-item" role="presentation">
                 <button class="px-1 nav-link" data-bs-toggle="tab" id="osinfo-tab" data-bs-target="#osinfo" type="button" role="tab" aria-controls="osinfo" aria-selected="false" onclick="get_osinfo();">
@@ -73,7 +73,7 @@
         {% endif %}
         {% if request.user.is_superuser %}
             <li class="nav-item" role="presentation">
-                <button class="px-1 nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="false">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="false">
                     {% trans "Users" %}
                 </button>
             </li>
