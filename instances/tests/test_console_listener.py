@@ -69,6 +69,7 @@ class ConsoleListenerTests(TestCase):
             proxy.get_console_listener_addr.return_value = "127.0.0.1"
             for name in ("get_networks", "get_ifaces", "get_storages", "get_disk_devices", "get_media_devices", "get_net_devices"):
                 getattr(proxy, name).return_value = []
+            proxy.get_hostdevs.return_value = ([], [])
             proxy.get_status.return_value = 5
             response = self.client.get(reverse("instances:instance", args=[self.vm.id]))
         form = response.context["console_form"]

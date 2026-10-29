@@ -11,10 +11,12 @@ from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
                      VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
+from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.create import cpu_choices, wvmCreate
-from vrtManager.instance import check_snapshot_name, wvmInstance
+from vrtManager.instance import HOST_DEVICES, check_snapshot_name, wvmInstance
+from vrtManager.nodedevs import check_hostdevs
 
 from accounts.models import UserInstance, UserSSHKey
 from appsettings.settings import app_settings
@@ -349,6 +351,14 @@ def _current(proxy):
     return dom.snapshotCurrent(0).getName() if dom.hasCurrentSnapshot(0) else None
 
 
+def _snapshot_definitions(proxy, params):
+    """The VM's definitions in the snapshot a revert restores (as it runs,
+    and as saved), and whether they give it host devices."""
+    tree = etree.fromstring(proxy._snapshot(params["name"], params["external"]).getXMLDesc(0))
+    definitions = tree.xpath("domain | inactiveDomain")
+    return any(definition.xpath(HOST_DEVICES) for definition in definitions), definitions
+
+
 @register
 class RevertSnapshot(Kind):
     name = "snapshot.revert"
@@ -363,14 +373,20 @@ class RevertSnapshot(Kind):
         _proxy(_authorized(user, params["instance"]))._snapshot(params["name"], params["external"])
 
     def plan(self, user, params):
-        return _vm_plan(params)
+        plan = _vm_plan(params)
+        # a revert that gives the VM host devices holds the whole compute: no other VM takes them meanwhile
+        if _snapshot_definitions(_proxy(_instance(params["instance"])), params)[0]:
+            plan.claims[claims.compute_key(plan.intent["compute"])] = Claim.EXCLUSIVE
+        return plan
 
     def precheck(self, op, ctx):
         proxy = _checked_proxy(op)
         if op.params["external"]:
             proxy.check_external_revert(op.params["name"])
-        else:
-            proxy._snapshot(op.params["name"], False)
+        # a revert gives the VM the host devices it had then: not one given since to another VM
+        has_hostdevs, definitions = _snapshot_definitions(proxy, op.params)
+        if has_hostdevs:
+            check_hostdevs(proxy, proxy.instance.name(), definitions)
 
     def run(self, op, ctx):
         proxy = _proxy(_instance(op.params["instance"]))

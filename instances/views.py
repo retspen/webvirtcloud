@@ -49,6 +49,7 @@ from vrtManager import util
 from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import USAGE_MAX_WINDOW
 from vrtManager.interface import wvmInterface
+from vrtManager.nodedevs import hostdev_problems, node_devices, usb_names
 from vrtManager.storage import wvmStorage
 from vrtManager.util import randomPasswd
 
@@ -307,6 +308,15 @@ def _instance_page(request, pk, instance, compute):
     if app_settings.VM_DRBD_STATUS == "True":
         instance.drbd = drbd_status(request, pk)
         instance.save()
+
+    usb_hostdevs, other_hostdevs = instance.proxy.get_hostdevs()
+    if usb_hostdevs:
+        names = usb_names(instance.proxy)
+        for row in usb_hostdevs:
+            row["name"] = names.get((row["vendor"], row["product"]), "")
+    # owners see the devices their VM has; only superusers change them
+    show_hostdevs = request.user.is_superuser or bool(usb_hostdevs or other_hostdevs)
+    show_settings = show_settings or show_hostdevs
 
     job_resource = claims.instance_key(instance.uuid)
     return render(request, "instance.html", locals(),)
@@ -1783,6 +1793,65 @@ def delete_network(request, pk):
     with audit_vm(request, instance, f"remove interface {mac_address}"):
         instance.proxy.delete_network(mac_address)
     return _back(request, pk, "network")
+
+
+def _host_usb(instance):
+    """The host's USB devices, each with why it cannot be given to the VM
+    (hostdev_problems; none: it can) and how the VM would name it: by its
+    address when the host has more than one of its model, else by model."""
+    _pci, usb = node_devices(instance.proxy)
+    for device in usb:
+        address = (device["bus"], device["device"]) if device["same_model"] else None
+        device["selector"] = (*device["model"], address)
+        device["problems"] = hostdev_problems(instance.name, [], [device], set(), [device["selector"]])
+        if instance.name in device["vms"]:
+            device["problems"].append(_("The VM has it"))
+    return usb
+
+
+@superuser_only
+def host_usb(request, pk):
+    """The add form of the Host devices tab, loaded when the tab opens: its
+    choices scan every VM of the host."""
+    instance = get_instance(request.user, pk)
+    try:
+        context = {"instance": instance, "host_usb": _host_usb(instance)}
+    except libvirtError as err:
+        context = {"instance": instance, "error": err}
+    return render(request, "instances/host_usb_form.html", context)
+
+
+@require_POST
+@superuser_only
+@serialize_compute_mutation
+def add_usb_hostdev(request, pk):
+    """Gives the VM a USB device of its host; checked under the compute's
+    claim, so no other VM gets it meanwhile."""
+    instance = get_instance(request.user, pk)
+    chosen = request.POST.get("usb_device", "")
+    device = next((d for d in _host_usb(instance) if f"{d['bus']}/{d['device']}" == chosen), None)
+    if device is None:
+        messages.error(request, _("The host has no USB device %(device)s") % {"device": chosen})
+    elif device["problems"]:
+        messages.error(request, "; ".join(device["problems"]))
+    else:
+        vendor, product, address = device["selector"]
+        with audit_vm(request, instance, f"add USB device {device['ids']} ({device['product']})"):
+            instance.proxy.add_usb_hostdev(vendor, product, address)
+    return _back(request, pk, "hostdevs")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def delete_usb_hostdev(request, pk):
+    instance = get_instance(request.user, pk)
+    vendor, product = request.POST.get("vendor", ""), request.POST.get("product", "")
+    bus, _sep, device = request.POST.get("address", "").partition("/")
+    address = (int(bus), int(device)) if bus.isdigit() and device.isdigit() else None
+    with audit_vm(request, instance, f"remove USB device {vendor[2:]}:{product[2:]}"):
+        instance.proxy.delete_usb_hostdev((vendor, product, address))
+    return _back(request, pk, "hostdevs")
 
 
 @require_POST

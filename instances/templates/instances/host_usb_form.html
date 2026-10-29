@@ -1,0 +1,15 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+{% if error %}
+<div class="alert alert-warning mb-0">{% blocktrans %}The host's devices could not be read: {{ error }}{% endblocktrans %}</div>
+{% else %}
+<form method="post" action="{% url 'instances:add_usb_hostdev' instance.id %}" class="d-flex flex-wrap gap-2">{% csrf_token %}
+    <select name="usb_device" class="form-select w-auto mw-100" aria-label="{% trans "USB device of the host" %}" required>
+        <option value="" selected disabled>{% trans "Choose a USB device of the host…" %}</option>
+        {% for device in host_usb %}
+        <option value="{{ device.bus }}/{{ device.device }}"{% if device.problems %} disabled{% endif %}>{{ device.product }} ({{ device.ids }}, {{ device.bus }}/{{ device.device }}){% if device.problems %}: {{ device.problems|join:"; " }}{% endif %}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">{% bs_icon 'plus-lg' %} {% trans "Add USB device" %}</button>
+</form>
+{% endif %}

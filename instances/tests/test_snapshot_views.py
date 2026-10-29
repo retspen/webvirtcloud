@@ -101,6 +101,7 @@ class SnapshotTabTestCase(TestCase):
             for getter in ("get_networks", "get_ifaces", "get_storages", "get_disk_devices",
                            "get_media_devices", "get_net_devices"):
                 getattr(proxy, getter).return_value = []
+            proxy.get_hostdevs.return_value = ([], [])
             proxy.get_snapshot.side_effect = lambda flag: {
                 libvirt.VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL: list(internal),
                 libvirt.VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL: list(external),

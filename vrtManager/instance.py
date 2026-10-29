@@ -61,12 +61,17 @@ from lxml import etree
 
 from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
+from vrtManager.nodedevs import pci_address, usb_selector
 from vrtManager.storage import wvmStorage, wvmStorages
 
 # Edits that redefine the domain start from this: the persistent definition,
 # with secrets. Live XML would drop pending changes, non-secure XML the VNC
 # password.
 PERSISTENT_XML = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE
+
+USB_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='usb']"
+# what of the host a VM holds: host devices, and NICs that are host devices
+HOST_DEVICES = "devices/hostdev | devices/interface[@type='hostdev'] | devices/interface/actual[@type='hostdev']"
 
 # External snapshot names become part of overlay and memory file names.
 SNAPSHOT_NAME = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}")
@@ -141,6 +146,9 @@ class wvmInstances(wvmConnect):
         definitions = {dom.XMLDesc(0)}
         if state != 5:
             definitions.add(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
+        # a host device is of the source host: the destination may have none, or another one
+        if any(etree.fromstring(xml).xpath(HOST_DEVICES) for xml in definitions):
+            raise util.OperationError("A VM with host devices cannot be migrated; remove them first")
         missing = self.missing_disks(definitions)
         if missing:
             raise util.OperationError(
@@ -1993,7 +2001,13 @@ class wvmInstance(wvmConnect):
                 raise ValueError("Cannot clone a disk without a supported source and destination")
             disks.append((source, dev))
 
+        # a host device is one VM's: the clone gets none (the clone form says so)
+        for hostdev in tree.findall("devices/hostdev"):
+            hostdev.getparent().remove(hostdev)
         for num, net in enumerate(tree.findall("devices/interface")):
+            if net.get("type") == "hostdev":  # numbered as the form numbers the VM's NICs
+                net.getparent().remove(net)
+                continue
             mac = clone_data.get(f"clone-net-mac-{num}")
             if not mac:
                 raise ValueError(f"No MAC address for network interface {num}")
@@ -2324,6 +2338,8 @@ class wvmInstance(wvmConnect):
         removed = None
         for xml_flags, affect in self._definitions():
             nic = self._nic(xml_flags, mac_address)
+            if nic is not None and nic.get("type") == "hostdev":
+                raise util.OperationError("A network interface that is a host device is removed in the XML editor")
             if nic is not None:
                 removed = etree.tostring(nic).decode()
                 self.instance.detachDeviceFlags(removed, affect)
@@ -2340,6 +2356,8 @@ class wvmInstance(wvmConnect):
         if not found:
             raise util.OperationError(f"No network interface with MAC {old_mac}")
         iface = found[0]
+        if iface.get("type") == "hostdev":
+            raise util.OperationError("A network interface that is a host device is changed in the XML editor")
 
         iface_type = {"net": "network", "bridge": "bridge"}.get(source_type, "direct")
         iface.set("type", iface_type)
@@ -2361,6 +2379,79 @@ class wvmInstance(wvmConnect):
             etree.SubElement(iface, "filterref", filter=nwfilter)
 
         self._defineXML(etree.tostring(tree).decode())
+
+    def _usb_hostdevs(self, xml_flags):
+        """(element, selector) of each USB host device of a definition. The
+        selector (usb_selector) is read from the migratable XML, the only one
+        that marks the addresses libvirt resolved for a running VM."""
+        elements = etree.fromstring(self._XMLDesc(xml_flags)).xpath(USB_HOSTDEVS)
+        marked = etree.fromstring(self._XMLDesc(xml_flags | VIR_DOMAIN_XML_MIGRATABLE)).xpath(USB_HOSTDEVS)
+        return [(element, usb_selector(mark.find("source"))) for element, mark in zip(elements, marked)]
+
+    def get_hostdevs(self):
+        """The VM's USB host devices, each once: its selector (vendor,
+        product, address), whether the running VM has it and the device it
+        holds there, whether its next start has it. And its other host
+        devices (PCI, SCSI, mediated, NICs that are host devices), by type
+        and PCI address, likewise: the panel does not change them."""
+        usb = {}
+        for xml_flags, affect in self._definitions():
+            for element, selector in self._usb_hostdevs(xml_flags):
+                row = usb.setdefault(selector, {"vendor": selector[0], "product": selector[1], "address": selector[2],
+                                                "now": None, "next": False})
+                if affect == VIR_DOMAIN_AFFECT_LIVE:
+                    held = element.find("source/address")
+                    row["now"] = (int(held.get("bus")), int(held.get("device"))) if held is not None else selector[2]
+                else:
+                    row["next"] = True
+        others = {}
+        for xml_flags, affect in self._definitions():
+            tree = etree.fromstring(self._XMLDesc(xml_flags))
+            for device in tree.xpath("devices/hostdev[not(@type='usb')]"
+                                     " | devices/interface[@type='hostdev' or actual/@type='hostdev']"):
+                if device.tag == "interface" and device.get("type") != "hostdev":
+                    source = device.find("actual/source")  # a NIC of a network that gives host devices
+                else:
+                    source = device.find("source")
+                address = source.find("address") if source is not None else None
+                if address is not None and address.get("slot") is not None:
+                    label = pci_address(address.get("domain", "0"), address.get("bus"), address.get("slot"),
+                                        address.get("function"))
+                else:  # a mediated device's UUID; a SCSI device as its source
+                    label = address.get("uuid", "") if address is not None else ""
+                kind = "nic" if device.tag == "interface" else device.get("type", device.get("mode"))
+                source_text = " ".join(etree.tostring(source, encoding="unicode").split()) if source is not None else ""
+                row = others.setdefault((kind, label or source_text),
+                                        {"type": kind, "address": label, "now": False, "next": False})
+                row["now" if affect == VIR_DOMAIN_AFFECT_LIVE else "next"] = True
+        return list(usb.values()), list(others.values())
+
+    def add_usb_hostdev(self, vendor, product, address=None):
+        """Gives the VM the host's USB device of vendor and product, at
+        address (bus, device) when given: the host has more than one of the
+        model. Refused without a USB controller."""
+        for xml_flags, _ in self._definitions():
+            if not etree.fromstring(self._XMLDesc(xml_flags)).xpath("devices/controller[@type='usb'][not(@model='none')]"):
+                raise util.OperationError("The VM has no USB controller")
+        hostdev = etree.Element("hostdev", mode="subsystem", type="usb", managed="yes")
+        source = etree.SubElement(hostdev, "source")
+        etree.SubElement(source, "vendor", id=vendor)
+        etree.SubElement(source, "product", id=product)
+        if address:
+            etree.SubElement(source, "address", bus=str(address[0]), device=str(address[1]))
+        self._attach_device(etree.tostring(hostdev, encoding="unicode"))
+
+    def delete_usb_hostdev(self, selector):
+        """Takes the USB host device of selector (usb_selector) from each
+        definition that has it, as that definition describes it."""
+        found = False
+        for xml_flags, affect in self._definitions():
+            for element, own in self._usb_hostdevs(xml_flags):
+                if own == selector:
+                    found = True
+                    self.instance.detachDeviceFlags(etree.tostring(element, encoding="unicode"), affect)
+        if not found:
+            raise util.OperationError("The VM has no such USB device")
 
     def set_link_state(self, mac_address, state):
         for xml_flags, affect in self._definitions():

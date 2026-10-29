@@ -205,6 +205,7 @@ class DetailPageQuotaTests(TestCase):
             proxy.get_max_memory.return_value = 4096
             for name in ("get_networks", "get_ifaces", "get_storages", "get_disk_devices", "get_media_devices", "get_net_devices"):
                 getattr(proxy, name).return_value = []
+            proxy.get_hostdevs.return_value = ([], [])
             proxy.get_status.return_value = 5
             response = self.client.get(reverse("instances:instance", args=[vm.id]))
         self.assertEqual(response.status_code, 200)

@@ -137,6 +137,7 @@ ALLOWED_HTML_SINKS = {
     ("accounts/templates/login.html", "$btn.html("): "static spinner markup",
     ("accounts/templates/accounts/otp_login.html", "$btn.html("): "static spinner markup",
     ("instances/templates/instance.html", "//sto_input.innerHTML = pool;"): "comment",
+    ("instances/templates/instance.html", "hostUsb.innerHTML = html;"): "the panel's own fragment, host_usb_form.html, escaped by Django",
 }
 
 

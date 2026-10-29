@@ -27,6 +27,7 @@ class SnapshotJobsTestCase(TransactionTestCase):
         self.proxy = patcher.start().return_value
         self.addCleanup(patcher.stop)
         self.proxy.instance.snapshotListNames.return_value = []
+        self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><domain/></domainsnapshot>"
         self.proxy.instance.isActive.return_value = False
         self.proxy.instance.hasCurrentSnapshot.return_value = 0
 

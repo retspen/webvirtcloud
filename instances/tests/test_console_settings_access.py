@@ -61,6 +61,7 @@ class ConsoleSettingsAccessTestCase(TestCase):
             proxy.get_max_memory.return_value = 4096
             proxy.get_networks.return_value = []
             proxy.get_ifaces.return_value = []
+            proxy.get_hostdevs.return_value = ([], [])
             proxy.get_storages.return_value = []
             proxy.get_console_passwd.return_value = VNC_PASSWORD
             proxy.get_console_type.return_value = "vnc"

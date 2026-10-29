@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, render
 from instances.models import Instance
 from libvirt import libvirtError
-from vrtManager.nodedevs import wvmNodeDevices
+from vrtManager.connection import wvmConnect
+from vrtManager.nodedevs import node_devices
 
 
 @superuser_only
@@ -14,8 +15,7 @@ def nodedevs(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
     context = {"compute": compute}
     try:
-        conn = wvmNodeDevices(compute.hostname, compute.login, compute.password, compute.type)
-        pci, usb = conn.get_node_devices()
+        pci, usb = node_devices(wvmConnect(compute.hostname, compute.login, compute.password, compute.type))
         vm_ids = dict(Instance.objects.filter(compute=compute).values_list("name", "id"))
         for device in pci + usb:
             device["vms"] = [{"name": name, "id": vm_ids.get(name)} for name in device["vms"]]

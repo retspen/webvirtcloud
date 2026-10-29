@@ -428,6 +428,22 @@
     });
 </script>
 <script>
+    // the Host devices tab's add form: loaded once, when the tab first opens
+    var hostUsb = document.getElementById("host-usb");
+    if (hostUsb) {
+        document.querySelector('[data-bs-target="#hostdevs"]').addEventListener("shown.bs.tab", function () {
+            if (hostUsb.dataset.loaded) return;
+            hostUsb.dataset.loaded = "true";
+            fetch(hostUsb.dataset.url).then(function (response) {
+                if (!response.ok) throw new Error(response.statusText);
+                return response.text();
+            }).then(function (html) {
+                hostUsb.innerHTML = html;
+            }).catch(function () {
+                hostUsb.textContent = "{{ _("The host's USB devices could not be read.")|escapejs }}";
+            });
+        });
+    }
     function get_osinfo() {
         show_tab('#settings');
         show_tab('#osinfo');

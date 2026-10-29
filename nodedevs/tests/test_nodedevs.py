@@ -13,7 +13,8 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.models import Instance
 from lxml import html
-from vrtManager.nodedevs import pci_address, wvmNodeDevices
+from vrtManager.connection import wvmConnect
+from vrtManager.nodedevs import node_devices, pci_address
 
 
 def pci(slot, product, code, driver=None, group=None):
@@ -76,10 +77,10 @@ USB_MODEL = "<hostdev mode='subsystem' type='usb'><source><vendor id='0x0627'/><
 
 
 def devices(nodes=NODES, domains=()):
-    conn = wvmNodeDevices.__new__(wvmNodeDevices)
+    conn = wvmConnect.__new__(wvmConnect)
     conn.wvm = MagicMock(**{"listAllDevices.return_value": [node(*n) for n in nodes],
                             "listAllDomains.return_value": list(domains)})
-    return conn.get_node_devices()
+    return node_devices(conn)
 
 
 class NodeDevicesTests(SimpleTestCase):
@@ -140,13 +141,13 @@ class NodeDevicesTests(SimpleTestCase):
             err.get_error_code = lambda code=code: code
             gone = node("pci_0000_00_0b_0", "")
             gone.XMLDesc.side_effect = err
-            conn = wvmNodeDevices.__new__(wvmNodeDevices)
+            conn = wvmConnect.__new__(wvmConnect)
             conn.wvm = MagicMock(**{"listAllDevices.return_value": [gone, node(*NODES[0])], "listAllDomains.return_value": []})
             with self.subTest(code=code):
                 if raised:
-                    self.assertRaises(libvirt.libvirtError, conn.get_node_devices)
+                    self.assertRaises(libvirt.libvirtError, node_devices, conn)
                 else:
-                    self.assertEqual([d["address"] for d in conn.get_node_devices()[0]], ["0000:00:06.0"])
+                    self.assertEqual([d["address"] for d in node_devices(conn)[0]], ["0000:00:06.0"])
 
     def test_a_pci_address_from_libvirts_hex_or_numbers(self):
         self.assertEqual(pci_address("0x0000", "0x00", "0x1f", "0x3"), pci_address(0, 0, 31, 3))

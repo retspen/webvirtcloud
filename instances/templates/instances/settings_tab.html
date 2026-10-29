@@ -38,6 +38,13 @@
                 </button>
             </li>
         {% endif %}
+        {% if show_hostdevs %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#hostdevs" type="button" role="tab" aria-controls="hostdevs" aria-selected="false">
+                    {% trans "Host devices" %}
+                </button>
+            </li>
+        {% endif %}
         {% if can_clone %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#clone" type="button" role="tab" aria-controls="clone" aria-selected="false">
@@ -395,6 +402,8 @@
                                     </div>
                                 </td>
                                 <td>
+                                    {# a NIC that is a host device is changed in the XML editor #}
+                                    {% if network.type != "hostdev" %}
                                     <form action="{% url 'instances:change_network' instance.id %}" method="post" name="edit_network{{ forloop.counter0 }}" role="form">{% csrf_token %}
                                         <button class="btn btn-sm btn-primary"
                                                 type="button"
@@ -467,6 +476,7 @@
                                             </div>
                                         </div>
                                     </form>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <form action="{% url 'instances:set_qos' instance.id %}" method="post" name="add_qos{{ forloop.counter0 }}" role="form" aria-label="Add network qos form">
@@ -476,12 +486,14 @@
                                     </form>
                                 </td>
                                 <td>
+                                    {% if network.type != "hostdev" %}
                                     <form action="{% url 'instances:delete_network' instance.id %}" method="post" name="delete_network" role="form">{% csrf_token %}
                                         <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
  data-confirm="{% blocktrans with mac=network.mac %}Remove network card {{ mac }}? A running VM loses its connection through it at once.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
                                             {% bs_icon 'trash' %}
                                         </button>
                                     </form>
+                                    {% endif %}
                                 </td>
                             </tr>
                             <tr>
@@ -582,6 +594,63 @@
             {% endif %}
             <div class="clearfix"></div>
         </div>
+        {% if show_hostdevs %}
+        <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="hostdevs">
+            <p class="small text-body-secondary">{% trans "Devices of the host given to the VM. The VM starts only on a host that has them; it is not migrated while it has them, and its clones get none." %}</p>
+            {% if request.user.is_superuser %}
+            {# the add form comes when the tab opens: its choices scan every VM of the host #}
+            <div id="host-usb" class="mb-3" data-url="{% url 'instances:host_usb' instance.id %}">
+                <span class="small text-body-secondary">{% trans "Reading the host's USB devices…" %}</span>
+            </div>
+            {% endif %}
+            {% if usb_hostdevs %}
+            <div class="table-responsive position-relative">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">{% trans "USB device" %}</th>
+                            <th scope="col">{% trans "Chosen by" %}</th>
+                            <th scope="col">{% trans "Running VM" %}</th>
+                            <th scope="col">{% trans "Next start" %}</th>
+                            {% if request.user.is_superuser %}<th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for device in usb_hostdevs %}
+                        <tr>
+                            <td>{{ device.name|default:"–" }} <span class="small text-body-secondary font-monospace">{{ device.vendor|slice:"2:" }}:{{ device.product|slice:"2:" }}</span></td>
+                            <td>{% if device.address %}{% blocktrans with bus=device.address.0 device=device.address.1 %}Its address {{ bus }}/{{ device }}{% endblocktrans %}{% else %}{% trans "Its model: any device of it" %}{% endif %}</td>
+                            <td>{% if device.now %}{% blocktrans with bus=device.now.0 device=device.now.1 %}Has {{ bus }}/{{ device }}{% endblocktrans %}{% else %}–{% endif %}</td>
+                            <td>{% if device.next %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+                            {% if request.user.is_superuser %}
+                            <td class="text-end">
+                                <form method="post" action="{% url 'instances:delete_usb_hostdev' instance.id %}">{% csrf_token %}
+                                    <input type="hidden" name="vendor" value="{{ device.vendor }}">
+                                    <input type="hidden" name="product" value="{{ device.product }}">
+                                    <input type="hidden" name="address" value="{% if device.address %}{{ device.address.0 }}/{{ device.address.1 }}{% endif %}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Remove the USB device" %}"
+                                            data-confirm="{% trans "Remove this USB device from the VM? A running VM loses it at once." %}"
+                                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% for device in other_hostdevs %}
+            <p class="mb-1">
+                {% if device.type == "nic" %}{% trans "Network interface" %}{% else %}{{ device.type|upper }}{% endif %} <span class="font-monospace">{{ device.address }}</span>
+                <span class="small text-body-secondary">{% if device.now and device.next %}{% trans "running VM and next start" %}{% elif device.now %}{% trans "running VM only" %}{% else %}{% trans "next start only" %}{% endif %}; {% trans "changed in the XML editor" %}</span>
+            </p>
+            {% endfor %}
+            {% if not usb_hostdevs and not other_hostdevs %}
+            <p class="small text-body-secondary mb-0">{% trans "The VM has no host devices." %}</p>
+            {% endif %}
+        </div>
+        {% endif %}
         <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="migrate">
             <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
             <form action="{% url 'instances:migrate' instance.id %}" class="ms-3 form" method="post" role="form" aria-label="Migrate instance form">
@@ -739,6 +808,7 @@
         {% if can_clone %}
         <div role="tabpanel" class="tab-pane border border-top-0 p-3" id="clone">
             <p class="fw-bold">{% trans "Create a clone" %}</p>
+            {% if usb_hostdevs or other_hostdevs %}<p class="small text-body-secondary">{% trans "The clone gets none of the VM's host devices: one VM holds a device of the host." %}</p>{% endif %}
             <form class="form" action="{% url 'instances:clone' instance.id %}" method="post" role="form" aria-label="Create clone form">{% csrf_token %}{% submission_key %}
                 <div class="row">
                     <label class="col-sm-3 col-form-label fw-normal">{% trans "Clone Name" %}</label>
