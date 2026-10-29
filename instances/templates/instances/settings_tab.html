@@ -662,8 +662,8 @@
                                 <form method="post" action="{% url 'instances:delete_pci_hostdev' instance.id %}">{% csrf_token %}
                                     <input type="hidden" name="address" value="{{ device.address }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Remove the PCI device" %}"
-                                            {% if instance.status != 5 or not device.next %}disabled title="{% trans "Shut the VM down to change its PCI devices" %}"{% endif %}
-                                            data-confirm="{% trans "Remove this PCI device from the VM?" %}" onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                            {% if instance.status != 1 and instance.status != 5 or instance.has_managed_save_image %}disabled title="{% trans "A paused VM, or one with a saved state, does not change its PCI devices" %}"{% endif %}
+                                            data-confirm="{% trans "Remove this PCI device from the VM? A running VM's guest has to let it go." %}" onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
                                 </form>
                             </td>
                             {% endif %}

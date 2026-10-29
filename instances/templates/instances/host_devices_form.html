@@ -14,15 +14,16 @@
     <button type="submit" class="btn btn-primary">{% bs_icon 'plus-lg' %} {% trans "Add USB device" %}</button>
 </form>
 <form method="post" action="{% url 'instances:add_pci_hostdev' instance.id %}" class="d-flex flex-wrap gap-2">{% csrf_token %}
-    <select name="pci_device" class="form-select w-auto mw-100" aria-label="{% trans "PCI device of the host" %}" aria-describedby="pci_help" required{% if running %} disabled{% endif %}>
+    <select name="pci_device" class="form-select w-auto mw-100" aria-label="{% trans "PCI device of the host" %}" aria-describedby="pci_help" required{% if pci_frozen %} disabled{% endif %}>
         <option value="" selected disabled>{% trans "Choose a PCI device of the host…" %}</option>
         {% for device in host_pci %}
         <option value="{{ device.address }}"{% if device.problems %} disabled{% endif %}>{{ device.product }} ({{ device.address }}, {{ device.driver|default:_("no driver") }}){% if device.problems %}: {{ device.problems|join:"; " }}{% endif %}</option>
         {% endfor %}
     </select>
-    <button type="submit" class="btn btn-primary"{% if running %} disabled{% endif %}>{% bs_icon 'plus-lg' %} {% trans "Add PCI device" %}</button>
+    <button type="submit" class="btn btn-primary"{% if pci_frozen %} disabled{% endif %}>{% bs_icon 'plus-lg' %} {% trans "Add PCI device" %}</button>
     <div class="form-text w-100" id="pci_help">
-        {% if running %}{% trans "Shut the VM down, without a saved state, to change its PCI devices." %}
+        {% if pci_frozen %}{% trans "A paused VM, or one with a saved state, does not change its PCI devices." %}
+        {% elif running %}{% trans "The device is plugged into the running VM at once and kept for its next start; libvirt binds it to vfio-pci. It needs a free slot: on a q35 VM a free pcie-root-port, added while the VM is shut off." %}
         {% else %}{% trans "libvirt binds the device to vfio-pci when the VM starts, and gives it back to the host when the VM stops; a device bound to vfio-pci before stays bound to it." %}{% endif %}
     </div>
 </form>

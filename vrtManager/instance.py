@@ -15,6 +15,8 @@ try:
         VIR_DOMAIN_AFFECT_CONFIG,
         VIR_DOMAIN_AFFECT_LIVE,
         VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
+        VIR_DOMAIN_RUNNING,
+        VIR_DOMAIN_SHUTOFF,
         VIR_DOMAIN_XML_SECURE,
         VIR_DOMAIN_XML_INACTIVE,
         VIR_DOMAIN_XML_MIGRATABLE,
@@ -2433,39 +2435,81 @@ class wvmInstance(wvmConnect):
                 row[where] = True
         return list(usb.values()), list(pci.values()), list(others.values())
 
-    def _pci_hostdev(self, address):
-        """The persistent definition's <hostdev> of the PCI device at address, or None."""
-        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+    def _pci_hostdev(self, address, xml_flags=PERSISTENT_XML):
+        """A definition's <hostdev> of the PCI device at address, or None."""
+        tree = etree.fromstring(self._XMLDesc(xml_flags))
         for found in tree.xpath(PCI_HOSTDEVS + "/source/address"):
             if pci_address(found.get("domain", "0"), found.get("bus"), found.get("slot"), found.get("function")) == address:
                 return found.getparent().getparent()
         return None
 
-    def _check_shut_off_for_pci(self):
-        """PCI devices change in the persistent definition of a shut-off VM;
-        a saved state (managed save) would start the VM without the change."""
-        if self.instance.isActive() or self.instance.hasManagedSaveImage(0):
-            raise util.OperationError("Shut the VM down, without a saved state, to change its PCI devices")
+    def _pci_running(self):
+        """Whether a PCI change goes to the running VM too: True while it
+        runs, False while it is shut off. A paused VM, or one with a saved
+        state (managed save, which would start without the change), is
+        refused."""
+        status = self.instance.info()[0]
+        if self.instance.hasManagedSaveImage(0) or status not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF):
+            raise util.OperationError("A VM changes its PCI devices while it runs, or is shut off without a saved state")
+        return status == VIR_DOMAIN_RUNNING
+
+    def _pci_outcome(self, address, err):
+        """An OperationError with err and where the PCI device at address is
+        now: in the running VM, in its next start; the outcome is unknown
+        when the VM cannot be read."""
+        try:
+            running = self.instance.isActive()
+            now = running and self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) is not None
+            later = self._pci_hostdev(address) is not None
+        except libvirtError:
+            return util.OperationError(f"{err}; whether the VM has PCI device {address} now is not known")
+        next_start = "its next start has it" if later else "its next start does not have it"
+        if not running:
+            return util.OperationError(f"{err}; PCI device {address}: the VM is not running, {next_start}")
+        now_text = "the running VM has it" if now else "the running VM does not have it"
+        return util.OperationError(f"{err}; PCI device {address}: {now_text}, {next_start}")
 
     def add_pci_hostdev(self, address):
-        """Gives the shut-off VM the host's PCI device at address
-        (0000:05:00.0): libvirt binds it to vfio-pci when the VM starts and
-        gives it back to the host when it stops."""
-        self._check_shut_off_for_pci()
+        """Gives the VM the host's PCI device at address (0000:05:00.0), for
+        its next start and, while it runs, at once: libvirt binds it to
+        vfio-pci, and gives it back when the VM stops or lets it go. A hot
+        plug that fails says where the device is (the two are not changed
+        together)."""
+        running = self._pci_running()
         domain, bus, slot_function = address.split(":")
         slot, function = slot_function.split(".")
         hostdev = etree.Element("hostdev", mode="subsystem", type="pci", managed="yes")
         etree.SubElement(etree.SubElement(hostdev, "source"), "address", domain=f"0x{domain}", bus=f"0x{bus}",
                          slot=f"0x{slot}", function=f"0x{function}")
-        self.instance.attachDeviceFlags(etree.tostring(hostdev, encoding="unicode"), VIR_DOMAIN_AFFECT_CONFIG)
+        flags = VIR_DOMAIN_AFFECT_CONFIG | (VIR_DOMAIN_AFFECT_LIVE if running else 0)
+        try:
+            self.instance.attachDeviceFlags(etree.tostring(hostdev, encoding="unicode"), flags)
+        except libvirtError as err:
+            if not running:
+                raise
+            raise self._pci_outcome(address, err) from None
 
     def delete_pci_hostdev(self, address):
-        """Takes the PCI device at address from the shut-off VM, also one the host no longer has."""
-        self._check_shut_off_for_pci()
-        hostdev = self._pci_hostdev(address)
-        if hostdev is None:
+        """Takes the PCI device at address from the VM: from the running VM
+        (the guest has to let it go; libvirt waits a few seconds for it) and
+        from its next start, each as it has it. Returns True when the guest
+        has not let it go yet: it stays in the running VM until it does or
+        the VM stops. A failure on a running VM says where the device is."""
+        running = self._pci_running()
+        live = self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) if running else None
+        saved = self._pci_hostdev(address)
+        if live is None and saved is None:
             raise util.OperationError(f"The VM has no PCI device {address}")
-        self.instance.detachDeviceFlags(etree.tostring(hostdev, encoding="unicode"), VIR_DOMAIN_AFFECT_CONFIG)
+        try:
+            if live is not None:  # a refusal stops here; a request the guest has not answered goes on
+                self.instance.detachDeviceFlags(etree.tostring(live, encoding="unicode"), VIR_DOMAIN_AFFECT_LIVE)
+            if saved is not None:
+                self.instance.detachDeviceFlags(etree.tostring(saved, encoding="unicode"), VIR_DOMAIN_AFFECT_CONFIG)
+            return live is not None and self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) is not None
+        except libvirtError as err:
+            if not running:
+                raise
+            raise self._pci_outcome(address, err) from None
 
     def add_usb_hostdev(self, vendor, product, address=None):
         """Gives the VM the host's USB device of vendor and product, at

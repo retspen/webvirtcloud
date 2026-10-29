@@ -34,6 +34,8 @@ from django.utils import timezone
 from django.utils.translation import gettext_noop as _
 from django.views.decorators.http import require_POST
 from libvirt import (VIR_DOMAIN_PAUSED,
+                     VIR_DOMAIN_RUNNING,
+                     VIR_DOMAIN_SHUTOFF,
                      VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
                      VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
                      VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA,
@@ -1801,11 +1803,16 @@ def _host_devices(instance):
     """The host's PCI and USB devices, each with why it cannot be given to
     the VM (pci_problems, hostdev_problems; none: it can). A USB device is
     named by its address when the host has more than one of its model, else
-    by model; a PCI device is checked with the managed PCI devices of the
-    VM's next start, as libvirt takes them from the host along with it."""
+    by model; a PCI device is checked alone on a running VM, as it is
+    hot-plugged, and with the managed PCI devices of the VM's next start on
+    a shut-off one, as libvirt takes them from the host along with it."""
     pci, usb = node_devices(instance.proxy)
     own_pci = instance.proxy.get_hostdevs()[1]
-    managed = {row["address"] for row in own_pci if row["managed"] and row["next"]}
+    # libvirt takes a hot-plugged device alone from the host, and a group's managed devices as the VM starts
+    if instance.proxy.instance.isActive():
+        managed = set()
+    else:
+        managed = {row["address"] for row in own_pci if row["managed"] and row["next"]}
     by_address = {device["address"]: device for device in pci}
     for device in pci:
         device["problems"] = pci_problems(instance.name, device, by_address, managed | {device["address"]})
@@ -1828,8 +1835,10 @@ def host_devices(request, pk):
     try:
         pci, usb = _host_devices(instance)
         domain = instance.proxy.instance
-        context = {"instance": instance, "host_pci": pci, "host_usb": usb,
-                   "running": domain.isActive() or domain.hasManagedSaveImage(0)}
+        state = domain.info()[0]
+        context = {"instance": instance, "host_pci": pci, "host_usb": usb, "running": state == VIR_DOMAIN_RUNNING,
+                   # paused, or with a saved state the VM would start from without the change
+                   "pci_frozen": state not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF) or domain.hasManagedSaveImage(0)}
     except libvirtError as err:
         context = {"instance": instance, "error": err}
     return render(request, "instances/host_devices_form.html", context)
@@ -1859,8 +1868,9 @@ def add_usb_hostdev(request, pk):
 @superuser_only
 @serialize_compute_mutation
 def add_pci_hostdev(request, pk):
-    """Gives the shut-off VM a PCI device of its host; checked under the
-    compute's claim, so no other VM gets it or its IOMMU group meanwhile."""
+    """Gives the VM a PCI device of its host, hot-plugged while it runs;
+    checked under the compute's claim, so no other VM gets it or its IOMMU
+    group meanwhile."""
     instance = get_instance(request.user, pk)
     chosen = request.POST.get("pci_device", "")
     device = next((d for d in _host_devices(instance)[0] if d["address"] == chosen), None)
@@ -1880,8 +1890,11 @@ def add_pci_hostdev(request, pk):
 def delete_pci_hostdev(request, pk):
     instance = get_instance(request.user, pk)
     address = request.POST.get("address", "")
-    with audit_vm(request, instance, f"remove PCI device {address}"):
-        instance.proxy.delete_pci_hostdev(address)
+    with audit_vm(request, instance, f"remove PCI device {address}") as entry:
+        if instance.proxy.delete_pci_hostdev(address):
+            entry.action = f"request the removal of PCI device {address}"
+            messages.warning(request, _("Removal of PCI device %(address)s requested: the guest has not let it go yet; "
+                                        "it stays in the running VM until it does or the VM stops.") % {"address": address})
     return _back(request, pk, "hostdevs")
 
 

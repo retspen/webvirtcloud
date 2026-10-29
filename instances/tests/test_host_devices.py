@@ -22,6 +22,8 @@ from vrtManager.tests.test_migration import FakeSource, destination, with_disks
 
 MIGRATABLE = libvirt.VIR_DOMAIN_XML_MIGRATABLE
 CONTROLLER = "<controller type='usb' model='qemu-xhci'/>"
+PCI_05 = ("<hostdev mode='subsystem' type='pci' managed='yes'><source>"
+          "<address domain='0x0000' bus='0x05' slot='0x00' function='0x0'/></source></hostdev>")
 BY_MODEL = "<hostdev mode='subsystem' type='usb' managed='yes'><source{auto}><vendor id='0x0627'/><product id='0x0001'/>{address}</source></hostdev>"
 
 
@@ -38,7 +40,8 @@ def vm(running, saved, active=True, migratable=None):
     the migratable XML marks it), and whose next start is saved."""
     proxy = wvmInstance.__new__(wvmInstance)
     proxy._read_cache = None
-    proxy.instance = MagicMock(**{"isActive.return_value": active, "hasManagedSaveImage.return_value": 0})
+    proxy.instance = MagicMock(**{"isActive.return_value": active, "hasManagedSaveImage.return_value": 0,
+                                  "info.return_value": [libvirt.VIR_DOMAIN_RUNNING if active else libvirt.VIR_DOMAIN_SHUTOFF]})
 
     def describe(flags=0):
         if flags & libvirt.VIR_DOMAIN_XML_INACTIVE:
@@ -100,30 +103,30 @@ class UsbHostdevTests(SimpleTestCase):
                                   {"type": "mdev", "address": "00000000-0000-4000-8000-00000000a001", "now": True, "next": False},
                                   {"type": "mdev", "address": "00000000-0000-4000-8000-00000000a002", "now": False, "next": True}])
 
-    def test_a_pci_device_is_given_and_taken_back_only_while_the_vm_is_shut_off(self):
+    def test_a_shut_off_vm_gets_a_pci_device_for_its_next_start(self):
         proxy = vm("", domain(), active=False)
         proxy.add_pci_hostdev("0000:05:00.0")
         xml, flags = proxy.instance.attachDeviceFlags.call_args.args
         self.assertEqual(flags, libvirt.VIR_DOMAIN_AFFECT_CONFIG)
         self.assertEqual((etree.fromstring(xml).get("managed"), dict(etree.fromstring(xml).find("source/address").attrib)),
                          ("yes", {"domain": "0x0000", "bus": "0x05", "slot": "0x00", "function": "0x0"}))
-        pci = "<hostdev mode='subsystem' type='pci' managed='yes'><source><address domain='0x0000' bus='0x05' slot='0x00' function='0x0'/></source></hostdev>"
-        proxy = vm("", domain(pci), active=False)
-        proxy.delete_pci_hostdev("0000:05:00.0")
-        self.assertEqual(proxy.instance.detachDeviceFlags.call_args.args[1], libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        proxy = vm("", domain(PCI_05), active=False)
+        self.assertFalse(proxy.delete_pci_hostdev("0000:05:00.0"))
+        self.assertEqual([c.args[1] for c in proxy.instance.detachDeviceFlags.call_args_list], [libvirt.VIR_DOMAIN_AFFECT_CONFIG])
         with self.assertRaisesRegex(OperationError, "no PCI device 0000:06:00.0"):
             proxy.delete_pci_hostdev("0000:06:00.0")
-        running = vm(domain(pci), domain(pci))
-        for change in (running.add_pci_hostdev, running.delete_pci_hostdev):
-            with self.assertRaisesRegex(OperationError, "Shut the VM down"):
-                change("0000:05:00.0")
-        running.instance.attachDeviceFlags.assert_not_called()
-        running.instance.detachDeviceFlags.assert_not_called()
-        # a saved state would start the VM without the change
-        saved = vm("", domain(pci), active=False)
+
+    def test_a_paused_vm_or_one_with_a_saved_state_keeps_its_pci_devices(self):
+        paused = vm(domain(PCI_05), domain(PCI_05))
+        paused.instance.info.return_value = [libvirt.VIR_DOMAIN_PAUSED]
+        saved = vm("", domain(PCI_05), active=False)
         saved.instance.hasManagedSaveImage.return_value = 1
-        with self.assertRaisesRegex(OperationError, "without a saved state"):
-            saved.add_pci_hostdev("0000:06:00.0")
+        for name, proxy in (("paused", paused), ("saved", saved)):
+            for change in (proxy.add_pci_hostdev, proxy.delete_pci_hostdev):
+                with self.subTest(vm=name, change=change.__name__), self.assertRaisesRegex(OperationError, "runs, or is shut off"):
+                    change("0000:05:00.0")
+            proxy.instance.attachDeviceFlags.assert_not_called()
+            proxy.instance.detachDeviceFlags.assert_not_called()
 
     def test_a_nic_that_is_a_host_device_is_left_to_the_xml_editor(self):
         nic = "<interface type='hostdev'><mac address='52:54:00:00:00:0a'/><source><address type='pci' bus='0x00' slot='0x0a'/></source></interface>"
@@ -143,6 +146,122 @@ class UsbHostdevTests(SimpleTestCase):
                                           "99999999-2222-3333-4444-555555555555")
         self.assertEqual(tree.xpath("devices/hostdev"), [])
         self.assertEqual(tree.xpath("devices/interface/mac/@address"), ["52:54:00:00:00:1b"])
+
+
+class RunningVM:
+    """A running VM whose definitions change as libvirt changes them: the
+    running one and the next start's, each with the PCI device or not.
+    fail: the affect flag whose change libvirt fails, after doing it or not;
+    keeps: the guest does not let the device go."""
+
+    def __init__(self, now=True, later=True, fail=None, done=False, keeps=False, machine="pc-i440fx-10.1"):
+        self.has = {libvirt.VIR_DOMAIN_AFFECT_LIVE: now, libvirt.VIR_DOMAIN_AFFECT_CONFIG: later}
+        self.fail, self.done, self.keeps, self.machine = fail, done, keeps, machine
+        self.proxy = vm("", "")
+        self.proxy.instance.XMLDesc.side_effect = self.describe
+        self.proxy.instance.attachDeviceFlags.side_effect = lambda xml, flags: self.change(flags, True)
+        self.proxy.instance.detachDeviceFlags.side_effect = lambda xml, flags: self.change(flags, False)
+
+    def describe(self, flags=0):
+        saved = flags & libvirt.VIR_DOMAIN_XML_INACTIVE
+        has = self.has[libvirt.VIR_DOMAIN_AFFECT_CONFIG if saved else libvirt.VIR_DOMAIN_AFFECT_LIVE]
+        return f"<domain><os><type machine='{self.machine}'>hvm</type></os><devices>{PCI_05 if has else ''}</devices></domain>"
+
+    def change(self, flags, adding):
+        for affect in (libvirt.VIR_DOMAIN_AFFECT_LIVE, libvirt.VIR_DOMAIN_AFFECT_CONFIG):
+            if flags & affect:
+                if affect == self.fail:
+                    if self.done:
+                        self.has[affect] = adding
+                    raise libvirt.libvirtError("refused")
+                if adding or not (self.keeps and affect == libvirt.VIR_DOMAIN_AFFECT_LIVE):
+                    self.has[affect] = adding
+
+
+class PciHotplugTests(SimpleTestCase):
+    def test_a_running_vm_gets_it_at_once_and_for_its_next_start(self):
+        running = RunningVM(now=False, later=False)
+        running.proxy.add_pci_hostdev("0000:05:00.0")
+        self.assertEqual(running.proxy.instance.attachDeviceFlags.call_args.args[1],
+                         libvirt.VIR_DOMAIN_AFFECT_LIVE | libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        self.assertEqual(list(running.has.values()), [True, True])
+
+    def test_a_hot_plug_that_fails_says_where_the_device_is(self):
+        cases = ((libvirt.VIR_DOMAIN_AFFECT_CONFIG, False, "the running VM has it, its next start does not have it"),
+                 (libvirt.VIR_DOMAIN_AFFECT_CONFIG, True, "the running VM has it, its next start has it"),
+                 (libvirt.VIR_DOMAIN_AFFECT_LIVE, False, "the running VM does not have it, its next start does not have it"))
+        for fail, done, where in cases:
+            # libvirt plugs into the running VM first, then saves the next start
+            running = RunningVM(now=False, later=False, fail=fail, done=done)
+            if fail == libvirt.VIR_DOMAIN_AFFECT_CONFIG:
+                running.has[libvirt.VIR_DOMAIN_AFFECT_LIVE] = True
+            with self.subTest(where=where), self.assertRaisesRegex(OperationError, f"refused; PCI device 0000:05:00.0: {where}"):
+                running.proxy.add_pci_hostdev("0000:05:00.0")
+
+    def test_a_hot_plug_whose_outcome_cannot_be_read_says_so(self):
+        running = RunningVM(now=False, later=False)
+        running.proxy.instance.attachDeviceFlags.side_effect = libvirt.libvirtError("connection reset")
+        running.proxy.instance.XMLDesc.side_effect = libvirt.libvirtError("connection reset")
+        with self.assertRaisesRegex(OperationError, "connection reset; whether the VM has PCI device 0000:05:00.0 now is not known"):
+            running.proxy.add_pci_hostdev("0000:05:00.0")
+
+    def test_a_vm_that_stops_meanwhile_is_said_to_be_not_running(self):
+        running = RunningVM(now=False, later=False, fail=libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        running.proxy.instance.isActive.return_value = False  # its live XML is then the inactive one
+        with self.assertRaisesRegex(OperationError, "the VM is not running, its next start does not have it"):
+            running.proxy.add_pci_hostdev("0000:05:00.0")
+
+    def test_a_running_vm_lets_it_go_as_its_guest_does(self):
+        running = RunningVM()
+        self.assertFalse(running.proxy.delete_pci_hostdev("0000:05:00.0"))
+        self.assertEqual(list(running.has.values()), [False, False])
+        # not yet: the request stands, the next start no longer has it
+        running = RunningVM(keeps=True)
+        self.assertTrue(running.proxy.delete_pci_hostdev("0000:05:00.0"))
+        self.assertEqual(list(running.has.values()), [True, False])
+
+    def test_a_guest_that_refuses_keeps_it_for_its_next_start_too(self):
+        running = RunningVM(fail=libvirt.VIR_DOMAIN_AFFECT_LIVE)
+        with self.assertRaisesRegex(OperationError, "refused; .*the running VM has it, its next start has it"):
+            running.proxy.delete_pci_hostdev("0000:05:00.0")
+        self.assertEqual(list(running.has.values()), [True, True])
+        # removed from the running VM, then an error: said, and the next start keeps it
+        running = RunningVM(fail=libvirt.VIR_DOMAIN_AFFECT_LIVE, done=True)
+        with self.assertRaisesRegex(OperationError, "the running VM does not have it, its next start has it"):
+            running.proxy.delete_pci_hostdev("0000:05:00.0")
+
+    def test_a_failed_removal_from_the_next_start_of_a_running_vm_is_said(self):
+        running = RunningVM(now=False, later=True, fail=libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        with self.assertRaisesRegex(OperationError, "the running VM does not have it, its next start has it"):
+            running.proxy.delete_pci_hostdev("0000:05:00.0")
+
+    def test_a_removal_whose_outcome_cannot_be_read_says_so(self):
+        running = RunningVM()
+        reads = []
+
+        def describe(flags=0):  # the reads before the removal work, the one after it does not
+            reads.append(flags)
+            if len(reads) > 2:
+                raise libvirt.libvirtError("connection reset")
+            return running.describe(flags)
+        running.proxy.instance.XMLDesc.side_effect = describe
+        with self.assertRaisesRegex(OperationError, "connection reset; whether the VM has PCI device 0000:05:00.0 now is not known"):
+            running.proxy.delete_pci_hostdev("0000:05:00.0")
+
+    def test_a_next_start_that_keeps_it_after_the_running_vm_let_it_go_is_said(self):
+        for keeps, where in ((False, "the running VM does not have it, its next start has it"),
+                             (True, "the running VM has it, its next start has it")):
+            running = RunningVM(fail=libvirt.VIR_DOMAIN_AFFECT_CONFIG, keeps=keeps)
+            with self.subTest(keeps=keeps), self.assertRaisesRegex(OperationError, where):
+                running.proxy.delete_pci_hostdev("0000:05:00.0")
+
+    def test_a_device_in_one_definition_only_is_taken_from_it(self):
+        for now, later in ((True, False), (False, True)):
+            running = RunningVM(now=now, later=later)
+            with self.subTest(now=now, later=later):
+                self.assertFalse(running.proxy.delete_pci_hostdev("0000:05:00.0"))
+                self.assertEqual(list(running.has.values()), [False, False])
+                self.assertEqual(running.proxy.instance.detachDeviceFlags.call_count, 1)
 
 
 class MigrationTests(unittest.TestCase):
@@ -209,11 +328,42 @@ class HostUsbViewTests(TestCase):
         self.client.post(reverse("instances:delete_pci_hostdev", args=[self.instance.id]), {"address": "0000:00:0a.0"})
         self.proxy.delete_pci_hostdev.assert_called_once_with("0000:00:0a.0")
 
-    def test_the_pci_form_waits_for_a_shut_off_vm(self):
-        self.proxy.instance.isActive.return_value = True
-        page = html.fromstring(self.client.get(reverse("instances:host_devices", args=[self.instance.id])).content)
-        self.assertEqual(page.xpath("//select[@name='pci_device']/@disabled"), ["disabled"])
-        self.assertIn("Shut the VM down", page.text_content())
+    def test_the_pci_form_waits_for_a_vm_that_runs_or_is_shut_off(self):
+        url = reverse("instances:host_devices", args=[self.instance.id])
+        for state, saved, frozen in ((libvirt.VIR_DOMAIN_RUNNING, 0, False), (libvirt.VIR_DOMAIN_SHUTOFF, 0, False),
+                                     (libvirt.VIR_DOMAIN_PAUSED, 0, True), (libvirt.VIR_DOMAIN_SHUTOFF, 1, True)):
+            self.proxy.instance.info.return_value = [state]
+            self.proxy.instance.hasManagedSaveImage.return_value = saved
+            page = html.fromstring(self.client.get(url).content)
+            with self.subTest(state=state, saved=saved):
+                self.assertEqual(page.xpath("//select[@name='pci_device']/@disabled"), ["disabled"] if frozen else [])
+
+    def test_a_removal_is_logged_as_done_or_as_requested(self):
+        from logs.models import Logs
+
+        url = reverse("instances:delete_pci_hostdev", args=[self.instance.id])
+        self.proxy.delete_pci_hostdev.return_value = False
+        self.client.post(url, {"address": "0000:00:0a.0"})
+        self.proxy.delete_pci_hostdev.return_value = True  # the guest has not let it go yet
+        response = self.client.post(url, {"address": "0000:00:0a.0"})
+        self.assertIn("the guest has not let it go yet", " ".join(str(m) for m in get_messages(response.wsgi_request)))
+        rows = list(Logs.objects.filter(instance="kiosk-1").order_by("id").values_list("message", flat=True))
+        self.assertEqual(rows, ["VM kiosk-1: remove PCI device 0000:00:0a.0",
+                                "VM kiosk-1: request the removal of PCI device 0000:00:0a.0"])
+
+    def test_a_running_vm_is_given_a_device_alone_a_shut_off_one_with_its_group(self):
+        from nodedevs.tests.test_pci_rules import NODES as GROUPS
+
+        # the next start has the GPU's audio function managed: it goes along when the VM starts, not at a hot plug
+        self.proxy.wvm.listAllDevices.return_value = [node(name, etree.tostring(n)) for name, n in GROUPS.items()]
+        self.proxy.domain_trees.side_effect = lambda: []
+        self.proxy.get_hostdevs.return_value = ([], [{"address": "0000:00:0e.0", "now": False, "next": True, "managed": True}], [])
+        url = reverse("instances:host_devices", args=[self.instance.id])
+        for active, offered in ((False, True), (True, False)):
+            self.proxy.instance.isActive.return_value = active
+            page = html.fromstring(self.client.get(url).content)
+            with self.subTest(active=active):
+                self.assertEqual(page.xpath("//option[@value='0000:00:0d.0']/@disabled") == [], offered)
 
     def test_a_device_is_taken_back_by_its_selector(self):
         url = reverse("instances:delete_usb_hostdev", args=[self.instance.id])
