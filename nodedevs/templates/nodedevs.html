@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load bootstrap_icons %}
+
+{% block title %}{% trans "Devices" %} - {{ compute.name }}{% endblock %}
+
+{% block page_heading %}{{ compute.name }} - {% trans "Devices" %}{% endblock page_heading %}
+
+{% block content %}
+    {% include "computes/host_nav.html" with section="nodedevs" %}
+
+    {% if devices_read %}
+    {% if pci_count and not iommu %}
+    <div class="alert alert-warning shadow-sm">
+        {% bs_icon 'exclamation-triangle' %}
+        {% blocktrans %}No IOMMU groups detected: a PCI device cannot be given to a VM. The host needs its IOMMU (Intel VT-d, AMD-Vi) turned on in the firmware and the kernel; on Intel, boot it with intel_iommu=on.{% endblocktrans %}
+    </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-end mb-3">
+        <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search devices" %}">
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">{% trans "PCI devices" %} <span class="badge text-bg-light border">{{ pci_count }}</span></div>
+        {% if pci_count %}
+        <div class="table-responsive position-relative">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "Address" %}</th>
+                        <th scope="col">{% trans "Device" %}</th>
+                        <th scope="col">{% trans "Type" %}</th>
+                        <th scope="col">{% trans "Driver" %}</th>
+                        <th scope="col">{% trans "Host resources" %}</th>
+                        <th scope="col">{% trans "Used by" %}</th>
+                    </tr>
+                </thead>
+                {% for group, devices in groups %}
+                <tbody class="searchable">
+                    <tr data-group-header class="table-light">
+                        <th colspan="6" scope="rowgroup" class="small">
+                            {% if group is None %}{% trans "Without an IOMMU group" %}{% else %}{% blocktrans %}IOMMU group {{ group }}{% endblocktrans %}{% endif %}
+                        </th>
+                    </tr>
+                    {% for device in devices %}
+                    <tr data-search="{{ device.address }} {{ device.ids }} {{ device.vendor }} {{ device.product }} {{ device.kind }} {{ device.driver }}{% for resource in device.resources %} {{ resource }}{% endfor %}{% for vm in device.vms %} {{ vm.name }}{% endfor %}">
+                        <td class="font-monospace text-nowrap">{{ device.address }}</td>
+                        <td>
+                            <div>{{ device.product }}</div>
+                            <div class="small text-body-secondary">{{ device.vendor }} <span class="font-monospace">{{ device.ids }}</span></div>
+                            {% if device.physfn %}<div class="small text-body-secondary">{% blocktrans with address=device.physfn %}Virtual function of {{ address }}{% endblocktrans %}</div>{% endif %}
+                            {% if device.vfs %}<div class="small text-body-secondary">{% blocktrans count counter=device.vfs %}{{ counter }} virtual function{% plural %}{{ counter }} virtual functions{% endblocktrans %}</div>{% endif %}
+                        </td>
+                        <td class="text-nowrap">{{ device.kind }}</td>
+                        <td class="font-monospace">{{ device.driver|default:"–" }}</td>
+                        <td>{% include "nodedev_resources.html" %}</td>
+                        <td class="text-nowrap">{% include "nodedev_users.html" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% endfor %}
+            </table>
+        </div>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "The host reports no PCI devices." %}</div>
+        {% endif %}
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">{% trans "USB devices" %} <span class="badge text-bg-light border">{{ usb|length }}</span></div>
+        {% if usb %}
+        <div class="table-responsive position-relative">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "Bus / device" %}</th>
+                        <th scope="col">{% trans "Device" %}</th>
+                        <th scope="col">{% trans "Type" %}</th>
+                        <th scope="col">{% trans "Host resources" %}</th>
+                        <th scope="col">{% trans "Used by" %}</th>
+                    </tr>
+                </thead>
+                <tbody class="searchable">
+                    {% for device in usb %}
+                    <tr data-search="{{ device.bus }}/{{ device.device }} {{ device.ids }} {{ device.vendor }} {{ device.product }}{% for kind in device.kinds %} {{ kind }}{% endfor %}{% for resource in device.resources %} {{ resource }}{% endfor %}{% for vm in device.vms %} {{ vm.name }}{% endfor %}{% for vm in device.by_model %} {{ vm }}{% endfor %}">
+                        <td class="font-monospace text-nowrap">{{ device.bus }} / {{ device.device }}</td>
+                        <td>
+                            <div>{{ device.product }}</div>
+                            <div class="small text-body-secondary">{{ device.vendor }} <span class="font-monospace">{{ device.ids }}</span></div>
+                            {% if device.same_model %}<div class="small text-body-secondary">{% trans "One of several of this model: a VM that names the model alone may take any of them." %}</div>{% endif %}
+                        </td>
+                        <td>{{ device.kinds|join:", "|default:"–" }}</td>
+                        <td>{% include "nodedev_resources.html" %}</td>
+                        <td>
+                            {% if device.vms or not device.by_model %}{% include "nodedev_users.html" %}{% endif %}
+                            {% if device.by_model %}<div class="small">{% blocktrans with vms=device.by_model|join:", " %}By model: {{ vms }}{% endblocktrans %}</div>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card-body small text-body-secondary">{% trans "The host reports no USB devices." %}</div>
+        {% endif %}
+    </div>
+    <div role="status">
+        <div id="no-match" class="text-center text-body-secondary py-3" hidden>{% trans "No device matches the search." %}</div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block script %}
+{% if devices_read %}<script src="{% static 'js/table_filter.js' %}"></script>{% endif %}
+{% endblock %}

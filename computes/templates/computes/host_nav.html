@@ -31,5 +31,9 @@
             {% if section == "virtsecrets" and not detail %}<span class="fw-bold" aria-current="page">{% bs_icon 'key' %} {% trans "Secrets" %}</span>
             {% else %}<a href="{% url 'virtsecrets' compute.id %}"{% if section == "virtsecrets" %} class="fw-bold" aria-current="true"{% endif %}>{% bs_icon 'key' %} {% trans "Secrets" %}</a>{% endif %}
         </li>
+        <li class="breadcrumb-item">
+            {% if section == "nodedevs" and not detail %}<span class="fw-bold" aria-current="page">{% bs_icon 'usb-symbol' %} {% trans "Devices" %}</span>
+            {% else %}<a href="{% url 'nodedevs' compute.id %}"{% if section == "nodedevs" %} class="fw-bold" aria-current="true"{% endif %}>{% bs_icon 'usb-symbol' %} {% trans "Devices" %}</a>{% endif %}
+        </li>
     </ol>
 </nav>

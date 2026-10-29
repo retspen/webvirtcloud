@@ -4,6 +4,7 @@ from admin.decorators import superuser_only
 from django.urls import URLPattern, URLResolver, include, path
 from interfaces.views import interface, interfaces
 from networks.views import network, networks
+from nodedevs.views import nodedevs
 from nwfilters.views import nwfilter, nwfilters
 from storages.views import create_volume, get_volumes, storage, storages
 
@@ -61,6 +62,7 @@ urlpatterns = [
                 path("statistics", views.compute_graph, name="compute_graph"),
                 path("capacity/", views.capacity, name="compute_capacity"),
                 path("instances/", views.instances, name="instances"),
+                path("nodedevs/", nodedevs, name="nodedevs"),
                 path("storages/", storages, name="storages"),
                 path("storage/<str:pool>/volumes/", get_volumes, name="volumes"),
                 path("storage/<str:pool>/", storage, name="storage"),
