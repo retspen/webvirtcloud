@@ -53,5 +53,6 @@ class MigrationAddressTests(TestCase):
              patch("instances.utils.wvmInstances") as instances, \
              patch("instances.utils.wvmInstance"), \
              patch.object(Instance, "proxy", MagicMock()):
+            instances.return_value.moveto.return_value = ("live", [])
             migrate_instance(dest, vm, user, live=True)
         self.assertEqual(instances.return_value.moveto.call_args.kwargs["uri"], "tcp://198.51.100.9")

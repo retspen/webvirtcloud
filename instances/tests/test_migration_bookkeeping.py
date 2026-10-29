@@ -29,7 +29,7 @@ class MigrationBookkeepingTests(TestCase):
              patch("instances.utils.wvmInstances") as instances, \
              patch("instances.utils.wvmInstance") as instance, \
              patch.object(Instance, "proxy", proxy):
-            instances.return_value.moveto.return_value = "live"
+            instances.return_value.moveto.return_value = ("live", [])
             if autostart_error:
                 instance.return_value.set_autostart.side_effect = autostart_error
             self.moveto = instances.return_value.moveto

@@ -158,10 +158,15 @@ def migrate_instance(
     offline=False,
     autoconverge=False,
     compress=False,
+    delete_source=False,
+    disk_pools=None,
 ):
     """Migrates instance to new_compute and logs the outcome (the mode
     used, or the error), then each later step that failed in a row of its
-    own. Returns the mode."""
+    own. disk_pools: {target: pool} of the disks copied into pools of
+    new_compute (moveto's pools); their source files go with delete_source
+    unless another VM or volume uses them, and are named in the log
+    otherwise. Returns the mode."""
     source, target = instance.compute, migration_target(new_compute)
 
     def log(action, error=None):
@@ -179,7 +184,7 @@ def migrate_instance(
 
         autostart = instance.proxy.get_autostart()
         nvram = instance.proxy.get_nvram()
-        mode = conn_migrate.moveto(
+        mode, copied = conn_migrate.moveto(
             instance.proxy,
             instance.name,
             live,
@@ -188,6 +193,7 @@ def migrate_instance(
             autoconverge,
             compress,
             uri=new_compute.migration_uri,
+            pools=disk_pools,
         )
     except Exception as error:
         log(f"migrate to {target}", error)
@@ -216,6 +222,24 @@ def migrate_instance(
         finally:
             if conn_new is not None:
                 conn_new.close()
+
+    in_use = set()
+    if copied and delete_source:
+        try:
+            in_use = instance.proxy.paths_in_use()
+        except libvirtError as error:
+            log("check the source copies before deleting them", error)
+            delete_source = False
+    for path in copied:
+        if not delete_source or path in in_use:
+            log(f"keep the source copy {path}" + (": another VM or volume uses it" if path in in_use else ""))
+            continue
+        try:
+            instance.proxy.get_volume_by_path(path).delete(0)
+        except libvirtError as error:
+            log(f"delete the source copy {path}", error)
+        else:
+            log(f"delete the source copy {path}")
 
     # libvirt keeps the NVRAM file on the source; a VM created there
     # later with the same name would start with these variables.

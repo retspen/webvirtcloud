@@ -172,6 +172,31 @@ class LiveJobsTestCase(TransactionTestCase):
         self.assertFalse(self.conn.lookupByUUIDString(uuid).isActive())  # defined on the source again
         self.assertEqual(Instance.objects.get(uuid=uuid).compute, self.compute)
 
+    def test_a_disk_neither_host_shares_is_copied_there_and_back(self):
+        """The test pool is a directory of each host's own: the disk is
+        copied into it, running there with its source file deleted on
+        request, shut off back (started paused for the copy) with it kept."""
+        dest, dest_conn = self.second_host()
+        self.addCleanup(livetest.remove_pool, dest_conn)
+        livetest.ensure_pool(dest_conn)
+        path = livetest.create_volume(self.conn, P + "copy")
+        dom = livetest.define_vm(self.conn, P + "copy", [path])
+        dom.create()
+        uuid = dom.UUIDString()
+        instance = Instance.objects.create(compute=self.compute, name=dom.name(), uuid=uuid)
+        pools = {"vda": livetest.POOL}
+        there = {"instance": instance.pk, "target": dest.pk, "live": True, "disk_pools": pools, "delete_source": True}
+        self.run_job(jobs.submit("instance.migrate", self.admin, there, "key-copy0001"))
+        self.assertTrue(dest_conn.lookupByUUIDString(uuid).isActive())
+        self.assertEqual((livetest.volume_exists(self.conn, path), livetest.volume_exists(dest_conn, path)),
+                         (False, True))
+        dest_conn.lookupByUUIDString(uuid).destroy()
+        back = {"instance": instance.pk, "target": self.compute.pk, "offline": True, "disk_pools": pools}
+        self.run_job(jobs.submit("instance.migrate", self.admin, back, "key-copy0002"))
+        self.assertFalse(self.conn.lookupByUUIDString(uuid).isActive())
+        self.assertEqual((livetest.volume_exists(self.conn, path), livetest.volume_exists(dest_conn, path)),
+                         (True, True))
+
     def test_a_shut_off_uefi_vm_migrates_with_its_nvram_there_and_back(self):
         dest, _dest_conn = self.second_host()
         hosts = {self.compute.pk: wvmConnect(*self.args), dest.pk: wvmConnect(dest.hostname, dest.login, "", 2)}

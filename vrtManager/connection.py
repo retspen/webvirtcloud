@@ -880,8 +880,11 @@ class wvmConnect(object):
         if os.path.dirname(path) != NVRAM_DIR:
             return False
         with self._nvram_pool() as pool, destination._nvram_pool() as other:
-            if self._nvram_shared(pool, other):
-                return False
+            try:
+                if self.same_directory(pool, other):
+                    return False
+            except libvirtError:
+                return False  # not known to be the source's own file
             vol = self._find_volume(pool, os.path.basename(path))
             if vol is None:
                 return False
@@ -889,11 +892,11 @@ class wvmConnect(object):
             return True
 
     @staticmethod
-    def _nvram_shared(pool, other):
-        """Whether pools on NVRAM_DIR of two hosts are one directory, or other
-        is not known to be one of its own: creating the same file in both
-        fails then. The create is exclusive on the file server, unlike a
-        directory listing, which an NFS client may cache."""
+    def same_directory(pool, other):
+        """Whether pools of two hosts are one directory: creating the same
+        file in both fails then, as it exists already. The create is
+        exclusive on the file server, unlike a directory listing, which an
+        NFS client may cache. Any other failure raises: it tells nothing."""
         marker = (
             f"<volume><name>webvirtcloud-check-{uuid.uuid4().hex}</name><capacity>0</capacity>"
             "<target><format type='raw'/></target></volume>"
@@ -901,22 +904,32 @@ class wvmConnect(object):
         mine = pool.createXML(marker, 0)
         try:
             other.createXML(marker, 0).delete(0)
-        except libvirtError:
-            return True
+        except libvirtError as error:
+            # the file exists (OPERATION_INVALID), or the pool lists it already
+            if error.get_error_code() in (libvirt.VIR_ERR_OPERATION_INVALID, libvirt.VIR_ERR_STORAGE_VOL_EXIST):
+                return True
+            raise
         finally:
             mine.delete(0)
         return False
+
+    def pool_at(self, directory):
+        """The active pool whose directory is directory, or None. A pool
+        without a target path (rbd, gluster, ...) holds no files."""
+        for pool in self.wvm.listAllStoragePools(libvirt.VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            if (util.get_xml_path(pool.XMLDesc(0), "/pool/target/path") or "").rstrip("/") == directory:
+                return pool
+        return None
 
     @contextlib.contextmanager
     def _nvram_pool(self):
         """An active, refreshed pool on NVRAM_DIR: libvirt reads and deletes
         files only as volumes of a pool. A transient one when none exists."""
-        for pool in self.wvm.listAllStoragePools(libvirt.VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
-            # a pool without a target path (rbd, gluster, ...) holds no files
-            if (util.get_xml_path(pool.XMLDesc(0), "/pool/target/path") or "").rstrip("/") == NVRAM_DIR:
-                pool.refresh(0)
-                yield pool
-                return
+        pool = self.pool_at(NVRAM_DIR)
+        if pool is not None:
+            pool.refresh(0)
+            yield pool
+            return
         pool = self.wvm.storagePoolCreateXML(
             f"<pool type='dir'><name>webvirtcloud-nvram-{uuid.uuid4().hex[:8]}</name>"
             f"<target><path>{NVRAM_DIR}</path></target></pool>",

@@ -444,6 +444,40 @@
             });
         });
     }
+    // the Migrate tab's disks: loaded for the chosen destination when the tab opens or the choice changes
+    // the form is not sent until the disks of the chosen destination are shown
+    var migratePlan = document.getElementById("migrate-plan");
+    var migrateCompute = document.getElementById("migrate_compute");
+    var migrateLoading = null;
+    function loadMigratePlan() {
+        if (!migrateCompute.value) return;
+        if (migrateLoading) migrateLoading.abort();
+        var loading = migrateLoading = new AbortController();
+        var submit = migratePlan.closest("form").querySelector('button[name="migrate"]');
+        submit.disabled = true;
+        migratePlan.textContent = "{{ _("Checking the disks…")|escapejs }}";
+        fetch(migratePlan.dataset.url + "?compute_id=" + encodeURIComponent(migrateCompute.value),
+              {signal: loading.signal}).then(function (response) {
+            if (!response.ok) throw new Error(response.statusText);
+            return response.text();
+        }).then(function (html) {
+            migratePlan.innerHTML = html;
+            submit.disabled = false;
+        }).catch(function () {
+            if (loading.signal.aborted) return;  // another destination was chosen
+            migratePlan.textContent = "{{ _("The disks could not be checked.")|escapejs }}";
+            submit.disabled = false;  // the migration checks them again
+        });
+    }
+    if (migratePlan && migrateCompute) {
+        document.querySelector('[data-bs-target="#migrate"]').addEventListener("shown.bs.tab", function () {
+            if (!migratePlan.dataset.loaded) {
+                migratePlan.dataset.loaded = "true";
+                loadMigratePlan();
+            }
+        });
+        migrateCompute.addEventListener("change", loadMigratePlan);
+    }
     function get_osinfo() {
         show_tab('#settings');
         show_tab('#osinfo');

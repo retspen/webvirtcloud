@@ -4,6 +4,7 @@ from computes.models import Compute
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from instances.jobs import MIGRATE_OPTIONS
 from instances.models import Flavor, Instance
 from instances.views import destroy as instance_destroy
 from instances.views import (
@@ -195,8 +196,8 @@ class MigrateViewSet(viewsets.ViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         data = serializer.validated_data
-        raw = {"instance": data["instance"].pk, "target": data["target_compute"].pk,
-               **{name: data.get(name, False) for name in ("live", "unsafe", "offline", "autoconverge", "compress")}}
+        raw = {"instance": data["instance"].pk, "target": data["target_compute"].pk, "disk_pools": data["disk_pools"],
+               **{name: data.get(name, False) for name in MIGRATE_OPTIONS}}
         op = jobs.submit("instance.migrate", request.user, raw, data["submission_key"])
         return Response(OperationSerializer(op, context={"request": request}).data, status=status.HTTP_202_ACCEPTED,
                         headers={"Location": reverse("operation-detail", args=[op.pk])})

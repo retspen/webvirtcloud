@@ -49,7 +49,7 @@ from operations.utils import busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
 from vrtManager.create import cpu_choices, wvmCreate
-from vrtManager.instance import USAGE_MAX_WINDOW
+from vrtManager.instance import USAGE_MAX_WINDOW, wvmInstances
 from vrtManager.interface import wvmInterface
 from vrtManager.nodedevs import device_names, hostdev_problems, node_devices, pci_problems
 from vrtManager.storage import wvmStorage
@@ -850,7 +850,10 @@ def migrate(request, pk):
     target_host = get_object_or_404(Compute, pk=compute_id)
     raw = {"instance": pk, "target": target_host.pk, "live": request.POST.get("live_migrate"),
            "unsafe": request.POST.get("unsafe_migrate"), "offline": request.POST.get("offline_migrate"),
-           "autoconverge": request.POST.get("autoconverge"), "compress": request.POST.get("compress")}
+           "autoconverge": request.POST.get("autoconverge"), "compress": request.POST.get("compress"),
+           "delete_source": request.POST.get("delete_source"),
+           "disk_pools": {key.removeprefix("pool-"): value for key, value in request.POST.items()
+                          if key.startswith("pool-")}}
     try:
         op = jobs.submit("instance.migrate", request.user, raw, request.POST.get("submission_key", ""))
     except claims.Busy as busy:
@@ -861,6 +864,36 @@ def migrate(request, pk):
         messages.info(request, _("The VM is being migrated; follow it in the job panel."))
         jobs.remember_job(request, op)
     return get_safe_redirect(request, default=reverse("instances:instance", args=[pk]))
+
+
+@superuser_only
+def migrate_plan(request, pk):
+    """The disks of the Migrate tab for the chosen destination, loaded when
+    one is chosen: each with the pools of the destination it can be copied
+    into, or the storage both hosts share."""
+    instance = get_instance(request.user, pk)
+    compute_id = request.GET.get("compute_id", "")
+    if not compute_id.isdigit():
+        raise Http404
+    target = get_object_or_404(Compute, pk=compute_id)
+    dest = None
+    try:
+        dest = wvmInstances(target.hostname, target.login, target.password, target.type)
+        pools = [{"name": name, "directory": directory, "free": pool.info()[3]}
+                 for name, (pool, directory) in sorted(dest.file_pools().items())]
+        disks = dest.disk_plan(instance.proxy, instance.proxy.instance.XMLDesc(0))
+        for disk in disks:
+            # a copy goes by default to the pool on the same directory, else the first
+            names = [pool["name"] for pool in pools if pool["directory"] == os.path.dirname(disk["path"])]
+            names = names or [pool["name"] for pool in pools]
+            disk["default"] = names[0] if names else None
+        context = {"disks": disks, "pools": pools, "shut_off": instance.proxy.get_status() == 5}
+    except libvirtError as err:
+        context = {"error": error_text(request, err)}
+    finally:
+        if dest is not None:
+            dest.close()
+    return render(request, "instances/migrate_plan.html", context)
 
 
 GSTFSD_PORT = 16510

@@ -1,6 +1,7 @@
 """Jobs of the instances app (operations framework, spec section 5)."""
 
 import math
+import os
 import re
 import time
 
@@ -809,7 +810,7 @@ class CreateInstance(Kind):
         return _log(op, state, "create")
 
 
-MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress")
+MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress", "delete_source")
 
 
 def _target(instance, target_pk):
@@ -841,7 +842,9 @@ class MigrateInstance(Kind):
     progress_bytes = True  # libvirt job data processed/total
 
     def normalize(self, raw):
+        # disk_pools: {target: pool of the destination} of the disks to copy there
         return {"instance": int(raw["instance"]), "target": int(raw["target"]),
+                "disk_pools": {str(k): str(v) for k, v in (raw.get("disk_pools") or {}).items() if v},
                 **{k: bool(raw.get(k)) for k in MIGRATE_OPTIONS}}
 
     def validate(self, user, params):
@@ -855,6 +858,13 @@ class MigrateInstance(Kind):
         keys.update({claims.compute_key(instance.compute_id): Claim.SHARED,
                      claims.reconcile_key(instance.compute_id): Claim.EXCLUSIVE,
                      claims.instance_key(instance.uuid): Claim.EXCLUSIVE})
+        if params["disk_pools"]:
+            # a copy takes its file's name in the chosen pool; the source file may go
+            for disk in instance.proxy.get_disk_devices():
+                if pool := params["disk_pools"].get(disk["dev"]):
+                    keys[claims.volume_key(params["target"], pool, os.path.basename(disk["path"]))] = Claim.EXCLUSIVE
+                    if disk["storage"]:
+                        keys[claims.volume_key(instance.compute_id, disk["storage"], disk["image"])] = Claim.EXCLUSIVE
         return Plan(claims=keys, resource=claims.instance_key(instance.uuid),
                     label=f"{instance.compute.name}/{instance.name}",
                     intent={"compute": instance.compute_id, "uuid": instance.uuid})
@@ -875,6 +885,7 @@ class MigrateInstance(Kind):
         try:
             # migrate_instance logs the outcome
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
+                                   disk_pools=p["disk_pools"],
                                    **{k: p[k] for k in MIGRATE_OPTIONS})
         except libvirtError:
             op.refresh_from_db(fields=["cancel_requested"])

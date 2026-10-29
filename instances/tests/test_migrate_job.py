@@ -31,7 +31,7 @@ class MigrateJobTestCase(TransactionTestCase):
         patch.object(Compute, "status", True).start()
         patch.object(Instance, "proxy", proxy).start()
         self.dest_conn = patch("instances.utils.wvmInstances").start().return_value
-        self.dest_conn.moveto.return_value = "live"
+        self.dest_conn.moveto.return_value = ("live", [])
         self.addCleanup(patch.stopall)
 
     def queue(self, **form):
@@ -75,6 +75,41 @@ class MigrateJobTestCase(TransactionTestCase):
             self.assertEqual(MigrateInstance().reconcile(op).state, Operation.SUCCEEDED)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.dest)
+
+    def test_a_copy_claims_its_volume_on_both_computes(self):
+        Instance.proxy.get_disk_devices.return_value = [
+            {"dev": "vda", "storage": "default", "image": "mig-vm.qcow2", "path": "/i/mig-vm.qcow2"},
+            {"dev": "vdb", "storage": None, "image": "/dev/sdb", "path": "/dev/sdb"}]
+        op = self.queue(live_migrate="true", delete_source="true", **{"pool-vda": "fast", "pool-vdb": ""})
+        self.assertTrue({(f"volume:{self.source.pk}:default/mig-vm.qcow2", "exclusive"),
+                         (f"volume:{self.dest.pk}:fast/mig-vm.qcow2", "exclusive")}
+                        <= set(Claim.objects.values_list("resource", "mode")))
+        self.assertEqual((op.params["disk_pools"], op.params["delete_source"]), ({"vda": "fast"}, True))
+        ctx = self.start(op)
+        get_kind(op.kind).run(op, ctx)
+        self.assertEqual(self.dest_conn.moveto.call_args.kwargs["pools"], {"vda": "fast"})
+
+    def test_the_migrate_tab_lists_each_disk_with_where_it_can_go(self):
+        Instance.proxy.instance.XMLDesc.return_value = "<domain/>"
+        Instance.proxy.get_status.return_value = 5
+        with patch("instances.views.wvmInstances") as instances:
+            dest = instances.return_value
+            fast, default = MagicMock(), MagicMock()
+            fast.info.return_value = default.info.return_value = [2, 0, 0, 8 << 30]
+            dest.file_pools.return_value = {"fast": (fast, "/srv/fast"), "default": (default, "/i")}
+            dest.disk_plan.return_value = [
+                {"target": "vda", "path": "/i/mig-vm.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None},
+                {"target": "sda", "path": "/i/os.iso", "capacity": 1 << 20, "shared": False,
+                 "refusal": "an image is not copied; eject it first"}]
+            page = self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk]),
+                                   {"compute_id": self.dest.pk}).content.decode()
+        dest.close.assert_called_once_with()
+        # the pool on the disk's directory is chosen
+        self.assertIn('<option value="default" selected>Copy to default (8.0\xa0GB free)</option>', page)
+        self.assertIn('<option value="fast">Copy to fast (8.0\xa0GB free)</option>', page)
+        self.assertIn("Cannot be copied: an image is not copied; eject it first", page)
+        self.assertIn("A shut-off VM is started paused for a copy", page)
+        self.assertEqual(self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk])).status_code, 404)
 
     def test_a_cancelled_migration_ends_cancelled_and_the_vm_stays(self):
         op = self.queue(live_migrate="true")

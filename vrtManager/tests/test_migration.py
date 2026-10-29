@@ -110,6 +110,9 @@ class FakePool:
     def isActive(self):
         return self.active
 
+    def XMLDesc(self, flags=0):
+        return "<pool><target><path>/elsewhere</path></target></pool>"
+
     def refresh(self, flags=0):
         self.host.refreshes += 1
         self.host.volumes |= self.host.unlisted
@@ -291,7 +294,7 @@ class MigrationModeTestCase(unittest.TestCase):
     def migrate(self, state, **request):
         source = FakeSource(state)
         options = {"live": False, "unsafe": False, "offline": False, **request}
-        mode = destination().moveto(source, "vm", **options)
+        mode, _copied = destination().moveto(source, "vm", **options)
         return mode, source.instance.calls[0][0] if source.instance.calls else None
 
     def test_refused_requests(self):
@@ -344,7 +347,14 @@ FILE_DISK = "<disk type='file' device='disk'><source file='/pool/vm.qcow2'/><tar
 
 class DestinationDisksTestCase(unittest.TestCase):
     """Every disk of the VM must be a volume the destination knows; the
-    VM is refused before anything changes otherwise, naming the disks."""
+    VM is refused before anything changes otherwise, naming the disks.
+    (Which disks are copied, and that the others are shared, is
+    test_disk_copy_migration's.)"""
+
+    def setUp(self):
+        patcher = mock.patch.object(wvmInstances, "disk_copies", return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def migrate(self, host, xml, state=1, inactive_xml=None):
         source = FakeSource(state, xml=xml)
@@ -450,7 +460,7 @@ class NvramCopyTestCase(unittest.TestCase):
         self.dest_pool = mock.MagicMock()
         self.dest._nvram_pool = lambda: contextlib.nullcontext(self.dest_pool)
         self.dest.wvm.newStream = mock.MagicMock()
-        self.shared = mock.patch.object(wvmInstances, "_nvram_shared", return_value=False)
+        self.shared = mock.patch.object(wvmInstances, "same_directory", return_value=False)
         self.shared.start()
         self.addCleanup(self.shared.stop)
 
@@ -466,10 +476,18 @@ class NvramCopyTestCase(unittest.TestCase):
 
     def test_a_shared_directory_is_not_copied(self):
         self.shared.stop()
-        with mock.patch.object(wvmInstances, "_nvram_shared", return_value=True):
+        with mock.patch.object(wvmInstances, "same_directory", return_value=True):
             self.move()
         self.dest_pool.createXML.assert_not_called()
         self.shared.start()
+
+    def test_a_directory_whose_sharing_cannot_be_told_stops_the_move(self):
+        self.shared.stop()
+        with mock.patch.object(wvmInstances, "same_directory", side_effect=libvirt.libvirtError("no marker")):
+            with self.assertRaisesRegex(libvirt.libvirtError, "no marker"):
+                self.move()
+        self.shared.start()
+        self.assertEqual(self.host.defined, [])
 
     def test_the_copy_is_deleted_when_the_definition_fails(self):
         # the raised error is this one: its message can be another libvirt

@@ -697,7 +697,7 @@
                 <div class="row">
                     <label class="col-sm-3 col-form-label">{% trans "Host migration" %}</label>
                     <div class="col-sm-6">
-                        <select name="compute_id" class="form-select">
+                        <select name="compute_id" class="form-select" id="migrate_compute">
                             {% if computes_count != 1 %}
                                 {% for comp in computes %}
                                     {% if comp.id != compute.id %}
@@ -707,6 +707,10 @@
                             {% endif %}
                         </select>
                     </div>
+                </div>
+                <div class="row">
+                    <label class="col-sm-3 col-form-label">{% trans "Disks" %}</label>
+                    <div class="col-sm-9 py-2" id="migrate-plan" data-url="{% url 'instances:migrate_plan' instance.id %}" aria-live="polite"></div>
                 </div>
                 <div class="row">
                     <div class="col-sm-6 offset-sm-3">
@@ -745,6 +749,14 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="compress" value="true" id="compress" {% if instance.status != 1 %}disabled{% endif %}>
                             <label class="form-check-label" for="compress" title="{% trans 'Compress instance memory for fast migration' %}">{% trans "Compressed" %}</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 offset-sm-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="delete_source" value="true" id="delete_source">
+                            <label class="form-check-label" for="delete_source">{% trans "Delete the source files of copied disks" %}</label>
                         </div>
                     </div>
                 </div>

@@ -94,6 +94,12 @@ class RemoveNvramTestCase(TestCase):
         self.assertFalse(source.vols["vm_VARS.fd"].delete.called)
         source.created[0].delete.assert_called_once_with(0)  # the marker is gone
 
+    def test_a_directory_whose_sharing_cannot_be_told_is_left_alone(self):
+        source = pool(NVRAM_DIR, ["vm_VARS.fd"])
+        destination = connect([pool(NVRAM_DIR, create_error=error(libvirt.VIR_ERR_SYSTEM_ERROR))])
+        self.assertFalse(connect([source]).remove_nvram(PATH, destination))
+        self.assertFalse(source.vols["vm_VARS.fd"].delete.called)
+
     def test_both_markers_are_removed(self):
         source = pool(NVRAM_DIR, ["vm_VARS.fd"])
         other = pool(NVRAM_DIR)

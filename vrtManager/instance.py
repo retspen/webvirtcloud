@@ -17,6 +17,7 @@ try:
         VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
         VIR_DOMAIN_RUNNING,
         VIR_DOMAIN_SHUTOFF,
+        VIR_DOMAIN_START_PAUSED,
         VIR_DOMAIN_XML_SECURE,
         VIR_DOMAIN_XML_INACTIVE,
         VIR_DOMAIN_XML_MIGRATABLE,
@@ -30,7 +31,12 @@ try:
         VIR_MIGRATE_AUTO_CONVERGE,
         VIR_MIGRATE_COMPRESSED,
         VIR_MIGRATE_LIVE,
+        VIR_MIGRATE_NON_SHARED_DISK,
         VIR_MIGRATE_OFFLINE,
+        VIR_MIGRATE_PARAM_DEST_XML,
+        VIR_MIGRATE_PARAM_MIGRATE_DISKS,
+        VIR_MIGRATE_PARAM_PERSIST_XML,
+        VIR_MIGRATE_PARAM_URI,
         VIR_MIGRATE_PERSIST_DEST,
         VIR_MIGRATE_UNDEFINE_SOURCE,
         VIR_MIGRATE_UNSAFE,
@@ -99,7 +105,8 @@ def _rate(before, after, seconds, scale=1):
 
 
 class wvmInstances(wvmConnect):
-    def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None):
+    def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
+               pools=None):
         """Migrates the VM of conn (a wvmInstance on the source) here.
 
         The mode follows the VM's state, read once: a running VM migrates
@@ -108,8 +115,10 @@ class wvmInstances(wvmConnect):
         fit the state is refused. unsafe, autoconverge (live only) and
         compress apply to a running VM. uri: the native migration URI
         (tcp://address) on the destination; None lets libvirt use the
-        destination's own hostname. Returns the mode and options used, for
-        the log."""
+        destination's own hostname. pools: {target: pool here} of the disks
+        libvirt copies into those pools during the migration (disk_copies);
+        the other disks must be on storage both hosts share. Returns the mode
+        and options used, for the log, and the paths of the copied disks."""
         state = conn.get_status()
         if state == 5:
             if live:
@@ -146,13 +155,17 @@ class wvmInstances(wvmConnect):
             raise util.OperationError("A VM with snapshots cannot be migrated")
         if state == 5:
             self.refuse_local_state(dom.XMLDesc(0))
-        definitions = {dom.XMLDesc(0)}
+        # the definition the migration carries first: it has the disks a migration copies
+        definitions = [dom.XMLDesc(0)]
         if state != 5:
-            definitions.add(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
+            definitions.append(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
         # a host device is of the source host: the destination may have none, or another one
         if any(etree.fromstring(xml).xpath(HOST_DEVICES) for xml in definitions):
             raise util.OperationError("A VM with host devices cannot be migrated; remove them first")
-        missing = self.missing_disks(definitions)
+        copies = self.disk_copies(conn, definitions, pools or {})
+        if copies:
+            mode.append("disks copied: " + ", ".join(f"{copy['target']} to {copy['pool'].name()}" for copy in copies))
+        missing = self.missing_disks(definitions, copied={copy["path"] for copy in copies})
         if missing:
             raise util.OperationError(
                 "The destination host does not have these disks of the VM: "
@@ -167,7 +180,11 @@ class wvmInstances(wvmConnect):
                 "Destination host emulator is different. Cannot be migrated"
             )
 
-        if state == 5:
+        if copies:
+            note = self.migrate_copying(conn, state, flags, uri, copies)
+            if note:
+                mode.append(note)
+        elif state == 5:
             # Workaround for a libvirt bug (RHEL-156800), see move_definition.
             # Once supported hosts all run a fixed libvirt, this branch and
             # move_definition can go: the flags above are those for
@@ -175,7 +192,185 @@ class wvmInstances(wvmConnect):
             self.move_definition(dom, conn)
         else:
             dom.migrate(self.wvm, flags, None, uri, 0)
-        return ", ".join(mode)
+        return ", ".join(mode), [copy["path"] for copy in copies]
+
+    def migrate_copying(self, conn, state, flags, uri, copies):
+        """Migrates the VM of conn while libvirt copies the disks of copies
+        into their pools here (NON_SHARED_DISK), the definitions naming the
+        new paths. libvirt copies the disks of a running or paused VM only: a
+        shut-off VM is started paused for it, its CPUs never run, and is shut
+        off here after it; its UEFI variables are copied first, as this host
+        would start from the firmware's template. Returns a note for the log
+        when the VM could not be shut off here."""
+        dom = conn.instance
+        nvram = None
+        xml_flags = VIR_DOMAIN_XML_SECURE | VIR_DOMAIN_XML_MIGRATABLE
+        params = {
+            VIR_MIGRATE_PARAM_MIGRATE_DISKS: [copy["target"] for copy in copies],
+            VIR_MIGRATE_PARAM_DEST_XML: self.moved_disks(dom.XMLDesc(xml_flags), copies),
+            VIR_MIGRATE_PARAM_PERSIST_XML: self.moved_disks(dom.XMLDesc(xml_flags | VIR_DOMAIN_XML_INACTIVE), copies),
+        }
+        if uri:
+            params[VIR_MIGRATE_PARAM_URI] = uri
+        try:
+            if state == 5:
+                flags &= ~VIR_MIGRATE_OFFLINE
+                nvram = self.copy_nvram(conn)
+                dom.createWithFlags(VIR_DOMAIN_START_PAUSED)
+            dom.migrate3(self.wvm, params, flags | VIR_MIGRATE_NON_SHARED_DISK)
+        except libvirtError as error:
+            if state == 5:
+                with contextlib.suppress(libvirtError):
+                    dom.destroy()  # shut off on the source again
+            self.remove_partial_copies(dom.UUIDString(), copies, error, nvram)
+            raise
+        if state == 5:
+            try:
+                self.wvm.lookupByUUIDString(dom.UUIDString()).destroy()
+            except libvirtError as error:
+                return f"left paused here, shut it off: {error}"
+        return None
+
+    @staticmethod
+    def moved_disks(xml, copies):
+        """xml with each copied disk's source at its path here; a disk is
+        found by its target and its source path before the copy."""
+        tree = etree.fromstring(xml)
+        sources = [(source, copy["dest"]) for copy in copies for source in tree.xpath(
+            "devices/disk[target/@dev=$target]/source[@file=$path]", target=copy["target"], path=copy["path"])]
+        for source, dest in sources:
+            source.set("file", dest)
+        return etree.tostring(tree, encoding="unicode")
+
+    def disk_plan(self, conn, xml):
+        """How the file disks of the VM of conn (on the source) in xml, the
+        definition the migration carries, can reach this host: a list of
+        {target, path, capacity, shared, refusal}. shared: both hosts see the
+        file at its path, as the directory both have as a storage pool is
+        one (same_directory); False when not, or when it cannot be told.
+        refusal: why the disk cannot be copied, or None."""
+        rows, shared = [], {}
+        for disk in ElementTree.fromstring(xml).iter("disk"):
+            source = disk.find("source")
+            if disk.get("type") != "file" or source is None or not source.get("file"):
+                continue
+            path = source.get("file")
+            directory = os.path.dirname(path)
+            if directory not in shared:
+                here, there = self.pool_at(directory), conn.pool_at(directory)
+                try:
+                    shared[directory] = here is not None and there is not None and self.same_directory(there, here)
+                except libvirtError:
+                    shared[directory] = False  # not known to be shared: copied, never assumed
+            try:
+                volume = conn.wvm.storageVolLookupByPath(path)
+            except libvirtError:
+                volume = None
+            rows.append({"target": disk.find("target").get("dev"), "path": path, "shared": shared[directory],
+                         "capacity": volume.info()[1] if volume else None,
+                         "refusal": self.copy_refusal(disk, volume)})
+        return rows
+
+    @staticmethod
+    def copy_refusal(disk, volume):
+        """Why the disk (its volume on the source, None if no pool has it) cannot be copied, or None."""
+        if disk.get("device") != "disk":
+            return "an image is not copied; eject it first"
+        if disk.find("readonly") is not None or disk.find("encryption") is not None \
+                or disk.find("source/encryption") is not None:
+            return "a read-only or encrypted disk is not copied"
+        driver = disk.find("driver")
+        if driver is None or driver.get("type") not in ("raw", "qcow2"):
+            return "only raw and qcow2 disks are copied"
+        if volume is None:
+            return "no storage pool of the source host has it"
+        if ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path"):
+            return "a disk with a backing file is not copied"
+        return None
+
+    def file_pools(self):
+        """The active pools of this host that keep disks as files, a copy's
+        destination: {name: (pool, directory)}."""
+        pools = {}
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            tree = ElementTree.fromstring(pool.XMLDesc(0))
+            if tree.get("type") in ("dir", "fs", "netfs") and tree.findtext("target/path"):
+                pools[pool.name()] = (pool, tree.findtext("target/path").rstrip("/"))
+        return pools
+
+    def disk_copies(self, conn, definitions, pools):
+        """The copies of the disks pools names a pool here for: {target, path,
+        dest, pool}, from the first of definitions (XML, the one the migration
+        carries). Each other file disk (see disk_plan), also of the next
+        start's definition, must be on shared storage. A copy never replaces a file: one
+        of the same name in the pool refuses it (libvirt would write into it).
+        Every problem is named in one refusal."""
+        here = self.file_pools() if pools else {}
+        copies, problems, targets, carried = [], [], set(), set()
+        for row in self.disk_plan(conn, definitions[0]):
+            targets.add(row["target"])
+            carried.add(row["path"])
+            name = pools.get(row["target"])
+            label = f"{row['target']} ({row['path']})"
+            if not name:
+                if not row["shared"]:
+                    problems.append(f"{label}: the destination host does not share it; choose a pool to copy it to")
+                continue
+            if row["refusal"]:
+                problems.append(f"{label}: {row['refusal']}")
+                continue
+            if name not in here:
+                problems.append(f"{label}: the destination host has no pool {name} for disk files")
+                continue
+            pool, directory = here[name]
+            pool.refresh(0)
+            file = os.path.basename(row["path"])
+            if self._find_volume(pool, file) is not None:
+                problems.append(f"{label}: pool {name} of the destination host already has a file {file}")
+                continue
+            if any(copy["dest"] == f"{directory}/{file}" for copy in copies):
+                problems.append(f"{label}: another disk is copied to {directory}/{file}")
+                continue
+            copies.append({"target": row["target"], "path": row["path"], "dest": f"{directory}/{file}",
+                           "pool": pool})
+        problems += [f"{target}: the VM has no disk file to copy" for target in pools.keys() - targets if pools[target]]
+        for xml in definitions[1:]:
+            problems += [f"{row['target']} ({row['path']}) of the next start: the destination host does not share it"
+                         for row in self.disk_plan(conn, xml) if row["path"] not in carried and not row["shared"]]
+        if problems:
+            raise util.OperationError("The disks cannot be migrated: " + "; ".join(problems))
+        return copies
+
+    def remove_partial_copies(self, uuid, copies, error, nvram=None):
+        """Deletes the copies libvirt made here for a migration that failed,
+        and the copy of its NVRAM file, while this host has no VM of uuid (a
+        VM here has them as its disks)."""
+        try:
+            self.wvm.lookupByUUIDString(uuid)
+            return
+        except libvirtError as lookup_error:
+            if lookup_error.get_error_code() != VIR_ERR_NO_DOMAIN:
+                raise util.OperationError(
+                    f"{error}; remove the partial disk copies from the destination host: "
+                    + ", ".join(copy["dest"] for copy in copies)
+                ) from error
+        left = []
+        for copy in copies:
+            copy["pool"].refresh(0)
+            volume = self._find_volume(copy["pool"], os.path.basename(copy["dest"]))
+            try:
+                if volume is not None:
+                    volume.delete(0)
+            except libvirtError:
+                left.append(copy["dest"])
+        try:
+            self.delete_nvram(nvram)
+        except libvirtError:
+            left.append(f"{NVRAM_DIR}/{nvram}")
+        if left:
+            raise util.OperationError(
+                f"{error}; remove the partial disk copies from the destination host: {', '.join(left)}"
+            ) from error
 
     @staticmethod
     def refuse_local_state(xml):
@@ -201,7 +396,7 @@ class wvmInstances(wvmConnect):
             vol = self._find_volume(source, name)
             if vol is None:
                 return None  # never started: libvirt creates it at the first start
-            if self._nvram_shared(source, target):
+            if self.same_directory(source, target):
                 if self._find_volume(target, name) is None:
                     raise util.OperationError(f"The destination host cannot see the NVRAM file {path}")
                 return None
@@ -218,7 +413,7 @@ class wvmInstances(wvmConnect):
             with self._nvram_pool() as pool:
                 pool.storageVolLookupByName(name).delete(0)
 
-    def missing_disks(self, definitions):
+    def missing_disks(self, definitions, copied=()):
         """(target, source) of the disks in the VM definitions (XML) that are
         not volumes of this host's active storage pools: the VM's own files,
         their backing files (as the definition or this host's volume lists
@@ -240,6 +435,8 @@ class wvmInstances(wvmConnect):
                     if kind == "volume":
                         disks[(source.get("pool"), source.get("volume"))] = target
                     elif kind in ("file", "block") and (source.get("file") or source.get("dev")):
+                        if element is disk and source.get("file") in copied:
+                            continue
                         disks[(None, source.get("file") or source.get("dev"))] = target
                     elif kind not in ("file", "block"):
                         disks[(kind, None)] = target

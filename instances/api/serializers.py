@@ -117,6 +117,9 @@ class MigrateSerializer(serializers.ModelSerializer):
     autoconverge = serializers.BooleanField(default=True)
     compress = serializers.BooleanField(default=False)
     unsafe = serializers.BooleanField(default=False)
+    # {target: pool of the destination} of the disks copied there; delete_source deletes their source files
+    disk_pools = serializers.DictField(child=serializers.CharField(allow_blank=True), default=dict)
+    delete_source = serializers.BooleanField(default=False)
     submission_key = serializers.CharField(write_only=True)
 
     class Meta:
@@ -129,5 +132,7 @@ class MigrateSerializer(serializers.ModelSerializer):
             "autoconverge",
             "compress",
             "unsafe",
+            "disk_pools",
+            "delete_source",
             "submission_key",
         ]

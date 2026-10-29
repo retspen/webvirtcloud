@@ -58,6 +58,7 @@ urlpatterns = [
     path("<int:pk>/add_network/", views.add_network, name="add_network"),
     path("<int:pk>/delete_network/", views.delete_network, name="delete_network"),
     path("<int:pk>/host_devices/", views.host_devices, name="host_devices"),
+    path("<int:pk>/migrate_plan/", views.migrate_plan, name="migrate_plan"),
     path("<int:pk>/add_usb_hostdev/", views.add_usb_hostdev, name="add_usb_hostdev"),
     path("<int:pk>/delete_usb_hostdev/", views.delete_usb_hostdev, name="delete_usb_hostdev"),
     path("<int:pk>/add_pci_hostdev/", views.add_pci_hostdev, name="add_pci_hostdev"),
