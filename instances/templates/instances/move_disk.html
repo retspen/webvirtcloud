@@ -1,0 +1,30 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+{% load operations %}
+{# the Move button of a disk and its dialog: another storage pool of this host #}
+<button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#movedisk{{ id }}" title="{% trans "Move to another pool" %}">
+    {% bs_icon 'arrow-left-right' %}
+</button>
+<div class="modal fade" id="movedisk{{ id }}" tabindex="-1" aria-labelledby="movedisk{{ id }}-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <form class="modal-content text-wrap" action="{% url 'instances:move_disk' instance.id %}" method="post">
+            {% csrf_token %}{% submission_key %}
+            <input type="hidden" name="dev" value="{{ disk.dev }}">
+            <div class="modal-header">
+                <h5 class="modal-title" id="movedisk{{ id }}-label">{% blocktrans with dev=disk.dev %}Move {{ dev }}{% endblocktrans %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label" for="movedisk{{ id }}-pool">{% trans "Storage pool" %}</label>
+                <select class="form-select" name="pool" id="movedisk{{ id }}-pool" required>
+                    {% for storage in storages_host %}{% if storage != disk.storage %}<option value="{{ storage }}">{{ storage }}</option>{% endif %}{% endfor %}
+                </select>
+                <div class="form-text text-break">{% blocktrans with path=disk.path %}The disk is copied into the pool, a running VM's without stopping it, and the VM uses the copy; {{ path }} is deleted then, unless a VM or volume of any host uses it.{% endblocktrans %}</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary">{% trans "Move" %}</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -923,3 +923,120 @@ class MigrateInstance(Kind):
             return Outcome(Operation.FAILED, error="The VM stayed on the source host")
         return Outcome(Operation.UNCERTAIN, error="The VM is on both computes or on neither; "
                                                   "check them, then resolve this job.")
+
+
+DISK_DEV = re.compile(r"[a-z][a-z0-9]*")
+
+
+def _movable(user, params):
+    """The disk move's VM, for a superuser, and its plan (disk_move_plan)."""
+    if user is None or not user.is_active or not user.is_superuser:
+        raise PermissionDenied
+    instance = _instance(params["instance"])
+    return instance, _proxy(instance).disk_move_plan(params["dev"], params["pool"])
+
+
+def _used_anywhere(path):
+    """Whether a VM or volume of any compute uses path (paths_in_use), as
+    shared storage holds it for every host that mounts it; a compute that
+    cannot be read might."""
+    for c in Compute.objects.all():
+        try:
+            if path in wvmConnect(c.hostname, c.login, c.password, c.type).paths_in_use():
+                return True
+        except libvirtError:
+            return True
+    return False
+
+
+@register
+class MoveDisk(Kind):
+    """A disk of a VM to another storage pool of its host (disk_move_plan)."""
+
+    name = "disk.move"
+    label = gettext_noop("Move disk")
+    cancellable = True  # a block copy is aborted; a shut-off VM's volume copy runs to its end
+    progress_bytes = True  # libvirt block job cur/end
+
+    def normalize(self, raw):
+        dev = str(raw.get("dev", ""))
+        if not DISK_DEV.fullmatch(dev):
+            raise util.OperationError("Choose a disk of the VM")
+        return {"instance": int(raw["instance"]), "dev": dev, "pool": str(raw.get("pool", ""))}
+
+    def validate(self, user, params):
+        _movable(user, params)
+
+    def plan(self, user, params):
+        instance, move = _movable(user, params)
+        plan = _vm_plan(params)
+        source_pool = move["volume"].storagePoolLookupByVolume().name()
+        name = os.path.basename(move["path"])
+        for pool in (source_pool, params["pool"]):
+            plan.claims[claims.volume_key(instance.compute_id, pool, name)] = Claim.EXCLUSIVE
+        return plan
+
+    def precheck(self, op, ctx):
+        instance, _move = _movable(op.user, op.params)
+        if instance.compute_id != op.intent["compute"]:
+            raise util.OperationError("The VM moved to another compute after the job was queued")
+
+    def run(self, op, ctx):
+        instance, move = _movable(op.user, op.params)
+        proxy = _proxy(instance)
+        ctx.record_intent(path=move["path"], dest=move["dest"])
+        ctx.set_phase(gettext_noop("Copying the disk"))
+        try:
+            proxy.move_disk(move)
+        except libvirtError:
+            op.refresh_from_db(fields=["cancel_requested"])
+            # cancelled only when the copy stopped and the VM kept its file
+            if op.cancel_requested and proxy.disk_named(move["dev"]) == {move["path"]} \
+                    and not (move["running"] and proxy.instance.blockJobInfo(move["dev"], 0)):
+                raise Cancelled from None
+            raise
+        # the move stands: a source file that cannot go is only left behind
+        try:
+            if not _used_anywhere(move["path"]):
+                move["volume"].delete(0)
+                return {"left_behind": []}
+        except libvirtError:
+            pass
+        return {"left_behind": [move["path"]]}
+
+    def progress(self, op):
+        info = _proxy(_instance(op.params["instance"])).instance.blockJobInfo(op.params["dev"], 0)
+        return (info["cur"], info["end"]) if info else None
+
+    def cancel(self, op):
+        dom = _proxy(_instance(op.params["instance"])).instance
+        # the worker sends a cancel once: one before the copy began waits for it
+        while dom.isActive() and not dom.blockJobInfo(op.params["dev"], 0):
+            if not Operation.objects.filter(pk=op.pk, state__in=Operation.ACTIVE).exists():
+                return
+            time.sleep(1)
+        if dom.isActive():
+            dom.blockJobAbort(op.params["dev"], 0)
+
+    def reconcile(self, op):
+        proxy = _recovery_proxy(op)
+        if proxy is None:
+            return Outcome(Operation.UNCERTAIN, error=GONE)
+        dev, path, dest = op.params["dev"], op.intent.get("path"), op.intent.get("dest")
+        dom = proxy.instance
+        # a copy no worker waits for mirrors forever: it ends here
+        if dest and dom.isActive() and dom.blockJobInfo(dev, 0):
+            mirror = etree.fromstring(dom.XMLDesc(0)).xpath(f"devices/disk[target/@dev='{dev}']/mirror/source/@file")
+            if mirror != [dest]:
+                return Outcome(Operation.UNCERTAIN, error=f"Another block job runs on {dev}; check the VM")
+            dom.blockJobAbort(dev, 0)
+        named = proxy.disk_named(dev)
+        if named == {dest}:
+            return Outcome(Operation.SUCCEEDED, result={"left_behind": [path]})
+        if named == {path}:
+            return Outcome(Operation.FAILED, error=f"The disk stayed in {path}; remove {dest} if it is there")
+        return Outcome(Operation.UNCERTAIN, error=f"The definitions of {dev} name {', '.join(sorted(map(str, named)))}; "
+                                                  "check the VM")
+
+    def log_entry(self, op, state):
+        return _log(op, state, f"move disk {op.params['dev']} to pool {op.params['pool']}")

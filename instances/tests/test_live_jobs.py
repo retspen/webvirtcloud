@@ -197,6 +197,39 @@ class LiveJobsTestCase(TransactionTestCase):
         self.assertEqual((livetest.volume_exists(self.conn, path), livetest.volume_exists(dest_conn, path)),
                          (True, True))
 
+    def test_a_disk_moves_to_another_pool_and_back(self):
+        """There while the VM runs (block copy and pivot), back shut off
+        (volume copy); each time the source file goes."""
+        other = self.conn.storagePoolDefineXML(
+            f"<pool type='dir'><name>{P}move</name><target><path>{livetest.POOL_PATH}-move</path></target></pool>")
+        other.create(libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
+
+        def remove_other():
+            other.refresh(0)
+            for vol in other.listAllVolumes():
+                vol.delete(0)
+            other.destroy()
+            other.delete(0)
+            other.undefine()
+        self.addCleanup(remove_other)
+        path = livetest.create_volume(self.conn, P + "move")
+        dom = livetest.define_vm(self.conn, P + "move", [path])
+        dom.create()
+        instance = Instance.objects.create(compute=self.compute, name=dom.name(), uuid=dom.UUIDString())
+        moved = f"{livetest.POOL_PATH}-move/{P}move.qcow2"
+
+        def source(flags):
+            return dom.XMLDesc(flags).split("<source file='")[1].split("'")[0]
+
+        self.run_job(jobs.submit("disk.move", self.admin, {"instance": instance.pk, "dev": "vda", "pool": P + "move"},
+                                 "key-move0001"))
+        self.assertEqual((source(0), source(libvirt.VIR_DOMAIN_XML_INACTIVE)), (moved, moved))
+        self.assertFalse(livetest.volume_exists(self.conn, path))  # no host uses the source file: it went
+        dom.destroy()
+        self.run_job(jobs.submit("disk.move", self.admin, {"instance": instance.pk, "dev": "vda", "pool": livetest.POOL},
+                                 "key-move0002"))
+        self.assertEqual(source(libvirt.VIR_DOMAIN_XML_INACTIVE), path)
+
     def test_a_shut_off_uefi_vm_migrates_with_its_nvram_there_and_back(self):
         dest, _dest_conn = self.second_host()
         hosts = {self.compute.pk: wvmConnect(*self.args), dest.pk: wvmConnect(dest.hostname, dest.login, "", 2)}

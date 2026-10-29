@@ -921,6 +921,16 @@ class wvmConnect(object):
                 return pool
         return None
 
+    def file_pools(self):
+        """The active pools of this host that keep disks as files, a copy's
+        destination: {name: (pool, directory)}."""
+        pools = {}
+        for pool in self.wvm.listAllStoragePools(libvirt.VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            tree = etree.fromstring(pool.XMLDesc(0))
+            if tree.get("type") in ("dir", "fs", "netfs") and tree.findtext("target/path"):
+                pools[pool.name()] = (pool, tree.findtext("target/path").rstrip("/"))
+        return pools
+
     @contextlib.contextmanager
     def _nvram_pool(self):
         """An active, refreshed pool on NVRAM_DIR: libvirt reads and deletes

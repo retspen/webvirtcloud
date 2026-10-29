@@ -312,6 +312,7 @@
                                         <input type="hidden" name="name" value="{{ disk.image }}">
                                         {% include 'instances/edit_instance_volume.html' with id=forloop.counter0 %}
                                     </form>
+                                    {% if request.user.is_superuser %}{% include 'instances/move_disk.html' with id=forloop.counter0 %}{% endif %}
                                     <form class="d-inline" action="{% url 'instances:detach_vol' instance.id %}" method="post">
                                         {% csrf_token %}
                                         <input type="hidden" name="path" value="{{ disk.path }}">

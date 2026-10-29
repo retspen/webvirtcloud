@@ -15,6 +15,7 @@ try:
         VIR_DOMAIN_AFFECT_CONFIG,
         VIR_DOMAIN_AFFECT_LIVE,
         VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
+        VIR_DOMAIN_PAUSED,
         VIR_DOMAIN_RUNNING,
         VIR_DOMAIN_SHUTOFF,
         VIR_DOMAIN_START_PAUSED,
@@ -26,6 +27,8 @@ try:
         VIR_ERR_NO_STORAGE_POOL,
         VIR_ERR_NO_STORAGE_VOL,
         VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE,
+        VIR_DOMAIN_BLOCK_COPY_TRANSIENT_JOB,
+        VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT,
         VIR_DOMAIN_BLOCK_RESIZE_BYTES,
         VIR_STORAGE_VOL_FILE,
         VIR_MIGRATE_AUTO_CONVERGE,
@@ -287,16 +290,6 @@ class wvmInstances(wvmConnect):
         if ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path"):
             return "a disk with a backing file is not copied"
         return None
-
-    def file_pools(self):
-        """The active pools of this host that keep disks as files, a copy's
-        destination: {name: (pool, directory)}."""
-        pools = {}
-        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
-            tree = ElementTree.fromstring(pool.XMLDesc(0))
-            if tree.get("type") in ("dir", "fs", "netfs") and tree.findtext("target/path"):
-                pools[pool.name()] = (pool, tree.findtext("target/path").rstrip("/"))
-        return pools
 
     def disk_copies(self, conn, definitions, pools):
         """The copies of the disks pools names a pool here for: {target, path,
@@ -2106,6 +2099,125 @@ class wvmInstance(wvmConnect):
             if info:
                 jobs.append({"dev": dev, "cur": info["cur"], "end": info["end"]})
         return jobs
+
+    def disk_move_plan(self, dev, pool_name):
+        """Where the disk dev of the VM goes in the pool pool_name of this
+        host: {dev, path, dest, format, pool, volume, running}. Refused with
+        the reason unless the VM is persistent, running, paused or shut off,
+        without snapshots, a saved state or a block job; the disk a raw or
+        qcow2 file of a storage pool, without a backing file, not read-only,
+        shareable or encrypted, the same file in both definitions; the pool
+        one of disk files, another directory, without a file of that name."""
+        dom = self.instance
+        state = dom.info()[0]
+        if not dom.isPersistent() or state not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_PAUSED, VIR_DOMAIN_SHUTOFF):
+            raise util.OperationError("A disk moves when its VM is defined and running, paused or shut off")
+        if dom.snapshotNum(0) or dom.hasManagedSaveImage(0) or self.get_snapshot_jobs():
+            raise util.OperationError("A disk of a VM with snapshots, a saved state or a running block job does not move")
+        # the running definition (the persistent one of a shut-off VM) first
+        disks = [ElementTree.fromstring(xml).find(f"devices/disk/target[@dev='{dev}']/..")
+                 for xml in (self._XMLDesc(0), self._XMLDesc(PERSISTENT_XML))]
+        sources = [disk.find("source") if disk is not None else None for disk in disks]
+        disk, source = disks[0], sources[0]
+        if disk is None or disk.get("type") != "file" or disk.get("device") != "disk" or None in sources \
+                or len({s.get("file") for s in sources}) != 1:
+            raise util.OperationError(f"{dev} is not a disk file of the VM, the same in its running and next start's "
+                                      "definition")
+        driver = disk.find("driver")
+        fmt = driver.get("type") if driver is not None else None
+        if fmt not in ("raw", "qcow2") or disk.find("readonly") is not None or disk.find("shareable") is not None \
+                or disk.find("encryption") is not None or source.find("encryption") is not None:
+            raise util.OperationError(f"{dev} does not move: only writable raw and qcow2 disks do")
+        path = source.get("file")
+        try:
+            volume = self.wvm.storageVolLookupByPath(path)
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+                raise
+            raise util.OperationError(f"{dev} does not move: no storage pool has {path}") from err
+        if ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path"):
+            raise util.OperationError(f"{dev} does not move: it has a backing file")
+        pools = self.file_pools()
+        if pool_name not in pools:
+            raise util.OperationError(f"{pool_name} is not an active pool of disk files of this host")
+        pool, directory = pools[pool_name]
+        if directory == os.path.dirname(path):
+            raise util.OperationError(f"{dev} is in pool {pool_name} already")
+        pool.refresh(0)
+        name = os.path.basename(path)
+        if self._find_volume(pool, name) is not None:
+            raise util.OperationError(f"Pool {pool_name} already has a file {name}")
+        return {"dev": dev, "path": path, "dest": f"{directory}/{name}", "format": fmt, "pool": pool,
+                "volume": volume, "running": state != VIR_DOMAIN_SHUTOFF}
+
+    def move_disk(self, move):
+        """Moves the disk as disk_move_plan planned it. A running or paused
+        VM's is copied by a block job (TRANSIENT_JOB: the VM is persistent)
+        into a file libvirt creates; at the pivot libvirt names the copy in
+        both definitions. A shut-off VM's volume is copied into the pool and
+        the copy named in the definition. The source file stays (see
+        MoveDisk). A failed move deletes the copy it made, unless a
+        definition names it; a file there before the copy began is never
+        ours."""
+        dom, dev, dest = self.instance, move["dev"], move["dest"]
+        made = False
+        try:
+            if move["running"]:
+                xml = (f"<disk type='file'><driver type='{move['format']}'/>"
+                       f"<source file='{util.xml_escape(dest)}'/></disk>")
+                dom.blockCopy(dev, xml, None, VIR_DOMAIN_BLOCK_COPY_TRANSIENT_JOB)
+                made = True
+                while True:  # mirrored once the copy caught up: cur == end
+                    info = dom.blockJobInfo(dev, 0)
+                    if not info:
+                        raise util.OperationError(f"The copy of {dev} ended before it was complete")
+                    if info["end"] and info["cur"] == info["end"]:
+                        break
+                    time.sleep(1)
+                dom.blockJobAbort(dev, VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT)
+                move["pool"].refresh(0)  # libvirt made the file past the pool: it lists it now
+            else:
+                move["pool"].createXMLFrom(
+                    f"<volume><name>{util.xml_escape(os.path.basename(dest))}</name>"
+                    f"<capacity>{move['volume'].info()[1]}</capacity>"
+                    f"<target><format type='{move['format']}'/></target></volume>", move["volume"], 0)
+                made = True
+                tree = ElementTree.fromstring(self._XMLDesc(PERSISTENT_XML))
+                tree.find(f"devices/disk/target[@dev='{dev}']/../source").set("file", dest)
+                self._defineXML(ElementTree.tostring(tree, encoding="unicode"))
+        except libvirtError as error:
+            if made:
+                self.remove_disk_copy(move, error)
+            raise
+
+    def disk_named(self, dev):
+        """The files the running (if active) and next start's definitions name for dev."""
+        flags = [0, PERSISTENT_XML] if self.instance.isActive() else [PERSISTENT_XML]
+        files = set()
+        for flag in flags:
+            disk = ElementTree.fromstring(self.instance.XMLDesc(flag)).find(f"devices/disk/target[@dev='{dev}']/..")
+            source = disk.find("source") if disk is not None else None
+            files.add(source.get("file") if source is not None else None)
+        return files
+
+    def remove_disk_copy(self, move, error):
+        """Deletes the copy of a failed move once nothing uses it: no block
+        job runs on the disk and no definition names it. Otherwise it stays,
+        and the error says so."""
+        dev, dest = move["dev"], move["dest"]
+        try:
+            if move["running"] and self.instance.blockJobInfo(dev, 0):
+                self.instance.blockJobAbort(dev, 0)
+            named = dest in self.disk_named(dev)
+            if not named:
+                move["pool"].refresh(0)
+                copy = self._find_volume(move["pool"], os.path.basename(dest))
+                if copy is not None:
+                    copy.delete(0)
+        except libvirtError as cleanup_error:
+            raise util.OperationError(f"{error}; remove {dest} if it is there: {cleanup_error}") from error
+        if named:
+            raise util.OperationError(f"{error}; the VM may use {dest} now: check its disk {dev}") from error
 
     def _snapshot(self, name, external):
         """The named snapshot; a snapshot of the other kind is refused."""

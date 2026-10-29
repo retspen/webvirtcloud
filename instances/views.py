@@ -866,6 +866,22 @@ def migrate(request, pk):
     return get_safe_redirect(request, default=reverse("instances:instance", args=[pk]))
 
 
+@require_POST
+@superuser_only
+def move_disk(request, pk):
+    get_instance(request.user, pk)
+    raw = {"instance": pk, "dev": request.POST.get("dev", ""), "pool": request.POST.get("pool", "")}
+    try:
+        op = jobs.submit("disk.move", request.user, raw, request.POST.get("submission_key", ""))
+    except claims.Busy as busy:
+        return _busy(request, pk, busy)
+    except (jobs.SubmissionConflict, libvirtError) as err:
+        messages.error(request, error_text(request, err))
+    else:
+        jobs.remember_job(request, op)
+    return _back(request, pk, "disks")
+
+
 @superuser_only
 def migrate_plan(request, pk):
     """The disks of the Migrate tab for the chosen destination, loaded when
