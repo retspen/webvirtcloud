@@ -2,7 +2,6 @@ import copy
 import re
 from functools import cached_property
 
-from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_NO_DOMAIN, libvirtError
 from lxml import etree
 
 from vrtManager import util
@@ -43,24 +42,15 @@ class wvmNWFilters(wvmConnect):
         return sorted(filters, key=lambda nwfilter: nwfilter["name"])
 
     def get_users(self):
-        """The VMs whose interfaces reference each filter, by filter name: as
-        they run and, for a persistent VM that runs, as saved for its next
-        boot. One listing, one or two XML reads per VM."""
+        """The VMs whose interfaces reference each filter, by filter name, in
+        any of their definitions (domain_trees)."""
         users = {}
-        for dom in self.wvm.listAllDomains(0):
-            try:
-                xmls = [dom.XMLDesc(0)]
-                if dom.isActive() and dom.isPersistent():
-                    xmls.append(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
-            except libvirtError as err:  # a VM undefined meanwhile uses none
-                if err.get_error_code() != VIR_ERR_NO_DOMAIN:
-                    raise
-                continue
+        for vm, trees in self.domain_trees():
             names = set()
-            for xml in xmls:
-                names.update(etree.fromstring(xml).xpath("devices/interface/filterref/@filter"))
+            for tree in trees:
+                names.update(tree.xpath("devices/interface/filterref/@filter"))
             for name in names:
-                users.setdefault(name, []).append(dom.name())
+                users.setdefault(name, []).append(vm)
         return users
 
     def create_nwfilter(self, xml):

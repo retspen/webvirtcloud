@@ -139,7 +139,7 @@ class PoolListTests(TestCase):
         ]
         with patch("storages.views.wvmStorages") as storages:
             storages.return_value.get_storages_info.return_value = pools
-            storages.return_value.get_secrets.return_value = []
+            storages.return_value.get_secrets_info.return_value = []
             page = html.fromstring(self.client.get(reverse("storages", args=[compute.pk])).content)
         cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
         self.assertEqual(cards, [

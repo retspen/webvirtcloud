@@ -843,11 +843,27 @@ class wvmConnect(object):
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
 
-    def get_secrets(self):
-        return self.wvm.listSecrets()
-
-    def get_secret(self, uuid):
-        return self.wvm.secretLookupByUUIDString(uuid)
+    def get_secrets_info(self):
+        """Every secret of the host: UUID, usage type and usage (a volume
+        path, an iSCSI target, a Ceph or TLS or vTPM name), whether it is
+        ephemeral and private. One listing, one XML read per secret; a secret
+        gone meanwhile is left out."""
+        secrets = []
+        for secret in self.wvm.listAllSecrets(0):
+            try:
+                tree = etree.fromstring(secret.XMLDesc(0))
+            except libvirtError as err:
+                if err.get_error_code() != libvirt.VIR_ERR_NO_SECRET:
+                    raise
+                continue
+            secrets.append({
+                "uuid": secret.UUIDString(),
+                "usage_type": tree.xpath("string(usage/@type)") or "none",
+                "usage": tree.xpath("string(usage/*)"),
+                "ephemeral": tree.get("ephemeral") == "yes",
+                "private": tree.get("private") == "yes",
+            })
+        return sorted(secrets, key=lambda secret: (secret["usage_type"], secret["usage"]))
 
     def get_storage(self, name):
         return self.wvm.storagePoolLookupByName(name)
@@ -968,16 +984,27 @@ class wvmConnect(object):
             instances.append(name)
         return instances
 
-    def domains_using(self, match, running_only=False):
-        """Names of the domains with a definition, parsed, that match(tree)
-        holds for: the live and the persistent one of each domain, or with
-        running_only the live one of each running domain."""
+    def domain_trees(self, running_only=False):
+        """Each domain's name with its definitions, parsed: the live one, and
+        for a persistent domain the one saved for its next boot too, read
+        whether it runs or not (it may stop meanwhile); with running_only the
+        live one of each running domain. A domain gone meanwhile is left out."""
         listing = libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE if running_only else 0
-        flags = (0,) if running_only else (0, libvirt.VIR_DOMAIN_XML_INACTIVE)
-        return sorted(
-            dom.name() for dom in self.wvm.listAllDomains(listing)
-            if any(match(etree.fromstring(dom.XMLDesc(f))) for f in flags)
-        )
+        for dom in self.wvm.listAllDomains(listing):
+            try:
+                xmls = [dom.XMLDesc(0)]
+                if not running_only and dom.isPersistent():
+                    xmls.append(dom.XMLDesc(libvirt.VIR_DOMAIN_XML_INACTIVE))
+            except libvirtError as err:
+                if err.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN:
+                    raise
+                continue
+            yield dom.name(), [etree.fromstring(xml) for xml in xmls]
+
+    def domains_using(self, match, running_only=False):
+        """Names of the domains with a definition (domain_trees) that
+        match(tree) holds for."""
+        return sorted(name for name, trees in self.domain_trees(running_only) if any(map(match, trees)))
 
     def paths_in_use(self, skip_uuid=None, own=()):
         """Paths (names for network disks) a domain uses as a disk or a

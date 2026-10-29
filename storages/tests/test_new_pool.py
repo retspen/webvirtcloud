@@ -2,13 +2,13 @@
 path another one has, an RBD pool only a Ceph secret of the host; a refused
 pool opens the dialog again with what was entered and why."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
-from libvirt import VIR_SECRET_USAGE_TYPE_CEPH, VIR_SECRET_USAGE_TYPE_VOLUME, libvirtError
+from libvirt import libvirtError
 from lxml import html
 
 from storages.forms import AddStgPool
@@ -63,11 +63,10 @@ class DialogTests(TestCase):
         self.addCleanup(patcher.stop)
         pools = [{**pool, "status": 1, "autostart": 1, "volumes": 0, "size": 1, "free": 1, "used_percent": 0} for pool in POOLS]
         self.conn.get_storages_info.return_value = pools
-        secrets = {SECRET: (VIR_SECRET_USAGE_TYPE_CEPH, "client.libvirt"),
-                   "00000000-0000-0000-0000-000000000003": (VIR_SECRET_USAGE_TYPE_VOLUME, "/var/lib/libvirt/images/a.img")}
-        self.conn.get_secrets.return_value = list(secrets)
-        self.conn.get_secret.side_effect = lambda uuid: MagicMock(**{"usageType.return_value": secrets[uuid][0],
-                                                                    "usageID.return_value": secrets[uuid][1]})
+        self.conn.get_secrets_info.return_value = [
+            {"uuid": SECRET, "usage_type": "ceph", "usage": "client.libvirt"},
+            {"uuid": "00000000-0000-0000-0000-000000000003", "usage_type": "volume", "usage": "/var/lib/libvirt/images/a.img"},
+        ]
         self.url = reverse("storages", args=[self.compute.pk])
 
     def page(self, response):

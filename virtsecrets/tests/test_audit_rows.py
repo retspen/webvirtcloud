@@ -27,11 +27,11 @@ class SecretRowTests(TestCase):
         patcher = patch("virtsecrets.views.wvmSecrets")
         self.conn = patcher.start().return_value
         self.addCleanup(patcher.stop)
-        self.conn.get_secrets.return_value = []
+        self.conn.get_secrets_info.return_value = []
 
     def test_secret_actions(self):
-        self.client.post(self.url, {"create": "", "ephemeral": "no", "private": "yes", "usage_type": "ceph",
-                                    "data": "client.admin"})
+        self.client.post(self.url, {"create": "", "private": "on", "usage_type": "ceph", "usage": "client.admin",
+                                    "value": VALUE})
         self.client.post(self.url, {"set_value": "", "uuid": UUID, "value": VALUE})
         self.client.post(self.url, {"delete": "", "uuid": UUID})
         self.assertEqual(rows(), [
@@ -42,9 +42,12 @@ class SecretRowTests(TestCase):
         self.assertEqual(set(Logs.objects.values_list("host", flat=True)), {"c1"})
 
     def test_a_secret_value_is_never_logged(self):
+        # an unexpected error naming the value is raised, its row names only the error's class
         self.conn.set_secret_value.side_effect = ValueError(f"bad value {VALUE}")
-        self.client.post(self.url, {"set_value": "", "uuid": UUID, "value": VALUE})
+        with self.assertRaises(ValueError):
+            self.client.post(self.url, {"set_value": "", "uuid": UUID, "value": VALUE})
         self.assertEqual(rows(), [(f"Secret {UUID}: set value: ValueError", False)])
+        self.conn.set_secret_value.side_effect = OperationError("A Ceph key is base64 text")
         with patch.object(Logs.objects, "create", side_effect=RuntimeError("db down")), \
                 self.assertLogs("logs.audit", "WARNING") as logged:
             self.client.post(self.url, {"set_value": "", "uuid": UUID, "value": VALUE})

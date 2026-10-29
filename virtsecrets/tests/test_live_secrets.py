@@ -46,7 +46,7 @@ class LiveSecretsTestCase(TestCase):
             with self.subTest(name):
                 response = self.client.post(
                     reverse("virtsecrets", args=[self.compute.id]),
-                    {"create": "", "ephemeral": "no", "private": "no", "usage_type": name, "data": value},
+                    {"create": "", "usage_type": name, "usage": value},
                 )
                 self.assertEqual(response.status_code, 302)
                 self.assertEqual(self.conn.secretLookupByUsage(usage_type, value).usageID(), value)

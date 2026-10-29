@@ -127,7 +127,7 @@ class PoolAndVolumeRowTests(TransactionTestCase):
             conn.get_size.return_value = (1, 1)
             conn.get_storages_info.return_value = []
             conn.get_storages.return_value = ["default"]
-            conn.get_secrets.return_value = []
+            conn.get_secrets_info.return_value = []
             conn.update_volumes.return_value = []
             conn.create_volume.return_value = "disk1.qcow2"
             setattr(self, name, conn)

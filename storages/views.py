@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from libvirt import VIR_SECRET_USAGE_TYPE_CEPH, libvirtError
+from libvirt import libvirtError
 from operations import claims, jobs
 from operations.utils import busy_message
 from logs.audit import audit, failed
@@ -79,11 +79,7 @@ def storages(request, compute_id):
         storages = conn.get_storages_info()
         iso_pool = next((pool for pool in storages if pool["name"] == "iso"), None)
         # the secrets an RBD pool can use, by the name they were given
-        ceph_secrets = []
-        for uuid in conn.get_secrets():
-            secret = conn.get_secret(uuid)
-            if secret.usageType() == VIR_SECRET_USAGE_TYPE_CEPH:
-                ceph_secrets.append({"uuid": uuid, "usage": secret.usageID()})
+        ceph_secrets = [secret for secret in conn.get_secrets_info() if secret["usage_type"] == "ceph"]
 
         if request.method == "POST" and "create" in request.POST:
             form = AddStgPool(request.POST, pools=storages, ceph_secrets=[s["uuid"] for s in ceph_secrets])

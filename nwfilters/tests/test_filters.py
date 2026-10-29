@@ -27,7 +27,7 @@ def nwfilter(name, xml, uuid=UUID):
 
 def vm(name, xml, saved=None, active=False, persistent=True):
     def describe(flags=0):
-        return saved if flags else xml
+        return (saved or xml) if flags else xml
     return MagicMock(**{"name.return_value": name, "XMLDesc.side_effect": describe,
                         "isActive.return_value": active, "isPersistent.return_value": persistent})
 
@@ -70,7 +70,7 @@ class UsersTests(SimpleTestCase):
         ])
         self.assertEqual(conn.get_users(), {"a": ["stopped"], "b": ["running"], "c": ["running"], "d": ["transient"]})
         stopped, running, transient = conn.wvm.listAllDomains.return_value
-        self.assertEqual((stopped.XMLDesc.call_count, running.XMLDesc.call_count, transient.XMLDesc.call_count), (1, 2, 1))
+        self.assertEqual((stopped.XMLDesc.call_count, running.XMLDesc.call_count, transient.XMLDesc.call_count), (2, 2, 1))
 
     def test_a_vm_gone_meanwhile_uses_nothing_other_errors_are_raised(self):
         gone = vm("gone", "")
