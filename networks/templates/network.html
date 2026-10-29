@@ -189,6 +189,69 @@
             <div class="card-body small text-body-secondary">{% trans "The network serves no DHCP, so it has no fixed addresses." %}</div>
             {% endif %}
         </div>
+
+        {% if dhcp_networks %}
+        <div class="card mb-3">
+            <div class="card-header">{% trans "DHCP leases" %} {% if leases %}<span class="badge text-bg-light border">{{ leases|length }}</span>{% endif %}</div>
+            {% if leases_error %}
+            <div class="card-body small text-danger">{% blocktrans with error=leases_error %}The leases could not be read: {{ error }}{% endblocktrans %}</div>
+            {% elif leases %}
+            <div class="table-responsive position-relative">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">{% trans "Address" %}</th>
+                            <th scope="col">{% trans "MAC / DUID" %}</th>
+                            <th scope="col">{% trans "Host name" %}</th>
+                            <th scope="col">{% trans "VM" %}</th>
+                            <th scope="col">{% trans "Ends" %}</th>
+                            <th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for lease in leases %}
+                        <tr>
+                            <td class="text-nowrap">
+                                <span class="font-monospace">{{ lease.ip }}</span>
+                                {% if lease.fixed %}<span class="badge text-bg-light border">{% trans "Fixed" %}</span>{% endif %}
+                            </td>
+                            <td class="font-monospace text-nowrap">{{ lease.key|default:"–" }}</td>
+                            <td class="text-nowrap">{{ lease.hostname|default:"–" }}</td>
+                            <td>
+                                {% if lease.vm.id %}
+                                    <a href="{% url 'instances:instance' lease.vm.id %}">{{ lease.vm.name }}</a>
+                                {% else %}
+                                    {{ lease.vm.name|default:"–" }}
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">
+                                {% if lease.expires %}
+                                    <div>{% blocktrans with time=lease.expires|timeuntil %}in {{ time }}{% endblocktrans %}</div>
+                                    <div class="small text-body-secondary">{{ lease.expires|date:"Y-m-d H:i" }}</div>
+                                {% else %}
+                                    {% trans "Never" %}
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {# a lease kept as a fixed address: the dialog of a new one, filled in #}
+                                {% if not lease.fixed and lease.key and lease.ip_index is not None %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" data-bs-toggle="modal" data-bs-target="#FixedAddress"
+                                        data-ip-index="{{ lease.ip_index }}" data-address="{{ lease.ip }}" data-mac="{{ lease.key }}"
+                                        data-name="{{ lease.name }}">{% bs_icon 'pin-angle' %} {% trans "Make fixed" %}</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% elif state %}
+            <div class="card-body small text-body-secondary">{% trans "No current DHCP leases." %}</div>
+            {% else %}
+            <div class="card-body small text-body-secondary">{% trans "The network is not running, so it gives no leases." %}</div>
+            {% endif %}
+        </div>
+        {% endif %}
     {% endif %}
 
     <div class="card mb-3">
@@ -413,7 +476,8 @@
         form.elements.address.value = data.address || "";
         form.elements.mac.value = data.mac || "";
         form.elements.name.value = data.name || "";
-        if (data.ipIndex) form.elements.ip_index.value = data.ipIndex;
+        // Add starts from the first subnet, not the one a row chose before
+        form.elements.ip_index.value = data.ipIndex || form.elements.ip_index.options[0].value;
         document.getElementById("fixed_subnet_row").hidden = Boolean(data.original);
     });
     fillFrom("DhcpRange", function (form, data) {

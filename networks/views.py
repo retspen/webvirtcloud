@@ -1,3 +1,5 @@
+import ipaddress
+
 from admin.decorators import superuser_only
 from computes.models import Compute
 from instances.models import Instance
@@ -279,6 +281,24 @@ def network(request, compute_id, pool):
     except libvirtError as lib_err:
         messages.error(request, lib_err)
         return HttpResponseRedirect(reverse("networks", args=[compute_id]))
+
+    # leases that cannot be read leave the rest of the page
+    leases, leases_error = [], None
+    if dhcp_networks:
+        try:
+            leases = conn.get_leases()
+        except libvirtError as lib_err:
+            leases_error = lib_err
+    vm_by_mac = {mac: vm for vm in vms for mac in vm["macs"]}
+    fixed_ips = {ipaddress.ip_address(host["ip"]) for host in fixed_addresses if host["ip"]}
+    for lease in leases:
+        lease["vm"] = vm_by_mac.get(lease["mac"])
+        lease["name"] = lease["hostname"] or (lease["vm"]["name"] if lease["vm"] else "")  # for a fixed address
+        lease["fixed"] = lease["ip"] in fixed_ips
+        # what a fixed address for it is known by: its MAC, or an IPv6 client's DUID
+        lease["key"] = lease["mac"] if lease["ip"].version == 4 else lease["client_id"]
+        lease["ip_index"] = next((ip["index"] for ip in dhcp_networks
+                                  if ip["subnet"] and lease["ip"] in ip["subnet"]), None)
     conn.close()
 
     return render(request, "network.html", locals())

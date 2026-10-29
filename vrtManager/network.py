@@ -1,5 +1,6 @@
 import copy
 import ipaddress
+from datetime import datetime, timezone
 from functools import cached_property
 
 from libvirt import (
@@ -240,24 +241,49 @@ class wvmNetwork(wvmConnect):
         return network_mode(self.tree)
 
     def get_vms(self):
-        """The VMs whose definition names this network, by name, and whether
-        each is running on it now: one listing, and one XML read per stopped
-        VM, two per running one (its running and its saved definition)."""
+        """The VMs whose definition names this network, by name, whether each
+        is running on it now, and the MACs of its cards on it (as it runs, or
+        as saved when it does not): one listing, and one XML read per stopped
+        VM, two per running one that is not on it now."""
         name = self.net.name()
 
-        def on_it(xml):
-            return etree.fromstring(xml).xpath("devices/interface[@type='network']/source[@network=$name]", name=name)
+        def cards(xml):
+            return etree.fromstring(xml).xpath("devices/interface[@type='network'][source/@network=$name]", name=name)
 
         vms = []
         for dom in self.wvm.listAllDomains():
             try:
-                connected = dom.isActive() and bool(on_it(dom.XMLDesc(0)))
-                if connected or on_it(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE)):
-                    vms.append({"name": dom.name(), "connected": connected})
+                on_it = cards(dom.XMLDesc(0)) if dom.isActive() else []
+                connected = bool(on_it)
+                if not connected:
+                    on_it = cards(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
             except libvirtError as err:  # a VM undefined meanwhile is not on it
                 if err.get_error_code() != VIR_ERR_NO_DOMAIN:
                     raise
+                continue
+            if on_it:
+                macs = [card.xpath("string(mac/@address)").lower() for card in on_it]
+                vms.append({"name": dom.name(), "connected": connected, "macs": [mac for mac in macs if mac]})
         return sorted(vms, key=lambda vm: vm["name"])
+
+    def get_leases(self):
+        """The network's DHCP leases as its dnsmasq keeps them, by address: IP,
+        MAC (an IPv6 lease may have none), the host name and client ID (an
+        IPv6 lease's DUID) the client sent, and when it ends (None: never).
+        A network that does not run has none."""
+        if not self.is_active():
+            return []
+        leases = []
+        for lease in self.net.DHCPLeases():
+            expiry = lease["expirytime"]
+            leases.append({
+                "ip": ipaddress.ip_address(lease["ipaddr"]),
+                "mac": (lease.get("mac") or "").lower(),
+                "hostname": lease.get("hostname") or "",
+                "client_id": lease.get("clientid") or "",
+                "expires": datetime.fromtimestamp(expiry, timezone.utc) if expiry else None,
+            })
+        return sorted(leases, key=lambda lease: (lease["ip"].version, int(lease["ip"])))
 
     def _vms_on_it(self, running_only):
         name = self.net.name()
