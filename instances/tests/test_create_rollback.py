@@ -33,6 +33,7 @@ class CreateRollbackTestCase(TestCase):
         with patch("instances.jobs.wvmCreate") as wvm:
             conn = wvm.return_value
             conn.get_cache_modes.return_value = {"none": "Disable cache"}
+            conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model"]}
             conn.get_instances.return_value = []
             conn.create_volume.return_value = "/pool/rb-vm.qcow2"
             op = jobs.submit("instance.create", self.admin, {**PARAMS, "compute": self.compute.pk}, "key-rollback1")

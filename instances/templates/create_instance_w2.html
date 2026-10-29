@@ -82,8 +82,8 @@
                         {% if dom_caps.cpu_modes %}
                         <div class="col-md-6">
                             <label for="vm_vcpu_mode" class="form-label">{% trans "CPU mode" %}</label>
-                            <select id="vm_vcpu_mode" class="form-select{{ vm_form.vcpu_mode|invalid }}" name="vcpu_mode"{% error_attrs vm_form.vcpu_mode "vm_vcpu_mode" %}>
-                                <option value="">{% trans 'no-mode' %}</option>
+                            <select id="vm_vcpu_mode" class="form-select{{ vm_form.vcpu_mode|invalid }}" name="vcpu_mode" required{% error_attrs vm_form.vcpu_mode "vm_vcpu_mode" %}>
+                                {% if not vm_form.vcpu_mode.value %}<option value="" selected disabled>{% trans "Choose…" %}</option>{% endif %}
                                 {% for mode in dom_caps.cpu_modes %}
                                     {% if mode == 'custom' %}
                                         <optgroup label="{% trans "Custom CPU Models" %}">

@@ -32,6 +32,7 @@ class CloudInitCreateTestCase(TransactionTestCase):
         self.addCleanup(patcher.stop)
         self.conn.get_instances.return_value = []
         self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
+        self.conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model"]}
         self.conn.get_disk_bus_types.return_value = ["virtio", "sata"]
         self.conn.create_volume.return_value = "/srv/default/api-vm.qcow2"
         self.conn.create_seed.return_value = SEED

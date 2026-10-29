@@ -352,7 +352,8 @@ class CreateInstance(models.Model):
     vcpu = models.IntegerField(
         error_messages={"required": _("No VCPU has been entered")}, validators=[MinValueValidator(1)]
     )
-    vcpu_mode = models.CharField(max_length=20, blank=True)
+    # a mode of libvirt's (host-model, host-passthrough, maximum) or a CPU model's name
+    vcpu_mode = models.CharField(max_length=64)
     disk = models.IntegerField(blank=True)
     memory = models.IntegerField(
         error_messages={"required": _("No RAM size has been entered")}, validators=[MinValueValidator(1)]

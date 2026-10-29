@@ -93,7 +93,7 @@ class CreateInstanceViewTests(TestCase):
         conn.get_nwfilters.return_value = []
         conn.get_network_models.return_value = ["virtio"]
         conn.get_storages.return_value = ["default"]
-        conn.get_dom_capabilities.return_value = {"loader_enums": [], "loaders": []}
+        conn.get_dom_capabilities.return_value = {"loader_enums": [], "loaders": [], "cpu_modes": ["host-model"]}
         conn.get_capabilities.return_value = {}
         conn.label_for_firmware_path.return_value = None
         conn.find_uefi_path_for_arch.return_value = None
@@ -136,7 +136,7 @@ class CreateInstanceViewTests(TestCase):
         conn.get_nwfilters.return_value = []
         conn.get_cache_modes.return_value = {}
         # A host without loader support has no "loaders"/"loader_enums" keys
-        conn.get_dom_capabilities.return_value = {"loader_support": "no"}
+        conn.get_dom_capabilities.return_value = {"loader_support": "no", "cpu_modes": ["host-model"]}
         conn.get_capabilities.return_value = {}
         conn.label_for_firmware_path.return_value = None
         conn.find_uefi_path_for_arch.return_value = None

@@ -67,7 +67,6 @@ class NewVMForm(forms.ModelForm):
     # name = forms.CharField(error_messages={'required': _('No Virtual Machine name has been entered')}, max_length=64)
     # firmware = forms.CharField(max_length=50, required=False)
     # vcpu = forms.IntegerField(error_messages={'required': _('No VCPU has been entered')})
-    # vcpu_mode = forms.CharField(max_length=20, required=False)
     # disk = forms.IntegerField(required=False)
     # memory = forms.IntegerField(error_messages={'required': _('No RAM size has been entered')})
     # networks = forms.CharField(error_messages={'required': _('No Network pool has been choosen')})

@@ -21,7 +21,8 @@ def render_create_page(testcase, data=None):
     url = reverse("instances:create_instance", args=[compute.id, "i686", "pc"])
     with patch("vrtManager.connection.connection_manager.get_connection", return_value=conn), \
          patch("vrtManager.connection.wvmConnect.get_machine_types", return_value=["pc"]), \
-         patch("vrtManager.connection.wvmConnect.get_nwfilters", return_value=[]):
+         patch("vrtManager.connection.wvmConnect.get_nwfilters", return_value=[]), \
+         patch("vrtManager.connection.wvmConnect.get_cpu_modes", return_value=["host-model"]):  # the test driver has none
         if data is None:
             response = testcase.client.get(url)
         else:

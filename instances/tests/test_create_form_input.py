@@ -20,7 +20,7 @@ from vrtManager import util
 
 def valid(**fields):
     """A create submission NewVMForm accepts."""
-    return {"name": "vm1", "firmware": "BIOS", "vcpu": "1", "memory": "512", "networks": "default",
+    return {"name": "vm1", "firmware": "BIOS", "vcpu": "1", "vcpu_mode": "host-model", "memory": "512", "networks": "default",
             "cache_mode": "default", "add_cdrom": "None", "add_input": "None", "video": "vga",
             "listener_addr": "0.0.0.0", "submission_key": uuid.uuid4().hex, **fields}
 

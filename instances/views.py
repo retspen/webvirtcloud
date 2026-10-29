@@ -46,7 +46,7 @@ from operations import claims, jobs
 from operations.utils import busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
-from vrtManager.create import wvmCreate
+from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import USAGE_MAX_WINDOW
 from vrtManager.interface import wvmInterface
 from vrtManager.storage import wvmStorage
@@ -2237,7 +2237,9 @@ def create_instance(request, compute_id, arch, machine):
             raise util.OperationError(_("You haven't defined any network pools"))
 
         vm_form = NewVMForm(initial={
-            "vcpu": 1, "memory": 512, "firmware": default_firmware, "vcpu_mode": default_cpu_mode,
+            # a default this host does not offer is no choice: the select asks for one
+            "vcpu": 1, "memory": 512, "firmware": default_firmware,
+            "vcpu_mode": default_cpu_mode if default_cpu_mode in cpu_choices(dom_caps) else "",
             "cache_mode": default_cache, "net_model": default_nic_type, "listener_addr": "0.0.0.0",
             "add_cdrom": default_cdrom, "add_input": default_input_device_bus, "video": default_video,
             "qemu_ga": True, "virtio": bool(virtio_support),

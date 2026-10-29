@@ -7,6 +7,15 @@ import pycdlib
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 
+# libvirt's CPU modes a new VM can have; any other value is a CPU model's name (mode custom)
+CPU_MODES = ("host-model", "host-passthrough", "maximum")
+
+
+def cpu_choices(dom_caps):
+    """The CPU modes and named models a new VM can have on a host, from its
+    domain capabilities (get_dom_capabilities)."""
+    return [mode for mode in dom_caps["cpu_modes"] if mode in CPU_MODES] + dom_caps.get("cpu_custom_models", [])
+
 
 def nocloud_seed(instance_id, hostname, user_data):
     """A cloud-init NoCloud seed: an ISO labelled cidata with the VM's
@@ -240,14 +249,11 @@ class wvmCreate(wvmConnect):
                 xml += """<smm state="on"/>"""
             xml += """</features>"""
 
-        if vcpu_mode == "host-model":
-            xml += """<cpu mode='host-model'/>"""
-        elif vcpu_mode == "host-passthrough":
-            xml += """<cpu mode='host-passthrough'/>"""
-        elif vcpu_mode != "":
-            xml += f"""<cpu mode='custom' match='exact' check='none'>
-                        <model fallback='allow'>{vcpu_mode}</model>"""
-            xml += """</cpu>"""
+        # a named model is that model or none: libvirt checks before the start that the host runs it
+        if vcpu_mode in CPU_MODES:
+            xml += f"""<cpu mode='{vcpu_mode}'/>"""
+        else:
+            xml += f"""<cpu mode='custom' match='exact'><model fallback='forbid'>{vcpu_mode}</model></cpu>"""
 
         xml += """
                   <clock offset="utc"/>

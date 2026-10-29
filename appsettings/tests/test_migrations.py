@@ -99,3 +99,17 @@ class DescriptionsTestCase(TestCase):
             with self.subTest(key=key):
                 self.assertLessEqual(len(text), limit)
                 self.assertEqual(AppSettings.objects.get(key=key).description, text)
+
+
+cpu_mode = importlib.import_module("appsettings.migrations.0022_cpu_mode_choices")
+
+
+class CpuModeChoicesTestCase(TestCase):
+    def test_the_default_cpu_mode_is_one_the_new_vm_dialog_offers(self):
+        for old, new in (("no-model", "host-model"), ("custom", "host-model"), ("host-passthrough", "host-passthrough")):
+            with self.subTest(old=old):
+                AppSettings.objects.filter(key="INSTANCE_CPU_DEFAULT_MODE").update(
+                    value=old, choices="no-model,host-model,host-passthrough,custom")
+                cpu_mode.fix_cpu_mode(apps, SimpleNamespace(connection=connection))
+                setting = AppSettings.objects.get(key="INSTANCE_CPU_DEFAULT_MODE")
+                self.assertEqual((setting.value, setting.choices), (new, "host-model,host-passthrough,maximum"))

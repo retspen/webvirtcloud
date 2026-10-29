@@ -13,7 +13,7 @@ from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE,
                      VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from vrtManager.create import wvmCreate
+from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import check_snapshot_name, wvmInstance
 
 from accounts.models import UserInstance, UserSSHKey
@@ -665,6 +665,8 @@ class CreateInstance(Kind):
             raise util.OperationError(_("Image has already exist. Please check volumes or change instance name"))
         if data["cache_mode"] not in conn.get_cache_modes():
             raise util.OperationError(_("Invalid cache mode"))
+        if data["vcpu_mode"] not in cpu_choices(conn.get_dom_capabilities(data["arch"], data["machine"])):
+            raise util.OperationError(_("This host offers no CPU mode or model %(mode)s") % {"mode": data["vcpu_mode"]})
         if data["add_cdrom"] != "None" and data["add_cdrom"] not in cdrom_buses:
             raise util.OperationError(_("A CD-ROM cannot use the %(bus)s bus") % {"bus": data["add_cdrom"]})
         if data["cloud_init"]:

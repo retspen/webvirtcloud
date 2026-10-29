@@ -32,6 +32,8 @@ class CreateJobTestCase(TransactionTestCase):
         self.conn.get_instances.return_value = []
         self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
         self.conn.get_disk_bus_types.return_value = ["virtio", "sata"]
+        self.conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model", "custom"],
+                                                       "cpu_custom_models": ["Skylake-Server-noTSX-IBRS"]}
         self.conn.create_volume.return_value = "/srv/default/api-vm.qcow2"
 
     def test_the_api_queues_the_create_and_the_worker_defines_and_records_it(self):
@@ -54,6 +56,18 @@ class CreateJobTestCase(TransactionTestCase):
         response = self.client.post(url, {**BODY, "cache_mode": "writeback"}, content_type="application/json")
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Operation.objects.exists())
+
+    def test_the_cpu_is_a_mode_or_a_model_the_host_offers(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        # a model name longer than 20 characters is taken; none, or one the host lacks, is refused
+        response = self.client.post(url, {**BODY, "vcpu_mode": "Skylake-Server-noTSX-IBRS"}, content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        for vcpu_mode in ("", "maximum", "EPYC-Genoa", "x" * 65):
+            with self.subTest(vcpu_mode=vcpu_mode):
+                body = {**BODY, "vcpu_mode": vcpu_mode, "name": "api-vm2", "submission_key": f"key-{len(vcpu_mode):08}"}
+                response = self.client.post(url, body, content_type="application/json")
+                self.assertEqual(response.status_code, 400)
+        self.assertEqual(Operation.objects.count(), 1)
 
     def test_impossible_sizes_are_refused_by_the_api(self):
         url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
