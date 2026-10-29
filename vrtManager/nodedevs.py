@@ -203,7 +203,7 @@ def _pci(name, node, nodes, children, vms):
         # of the bridge class: a host bridge or an LPC controller too
         "bridge_class": code >> 16 == 0x06,
         "resources": host_resources(name, nodes, children),
-        "vms": [vm for vm, pci, _ in vms if address in pci],
+        "vms": [vm for vm, pci, usb_selectors in vms if address in pci],
         "physfn": pci_address(physfn.get("domain"), physfn.get("bus"), physfn.get("slot"), physfn.get("function"))
         if physfn is not None else "",
         "vfs": len(cap.xpath("capability[@type='virt_functions']/address")),
@@ -222,7 +222,7 @@ def _usb(name, node, nodes, children, vms):
     while parent in nodes and nodes[parent].find("capability").get("type") != "pci":
         parent = nodes[parent].findtext("parent")
     controller = nodes[parent].find("capability") if parent in nodes else None
-    named = [(vm, usb_named(selector, model, (bus, device))) for vm, _, selectors in vms for selector in selectors]
+    named = [(vm, usb_named(selector, model, (bus, device))) for vm, pci_addresses, selectors in vms for selector in selectors]
     by_address = sorted({vm for vm, how in named if how == "address"})
     return {
         "bus": bus,
@@ -297,7 +297,7 @@ def check_hostdevs(conn, vm, trees):
     on the host of conn, when they cannot be (hostdev_problems): each
     definition on its own, as the VM starts from one of them."""
     wanted = [(tree, hostdev_users([tree])) for tree in trees]
-    if not any(pci or usb for _, (pci, usb) in wanted):
+    if not any(pci or usb for tree, (pci, usb) in wanted):
         return
     pci, usb = node_devices(conn)
     problems = []
