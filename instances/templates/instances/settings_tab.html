@@ -170,191 +170,130 @@
             <div class="clearfix"></div>
         </div>
         <div role="tabpanel" class="tab-pane" id="disks">
-                <form action="{% url 'instances:add_cdrom' instance.id %}" method="post" role="form" aria-label="Add CD-ROM form">{% csrf_token %}
-                    <p class="fw-bold">
-                        {% trans "Instance Media" %}
-                        <button class="btn btn-primary float-end"
-                                type="submit"
-                                title="{% trans 'Add CD-ROM' %}"
-                                {% if instance.status != 5 %} disabled {% endif %}>
-                            <span>{% bs_icon 'plus' %} </span>
-                        </button>
-                    </p>
-                </form>
-                <div class="clearfix"></div>
+            {# its CD-ROM drives, then its disks as cards; the forms are those of the actions #}
+            {% if instance.status != 5 %}
+            <p class="small text-body-secondary">{% bs_icon 'lock' %} {% trans "The VM is running: CD-ROM drives added now use the SCSI bus. Shut it down to detach other CD-ROM drives, or to detach or delete disks." %}</p>
+            {% endif %}
+            <section class="mb-4" aria-labelledby="media-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h6 mb-0" id="media-heading">{% trans "Removable media" %}</h2>
+                    <form action="{% url 'instances:add_cdrom' instance.id %}" method="post" aria-label="{% trans "Add CD-ROM form" %}">{% csrf_token %}
+                        <button class="btn btn-sm btn-secondary" type="submit">{% bs_icon 'plus' %} {% trans "Add CD-ROM" %}</button>
+                    </form>
+                </div>
                 {% for cd in instance.media %}
-                <div class="row mt-2">
-                    <div class="col-sm-12">
-                        {% if not cd.image %}
-                            <form action="{% url 'instances:mount_iso' instance.id %}" method="post">
-                                {% csrf_token %}
-                                <div class="input-group">
-                                    <a class="btn btn-secondary"
-                                        role="button"        
-                                        name="details"
-                                        title="{% trans 'Details' %}"
-                                        tabindex="0"
-                                        data-trigger="focus"
-                                        data-bs-toggle="popover"
-                                        data-bs-html="true"
-                                        data-bs-content="<strong>{% trans 'Bus' %}:</strong> {{ cd.bus }} <br/>
-                                            <strong>{% trans 'Device' %}:</strong> {{ cd.dev }}">
-                                            {% trans "CD-ROM" %} {{ forloop.counter }}
-                                    </a>
-                                    <select name="media" class="form-select">
-                                    {% if instance.media_iso %}
-                                        {% for iso in instance.media_iso %}
-                                            <option value="{{ iso }}">{{ iso }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="none">{% trans "None" %}</option>
-                                    {% endif %}
-                                    </select>
-                                    
-                                    {% if instance.media_iso %}
-                                        <button type="submit" class="btn btn-sm btn-primary" name="mount_iso" value="{{ cd.dev }}">{% trans "Mount" %}</button>
-                                    {% else %}
-                                        <button class="btn btn-sm btn-primary disabled" disabled>{% trans "Mount" %}</button>
-                                    {% endif %}
-                                    {% if instance.status == 5 %}
-                                        <button type="submit" class="btn btn-sm btn-danger float-end" formaction="{% url 'instances:detach_cdrom' instance.id cd.dev %}" formmethod="post" title="{% trans "Detach CD-ROM (remove device)" %}">
-                                            {% bs_icon 'dash-circle' %}
-                                        </button>
-                                    {% endif %}
-                                    
+                <div class="card mb-2">
+                    <form class="card-body" method="post" action="{% if cd.image %}{% url 'instances:unmount_iso' instance.id %}{% else %}{% url 'instances:mount_iso' instance.id %}{% endif %}">
+                        {% csrf_token %}
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fs-4 text-body-secondary" aria-hidden="true">{% bs_icon 'disc' %}</span>
+                                <div>
+                                    <div class="fw-semibold">{% trans "CD-ROM" %} {{ forloop.counter }}</div>
+                                    <div class="small text-body-secondary">{{ cd.dev }} · {{ cd.bus }} · {% if cd.image %}{{ cd.image }}{% else %}{% trans "No media" %}{% endif %}</div>
                                 </div>
-                            </form>
+                            </div>
+                            {% if not cd.image %}
+                            <button type="submit" class="btn btn-sm btn-secondary" formaction="{% url 'instances:detach_cdrom' instance.id cd.dev %}" formmethod="post"{% if instance.status != 5 and cd.bus != "scsi" %} disabled{% endif %}>{% trans "Detach" %}</button>
+                            {% endif %}
+                        </div>
+                        {% if cd.image %}
+                        <input type="hidden" name="path" value="{{ cd.path }}">
+                        <button type="submit" class="btn btn-sm btn-primary" value="{{ cd.dev }}" name="umount_iso">{% bs_icon 'eject' %} {% trans "Unmount" %}</button>
                         {% else %}
-                            <form action="{% url 'instances:unmount_iso' instance.id %}" method="post">
-                                {% csrf_token %}
-                                <div class="input-group">
-                                    <a class="btn btn-secondary"
-                                        role="button"        
-                                        name="details"
-                                        title="{% trans 'Details' %}"
-                                        tabindex="0"
-                                        data-trigger="focus"
-                                        data-bs-toggle="popover"
-                                        data-bs-html="true"
-                                        data-bs-content="<strong>{% trans 'Bus' %}:</strong> {{ cd.bus }} <br/>
-                                            <strong>{% trans 'Device' %}:</strong> {{ cd.dev }}">
-                                            {% trans "CD-ROM" %} {{ forloop.counter }}
-                                    </a>
-                                    <input type="text" class="form-control" value="{{ cd.image }}" disabled/>
-                                    <input type="hidden" name="path" value="{{ cd.path }}">
-                                    <button type="submit" class="btn btn-sm btn-primary" value="{{ cd.dev }}" name="umount_iso">{% trans "Unmount" %}</button>
-                                </div>
-                            </form>
+                        <label class="form-label small" for="media-{{ cd.dev }}">{% trans "ISO image" %}</label>
+                        <div class="row g-2">
+                            <div class="col-12 col-sm">
+                                <select name="media" class="form-select form-select-sm" id="media-{{ cd.dev }}">
+                                {% for iso in instance.media_iso %}
+                                    <option value="{{ iso }}">{{ iso }}</option>
+                                {% empty %}
+                                    <option value="none">{% trans "None" %}</option>
+                                {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-auto d-grid">
+                                <button type="submit" class="btn btn-sm btn-primary" name="mount_iso" value="{{ cd.dev }}"{% if not instance.media_iso %} disabled{% endif %}>{% trans "Mount" %}</button>
+                            </div>
+                        </div>
                         {% endif %}
-                    </div>
+                    </form>
                 </div>
                 {% empty %}
-                <div class="offset-sm-3 col-sm-6">
-                    <div class="bg-warning rounded shadow-sm">{% trans 'There is not any CD-ROM device.' %}</div>
-                </div>
+                <p class="small text-body-secondary mb-0">{% trans "The VM has no CD-ROM drive." %}</p>
                 {% endfor %}
-                <div class="clearfix"></div>
-                <div class="mb-3">
-                    <span class="fw-bold">{% trans "Instance Volume" %}</span>
+            </section>
+            <section aria-labelledby="disks-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h6 mb-0" id="disks-heading">{% trans "Disks" %} <span class="text-body-secondary fw-normal">· {{ instance.config_disks|length }}</span></h2>
                     {% include 'add_instance_volume.html' %}
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th scope="col">{% trans "Device" %}</th>
-                                <th scope="col">{% trans "Used" %}</th>
-                                <th scope="col">{% trans "Capacity" %}</th>
-                                <th scope="col">{% trans "Storage" %}</th>
-                                <th scope="col">{% trans "Source" %}</th>
-                                <th scope="col">{% trans "Action" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for disk in instance.config_disks %}
-                            <tr>
-                                <td>
-                                    <button type="submit" class="btn btn-sm btn-secondary"
-                                            name="details{{ forloop.counter0 }}"
-                                            title="{% trans 'Details' %}"
-                                            tabindex="1"
-                                            data-trigger="focus"
-                                            data-bs-toggle="popover"
-                                            data-bs-html="true"
-                                            data-bs-content="<strong>{% trans 'Bus' %}:</strong> {{ disk.bus }} <br/>
-                                                            <strong>{% trans 'Format' %}:</strong> {{ disk.format }} <br/>
-                                                            <strong>{% trans 'Cache' %}:</strong> {{ disk.cache }} <br/>
-                                                            <strong>{% trans 'Serial' %}:</strong> {{ disk.serial }} <br/>
-                                                            <strong>{% trans 'Readonly' %}:</strong> {{ disk.readonly }} <br/>
-                                                            <strong>{% trans 'Shareable' %}:</strong> {{ disk.shareable }}</br>
-                                                            <strong>{% trans 'IO Mode' %}:</strong> {{ disk.io }} <br/>
-                                                            <strong>{% trans 'Discard' %}:</strong> {{ disk.discard }} <br/>
-                                                            <strong>{% trans 'Detect Zeroes' %}:</strong> {{ disk.detect_zeroes }}">
-                                        <span>{% bs_icon 'info' %} </span>
-                                    </button>
-                                    {{ disk.dev }}
-                                </td>
-                            {% if disk.storage is None %}
-                                <td colspan="4">
-                                    <div class="alert alert-danger">
-                                        {% trans "Error getting disk info" %}
-                                    </div>
-                                </td>
-                            {% else %}
-                                <td>{{ disk.used | filesizeformat}}</td>
-                                <td>{{ disk.size | filesizeformat }}</td>
-                                <td>{{ disk.storage }}</td>
-                                <td>{{ disk.path }}</td>
-                            {% endif %}
-                                <td class="text-nowrap">
-                                    <form class="d-inline" action="{% url 'instances:edit_volume' instance.id %}" method="post" role="form" aria-label="Edit instance volume form">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="path" value="{{ disk.path }}">
-                                        <input type="hidden" name="dev" value="{{ disk.dev }}">
-                                        <input type="hidden" name="storage" value="{{ disk.storage }}">
-                                        <input type="hidden" name="name" value="{{ disk.image }}">
-                                        {% include 'instances/edit_instance_volume.html' with id=forloop.counter0 %}
-                                    </form>
-                                    {% if request.user.is_superuser %}{% include 'instances/move_disk.html' with id=forloop.counter0 %}{% endif %}
-                                    <form class="d-inline" action="{% url 'instances:detach_vol' instance.id %}" method="post">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="path" value="{{ disk.path }}">
-                                        <input type="hidden" name="dev" value="{{ disk.dev }}">
-                                        <input type="hidden" name="storage" value="{{ disk.storage }}">
-                                        <input type="hidden" name="name" value="{{ disk.image }}">
-                                        {% if instance.status == 5 %}
-                                            <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}" title="{% trans "Detach" %}" data-confirm="{% blocktrans with dev=disk.dev %}Detach {{ dev }}? Its file is kept.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                                {% bs_icon 'eject' %}
-                                            </button>
-                                        {% else %}
-                                            <button class="btn btn-sm btn-secondary disabled" disabled value="{{ disk.dev }}" title="{% trans "Detach" %}">
-                                                {% bs_icon 'eject' %}
-                                            </button>
-                                        {% endif %}
-                                    </form>
-                                    <form class="d-inline" action="{% url 'instances:delete_vol' instance.id %}" method="post">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="path" value="{{ disk.path }}">
-                                        <input type="hidden" name="dev" value="{{ disk.dev }}">
-                                        <input type="hidden" name="storage" value="{{ disk.storage }}">
-                                        <input type="hidden" name="name" value="{{ disk.image }}">
-                                        {% if instance.status == 5 %}
-                                            <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Delete" %}" data-confirm="{% blocktrans with dev=disk.dev %}Delete {{ dev }}? It is detached and its file and data are removed.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">
-                                                {% bs_icon 'trash' %}
-                                            </button>
-                                        {% else %}
-                                            <button class="btn btn-sm btn-secondary disabled" disabled title="{% trans "Delete" %}">
-                                                {% bs_icon 'trash' %}
-                                            </button>
-                                        {% endif %}
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="row g-3">
+                {% for disk in instance.config_disks %}
+                    <div class="col-12{% if instance.config_disks|length > 1 %} col-md-6{% endif %}">
+                        <article class="card h-100" aria-labelledby="disk-{{ disk.dev }}">
+                            <div class="card-body small">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                    <h3 class="h6 mb-0" id="disk-{{ disk.dev }}">{% bs_icon 'device-hdd' %} {{ disk.dev }}</h3>
+                                    <span class="text-body-secondary">{{ disk.bus }} · {{ disk.format }}</span>
+                                </div>
+                                {% if disk.storage is None %}
+                                <div class="alert alert-danger mb-0">{% trans "Error getting disk info" %}</div>
+                                {% else %}
+                                <div class="text-body-secondary">{% trans "Capacity" %}</div>
+                                <p class="fs-4 fw-semibold lh-sm mb-0">{{ disk.size|filesizeformat }}</p>
+                                <p class="text-body-secondary mb-2">{% blocktrans with used=disk.used|filesizeformat %}{{ used }} used{% endblocktrans %}</p>
+                                <div class="border-top pt-2">
+                                    <div class="mb-1"><span class="text-body-secondary">{% trans "Storage pool" %}</span> <strong class="ms-1">{{ disk.storage }}</strong></div>
+                                    <div class="text-body-secondary">{% trans "Source" %}</div>
+                                    <p class="text-break mb-2">{{ disk.path }}</p>
+                                </div>
+                                {% endif %}
+                                <details>
+                                    <summary class="text-body-secondary">{% trans "Device details" %}</summary>
+                                    <dl class="row mb-0 mt-2" style="max-width: 32rem">
+                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Cache" %}</dt><dd class="col-6 mb-1">{{ disk.cache }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "IO mode" %}</dt><dd class="col-6 mb-1">{{ disk.io }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Discard" %}</dt><dd class="col-6 mb-1">{{ disk.discard }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Detect zeroes" %}</dt><dd class="col-6 mb-1">{{ disk.detect_zeroes }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Serial" %}</dt><dd class="col-6 mb-1">{{ disk.serial|default:"—" }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Read-only" %}</dt><dd class="col-6 mb-1">{{ disk.readonly|yesno }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Shareable" %}</dt><dd class="col-6 mb-0">{{ disk.shareable|yesno }}</dd>
+                                    </dl>
+                                </details>
+                            </div>
+                            <div class="card-footer bg-transparent d-flex flex-wrap gap-2">
+                                <form class="d-inline" action="{% url 'instances:edit_volume' instance.id %}" method="post" aria-label="{% trans "Edit instance volume form" %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="dev" value="{{ disk.dev }}">
+                                    <input type="hidden" name="storage" value="{{ disk.storage }}">
+                                    <input type="hidden" name="name" value="{{ disk.image }}">
+                                    {% include 'instances/edit_instance_volume.html' with id=forloop.counter0 %}
+                                </form>
+                                {% if request.user.is_superuser %}{% include 'instances/move_disk.html' with id=forloop.counter0 %}{% endif %}
+                                <form class="d-inline" action="{% url 'instances:detach_vol' instance.id %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="dev" value="{{ disk.dev }}">
+                                    <input type="hidden" name="storage" value="{{ disk.storage }}">
+                                    <input type="hidden" name="name" value="{{ disk.image }}">
+                                    <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Detach {{ dev }}? Its file is kept.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Detach" %}</button>
+                                </form>
+                                <form class="d-inline" action="{% url 'instances:delete_vol' instance.id %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="dev" value="{{ disk.dev }}">
+                                    <input type="hidden" name="storage" value="{{ disk.storage }}">
+                                    <input type="hidden" name="name" value="{{ disk.image }}">
+                                    <button type="submit" class="btn btn-sm btn-danger"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Delete {{ dev }}? It is detached and its file and data are removed.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Delete" %}</button>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                {% endfor %}
                 </div>
-                <div class="clearfix"></div>
+            </section>
         </div>
         <div role="tabpanel" class="tab-pane" id="network">
             <div class="mb-3">

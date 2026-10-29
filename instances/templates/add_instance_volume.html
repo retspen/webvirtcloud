@@ -1,9 +1,7 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% if request.user.is_superuser %}
-    <a href="#addvol" type="button" class="btn btn-primary float-end" data-bs-toggle="modal" title="{% trans "Add Volume" %}">
-        <span aria-hidden="true">{% bs_icon 'plus'%} </span>
-    </a>
+    <a href="#addvol" type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal">{% bs_icon 'plus' %} {% trans "Add disk" %}</a>
 
     <!-- Modal pool -->
     <div class="modal fade" id="addvol" tabindex="-1" role="dialog" aria-labelledby="addInstanceVolumeLabel" aria-hidden="true">

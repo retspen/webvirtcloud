@@ -1462,7 +1462,11 @@ def detach_vol(request, pk):
 @serialize_instance_mutation
 def add_cdrom(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
-    bus = request.POST.get("bus", "ide" if instance.machine == "pc" else "sata")
+    if instance.status == 5:
+        default_bus = "ide" if instance.machine == "pc" else "sata"
+    else:  # IDE and SATA drives cannot be plugged into a running VM, SCSI ones can
+        default_bus = "scsi"
+    bus = request.POST.get("bus", default_bus)
     invalid = invalid_disk_options(instance, bus=bus)
     if invalid:
         return reject_disk_options(request, pk, invalid)

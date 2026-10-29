@@ -2,9 +2,7 @@
 {% load bootstrap_icons %}
 {% load operations %}
 {# the Move button of a disk and its dialog: another storage pool of this host #}
-<button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#movedisk{{ id }}" title="{% trans "Move to another pool" %}">
-    {% bs_icon 'arrow-left-right' %}
-</button>
+<button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#movedisk{{ id }}" title="{% trans "Move to another pool" %}">{% trans "Move" %}</button>
 <div class="modal fade" id="movedisk{{ id }}" tabindex="-1" aria-labelledby="movedisk{{ id }}-label" aria-hidden="true">
     <div class="modal-dialog">
         <form class="modal-content text-wrap" action="{% url 'instances:move_disk' instance.id %}" method="post">

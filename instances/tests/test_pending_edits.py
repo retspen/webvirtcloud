@@ -78,6 +78,14 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual([" ".join(t.split()) for t in doc.xpath("//label[@class='col-form-label']/text()")],
                          [f"{mac} Inbound", f"{mac} Outbound"])
 
+    def test_one_disk_card_spans_the_row_and_more_sit_side_by_side(self):
+        for disks, wide in (([disk("vda", "default", "")], ["col-12"]),
+                            ([disk("vda", "default", ""), disk("vdb", "default", "")], ["col-12 col-md-6"] * 2)):
+            with self.subTest(count=len(disks)):
+                doc = self.page(live=disks, config=disks)
+                self.assertEqual(doc.xpath("//div[@id='disks']//div[article[starts-with(@aria-labelledby, 'disk-')]]/@class"),
+                                 wide)
+
     def test_a_disk_with_a_pending_source_is_not_deleted(self):
         # running: vda is A, its definition for the next start uses B
         with patch("instances.models.wvmInstance") as wvm, patch("instances.views.wvmStorage") as storage:
@@ -99,8 +107,8 @@ class PendingEditsTestCase(TestCase):
     def test_buttons_shown_as_disabled_cannot_submit(self):
         # running: the CPU, options and video forms wait for a shutdown
         doc = self.page(live=[disk("vda", "default", "")], config=[disk("vda", "default", "")])
+        self.assertGreater(len(doc.xpath("//button[@disabled]")), 5)
         shown = doc.xpath("//button[contains(concat(' ', @class, ' '), ' disabled ')]")
-        self.assertGreater(len(shown), 5)
         self.assertEqual([b for b in shown if b.get("disabled") is None], [])
         for action in ("resizevm_cpu", "change_options", "set_video_model", "detach_vol", "delete_vol"):
             with self.subTest(action):

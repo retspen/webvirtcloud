@@ -22,8 +22,8 @@ class NewDiskNameTestCase(TestCase):
         compute = Compute.objects.create(name="nd", hostname="127.0.0.1:1", login="root", password="", type=1)
         self.instance = Instance.objects.create(compute=compute, name="nd-vm", uuid="aaaaaaaa-5555-2222-3333-444444444444")
 
-    def attached_name(self, view, data, live=((), ()), config=((), ())):
-        """The name view attaches with; live and config are (disks, media) of each definition."""
+    def attach(self, view, data, live=((), ()), config=((), ()), status=1):
+        """The attach_disk call of view; live and config are (disks, media) of each definition."""
         with patch("instances.models.wvmInstance") as wvm, patch("instances.views.wvmStorage") as storage, patch(
             "instances.views.wvmCreate"
         ) as create:
@@ -33,6 +33,7 @@ class NewDiskNameTestCase(TestCase):
             proxy.get_disk_bus_types.return_value = ["virtio", "sata", "scsi"]
             proxy.get_cache_modes.return_value = {"default": "", "none": ""}
             proxy.get_machine_type.return_value = "q35"
+            proxy.get_status.return_value = status
             storage.return_value.get_volumes.return_value = ["data.qcow2"]
             storage.return_value.get_type.return_value = "dir"
             storage.return_value.get_volume_type.return_value = "file"
@@ -40,7 +41,7 @@ class NewDiskNameTestCase(TestCase):
             create.return_value.create_volume.return_value = "/pool/data.qcow2"
             self.client.post(reverse(f"instances:{view}", args=[self.instance.id]), data)
         proxy.attach_disk.assert_called_once()
-        return proxy.attach_disk.call_args.args[0]
+        return proxy.attach_disk.call_args
 
     VIEWS = (
         ("add_new_vol", {"storage": "default", "name": "data", "format": "qcow2", "size": "1", "cache": "default"}),
@@ -60,4 +61,9 @@ class NewDiskNameTestCase(TestCase):
         for view, data in self.VIEWS:
             for bus, live, config, expected in cases:
                 with self.subTest(view=view, bus=bus, expected=expected):
-                    self.assertEqual(self.attached_name(view, {**data, "bus": bus}, live, config), expected)
+                    self.assertEqual(self.attach(view, {**data, "bus": bus}, live, config).args[0], expected)
+
+    def test_a_cdrom_of_a_running_vm_is_on_the_bus_that_can_be_hotplugged(self):
+        for status, bus in ((1, "scsi"), (3, "scsi"), (5, "sata")):  # running, paused, shut off
+            with self.subTest(status=status):
+                self.assertEqual(self.attach("add_cdrom", {}, status=status).kwargs["target_bus"], bus)
