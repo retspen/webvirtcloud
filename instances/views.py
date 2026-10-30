@@ -322,6 +322,18 @@ def _instance_page(request, pk, instance, compute):
     show_hostdevs = request.user.is_superuser or bool(usb_hostdevs or pci_hostdevs or other_hostdevs)
     show_settings = show_settings or show_hostdevs
 
+    # what keeps the Migrate tab from migrating the VM to any destination
+    if computes_count == 1:
+        migrate_refusal = _("There is no other host to migrate to.")
+    elif instance.status not in (1, 3, 5):
+        migrate_refusal = _("A VM migrates when it is running, paused or shut off.")
+    elif instance.snapshots:
+        migrate_refusal = _("A VM with snapshots cannot be migrated: its snapshots stay on this host. Delete them first.")
+    elif usb_hostdevs or pci_hostdevs or other_hostdevs:
+        migrate_refusal = _("A VM with host devices cannot be migrated: the destination may not have them. Remove them first.")
+    else:
+        migrate_refusal = None
+
     job_resource = claims.instance_key(instance.uuid)
     return render(request, "instance.html", locals(),)
 
@@ -849,7 +861,7 @@ def migrate(request, pk):
         raise Http404
     target_host = get_object_or_404(Compute, pk=compute_id)
     raw = {"instance": pk, "target": target_host.pk, "live": request.POST.get("live_migrate"),
-           "unsafe": request.POST.get("unsafe_migrate"), "offline": request.POST.get("offline_migrate"),
+           "unsafe": request.POST.get("unsafe_migrate"),
            "autoconverge": request.POST.get("autoconverge"), "compress": request.POST.get("compress"),
            "delete_source": request.POST.get("delete_source"),
            "disk_pools": {key.removeprefix("pool-"): value for key, value in request.POST.items()

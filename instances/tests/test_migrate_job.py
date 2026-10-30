@@ -109,6 +109,12 @@ class MigrateJobTestCase(TransactionTestCase):
         self.assertIn('<option value="fast">Copy to fast (8.0\xa0GB free)</option>', page)
         self.assertIn("Cannot be copied: an image is not copied; eject it first", page)
         self.assertIn("A shut-off VM is started paused for a copy", page)
+        # a disk that cannot go keeps the form from being sent, as does a destination that does not answer
+        self.assertEqual(page.count("data-refused"), 1)
+        with patch("instances.views.wvmInstances", side_effect=libvirtError("no answer")):
+            page = self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk]),
+                                   {"compute_id": self.dest.pk}).content.decode()
+        self.assertIn("data-refused", page)
         self.assertEqual(self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk])).status_code, 404)
 
     def test_a_cancelled_migration_ends_cancelled_and_the_vm_stays(self):

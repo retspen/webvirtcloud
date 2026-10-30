@@ -484,86 +484,98 @@
         </div>
         {% endif %}
         <div role="tabpanel" class="tab-pane" id="migrate">
-            <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
-            <form action="{% url 'instances:migrate' instance.id %}" class="ms-3 form" method="post" role="form" aria-label="Migrate instance form">
-                {% csrf_token %}{% submission_key %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Original host" %}</label>
-                    <div class="col-sm-6">
-                        <label class="form-control" readonly="readonly">{{ compute.name }}</label>
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Host migration" %}</label>
-                    <div class="col-sm-6">
-                        <select name="compute_id" class="form-select" id="migrate_compute">
-                            {% if computes_count != 1 %}
+            <form action="{% url 'instances:migrate' instance.id %}" method="post" aria-labelledby="migrate-route">{% csrf_token %}{% submission_key %}
+                <header class="border-bottom pb-3 mb-4">
+                    <h2 class="h6" id="migrate-route">{% trans "Migration route" %}</h2>
+                    <div class="row g-2 align-items-end">
+                        <div class="col">
+                            <label class="form-label small" for="migrate-from">{% trans "From" %}</label>
+                            <input class="form-control" id="migrate-from" value="{{ compute.name }}" readonly>
+                        </div>
+                        <div class="col-auto pb-2 text-body-secondary" aria-hidden="true">→</div>
+                        <div class="col">
+                            <label class="form-label small" for="migrate_compute">{% trans "To" %}</label>
+                            <select class="form-select" name="compute_id" id="migrate_compute">
                                 {% for comp in computes %}
-                                    {% if comp.id != compute.id %}
-                                        <option value="{{ comp.id }}">{{ comp.name }}</option>
-                                    {% endif %}
+                                {% if comp.id != compute.id %}<option value="{{ comp.id }}">{{ comp.name }}</option>{% endif %}
                                 {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <p class="small text-body-secondary mt-3 mb-0">
+                        {% if instance.status == 1 %}{% trans "The VM is running: it migrates live, or paused for the transfer when Live migration is off." %}
+                        {% elif instance.status == 3 %}{% trans "The VM is paused: it stays paused on the destination." %}
+                        {% elif instance.status == 5 %}{% trans "The VM is shut off: it moves offline." %}{% endif %}
+                        {% trans "Both hosts need the same emulator; the VM's definition leaves the source host." %}
+                    </p>
+                </header>
+                {# a VM that cannot go anywhere gets the reason, not the disks and settings #}
+                {% if not migrate_refusal %}
+                <section class="card mb-3" aria-labelledby="migrate-storage">
+                    <div class="card-body">
+                        <h2 class="h6 mb-3" id="migrate-storage">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</h2>
+                        <div id="migrate-plan" data-url="{% url 'instances:migrate_plan' instance.id %}" aria-live="polite"></div>
+                    </div>
+                </section>
+                <section class="card mb-4" aria-labelledby="migrate-transfer">
+                    <div class="card-body">
+                        <h2 class="h6 mb-3" id="migrate-transfer">{% bs_icon 'arrow-left-right' %} {% trans "Transfer settings" %}</h2>
+                        <div class="row g-3">
+                            {% if instance.status == 1 or instance.status == 3 %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="live_migrate" value="true" id="vm_live_migrate" aria-describedby="live-help" checked>
+                                    <label class="form-check-label fw-semibold" for="vm_live_migrate">{% trans "Live migration" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="live-help">{% trans "The VM keeps running while its memory is copied. Off, it is paused for the transfer." %}</p>
+                            </div>
                             {% endif %}
-                        </select>
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Disks" %}</label>
-                    <div class="col-sm-9 py-2" id="migrate-plan" data-url="{% url 'instances:migrate_plan' instance.id %}" aria-live="polite"></div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-sm-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% if instance.status != 5 %}checked{% else %}disabled{% endif %}>
-                            <label class="form-check-label" for="vm_live_migrate">{% trans "Live migration" %}</label>
+                            {% if instance.status == 1 %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="autoconverge" value="true" id="autoconverge" aria-describedby="autoconverge-help" checked>
+                                    <label class="form-check-label fw-semibold" for="autoconverge">{% trans "Auto converge" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="autoconverge-help">{% trans "Slows the guest's CPUs so that a busy VM's live migration can finish. Only with Live migration." %}</p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="compress" value="true" id="compress" aria-describedby="compress-help">
+                                    <label class="form-check-label fw-semibold" for="compress">{% trans "Compressed" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="compress-help">{% trans "Compresses the memory sent: less network, more CPU on both hosts." %}</p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="unsafe_migrate" value="true" id="vm_unsafe_migrate" aria-describedby="unsafe-help">
+                                    <label class="form-check-label fw-semibold" for="vm_unsafe_migrate">{% trans "Unsafe migration" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="unsafe-help">{% trans "Skips libvirt's safety checks, such as a disk cache mode that can corrupt data in a migration." %}</p>
+                            </div>
+                            {% endif %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="delete_source" value="true" id="delete_source" aria-describedby="delete-source-help">
+                                    <label class="form-check-label fw-semibold" for="delete_source">{% trans "Delete the source files of copied disks" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="delete-source-help">{% trans "After a migration that copied disks, their files on the source host go. Disks on shared storage stay." %}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-sm-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="unsafe_migrate" value="true" id="vm_unsafe_migrate">
-                            <label class="form-check-label" for="vm_unsafe_migrate">{% trans "Unsafe migration" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-sm-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% if instance.status == 5 %}checked{% else %}disabled{% endif %}>
-                            <label class="form-check-label" for="offline_migrate">{% trans "Offline migration" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-sm-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="autoconverge" value="true" id="autoconverge" {% if instance.status != 1 %}disabled{% else %}checked{% endif %}>
-                            <label class="form-check-label" for="autoconverge" title="{% trans 'Forces CPU convergence during live migration' %}">{% trans "Auto converge" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-sm-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="compress" value="true" id="compress" {% if instance.status != 1 %}disabled{% endif %}>
-                            <label class="form-check-label" for="compress" title="{% trans 'Compress instance memory for fast migration' %}">{% trans "Compressed" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-sm-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="delete_source" value="true" id="delete_source">
-                            <label class="form-check-label" for="delete_source">{% trans "Delete the source files of copied disks" %}</label>
-                        </div>
-                    </div>
-                </div>
-                {% if computes_count != 1 %}
-                    <button type="submit" class="btn btn-primary float-end" name="migrate" >{% trans "Migrate" %}</button>
-                {% else %}
-                    <button class="btn btn-primary float-end disabled" disabled>{% trans "Migrate" %}</button>
+                </section>
                 {% endif %}
+                <footer class="border-top pt-3">
+                    {% if migrate_refusal %}<p class="small text-body-secondary mb-2">{{ migrate_refusal }}</p>{% endif %}
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <p class="small text-body-secondary mb-0">{% trans "Migration runs as a background job." %}</p>
+                        {% if migrate_refusal %}
+                        <button type="button" class="btn btn-primary ms-auto" disabled>{% trans "Migrate" %}</button>
+                        {% else %}
+                        {# enabled once the disks of the chosen destination are shown #}
+                        <button type="submit" class="btn btn-primary ms-auto" name="migrate" disabled>{% trans "Migrate" %}</button>
+                        {% endif %}
+                    </div>
+                </footer>
             </form>
             <div class="clearfix"></div>
         </div>

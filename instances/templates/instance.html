@@ -409,7 +409,8 @@
             return response.text();
         }).then(function (html) {
             migratePlan.innerHTML = html;
-            submit.disabled = false;
+            // a destination that did not answer, or a disk that cannot go there
+            submit.disabled = migratePlan.querySelector("[data-refused]") !== null;
         }).catch(function () {
             if (loading.signal.aborted) return;  // another destination was chosen
             migratePlan.textContent = "{{ _("The disks could not be checked.")|escapejs }}";

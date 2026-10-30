@@ -1,7 +1,8 @@
-"""The migrate form ticks auto converge for a running VM, and the API uses
-the same default: it only slows a VM that the migration cannot keep up with."""
+"""The migrate form shows the switches the VM's state uses and ticks auto
+converge for a running VM, and the API uses the same default: it only slows
+a VM that the migration cannot keep up with. A VM that cannot migrate gets
+the reason instead."""
 
-import re
 from unittest.mock import patch
 
 import libvirt
@@ -10,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
+from lxml import html
 from operations.models import Operation
 from rest_framework.test import APIClient
 
@@ -37,20 +39,34 @@ class MigrateFormTests(TestCase):
             self.domain.destroy()
         self.domain.undefine()
 
-    def autoconverge_input(self):
+    def migrate_form(self):
         self.client.force_login(self.admin)
         with patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn):
-            page = self.client.get(reverse("instances:instance", args=[self.vm.id])).content.decode()
-        return re.search(r'<input[^>]*id="autoconverge"[^>]*>', page).group(0)
+            page = self.client.get(reverse("instances:instance", args=[self.vm.id])).content
+        (form,) = html.fromstring(page).xpath("//form[@action=$a]", a=reverse("instances:migrate", args=[self.vm.id]))
+        return form
 
     def test_auto_converge_is_ticked_for_a_running_vm(self):
         self.domain.create()
-        self.assertIn("checked", self.autoconverge_input())
+        self.assertEqual(self.migrate_form().xpath(".//input[@name='autoconverge']/@checked"), ["checked"])
 
-    def test_a_shut_off_vm_has_no_auto_converge(self):
-        field = self.autoconverge_input()
-        self.assertIn("disabled", field)
-        self.assertNotIn("checked", field)
+    def test_each_state_shows_the_switches_it_uses(self):
+        # the mode follows the state: no Offline switch; unsafe, auto converge and compressed apply to a running VM
+        for state, switches in (("shut off", ["delete_source"]),
+                                ("running", ["live_migrate", "autoconverge", "compress", "unsafe_migrate", "delete_source"]),
+                                ("paused", ["live_migrate", "delete_source"])):
+            with self.subTest(state):
+                if state == "running":
+                    self.domain.create()
+                elif state == "paused":
+                    self.domain.suspend()
+                self.assertEqual(self.migrate_form().xpath(".//input[@type='checkbox']/@name"), switches)
+
+    def test_a_vm_with_no_other_host_gets_the_reason(self):
+        self.other.delete()
+        form = self.migrate_form()
+        self.assertIn("There is no other host to migrate to.", form.text_content())
+        self.assertEqual(form.xpath(".//button[@name='migrate']"), [])
 
     def test_the_api_uses_auto_converge_unless_told_otherwise(self):
         api = APIClient()
