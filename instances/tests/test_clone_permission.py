@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
+from appsettings.models import AppSettings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TestCase, override_settings
@@ -170,6 +171,19 @@ class ClonePermissionTestCase(TestCase):
             )
         self.assertFalse(Operation.objects.exists())
 
+    def test_a_vm_without_a_nic_is_cloned(self):
+        for user, auto_name in ((self.superuser, "False"), (self.owner_change, "False"), (self.owner_change, "True")):
+            with self.subTest(user.username, auto_name=auto_name), self.mocked_libvirt() as proxy, patch(
+                "instances.views.utils.get_clone_free_names", return_value=["auto-clone"]
+            ):
+                AppSettings.objects.filter(key="CLONE_INSTANCE_AUTO_NAME").update(value=auto_name)
+                proxy.get_net_devices.return_value = []
+                Operation.objects.all().delete()
+                data = self._valid_post(name="" if auto_name == "True" else "clone-vm")
+                del data["clone-net-mac-0"]
+                self._clone(user, data)
+                self.assertNotIn("clone-net-mac-0", Operation.objects.get().intent["clone"])
+
     def test_superuser_valid_clone_passes_posted_values(self):
         with self.mocked_libvirt():
             self._clone(
@@ -191,14 +205,23 @@ class ClonePermissionTestCase(TestCase):
         self.assertEqual(clone_data["disk-vda"], "clone-vm.qcow2")
         self.assertIsNone(clone_data["disk-vdb"])
 
+    def test_derived_disk_names_differ(self):
+        disks = [dict(SRC_DISK, dev="vdb", image="src-vm-data.qcow2"), dict(SRC_DISK, dev="vdc", image="data.qcow2")]
+        with self.mocked_libvirt() as proxy:
+            proxy.get_disk_devices.return_value = disks
+            self._clone(self.owner_change, self._valid_post())
+        clone_data = Operation.objects.get().intent["clone"]
+        self.assertEqual((clone_data["disk-vdb"], clone_data["disk-vdc"]), ("clone-vm-data.qcow2", "clone-vm-vdc-data.qcow2"))
+
     def test_derived_disk_names_are_sanitized_instead_of_rejected(self):
         odd_disk = dict(SRC_DISK, image="my disk@2.qcow2")
         with self.mocked_libvirt() as proxy:
             proxy.get_disk_devices.return_value = [odd_disk]
             self._clone(self.owner_change, self._valid_post())
         self.assertEqual(Operation.objects.count(), 1)
+        # the clone's name leads, so a second clone's disk does not take the first one's name
         self.assertEqual(
-            Operation.objects.get().intent["clone"]["disk-vda"], "my-disk-2-clone.qcow2"
+            Operation.objects.get().intent["clone"]["disk-vda"], "clone-vm-vda-my-disk-2.qcow2"
         )
 
 

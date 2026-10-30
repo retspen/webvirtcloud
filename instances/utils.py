@@ -358,17 +358,20 @@ def get_random_mac_address():
     return mac
 
 
-def get_clone_disk_name(disk, prefix, clone_name=""):
+def get_clone_disk_name(disk, prefix, clone_name):
+    """A volume name for the clone's copy of disk: the clone's name in place of
+    the source's (prefix), else before the disk's device and name, so two disks
+    of one clone do not get the same name."""
     if not disk["image"]:
         return None
-    if disk["image"].startswith(prefix) and clone_name:
+    if disk["image"].startswith(prefix):
         suffix = disk["image"][len(prefix) :]
         image = f"{clone_name}{suffix}"
     elif "." in disk["image"] and len(disk["image"].rsplit(".", 1)[1]) <= 7:
         name, suffix = disk["image"].rsplit(".", 1)
-        image = f"{name}-clone.{suffix}"
+        image = f"{clone_name}-{disk['dev']}-{name}.{suffix}"
     else:
-        image = f"{disk['image']}-clone"
+        image = f"{clone_name}-{disk['dev']}-{disk['image']}"
     # Derived names go into volume XML and paths: keep them to a safe charset.
     image = re.sub(r"[^A-Za-z0-9_.+-]+", "-", image).lstrip("_.+-")
     return image or None

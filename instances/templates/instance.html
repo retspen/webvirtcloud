@@ -152,6 +152,12 @@
 <script>
     function guess_clone_name() {
         $.getJSON("{% url 'instances:guess_clone_name' %}", function(data) {
+            // a free name of the DHCP file, if there is one
+            if (!data.name) {
+                $('#clone-name-help').text("{{ _("The DHCP file has no free name to suggest.")|escapejs }}");
+                return;
+            }
+            $('#clone-name-help').text('');
             guessed_name = data['name'].split(".")[0];
             $('#clone_name').val(guessed_name);
             update_clone_disk_name(guessed_name);
@@ -161,9 +167,9 @@
 </script>
 <script>
     function update_clone_disk_name(new_vname) {
-        vname = '{{ instance.name }}';
-        {% for disk in instance.disks %}
-            disk_name = '{{ disk.image }}';
+        vname = '{{ instance.name|escapejs }}';
+        {% for disk in instance.config_disks %}
+            disk_name = '{{ disk.image|escapejs }}';
             disk_dot = disk_name.split('.');
             disk_dot_suffix = disk_dot[disk_dot.length-1];
             if (disk_name.startsWith(vname)) {
@@ -177,7 +183,7 @@
             } else {
                 image = new_vname + '-clone';
             }
-            $('#disk_name-{{ disk.dev }}').val(image);
+            $('#disk_name-{{ disk.dev|escapejs }}').val(image);
         {% endfor %}
     }
 </script>
@@ -203,18 +209,10 @@
 {% endif %}
 {% if request.user.is_superuser %}
     $(document).ready(function () {
-        random_mac('clone-net-mac-0');
+        // every NIC of the clone a new address: one the VM has would clash with it
+        $('input[name^="clone-net-mac-"]').each(function () { random_mac(this.name); });
         random_mac('add-net-mac');
         update_clone_disk_name($('#clone_name').val());
-    });
-{% else %}
-    $('#select_clone_name').on('change', function () {
-        update_clone_disk_name($(this).val());
-        guess_mac_address('#select_clone_name', 0);
-    });
-    $(document).ready(function () {
-        update_clone_disk_name($('#select_clone_name').val());
-        guess_mac_address('#select_clone_name', 0);
     });
 {% endif %}
 </script>

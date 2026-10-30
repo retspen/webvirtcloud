@@ -692,97 +692,105 @@
         {% endif %}
         {% if can_clone %}
         <div role="tabpanel" class="tab-pane" id="clone">
-            <p class="fw-bold">{% trans "Create a clone" %}</p>
-            {% if usb_hostdevs or pci_hostdevs or other_hostdevs %}<p class="small text-body-secondary">{% trans "The clone gets none of the VM's host devices: one VM holds a device of the host." %}</p>{% endif %}
-            <form class="form" action="{% url 'instances:clone' instance.id %}" method="post" role="form" aria-label="Create clone form">{% csrf_token %}{% submission_key %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label fw-normal">{% trans "Clone Name" %}</label>
+            <form action="{% url 'instances:clone' instance.id %}" method="post" aria-labelledby="clone-heading">{% csrf_token %}{% submission_key %}
+                <header class="mb-4">
+                    <h2 class="h6 mb-1" id="clone-heading">{% trans "Create a clone" %}</h2>
+                    <p class="small text-body-secondary mb-0">{% blocktrans with name=instance.name %}Source VM: {{ name }}{% endblocktrans %}</p>
+                </header>
+                <div class="mb-4">
                     {% if request.user.is_superuser %}
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <input id="clone_name" type="text" class="form-control" name="name" value="{{ instance.name }}-clone">
-                            <button type="button" class="btn btn-primary" name="guess-clone-name"
-                                        onclick="guess_clone_name()">{% trans "Guess" %}</button>
+                    <label class="form-label" for="clone_name">{% trans "Clone name" %}</label>
+                    <div class="row g-2">
+                        <div class="col-12 col-sm">
+                            <input class="form-control" id="clone_name" name="name" type="text" value="{{ instance.name }}-clone" aria-describedby="clone-name-help">
+                        </div>
+                        <div class="col-12 col-sm-auto">
+                            <button class="btn btn-secondary" type="button" onclick="guess_clone_name()">{% trans "Guess" %}</button>
                         </div>
                     </div>
-                    {% elif app_settings.CLONE_INSTANCE_AUTO_NAME == 'True'%}
-                    <div class="col-sm-4">
-                        <input id="clone_instance_auto_name" type="text" class="form-control" name="auto_name" value="Automatic" disabled/>
-                    </div>
+                    <p class="small text-body-secondary mt-1 mb-0" id="clone-name-help"></p>
+                    {% elif app_settings.CLONE_INSTANCE_AUTO_NAME == 'True' %}
+                    <label class="form-label" for="clone_instance_auto_name">{% trans "Clone name" %}</label>
+                    <input class="form-control" id="clone_instance_auto_name" type="text" value="{% trans "Automatic" %}" disabled>
                     {% else %}
-                    <div class="col-sm-4">
-                        <select id="select_clone_name" class="form-control" name="name" size="1">
+                    <label class="form-label" for="select_clone_name">{% trans "Clone name" %}</label>
+                    <select class="form-select" id="select_clone_name" name="name">
                         {% for name in clone_free_names %}
-                            <option value="{{ name }}">{{ name }}</option>
+                        <option value="{{ name }}">{{ name }}</option>
                         {% endfor %}
-                        </select>
-                    </div>
+                    </select>
                     {% endif %}
                 </div>
                 {% if request.user.is_superuser %}
-                    <label>{% trans "Network devices" %}:</label>
-                    {% for network in instance.config_networks %}
-                    <div class="mb-3">
-                        <div class="row">
-                            <label class="col-sm-2 col-form-label offset-sm-1">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
-                            <div class="col-sm-6">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                                    <button type="button" class="btn btn-primary" name="random-mac-{{ forloop.counter0 }}"
-                                            onclick="random_mac('clone-net-mac-{{ forloop.counter0 }}')">{% trans "Random" %}</button>
-                                    <button type="button" class="btn btn-primary" name="guess-mac-{{ forloop.counter0 }}"
-                                            onclick="guess_mac_address('#clone_name', {{ forloop.counter0 }})">{% trans "Guess" %}</button>
+                <div class="row g-3 mb-4">
+                    {% if instance.config_networks %}
+                    <div class="col-12 col-lg-6">
+                        <section class="card h-100" aria-labelledby="clone-network-heading">
+                            <div class="card-body">
+                                <h3 class="h6 mb-3" id="clone-network-heading">{% bs_icon 'ethernet' %} {% trans "Network" %}</h3>
+                                {% for network in instance.config_networks %}
+                                <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
+                                    <p class="small mb-2"><strong>eth{{ forloop.counter0 }}</strong> <span class="text-body-secondary">· {{ network.nic }}</span></p>
+                                    <label class="form-label small" for="clone-net-mac-{{ forloop.counter0 }}">{% trans "New MAC address" %}</label>
+                                    <input class="form-control" id="clone-net-mac-{{ forloop.counter0 }}" name="clone-net-mac-{{ forloop.counter0 }}" type="text" value="{{ network.mac }}">
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        <button class="btn btn-sm btn-secondary" type="button" onclick="random_mac('clone-net-mac-{{ forloop.counter0 }}')">{% trans "Random" %}</button>
+                                        {% if forloop.first %}
+                                        {# the DHCP host entry of the clone's name holds one address: the first NIC's #}
+                                        <button class="btn btn-sm btn-secondary" type="button" onclick="guess_mac_address('#clone_name', 0)">{% trans "Guess" %}</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
+                                {% endfor %}
                             </div>
-                        </div>
+                        </section>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    {% for network in instance.config_networks %}
-                        <input type="hidden" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                    {% endfor %}
-                {% endif %}
-                {% if request.user.is_superuser %}
-                    <label>{% trans "Storage devices" %}:</label>
-                    {% for disk in instance.config_disks %}
-                        <div class="row">
-                            <label class="col-sm-2 col-form-label offset-sm-1">{{ disk.dev }} ({{ disk.storage }})</label>
-                            <div class="col-sm-6">
-                            <div class="input-group mb-3">
-                                    <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
-                                    {% if disk.format == 'qcow2' %}
-                                            <span class="input-group-text" >{% trans 'Metadata' %}</span>
-                                            <div class="input-group-text">
-                                                <input type="checkbox" name="meta-{{ disk.dev }}" value="true">
-                                            </div>
-                                        
+                    {% endif %}
+                    <div class="col-12{% if instance.config_networks %} col-lg-6{% endif %}">
+                        <section class="card h-100" aria-labelledby="clone-storage-heading">
+                            <div class="card-body">
+                                <h3 class="h6 mb-3" id="clone-storage-heading">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</h3>
+                                {% for disk in instance.config_disks %}
+                                <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
+                                    <p class="small mb-2"><strong>{{ disk.dev }}</strong> <span class="text-body-secondary">· {% blocktrans with pool=disk.storage %}Pool: {{ pool }}{% endblocktrans %} · {{ disk.format }}</span></p>
+                                    <label class="form-label small" for="disk_name-{{ disk.dev }}">{% trans "New volume name" %}</label>
+                                    <input class="form-control" id="disk_name-{{ disk.dev }}" name="disk-{{ disk.dev }}" type="text" value="{{ disk.image }}">
+                                    {# a running or paused VM's disks are copied by a backup job, which does not preallocate #}
+                                    {% if disk.format == 'qcow2' and instance.status == 5 %}
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" id="meta-{{ disk.dev }}" name="meta-{{ disk.dev }}" type="checkbox" value="true">
+                                        <label class="form-check-label small" for="meta-{{ disk.dev }}">{% trans "Preallocate qcow2 metadata" %}</label>
+                                    </div>
                                     {% endif %}
                                 </div>
+                                {% empty %}
+                                <p class="small text-body-secondary mb-0">{% trans "The VM has no disk to copy." %}</p>
+                                {% endfor %}
                             </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    {% for disk in instance.disks %}
-                        <input id="disk_name-{{ disk.dev }}" type="hidden" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
-                    {% endfor %}
-                {% endif %}
-                <div class="row mb-3">
-                    <label class="col-sm-3 col-form-label">{% trans "Title" %}</label>
-                    <div class="col-sm-6">
-                        <input type="text" name="clone-title" class="form-control">
+                        </section>
                     </div>
                 </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Description" %}</label>
-                    <div class="col-sm-6">
-                        <textarea name="clone-description" class="form-control"></textarea>
-                    </div>
-                </div>
-                {% if instance.status == 1 or instance.status == 3 or instance.status == 5 %}
-                    <button type="submit" class="btn btn-primary float-end" name="clone">{% trans "Clone" %}</button>
-                {% else %}
-                    <button class="btn btn-primary float-end disabled" disabled name="clone">{% trans "Clone" %}</button>
                 {% endif %}
+                <fieldset class="mb-4">
+                    <legend class="h6">{% trans "Optional details" %}</legend>
+                    <label class="form-label" for="clone-title">{% trans "Title" %}</label>
+                    <input class="form-control mb-3" id="clone-title" name="clone-title" type="text">
+                    <label class="form-label" for="clone-description">{% trans "Description" %}</label>
+                    <textarea class="form-control" id="clone-description" name="clone-description" rows="3"></textarea>
+                </fieldset>
+                <footer class="border-top pt-3">
+                    {% if usb_hostdevs or pci_hostdevs or other_hostdevs %}
+                    <p class="small text-body-secondary mb-2">{% trans "The clone gets none of the VM's host devices: one VM holds a device of the host." %}</p>
+                    {% endif %}
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <p class="small text-body-secondary mb-0">{% trans "Cloning runs as a background job." %}</p>
+                        {% if instance.status == 1 or instance.status == 3 or instance.status == 5 %}
+                        <button type="submit" class="btn btn-primary ms-auto" name="clone">{% trans "Clone" %}</button>
+                        {% else %}
+                        <button type="button" class="btn btn-primary ms-auto" disabled name="clone">{% trans "Clone" %}</button>
+                        {% endif %}
+                    </div>
+                </footer>
             </form>
             <div class="clearfix"></div>
         </div>

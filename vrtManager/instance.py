@@ -2467,6 +2467,11 @@ class wvmInstance(wvmConnect):
                 raise util.OperationError(f"Disk {dev} is not a local file; shut the VM down to clone it")
             if source.getparent().find("shareable") is not None:
                 raise util.OperationError(f"Disk {dev} is shareable; shut the VM down to clone it")
+        # the backup copies the running disks: one the next start changes would give the clone the wrong data
+        live = etree.fromstring(self._XMLDesc(0))
+        for source, dev in disks:
+            if live.xpath("devices/disk[target/@dev=$dev]/source/@file", dev=dev) != [source.get("file")]:
+                raise util.OperationError(f"Disk {dev} changes at the next start; shut the VM down to clone it")
         if self.instance.jobInfo()[0] != VIR_DOMAIN_JOB_NONE:
             raise util.OperationError("Another job is running on the VM; clone it when that ends")
 

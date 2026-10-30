@@ -141,14 +141,13 @@ def clone_data(user, instance, fields):
     if app_settings.CLONE_INSTANCE_AUTO_NAME == "True" and not data["name"]:
         auto_vname = utils.get_clone_free_names()[0]
         data["name"] = auto_vname
-        data["clone-net-mac-0"] = utils.get_dhcp_mac_address(auto_vname)
         for disk in instance.config_disks:
             data[f"disk-{disk['dev']}"] = utils.get_clone_disk_name(disk, instance.name, auto_vname)
 
     if not user.is_superuser:
         for disk in instance.config_disks:
             data[f"disk-{disk['dev']}"] = utils.get_clone_disk_name(disk, instance.name, data["name"])
-        for num in range(max(1, len(instance.config_networks))):
+        for num in range(len(instance.config_networks)):
             key = f"clone-net-mac-{num}"
             if not data.get(key):
                 data[key] = (utils.get_dhcp_mac_address(data["name"]) if num == 0 else "") or utils.get_random_mac_address()
@@ -173,7 +172,7 @@ def clone_data(user, instance, fields):
     if not re.match(r"^[a-zA-Z0-9-]+$", data["name"]):
         raise util.OperationError(
             _("Instance name '%(clone_name)s' contains invalid characters!") % {"clone_name": data["name"]})
-    if "clone-net-mac-0" not in data or invalid_macs:
+    if invalid_macs:
         raise util.OperationError(_("Instance MAC '%(clone_mac)s' invalid format!") % {"clone_mac": ", ".join(invalid_macs)})
     if invalid_disks:
         raise util.OperationError(

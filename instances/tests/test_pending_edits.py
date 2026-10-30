@@ -97,6 +97,23 @@ class PendingEditsTestCase(TestCase):
                 self.assertEqual(doc.xpath("//div[@id='disks']//div[article[starts-with(@aria-labelledby, 'disk-')]]/@class"),
                                  wide)
 
+    def test_the_clone_form_lists_the_persistent_devices(self):
+        nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
+               "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}
+        nics = [nic, {**nic, "mac": "52:54:10:00:00:02"}]
+        for status, metadata in ((1, []), (5, ["meta-vda", "meta-vdb"])):
+            with self.subTest(status=status):
+                # running: vdb is pending the next start
+                doc = self.page(live=[disk("vda", "default", "")], config=[disk("vda", "default", ""), disk("vdb", "default", "")],
+                                nics=([nic], nics), status=status)
+                (form,) = doc.xpath("//form[@action=$a]", a=reverse("instances:clone", args=[self.instance.id]))
+                self.assertEqual(form.xpath(".//input[@type='text']/@name"),
+                                 ["name", "clone-net-mac-0", "clone-net-mac-1", "disk-vda", "disk-vdb", "clone-title"])
+                # the DHCP entry of the clone's name holds one address: only the first NIC guesses it
+                self.assertEqual(len(form.xpath(".//button[contains(@onclick, 'guess_mac_address')]")), 1)
+                # a running or paused VM is copied by a backup, which does not preallocate
+                self.assertEqual(form.xpath(".//input[@type='checkbox']/@name"), metadata)
+
     def test_a_disk_with_a_pending_source_is_not_deleted(self):
         # running: vda is A, its definition for the next start uses B
         with patch("instances.models.wvmInstance") as wvm, patch("instances.views.wvmStorage") as storage:

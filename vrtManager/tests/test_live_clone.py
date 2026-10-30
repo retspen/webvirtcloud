@@ -9,7 +9,12 @@ from lxml import etree
 
 from vrtManager import instance as instance_module
 from vrtManager import util
-from vrtManager.instance import LIVE_CLONE_MIN_LIBVIRT, VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN, wvmInstance
+from vrtManager.instance import (
+    LIVE_CLONE_MIN_LIBVIRT,
+    PERSISTENT_XML,
+    VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN,
+    wvmInstance,
+)
 
 GIB = 1024**3
 UUID = "abababab-0000-1111-2222-333333333333"
@@ -97,6 +102,16 @@ class LiveCloneTargetsTestCase(unittest.TestCase):
 
     def test_a_tpm_is_refused(self):
         self.refused(proxy(domain(extra="<tpm model='tpm-crb'/>")), "TPM")
+
+    def test_a_disk_the_next_start_changes_is_refused(self):
+        # the backup copies the running disk: a pending new source, or a disk only the next start has
+        disk = "<disk type='file' device='disk'><source file='/pool/{}.qcow2'/><target dev='{}'/></disk>"
+        for persistent in (domain(disk.format("new", "vda")), domain(disk.format("src", "vda") + disk.format("add", "vdb"))):
+            with self.subTest(persistent):
+                p = proxy()
+                p._XMLDesc = lambda flags, xml=persistent: xml if flags == PERSISTENT_XML else domain()
+                with self.assertRaisesRegex(util.OperationError, "changes at the next start"):
+                    p.live_clone_targets({**FORM, "disk-vdb": "copy-vdb.qcow2"}, 10, 5)
 
     def test_a_running_libvirt_job_is_refused(self):
         p = proxy()
