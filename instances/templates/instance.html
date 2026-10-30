@@ -48,7 +48,7 @@
                 </div>
                 <div class="col-6 col-lg-2">
                     <dt class="fw-normal text-body-secondary">{% trans "Memory" %}</dt>
-                    <dd class="mb-0">{{ instance.cur_memory }} {% trans "MB" %}</dd>
+                    <dd class="mb-0">{{ instance.cur_memory }} MiB</dd>
                 </div>
                 <div class="col-6 col-lg-5">
                     <dt class="fw-normal text-body-secondary">{% trans "Disks" %}</dt>
@@ -263,6 +263,7 @@
 <script src="{% static 'js/poll.js' %}"></script>
 <script>
     {% trans "average over" as average_over %}
+    {% trans "In" as rx_label %}{% trans "Out" as tx_label %}{% trans "Read" as rd_label %}{% trans "Write" as wr_label %}
     var stats_tab = document.querySelector('#graphics-tab');
     var stats_poll = null;
     // the seconds each CPU point averages
@@ -270,6 +271,10 @@
     // the usage sample of the previous answer: the next one averages since then
     var statsSample = null;
     // The charts are polled while the Stats tab is shown; they are made once.
+    // a reading for the line above a chart: one decimal, a dash where it is missing
+    function reading(value) {
+        return value == null ? "–" : String(Math.round(value * 10) / 10);
+    }
     stats_tab.addEventListener('hidden.bs.tab', function (event) {
         stats_poll.stop();
     });
@@ -285,14 +290,15 @@
                 return span ? text + ' ({{ average_over|escapejs }} ' + span + ' s)' : text;
             },
         });
-        var memChart = lineChart(document.getElementById("memChart"), "MB", ["Usage (RSS)"]);
+        var memChart = lineChart(document.getElementById("memChart"), "MiB", ["Usage (RSS)"]);
         var diskChart = {};
         {% for disk in instance.disks %}
             diskChart['{{ disk.dev|escapejs }}'] = lineChart(document.getElementById("blk{{ disk.dev|escapejs }}Chart"), "MB/s", ["Read", "Write"]);
         {% endfor %}
+        // two NICs with one MAC (a misconfiguration) share the first one's chart
         var netChart = {};
         {% for net in instance.networks %}
-            netChart[{{ forloop.counter0 }}] = lineChart(document.getElementById("netEth{{ forloop.counter0 }}Chart"), "Mbit/s", ["Inbound", "Outbound"]);
+            netChart['{{ net.mac|escapejs }}'] = netChart['{{ net.mac|escapejs }}'] || lineChart(document.getElementById("net{{ net.mac|escapejs }}Chart"), "Mbit/s", ["Inbound", "Outbound"]);
         {% endfor %}
 
         // the first point at once, then every 5 s like the host graph
@@ -308,21 +314,33 @@
                 cpuWindows.shift();
             }
             addPoint(cpuChart, data.timeline, [data.cpudata]);
-            // a VM whose memory could not be read gives total 0: a gap, same axis
+            document.getElementById("cpuNow").textContent = reading(data.cpudata) + " %";
+            // a VM whose memory could not be read gives total 0: a gap, same axis;
+            // the RSS may pass the balloon size: then the axis grows to it
             if (data.memdata.total) {
-                memChart.options.scales.y.max = Math.round(data.memdata.total / 1024);
-                addPoint(memChart, data.timeline, [Math.round(data.memdata.used / 1024)]);
+                var used = Math.round(data.memdata.used / 1024), total = Math.round(data.memdata.total / 1024);
+                memChart.options.scales.y.max = Math.max(total, used);
+                addPoint(memChart, data.timeline, [used]);
+                document.getElementById("memNow").textContent = used + " / " + total + " MiB";
             } else {
                 addPoint(memChart, data.timeline, [null]);
+                document.getElementById("memNow").textContent = "";
             }
-            // a disk or NIC added after the page loaded has no chart until a reload
-            function push(chart, values) {
+            // a disk or NIC added after the page loaded has no chart until a reload,
+            // and one removed keeps its last points
+            function push(chart, id, labels, unit, values) {
                 if (chart) {
                     addPoint(chart, data.timeline, values);
+                    document.getElementById(id).textContent =
+                        labels[0] + " " + reading(values[0]) + " · " + labels[1] + " " + reading(values[1]) + " " + unit;
                 }
             }
-            data.blkdata.forEach(function (disk) { push(diskChart[disk.dev], disk.data); });
-            data.netdata.forEach(function (nic) { push(netChart[nic.dev], nic.data); });
+            data.blkdata.forEach(function (disk) {
+                push(diskChart[disk.dev], "blk" + disk.dev + "Now", ["{{ rd_label|escapejs }}", "{{ wr_label|escapejs }}"], "MB/s", disk.data);
+            });
+            data.netdata.forEach(function (nic) {
+                push(netChart[nic.mac], "net" + nic.mac + "Now", ["{{ rx_label|escapejs }}", "{{ tx_label|escapejs }}"], "Mbit/s", nic.data);
+            });
         }, 0);
     });
 </script>

@@ -1,108 +1,113 @@
 {% load i18n %}
-{% load bootstrap_icons %}
-<div class="tab-pane" id="graphics" role="tabpanel" >
-    <!-- Nav tabs -->
+<div class="tab-pane" id="graphics" role="tabpanel">
     <div class="card">
-    <div class="card-header bg-transparent pb-0">
-    <ul class="nav nav-underline small" role="tablist" aria-label="Instance graphs and logs menu">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#graphs" type="button" role="tab" aria-controls="graphs" aria-selected="true">
-                {% trans "Real Time" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab" aria-controls="logs" aria-selected="false" onclick="update_logs_table();">
-                {% trans "Logs" %}
-            </button>
-        </li>
-    </ul>
-    </div>
-    <!-- Tab panes -->
-    <div class="tab-content card-body">
-        <div role="tabpanel" class="tab-pane active" id="graphs">
-            <div class="mb-3 card">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "CPU Usage" %}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart position-relative"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU Usage" %}"></canvas></div>
-                </div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <p class="small text-body-secondary mb-0 me-auto">
+                {% if instance.status == 1 %}
+                    {% trans "Updates every 5 seconds." %}
+                {% else %}
+                    {% trans "The VM is not running: nothing is measured." %}
+                {% endif %}
+            </p>
+            {% if request.user.is_superuser %}
+            <div class="btn-group btn-group-sm" role="tablist" aria-label="{% trans "Stats view" %}">
+                <button class="btn btn-outline-secondary active" type="button" data-bs-toggle="tab" data-bs-target="#graphs" role="tab" aria-controls="graphs" aria-selected="true">{% trans "Graphs" %}</button>
+                <button class="btn btn-outline-secondary" id="logs-tab" type="button" data-bs-toggle="tab" data-bs-target="#logs" role="tab" aria-controls="logs" aria-selected="false">{% trans "Logs" %}</button>
             </div>
-            <div class="mb-3 card">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "Memory Usage" %}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart position-relative"><canvas id="memChart" role="img" aria-label="{% trans "Memory Usage" %}"></canvas></div>
-                </div>
-            </div>
-            {% for net in instance.networks %}
-            <div class="mb-3 card">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart position-relative"><canvas id="netEth{{ forloop.counter0 }}Chart" role="img" aria-label="{% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}"></canvas></div>
-                </div>
-            </div>
-            {% endfor %}
-            {% for disk in instance.disks %}
-            <div class="mb-3 card">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "Disk I/O device" %}: {{ disk.dev }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart position-relative"><canvas id="blk{{ disk.dev }}Chart" role="img" aria-label="{% trans "Disk I/O device" %}: {{ disk.dev }}"></canvas></div>
-                </div>
-            </div>
-            {% endfor %}
-            <div class="clearfix"></div>
+            {% endif %}
         </div>
-        <div role="tabpanel" class="tab-pane" id="logs">
-            <div class="table-responsive">
-                <table class="table table-striped align-middle" id="logs_table">
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans "Date" %}</th>
-                            <th scope="col">{% trans "User" %}</th>
-                            <th scope="col">{% trans "Message" %}</th>
-                            <th scope="col">{% trans "Result" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                        <tr>
-                            <td colspan="4"><i>{% trans 'None' %}...</i></td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="tab-content">
+            <div class="tab-pane active" id="graphs" role="tabpanel">
+                <div class="row g-3">
+                    <section class="col-12 col-md-6">
+                        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+                            <h2 class="h6 mb-0">{% trans "CPU" %}</h2>
+                            <span><span id="cpuNow"></span> <span class="small text-body-secondary">{% trans "of the host" %}</span></span>
+                        </div>
+                        <div class="chart position-relative"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU use, recent readings" %}"></canvas></div>
+                    </section>
+                    <section class="col-12 col-md-6">
+                        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+                            <h2 class="h6 mb-0">{% trans "Memory" %}</h2>
+                            <span id="memNow"></span>
+                        </div>
+                        <div class="chart position-relative"><canvas id="memChart" role="img" aria-label="{% trans "Memory use, recent readings" %}"></canvas></div>
+                    </section>
+                </div>
+                <div class="border-top mt-3 pt-3">
+                <div class="row g-3">
+                    {% for net in instance.networks %}
+                    <section class="col-12 col-md-6 col-lg-4">
+                        <h2 class="h6 mb-1">{% trans "Network" %} · {{ net.mac }}</h2>
+                        <p class="small text-body-secondary mb-2" id="net{{ net.mac }}Now">&nbsp;</p>
+                        <div class="chart position-relative"><canvas id="net{{ net.mac }}Chart" role="img" aria-label="{% blocktrans with mac=net.mac %}Network {{ mac }}, recent readings{% endblocktrans %}"></canvas></div>
+                    </section>
+                    {% endfor %}
+                    {% for disk in instance.disks %}
+                    <section class="col-12 col-md-6 col-lg-4">
+                        <h2 class="h6 mb-1">{% trans "Disk" %} · {{ disk.dev }}</h2>
+                        <p class="small text-body-secondary mb-2" id="blk{{ disk.dev }}Now">&nbsp;</p>
+                        <div class="chart position-relative"><canvas id="blk{{ disk.dev }}Chart" role="img" aria-label="{% blocktrans with dev=disk.dev %}Disk {{ dev }}, recent readings{% endblocktrans %}"></canvas></div>
+                    </section>
+                    {% endfor %}
+                </div>
+                </div>
             </div>
-            <div class="clearfix"></div>
+            {% if request.user.is_superuser %}
+            <div class="tab-pane" id="logs" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0" id="logs_table">
+                        <thead>
+                            <tr>
+                                <th scope="col">{% trans "Date" %}</th>
+                                <th scope="col">{% trans "User" %}</th>
+                                <th scope="col">{% trans "Message" %}</th>
+                                <th scope="col">{% trans "Result" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p class="small text-body-secondary mt-2 mb-0">
+                    {% trans "The latest rows, newest first." %}
+                    <a href="{% url 'admin:logs' %}?q={{ instance.uuid|urlencode }}">{% trans "All of this VM's logs" %}</a>
+                </p>
+            </div>
+            {% endif %}
         </div>
     </div>
     </div>
 </div>
+{% if request.user.is_superuser %}
 <script>
-    function update_logs_table() {
+    {% trans "None" as no_rows %}
+    {% trans "The logs could not be loaded." as logs_failed %}
+    // a click or the arrow keys: the rows of the moment each time Logs is shown
+    document.getElementById("logs-tab").addEventListener("shown.bs.tab", function () {
+        var tbody = $("#logs_table > tbody");
+        function note(text) {
+            tbody.empty().append($("<tr>").append($("<td colspan='4' class='text-body-secondary'>").text(text)));
+        }
         $.getJSON("{% url 'vm_logs' instance.id %}", function(data) {
+            if (!data.length) {
+                note("{{ no_rows|escapejs }}");
+                return;
+            }
             // Log messages contain user-entered names (snapshots, disks, clones);
             // insert them as text, never as HTML.
-            var tbody = $("#logs_table > tbody").empty();
+            tbody.empty();
             $.each(data, function(id, row) {
                 $("<tr>")
-                    .append($("<td>").css("width", "150px").text(row['date']))
+                    .append($("<td>").addClass("text-nowrap").text(row['date']))
                     .append($("<td>").text(row['user']))
                     .append($("<td>").text(row['message']))
                     .append($("<td>").text(row['result']))
                     .appendTo(tbody);
             });
+        }).fail(function () {
+            note("{{ logs_failed|escapejs }}");
         });
-    }
+    });
 </script>
+{% endif %}

@@ -6,6 +6,9 @@ from admin.decorators import superuser_only
 from instances.models import Instance
 from logs.models import Logs
 
+# the rows of a VM on its Stats tab; the Logs page has them all
+VM_LOG_ROWS = 50
+
 
 @superuser_only
 def vm_logs(request, pk):
@@ -13,7 +16,7 @@ def vm_logs(request, pk):
     vm = get_object_or_404(Instance, pk=pk)
     results = {None: _("Unknown"), True: _("Done"), False: _("Failed")}
     logs = []
-    for log in Logs.objects.filter(instance_uuid=vm.uuid).order_by("-date", "-id"):
+    for log in Logs.objects.filter(instance_uuid=vm.uuid).order_by("-date", "-id")[:VM_LOG_ROWS]:
         logs.append({
             "user": log.user,
             "host": log.host,

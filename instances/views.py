@@ -431,7 +431,7 @@ def stats(request, pk):
         "memdata": mem_usage,
         # MB/s and Mbit/s
         "blkdata": [{"dev": disk["dev"], "data": [mega(disk["rd"]), mega(disk["wr"])]} for disk in usage["disks"]],
-        "netdata": [{"dev": nic["dev"], "data": [mega(nic["rx"]), mega(nic["tx"])]} for nic in usage["nics"]],
+        "netdata": [{"mac": nic["mac"], "data": [mega(nic["rx"]), mega(nic["tx"])]} for nic in usage["nics"]],
         "timeline": time.strftime("%H:%M:%S"),
     }
     if "sample" in usage:

@@ -40,7 +40,7 @@ class StatsViewTestCase(TestCase):
         self.proxy.usage.return_value = {
             "cpu": 12.345,
             "disks": [{"dev": "vda", "rd": 2_000_000, "wr": None}],
-            "nics": [{"dev": 0, "rx": 8_000_000, "tx": 0}],
+            "nics": [{"mac": "52:54:00:00:00:01", "rx": 8_000_000, "tx": 0}],
             "window": 9.96,
             "sample": SAMPLE,
         }
@@ -58,7 +58,7 @@ class StatsViewTestCase(TestCase):
         self.assertIsNone(self.previous())
         self.assertEqual((data["cpudata"], data["window"]), (12.3, 10.0))
         self.assertEqual(data["blkdata"], [{"dev": "vda", "data": [2.0, None]}])
-        self.assertEqual(data["netdata"], [{"dev": 0, "data": [8.0, 0.0]}])
+        self.assertEqual(data["netdata"], [{"mac": "52:54:00:00:00:01", "data": [8.0, 0.0]}])
         self.stats(sample=data["sample"])
         self.assertEqual(self.previous(), SAMPLE)
 
@@ -178,7 +178,9 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
                                           memdata: {used: 1024, total: 1024},
                                           // vdb was attached after the page loaded
                                           blkdata: [{dev: "vdb", data: [9, 9]}, {dev: "vda", data: [1.5, null]}],
-                                          netdata: [{dev: 0, data: [2, 3]}]});
+                                          // a NIC is known by its MAC: one added later has no chart
+                                          netdata: [{mac: "52:54:00:00:00:99", data: [7, 7]},
+                                                    {mac: "52:54:00:00:00:31", data: [2, 3]}]});
         poll.request();
         poll.onData(answer(3, "token-1"));
         poll.request();

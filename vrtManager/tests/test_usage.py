@@ -86,8 +86,8 @@ class UsageTestCase(unittest.TestCase):
         self.assertEqual(
             result["disks"], [{"dev": "vda", "rd": 1000, "wr": 3000}, {"dev": "vdb", "rd": 2000, "wr": 6000}]
         )
-        # bits; the NIC without a target is not measured and keeps its place
-        self.assertEqual(result["nics"], [{"dev": 0, "rx": None, "tx": None}, {"dev": 1, "rx": 800, "tx": 400}])
+        # bits; the NIC without a target is not measured
+        self.assertEqual(result["nics"], [{"mac": "52:54:00:00:00:01", "rx": None, "tx": None}, {"mac": "52:54:00:00:00:02", "rx": 800, "tx": 400}])
         self.assertEqual(result["sample"]["counters"][3], 101.0)
 
     def test_since_the_previous_sample_without_waiting(self):
@@ -98,7 +98,7 @@ class UsageTestCase(unittest.TestCase):
         self.time.sleep.assert_not_called()
         self.assertEqual((result["cpu"], result["window"]), (12.5, 9.5))
         self.assertEqual(result["disks"][1], {"dev": "vdb", "rd": 2000, "wr": 6000})  # per second
-        self.assertEqual(result["nics"][1], {"dev": 1, "rx": 800, "tx": 400})
+        self.assertEqual(result["nics"][1], {"mac": "52:54:00:00:00:02", "rx": 800, "tx": 400})
         self.assertEqual(result["sample"]["counters"][3], 110.5)
 
     def test_a_sample_of_another_run_host_or_devices_is_not_used(self):
@@ -169,7 +169,7 @@ class UsageTestCase(unittest.TestCase):
                     {
                         "cpu": 0,
                         "disks": [{"dev": "vda", "rd": 0, "wr": 0}, {"dev": "vdb", "rd": 0, "wr": 0}],
-                        "nics": [{"dev": 0, "rx": 0, "tx": 0}, {"dev": 1, "rx": 0, "tx": 0}],
+                        "nics": [{"mac": "52:54:00:00:00:01", "rx": 0, "tx": 0}, {"mac": "52:54:00:00:00:02", "rx": 0, "tx": 0}],
                     },
                 )
 

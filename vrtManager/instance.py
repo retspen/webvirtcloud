@@ -1378,7 +1378,7 @@ class wvmInstance(wvmConnect):
                 and target.get("dev")
             ):
                 disks.append(target.get("dev"))  # blockStats takes the target name
-        # all NICs, in the order of the page's charts; one without a target is not measured
+        # all NICs, known by their MAC; one without a target is not measured
         nics = []
         for nic in tree.findall("devices/interface"):
             mac, target = nic.find("mac"), nic.find("target")
@@ -1391,7 +1391,7 @@ class wvmInstance(wvmConnect):
             return {
                 "cpu": 0,
                 "disks": [{"dev": dev, "rd": 0, "wr": 0} for dev in disks],
-                "nics": [{"dev": i, "rx": 0, "tx": 0} for i in range(len(nics))],
+                "nics": [{"mac": mac, "rx": 0, "tx": 0} for mac, target in nics],
             }
 
         key = [self.instance.ID(), self.host_info[2], disks, nics]
@@ -1418,8 +1418,8 @@ class wvmInstance(wvmConnect):
                     for dev, old, new in zip(disks, before[1], after[1])
                 ],
                 "nics": [
-                    {"dev": i, "rx": _rate(old[0], new[0], seconds, 8), "tx": _rate(old[1], new[1], seconds, 8)}
-                    for i, (old, new) in enumerate(zip(before[2], after[2]))
+                    {"mac": mac, "rx": _rate(old[0], new[0], seconds, 8), "tx": _rate(old[1], new[1], seconds, 8)}
+                    for (mac, target), old, new in zip(nics, before[2], after[2])
                 ],
                 "window": seconds,
             }
@@ -1436,7 +1436,7 @@ class wvmInstance(wvmConnect):
             usage = rates(before, counters) or {
                 "cpu": None,
                 "disks": [{"dev": dev, "rd": None, "wr": None} for dev in disks],
-                "nics": [{"dev": i, "rx": None, "tx": None} for i in range(len(nics))],
+                "nics": [{"mac": mac, "rx": None, "tx": None} for mac, target in nics],
                 "window": None,
             }
         usage["sample"] = {"key": key, "counters": counters}

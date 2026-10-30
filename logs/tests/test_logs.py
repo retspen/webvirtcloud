@@ -5,6 +5,7 @@ from django.urls import reverse
 from computes.models import Compute
 from instances.models import Instance
 from logs.audit import write
+from logs.views import VM_LOG_ROWS
 
 UUID = "12345678-1234-1234-1234-123456789012"
 
@@ -24,6 +25,13 @@ class VMLogsTestCase(TestCase):
         response = self.client.get(reverse("vm_logs", args=[(instance or self.instance).pk]))
         self.assertEqual(response.status_code, 200)
         return [(row["message"], row["result"]) for row in response.json()]
+
+    def test_only_the_latest_rows(self):
+        for n in range(VM_LOG_ROWS + 1):
+            write("admin", "c1", "test-vm", f"VM test-vm: row {n}", True, uuid=UUID)
+        shown = self.shown()
+        self.assertEqual(len(shown), VM_LOG_ROWS)
+        self.assertEqual(shown[0][0], f"VM test-vm: row {VM_LOG_ROWS}")
 
     def test_rows_of_the_vm_with_their_result(self):
         write("admin", "c1", "test-vm", "VM test-vm: power on", True, uuid=UUID)
