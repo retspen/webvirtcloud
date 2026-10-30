@@ -168,6 +168,19 @@ class PendingEditsTestCase(TestCase):
         # not an owner yet and not an administrator, who can use every VM anyway
         self.assertEqual(doc.xpath("//select[@id='add-owner-user']/option/text()"), ["pe-new"])
 
+    def test_a_paused_vm_offers_to_turn_vcpus_on_only(self):
+        # unplugging a vCPU needs the guest, which a paused VM does not run
+        vcpus = {"0": {"enabled": "yes", "hotpluggable": "no", "order": "1"},
+                 "1": {"enabled": "yes", "hotpluggable": "yes", "order": "2"},
+                 "2": {"enabled": "no", "hotpluggable": "yes", "order": "3"}}
+        for status, off_disabled in ((1, False), (3, True)):
+            with self.subTest(status=status):
+                doc = self.page(status=status, get_vcpus=(vcpus, vcpus))
+                buttons = {b.get("value"): b.get("disabled") is not None
+                           for b in doc.xpath("//form[@action=$a]//button[@name='set_vcpu']",
+                                              a=reverse("instances:set_vcpu", args=[self.instance.id]))}
+                self.assertEqual(buttons, {"False": off_disabled, "True": False})
+
     def test_buttons_shown_as_disabled_cannot_submit(self):
         # running: the CPU resize, vCPU hot plug, template and disk removal forms wait for a shutdown;
         # the title, description and video model are of the next start, saved at once

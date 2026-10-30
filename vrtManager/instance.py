@@ -1307,7 +1307,8 @@ class wvmInstance(wvmConnect):
         self._defineXML(etree.tostring(tree).decode())
 
     def set_vcpu(self, cpu_id, enabled):
-        self.instance.setVcpu(str(cpu_id), enabled)
+        """Turns a hotpluggable vCPU of the active VM on or off, now and for its next start."""
+        self.instance.setVcpu(str(cpu_id), enabled, VIR_DOMAIN_AFFECT_LIVE | VIR_DOMAIN_AFFECT_CONFIG)
 
     def set_vcpu_hotplug(self, status, vcpus_hotplug=0):
         """vcpus_hotplug: the vCPUs enabled at boot, 0 keeps the current ones;

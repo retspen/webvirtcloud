@@ -165,8 +165,9 @@ class SnapshotTabTestCase(TestCase):
                 self.assertEqual(box.get("disabled") is None, offered)
 
     def test_memory_checkbox_only_for_a_running_vm(self):
-        self.assertFalse(self.page(status=1).xpath("//input[@name='memory']")[0].get("disabled"))
-        self.assertIsNotNone(self.page(status=5).xpath("//input[@name='memory']")[0].get("disabled"))
+        checkbox = "//div[@id='snapshots']//input[@name='memory']"  # the Resize tab has a memory field too
+        self.assertFalse(self.page(status=1).xpath(checkbox)[0].get("disabled"))
+        self.assertIsNotNone(self.page(status=5).xpath(checkbox)[0].get("disabled"))
 
     def test_a_running_job_disables_actions(self):
         # its progress shows in the job panel, not in the tab; the tab says why the actions are off

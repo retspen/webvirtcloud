@@ -65,7 +65,7 @@ class MissingFieldTestCase(TestCase):
         self.assert_reported(self.post("resizevm_cpu", {"vcpu": "²", "cur_vcpu": "1"}))
 
     def test_resize_memory_with_a_unicode_digit(self):
-        self.assert_reported(self.post("resize_memory", {"memory": "512", "cur_memory_custom": "²"}))
+        self.assert_reported(self.post("resize_memory", {"memory": "512", "cur_memory": "²"}))
 
     def test_set_qos_with_non_numeric_rate(self):
         self.assert_reported(self.post("set_qos", {"qos_direction": "inbound", "net-mac-0": "52:54:00:00:00:01", "qos_average": "fast"}))

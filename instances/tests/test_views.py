@@ -321,7 +321,7 @@ class InstancesTestCase(TestCase):
 
         response = self.client.post(
             reverse("instances:resize_memory", args=[self.instance.id]),
-            {"memory_custom": 500, "cur_memory_custom": 200},
+            {"memory": 500, "cur_memory": 200},
         )
         self.assertRedirects(
             response, reverse("instances:instance", args=[self.instance.id]) + "#resize"

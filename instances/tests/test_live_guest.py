@@ -252,6 +252,9 @@ class LiveGuestTestCase(TestCase):
         self.assertEqual(online(), 1)
         self.post("set_vcpu", inst, {"id": "1", "set_vcpu": "True"})
         self.assertTrue(wait_for(lambda: online() == 2, 60), "guest did not bring the new vCPU online")
+        # the next start keeps it
+        persistent = etree.fromstring(dom.XMLDesc(libvirt.VIR_DOMAIN_XML_INACTIVE))
+        self.assertEqual(persistent.xpath("vcpus/vcpu[@id='1']/@enabled"), ["yes"])
 
     def test_agent_reports_the_guest_os_and_nic(self):
         dom, inst = self.boot("gagent")

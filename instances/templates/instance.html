@@ -258,17 +258,6 @@
         });
     });
 </script>
-<script>
-    $(function () {
-        $('.js-custom__checkbox').change(function () {
-            var container  = $(this).closest('.js-custom__container');
-            var toggles    = container.find('.js-custom__toggle');
-            toggles.toggleClass("d-none");
-            // a custom value is sent only while its box is ticked
-            container.find('input.js-custom__toggle').prop('disabled', !this.checked);
-        });
-    });
-</script>
 <script src="{% static 'js/chart.umd.min.js' %}"></script>
 <script src="{% static 'js/charts.js' %}"></script>
 <script src="{% static 'js/poll.js' %}"></script>

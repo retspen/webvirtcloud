@@ -70,6 +70,11 @@ class DetachDiskTestCase(unittest.TestCase):
 
 
 class VcpuHotplugTestCase(unittest.TestCase):
+    def test_a_vcpu_turned_on_or_off_stays_so_at_the_next_start(self):
+        p = proxy()
+        p.set_vcpu("1", 1)
+        p.instance.setVcpu.assert_called_once_with("1", 1, VIR_DOMAIN_AFFECT_LIVE | VIR_DOMAIN_AFFECT_CONFIG)
+
     def test_enabling_hotplug_keeps_the_current_vcpus_enabled(self):
         p = proxy(active=False)
         p.instance.info.return_value = [5]

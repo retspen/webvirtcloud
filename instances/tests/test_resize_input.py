@@ -48,6 +48,26 @@ class ResizeInputTests(TestCase):
         self.assertEqual([(d["dev"], d["size_new"]) for d in proxy.resize_disk.call_args.args[0]], [("vdb", 30 * GIB)])
         self.assertEqual(messages, ["Disk is resized: vdb"])
 
+    def test_a_smaller_disk_size_refuses_every_change(self):
+        # a disk does not shrink: one smaller size leaves the others as they are too
+        disks = [{"dev": "vda", "size": 10 * GIB}, {"dev": "vdb", "size": 20 * GIB}]
+        messages, proxy = self.post("instances:resize_disk", {"disk_size_vda": "5", "disk_size_vdb": "30"}, disks=disks)
+        proxy.resize_disk.assert_not_called()
+        self.assertEqual(messages, ["vda is 10.0\xa0GB: a disk cannot shrink"])
+
+    def test_vcpus_and_memory_must_be_at_least_one(self):
+        for view, data, setter in (("instances:resizevm_cpu", {"vcpu": "2", "cur_vcpu": "0"}, "resize_cpu"),
+                                   ("instances:resize_memory", {"memory": "2048", "cur_memory": "-1"}, "resize_mem")):
+            with self.subTest(view):
+                messages, proxy = self.post(view, data)
+                getattr(proxy, setter).assert_not_called()
+                self.assertTrue(messages[-1].startswith("Enter a whole number"), messages)
+
+    def test_a_cpu_resize_says_what_the_vm_gets(self):
+        messages, proxy = self.post("instances:resizevm_cpu", {"vcpu": "4", "cur_vcpu": "2"})
+        proxy.resize_cpu.assert_called_once_with("2", "4")
+        self.assertEqual(messages, ["vCPUs set to 2 (maximum 4)"])
+
     def test_a_disk_size_that_is_not_a_whole_number_is_refused(self):
         messages, proxy = self.post("instances:resize_disk", {"disk_size_vda": "4.5"}, disks=[{"dev": "vda", "size": GIB}])
         proxy.resize_disk.assert_not_called()
@@ -72,7 +92,5 @@ class ResizeInputTests(TestCase):
         with patch("instances.models.wvmInstance"):
             self.vm.__dict__["status"] = VIR_DOMAIN_RUNNING
             from django.template.loader import render_to_string
-            html = render_to_string("instances/resize_tab.html", {"instance": self.vm, "can_change": True,
-                                                                   "memory_range": [1024, 2048]})
-        self.assertRegex(html, r'<select name="memory" class="form-select js-custom__toggle" disabled>')
-        self.assertNotIn('name="memory_custom"', html)
+            html = render_to_string("instances/resize_tab.html", {"instance": self.vm, "can_change": True})
+        self.assertRegex(html, r'<input [^>]*name="memory"[^>]*disabled>')

@@ -10,7 +10,6 @@ import re
 import socket
 import subprocess
 import time
-from bisect import insort
 from ipaddress import ip_address
 
 from accounts.models import UserInstance, UserSSHKey
@@ -30,6 +29,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.db.models import Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.template.defaultfilters import filesizeformat
 from django.utils import timezone
 from django.utils.translation import gettext_noop as _
 from django.views.decorators.http import require_POST
@@ -278,11 +278,6 @@ def _instance_page(request, pk, instance, compute):
         request.user.is_superuser or can_manage_console or can_clone or can_change or instance.guest_agent_ready
     )
 
-    memory_range = [256, 512, 768, 1024, 2048, 3072, 4096, 6144, 8192, 16384]
-    if instance.memory not in memory_range:
-        insort(memory_range, instance.memory)
-    if instance.cur_memory not in memory_range:
-        insort(memory_range, instance.cur_memory)
     clone_free_names = utils.get_clone_free_names()
 
     default_bus = app_settings.INSTANCE_VOLUME_DEFAULT_BUS
@@ -1050,7 +1045,7 @@ def resizevm_cpu(request, pk):
 
     new_vcpu = request.POST.get("vcpu", "")
     new_cur_vcpu = request.POST.get("cur_vcpu", "")
-    if not _is_int(new_vcpu) or not _is_int(new_cur_vcpu):
+    if not _is_int(new_vcpu) or not _is_int(new_cur_vcpu) or int(new_cur_vcpu) < 1:
         messages.error(request, _("Enter a whole number of vCPUs"))
         return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
     # a running VM would get them only at its next start, past the quota counted now
@@ -1077,11 +1072,7 @@ def resizevm_cpu(request, pk):
         vcpu = new_vcpu
         with audit_vm(request, instance, f"set vCPUs to {cur_vcpu} (maximum {vcpu})"):
             instance.proxy.resize_cpu(cur_vcpu, vcpu)
-        msg = _("CPU is resized:  %(old)s to %(new)s") % {
-            "old": cur_vcpu,
-            "new": vcpu,
-        }
-        messages.success(request, msg)
+        messages.success(request, _("vCPUs set to %(cur)s (maximum %(max)s)") % {"cur": cur_vcpu, "max": vcpu})
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
 
 
@@ -1091,22 +1082,15 @@ def resizevm_cpu(request, pk):
 def resize_memory(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
     memory = instance.proxy.get_memory()
-    cur_memory = instance.proxy.get_cur_memory()
 
     new_memory = request.POST.get("memory", "")
-    new_memory_custom = request.POST.get("memory_custom", "")
-    if new_memory_custom:
-        new_memory = new_memory_custom
     new_cur_memory = request.POST.get("cur_memory", "")
-    new_cur_memory_custom = request.POST.get("cur_memory_custom", "")
-    if new_cur_memory_custom:
-        new_cur_memory = new_cur_memory_custom
     # The quota charges the maximum. An active VM keeps it (resize_mem changes
     # only the current memory there); pass the current maximum, so a VM that
     # shuts down meanwhile does not get an unchecked one.
     if instance.proxy.instance.isActive():
         new_memory = memory
-    if not _is_int(new_memory) or not _is_int(new_cur_memory):
+    if not _is_int(new_memory) or not _is_int(new_cur_memory) or int(new_cur_memory) < 1:
         messages.error(request, _("Enter a whole number for memory"))
         return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
     if int(new_cur_memory) > int(new_memory):
@@ -1124,15 +1108,8 @@ def resize_memory(request, pk):
     else:
         with audit_vm(request, instance, f"set memory to {new_cur_memory} MiB (maximum {new_memory} MiB)"):
             instance.proxy.resize_mem(new_cur_memory, new_memory)
-        msg = _(
-            "Memory is resized: current/max: %(old_cur)s/%(old_max)s to %(new_cur)s/%(new_max)s"
-        ) % {
-            "old_cur": cur_memory,
-            "old_max": memory,
-            "new_cur": new_cur_memory,
-            "new_max": new_memory,
-        }
-        messages.success(request, msg)
+        messages.success(request, _("Memory set to %(cur)s MiB (maximum %(max)s MiB)") % {
+            "cur": new_cur_memory, "max": new_memory})
 
     return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
 
@@ -1152,6 +1129,11 @@ def resize_disk(request, pk):
             continue
         if not _is_int(size):
             messages.error(request, _("Enter disk sizes as whole GiB"))
+            return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+        # a disk does not shrink: one smaller size refuses them all
+        if int(size) << 30 < disk["size"]:
+            messages.error(request, _("%(dev)s is %(size)s: a disk cannot shrink") % {
+                "dev": disk["dev"], "size": filesizeformat(disk["size"])})
             return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
         if int(size) << 30 > disk["size"]:
             disk["size_new"] = int(size) << 30
