@@ -57,7 +57,7 @@ class CloneJobTestCase(TransactionTestCase):
         c = self.compute.pk
         self.assertEqual(set(Claim.objects.values_list("resource", "mode")), {
             (f"compute:{c}", "shared"), (f"reconcile:{c}", "exclusive"),
-            (f"instance:{self.source.uuid}", "exclusive"), (f"name:{c}:copy", "exclusive"),
+            (f"instance:{self.source.uuid}", "exclusive"), ("name:copy", "exclusive"),
             (f"volume:{c}:default/copy.qcow2", "exclusive")})
         self.proxy.clone_instance.assert_not_called()
 
@@ -200,9 +200,17 @@ class LiveCloneJobTestCase(TransactionTestCase):
         self.proxy.live_clone_targets.assert_not_called()
         self.assertFalse(Operation.objects.get(pk=op.pk).intent["live"])
 
+    def test_a_name_taken_since_the_job_was_queued_stops_it(self):
+        op = self.op()
+        other = Compute.objects.create(name="live-d", hostname="192.0.2.33", login="root", password="", type=1)
+        Instance.objects.create(compute=other, name="copy", uuid="cdcdcdcd-9999-1111-2222-333333333333")
+        with self.assertRaisesMessage(OperationError, "already exists"):
+            CloneInstance().precheck(op, None)
+
     def test_a_running_or_paused_vm_takes_the_live_path(self):
         for status in (1, 3):
             with self.subTest(status=status):
+                Instance.objects.filter(name="copy").delete()  # the clone of the run before
                 self.proxy.reset_mock()
                 self.proxy.get_status.return_value = status
                 self.proxy.backup_progress.side_effect = [None]

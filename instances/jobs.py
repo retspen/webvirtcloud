@@ -138,11 +138,16 @@ def clone_data(user, instance, fields):
             if CLONE_POST_KEY_RE.fullmatch(key):
                 data[key] = value.strip()
 
-    if app_settings.CLONE_INSTANCE_AUTO_NAME == "True" and not data["name"]:
-        auto_vname = utils.get_clone_free_names()[0]
-        data["name"] = auto_vname
+    # A user who is not a superuser clones to a free name the form offers, or,
+    # with automatic names, to the first one; a superuser to any name.
+    free_names = utils.get_clone_free_names()
+    auto_name = app_settings.CLONE_INSTANCE_AUTO_NAME == "True"
+    if not user.is_superuser and not auto_name and data["name"] not in free_names:
+        raise util.OperationError(_("Choose the clone's name from the list of free names"))
+    if auto_name and (not data["name"] or not user.is_superuser):
+        data["name"] = free_names[0]
         for disk in instance.config_disks:
-            data[f"disk-{disk['dev']}"] = utils.get_clone_disk_name(disk, instance.name, auto_vname)
+            data[f"disk-{disk['dev']}"] = utils.get_clone_disk_name(disk, instance.name, data["name"])
 
     if not user.is_superuser:
         for disk in instance.config_disks:
@@ -183,7 +188,7 @@ def clone_data(user, instance, fields):
 def vm_claims(compute, name):
     """A job that adds a VM: other VMs stay usable; the VM list reconcile waits."""
     return {claims.compute_key(compute.pk): Claim.SHARED, claims.reconcile_key(compute.pk): Claim.EXCLUSIVE,
-            claims.name_key(compute.pk, name): Claim.EXCLUSIVE}
+            claims.name_key(name): Claim.EXCLUSIVE}
 
 
 def record_vm(op, owner):
@@ -470,6 +475,9 @@ class CloneInstance(Kind):
         instance = _clonable(op.user, op.params["instance"])
         if instance.compute_id != op.intent["compute"]:
             raise util.OperationError("The VM moved to another compute after the job was queued")
+        # a VM found on a host since the job was queued may have taken the name
+        if Instance.objects.filter(name=op.intent["name"]).exists():
+            raise util.OperationError(_("Instance '%(clone_name)s' already exists!") % {"clone_name": op.intent["name"]})
         _check_clone_state(instance.proxy, op.intent["clone"])
 
     def run(self, op, ctx):

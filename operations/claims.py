@@ -48,8 +48,9 @@ def volume_key(compute_id, pool, name):
     return f"volume:{compute_id}:{pool}/{name}"
 
 
-def name_key(compute_id, name):
-    return f"name:{compute_id}:{name}"
+def name_key(name):
+    """A VM name is the panel's on every compute (the name checks are global)."""
+    return f"name:{name}"
 
 
 def quota_key(user_id):

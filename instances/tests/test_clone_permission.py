@@ -67,9 +67,10 @@ class ClonePermissionTestCase(TestCase):
 
     @contextmanager
     def mocked_libvirt(self):
+        # the name these tests post is the first free one
         with patch("instances.models.wvmInstance") as mock_wvm, patch(
             "instances.views.utils.check_user_quota", return_value=""
-        ):
+        ), patch("instances.utils.get_clone_free_names", return_value=["clone-vm", "clone-vm2"]):
             proxy = mock_wvm.return_value
             proxy.get_disk_devices.return_value = [SRC_DISK]
             proxy.get_net_devices.return_value = [{"mac": "52:54:00:aa:bb:cc"}]
@@ -174,7 +175,7 @@ class ClonePermissionTestCase(TestCase):
     def test_a_vm_without_a_nic_is_cloned(self):
         for user, auto_name in ((self.superuser, "False"), (self.owner_change, "False"), (self.owner_change, "True")):
             with self.subTest(user.username, auto_name=auto_name), self.mocked_libvirt() as proxy, patch(
-                "instances.views.utils.get_clone_free_names", return_value=["auto-clone"]
+                "instances.views.utils.get_clone_free_names", return_value=["auto-clone", "clone-vm"]
             ):
                 AppSettings.objects.filter(key="CLONE_INSTANCE_AUTO_NAME").update(value=auto_name)
                 proxy.get_net_devices.return_value = []
@@ -239,3 +240,46 @@ class DhcpdConfTestCase(TestCase):
                 response = self.client.get(reverse("instances:guess_clone_name"))
             self.assertEqual(response.json(), {"name": "clone7"})
             self.assertEqual(get_dhcp_mac_address("clone7"), "52:54:00:00:07:07")
+
+
+class CloneNameTestCase(TestCase):
+    """A user who is not a superuser clones to a name the form offers: one of
+    the free names, or with automatic names the first; the server checks it."""
+
+    def setUp(self):
+        AppSettings.objects.filter(key="CLONE_INSTANCE_DEFAULT_PREFIX").update(value="copy")
+        AppSettings.objects.filter(key="CLONE_INSTANCE_AUTO_NAME").update(value="False")
+        self.user = get_user_model().objects.create_user("clone_names", password="pw")
+        self.user.user_permissions.add(Permission.objects.get(codename="clone_instances"))
+        compute = Compute.objects.create(name="names-compute", hostname="192.0.2.40", login="root", password="", type=1)
+        other = Compute.objects.create(name="names-other", hostname="192.0.2.41", login="root", password="", type=1)
+        self.instance = Instance.objects.create(compute=compute, name="src-vm", uuid="45454545-3434-5656-7878-909090909090")
+        UserInstance.objects.create(instance=self.instance, user=self.user, is_change=True)
+        # copy1 is taken on another host: names are the panel's on every host
+        Instance.objects.create(compute=other, name="copy1", uuid="45454545-0000-5656-7878-909090909090")
+        self.client.force_login(self.user)
+
+    def clone(self, name):
+        with patch("instances.models.wvmInstance") as mock_wvm, patch(
+            "instances.views.utils.check_user_quota", return_value=""
+        ):
+            proxy = mock_wvm.return_value
+            proxy.get_disk_devices.return_value = [SRC_DISK]
+            proxy.get_net_devices.return_value = [{"mac": "52:54:00:aa:bb:cc"}]
+            proxy.get_status.return_value = 5
+            self.client.post(reverse("instances:clone", args=[self.instance.id]),
+                             {"name": name, "submission_key": f"key-names-{name}"})
+        op = Operation.objects.first()
+        return op and op.intent["name"]
+
+    def test_a_free_name_from_the_list(self):
+        self.assertEqual(self.clone("copy2"), "copy2")
+
+    def test_any_other_name_is_refused(self):
+        for name in ("copy1", "my-own-name", "", "copy12"):  # taken, not offered, empty, past the ten offered
+            with self.subTest(name=name):
+                self.assertIsNone(self.clone(name))
+
+    def test_automatic_names_ignore_the_posted_name(self):
+        AppSettings.objects.filter(key="CLONE_INSTANCE_AUTO_NAME").update(value="True")
+        self.assertEqual(self.clone("my-own-name"), "copy2")
