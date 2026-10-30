@@ -91,6 +91,7 @@ class DeleteWithDisksTestCase(unittest.TestCase):
         vm.get_disk_devices = lambda: [{"path": "/pool/web-1.qcow2"}]
         vm._snapshot_chain_files = lambda own: []
         vm.paths_used_by_other_domains = lambda own: set()
+        vm.backing_path = lambda path: None
         pool = MagicMock()
         if seed_in_pool:
             pool.storageVolLookupByName.return_value.path.return_value = f"/pool/cidata-{UUID}.iso"

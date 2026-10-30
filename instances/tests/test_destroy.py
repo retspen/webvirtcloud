@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
@@ -63,6 +63,39 @@ class DestroyOrderTestCase(TestCase):
                     response = self.client.delete(url, body, content_type=content_type)
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(proxy.get_volume_by_path.called, deleted)
+
+    def test_a_disk_file_that_stays_keeps_the_files_it_needs(self):
+        # the overlay is not deleted: the file below it would leave it broken
+        volumes = {}
+
+        def volume(path):
+            vol = volumes.setdefault(path, MagicMock())
+            if path == "/pool/vm.snap1":
+                vol.delete.side_effect = libvirtError("Permission denied")
+            return vol
+
+        with patch("instances.models.wvmInstance") as wvm:
+            proxy = wvm.return_value
+            proxy.instance.isActive.return_value = False
+            proxy.split_disk_paths_by_use.return_value = (["/pool/vm.snap1", "/pool/vm.qcow2", "/pool/vm-data.qcow2"], [])
+            proxy.get_volume_by_path.side_effect = volume
+            proxy.backing_path.side_effect = {"/pool/vm.snap1": "/pool/vm.qcow2"}.get
+            response = self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
+        self.assertNotIn("/pool/vm.qcow2", volumes)
+        volumes["/pool/vm-data.qcow2"].delete.assert_called_once_with(0)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)][-1],
+                         "Disk /pool/vm.qcow2 was kept: a disk file that stays needs it")
+
+    def test_when_the_files_a_kept_one_needs_are_unknown_none_of_the_rest_goes(self):
+        with patch("instances.models.wvmInstance") as wvm:
+            proxy = wvm.return_value
+            proxy.instance.isActive.return_value = False
+            proxy.split_disk_paths_by_use.return_value = (["/pool/a.qcow2", "/pool/b.qcow2"], [])
+            proxy.get_volume_by_path.return_value.delete.side_effect = libvirtError("Permission denied")
+            proxy.backing_path.side_effect = libvirtError("pool unreachable")
+            response = self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
+        self.assertEqual(response.status_code, 302)
+        proxy.get_volume_by_path.assert_called_once_with("/pool/a.qcow2")
 
     def test_disks_are_deleted_after_the_undefine(self):
         proxy = self.destroy()

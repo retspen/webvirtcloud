@@ -822,13 +822,25 @@ def destroy(request, pk):
                 proxy.delete(flags)
                 instance.delete()
 
-            # each disk has its own row: the VM is gone even if one is kept
+            # each disk has its own row: the VM is gone even if one is kept; a
+            # file that stays keeps the files below it, which it needs
+            kept = set()
             for path in to_delete:
+                if path in kept:
+                    messages.warning(request, _("Disk %(path)s was kept: a disk file that stays needs it") % {"path": path})
+                    continue
                 try:
                     with audit_vm(request, instance, f"delete volume {path}"):
                         proxy.get_volume_by_path(path).delete(0)
                 except libvirtError as err:
-                    messages.error(request, _("Disk %(path)s was not deleted: %(err)s") % {"path": path, "err": error_text(request, err)})
+                    messages.error(request, _("The VM is removed, but disk %(path)s was not deleted: %(err)s") % {
+                        "path": path, "err": error_text(request, err)})
+                    try:
+                        while (path := proxy.backing_path(path)) and path not in kept:
+                            kept.add(path)
+                    except libvirtError:
+                        # the files it needs are unknown: none of the rest goes
+                        kept.update(to_delete)
             for path in shared:
                 messages.warning(request, _("Disk %(path)s is used by another VM and was kept") % {"path": path})
         return redirect(reverse("instances:index"))

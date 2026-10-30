@@ -1,38 +1,52 @@
 {% extends 'base.html' %}
 {% load i18n %}
-{% block title %}
-{% trans "Confirm Destroy" %}
-{% endblock title %}
+{% block title %}{% blocktrans with name=instance.name %}Destroy {{ name }}{% endblocktrans %}{% endblock title %}
 
 {% block page_heading %}
-{% trans "Destroy instance" %} {{ instance }}
+{% blocktrans with name=instance.name %}Destroy {{ name }}{% endblocktrans %} <small class="text-body-secondary fs-6">{% blocktrans with host=instance.compute.name %}on {{ host }}{% endblocktrans %}</small>
 {% endblock page_heading %}
 
 {% block content %}
-{% if can_delete %}
-    <div class="alert alert-danger">
-        {% trans "This action is irreversible!" %}
-    </div>
-    <form action="{% url 'instances:destroy' instance.id %}" class="form" method="post" role="form" id="delete_form">{% csrf_token %}
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" name="delete_disk" value="true" checked id="delete_disk">
-            <label class="form-check-label fw-bold" for="delete_disk">{% trans "Remove Instance's data" %}</label>
+<p class="small">{% trans "The VM's definition, saved state and snapshot records are removed. A running VM is forced off first; what the guest has not written to disk is lost." %}</p>
+<form action="{% url 'instances:destroy' instance.id %}" method="post" id="delete_form">{% csrf_token %}
+    <fieldset class="mb-3">
+        <legend class="h6">{% trans "What should happen to the files?" %}</legend>
+        <div class="row g-2">
+            <div class="col-12 col-md-6">
+                <label class="border rounded p-3 d-block h-100">
+                    <input class="form-check-input me-2" type="radio" name="delete_disk" value="true" checked>
+                    <strong>{% trans "Delete disk files" %}</strong>
+                    <span class="small d-block mt-2">{% trans "With them go this VM's external snapshot files, snapshot memory files and cloud-init seed." %}</span>
+                </label>
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="border rounded p-3 d-block h-100">
+                    <input class="form-check-input me-2" type="radio" name="delete_disk" value="false">
+                    <strong>{% trans "Keep the disk files" %}</strong>
+                    <span class="small d-block mt-2">{% trans "They stay with their internal snapshot data; the snapshot records still go with the VM." %}</span>
+                </label>
+            </div>
         </div>
-        {% if instance.nvram %}    
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" name="delete_nvram" value="true" id="delete_nvram" checked>
-            <label class="form-check-label fw-bold" for="delete_nvram">
-                {% trans "Remove Instance's NVRAM" %}
-            </label>
-        </div>
-        {% endif %}
-        <button type="submit" class="btn btn-danger float-end" name="delete">
-            {% trans "Destroy" %}
-        </button>
-    </form>
-{% else %}
-    <div class="alert alert-danger" role="alert">
-        {% trans "You cannot destroy instance!" %}
+    </fieldset>
+    {% if instance.config_disks %}
+    <p class="small fw-semibold mb-1">{% trans "Disks" %}</p>
+    <ul class="small ps-3">
+        {% for disk in instance.config_disks %}
+        <li><strong>{{ disk.dev }}</strong> <span class="text-break">{{ disk.path|default:_("no file") }}</span></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="small text-body-secondary">{% trans "A file another VM on this host uses, directly or under its own disk, is kept, and so is the template a disk was made from." %}</p>
+    {% if instance.nvram %}
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="delete_nvram" value="true" id="delete_nvram" checked>
+        <label class="form-check-label" for="delete_nvram">{% trans "Delete the NVRAM file (firmware settings). Untick to keep it." %}</label>
     </div>
-{% endif %}
+    {% endif %}
+    <div class="border-top pt-3 d-flex flex-wrap align-items-center gap-2">
+        <span class="small text-danger me-auto">{% trans "This cannot be undone." %}</span>
+        <a class="btn btn-secondary" href="{% url 'instances:instance' instance.id %}">{% trans "Cancel" %}</a>
+        <button class="btn btn-danger" type="submit" name="delete">{% trans "Destroy VM" %}</button>
+    </div>
+</form>
 {% endblock content %}

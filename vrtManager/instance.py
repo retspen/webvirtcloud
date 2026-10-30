@@ -1705,10 +1705,18 @@ class wvmInstance(wvmConnect):
         used_elsewhere = self.paths_used_by_other_domains(own)
         # a kept file keeps the files below it
         for path in [path for path in own if path in used_elsewhere]:
-            while (path := self._backing_path(path)) and path not in used_elsewhere:
+            while (path := self.backing_path(path)) and path not in used_elsewhere:
                 used_elsewhere.add(path)
+        def below(path):
+            """How many files the path grows from: an overlay is deleted before
+            the files it needs, so one that cannot be deleted keeps them."""
+            seen = set()
+            while (path := self.backing_path(path)) and path not in seen:
+                seen.add(path)
+            return len(seen)
+
         return (
-            [path for path in own if path not in used_elsewhere],
+            sorted((path for path in own if path not in used_elsewhere), key=below, reverse=True),
             [path for path in own if path in used_elsewhere],
         )
 
@@ -1739,7 +1747,7 @@ class wvmInstance(wvmConnect):
                 points.update(self._disk_sources(saved).values())
         files = list(tops)
         for path in tops:
-            while (path := self._backing_path(path)) in points and path not in files:
+            while (path := self.backing_path(path)) in points and path not in files:
                 files.append(path)
         grew = True
         while grew:
@@ -1748,14 +1756,14 @@ class wvmInstance(wvmConnect):
                 if top in files:  # reached by a branch in this pass
                     continue
                 branch, path = [top], top
-                while (path := self._backing_path(path)) in points | overlays and path not in files:
+                while (path := self.backing_path(path)) in points | overlays and path not in files:
                     branch.append(path)
                 if path in files:
                     files += branch
                     grew = True
         return files[len(tops):] + memory
 
-    def _backing_path(self, path):
+    def backing_path(self, path):
         """The backing file of a volume; None if it has none or is in no pool.
         Any other error is raised: a chain cut short would let a file a kept
         one needs count as deletable."""
@@ -2026,7 +2034,7 @@ class wvmInstance(wvmConnect):
             # do not keep each other, but a file in use keeps the files below it
             in_use = self.paths_in_use(own=left)
             for path in [path for path in left if path in in_use]:
-                while (path := self._backing_path(path)) and path not in in_use:
+                while (path := self.backing_path(path)) and path not in in_use:
                     in_use.add(path)
             left = [path for path in left if path not in in_use]
         return left

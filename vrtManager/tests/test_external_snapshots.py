@@ -611,7 +611,7 @@ class LeftBehindTestCase(unittest.TestCase):
     def test_a_file_another_vm_uses_is_not_reported(self):
         # on NFS libvirt could not remove it, but another VM uses it now
         with patch.object(wvmInstance, "paths_in_use", return_value={"/pool/a.one"}) as in_use, \
-                patch.object(wvmInstance, "_backing_path", return_value=None):
+                patch.object(wvmInstance, "backing_path", return_value=None):
             left = self.run_delete({"/pool/a.one", "/pool/vm.one.mem", "/pool/a.two", "/pool/a.qcow2"})
         self.assertEqual(left, ["/pool/vm.one.mem"])
         # their own backing files do not keep each other
@@ -622,7 +622,7 @@ class LeftBehindTestCase(unittest.TestCase):
         # file, and the in-use top's own backing reference does not count
         backing = {"/pool/a.one": "/pool/vm.one.mem"}
         with patch.object(wvmInstance, "paths_in_use", return_value={"/pool/a.one"}), \
-                patch.object(wvmInstance, "_backing_path", side_effect=backing.get):
+                patch.object(wvmInstance, "backing_path", side_effect=backing.get):
             left = self.run_delete({"/pool/a.one", "/pool/vm.one.mem", "/pool/a.two", "/pool/a.qcow2"})
         self.assertEqual(left, [])
 
@@ -774,6 +774,9 @@ class DestroyFilesTestCase(unittest.TestCase):
             backing[top] = "/pool/a.one"
         if extra:
             backing[extra[0]] = extra[1]
+        # the template's own chain, longer than the VM's files
+        template = ["/templates/base.qcow2"] + [f"/templates/base{n}.qcow2" for n in range(1, 10)]
+        backing.update(zip(template, template[1:]))
         if other_overlay_on:
             backing["/pool/other.qcow2"] = other_overlay_on
 
@@ -798,10 +801,10 @@ class DestroyFilesTestCase(unittest.TestCase):
         missing = libvirtError("no volume")
         missing.err = (libvirt.VIR_ERR_NO_STORAGE_VOL,)
         p.get_volume_by_path = MagicMock(side_effect=missing)
-        self.assertIsNone(p._backing_path("/elsewhere/base.qcow2"))  # in no pool
+        self.assertIsNone(p.backing_path("/elsewhere/base.qcow2"))  # in no pool
         p.get_volume_by_path = MagicMock(side_effect=libvirtError("connection lost"))
         with self.assertRaises(libvirtError):
-            p._backing_path("/pool/a.one")
+            p.backing_path("/pool/a.one")
 
     def test_the_snapshot_chain_and_memory_go_but_not_the_template(self):
         delete, keep = self.split()
@@ -821,6 +824,13 @@ class DestroyFilesTestCase(unittest.TestCase):
             sorted(delete), ["/pool/a.one", "/pool/a.qcow2", "/pool/a.reverted", "/pool/a.two", "/pool/vm.one.mem"]
         )
         self.assertEqual(keep, [])
+
+    def test_an_overlay_is_deleted_before_the_files_it_needs(self):
+        # after a revert the branch a.two comes before a.one: if it cannot be deleted, a.one is still there
+        delete, _ = self.split(top="/pool/a.reverted")
+        for overlay, below in (("/pool/a.two", "/pool/a.one"), ("/pool/a.reverted", "/pool/a.one"),
+                               ("/pool/a.one", "/pool/a.qcow2")):
+            self.assertLess(delete.index(overlay), delete.index(below), (overlay, below))
 
     def test_a_snapshot_file_off_the_disks_chain_stays(self):
         # a disk detached since: its snapshot overlay grows from a file the
