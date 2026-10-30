@@ -156,7 +156,9 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//select[@name='video_model']/option[@selected]/@value"), ["virtio"])
         self.assertEqual(doc.xpath("//select[@name='keymap']/option[@selected]/@value"), ["de"])
         self.assertEqual(doc.xpath("//select[@name='listen_on']/option[@selected]/@value"), ["0.0.0.0"])
-        self.assertEqual(doc.xpath("//input[@name='password']/@value"), ["pending-pw"])
+        # the pending password is not shown, only that one is set
+        self.assertEqual(doc.xpath("//input[@name='password']/@value"), [])
+        self.assertIn("A password is set.", doc.xpath("string(//div[@id='vncsettings']//fieldset)"))
 
     def test_a_boot_order_by_device_type_is_named_and_no_device_is_checked(self):
         doc = self.page(live=[disk("vda", "default", "")], config=[disk("vda", "default", "")],

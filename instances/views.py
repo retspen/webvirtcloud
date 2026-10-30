@@ -247,7 +247,7 @@ def _instance_page(request, pk, instance, compute):
     can_manage_console = utils.can_manage_console(request.user, instance)
     console_form = None
     if can_manage_console:
-        console_form = ConsoleForm(instance=instance, can_set_listener=request.user.is_superuser)
+        console_form = ConsoleForm(instance=instance, is_superuser=request.user.is_superuser)
     console_listener_addresses = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
     ipv4_addresses = [address for net in instance.networks for address in net["ipv4"] or []]
     try:
@@ -2107,47 +2107,34 @@ def update_console(request, pk):
 
     if not utils.can_manage_console(request.user, instance):
         raise PermissionDenied
-    form = ConsoleForm(request.POST, instance=instance, can_set_listener=request.user.is_superuser)
-    if form.is_valid() and form.cleaned_data["console_type"] not in ("", instance.console_type):
-        with audit_vm(request, instance, f"set console type {form.cleaned_data['console_type']}"):
-            instance.proxy.set_console_type(form.cleaned_data["console_type"])
-    # the other fields are VNC settings; a new VNC console gets them too
-    if form.is_valid() and form.cleaned_data["console_type"] != "pty":
-        if (
-            "generate_password" in form.changed_data
-            or "clear_password" in form.changed_data
-            or "password" in form.changed_data
-        ):
-            if form.cleaned_data["generate_password"]:
-                password = randomPasswd()
-            elif form.cleaned_data["clear_password"]:
-                password = ""
-            else:
+    form = ConsoleForm(request.POST, instance=instance, is_superuser=request.user.is_superuser)
+    if not form.is_valid():
+        messages.error(request, _("Console settings were not saved: %(errors)s") % {"errors": form.errors.as_text()})
+        return get_safe_redirect(request, default=reverse("instances:instance", args=[instance.id]) + "#vncsettings")
+    console_type = form.cleaned_data["console_type"]
+    if console_type not in ("", instance.config_console_type):
+        with audit_vm(request, instance, f"set console type {console_type}"):
+            instance.proxy.set_console_type(console_type)
+    # the VNC settings, if the form takes them
+    if "keymap" in form.fields:
+        action = form.cleaned_data["password_action"]
+        if action != "keep":
+            if action == "generate":
+                password = randomPasswd(8)  # the length VNC allows
+            elif action == "set":
                 password = form.cleaned_data["password"]
-
-            # A console that listens beyond localhost (set by an
-            # administrator) keeps its password unless an administrator
-            # removes it. The definition being changed is the persistent one.
-            if (
-                not password
-                and not request.user.is_superuser
-                and not instance.proxy.console_listens_locally()
-            ):
-                messages.error(
-                    request,
-                    _("The console listens beyond localhost; only an administrator can remove its password."),
-                )
             else:
-                try:
-                    with audit_vm(request, instance, "set console password" if password else "remove console password"):
-                        if not instance.proxy.set_console_passwd(password):
-                            raise util.OperationError("The VM has no graphics device")
-                except util.OperationError:
-                    msg = _(
-                        "Error setting console password. "
-                        + "You should check that your instance have an graphic device."
-                    )
-                    messages.error(request, msg)
+                password = ""
+            try:
+                with audit_vm(request, instance, "set console password" if password else "remove console password"):
+                    if not instance.proxy.set_console_passwd(password):
+                        raise util.OperationError("The VM has no graphics device")
+            except util.OperationError:
+                msg = _(
+                    "Error setting console password. "
+                    + "You should check that your instance have an graphic device."
+                )
+                messages.error(request, msg)
 
         if "keymap" in form.changed_data:
             # "auto" removes the keymap: the client's keys go through as they are
@@ -2159,8 +2146,6 @@ def update_console(request, pk):
         if "listen_on" in form.changed_data:
             with audit_vm(request, instance, f"set console listen address {form.cleaned_data['listen_on']}") as entry:
                 entry.skip = instance.proxy.set_console_listener_addr(form.cleaned_data["listen_on"]) is False
-    if not form.is_valid():
-        messages.error(request, _("Console settings were not saved: %(errors)s") % {"errors": form.errors.as_text()})
 
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#vncsettings"

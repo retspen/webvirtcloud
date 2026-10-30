@@ -1,9 +1,9 @@
 """
-The console settings form on the VM detail page carries the VNC password
-(PasswordInput(render_value=True)). It must only be rendered for users who may
-change console settings, which is the rule update_console enforces: a
-superuser, or an owner with both is_change and is_vnc. In particular, is_staff
-and the global view_instances permission must not reveal the VNC password.
+The console settings form is rendered only for users who may change console
+settings, which is the rule update_console enforces: a superuser, or an owner
+with both is_change and is_vnc; not for is_staff or the global view_instances
+permission. The form never carries the VNC password: it says whether one is
+set.
 """
 from unittest.mock import PropertyMock, patch
 
@@ -75,14 +75,11 @@ class ConsoleSettingsAccessTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         return response.content.decode()
 
-    def test_staff_with_view_instances_does_not_see_vnc_password(self):
-        self.assertFalse(VNC_PASSWORD in self._detail_page(self.staff_viewer), "VNC password leaked")
-
-    def test_staff_owner_without_is_vnc_does_not_see_vnc_password(self):
-        self.assertFalse(VNC_PASSWORD in self._detail_page(self.staff_owner), "VNC password leaked")
-
-    def test_owner_with_is_change_and_is_vnc_sees_console_settings(self):
-        self.assertTrue(VNC_PASSWORD in self._detail_page(self.vnc_owner), "console settings missing")
-
-    def test_superuser_sees_console_settings(self):
-        self.assertTrue(VNC_PASSWORD in self._detail_page(self.superuser), "console settings missing")
+    def test_only_users_who_may_change_the_console_see_its_settings(self):
+        form = reverse("instances:update_console", args=[self.instance.id])
+        for user, shown in ((self.staff_viewer, False), (self.staff_owner, False),
+                            (self.vnc_owner, True), (self.superuser, True)):
+            with self.subTest(user.username):
+                page = self._detail_page(user)
+                self.assertEqual(form in page, shown)
+                self.assertNotIn(VNC_PASSWORD, page)

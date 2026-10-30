@@ -226,6 +226,10 @@ class Instance(models.Model):
         return self.proxy.get_video_model(config=True)
 
     @cached_property
+    def config_console_type(self) -> str | None:
+        return self.proxy.get_console_type(config=True)
+
+    @cached_property
     def config_console_listener_address(self) -> str:
         return self.proxy.get_console_listener_addr(config=True)
 

@@ -21,24 +21,35 @@ class FlavorForm(forms.ModelForm):
 
 
 class ConsoleForm(forms.Form):
-    console_type = forms.ChoiceField(label=_("Console type"), required=False)
-    listen_on = forms.ChoiceField(label=_("Listen on"))
-    generate_password = forms.BooleanField(label=_("Generate password"), required=False)
-    clear_password = forms.BooleanField(label=_("Clear password"), required=False)
-    password = forms.CharField(
-        label=_("Password"),
-        widget=forms.PasswordInput(render_value=True),
-        required=False
+    console_type = forms.ChoiceField(
+        label=_("Console type"), required=False, widget=forms.Select(attrs={"class": "form-select"})
     )
-    keymap = forms.ChoiceField(label=_("Keymap"), required=False)
+    password_action = forms.ChoiceField(
+        label=_("Password"),
+        choices=[
+            ("keep", _("Keep the password")),
+            ("generate", _("Generate a new one")),
+            ("set", _("Set a new one")),
+            ("none", _("No password")),
+        ],
+        widget=forms.RadioSelect(attrs={"class": "form-check-input"}),
+    )
+    password = forms.CharField(
+        label=_("New password"),
+        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
+        required=False,
+        strip=False,
+    )
 
-    def __init__(self, *args, instance, can_set_listener, **kwargs):
+    def __init__(self, *args, instance, is_superuser, **kwargs):
         # the VM's settings as the initial values: a save changes only the fields edited
+        self.instance = instance
+        self.is_superuser = is_superuser
         listener = instance.config_console_listener_address
         kwargs["initial"] = {
-            "console_type": instance.console_type,
+            "console_type": instance.config_console_type,
             "listen_on": listener,
-            "password": instance.config_console_passwd,
+            "password_action": "keep",
             "keymap": instance.config_console_keymap or "auto",
         }
         super(ConsoleForm, self).__init__(*args, **kwargs)
@@ -46,6 +57,11 @@ class ConsoleForm(forms.Form):
         if settings.SERIAL_CONSOLE_ENABLED:
             types.append(("pty", _("Serial (xterm; the guest needs a getty on ttyS0)")))
         self.fields["console_type"].choices = types
+        # the VNC settings are shown and saved while the console is VNC; a
+        # switch to Serial ignores them
+        if "pty" in (instance.config_console_type, self.data.get("console_type")):
+            del self.fields["password_action"], self.fields["password"]
+            return
         keymap_choices = [("auto", _("Auto"))] + list((c, c) for c in QEMU_KEYMAPS)
         # Only administrators choose the listen address: beyond localhost the
         # console is reachable from the network. A disabled field ignores
@@ -57,10 +73,32 @@ class ConsoleForm(forms.Form):
         self.fields["listen_on"] = forms.ChoiceField(
             label=_("Listen on"),
             choices=listeners,
-            disabled=not can_set_listener,
-            required=can_set_listener,
+            disabled=not is_superuser,
+            required=is_superuser,
+            widget=forms.Select(attrs={"class": "form-select"}),
         )
-        self.fields["keymap"] = forms.ChoiceField(label=_("Keymap"), choices=keymap_choices)
+        self.fields["keymap"] = forms.ChoiceField(
+            label=_("Keymap"), choices=keymap_choices, widget=forms.Select(attrs={"class": "form-select"})
+        )
+
+    def clean(self):
+        data = super().clean()
+        action = data.get("password_action")
+        if action == "set":
+            password = data.get("password", "")
+            if not password:
+                self.add_error("password", _("Enter the new password."))
+            # VNC uses 8 bytes; libvirt refuses a longer password
+            elif len(password.encode()) > 8:
+                self.add_error("password", _("A VNC password takes at most 8 bytes."))
+        # A console that listens beyond localhost (set by an administrator)
+        # keeps its password unless an administrator removes it.
+        if action == "none" and not self.is_superuser and not self.instance.proxy.console_listens_locally():
+            self.add_error(
+                "password_action",
+                _("The console listens beyond localhost; only an administrator can remove its password."),
+            )
+        return data
 
 
 class NewVMForm(forms.ModelForm):

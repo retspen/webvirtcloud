@@ -96,11 +96,11 @@ class VMRowTests(TestCase):
         self.proxy.get_console_type.return_value = "vnc"
         self.proxy.console_listens_locally.return_value = True
         self.proxy.set_console_passwd.return_value = False  # no graphics device
-        form = {"listen_on": "127.0.0.1", "keymap": "auto"}
-        self.post("update_console", {**form, "password": "Vnc-pass-1"})
+        form = {"listen_on": "127.0.0.1", "keymap": "auto", "password_action": "set"}
+        self.post("update_console", {**form, "password": "Vnc-pw-1"})
         self.proxy.set_console_passwd.return_value = True
-        self.post("update_console", {**form, "password": "Vnc-pass-2"})
-        self.assertNotIn("Vnc-pass", str(self.rows()))
+        self.post("update_console", {**form, "password": "Vnc-pw-2"})
+        self.assertNotIn("Vnc-pw", str(self.rows()))
         rows = [row for row in self.rows() if "password" in row[0]]
         self.assertEqual(rows, [("VM vm: set console password: The VM has no graphics device", False),
                                        ("VM vm: set console password", True)])
@@ -112,10 +112,11 @@ class VMRowTests(TestCase):
         self.proxy.get_console_keymap.return_value = ""
         self.proxy.set_console_keymap.return_value = False  # no graphics device
         self.proxy.set_console_listener_addr.return_value = False  # a socket, no address
-        self.post("update_console", {"listen_on": "0.0.0.0", "keymap": "de"})
+        form = {"listen_on": "0.0.0.0", "keymap": "de", "password_action": "keep"}
+        self.post("update_console", form)
         self.proxy.set_console_keymap.return_value = None  # the define's result
         self.proxy.set_console_listener_addr.return_value = None
-        self.post("update_console", {"listen_on": "0.0.0.0", "keymap": "de"})
+        self.post("update_console", form)
         self.assertEqual(self.rows(), [("VM vm: set console keymap de", True),
                                        ("VM vm: set console listen address 0.0.0.0", True)])
 
@@ -126,7 +127,7 @@ class VMRowTests(TestCase):
         self.proxy.get_console_passwd.return_value = ""
         self.proxy.get_console_keymap.return_value = "de"
         self.proxy.set_console_keymap.return_value = None
-        self.post("update_console", {"listen_on": "127.0.0.1", "keymap": "auto"})
+        self.post("update_console", {"listen_on": "127.0.0.1", "keymap": "auto", "password_action": "keep"})
         self.proxy.set_console_keymap.assert_called_once_with("auto")
         self.assertEqual(self.rows(), [("VM vm: remove console keymap", True)])
 
@@ -135,10 +136,10 @@ class VMRowTests(TestCase):
         self.proxy.get_console_type.return_value = "vnc"
         self.proxy.get_console_listener_addr.return_value = "192.0.2.10"
         self.proxy.get_console_keymap.return_value = "de"
-        self.proxy.get_console_passwd.return_value = "Vnc-pass-1"
+        self.proxy.get_console_passwd.return_value = "Vnc-pw-1"
         form = {"listen_on": "192.0.2.10", "keymap": "de"}
-        self.post("update_console", {**form, "password": "Vnc-pass-1"})
-        self.post("update_console", {**form, "password": "Vnc-pass-2"})
+        self.post("update_console", {**form, "password_action": "keep"})
+        self.post("update_console", {**form, "password_action": "set", "password": "Vnc-pw-2"})
         self.assertEqual(self.rows(), [("VM vm: set console password", True)])
         self.proxy.set_console_listener_addr.assert_not_called()
 

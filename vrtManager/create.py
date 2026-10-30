@@ -352,7 +352,7 @@ class wvmCreate(wvmConnect):
             xml += """</interface>"""
 
         if console_pass == "random":
-            console_pass = "passwd='" + util.randomPasswd() + "'"
+            console_pass = "passwd='" + util.randomPasswd(8) + "'"  # the length VNC allows
         elif console_pass != "":
             console_pass = "passwd='" + console_pass + "'"
 

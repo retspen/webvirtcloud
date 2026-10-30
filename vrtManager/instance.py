@@ -1530,14 +1530,11 @@ class wvmInstance(wvmConnect):
         socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@socket")
         return socket
 
-    def get_console_type(self):
-        console_type = util.get_xml_path(
-            self._XMLDesc(0), "/domain/devices/graphics/@type"
-        )
+    def get_console_type(self, config=False):
+        xml = self._XMLDesc(PERSISTENT_XML if config else 0)
+        console_type = util.get_xml_path(xml, "/domain/devices/graphics/@type")
         if console_type is None:
-            console_type = util.get_xml_path(
-                self._XMLDesc(0), "/domain/devices/console/@type"
-            )
+            console_type = util.get_xml_path(xml, "/domain/devices/console/@type")
         return console_type
 
     def get_console_port(self, console_type=None):

@@ -630,23 +630,64 @@
         {% endif %}
         {% if can_manage_console %}
         <div role="tabpanel" class="tab-pane" id="vncsettings">
-            <form method="post" action="{% url 'instances:update_console' instance.id %}">
-                {% csrf_token %}
+            <form method="post" action="{% url 'instances:update_console' instance.id %}" aria-label="{% trans "Console settings" %}">{% csrf_token %}
                 {% if instance.status != 5 %}
-                    <div class="alert alert-warning">
-                        {% trans "To change console settings, shutdown the instance." %}
-                    </div>
+                <p class="small text-body-secondary">{% trans "The running console keeps its current settings; changes here apply after the VM is shut down and started." %}</p>
                 {% endif %}
-                {% bootstrap_form console_form layout='horizontal' %}
-                <div class="float-end">
-                    {% if instance.status != 5 %}
-                        <button class="btn btn-primary" disabled>{% trans "Update" %}</button>
+                <section class="mb-4" aria-labelledby="console-heading">
+                    <h2 class="h6" id="console-heading">{% trans "Console" %}</h2>
+                    <label class="form-label" for="{{ console_form.console_type.id_for_label }}">{{ console_form.console_type.label }}</label>
+                    {{ console_form.console_type }}
+                    {% if console_form.keymap %}
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "The settings below apply to a VNC console." %}</p>
                     {% else %}
-                        <button type="submit" class="btn btn-primary ">{% trans "Update" %}</button>
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "The VNC settings appear once the console type VNC is saved." %}</p>
                     {% endif %}
+                </section>
+                {% if console_form.keymap %}
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-lg-6">
+                        <section class="card h-100" aria-labelledby="console-connection">
+                            <div class="card-body">
+                                <h2 class="h6 mb-3" id="console-connection">{% bs_icon 'display' %} {% trans "VNC connection" %}</h2>
+                                <div class="mb-4">
+                                    <label class="form-label" for="{{ console_form.listen_on.id_for_label }}">{{ console_form.listen_on.label }}</label>
+                                    {{ console_form.listen_on }}
+                                    <p class="small text-body-secondary mt-1 mb-0">
+                                        {% if not request.user.is_superuser %}{% trans "Only administrators can change this." %} {% endif %}{% trans "Beyond localhost the console is reachable from the network." %}
+                                    </p>
+                                </div>
+                                <label class="form-label" for="{{ console_form.keymap.id_for_label }}">{{ console_form.keymap.label }}</label>
+                                {{ console_form.keymap }}
+                            </div>
+                        </section>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <section class="card h-100" aria-labelledby="console-password">
+                            <div class="card-body">
+                                <h2 class="h6 mb-3" id="console-password">{% bs_icon 'key' %} {% trans "VNC password" %}</h2>
+                                <fieldset>
+                                    <legend class="fs-6 mb-1">{{ console_form.password_action.label }}</legend>
+                                    <p class="small text-body-secondary mb-2">{% if instance.config_console_passwd %}{% trans "A password is set." %}{% else %}{% trans "No password is set." %}{% endif %}</p>
+                                    {% for choice in console_form.password_action %}
+                                    <div class="form-check">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </fieldset>
+                                <label class="form-label mt-3" for="{{ console_form.password.id_for_label }}">{{ console_form.password.label }}</label>
+                                {{ console_form.password }}
+                                <p class="small text-body-secondary mt-1 mb-0">{% trans "Up to 8 characters (an accented letter counts as two), used with \"Set a new one\"." %}</p>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-sm btn-primary">{% trans "Save console settings" %}</button>
                 </div>
             </form>
-            <div class="clearfix"></div>
         </div>
         {% endif %}
         {% if can_clone %}
