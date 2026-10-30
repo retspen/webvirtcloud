@@ -311,3 +311,22 @@ class SingleOwnerEditTests(TestCase):
         self.assertRedirects(response, reverse("accounts:account", args=[bob.pk]), fetch_redirect_response=False)
         ui.refresh_from_db()
         self.assertTrue(ui.is_vnc)
+
+
+class OwnerRightsReturnTestCase(TestCase):
+    """Edit rights on a VM's Users tab comes back to that tab; a page of
+    another site does not count."""
+
+    def test_an_owner_s_rights_come_back_to_the_vm_page(self):
+        admin = get_user_model().objects.create_superuser("rights-admin", "rights@example.com", "x")
+        owner = get_user_model().objects.create_user("rights-owner")
+        compute = Compute.objects.create(name="rights", hostname="192.0.2.30", login="u", password="p", type=1)
+        vm = Instance.objects.create(compute=compute, name="rights-vm", uuid="12121212-0000-0000-0000-000000000000")
+        user_instance = UserInstance.objects.create(user=owner, instance=vm)
+        self.client.force_login(admin)
+        update = reverse("accounts:user_instance_update", args=[user_instance.id])
+        for next_url, back in ((f"/instances/{vm.id}/%23users", f"/instances/{vm.id}/#users"),
+                               ("https://example.com/", reverse("accounts:account", args=[owner.id]))):
+            with self.subTest(next_url):
+                response = self.client.post(f"{update}?next={next_url}", {"is_change": True})
+                self.assertRedirects(response, back, fetch_redirect_response=False)

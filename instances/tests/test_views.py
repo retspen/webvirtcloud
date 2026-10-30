@@ -643,11 +643,7 @@ class InstancesTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(UserInstance.objects.count(), 1)
 
-        response = self.client.post(
-            reverse("instances:del_owner", args=[self.instance.id]),
-            {"userinstance": user_instance.id},
-            HTTP_REFERER=reverse("index"),
-        )
+        response = self.client.post(reverse("accounts:user_instance_delete", args=[user_instance.id]))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(UserInstance.objects.count(), 0)
 

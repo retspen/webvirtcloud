@@ -1,6 +1,8 @@
-// The VM page's XML editor. Change shows the lines the edit changes in the
-// VM's definition (instances.views.change_xml), and Save in that dialog
+// The VM page's XML editor. Review changes shows the lines the edit changes
+// in the VM's definition (instances.views.change_xml), and Save in that dialog
 // defines it. A refusal shows in the dialog, and the edit stays in the editor.
+// An edit not saved yet keeps the page from reloading itself on a VM state
+// change (window.xmlEditUnsaved), and the browser asks before leaving it.
 (function () {
     var form = document.getElementById("xml-form");
     if (!form) {
@@ -16,6 +18,19 @@
     var diff = document.getElementById("xml-review-diff");
     var save = document.getElementById("xml-review-save");
     var reviewed = ""; // Save defines the XML the dialog shows, not later edits
+    var clean = base; // the XML the page has: the opened definition, or the one Save just defined
+
+    window.xmlEditUnsaved = function () {
+        return editor.getValue() !== clean;
+    };
+    window.addEventListener("beforeunload", function (event) {
+        if (window.xmlEditUnsaved()) {
+            event.preventDefault();
+        }
+    });
+    dialog.addEventListener("hidden.bs.modal", function () {
+        editor.focus();
+    });
 
     // The answer: diff, saved, or error (detail when the VM is busy or moved).
     // Any other failure, such as a redirect, keeps the edit and says so.
@@ -70,6 +85,7 @@
         save.disabled = true;
         post(reviewed, true).then(function (answer) {
             if (answer.saved) {
+                clean = reviewed;
                 location.hash = "xmledit";
                 location.reload();
             } else {

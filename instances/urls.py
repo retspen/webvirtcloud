@@ -68,10 +68,7 @@ urlpatterns = [
     path("<int:pk>/delete_pci_hostdev/", views.delete_pci_hostdev, name="delete_pci_hostdev"),
     path("<int:pk>/set_link_state/", views.set_link_state, name="set_link_state"),
     path("<int:pk>/set_qos/", views.set_qos, name="set_qos"),
-    path("<int:pk>/unset_qos/", views.unset_qos, name="unset_qos"),
-    path(
-        "<int:pk>/del_owner/", views.del_owner, name="del_owner"
-    ),  # no links to this one???
+    path("<int:pk>/unset_qos/", views.unset_qos, name="unset_qos"),  # no links to this one???
     path("<int:pk>/clone/", views.clone, name="clone"),
     path("<int:pk>/update_console/", views.update_console, name="update_console"),
     path("<int:pk>/change_options/", views.change_options, name="change_options"),

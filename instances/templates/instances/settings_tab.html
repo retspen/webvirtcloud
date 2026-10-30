@@ -581,16 +581,14 @@
         </div>
         <div role="tabpanel" class="tab-pane" id="xmledit">
             {% if instance.status != 5 %}
-                <p id="xml-next-start">{% trans "This is the definition for the VM's next start; a saved change applies then." %}</p>
+                <p class="small text-body-secondary" id="xml-next-start">{% trans "This is the definition for the VM's next start; a saved change applies then." %}</p>
             {% endif %}
             <form action="{% url 'instances:change_xml' instance.id %}" method="post" role="form" aria-label="Edit instance XML form" id="xml-form">
                 {% csrf_token %}
                 <div class="col-sm-12 xmlheight">
                     <textarea id="editor">{{ instance.inst_xml }}</textarea>
                 </div>
-                <button type="submit" class="btn btn-primary float-end" name="change_xml">
-                    {% trans "Change" %}
-                </button>
+                <button type="submit" class="btn btn-primary float-end" name="change_xml">{% trans "Review changes" %}</button>
             </form>
             <div class="clearfix"></div>
             <div class="modal fade" id="xml-review" tabindex="-1" aria-labelledby="xml-review-title" aria-hidden="true"
@@ -615,29 +613,41 @@
             </div>
         </div>
         <div role="tabpanel" class="tab-pane" id="users">
-            <div>
-            <div class="mb-3">
-                <span class="fw-bold">{% trans "Instance owners" %}</span>
-                {% include 'add_instance_owner_block.html' %}
-            </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-striped mt-3 align-middle">
-                    <tbody class="searchable">
+            <section aria-labelledby="owners-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h6 mb-0" id="owners-heading">{% trans "Instance owners" %}</h2>
+                    {% include 'add_instance_owner_block.html' %}
+                </div>
+                <p class="small text-body-secondary">{% trans "Every owner can power the VM and open its console. A new owner has no other right until it is given one." %}</p>
+                {% if userinstances %}
+                <ul class="list-group">
                     {% for userinstance in userinstances %}
-                        <tr>
-                            <td><a href="{% url 'accounts:account' userinstance.user.id %}">{{ userinstance.user }}</a></td>
-                            <td style="width:30px;">
-                                <a href="{% url 'accounts:user_instance_delete' userinstance.id %}?next={% url 'instances:instance' instance.id %}#users">
-                                    {% bs_icon 'trash' %}
-                                </a>
-                            </td>
-                        </tr>
+                    <li class="list-group-item p-3">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-12 col-md">
+                                <a class="fw-semibold text-break" href="{% url 'accounts:account' userinstance.user.id %}">{{ userinstance.user }}</a>
+                                <p class="small mb-0 mt-1">
+                                    {% if userinstance.is_change or userinstance.is_delete %}
+                                    {% if userinstance.is_change %}{% trans "Change settings" %}{% endif %}{% if userinstance.is_change and userinstance.is_delete %} · {% endif %}{% if userinstance.is_delete %}{% trans "Delete the VM" %}{% endif %}{% if userinstance.is_change and userinstance.is_vnc %} · {% trans "Change console settings" %}{% endif %}
+                                    {% else %}
+                                    <span class="text-body-secondary">{% trans "Power and console only" %}</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            {% if request.user.is_superuser %}
+                            <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+                                <a class="btn btn-sm btn-secondary" href="{% url 'accounts:user_instance_update' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Edit rights" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
+                                <a class="btn btn-sm btn-danger" href="{% url 'accounts:user_instance_delete' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Remove" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </li>
                     {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="clearfix"></div>
+                </ul>
+                {% else %}
+                <p class="mb-0">{% trans "The VM has no owner: only administrators can use it." %}</p>
+                {% endif %}
+            </section>
         </div>
         {% endif %}
         {% if can_manage_console %}

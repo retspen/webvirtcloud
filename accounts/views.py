@@ -235,6 +235,17 @@ def user_instance_create(request, user_id):
     )
 
 
+def _next_or(request, default):
+    """To the ?next page, the VM page an owner was changed from, when it is
+    on this site; else to default."""
+    next_url = request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(
+        url=next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return redirect(next_url)
+    return redirect(default)
+
+
 @superuser_only
 def user_instance_update(request, pk):
     user_instance = get_object_or_404(UserInstance, pk=pk)
@@ -246,7 +257,7 @@ def user_instance_update(request, pk):
             fields = changed_fields(before, snapshot(user_instance))
             entry.action = f"change owner {user_instance.user.username}: " + ", ".join(fields)
             entry.skip = not fields
-        return redirect(reverse("accounts:account", args=[user_instance.user.id]))
+        return _next_or(request, reverse("accounts:account", args=[user_instance.user.id]))
 
     return render(
         request,
@@ -265,14 +276,7 @@ def user_instance_delete(request, pk):
         user, instance = user_instance.user, user_instance.instance
         with audit_vm(request, instance, f"remove owner {user.username}"):
             user_instance.delete()
-        next_url = request.GET.get("next", None)
-        if next_url and url_has_allowed_host_and_scheme(
-            url=next_url,
-            allowed_hosts={request.get_host()},
-            require_https=request.is_secure(),
-        ):
-            return redirect(next_url)
-        return redirect(reverse("accounts:account", args=[user.id]))
+        return _next_or(request, reverse("accounts:account", args=[user.id]))
 
     return render(
         request,

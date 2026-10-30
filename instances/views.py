@@ -239,7 +239,8 @@ def instance(request, pk):
 def _instance_page(request, pk, instance, compute):
     computes = Compute.objects.all().order_by("name")
     computes_count = computes.count()
-    users = User.objects.all().order_by("username")
+    # the add-owner choices: users who are not owners yet; a superuser can use every VM
+    users = User.objects.filter(is_superuser=False).exclude(userinstance__instance=instance).order_by("username")
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     keymaps = settings.QEMU_KEYMAPS
     # The console form renders the VNC password, so only users who may manage
@@ -2093,19 +2094,6 @@ def add_owner(request, pk):
             entry.skip = not UserInstance.objects.get_or_create(instance=instance, user=user)[1]
         if entry.skip:
             messages.warning(request, _("%(user)s is already an owner") % {"user": user})
-    return _back(request, pk, "users")
-
-
-@require_POST
-@superuser_only
-def del_owner(request, pk):
-    instance = get_instance(request.user, pk)
-    userinstance_id = request.POST.get("userinstance", "")
-    if not userinstance_id.isdigit():
-        raise Http404
-    userinstance = get_object_or_404(UserInstance, pk=userinstance_id, instance=instance)
-    with audit_vm(request, instance, f"remove owner {userinstance.user.username}"):
-        userinstance.delete()
     return _back(request, pk, "users")
 
 

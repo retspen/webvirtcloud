@@ -3,6 +3,7 @@ until the next start. The edit forms show that definition, so a save does
 not post the running VM's value back over a pending change."""
 
 from unittest.mock import PropertyMock, patch
+from urllib.parse import unquote
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
@@ -149,6 +150,23 @@ class PendingEditsTestCase(TestCase):
         doc = self.page(get_rng=("virtio", "virtio"), get_on_crash=("restart", "restart"))  # read from the persistent definition
         self.assertEqual(doc.xpath("//input[@name='rng']/@checked"), ["checked"])
         self.assertEqual(doc.xpath("//select[@name='on_crash']/option[@selected]/@value"), ["restart"])
+
+    def test_the_users_tab_shows_each_owner_and_offers_only_new_owners(self):
+        from accounts.models import UserInstance
+
+        User = get_user_model()
+        owner = User.objects.create_user("pe-owner")
+        UserInstance.objects.create(instance=self.instance, user=owner, is_change=True, is_vnc=True)
+        User.objects.create_user("pe-new")
+        User.objects.create_superuser("pe-admin2", "pe2@example.com", "x")
+        doc = self.page()
+        (row,) = doc.xpath("//div[@id='users']//li")
+        self.assertIn("Change settings · Change console settings", " ".join(row.text_content().split()))
+        # Remove and Edit rights come back to the Users tab
+        self.assertEqual([unquote(href.split("?next=")[1]) for href in row.xpath(".//a[contains(@class, 'btn')]/@href")],
+                         [f"/instances/{self.instance.id}/#users"] * 2)
+        # not an owner yet and not an administrator, who can use every VM anyway
+        self.assertEqual(doc.xpath("//select[@id='add-owner-user']/option/text()"), ["pe-new"])
 
     def test_buttons_shown_as_disabled_cannot_submit(self):
         # running: the CPU resize, vCPU hot plug, template and disk removal forms wait for a shutdown;

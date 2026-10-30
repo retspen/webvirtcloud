@@ -31,7 +31,7 @@ class VMOwnerRowTests(TestCase):
         self.client.post(add, {"user_id": self.carol.pk})
         self.assertFalse(UserInstance.objects.filter(user=self.carol).exists())
         ui = UserInstance.objects.get(user=self.bob)
-        self.client.post(reverse("instances:del_owner", args=[self.vm.pk]), {"userinstance": ui.pk})
+        self.client.post(reverse("accounts:user_instance_delete", args=[ui.pk]))
         self.assertEqual(rows(), [
             ("VM vm: add owner bob", True),
             ("VM vm: add owner carol: only one owner is allowed", False),

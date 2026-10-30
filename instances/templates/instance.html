@@ -344,7 +344,8 @@
     var status_poll = pollWhileVisible(5000, function () {
         return $.getJSON("{% url 'instances:status' instance.id %}");
     }, function get_status(data) {
-        if (data['status'] != vm_status && !backgroundJobRunning) {
+        // an XML edit not saved yet stays: the reload waits until it is saved or undone
+        if (data['status'] != vm_status && !backgroundJobRunning && !(window.xmlEditUnsaved && window.xmlEditUnsaved())) {
             window.location.reload()
         }
     });

@@ -3,7 +3,6 @@
 import inspect
 from unittest.mock import patch
 
-from accounts.models import UserInstance
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
@@ -49,8 +48,6 @@ class ErrorHandlingTestCase(TestCase):
     # Required fields for the views that 404 without them
     DATA = {
         "add_owner": lambda self: {"user_id": get_user_model().objects.get(username="err_admin").id},
-        "del_owner": lambda self: {"userinstance": UserInstance.objects.get_or_create(
-            instance=self.instance, user=get_user_model().objects.get(username="err_admin"))[0].id},
         "add_network": lambda self: {"add-net-network": "net:default"},
         "set_qos": lambda self: {"qos_direction": "inbound", "net-mac-0": "52:54:00:00:00:01"},
     }
@@ -68,13 +65,8 @@ class ErrorHandlingTestCase(TestCase):
                     self.assertEqual(response.status_code, 302)
                     self.assertTrue(response.url.startswith(self.page + "#"), response.url)
 
-    def test_owner_views_reject_missing_or_foreign_ids(self):
-        other = Instance.objects.create(compute=self.compute, name="other", uuid="11111111-2222-3333-4444-777777777777")
-        foreign = UserInstance.objects.create(instance=other, user=get_user_model().objects.get(username="err_admin"))
+    def test_add_owner_rejects_a_missing_user(self):
         self.assertEqual(self.client.post(self.url("add_owner"), {}).status_code, 404)
-        self.assertEqual(self.client.post(self.url("del_owner"), {}).status_code, 404)
-        self.assertEqual(self.client.post(self.url("del_owner"), {"userinstance": foreign.id}).status_code, 404)
-        self.assertTrue(UserInstance.objects.filter(pk=foreign.id).exists())
 
     def test_same_site_referer_is_kept(self):
         with patch("instances.models.wvmInstance"):

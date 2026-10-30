@@ -1,35 +1,34 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% if request.user.is_superuser %}
-    <a href="#addInstanceOwner" type="button" class="btn btn-primary float-end" data-bs-toggle="modal">
-        <span aria-hidden="true">{% bs_icon 'plus'%} </span>
-    </a>
+    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addInstanceOwner">{% bs_icon 'plus' %} {% trans "Add owner" %}</button>
 
     <!-- Modal pool -->
     <div class="modal fade" id="addInstanceOwner" tabindex="-1" role="dialog" aria-labelledby="addInstanceOwnerLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Add Instance Owner" %}</h5>
+                    <h5 class="modal-title" id="addInstanceOwnerLabel">{% trans "Add owner" %}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="add-owner-form" method="post" action="{% url 'instances:add_owner' instance.id %}" role="form" aria-label="Add instance owner form">{% csrf_token %}
-                        <div class="row">
-                            <label class="col-sm-4 col-form-label">{% trans "User" %}</label>
-                            <div class="col-sm-6">
-                                <select class="form-select" name="user_id">
-                                    {% for user in users %}
-                                        <option value="{{ user.id }}">{{ user.username }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
+                        {# users who are not owners yet; a superuser can use every VM #}
+                        {% if users %}
+                        <label class="form-label" for="add-owner-user">{% trans "User" %}</label>
+                        <select class="form-select" name="user_id" id="add-owner-user">
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <p class="mb-0">{% trans "Every user who is not an administrator is already an owner." %}</p>
+                        {% endif %}
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                    <button type="submit" class="btn btn-primary" form="add-owner-form">{% trans "Add" %}</button>
+                    <button type="submit" class="btn btn-primary" form="add-owner-form"{% if not users %} disabled{% endif %}>{% trans "Add" %}</button>
                 </div>
             </div> <!-- /.modal-content -->
         </div> <!-- /.modal-dialog -->
