@@ -1545,7 +1545,7 @@ def delete_snapshot(request, pk):
             instance.proxy.snapshot_delete(snap_name)
     except libvirtError as err:
         messages.error(request, _("Snapshot was not deleted: %(err)s") % {"err": error_text(request, err)})
-    return _back(request, pk, "managesnapshot")
+    return _back(request, pk, "snapshots")
 
 
 @require_POST
@@ -1581,7 +1581,7 @@ def _snapshot_job(request, pk, kind, params):
         messages.error(request, error_text(request, err))
     else:
         jobs.remember_job(request, op)
-    return _back(request, pk, "managesnapshot")
+    return _back(request, pk, "snapshots")
 
 
 @require_POST

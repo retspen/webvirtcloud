@@ -236,6 +236,27 @@ class SnapshotStateTestCase(unittest.TestCase):
     def test_a_clean_vm_passes(self):
         proxy()._check_snapshot_state()
 
+    def test_internal_snapshots_are_refused_alike(self):
+        # a saved state or a running job refuses internal create, revert and delete too
+        for state in ({"managed_save": True}, {"jobs": {"vda": {"cur": 1, "end": 2}}}):
+            for name, act in (("create", lambda p: p.create_snapshot("s")),
+                              ("revert", lambda p: p.snapshot_revert("i")),
+                              ("delete", lambda p: p.snapshot_delete("i"))):
+                with self.subTest(name, **{key: True for key in state}):
+                    p = proxy(status=5, internal=[fake_snap("i")], **state)
+                    with self.assertRaises(util.OperationError):
+                        act(p)
+                    p.instance.revertToSnapshot.assert_not_called()
+                    p._snapshotCreateXML.assert_not_called()
+
+    def test_an_internal_snapshot_is_reverted_to_on_a_shut_off_vm(self):
+        for status in (1, 3):
+            with self.subTest(status=status), self.assertRaisesRegex(util.OperationError, "Shut the VM down"):
+                proxy(status=status, internal=[fake_snap("i")]).snapshot_revert("i")
+        p = proxy(status=5, internal=[fake_snap("i")])
+        p.snapshot_revert("i")
+        p.instance.revertToSnapshot.assert_called_once()
+
 
 DISK_ONLY_ATOMIC = libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY | libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC
 

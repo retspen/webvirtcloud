@@ -57,7 +57,8 @@ class TestXmlSafety(unittest.TestCase):
 
     def test_snapshot_xml_payload_is_escaped(self):
         inst = wvmInstance.__new__(wvmInstance)
-        inst.instance = MagicMock(**{"snapshotListNames.return_value": []})  # no snapshots yet
+        inst.instance = MagicMock(**{"snapshotListNames.return_value": [], "hasManagedSaveImage.return_value": 0})  # no snapshots yet
+        inst.get_snapshot_jobs = MagicMock(return_value=[])
         inst.get_status = MagicMock(return_value=5)  # shutoff
         inst._XMLDesc = MagicMock(return_value="<domain></domain>")
         inst._snapshotCreateXML = MagicMock(return_value=None)
@@ -76,7 +77,8 @@ class TestXmlSafety(unittest.TestCase):
 
     def test_original_rom_loader_preserved(self):
         inst = wvmInstance.__new__(wvmInstance)
-        inst.instance = MagicMock(**{"snapshotListNames.return_value": []})  # no snapshots yet
+        inst.instance = MagicMock(**{"snapshotListNames.return_value": [], "hasManagedSaveImage.return_value": 0})  # no snapshots yet
+        inst.get_snapshot_jobs = MagicMock(return_value=[])
         inst._XMLDesc = MagicMock(return_value="<domain><os><loader type='rom'>/usr/share/rom.bin</loader></os></domain>")
         inst._defineXML = MagicMock()
         inst._snapshotCreateXML = MagicMock(return_value=None)
@@ -87,7 +89,9 @@ class TestXmlSafety(unittest.TestCase):
 
     def test_snapshot_revert_rom_loader_preserved(self):
         inst = wvmInstance.__new__(wvmInstance)
-        inst.instance = MagicMock(**{"snapshotListNames.return_value": ["snap_rom"]})
+        inst.instance = MagicMock(**{"snapshotListNames.return_value": ["snap_rom"], "hasManagedSaveImage.return_value": 0})
+        inst.get_snapshot_jobs = MagicMock(return_value=[])
+        inst.get_status = MagicMock(return_value=5)  # an internal snapshot is reverted to on a shut-off VM
         mock_snap = MagicMock()
         inst.instance.snapshotLookupByName = MagicMock(return_value=mock_snap)
         inst.instance.revertToSnapshot = MagicMock()
@@ -102,7 +106,8 @@ class TestXmlSafety(unittest.TestCase):
     def test_internal_snapshot_never_rewrites_a_pflash_loader(self):
         # libvirt decides; the definition is not switched to rom.
         inst = wvmInstance.__new__(wvmInstance)
-        inst.instance = MagicMock(**{"snapshotListNames.return_value": []})  # no snapshots yet
+        inst.instance = MagicMock(**{"snapshotListNames.return_value": [], "hasManagedSaveImage.return_value": 0})  # no snapshots yet
+        inst.get_snapshot_jobs = MagicMock(return_value=[])
         inst.get_status = MagicMock(return_value=5)
         inst._XMLDesc = MagicMock(
             return_value="<domain><os><loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF.fd</loader></os></domain>"

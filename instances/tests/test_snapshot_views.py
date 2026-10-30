@@ -126,7 +126,7 @@ class SnapshotTabTestCase(TestCase):
 
     def snap(self, name, **kw):
         return {"name": name, "date": datetime(2026, 1, 1), "description": "", "memory": False,
-                "current": False, "detaches": [], **kw}
+                "current": False, "children": 0, "detaches": [], **kw}
 
     def test_revert_confirm_names_detached_disks_and_nvram(self):
         doc = self.page(external=[self.snap("e", detaches=[{"dev": "vdb", "path": "/pool/later.qcow2"}])],
@@ -158,11 +158,11 @@ class SnapshotTabTestCase(TestCase):
                 self.assertEqual("powered off" in button.get("data-confirm"), restarts)
 
     def test_quiesce_is_checked_and_offered_with_a_running_vm_and_its_agent(self):
+        # where it cannot be offered it is not shown ticked either
         for status, agent, offered in ((1, True, True), (1, False, False), (3, True, False), (5, True, False)):
             with self.subTest(status=status, agent=agent):
                 [box] = self.page(status=status, agent=agent).xpath("//input[@name='quiesce']")
-                self.assertIsNotNone(box.get("checked"))
-                self.assertEqual(box.get("disabled") is None, offered)
+                self.assertEqual((box.get("checked") is not None, box.get("disabled") is None), (offered, offered))
 
     def test_memory_checkbox_only_for_a_running_vm(self):
         checkbox = "//div[@id='snapshots']//input[@name='memory']"  # the Resize tab has a memory field too
@@ -186,15 +186,19 @@ class SnapshotTabTestCase(TestCase):
         return Claim.objects.create(operation=op, resource=key, mode=Claim.EXCLUSIVE)
 
     def test_an_active_job_disables_actions_before_libvirt_has_a_block_job(self):
-        # the button each case leaves enabled, so only the job can disable it
-        cases = (("none", {}, ("takesnapshot", "takeextsnapshot")),
-                 ("internal only", {"internal": [self.snap("i")]}, ("takesnapshot", "managesnapshot")),
-                 ("external only", {"external": [self.snap("e")]}, ("takeextsnapshot", "managesnapshot")))
+        # the buttons each case leaves enabled, so only the job can disable them
+        def form(name):
+            return reverse(f"instances:{name}", args=[self.instance.id])
+
+        cases = (("none", {}, ("create_external_snapshot", "snapshot")),
+                 ("internal only", {"internal": [self.snap("i")]}, ("snapshot", "revert_snapshot", "delete_snapshot")),
+                 ("external only", {"external": [self.snap("e")]},
+                  ("create_external_snapshot", "revert_external_snapshot", "delete_external_snapshot")))
         buttons = "//div[@id='snapshots']//button[@type='submit']"
 
-        def enabled(doc, panes):
-            return [bool(doc.xpath(f"//div[@id='{pane}']//button[@type='submit' and not(@disabled)]"))
-                    for pane in panes]
+        def enabled(doc, forms):
+            return [bool(doc.xpath("//form[@action=$a]//button[@type='submit' and not(@disabled)]", a=form(name)))
+                    for name in forms]
 
         for name, lists, panes in cases:
             with self.subTest(name):
@@ -213,7 +217,16 @@ class SnapshotTabTestCase(TestCase):
         self.assertTrue(doc.xpath("//button[@name='revert_snapshot']"))
         self.assertFalse(doc.xpath("//div[@id='snapshots']//button[@type='submit'][not(@disabled)]"))
 
-    def test_lists_are_separate(self):
-        doc = self.page(internal=[self.snap("i")], external=[self.snap("e")])
-        self.assertEqual(doc.xpath("//table[@id='internal-snapshots']//strong/text()"), ["i"])
-        self.assertEqual(doc.xpath("//table[@id='external-snapshots']//strong/text()"), ["e"])
+    def test_one_list_newest_first_each_with_its_kind(self):
+        doc = self.page(internal=[self.snap("i")], external=[self.snap("e", date=datetime(2026, 2, 1), memory=True)])
+        rows = [" ".join(li.text_content().split()) for li in doc.xpath("//ul[@id='snapshot-list']/li")]
+        self.assertEqual([row.split(" ")[0] for row in rows], ["e", "i"])
+        self.assertIn("external, with memory", rows[0])
+        self.assertIn("internal", rows[1])
+
+    def test_an_external_snapshot_waits_for_newer_ones_after_a_revert(self):
+        create = "//form[@action=$a]//button[@type='submit']"
+        url = reverse("instances:create_external_snapshot", args=[self.instance.id])
+        doc = self.page(external=[self.snap("old", current=True, children=1), self.snap("new")])
+        self.assertIsNotNone(doc.xpath(create, a=url)[0].get("disabled"))
+        self.assertIn("Snapshots newer than the one reverted to exist", doc.text_content())

@@ -1,196 +1,124 @@
 {% load i18n %}
 {% load tz %}
 {% get_current_timezone as TIME_ZONE %}
-{% load bootstrap_icons %}
 {% load operations %}
+{% load vm_states %}
 <div class="tab-pane" id="snapshots" role="tabpanel">
     {% with busy=instance.snapshot_jobs held=instance.held_by_job %}
-    <!-- Nav tabs -->
+    {% vm_state instance.status as state %}
     <div class="card">
-    <div class="card-header bg-transparent pb-0">
-    <ul class="nav nav-underline small" role="tablist" aria-label="Instance snapshot menu">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#takesnapshot" type="button" role="tab" aria-controls="takesnapshot" aria-selected="true">
-                {% trans "Take Snapshot - Internal" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#takeextsnapshot" type="button" role="tab" aria-controls="externalSnapshot" aria-selected="false">
-                {% trans "Take Snapshot - External" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#managesnapshot" type="button" role="tab" aria-controls="managesnapshot" aria-selected="false">
-                {% trans "Manage Snapshots" %}
-            </button>
-        </li>
-    </ul>
-    </div>
-    <!-- Tab panes -->
-    <div class="tab-content card-body">
-        {% if busy %}
-            <div class="alert alert-warning mt-3" role="status">
-                {% trans "A disk job is running on this VM; snapshot actions are unavailable until it ends." %}
-            </div>
-        {% endif %}
-        <div role="tabpanel" class="tab-pane active" id="takesnapshot">
-            {% if instance.status != 5 %}
-            <p>{% trans "With running machine, internal snapshots may take more than an hour, depending on how much memory has on your instance and how large the disk is." %} </p>
-                <p class="text-danger">{% trans "The VM is paused while its memory is saved." %}</p>
-            {% else %}
-                <p>{% trans "Create an internal snapshot" %}</p>
+        <div class="card-body">
+            <p class="small text-body-secondary mb-2">{% trans "Snapshots" %} · {{ state.0 }}</p>
+            {% if busy %}
+            <div class="alert alert-warning" role="status">{% trans "A disk job is running on this VM; snapshot actions are unavailable until it ends." %}</div>
             {% endif %}
-            <form action="{% url 'instances:snapshot' instance.id %}" method="post" role="form" aria-label="Create snapshot form">
-                {% csrf_token %}{% submission_key %}
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="64" pattern="[A-Za-z0-9_\-][A-Za-z0-9._\-]{0,63}" title="{% trans "Letters, digits, '.', '_' or '-'; not starting with '.'" %}" required>
-                        <span class="input-group-text">|</span>
-                        <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
-                        {% if instance.external_snapshots or busy or held %}
-                            <button type="submit" class="btn btn-primary float-end" name="snapshot" disabled>{% trans "Take Snapshot" %}</button>
-                        {% else %}
-                            <button type="submit" class="btn btn-primary float-end" name="snapshot">{% trans "Take Snapshot" %}</button>
-                        {% endif %}
+            {# an external snapshot is the way: each disk goes on in a new file, the VM keeps running #}
+            <form action="{% url 'instances:create_external_snapshot' instance.id %}" method="post" aria-label="{% trans "Take a snapshot" %}">{% csrf_token %}{% submission_key %}
+                <div class="row g-2">
+                    <div class="col-12 col-md">
+                        <label class="visually-hidden" for="snapshot-name">{% trans "Snapshot name" %}</label>
+                        <input type="text" class="form-control" id="snapshot-name" name="name" placeholder="{% trans "Snapshot name" %}" maxlength="64" pattern="[A-Za-z0-9_\-][A-Za-z0-9._\-]{0,63}" title="{% trans "Letters, digits, '.', '_' or '-'; not starting with '.'" %}" required>
                     </div>
-            </form>
-            <div class="clearfix"></div>
-        </div> <!-- Tab pane - takesnapshot -->
-        <div role="tabpanel" class="tab-pane" id="takeextsnapshot">
-            <p>{% trans "Create an external snapshot. Each disk keeps its state in a new file next to it." %}</p>
-            <form action="{% url 'instances:create_external_snapshot' instance.id %}" method="post" role="form" aria-label="Create external snapshot form">
-                {% csrf_token %}{% submission_key %}
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control form-control-lg" name="name" placeholder="{% trans "Snapshot Name" %}" maxlength="64" pattern="[A-Za-z0-9_\-][A-Za-z0-9._\-]{0,63}" title="{% trans "Letters, digits, '.', '_' or '-'; not starting with '.'" %}" required>
-                    <span class="input-group-text">|</span>
-                    <input type="text" class="form-control form-control-lg" name="description" placeholder="{% trans "Snapshot Description" %}" maxlength="45">
-                    {% if instance.internal_snapshots or busy or held %}
-                        <button type="submit" class="btn btn-primary float-end" name="snapshot" disabled>{% trans "Take Snapshot" %}</button>
-                    {% else %}
-                        <button type="submit" class="btn btn-primary float-end" name="snapshot">{% trans "Take Snapshot" %}</button>
-                    {% endif %}
+                    <div class="col-12 col-md">
+                        <label class="visually-hidden" for="snapshot-description">{% trans "Description" %}</label>
+                        <input type="text" class="form-control" id="snapshot-description" name="description" placeholder="{% trans "Description (optional)" %}">
+                    </div>
+                    <div class="col-12 col-md-auto d-grid">
+                        <button type="submit" class="btn btn-primary" name="snapshot"{% if instance.internal_snapshots or instance.newer_than_current_snapshot or busy or held %} disabled{% endif %}>{% trans "Take a snapshot" %}</button>
+                    </div>
                 </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" name="memory" id="snapshot-memory" {% if instance.status != 1 %}disabled{% endif %}
-                           onchange="var q = document.getElementById('snapshot-quiesce'); if (q.dataset.offered) { q.disabled = this.checked; q.checked = !this.checked; }">
-                    <label class="form-check-label" for="snapshot-memory">{% trans "Save memory too (running VMs only); the VM resumes as it was when reverted" %}</label>
-                </div>
-                <div class="form-check mb-3">
-                    {% if instance.status == 1 and instance.guest_agent_ready %}
+                <div class="d-flex flex-wrap column-gap-4 mt-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="memory" id="snapshot-memory"{% if instance.status != 1 %} disabled{% endif %}
+                               onchange="var q = document.getElementById('snapshot-quiesce'); if (q.dataset.offered) { if (this.checked) q.dataset.was = q.checked; q.disabled = this.checked; q.checked = !this.checked && q.dataset.was !== 'false'; }">
+                        <label class="form-check-label" for="snapshot-memory">{% trans "Save memory too" %}</label>
+                    </div>
+                    <div class="form-check">
+                        {% if instance.status == 1 and instance.guest_agent_ready %}
                         <input class="form-check-input" type="checkbox" name="quiesce" id="snapshot-quiesce" data-offered="1" checked>
-                    {% else %}
-                        <input class="form-check-input" type="checkbox" name="quiesce" id="snapshot-quiesce" checked disabled>
-                    {% endif %}
-                    <label class="form-check-label" for="snapshot-quiesce">{% trans "Freeze the guest's file systems while the disks are snapshotted (running VMs with a connected QEMU guest agent; not with memory)" %}</label>
+                        {% else %}
+                        <input class="form-check-input" type="checkbox" name="quiesce" id="snapshot-quiesce" disabled>
+                        {% endif %}
+                        <label class="form-check-label" for="snapshot-quiesce">{% trans "Freeze the guest's file systems" %}</label>
+                    </div>
                 </div>
-                <p class="small">{% trans "A VM with snapshots cannot be migrated." %}</p>
+                <p class="small text-body-secondary mt-1 mb-0">
+                    {% if instance.internal_snapshots %}{% trans "The VM has internal snapshots: delete them before taking an external one." %}
+                    {% elif instance.newer_than_current_snapshot %}{% trans "Snapshots newer than the one reverted to exist: delete them before taking a new one." %}
+                    {% else %}{% trans "Each disk goes on in a new file next to it; the VM keeps running." %}
+                    {% if instance.status == 1 %}{% trans "With memory, the VM pauses while its memory is saved." %}{% endif %}
+                    {% if instance.status != 1 %}{% trans "Memory and frozen file systems are for a running VM." %}{% elif not instance.guest_agent_ready %}{% trans "Freezing needs the guest agent, which is not connected." %}{% endif %}{% endif %}
+                </p>
             </form>
-            <div class="clearfix"></div>
-        </div> <!--tab pane takeextsnapshot-->
-        <div role="tabpanel" class="tab-pane" id="managesnapshot">
-            {% if instance.internal_snapshots or instance.external_snapshots %}
-                <p>{% trans "Choose a snapshot for restore/delete" %}</p>
-                {% if instance.internal_snapshots %}
-                <h6>{% trans "Internal" %}</h6>
-                <div class="table-responsive">
-                    <table align-middle class="table" id="internal-snapshots">
-                        <thead>
-                            <tr>
-                                <th scope="col">{% blocktrans %}Date ({{ TIME_ZONE }}){% endblocktrans %}</th>
-                                <th scope="col">{% trans "Name" %}</th>
-                                <th scope="col">{% trans "Description" %}</th>
-                                <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for snap in instance.internal_snapshots %}
-                                <tr>
-                                    <td>{{ snap.date|date:"Y-m-d H:i:s" }}</td>
-                                    <td><strong>{{ snap.name }}</strong></td>
-                                    <td>{{ snap.description }}</td>
-                                    <td style="width:30px;">
-                                        <form action="{% url 'instances:revert_snapshot' instance.id %}" method="post" role="form" aria-label="Restore snapshot form">
-                                            {% csrf_token %}{% submission_key %}
-                                            <input type="hidden" name="name" value="{{ snap.name }}">
-                                            {% if instance.status == 5 %}
-                                                <button type="submit" class="btn btn-sm btn-primary" name="revert_snapshot" title="{% trans 'Revert to this Snapshot' %}" data-confirm="{% blocktrans with name=snap.name %}Revert to snapshot {{ name }}? Disk changes made since it are lost.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)" {% if busy or held %}disabled{% endif %}>
-                                                        <span>{% bs_icon 'download' %} </span>
-                                                </button>
-                                            {% else %}
-                                                <button type="button" class="btn btn-sm btn-primary disabled"
-                                                        title="{% trans "To restore snapshots you need Power Off the instance." %}">
-                                                        <span>{% bs_icon 'download' %} </span>
-                                                </button>
-                                            {% endif %}
-                                        </form>
-                                    </td>
-                                    <td style="width:30px;">
-                                        <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post" role="form" aria-label="Delete snapshot form">{% csrf_token %}
-                                            <input type="hidden" name="name" value="{{ snap.name }}">
-                                            <button type="submit" class="btn btn-sm btn-danger" title="{% trans 'Delete Snapshot' %}" data-confirm="{% blocktrans with name=snap.name %}Delete snapshot {{ name }}? The VM's current disks are not changed.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)" {% if busy or held %}disabled{% endif %}>
-                                                {% bs_icon 'trash' %}
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% endif %}
-                {% if instance.external_snapshots %}
-                <h6>{% trans "External" %}</h6>
-                <div class="table-responsive">
-                    <table align-middle class="table" id="external-snapshots">
-                        <thead>
-                            <tr>
-                                <th scope="col">{% blocktrans %}Date ({{ TIME_ZONE }}){% endblocktrans %}</th>
-                                <th scope="col">{% trans "Name" %}</th>
-                                <th scope="col">{% trans "Description" %}</th>
-                                <th scope="colgroup" colspan="2">{% trans "Action" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ext_snap in instance.external_snapshots %}
-                                <tr>
-                                    <td>{{ ext_snap.date|date:"Y-m-d H:i:s" }}</td>
-                                    <td>
-                                        <strong>{{ ext_snap.name }}</strong>
-                                        {% if ext_snap.current %}<span class="badge text-bg-secondary">{% trans "current" %}</span>{% endif %}
-                                        {% if ext_snap.memory %}<span class="badge text-bg-info">{% trans "memory" %}</span>{% endif %}
-                                    </td>
-                                    <td>{{ ext_snap.description }}</td>
-                                    <td style="width:30px;">
-                                        <form action="{% url 'instances:revert_external_snapshot' instance.id %}" method="post" role="form" aria-label="Restore external snapshot form">
-                                            {% csrf_token %}{% submission_key %}
-                                            <input type="hidden" name="name" value="{{ ext_snap.name }}">
-                                            <button type="submit" class="btn btn-sm btn-primary" name="revert_external_snapshot" title="{% trans 'Revert to this Snapshot' %}"
-                                                    data-confirm="{% trans 'Revert to this snapshot? Changes made since it are lost.' %}{% if not ext_snap.memory %}{% if instance.status == 1 or instance.status == 3 %} {% trans "The VM is powered off and starts again from the snapshot's disks, as after a power cut." %}{% endif %}{% endif %}{% if ext_snap.detaches %} {% trans 'These disks are detached; their writes since the current snapshot are discarded and their files are kept:' %} {% for d in ext_snap.detaches %}{{ d.dev }} ({{ d.path }}){% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}{% if instance.nvram %} {% trans 'Firmware variables (NVRAM) are not restored.' %}{% endif %}"
-                                                    onclick="return confirm(this.dataset.confirm)" {% if busy or held %}disabled{% endif %}>
-                                                <span>{% bs_icon 'download' %} </span>
-                                            </button>
-                                        </form>
-                                    </td>
-                                    <td style="width:30px;">
-                                        <form action="{% url 'instances:delete_external_snapshot' instance.id %}" method="post" role="form" aria-label="Delete external snapshot form">{% csrf_token %}{% submission_key %}
-                                            <input type="hidden" name="name" value="{{ ext_snap.name }}">
-                                            <button type="submit" class="btn btn-sm btn-danger" name="delete_external_snapshot" title="{% trans 'Delete Snapshot' %}"
-                                                    data-confirm="{% trans 'Delete this snapshot? Its changes are merged into the next one; nothing is lost.' %}"
-                                                    onclick="return confirm(this.dataset.confirm)" {% if busy or held %}disabled{% endif %}>
-                                                {% bs_icon 'trash' %}
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% endif %}
+            <details class="mt-3">
+                <summary class="small text-body-secondary">{% trans "Internal snapshot: a fallback for a VM that cannot take an external one" %}</summary>
+                <form class="mt-2" action="{% url 'instances:snapshot' instance.id %}" method="post" aria-label="{% trans "Take an internal snapshot" %}">{% csrf_token %}{% submission_key %}
+                    <p class="small mb-2">
+                        {% if instance.status == 1 %}{% trans "The disks and memory go into the disk files. The VM does not respond while its memory is saved, which can take long: avoid it in production." %}
+                        {% elif instance.status == 3 %}{% trans "The disks and memory go into the disk files; the paused VM stays paused." %}
+                        {% else %}{% trans "The disks go into their files." %}{% endif %}
+                    </p>
+                    <div class="row g-2">
+                        <div class="col-12 col-md">
+                            <label class="visually-hidden" for="internal-snapshot-name">{% trans "Snapshot name" %}</label>
+                            <input type="text" class="form-control" id="internal-snapshot-name" name="name" placeholder="{% trans "Snapshot name" %}" maxlength="64" pattern="[A-Za-z0-9_\-][A-Za-z0-9._\-]{0,63}" title="{% trans "Letters, digits, '.', '_' or '-'; not starting with '.'" %}" required>
+                        </div>
+                        <div class="col-12 col-md">
+                            <label class="visually-hidden" for="internal-snapshot-description">{% trans "Description" %}</label>
+                            <input type="text" class="form-control" id="internal-snapshot-description" name="description" placeholder="{% trans "Description (optional)" %}">
+                        </div>
+                        <div class="col-12 col-md-auto d-grid">
+                            <button type="submit" class="btn btn-secondary" name="snapshot"{% if instance.external_snapshots or busy or held %} disabled{% endif %}>{% trans "Take an internal snapshot" %}</button>
+                        </div>
+                    </div>
+                    {% if instance.external_snapshots %}<p class="small text-body-secondary mt-1 mb-0">{% trans "The VM has external snapshots: the two kinds do not mix." %}</p>{% endif %}
+                </form>
+            </details>
+            {% if instance.snapshots %}
+            <ul class="list-group mt-3" id="snapshot-list">
+                {% for snap in instance.snapshots %}
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <div class="me-auto text-break">
+                        <strong>{{ snap.name }}</strong>{% if snap.description %} <span>· {{ snap.description }}</span>{% endif %}
+                        <span class="small text-body-secondary">· {% if snap.external %}{% trans "external" %}{% if snap.memory %}, {% trans "with memory" %}{% endif %}{% else %}{% trans "internal" %}{% endif %}{% if snap.current %}, {% trans "current" %}{% endif %} · {{ snap.date|date:"Y-m-d H:i" }}</span>
+                    </div>
+                    {% if snap.external %}
+                    <form action="{% url 'instances:revert_external_snapshot' instance.id %}" method="post">{% csrf_token %}{% submission_key %}
+                        <input type="hidden" name="name" value="{{ snap.name }}">
+                        <button type="submit" class="btn btn-sm btn-secondary" name="revert_external_snapshot"
+                                data-confirm="{% blocktrans with name=snap.name %}Revert to snapshot {{ name }}? Changes made since it are lost.{% endblocktrans %}{% if not snap.memory %}{% if instance.status == 1 %} {% trans "The VM is powered off and starts again from the snapshot's disks, as after a power cut." %}{% elif instance.status == 3 %} {% trans "The VM is powered off and comes back paused on the snapshot's disks." %}{% endif %}{% endif %}{% if snap.detaches %} {% trans 'These disks are detached; their writes since the current snapshot are discarded and their files are kept:' %} {% for d in snap.detaches %}{{ d.dev }} ({{ d.path }}){% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}{% if instance.nvram %} {% trans 'Firmware variables (NVRAM) are not restored.' %}{% endif %}"
+                                onclick="return confirm(this.dataset.confirm)"{% if busy or held %} disabled{% endif %}>{% trans "Revert" %}</button>
+                    </form>
+                    <form action="{% url 'instances:delete_external_snapshot' instance.id %}" method="post">{% csrf_token %}{% submission_key %}
+                        <input type="hidden" name="name" value="{{ snap.name }}">
+                        <button type="submit" class="btn btn-sm btn-danger" name="delete_external_snapshot"
+                                data-confirm="{% blocktrans with name=snap.name %}Delete snapshot {{ name }}? Its files are merged with the disks; the VM's data is kept.{% endblocktrans %}"
+                                onclick="return confirm(this.dataset.confirm)"{% if busy or held %} disabled{% endif %}>{% trans "Delete" %}</button>
+                    </form>
+                    {% else %}
+                    <form action="{% url 'instances:revert_snapshot' instance.id %}" method="post">{% csrf_token %}{% submission_key %}
+                        <input type="hidden" name="name" value="{{ snap.name }}">
+                        <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot"
+                                data-confirm="{% blocktrans with name=snap.name %}Revert to snapshot {{ name }}? Disk changes made since it are lost; a snapshot of a running VM starts it again as it was then.{% endblocktrans %}"
+                                onclick="return confirm(this.dataset.confirm)"{% if instance.status != 5 or busy or held %} disabled{% endif %}
+                                {% if instance.status != 5 %}title="{% trans "Shut the VM down to revert to an internal snapshot." %}"{% endif %}>{% trans "Revert" %}</button>
+                    </form>
+                    <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post">{% csrf_token %}
+                        <input type="hidden" name="name" value="{{ snap.name }}">
+                        <button type="submit" class="btn btn-sm btn-danger"
+                                data-confirm="{% blocktrans with name=snap.name %}Delete snapshot {{ name }}? The VM's current disks are not changed.{% endblocktrans %}"
+                                onclick="return confirm(this.dataset.confirm)"{% if busy or held %} disabled{% endif %}>{% trans "Delete" %}</button>
+                    </form>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% if instance.internal_snapshots and instance.status != 5 %}<p class="small text-body-secondary mt-1 mb-0">{% trans "Shut the VM down to revert to an internal snapshot." %}</p>{% endif %}
             {% else %}
-                <p>{% trans "You do not have any snapshots" %}</p>
+            <p class="small text-body-secondary mt-3 mb-0">{% trans "The VM has no snapshot." %}</p>
             {% endif %}
-        </div> <!--tab pane managesnapshot-->
-    </div> <!-- Tab content-->
+            <p class="small text-body-secondary mt-2 mb-0">{% blocktrans %}Times in {{ TIME_ZONE }}. A VM with snapshots cannot be migrated.{% endblocktrans %}</p>
+        </div>
     </div>
     {% endwith %}
-</div> <!-- Tab panel-->
+</div>

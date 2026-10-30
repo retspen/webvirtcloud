@@ -296,11 +296,19 @@ class Instance(models.Model):
         return self.proxy.get_video_models(self.arch, self.machine)
 
     def _snapshots(self, flag):
-        return sorted(self.proxy.get_snapshot(flag), reverse=True, key=lambda k: k["date"])
+        external = flag == VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL
+        return sorted(({**snap, "external": external} for snap in self.proxy.get_snapshot(flag)),
+                      reverse=True, key=lambda k: k["date"])
 
     @cached_property
     def snapshots(self) -> list[dict]:
+        """Both kinds, the newest first; "external" tells them apart."""
         return sorted(self.internal_snapshots + self.external_snapshots, reverse=True, key=lambda k: k["date"])
+
+    @cached_property
+    def newer_than_current_snapshot(self) -> bool:
+        """Snapshots newer than the one reverted to: an external snapshot waits until they are deleted."""
+        return any(snap["current"] and snap["children"] for snap in self.external_snapshots)
 
     @cached_property
     def internal_snapshots(self) -> list[dict]:

@@ -1771,6 +1771,7 @@ class wvmInstance(wvmConnect):
         self.instance.snapshotCreateXML(xml, flag)
 
     def create_snapshot(self, name, desc=None):
+        self._check_snapshot_state()
         if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
             raise util.OperationError("The VM has external snapshots; internal snapshots cannot be mixed with them")
         state = "shutoff" if self.get_status() == 5 else "running"
@@ -2071,6 +2072,7 @@ class wvmInstance(wvmConnect):
                     "description": tree.findtext("description") or "",
                     "memory": tree.find("memory[@snapshot='external']") is not None,
                     "current": bool(snap.isCurrent(0)),
+                    "children": snap.numChildren(0),
                     "detaches": [{"dev": dev, "path": path} for dev, path in detaches.items()],
                 }
             )
@@ -2222,18 +2224,24 @@ class wvmInstance(wvmConnect):
         return self.instance.snapshotLookupByName(name, 0)
 
     def _check_snapshot_state(self):
-        """Refusals shared by external snapshot create, revert and delete. The
-        internal/external mix is checked only on create, so a VM that is
-        already mixed can still be cleaned up."""
+        """Refusals shared by snapshot create, revert and delete, internal and
+        external. The internal/external mix is checked only on create, so a
+        VM that is already mixed can still be cleaned up."""
         if self.instance.hasManagedSaveImage(0):
             raise util.OperationError("The VM has a saved state; start it or remove the saved state first")
         if self.get_snapshot_jobs():
             raise util.OperationError("A snapshot job is still running on this VM; try again when it ends")
 
     def snapshot_delete(self, snapshot):
+        self._check_snapshot_state()
         self._snapshot(snapshot, external=False).delete(0)
 
     def snapshot_revert(self, snapshot):
+        """An internal snapshot is reverted to on a shut-off VM; one of a
+        running VM starts it again as it was then."""
+        if self.get_status() != 5:
+            raise util.OperationError("Shut the VM down to revert to an internal snapshot")
+        self._check_snapshot_state()
         self.instance.revertToSnapshot(self._snapshot(snapshot, external=False), 0)
 
     def get_managed_save_image(self):
