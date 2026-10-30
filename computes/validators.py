@@ -51,3 +51,10 @@ def validate_migration_address(value):
         if _hostname.fullmatch(value):
             return
     raise ValidationError(_("Enter an IP address or a host name, without a scheme or port"))
+
+
+def validate_gstfsd_key(value):
+    """The key gstfsd on the host signs with: GSTFSD_KEY in its
+    /etc/default/webvirt-gstfsd, 64 lowercase hexadecimal characters."""
+    if not re.fullmatch(r"[0-9a-f]{64}", value):
+        raise ValidationError(_("Enter the 64 hexadecimal characters of GSTFSD_KEY in the host's /etc/default/webvirt-gstfsd"))

@@ -1,3 +1,6 @@
+import contextlib
+import hashlib
+import hmac
 import json
 import os
 import socket
@@ -7,8 +10,41 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 GSTFSD = Path(__file__).resolve().parent.parent.parent / "conf" / "daemon" / "gstfsd"
+# the host's key (GSTFSD_KEY) and the panel's copy of it
+KEY = "5e" * 32
+
+
+def mac(kind, challenge, nonce, payload, key=KEY):
+    message = "\n".join(("gstfsd-v1", kind, challenge, nonce, payload)).encode()
+    return hmac.new(bytes.fromhex(key), message, hashlib.sha256).hexdigest()
+
+
+def challenge_of(s):
+    """The challenge gstfsd sends first, on one line."""
+    line = b""
+    while not line.endswith(b"\n"):
+        chunk = s.recv(1)
+        if not chunk:
+            raise ConnectionError("gstfsd closed the connection")
+        line += chunk
+    return json.loads(line)["challenge"]
+
+
+def signed(challenge, data, key=KEY, nonce="0f" * 32):
+    """The request frame of the panel for this challenge."""
+    request = json.dumps(data)
+    return json.dumps({"nonce": nonce, "request": request, "mac": mac("request", challenge, nonce, request, key)}).encode()
+
+
+def reply_of(s, challenge=None, nonce="0f" * 32):
+    """gstfsd's reply; with the challenge, checked to be signed for it."""
+    frame = json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
+    if challenge is not None:
+        assert hmac.compare_digest(frame["mac"], mac("reply", challenge, nonce, frame["reply"])), frame
+    return json.loads(frame["reply"])
 
 # A stand-in for libguestfs: the guest's operating systems ("roots", each with
 # its mountpoints), its files, and what is mounted live in a JSON file.
@@ -116,7 +152,7 @@ class GstfsdTestCase(unittest.TestCase):
             os.environ,
             PYTHONPATH=self.tmp.name,
             FAKE_GUESTFS_STATE=str(self.state),
-            **extra,
+            **{"GSTFSD_KEY": KEY, **extra},
         )
 
     def _start(self, host, port, family=socket.AF_INET, **env):
@@ -144,9 +180,10 @@ class GstfsdTestCase(unittest.TestCase):
         with socket.socket(family, socket.SOCK_STREAM) as s:
             s.settimeout(10)
             s.connect((host, port))
-            s.sendall(json.dumps(data).encode())
+            challenge = challenge_of(s)
+            s.sendall(signed(challenge, data))
             # everything until gstfsd closes: more than one reply fails to parse
-            return json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
+            return reply_of(s, challenge)
 
     def test_refuses_non_loopback_bind_without_opt_in(self):
         result = subprocess.run(
@@ -201,6 +238,59 @@ class GstfsdTestCase(unittest.TestCase):
         port = free_port()
         self._start("127.0.0.1", port)
         return port
+
+    def test_only_a_request_signed_for_this_connection_is_done(self):
+        port = self._serve()
+        data = {"action": "password", "vname": "vm", "passwd": "$6$intruder"}
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(10)
+            s.connect(("127.0.0.1", port))
+            recorded = signed(challenge_of(s), data)  # a request of another connection, never sent there
+
+        def tampered(challenge):
+            frame = json.loads(signed(challenge, {"action": "password", "vname": "vm", "passwd": "$6$ok"}))
+            frame["request"] = json.dumps(data)
+            return json.dumps(frame).encode()
+
+        for name, frame in (
+            ("unsigned", lambda challenge: json.dumps(data).encode()),
+            ("another key", lambda challenge: signed(challenge, data, key="a1" * 32)),
+            ("changed after signing", tampered),
+            ("recorded on another connection", lambda challenge: recorded),
+            ("a nonce that is no nonce", lambda challenge: signed(challenge, data, nonce="x")),
+        ):
+            with self.subTest(name), socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(10)
+                s.connect(("127.0.0.1", port))
+                s.sendall(frame(challenge_of(s)))
+                reply = reply_of(s)
+                self.assertEqual(reply, {"return": "error", "message": "the request is not signed with this host's gstfsd key"})
+        state = json.loads(self.state.read_text())
+        self.assertEqual((state["writes"], state["history"]), (0, []))  # no appliance was started
+
+    def test_it_does_not_start_without_a_key(self):
+        for key in ("", "5E" * 32, "5e" * 31):
+            with self.subTest(key=key):
+                result = subprocess.run([sys.executable, str(GSTFSD)], env=self._env(GSTFSD_KEY=key),
+                                        capture_output=True, text=True, timeout=20)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("GSTFSD_KEY", result.stderr)
+
+    def test_the_panel_asks_with_the_host_s_key(self):
+        from unittest.mock import patch
+
+        from instances import views
+        from vrtManager.util import OperationError
+
+        port = self._serve()
+        compute = SimpleNamespace(name="host-a", hostname="127.0.0.1", gstfsd_key=KEY)
+        with patch.object(views, "GSTFSD_PORT", port):
+            self.assertEqual(views.gstfsd_request(compute, {"action": "password", "vname": "vm", "passwd": "$6$panel"}),
+                             {"return": "success"})
+            compute.gstfsd_key = "a1" * 32  # the key of another host
+            with self.assertRaisesRegex(OperationError, "not signed with this host's gstfsd key"):
+                views.gstfsd_request(compute, {"action": "password", "vname": "vm", "passwd": "$6$other"})
+        self.assertIn("root:$6$panel:", json.loads(self.state.read_text())["files"]["/etc/shadow"])
 
     def test_root_password_is_set_on_the_guest_root(self):
         reply = self._request("127.0.0.1", self._serve(), {"action": "password", "vname": "vm", "passwd": "$6$new"})
@@ -278,14 +368,15 @@ class GstfsdTestCase(unittest.TestCase):
 
     def test_a_request_in_two_pieces(self):
         port = self._serve()
-        body = json.dumps({"action": "password", "vname": "vm", "passwd": "$6$parts"}).encode()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(10)
             s.connect(("127.0.0.1", port))
+            challenge = challenge_of(s)
+            body = signed(challenge, {"action": "password", "vname": "vm", "passwd": "$6$parts"})
             s.sendall(body[:10])
             time.sleep(0.3)
             s.sendall(body[10:])
-            reply = json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
+            reply = reply_of(s, challenge)
         self.assertEqual(reply, {"return": "success"})
 
     def test_a_request_over_the_limit_is_refused(self):
@@ -293,8 +384,8 @@ class GstfsdTestCase(unittest.TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(10)
             s.connect(("127.0.0.1", port))
-            s.sendall(b'{"action": "publickey", "vname": "vm", "key": "' + b"A" * 70000 + b'"}')
-            reply = json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
+            s.sendall(signed(challenge_of(s), {"action": "publickey", "vname": "vm", "key": "A" * 70000}))
+            reply = reply_of(s)
         self.assertEqual(reply["return"], "error")
         self.assertEqual(json.loads(self.state.read_text())["writes"], 0)
 
@@ -303,6 +394,7 @@ class GstfsdTestCase(unittest.TestCase):
         self._start("127.0.0.1", port, GSTFSD_DEADLINE="2")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(("127.0.0.1", port))
+            challenge_of(s)
             s.settimeout(0.25)
             start = time.monotonic()
             reply = b""
@@ -316,7 +408,7 @@ class GstfsdTestCase(unittest.TestCase):
                 except OSError:
                     break
         self.assertTrue(reply, "gstfsd kept reading a request that never completes")
-        self.assertEqual(json.loads(reply)["return"], "error")
+        self.assertEqual(json.loads(json.loads(reply)["reply"])["return"], "error")
 
     def test_a_slow_write_is_stopped_at_the_deadline(self):
         # the whole change is bounded, not only its start: a write still
@@ -391,7 +483,8 @@ class GstfsdTestCase(unittest.TestCase):
         proc = self._start("127.0.0.1", port, GSTFSD_DEADLINE="1")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(("127.0.0.1", port))
-            s.sendall(b'{"action": ')
+            challenge_of(s)
+            s.sendall(b'{"nonce": ')
         time.sleep(1.5)  # gstfsd times the request out and answers a closed socket
         reply = self._request("127.0.0.1", port, {"action": "password", "vname": "vm", "passwd": "$6$after"})
         self.assertEqual(reply, {"return": "success"})
@@ -424,15 +517,16 @@ class GstfsdTestCase(unittest.TestCase):
         port = free_port()
         self._start("127.0.0.1", port, GSTFSD_DEADLINE="2")
         self._update_state(launch_seconds=3)
-        request = json.dumps({"action": "password", "vname": "vm", "passwd": "$6$slow"}).encode()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(10)
             s.connect(("127.0.0.1", port))
             start = time.monotonic()
+            challenge = challenge_of(s)
+            request = signed(challenge, {"action": "password", "vname": "vm", "passwd": "$6$slow"})
             s.sendall(request[:10])
             time.sleep(1.5)
             s.sendall(request[10:])
-            reply = json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
+            reply = reply_of(s, challenge)
         self.assertEqual(reply["return"], "error")
         self.assertLess(time.monotonic() - start, 2.8)
 
@@ -450,7 +544,7 @@ class GstfsdTestCase(unittest.TestCase):
         self._update_state(launch_seconds=2)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(("127.0.0.1", port))
-            s.sendall(json.dumps({"action": "password", "vname": "vm", "passwd": "$6$gone"}).encode())
+            s.sendall(signed(challenge_of(s), {"action": "password", "vname": "vm", "passwd": "$6$gone"}))
             time.sleep(0.5)
         time.sleep(3)  # longer than the change would have taken
         self.assertEqual(json.loads(self.state.read_text())["writes"], 0)
@@ -471,9 +565,10 @@ class GstfsdTestCase(unittest.TestCase):
 
 
 class GstfsdClientTestCase(unittest.TestCase):
-    """The panel side sends the whole request and reads the whole reply."""
+    """The panel side checks that the reply is gstfsd's, signed for its request."""
 
-    def test_a_reply_in_pieces_is_read_whole(self):
+    def ask(self, *sent):
+        """gstfsd_request against a server that sends these, in pieces."""
         import threading
         from unittest.mock import patch
 
@@ -483,20 +578,45 @@ class GstfsdClientTestCase(unittest.TestCase):
         server.bind(("127.0.0.1", 0))
         server.listen(1)
         self.addCleanup(server.close)
-        received = []
 
         def serve():
             conn, _ = server.accept()
-            with conn:
-                received.append(conn.recv(65536))
-                conn.sendall(b'{"return": ')
-                time.sleep(0.2)
-                conn.sendall(b'"success"}')
+            with conn, contextlib.suppress(OSError):  # the panel may hang up first
+                conn.sendall(sent[0])
+                conn.recv(65536)
+                for piece in sent[1:]:
+                    time.sleep(0.1)
+                    conn.sendall(piece)
 
         thread = threading.Thread(target=serve)
         thread.start()
+        self.addCleanup(thread.join, 5)
+        compute = SimpleNamespace(name="host-a", hostname="127.0.0.1", gstfsd_key=KEY)
         with patch.object(views, "GSTFSD_PORT", server.getsockname()[1]):
-            reply = views.gstfsd_request("127.0.0.1", {"action": "publickey", "vname": "vm", "key": "k"})
-        thread.join(5)
-        self.assertEqual(reply, {"return": "success"})
-        self.assertEqual(json.loads(received[0])["vname"], "vm")
+            return views.gstfsd_request(compute, {"action": "publickey", "vname": "vm", "key": "k"})
+
+    def test_a_reply_that_is_not_signed_is_refused(self):
+        from vrtManager.util import OperationError
+
+        challenge = json.dumps({"challenge": "1a" * 32}).encode() + b"\n"
+        # something else on the port, which claims success in pieces, or sends what is no reply
+        for name, sent in (
+            ("unsigned success", (challenge, b'{"reply": "{\\"return\\": ', b'\\"success\\"}", "mac": ""}')),
+            ("a mac that is no hex", (challenge, b'{"reply": "{}", "mac": "\xc3\xa9"}')),
+            ("a mac that is no text", (challenge, b'{"reply": "{}", "mac": "\\ud800"}')),
+            ("a challenge line without end", (b"{" + b" " * 70000,)),
+            ("a reply too long", (challenge, b'{"reply": "' + b"x" * 70000 + b'"}')),
+        ):
+            with self.subTest(name), self.assertRaises(OperationError):
+                self.ask(*sent)
+
+    def test_a_host_without_a_key_is_not_asked(self):
+        from unittest.mock import patch
+
+        from instances import views
+        from vrtManager.util import OperationError
+
+        with patch("instances.views.socket.create_connection") as connect:
+            with self.assertRaisesRegex(OperationError, "Set the gstfsd key of host-a first"):
+                views.gstfsd_request(SimpleNamespace(name="host-a", hostname="127.0.0.1", gstfsd_key=""), {})
+        connect.assert_not_called()

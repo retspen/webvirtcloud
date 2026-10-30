@@ -263,16 +263,20 @@ A compute node is a KVM host the panel manages over libvirt.
    curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/daemon/gstfsd | sudo tee /usr/local/bin/gstfsd > /dev/null
    sudo chmod +x /usr/local/bin/gstfsd
    curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/conf/systemd/webvirt-gstfsd.service | sudo tee /etc/systemd/system/webvirt-gstfsd.service > /dev/null
+   # its key, once: keep the file when you update gstfsd
+   [ -s /etc/default/webvirt-gstfsd ] || sudo sh -c 'umask 077 && echo "GSTFSD_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")" > /etc/default/webvirt-gstfsd'
+   sudo chown root:root /etc/default/webvirt-gstfsd && sudo chmod 600 /etc/default/webvirt-gstfsd
    sudo systemctl daemon-reload && sudo systemctl enable webvirt-gstfsd && sudo systemctl restart webvirt-gstfsd
+   sudo cat /etc/default/webvirt-gstfsd   # the key for step 4
    ```
 
-   It listens on 127.0.0.1:16510 only, which serves a panel on the same host. For a remote panel, run `sudo systemctl edit webvirt-gstfsd`, add `[Service]` and `Environment=GSTFSD_BIND_HOST=0.0.0.0 GSTFSD_ALLOW_REMOTE=1`, and restart it. It is unauthenticated: allow TCP 16510 only from the panel's IP.
+   gstfsd does only what the panel signs with this key. It listens on 127.0.0.1:16510 only, which serves a panel on the same host. For a remote panel, add `GSTFSD_BIND_HOST=0.0.0.0` and `GSTFSD_ALLOW_REMOTE=1` on lines of their own to `/etc/default/webvirt-gstfsd` and restart it. Its traffic is not encrypted, and a password hash crosses it: allow TCP 16510 only from the panel's IP, on a network you trust.
 
    A running VM gets them through its QEMU guest agent instead, without gstfsd. On RHEL-family guests, SELinux lets the agent add SSH keys only after `sudo setsebool -P virt_qemu_ga_manage_ssh on` inside the guest.
 
    A compute that ran gstfsd under supervisor: remove its program first (`/etc/supervisor/conf.d/gstfsd.conf` on Debian / Ubuntu, `/etc/supervisord.d/gstfsd.ini` on RHEL / openSUSE), run `sudo supervisorctl update`, and remove supervisor once nothing else uses it.
 
-4. Add the compute on the panel's Computes page.
+4. Add the compute on the panel's Computes page, with the `GSTFSD_KEY` value from step 3 as its gstfsd key.
 
 Firewall: the compute's VNC ports (`5900`–`65535`) must accept connections **only** from the panel's IP, never from public networks.
 
@@ -604,6 +608,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 - A running VM without a guest agent shows the IPv4 address the host learned by ARP (the lookup always failed before).
 - After a migration the VM's NVRAM file is deleted on the source, when it is in libvirt's `/var/lib/libvirt/qemu/nvram` and the destination does not share that directory (a VM created there later with the same name would start with those UEFI variables).
 - gstfsd finds the guest's operating system the way libguestfs inspects it, so a root on LVM works, and it always answers (an error when it finds no or several operating systems). Update `/usr/local/bin/gstfsd` on every compute (see [Adding a Compute Node](#adding-a-compute-node), step 3).
+- gstfsd does only what the panel signs with the host's key: it does not start without `GSTFSD_KEY` in `/etc/default/webvirt-gstfsd`, and the panel needs the same value as the host's gstfsd key on its edit page. On every compute, update gstfsd and its unit and make the key as in [Adding a Compute Node](#adding-a-compute-node), step 3 (a remote panel's `GSTFSD_BIND_HOST` and `GSTFSD_ALLOW_REMOTE` move into that file from `systemctl edit webvirt-gstfsd`), then enter the key on each compute's edit page.
 - The themes ship compiled in `static/css/themes`; picking one on the Settings page only saves its name, so updates, rollbacks and recreated Docker containers keep it, and the "Theme SASS Path" setting is gone. libsass is no longer installed; `manage.py build_themes` recompiles the themes in a development setup.
 - With the bundled nginx config, browsers revalidate static files on each load (304 when unchanged), so an update or a theme change shows without a hard reload. Files cached before this update can stay until a hard reload (Ctrl+F5) of each affected page, or until the site's browser cache is cleared once; an external caching proxy may need a purge.
 - External snapshots use libvirt's snapshot API and need libvirt 9.9 or newer on the compute hosts. They work on UEFI VMs and running, paused or shut-off VMs, can save memory too or, on a running VM with a connected QEMU guest agent, freeze the guest's file systems (the default there), and a revert keeps disks added later (it detaches them). A snapshot is refused when a storage pool with the VM's disks has less free space than a share of those disks (10%, at least 1 GiB; both on the Settings page) plus, for the pool of the memory file, the VM's memory; this is checked before the snapshot only, nothing is reserved. A VM's snapshots form one chain: after a revert, delete the newer snapshots before taking another. Snapshot names no longer get an `s1.` prefix; existing ones keep theirs and can still be reverted and deleted, except that a snapshot an older version took of a UEFI VM can only be deleted. On NFS, libvirt removes merged snapshot files as the qemu user, who needs write access to the image directory; files it could not remove are named in a warning after the delete or revert. Deleting a VM with its data removes its snapshot files too, except a template it grew from and files another VM uses.

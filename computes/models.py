@@ -6,7 +6,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError, virConnect
 
-from computes.validators import validate_hostname, validate_login, validate_migration_address
+from computes.validators import validate_gstfsd_key, validate_hostname, validate_login, validate_migration_address
 from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
 
@@ -27,6 +27,17 @@ class Compute(Model):
         help_text=_(
             "IP address or host name the other hosts send migrating VMs to; "
             "empty: the host's own host name, which they must be able to resolve"
+        ),
+    )
+    gstfsd_key = CharField(
+        _("gstfsd key"),
+        max_length=64,
+        blank=True,
+        default="",
+        validators=[validate_gstfsd_key],
+        help_text=_(
+            "GSTFSD_KEY in the host's /etc/default/webvirt-gstfsd: the panel sets the root password and SSH key "
+            "of a shut-off VM with it; empty: they cannot be set there"
         ),
     )
 

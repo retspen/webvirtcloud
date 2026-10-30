@@ -7,11 +7,26 @@
 # killed, with its guestfs appliance, when the request is not done DEADLINE
 # seconds after the connection was accepted.
 #
+# Only the panel may ask: it knows this host's key (GSTFSD_KEY, 64 hex
+# characters, the gstfsd key of the host in the panel). Each connection gets
+# a new challenge; the request and the reply carry an HMAC-SHA256 of it:
+#
+#   gstfsd -> panel   {"challenge": C}\n
+#   panel -> gstfsd   {"nonce": N, "request": R, "mac": mac("request", C, N, R)}
+#   gstfsd -> panel   {"reply": A, "mac": mac("reply", C, N, A)}
+#
+# R and A are the request and the reply as JSON text. A request recorded on
+# one connection is refused on any other, and only the panel's own
+# connection can get a reply it accepts. The traffic is not encrypted.
+#
 
+import hashlib
+import hmac
 import ipaddress
 import json
 import os
 import re
+import secrets
 import select
 import signal
 import socket
@@ -21,6 +36,8 @@ import sys
 import threading
 import time
 
+HEX64 = re.compile(r"[0-9a-f]{64}")
+KEY = os.environ.get("GSTFSD_KEY", "").strip()
 PORT = int(os.environ.get("GSTFSD_PORT", 16510))
 ADDRESS = os.environ.get("GSTFSD_BIND_HOST", "127.0.0.1")
 MAX_REQUEST = 64 * 1024
@@ -187,6 +204,22 @@ def read_request(sock, end):
             continue
 
 
+def mac(kind, challenge, nonce, payload):
+    message = "\n".join(("gstfsd-v1", kind, challenge, nonce, payload)).encode()
+    return hmac.new(bytes.fromhex(KEY), message, hashlib.sha256).hexdigest()
+
+
+def signed_request(sock, end, challenge):
+    """The client's nonce and request, if the panel signed it for this
+    connection's challenge; PermissionError otherwise, before any change."""
+    frame = read_request(sock, end)
+    nonce, request, given = (frame.get(key) if isinstance(frame, dict) else None for key in ("nonce", "request", "mac"))
+    if not (isinstance(nonce, str) and HEX64.fullmatch(nonce) and isinstance(request, str)
+            and isinstance(given, str) and hmac.compare_digest(given, mac("request", challenge, nonce, request))):
+        raise PermissionError("the request is not signed with this host's gstfsd key")
+    return nonce, json.loads(request)
+
+
 def group_running(pgid):
     """Whether a process of the group still runs. A killed appliance whose
     parent is gone may stay a zombie until init reaps it; it holds no disk."""
@@ -268,29 +301,40 @@ def run_worker(data, end, sock):
 
 class MyTCPServerHandler(socketserver.StreamRequestHandler):
     def handle(self):
-        # Exactly one reply per request, success or error.
+        # Exactly one reply per request, success or error; signed only for a
+        # signed request.
         end = time.monotonic() + DEADLINE
-        try:
-            reply = run_worker(read_request(self.request, end), end, self.request)
-        except Exception as err:
-            reply = {'return': 'error', 'message': str(err)}
+        challenge, nonce = secrets.token_hex(32), None
         try:
             self.request.settimeout(REPLY_TIMEOUT)
-            self.request.sendall(json.dumps(reply).encode())
+            self.request.sendall((json.dumps({"challenge": challenge}) + "\n").encode())
+            nonce, data = signed_request(self.request, end, challenge)
+            reply = run_worker(data, end, self.request)
+        except Exception as err:
+            reply = {'return': 'error', 'message': str(err)}
+        answer = json.dumps(reply)
+        frame = {"reply": answer, "mac": mac("reply", challenge, nonce, answer) if nonce else ""}
+        try:
+            self.request.settimeout(REPLY_TIMEOUT)
+            self.request.sendall(json.dumps(frame).encode())
         except OSError:
             pass  # the client is gone
 
 
 def serve():
-    # gstfsd is an unauthenticated root service that rewrites any VM's
-    # /etc/shadow and authorized_keys, so it only listens on loopback unless
-    # explicitly allowed.
+    # gstfsd is a root service that rewrites any VM's /etc/shadow and
+    # authorized_keys; its traffic is not encrypted, so it only listens on
+    # loopback unless explicitly allowed.
+    if not HEX64.fullmatch(KEY):
+        sys.stderr.write("gstfsd: GSTFSD_KEY must be 64 hexadecimal characters (lowercase); "
+                         "set it in /etc/default/webvirt-gstfsd\n")
+        return 1
     if not 0 < DEADLINE <= MAX_DEADLINE:
         sys.stderr.write("gstfsd: GSTFSD_DEADLINE must be above 0 and at most %d seconds\n" % MAX_DEADLINE)
         return 1
     if not is_loopback(ADDRESS) and os.environ.get("GSTFSD_ALLOW_REMOTE") != "1":
         sys.stderr.write(
-            "gstfsd: refusing to listen on %s (unauthenticated root service). "
+            "gstfsd: refusing to listen on %s (a root service whose traffic is not encrypted). "
             "Set GSTFSD_ALLOW_REMOTE=1 to allow it on a trusted network.\n" % ADDRESS
         )
         return 1

@@ -386,8 +386,15 @@ __check_end_of_life_versions
 #   CentOS Install Functions
 #
 # gstfsd and its systemd unit, enabled and (re)started: from the clone this
-# script runs in, else from GitHub
+# script runs in, else from GitHub. Its key is made once and kept: the
+# panel's copy of it (the host's gstfsd key) stays valid.
 install_gstfsd() {
+    if [ ! -s /etc/default/webvirt-gstfsd ]; then
+        key="$(python3 -c 'import secrets; print(secrets.token_hex(32))')" || return 1
+        (umask 077 && printf 'GSTFSD_KEY=%s\n' "$key" > /etc/default/webvirt-gstfsd) || return 1
+    fi
+    # only root reads it, also when it was there already
+    chown root:root /etc/default/webvirt-gstfsd && chmod 600 /etc/default/webvirt-gstfsd || return 1
     src="$(dirname "$0")/.."
     if [ -f "$src/conf/daemon/gstfsd" ]; then
         install -m 755 "$src/conf/daemon/gstfsd" /usr/local/bin/gstfsd &&

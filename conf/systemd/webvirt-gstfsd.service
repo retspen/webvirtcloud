@@ -4,6 +4,8 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
+# GSTFSD_KEY, the key the panel signs with (root, mode 600)
+EnvironmentFile=/etc/default/webvirt-gstfsd
 ExecStart=/usr/bin/python3 /usr/local/bin/gstfsd
 Restart=on-failure
 RestartSec=10

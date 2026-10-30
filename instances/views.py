@@ -4,9 +4,12 @@ except ImportError:
     import crypt
 import difflib
 import functools
+import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
 import socket
 import subprocess
 import time
@@ -955,24 +958,51 @@ def migrate_plan(request, pk):
 
 GSTFSD_PORT = 16510
 GSTFSD_TIMEOUT = 120  # gstfsd answers within its 100 s limit for a request (GSTFSD_DEADLINE)
+GSTFSD_MAX_FRAME = 64 * 1024  # a challenge or a reply of gstfsd is far shorter
 
 
-def gstfsd_request(hostname, data):
-    """Send one request to gstfsd and return its JSON reply; an error reply or
-    a failed exchange raises OperationError with the reason."""
+def gstfsd_mac(key, kind, challenge, nonce, payload):
+    """The HMAC-SHA256 gstfsd signs and checks with (see conf/daemon/gstfsd)."""
+    message = "\n".join(("gstfsd-v1", kind, challenge, nonce, payload)).encode()
+    return hmac.new(bytes.fromhex(key), message, hashlib.sha256).hexdigest()
+
+
+def gstfsd_request(compute, data):
+    """Send one request to the compute's gstfsd, signed with its key, and
+    return the reply gstfsd signed for it; an error reply or a failed or
+    unsigned exchange raises OperationError with the reason."""
+    if not compute.gstfsd_key:
+        raise util.OperationError(_("Set the gstfsd key of %(compute)s first (Computes, edit the host)") % {
+            "compute": compute.name})
     try:
         # the host name may resolve to IPv4 or IPv6
-        s = socket.create_connection((hostname, GSTFSD_PORT), timeout=GSTFSD_TIMEOUT)
+        s = socket.create_connection((compute.hostname, GSTFSD_PORT), timeout=GSTFSD_TIMEOUT)
     except OSError as err:
         raise util.OperationError(_("gstfsd error: %(err)s") % {"err": err}) from err
     try:
-        s.sendall(json.dumps(data).encode())
+        stream = s.makefile("rb")
+        challenge = json.loads(stream.readline(GSTFSD_MAX_FRAME))["challenge"]
+        nonce, request = secrets.token_hex(32), json.dumps(data)
+        s.sendall(json.dumps({"nonce": nonce, "request": request,
+                              "mac": gstfsd_mac(compute.gstfsd_key, "request", challenge, nonce, request)}).encode())
         # gstfsd sends one reply and closes the connection
-        reply = json.loads(b"".join(iter(lambda: s.recv(4096), b"")))
-    except (OSError, ValueError) as err:
+        answer = stream.read(GSTFSD_MAX_FRAME + 1)
+        if len(answer) > GSTFSD_MAX_FRAME:
+            raise ValueError("the reply is too long")
+        frame = json.loads(answer)
+        reply = json.loads(frame["reply"])
+    except (OSError, ValueError, KeyError, TypeError) as err:
         raise util.OperationError(_("gstfsd error: %(err)s") % {"err": err}) from err
     finally:
         s.close()
+    given = frame.get("mac")
+    if not (isinstance(given, str) and re.fullmatch(r"[0-9a-f]{64}", given) and hmac.compare_digest(
+            given, gstfsd_mac(compute.gstfsd_key, "reply", challenge, nonce, frame["reply"]))):
+        # gstfsd refused the request (a wrong key): its error says so; any
+        # other reply that is not signed is no answer of gstfsd
+        refused = isinstance(reply, dict) and reply.get("return") == "error"
+        raise util.OperationError(_("gstfsd error: %(err)s") % {
+            "err": reply.get("message") if refused else _("the reply is not signed with the key")})
     if reply["return"] != "success":
         raise util.OperationError(reply["message"])
     return reply
@@ -1014,7 +1044,7 @@ def set_root_pass(request, pk):
                 try:
                     with audit_vm(request, instance, "reset root password"):
                         if status == 5:
-                            gstfsd_request(instance.compute.hostname, data)
+                            gstfsd_request(instance.compute, data)
                         else:
                             instance.proxy.set_user_password("root", passwd_hash)
                 except (util.OperationError, libvirtError) as err:
@@ -1054,7 +1084,7 @@ def add_public_key(request, pk):
             try:
                 with audit_vm(request, instance, f"install SSH key {publickey.keyname}"):
                     if status == 5:
-                        gstfsd_request(instance.compute.hostname, data)
+                        gstfsd_request(instance.compute, data)
                     else:
                         instance.proxy.add_authorized_key("root", publickey.keypublic)
             except (util.OperationError, libvirtError) as err:
