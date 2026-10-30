@@ -11,7 +11,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import MigrateInstance
 from instances.models import Instance
-from libvirt import libvirtError
+from libvirt import VIR_DOMAIN_XML_INACTIVE, libvirtError
 from operations.jobs import Cancelled, Context, get_kind
 from operations.models import Claim, Operation, acquire
 
@@ -30,6 +30,8 @@ class MigrateJobTestCase(TransactionTestCase):
         proxy.get_nvram.return_value = None
         patch.object(Compute, "status", True).start()
         patch.object(Instance, "proxy", proxy).start()
+        # another host than the VM's
+        patch.object(Compute, "proxy", MagicMock(**{"host_uuid.return_value": "dddddddd-0000-0000-0000-000000000051"})).start()
         self.dest_conn = patch("instances.utils.wvmInstances").start().return_value
         self.dest_conn.moveto.return_value = ("live", [])
         self.addCleanup(patch.stopall)
@@ -97,25 +99,52 @@ class MigrateJobTestCase(TransactionTestCase):
             fast, default = MagicMock(), MagicMock()
             fast.info.return_value = default.info.return_value = [2, 0, 0, 8 << 30]
             dest.file_pools.return_value = {"fast": (fast, "/srv/fast"), "default": (default, "/i")}
-            dest.disk_plan.return_value = [
-                {"target": "vda", "path": "/i/mig-vm.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None},
+            dest.migration_plan.return_value = ([
+                {"target": "vda", "path": "/i/mig-vm.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None,
+                 "free_pools": ["default", "fast"], "default": "default"},
+                {"target": "vdb", "path": "/i/data.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None,
+                 "free_pools": ["default"], "default": "default"},
                 {"target": "sda", "path": "/i/os.iso", "capacity": 1 << 20, "shared": False,
-                 "refusal": "an image is not copied; eject it first"}]
+                 "refusal": "an image is not copied; eject it first", "free_pools": [], "default": None}],
+                # the next start's disks the migration does not carry
+                [{"target": "vdc", "path": "/i/new.qcow2", "shared": False},
+                 {"target": "vdd", "path": "/nfs/new.qcow2", "shared": True}])
             page = self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk]),
                                    {"compute_id": self.dest.pk}).content.decode()
-        dest.close.assert_called_once_with()
-        # the pool on the disk's directory is chosen
+        # the definitions it plans with: the one it carries and the next start's
+        self.assertEqual(dest.migration_plan.call_args.args[1:], ("<domain/>", "<domain/>"))
+        self.assertEqual(Instance.proxy.instance.XMLDesc.call_args_list[-1].args, (VIR_DOMAIN_XML_INACTIVE,))
+        # the pool on the disk's directory is chosen; one that has a file of the name cannot be
         self.assertIn('<option value="default" selected>Copy to default (8.0\xa0GB free)</option>', page)
         self.assertIn('<option value="fast">Copy to fast (8.0\xa0GB free)</option>', page)
+        self.assertIn('<option value="fast" disabled>fast has a file of this name</option>', page)
         self.assertIn("Cannot be copied: an image is not copied; eject it first", page)
         self.assertIn("A shut-off VM is started paused for a copy", page)
+        self.assertIn("/nfs/new.qcow2</span>:\n            on storage both hosts share", page)
         # a disk that cannot go keeps the form from being sent, as does a destination that does not answer
-        self.assertEqual(page.count("data-refused"), 1)
+        self.assertEqual(page.count("data-refused"), 2)
+        dest.close.assert_called_once_with()
         with patch("instances.views.wvmInstances", side_effect=libvirtError("no answer")):
             page = self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk]),
                                    {"compute_id": self.dest.pk}).content.decode()
         self.assertIn("data-refused", page)
         self.assertEqual(self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk])).status_code, 404)
+
+    def test_the_destinations_that_cannot_be_chosen(self):
+        down = Compute.objects.create(name="mig-down", hostname="192.0.2.52", login="root", password="", type=1)
+        alias = Compute.objects.create(name="mig-alias", hostname="192.0.2.53", login="root", password="", type=1)
+        Instance.proxy.host_uuid.return_value = "aaaaaaaa-0000-0000-0000-000000000050"
+        # the alias is the source host under another record: the same libvirt host UUID
+        uuids = {alias.pk: "aaaaaaaa-0000-0000-0000-000000000050"}
+        with patch.object(Compute, "status", property(lambda c: c.pk != down.pk)), patch.object(
+                Compute, "proxy", property(lambda c: MagicMock(**{"host_uuid.return_value": uuids.get(c.pk, str(c.pk))}))):
+            refused = self.client.get(reverse("instances:migrate_targets", args=[self.vm.pk])).json()
+            self.assertEqual(refused, {str(down.pk): "mig-down is not reachable",
+                                       str(alias.pk): "mig-alias is the VM's own host under another name"})
+            # a request that names it anyway is refused too
+            self.client.post(reverse("instances:migrate", args=[self.vm.pk]),
+                             {"compute_id": alias.pk, "submission_key": "key-mig00002"})
+        self.assertFalse(Operation.objects.exists())
 
     def test_a_cancelled_migration_ends_cancelled_and_the_vm_stays(self):
         op = self.queue(live_migrate="true")

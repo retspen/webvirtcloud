@@ -276,6 +276,29 @@ class wvmInstances(wvmConnect):
                          "refusal": self.copy_refusal(disk, volume)})
         return rows
 
+    def migration_plan(self, conn, live_xml, next_xml):
+        """The disks of the Migrate tab for a VM coming here (disk_plan of
+        live_xml), each with the pools here it can be copied into, as
+        disk_copies takes them: {free_pools, default} added, and the file
+        disks of next_xml (the next start's definition) that the migration
+        does not carry, which must be on shared storage."""
+        here = self.file_pools()
+        for pool, directory in here.values():
+            pool.refresh(0)
+        disks = self.disk_plan(conn, live_xml)
+        for disk in disks:
+            file = os.path.basename(disk["path"])
+            # a copy never replaces a file: a pool that has one of its name cannot take it
+            disk["free_pools"] = [name for name, (pool, directory) in sorted(here.items())
+                                  if self._find_volume(pool, file) is None]
+            # a copy goes by default to the pool on the same directory, else the first
+            names = [name for name in disk["free_pools"] if here[name][1] == os.path.dirname(disk["path"])]
+            names = names or disk["free_pools"]
+            disk["default"] = names[0] if names else None
+        carried = {disk["path"] for disk in disks}
+        pending = [row for row in self.disk_plan(conn, next_xml) if row["path"] not in carried]
+        return disks, pending
+
     @staticmethod
     def copy_refusal(disk, volume):
         """Why the disk (its volume on the source, None if no pool has it) cannot be copied, or None."""

@@ -514,7 +514,7 @@
                 <section class="card mb-3" aria-labelledby="migrate-storage">
                     <div class="card-body">
                         <h2 class="h6 mb-3" id="migrate-storage">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</h2>
-                        <div id="migrate-plan" data-url="{% url 'instances:migrate_plan' instance.id %}" aria-live="polite"></div>
+                        <div id="migrate-plan" data-url="{% url 'instances:migrate_plan' instance.id %}" data-targets-url="{% url 'instances:migrate_targets' instance.id %}" aria-live="polite"></div>
                     </div>
                 </section>
                 <section class="card mb-4" aria-labelledby="migrate-transfer">

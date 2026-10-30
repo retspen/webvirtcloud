@@ -2,30 +2,50 @@
 {# the disks of the Migrate tab for the chosen destination: where each goes; data-refused keeps the form from being sent #}
 {% if error %}
 <div class="alert alert-warning mb-0" data-refused>{% blocktrans %}The disks could not be checked: {{ error }}{% endblocktrans %}</div>
-{% elif not disks %}
+{% elif not disks and not pending %}
 <p class="small text-body-secondary mb-0">{% trans "The VM has no disk files: its disks stay where they are." %}</p>
 {% else %}
 {% for disk in disks %}
 <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
     <p class="mb-0"><strong>{{ disk.target }}</strong> <span class="text-body-secondary">· {{ disk.capacity|filesizeformat }}</span></p>
     <p class="small text-body-secondary text-break mb-2">{{ disk.path }}</p>
-    {% if disk.shared or not disk.refusal and pools %}
+    {% if disk.shared or not disk.refusal and disk.free_pools %}
     <label class="form-label small" for="pool-{{ disk.target }}">{% trans "On the destination" %}</label>
     <select name="pool-{{ disk.target }}" id="pool-{{ disk.target }}" class="form-select">
         {% if disk.shared %}<option value="" selected>{% trans "Stays on shared storage" %}</option>{% endif %}
         {% if not disk.refusal %}
         {% for pool in pools %}
+        {% if pool.name in disk.free_pools %}
         <option value="{{ pool.name }}"{% if not disk.shared and pool.name == disk.default %} selected{% endif %}>{% blocktrans with name=pool.name free=pool.free|filesizeformat %}Copy to {{ name }} ({{ free }} free){% endblocktrans %}</option>
+        {% else %}
+        <option value="{{ pool.name }}" disabled>{% blocktrans with name=pool.name %}{{ name }} has a file of this name{% endblocktrans %}</option>
+        {% endif %}
         {% endfor %}
         {% endif %}
     </select>
     {% elif disk.refusal %}
     <p class="small text-danger mb-0" data-refused>{% blocktrans with reason=disk.refusal %}Cannot be copied: {{ reason }}{% endblocktrans %}</p>
+    {% elif pools %}
+    <p class="small text-danger mb-0" data-refused>{% trans "Every pool of the destination host has a file of this name" %}</p>
     {% else %}
     <p class="small text-danger mb-0" data-refused>{% trans "No pool of the destination host can take it" %}</p>
     {% endif %}
 </div>
 {% endfor %}
+{% if pending %}
+<div class="border-top pt-3 mt-3">
+    <p class="small fw-semibold mb-1">{% trans "Disks of the next start" %}</p>
+    <p class="small text-body-secondary mb-2">{% trans "The VM gets these at its next start; the migration does not copy them." %}</p>
+    <ul class="small ps-3 mb-0">
+        {% for disk in pending %}
+        <li><strong>{{ disk.target }}</strong> <span class="text-break">{{ disk.path }}</span>:
+            {% if disk.shared %}{% trans "on storage both hosts share" %}
+            {% else %}<span class="text-danger" data-refused>{% trans "not on storage both hosts share: detach it, or move it to shared storage first" %}</span>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
 <p class="small text-body-secondary mt-3 mb-0">
     {% trans "A copy is made during the migration and takes as long as the disk's data needs. Disks on network storage stay where they are." %}
     {% if shut_off %}{% trans "A shut-off VM is started paused for a copy, its CPUs never run, and is shut off on the destination." %}{% endif %}

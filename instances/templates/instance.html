@@ -425,11 +425,40 @@
             submit.disabled = false;  // the migration checks them again
         });
     }
+    // the destinations that cannot be chosen (unreachable, or this host under
+    // another record) are marked first; then the disks of the first one left
+    function loadMigrateTargets() {
+        var submit = migratePlan.closest("form").querySelector('button[name="migrate"]');
+        submit.disabled = true;
+        migrateCompute.disabled = true;  // no disks are checked for a host before the hosts are
+        migratePlan.textContent = "{{ _("Checking the hosts…")|escapejs }}";
+        fetch(migratePlan.dataset.targetsUrl).then(function (response) {
+            if (!response.ok) throw new Error(response.statusText);
+            return response.json();
+        }).then(function (refused) {
+            migrateCompute.disabled = false;
+            Array.prototype.forEach.call(migrateCompute.options, function (option) {
+                if (refused[option.value]) {
+                    option.disabled = true;
+                    option.textContent = refused[option.value];  // it names the host
+                }
+            });
+            var first = Array.prototype.find.call(migrateCompute.options, function (option) { return !option.disabled; });
+            if (!first) {
+                migratePlan.textContent = "{{ _("No host can take the VM now.")|escapejs }}";
+                return;
+            }
+            if (migrateCompute.selectedOptions[0].disabled) migrateCompute.value = first.value;
+            loadMigratePlan();
+        }).catch(function () {
+            migratePlan.textContent = "{{ _("The hosts could not be checked.")|escapejs }}";
+        });
+    }
     if (migratePlan && migrateCompute) {
         document.querySelector('[data-bs-target="#migrate"]').addEventListener("shown.bs.tab", function () {
             if (!migratePlan.dataset.loaded) {
                 migratePlan.dataset.loaded = "true";
-                loadMigratePlan();
+                loadMigrateTargets();
             }
         });
         migrateCompute.addEventListener("change", loadMigratePlan);

@@ -41,6 +41,7 @@ from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
                      VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA,
                      VIR_DOMAIN_UNDEFINE_NVRAM,
+                     VIR_DOMAIN_XML_INACTIVE,
                      VIR_ERR_NO_SUPPORT,
                      libvirtError)
 from logs.audit import audit, audit_vm, changed_fields, failed_vm
@@ -911,6 +912,23 @@ def move_disk(request, pk):
 
 
 @superuser_only
+def migrate_targets(request, pk):
+    """The Migrate tab's destinations that cannot be chosen, {id: why}: one
+    that cannot be reached, or the VM's own host under another record.
+    Loaded when the tab opens, so the page does not wait for the hosts."""
+    from instances.jobs import migration_target
+
+    instance = get_instance(request.user, pk)
+    refused = {}
+    for target in Compute.objects.exclude(pk=instance.compute_id):
+        try:
+            migration_target(instance, target.pk)
+        except libvirtError as err:
+            refused[target.pk] = error_text(request, err)
+    return JsonResponse(refused)
+
+
+@superuser_only
 def migrate_plan(request, pk):
     """The disks of the Migrate tab for the chosen destination, loaded when
     one is chosen: each with the pools of the destination it can be copied
@@ -923,15 +941,10 @@ def migrate_plan(request, pk):
     dest = None
     try:
         dest = wvmInstances(target.hostname, target.login, target.password, target.type)
-        pools = [{"name": name, "directory": directory, "free": pool.info()[3]}
-                 for name, (pool, directory) in sorted(dest.file_pools().items())]
-        disks = dest.disk_plan(instance.proxy, instance.proxy.instance.XMLDesc(0))
-        for disk in disks:
-            # a copy goes by default to the pool on the same directory, else the first
-            names = [pool["name"] for pool in pools if pool["directory"] == os.path.dirname(disk["path"])]
-            names = names or [pool["name"] for pool in pools]
-            disk["default"] = names[0] if names else None
-        context = {"disks": disks, "pools": pools, "shut_off": instance.proxy.get_status() == 5}
+        pools = [{"name": name, "free": pool.info()[3]} for name, (pool, directory) in sorted(dest.file_pools().items())]
+        domain = instance.proxy.instance
+        disks, pending = dest.migration_plan(instance.proxy, domain.XMLDesc(0), domain.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
+        context = {"disks": disks, "pending": pending, "pools": pools, "shut_off": instance.proxy.get_status() == 5}
     except libvirtError as err:
         context = {"error": error_text(request, err)}
     finally:

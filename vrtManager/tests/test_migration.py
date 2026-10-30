@@ -499,3 +499,24 @@ class NvramCopyTestCase(unittest.TestCase):
         self.assertIs(raised.exception, error)
         self.dest_pool.storageVolLookupByName.assert_called_once_with("vm_VARS.fd")
         self.dest_pool.storageVolLookupByName.return_value.delete.assert_called_once_with(0)
+
+
+class MigrationPlanTestCase(unittest.TestCase):
+    """The Migrate tab's plan: the pools each disk can be copied into, and the
+    next start's disks the migration does not carry."""
+
+    def test_pools_with_a_file_of_the_name_and_the_next_start_disks(self):
+        dest = wvmInstances.__new__(wvmInstances)
+        pools = {"default": (mock.MagicMock(), "/i"), "fast": (mock.MagicMock(), "/srv/fast"),
+                 "slow": (mock.MagicMock(), "/srv/slow")}
+        dest.file_pools = lambda: pools
+        vda = {"target": "vda", "path": "/i/vm.qcow2", "shared": False, "refusal": None}
+        vdb = {"target": "vdb", "path": "/i/new.qcow2", "shared": False, "refusal": None}
+        dest.disk_plan = lambda conn, xml: [dict(row) for row in {"live": [vda], "next": [vda, vdb]}[xml]]
+        # the pool on the disk's directory has a file of its name
+        dest._find_volume = lambda pool, name: object() if pool is pools["default"][0] else None
+        disks, pending = dest.migration_plan(None, "live", "next")
+        self.assertEqual((disks[0]["free_pools"], disks[0]["default"]), (["fast", "slow"], "fast"))
+        self.assertEqual(pending, [vdb])
+        for pool, directory in pools.values():
+            pool.refresh.assert_called_once_with(0)  # a file made since is seen

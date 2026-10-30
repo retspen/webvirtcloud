@@ -825,13 +825,16 @@ class CreateInstance(Kind):
 MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress", "delete_source")
 
 
-def _target(instance, target_pk):
-    """The destination; refused when the VM is already there or it cannot be reached."""
+def migration_target(instance, target_pk):
+    """The destination; refused when the VM is already there, also under
+    another record of its host, or it cannot be reached."""
     target = Compute.objects.get(pk=target_pk)
     if target.pk == instance.compute_id:
         raise util.OperationError(_("The instance is already on %(compute)s") % {"compute": target.name})
     if not target.status:
         raise util.OperationError(_("%(compute)s is not reachable") % {"compute": target.name})
+    if target.proxy.host_uuid() == instance.proxy.host_uuid():
+        raise util.OperationError(_("%(compute)s is the VM's own host under another name") % {"compute": target.name})
     return target
 
 
@@ -862,7 +865,7 @@ class MigrateInstance(Kind):
     def validate(self, user, params):
         if not user.is_superuser:
             raise PermissionDenied
-        _target(_instance(params["instance"]), params["target"])
+        migration_target(_instance(params["instance"]), params["target"])
 
     def plan(self, user, params):
         instance = _instance(params["instance"])
@@ -887,7 +890,7 @@ class MigrateInstance(Kind):
         instance = _instance(op.params["instance"])
         if instance.compute_id != op.intent["compute"]:
             raise util.OperationError("The VM moved to another compute after the job was queued")
-        _target(instance, op.params["target"])
+        migration_target(instance, op.params["target"])
 
     def run(self, op, ctx):
         p = op.params
