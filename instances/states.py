@@ -18,7 +18,7 @@ STATES = {
 }
 UNKNOWN = (_("Unknown"), "secondary")  # the VM cannot be read
 
-RUNNING = {"suspend", "poweroff", "powercycle", "console"}
+RUNNING = {"suspend", "poweroff", "powercycle", "force_off", "console"}
 STATE_ACTIONS = {
     1: RUNNING,
     2: RUNNING,
@@ -49,15 +49,16 @@ def allowed_actions(user, instance, state):
     The power actions the state allows and the user may use: superusers all,
     a VM's owners all but suspend and resume, nobody else any (the
     view_instances permission is read-only). A VM suspended by an
-    administrator offers its owner nothing. A shut-off template is not
-    started but cloned, by anyone with the clone permission who sees it.
+    administrator offers its owner nothing. A template is not started (a
+    power cycle starts it again) but cloned, by anyone with the clone
+    permission who sees it.
     """
     if state == 5 and instance.is_template:
         return {"clone"} if user.has_perm("instances.clone_instances") else set()
     if user.is_superuser:
-        return STATE_ACTIONS.get(state, set())
-    if not manages(user, instance):
+        actions = STATE_ACTIONS.get(state, set())
+    elif not manages(user, instance) or state == 3:
         return set()
-    if state == 3:
-        return set()
-    return STATE_ACTIONS.get(state, set()) - SUPERUSER_ONLY
+    else:
+        actions = STATE_ACTIONS.get(state, set()) - SUPERUSER_ONLY
+    return actions - {"powercycle"} if instance.is_template else actions

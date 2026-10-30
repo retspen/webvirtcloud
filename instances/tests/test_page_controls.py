@@ -88,7 +88,7 @@ class PageControls:
             "console": bool(doc.xpath("//button[@id='console_button']")),
             "vv file": bool(doc.xpath("//a[@href=$a]", a=reverse("instances:getvvfile", args=[pk]))),
             "vdi": bool(doc.xpath("//*[@id='vdiconsole']")),
-            "power": form("poweroff") or form("poweron"),
+            "power": form("poweron") or bool(doc.xpath("//button[@formaction=$a]", a=reverse("instances:poweroff", args=[pk]))),
             "root password": form("rootpasswd"),
             "ssh key": form("add_public_key"),
             # a running VM with hotplug shows per-vCPU buttons instead of the CPU form
@@ -196,6 +196,22 @@ class PageControlsTestCase(PageControls, TestCase):
                     a=reverse("instances:resize_disk", args=[self.instance.id]),
                 )
                 self.assertEqual(bool(buttons), enabled)
+
+    def test_the_power_tab_offers_the_state_s_actions_and_confirms_a_power_cut(self):
+        admin = get_user_model().objects.create_superuser("power_admin", "pa@example.com", "x")
+        owner = self.user("power_owner", owner={})
+        for user, status, names in ((admin, 1, ["poweroff", "suspend", "powercycle", "powerforce"]),
+                                    (admin, 3, ["resume", "powerforce"]), (owner, 3, []), (admin, 5, ["poweron"])):
+            with self.subTest(user=user.username, status=status):
+                self.controls(user, status=status)
+                (tab,) = lxml_html.fromstring(self.last_page).xpath("//div[@id='power']")
+                self.assertEqual(tab.xpath(".//button/@name"), names)
+                # the power-cut actions ask first
+                self.assertTrue(all(b.get("data-confirm") for b in tab.xpath(".//button[contains(@class, 'btn-danger')]")))
+                if user == owner:
+                    self.assertIn("The VM is paused. An administrator can resume it.", tab.text_content())
+                if status == 5:
+                    self.assertEqual(tab.xpath(".//form/@onsubmit"), ["showPleaseWaitDialog()"])
 
     def test_a_running_paused_or_shut_off_vm_can_be_cloned(self):
         changer = self.user("vm_cloner", perms=("clone_instances",), owner={"is_change": True})

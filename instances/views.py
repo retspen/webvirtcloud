@@ -61,7 +61,7 @@ from . import addresses, report, utils
 from .api.serializers import DestroyOptionsSerializer
 from .forms import ConsoleForm, FlavorForm, NewVMForm
 from .models import Flavor
-from .states import STATES, UNKNOWN, state_label
+from .states import STATES, UNKNOWN, allowed_actions, state_label
 
 # the VM page waits this long (seconds) for the compute's drbdadm status
 DRBD_STATUS_TIMEOUT = 10
@@ -264,6 +264,7 @@ def _instance_page(request, pk, instance, compute):
     # view_instances permission are read-only.
     can_open_console = utils.can_open_console(request.user, instance)
     can_power = request.user.is_superuser or userinstance is not None
+    power_actions = allowed_actions(request.user, instance, instance.status)
     # get_instance(perm_type="delete"): a template only for superusers and staff owners
     can_delete = request.user.is_superuser or bool(
         userinstance and userinstance.is_delete and (request.user.is_staff or not instance.is_template)

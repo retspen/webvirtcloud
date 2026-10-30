@@ -1,155 +1,61 @@
 {% load i18n %}
+{% load vm_states %}
 <div class="tab-pane active mt-3" id="power" role="tabpanel">
     {% if not can_power %}
     <p>{% trans "Only the owners of this instance and administrators can change its power state." %}</p>
     {% else %}
-    <!-- Nav tabs -->
+    {# the actions the VM's state allows this user (states.allowed_actions): those that keep the guest's data, and those that cut the power #}
+    {% vm_state instance.status as state %}
     <div class="card">
-    <div class="card-header bg-transparent pb-0">
-    <ul class="nav nav-underline small" role="tablist" aria-label="Instance power actions">
-        {% if instance.status == 1 or instance.status == 2 %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#poweroff" type="button" role="tab" aria-controls="poweroff" aria-selected="true">
-                    {% trans "Power Off" %}
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#powercycle" type="button" role="tab" aria-controls="powercycle" aria-selected="false">
-                    {% trans "Power Cycle" %}
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#powerforce" type="button" role="tab" aria-controls="powerforce" aria-selected="false">
-                    {% trans "Force Off" %}
-                </button>
-            </li>
-            {% if request.user.is_superuser %}
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#suspend" type="button" role="tab" aria-controls="suspend" aria-selected="false">
-                        {% trans "Suspend" %}
-                    </button>
-                </li>
-            {% endif %}
-        {% endif %}
-        {% if instance.status == 3 %}
-            {% if request.user.is_superuser %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#resume" type="button" role="tab" aria-controls="resume" aria-selected="false">
-                    {% trans "Resume" %}
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#powerforce" type="button" role="tab" aria-controls="powerforce" aria-selected="false">
-                    {% trans "Force Off" %}
-                </button>
-            </li>
-            {% endif %}
-        {% endif %}
-        {% if instance.status == 4 or instance.status == 6 or instance.status == 7 %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#powerforce" type="button" role="tab" aria-controls="powerforce" aria-selected="true">
-                    {% trans "Force Off" %}
-                </button>
-            </li>
-        {% endif %}
-        {% if instance.status == 5 %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#boot" type="button" role="tab" aria-controls="boot" aria-selected="true">
-                    {% trans "Power On" %}
-                </button>
-            </li>
-        {% endif %}
-    </ul>
-    </div>
-    <!-- Tab panes -->
-    <div class="tab-content card-body">
-        {% if instance.status == 1 or instance.status == 2 %}
-            <div class="tab-pane active" id="poweroff" role="tabpanel" aria-labelledby="poweroff-tab">
-                <p>{% trans "This action sends an ACPI shutdown signal to the instance." %}</p>
-                <form action="{% url 'instances:poweroff' instance.id %}" method="post" role="form" aria-label="Power off instance form">
-                    {% csrf_token %}
-                    <input type="submit" name="poweroff" class="btn btn-primary float-end" value="{% trans "Power Off" %}">
-                    <div class="clearfix"></div>
+        <div class="card-body">
+            <p class="small text-body-secondary mb-2">{% trans "Power" %} · {{ state.0 }}</p>
+            {% if "poweroff" in power_actions or "suspend" in power_actions or "resume" in power_actions or "poweron" in power_actions or "force_off" in power_actions or "powercycle" in power_actions %}
+            <div class="row g-3">
+                {% if "poweroff" in power_actions or "suspend" in power_actions or "resume" in power_actions or "poweron" in power_actions %}
+                <form class="col-12 col-md-6" method="post"{% if "poweron" in power_actions %} action="{% url 'instances:poweron' instance.id %}" onsubmit="showPleaseWaitDialog()"{% endif %}>{% csrf_token %}
+                    <div class="btn-group mb-2" role="group" aria-label="{% trans "Power actions that keep the guest's data" %}">
+                        {% if "poweron" in power_actions %}<button type="submit" class="btn btn-primary" name="poweron">{% trans "Power On" %}</button>{% endif %}
+                        {% if "poweroff" in power_actions %}<button type="submit" class="btn btn-primary" name="poweroff" formaction="{% url 'instances:poweroff' instance.id %}">{% trans "Power Off" %}</button>{% endif %}
+                        {% if "resume" in power_actions %}<button type="submit" class="btn btn-primary" name="resume" formaction="{% url 'instances:resume' instance.id %}">{% trans "Resume" %}</button>{% endif %}
+                        {% if "suspend" in power_actions %}<button type="submit" class="btn btn-secondary" name="suspend" formaction="{% url 'instances:suspend' instance.id %}">{% trans "Suspend" %}</button>{% endif %}
+                    </div>
+                    <p class="small text-body-secondary mb-0">
+                        {% if "poweron" in power_actions %}{% trans "Power On starts the VM." %}{% endif %}
+                        {% if "poweroff" in power_actions %}{% trans "Power Off asks the guest to shut down; the guest decides." %}{% endif %}
+                        {% if "resume" in power_actions %}{% trans "Resume lets the paused VM run on." %}{% endif %}
+                        {% if "suspend" in power_actions %}{% trans "Suspend pauses its vCPUs; the VM stays in memory." %}{% endif %}
+                    </p>
                 </form>
-            </div>
-            <div class="tab-pane" id="powercycle" role="tabpanel" aria-labelledby="powercycle-tab">
-                <p>{% trans "This action forcibly powers off and start the instance and may cause data corruption." %}</p>
-                <form action="{% url 'instances:powercycle' instance.id %}" method="post" role="form" aria-label="Power cycle instance form">{% csrf_token %}
-                    <input type="submit" name="powercycle" class="btn btn-danger float-end" value="{% trans "Power Cycle" %}">
-                    <div class="clearfix"></div>
+                {% endif %}
+                {% if "force_off" in power_actions or "powercycle" in power_actions %}
+                <form class="col-12 col-md-6" method="post">{% csrf_token %}
+                    <div class="btn-group mb-2" role="group" aria-label="{% trans "Power actions that cut the power" %}">
+                        {% if "powercycle" in power_actions %}
+                        <button type="submit" class="btn btn-danger" name="powercycle" formaction="{% url 'instances:powercycle' instance.id %}"
+                                data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}"
+                                onclick="return confirm(this.dataset.confirm)">{% trans "Power Cycle" %}</button>
+                        {% endif %}
+                        {% if "force_off" in power_actions %}
+                        <button type="submit" class="btn btn-danger" name="powerforce" formaction="{% url 'instances:force_off' instance.id %}"
+                                data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}"
+                                onclick="return confirm(this.dataset.confirm)">{% trans "Force Off" %}</button>
+                        {% endif %}
+                    </div>
+                    <p class="small text-body-secondary mb-0">
+                        {% trans "These cut the power: what the guest has not written to disk is lost." %}
+                        {% if "powercycle" in power_actions %}{% trans "Power Cycle then starts the VM again, with the settings pending its next start." %}{% endif %}
+                    </p>
                 </form>
+                {% endif %}
             </div>
-            <div class="tab-pane" id="powerforce" role="tabpanel" aria-labelledby="powerforce-tab">
-                <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
-                <form action="{% url 'instances:force_off' instance.id %}" method="post" role="form" aria-label="Force to shutdown instance form">
-                    {% csrf_token %}
-                    <input type="submit" name="powerforce" class="btn btn-danger float-end" value="{% trans "Force Off" %}">
-                    <div class="clearfix"></div>
-                </form>
-            </div>
-            {% if request.user.is_superuser %}
-                <div class="tab-pane" id="suspend" role="tabpanel" aria-labelledby="suspend-tab">
-                    <p>{% trans "This action suspends the instance." %}</p>
-                    <form action="{% url 'instances:suspend' instance.id %}" method="post" role="form" aria-label="Suspend instance form">{% csrf_token %}
-                        <input type="submit" name="suspend" class="btn btn-primary float-end" value="{% trans "Suspend" %}">
-                        <div class="clearfix"></div>
-                    </form>
-                </div>
-            {% endif %}
-        {% endif %}
-        {% if instance.status == 3 %}
-            {% if request.user.is_superuser %}
-                <div class="tab-pane active" id="resume" role="tabpanel" aria-labelledby="resume-tab">
-                    <p>{% trans "This action restore the instance after suspend." %}</p>
-                    <form action="{% url 'instances:resume' instance.id %}" method="post" role="form" aria-label="Resume instance from suspension form">{% csrf_token %}
-                        <input type="submit" name="resume" class="btn btn-primary float-end" value="{% trans "Resume" %}">
-                        <div class="clearfix"></div>
-                    </form>
-                </div>
-                <div class="tab-pane" id="powerforce" role="tabpanel" aria-labelledby="powerforce-tab">
-                    <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
-                    <form action="{% url 'instances:force_off' instance.id %}" method="post" role="form" aria-label="Force to shutdown form">{% csrf_token %}
-                        <input type="submit" name="powerforce" class="btn btn-danger float-end" value="{% trans "Force Off" %}">
-                        <div class="clearfix"></div>
-                    </form>
-                </div>
+            {% elif instance.status == 3 %}
+            <p class="mb-0">{% trans "The VM is paused. An administrator can resume it." %}</p>
+            {% elif instance.status == 5 and instance.is_template %}
+            <p class="mb-0">{% trans "A template is not started: clone it to make a VM." %}</p>
             {% else %}
-                <div class="tab-pane active" id="resume" role="tabpanel" aria-labelledby="resume-tab">
-                    <p>{% trans "Administrator blocked your instance." %}</p>
-                    <form action="{% url 'instances:resume' instance.id %}" method="post" role="form" aria-label="Resume instance form">{% csrf_token %}
-                        <button class="btn btn-primary disabled float-end">{% trans "Resume" %}</button>
-                        <div class="clearfix"></div>
-                    </form>
-                </div>
+            <p class="mb-0">{% trans "There is no power action for the VM in this state." %}</p>
             {% endif %}
-        {% endif %}
-        {% if instance.status == 4 or instance.status == 6 or instance.status == 7 %}
-            {# shutting down, crashed or suspended by the guest: a forced power off ends it, then it can be started #}
-            <div class="tab-pane active" id="powerforce" role="tabpanel" aria-labelledby="powerforce-tab">
-                <p>{% trans "This action forcibly powers off the instance and may cause data corruption." %}</p>
-                <form action="{% url 'instances:force_off' instance.id %}" method="post" role="form" aria-label="Force to shutdown instance form">
-                    {% csrf_token %}
-                    <input type="submit" name="powerforce" class="btn btn-danger float-end" value="{% trans "Force Off" %}">
-                    <div class="clearfix"></div>
-                </form>
-            </div>
-        {% endif %}
-        {% if instance.status == 5 %}
-            <div class="tab-pane active" id="boot" role="tabpanel" aria-labelledby="boot-tab">
-                <p>{% trans "Click on Power On button to start this instance." %}</p>
-                <form action="{% url 'instances:poweron' instance.id %}" method="post" role="form" aria-label="Start instance form">
-                    {% csrf_token %}
-                    {% if instance.is_template %}
-                        <p>{% trans "Template instance cannot be started." %}</p>
-                        <input type="submit" name="poweron" class="btn btn-primary float-end disabled" value="{% trans "Power On" %}">
-                    {% else %}
-                        <input type="submit" name="poweron" class="btn btn-primary float-end" onclick="showPleaseWaitDialog()" value="{% trans "Power On" %}">
-                    {% endif %}
-                    <div class="clearfix"></div>
-                </form>
-            </div>
-        {% endif %}
-    </div>
+        </div>
     </div>
     {% endif %}
 </div>

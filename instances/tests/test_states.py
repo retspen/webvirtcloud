@@ -19,8 +19,8 @@ LABELS = {0: "No state", 1: "Active", 2: "Blocked", 3: "Suspended", 4: "Shutting
 # actions offered per state, for a superuser
 ACTIONS = {
     0: set(),
-    1: {"poweroff", "powercycle", "suspend"},
-    2: {"poweroff", "powercycle", "suspend"},
+    1: {"poweroff", "powercycle", "force_off", "suspend"},
+    2: {"poweroff", "powercycle", "force_off", "suspend"},
     3: {"resume", "force_off"},
     4: {"force_off"},
     5: {"poweron"},
@@ -246,6 +246,16 @@ class AllowedActionsTests(TestCase):
                 expected = set() if state == 3 else ACTIONS[state] - {"suspend", "resume"}
                 self.assertEqual(allowed_actions(owner, vm, state) - {"console"}, expected)
                 self.assertEqual(allowed_actions(other, vm, state), set())
+
+
+class TemplatePowerTests(TestCase):
+    """A running template is not power cycled: that would start it again."""
+
+    def test_a_running_template_has_no_power_cycle(self):
+        admin = get_user_model().objects.create_superuser("tp-admin", "tp@example.com", "pw")
+        compute = Compute.objects.create(name="tp", hostname="10.0.0.5", login="u", password="p", type=1)
+        vm = Instance.objects.create(compute=compute, name="tp-vm", uuid="dddddddd-0000-0000-0000-000000000000", is_template=True)
+        self.assertEqual(allowed_actions(admin, vm, 1) - {"console"}, ACTIONS[1] - {"powercycle"})
 
 
 class TemplateCloneTests(TestCase):
