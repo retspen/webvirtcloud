@@ -10,6 +10,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from logs.audit import reason, write
+from operations.models import Operation
 from vrtManager.instance import wvmInstance, wvmInstances
 
 from .models import Instance
@@ -42,6 +43,11 @@ def get_clone_free_names(size=10):
     return free_names
 
 
+def disk_gib(disks):
+    """The size of the disks in whole GiB each, as the quota counts them."""
+    return sum(int(disk["size"] or 0) >> 30 for disk in disks)
+
+
 # check_user_quota could not read every VM of the user: an increase is refused
 QUOTA_UNVERIFIED = "unverified"
 
@@ -68,7 +74,13 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     user_instances = UserInstance.objects.filter(user=user, instance__is_template=False).select_related(
         "instance__compute"
     )
-    instance += user_instances.count()
+    # a clone counts from its job's admission until its VM is recorded
+    clones = [
+        op.intent["quota"] for op in Operation.objects.filter(
+            user=user, kind="instance.clone", state__in=Operation.ACTIVE + (Operation.UNCERTAIN,))
+        if "quota" in op.intent and not Instance.objects.filter(uuid=op.intent["uuid"]).exists()
+    ]
+    instance += user_instances.count() + len(clones)
     if ua.max_instances >= 0 and instance > ua.max_instances:
         msg = "instance"
         if quota_debug:
@@ -77,6 +89,10 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     if ua.max_cpus < 0 and ua.max_memory < 0 and ua.max_disk_size < 0:
         return msg
 
+    for clone in clones:
+        cpu += clone["cpus"]
+        memory += clone["memory"]
+        disk_size += clone["disk"]
     computes = {}  # status is cached per object: check each host once
     for usr_inst in user_instances:
         vm = usr_inst.instance
@@ -92,11 +108,11 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
                 vm.name,
                 uuid=vm.uuid,
             )
-            cpu += int(conn.get_vcpu())
-            memory += int(conn.get_memory())
-            for disk in conn.get_disk_devices():
-                if disk["size"]:
-                    disk_size += int(disk["size"]) >> 30
+            # a running VM counts what it has, or what it gets at its next start if that is more
+            with conn.cached_reads():
+                cpu += max(conn.get_vcpu(), conn.get_vcpu(config=True))
+                memory += max(conn.get_memory(), conn.get_memory(config=True))
+                disk_size += max(disk_gib(conn.get_disk_devices()), disk_gib(conn.get_disk_devices(config=True)))
         except libvirtError:
             return QUOTA_UNVERIFIED
 

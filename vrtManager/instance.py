@@ -713,8 +713,8 @@ class wvmInstance(wvmConnect):
 
         return vcpus
 
-    def get_memory(self):
-        mem = util.get_xml_path(self._XMLDesc(0), "/domain/memory")
+    def get_memory(self, config=False):
+        mem = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/memory")
         return int(mem) // 1024
 
     def get_cur_memory(self):

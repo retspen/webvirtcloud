@@ -71,7 +71,7 @@ class ClonePermissionTestCase(TestCase):
         with patch("instances.models.wvmInstance") as mock_wvm, patch(
             "instances.views.utils.check_user_quota", return_value=""
         ), patch("instances.utils.get_clone_free_names", return_value=["clone-vm", "clone-vm2"]):
-            proxy = mock_wvm.return_value
+            proxy = self.proxy = mock_wvm.return_value
             proxy.get_disk_devices.return_value = [SRC_DISK]
             proxy.get_net_devices.return_value = [{"mac": "52:54:00:aa:bb:cc"}]
             proxy.get_status.return_value = 5
@@ -263,10 +263,12 @@ class CloneNameTestCase(TestCase):
         with patch("instances.models.wvmInstance") as mock_wvm, patch(
             "instances.views.utils.check_user_quota", return_value=""
         ):
-            proxy = mock_wvm.return_value
+            proxy = self.proxy = mock_wvm.return_value
             proxy.get_disk_devices.return_value = [SRC_DISK]
             proxy.get_net_devices.return_value = [{"mac": "52:54:00:aa:bb:cc"}]
             proxy.get_status.return_value = 5
+            proxy.get_vcpu.return_value = 1
+            proxy.get_memory.return_value = 512
             self.client.post(reverse("instances:clone", args=[self.instance.id]),
                              {"name": name, "submission_key": f"key-names-{name}"})
         op = Operation.objects.first()
@@ -274,6 +276,11 @@ class CloneNameTestCase(TestCase):
 
     def test_a_free_name_from_the_list(self):
         self.assertEqual(self.clone("copy2"), "copy2")
+        # what the clone adds to the user's quota until its VM is recorded: the
+        # source's persistent definition, which it copies
+        self.assertEqual(Operation.objects.get().intent["quota"], {"cpus": 1, "memory": 512, "disk": 10})
+        self.proxy.get_vcpu.assert_called_with(config=True)
+        self.proxy.get_memory.assert_called_with(config=True)
 
     def test_any_other_name_is_refused(self):
         for name in ("copy1", "my-own-name", "", "copy12"):  # taken, not offered, empty, past the ten offered

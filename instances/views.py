@@ -2209,8 +2209,8 @@ def set_template(request, pk):
         messages.error(request, _("Shut the VM down to change whether it is a template."))
         return _back(request, pk, "options")
     if instance.is_template and not is_template and not request.user.is_superuser:
-        disk_sum = sum(int(disk.get("size") or 0) >> 30 for disk in instance.disks)
-        quota_msg = utils.check_user_quota(request.user, 1, instance.vcpu, instance.memory, disk_sum)
+        quota_msg = utils.check_user_quota(request.user, 1, instance.vcpu, instance.memory,
+                                           utils.disk_gib(instance.disks))
         if quota_msg:
             messages.error(request, quota_refused(quota_msg, _(
                 "User %(quota_msg)s quota reached, '%(instance_name)s' stays a template!"

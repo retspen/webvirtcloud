@@ -5,6 +5,7 @@ import os
 import re
 import time
 
+from django.db import transaction
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
@@ -115,8 +116,9 @@ CLONE_FIELDS = ("name", "clone-title", "clone-description")
 
 
 def clone_data(user, instance, fields):
-    """The clone's settings from the form fields and the source as it is now;
-    OperationError with the reason when it cannot be made."""
+    """The clone's settings from the form fields and the source as it is now,
+    and what it adds to the user's quota; OperationError with the reason when
+    it cannot be made."""
     from instances.views import VOLUME_NAME_RE, quota_refused
 
     data = dict()
@@ -124,9 +126,10 @@ def clone_data(user, instance, fields):
     data["clone-title"] = fields.get("clone-title", "").strip()
     data["clone-description"] = fields.get("clone-description", "").strip()
 
-    # the clone copies the disks of the persistent definition
-    disk_sum = sum(int(disk.get("size") or 0) >> 30 for disk in instance.config_disks)
-    quota_msg = utils.check_user_quota(user, 1, instance.vcpu, instance.memory, disk_sum)
+    # the clone copies the persistent definition
+    quota = {"cpus": instance.proxy.get_vcpu(config=True), "memory": instance.proxy.get_memory(config=True),
+             "disk": utils.disk_gib(instance.config_disks)}
+    quota_msg = utils.check_user_quota(user, 1, quota["cpus"], quota["memory"], quota["disk"])
 
     data["disk_owner_uid"] = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
     data["disk_owner_gid"] = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
@@ -182,7 +185,7 @@ def clone_data(user, instance, fields):
     if invalid_disks:
         raise util.OperationError(
             _("Disk name '%(disk_name)s' contains invalid characters!") % {"disk_name": ", ".join(str(v) for v in invalid_disks)})
-    return data
+    return data, quota
 
 
 def vm_claims(compute, name):
@@ -192,12 +195,14 @@ def vm_claims(compute, name):
 
 
 def record_vm(op, owner):
-    """The panel's records of the new VM, as the synchronous views wrote them."""
-    vm = Instance.objects.get_or_create(compute_id=op.intent["compute"], uuid=op.intent["uuid"],
-                                        defaults={"name": op.intent["name"]})[0]
-    if owner and op.user_id:
-        UserInstance.objects.get_or_create(instance=vm, user_id=op.user_id,
-                                           defaults={"is_delete": True, "is_change": True, "is_vnc": True})
+    """The panel's records of the new VM, as the synchronous views wrote them;
+    together, as the quota then counts the VM instead of its clone job."""
+    with transaction.atomic():
+        vm = Instance.objects.get_or_create(compute_id=op.intent["compute"], uuid=op.intent["uuid"],
+                                            defaults={"name": op.intent["name"]})[0]
+        if owner and op.user_id:
+            UserInstance.objects.get_or_create(instance=vm, user_id=op.user_id,
+                                               defaults={"is_delete": True, "is_change": True, "is_vnc": True})
 
 
 def vm_outcome(op, owner, volumes):
@@ -458,7 +463,7 @@ class CloneInstance(Kind):
 
     def plan(self, user, params):
         instance = _clonable(user, params["instance"])
-        data = clone_data(user, instance, params["fields"])
+        data, quota = clone_data(user, instance, params["fields"])
         keys = vm_claims(instance.compute, data["name"])
         # the VM's definition is read again when the clone is defined
         keys[claims.instance_key(instance.uuid)] = Claim.EXCLUSIVE
@@ -469,7 +474,7 @@ class CloneInstance(Kind):
         return Plan(claims=keys, resource=claims.instance_key(instance.uuid),
                     label=f"{instance.compute.name}/{instance.name}",
                     intent={"compute": instance.compute_id, "uuid": util.randomUUID(), "name": data["name"],
-                            "clone": data})
+                            "clone": data, "quota": quota})
 
     def precheck(self, op, ctx):
         instance = _clonable(op.user, op.params["instance"])

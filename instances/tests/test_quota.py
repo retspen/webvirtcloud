@@ -1,7 +1,7 @@
 """check_user_quota counts every VM of the user and refuses an increase it
 cannot verify (fail closed); requests that add nothing are not checked."""
 
-from types import SimpleNamespace
+from contextlib import nullcontext
 from unittest.mock import PropertyMock, patch
 
 from accounts.models import UserAttributes, UserInstance
@@ -14,16 +14,33 @@ from django.urls import reverse
 from instances.models import Instance
 from instances.utils import QUOTA_UNVERIFIED, check_user_quota
 from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING
+from operations.models import Operation
 from vrtManager.util import OperationError
 
 
-def vm_reader(vcpu=2, memory=1024, disk_gib=10):
+def vm_reader(vcpu=2, memory=1024, disk_gib=10, pending=None):
+    """pending: the persistent definition's values where they differ from the running VM's"""
+    live = {"vcpu": vcpu, "memory": memory, "disk_gib": disk_gib}
+    config = {**live, **(pending or {})}
+
+    class Reader:
+        def cached_reads(self):
+            return nullcontext(self)
+
+        def get_vcpu(self, config=False):
+            return values(config)["vcpu"]
+
+        def get_memory(self, config=False):
+            return values(config)["memory"]
+
+        def get_disk_devices(self, config=False):
+            return [{"size": values(config)["disk_gib"] << 30}]
+
+    def values(persistent):
+        return config if persistent else live
+
     def make(*args, **kwargs):
-        return SimpleNamespace(
-            get_vcpu=lambda: vcpu,
-            get_memory=lambda: memory,
-            get_disk_devices=lambda: [{"size": disk_gib << 30}],
-        )
+        return Reader()
 
     return make
 
@@ -81,6 +98,50 @@ class QuotaTests(TestCase):
         self.check(0, 1, 0, 0)
         # one Compute object asked (its status is cached), not one per VM
         self.assertEqual(len(set(self.status_checks)), 1)
+
+    def test_values_pending_the_next_start_count_when_larger(self):
+        for field, pending, delta, refused in (("vcpu", 3, (0, 1, 0, 0), "cpu"), ("memory", 3000, (0, 0, 1, 0), "memory"),
+                                                ("disk_gib", 40, (0, 0, 0, 1), "disk")):
+            with self.subTest(field=field):
+                Instance.objects.all().delete()
+                for n in range(3):
+                    self.own(self.up, n)  # 6 vCPUs, 3072 MiB, 30 GiB running; quota 8, 8192, 100
+                self.assertEqual(self.check(*delta)[0], "")
+                self.assertEqual(self.check(*delta, reader=vm_reader(pending={field: pending}))[0], refused)
+        # a smaller pending value: the running VM still has the larger one
+        self.assertEqual(self.check(0, 2, 0, 0, reader=vm_reader(pending={"vcpu": 1}))[0], "")
+
+    def clone_job(self, state=Operation.QUEUED, uuid="abababab-0000-0000-0000-000000000001"):
+        return Operation.objects.create(kind="instance.clone", user=self.user, username=self.user.username, state=state,
+                                        submission_key=uuid, resource="instance:x", resource_label="up/vm",
+                                        intent={"uuid": uuid, "quota": {"cpus": 4, "memory": 1024, "disk": 10}})
+
+    def test_a_clone_counts_until_its_vm_is_recorded(self):
+        for n in range(2):
+            self.own(self.up, n)  # 4 vCPUs of 8
+        self.assertEqual(self.check(0, 1, 0, 0)[0], "")
+        op = self.clone_job()
+        self.assertEqual(self.check(0, 1, 0, 0)[0], "cpu")
+        for state in (Operation.RUNNING, Operation.UNCERTAIN):
+            with self.subTest(state=state):
+                Operation.objects.filter(pk=op.pk).update(state=state)
+                self.assertEqual(self.check(0, 1, 0, 0)[0], "cpu")
+        for state in (Operation.FAILED, Operation.CANCELLED, Operation.SUCCEEDED):
+            with self.subTest(state=state):
+                Operation.objects.filter(pk=op.pk).update(state=state)
+                self.assertEqual(self.check(0, 1, 0, 0)[0], "")
+        # its VM recorded while the job still runs: the VM counts (2 vCPUs here), not the job
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING)
+        vm = Instance.objects.create(compute=self.up, name="clone", uuid=op.intent["uuid"])
+        UserInstance.objects.create(user=self.user, instance=vm)
+        self.assertEqual(self.check(0, 2, 0, 0)[0], "")
+        self.assertEqual(self.check(0, 3, 0, 0)[0], "cpu")
+
+    def test_queued_clones_count_as_instances(self):
+        UserAttributes.objects.filter(user=self.user).update(max_instances=2)
+        self.own(self.up, 1)
+        self.clone_job()
+        self.assertEqual(self.check(1, 0, 0, 0)[0], "instance")
 
     def test_a_user_over_quota_can_still_shrink(self):
         for n in range(5):
