@@ -602,9 +602,9 @@ class LiveDataLossTestCase(TestCase):
 
         def row():
             page = html.fromstring(self.client.get(reverse("instances:instance", args=[inst.id])).content)
-            (label,) = page.xpath("//label[@class='col-form-label'][contains(., 'Inbound')]")
-            fields = label.xpath("ancestor::tr[1]//input[@name]")  # the browser posts the row's inputs
-            return {f.get("name"): f.get("value") for f in fields}
+            # the browser posts the inputs of the NIC's inbound limit form
+            (form,) = page.xpath("//form[input[@name='qos_direction'][@value='inbound']]")
+            return {f.get("name"): f.get("value") for f in form.xpath(".//input[@name!='csrfmiddlewaretoken']")}
 
         self.post("set_qos", inst, {**row(), "qos_average": "1000"})
         form = row()

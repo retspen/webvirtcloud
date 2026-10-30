@@ -2883,48 +2883,6 @@ class wvmInstance(wvmConnect):
     def set_memory(self, size, flags=0):
         self.instance.setMemoryFlags(size, flags)
 
-    def get_all_qos(self, config=False):
-        qos_values = dict()
-        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML if config else 0))
-        qos = tree.xpath("/domain/devices/interface")
-
-        for q in qos:
-            bound_list = list()
-            mac = q.xpath("mac/@address")
-            band = q.find("bandwidth")
-            if band is not None:
-                in_qos = band.find("inbound")
-                if in_qos is not None:
-                    in_av = in_qos.get("average")
-                    in_peak = in_qos.get("peak")
-                    in_burst = in_qos.get("burst")
-                    in_floor = in_qos.get("floor")
-                    bound_list.append(
-                        {
-                            "direction": "inbound",
-                            "average": in_av,
-                            "peak": in_peak,
-                            "floor": in_floor,
-                            "burst": in_burst,
-                        }
-                    )
-
-                out_qos = band.find("outbound")
-                if out_qos is not None:
-                    out_av = out_qos.get("average")
-                    out_peak = out_qos.get("peak")
-                    out_burst = out_qos.get("burst")
-                    bound_list.append(
-                        {
-                            "direction": "outbound",
-                            "average": out_av,
-                            "peak": out_peak,
-                            "burst": out_burst,
-                        }
-                    )
-                qos_values[mac[0]] = bound_list
-        return qos_values
-
     def set_qos(self, mac, direction, average, peak, burst):
         if direction not in ("inbound", "outbound"):
             raise ValueError("Direction must be inbound or outbound")

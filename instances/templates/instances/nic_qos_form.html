@@ -1,0 +1,26 @@
+{% load i18n %}
+{# one QoS limit of a NIC: its values to change, or to delete #}
+<form class="mt-2" style="max-width: 32rem" action="{% url 'instances:set_qos' instance.id %}" method="post" aria-label="{% blocktrans %}{{ direction }} QoS form{% endblocktrans %}">{% csrf_token %}
+    <input type="hidden" name="net-mac" value="{{ network.mac }}">
+    <input type="hidden" name="qos_direction" value="{{ direction }}">
+    <div class="fw-semibold mb-1">{% if direction == "inbound" %}{% trans "Inbound" %}{% else %}{% trans "Outbound" %}{% endif %}</div>
+    <div class="row g-2">
+        <div class="col-4">
+            <label class="form-label small" for="qos-{{ nic }}-{{ direction }}-average">{% trans "Average" %}</label>
+            <input class="form-control form-control-sm" id="qos-{{ nic }}-{{ direction }}-average" name="qos_average" value="{{ limit.average|default:'' }}" required pattern="[0-9]+">
+        </div>
+        <div class="col-4">
+            <label class="form-label small" for="qos-{{ nic }}-{{ direction }}-peak">{% trans "Peak" %}</label>
+            <input class="form-control form-control-sm" id="qos-{{ nic }}-{{ direction }}-peak" name="qos_peak" value="{{ limit.peak|default:'' }}" pattern="[0-9]+">
+        </div>
+        <div class="col-4">
+            <label class="form-label small" for="qos-{{ nic }}-{{ direction }}-burst">{% trans "Burst" %}</label>
+            <input class="form-control form-control-sm" id="qos-{{ nic }}-{{ direction }}-burst" name="qos_burst" value="{{ limit.burst|default:'' }}" pattern="[0-9]+">
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+        <button type="submit" class="btn btn-sm btn-primary" name="set_qos">{% trans "Save" %}</button>
+        <button type="submit" class="btn btn-sm btn-danger" name="unset_qos" formaction="{% url 'instances:unset_qos' instance.id %}" formnovalidate
+                data-confirm="{% blocktrans with mac=network.mac %}Remove the {{ direction }} limit of {{ mac }}? A running VM keeps it until it is powered off and on.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Delete limit" %}</button>
+    </div>
+</form>

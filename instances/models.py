@@ -169,11 +169,6 @@ class Instance(models.Model):
         return self.proxy.get_disk_devices(config=True)
 
     @cached_property
-    def config_qos(self):
-        """QoS of the persistent definition, which the QoS form changes."""
-        return self.proxy.get_all_qos(config=True)
-
-    @cached_property
     def config_vcpu(self) -> int:
         """vCPUs of the persistent definition, which the CPU form changes."""
         return self.proxy.get_vcpu(config=True)

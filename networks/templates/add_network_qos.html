@@ -1,17 +1,12 @@
 {% load i18n %}
-{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
-    <a href="#AddQos{{ id }}" type="button" class="btn btn-sm btn-success float-end" data-bs-toggle="modal" title="add qos">
-        <span aria-hidden="true">{% bs_icon 'qr-code' %} </span>
-    </a>
-
     <!-- Modal pool -->
     <div class="modal fade" id="AddQos{{ id }}" tabindex="-1" role="dialog" aria-labelledby="AddQosLabel{{ id }}"
          aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Add QoS for Network" %}</h5>
+                    <h5 class="modal-title" id="AddQosLabel{{ id }}">{% trans "Add QoS for Network" %}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

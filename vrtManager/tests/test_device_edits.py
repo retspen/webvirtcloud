@@ -110,10 +110,8 @@ class DeviceEditsTestCase(unittest.TestCase):
             p._defineXML.assert_called_once()
             p.wvm.defineXML.assert_not_called()
 
-    def test_qos_is_read_from_either_definition_and_an_edit_keeps_the_floor(self):
+    def test_a_qos_edit_keeps_the_floor(self):
         p = proxy()
-        self.assertEqual(p.get_all_qos(config=True)["52:54:10:00:00:01"][0]["floor"], "4")
-        self.assertEqual(p.get_all_qos(), {})  # the running VM has none
         p.set_qos("52:54:10:00:00:01", "inbound", 10, 20, 30)
         inbound = defined(p).find("devices/interface[@type='network']/bandwidth/inbound")
         self.assertEqual(inbound.attrib, {"average": "10", "peak": "20", "burst": "30", "floor": "4"})

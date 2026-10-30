@@ -28,8 +28,8 @@ class PendingEditsTestCase(TestCase):
         compute = Compute.objects.create(name="pe", hostname="127.0.0.1:1", login="root", password="", type=1)
         self.instance = Instance.objects.create(compute=compute, name="pe-vm", uuid="aaaaaaaa-1111-2222-3333-444444444444")
 
-    def page(self, live=(), config=(), qos=({}, {}), status=1, **getters):
-        """live and config: disks; qos and getters (get_vcpu=(2, 4)): values of
+    def page(self, live=(), config=(), nics=((), ()), status=1, **getters):
+        """live and config: disks; nics and getters (get_vcpu=(2, 4)): values of
         the live and the persistent definition."""
         with patch("instances.models.wvmInstance") as wvm, patch.object(
             Compute, "status", new_callable=PropertyMock, return_value=True
@@ -44,12 +44,12 @@ class PendingEditsTestCase(TestCase):
                 getattr(proxy, getter).side_effect = lambda config=False, values=values: values[config]
             proxy.get_max_cpus.return_value = [1, 2, 3, 4]
             proxy.get_vcpus.return_value = {}
-            for getter in ("get_networks", "get_ifaces", "get_storages", "get_media_devices", "get_net_devices",
+            for getter in ("get_networks", "get_ifaces", "get_storages", "get_media_devices",
                            "get_snapshot", "get_snapshot_jobs"):
                 getattr(proxy, getter).return_value = []
             proxy.get_hostdevs.return_value = ([], [], [])
             proxy.get_disk_devices.side_effect = lambda **kw: config if kw.get("config") else live
-            proxy.get_all_qos.side_effect = lambda **kw: qos[1] if kw.get("config") else qos[0]
+            proxy.get_net_devices.side_effect = lambda config=False: [dict(nic) for nic in nics[config]]
             proxy.get_console_type.return_value = "vnc"
             proxy.get_video_models.return_value = ["vga", "virtio"]
             proxy.get_cache_modes.return_value = {"default": "Default", "none": "Disabled"}
@@ -70,13 +70,24 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(vda.xpath("string(.//input[@name='vol_serial']/@value)"), "")
 
     def test_the_qos_form_shows_the_pending_definition(self):
-        mac = "52:54:10:00:00:01"
-        inbound = {"direction": "inbound", "average": "500", "peak": "0", "burst": "0", "floor": None}
-        doc = self.page(qos=({mac: [inbound]}, {mac: [{**inbound, "average": "1000"}, {**inbound, "direction": "outbound"}]}))
+        nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
+               "ipv4": None, "ipv6": None, "filterref": "", "target": "vnet0", "outbound": [],
+               "inbound": {"average": "500", "peak": "0", "burst": "0"}}
+        pending = {**nic, "inbound": {"average": "1000", "peak": "0", "burst": "0"}, "outbound": nic["inbound"]}
+        doc = self.page(nics=([nic], [pending]))
+        # the pending inbound value, and the pending outbound limit has a form
         self.assertEqual(doc.xpath("//input[@name='qos_average']/@value"), ["1000", "500"])
-        # the pending outbound has a row
-        self.assertEqual([" ".join(t.split()) for t in doc.xpath("//label[@class='col-form-label']/text()")],
-                         [f"{mac} Inbound", f"{mac} Outbound"])
+        self.assertEqual(doc.xpath("//form[.//input[@name='qos_average']]//input[@name='qos_direction']/@value"),
+                         ["inbound", "outbound"])
+
+    def test_one_nic_card_spans_the_row_and_more_sit_side_by_side(self):
+        nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
+               "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}
+        second = {**nic, "mac": "52:54:10:00:00:02"}
+        for nics, wide in (([nic], ["col-12"]), ([nic, second], ["col-12 col-md-6"] * 2)):
+            with self.subTest(count=len(nics)):
+                doc = self.page(nics=(nics, nics))
+                self.assertEqual(doc.xpath("//div[@id='network']//div[article]/@class"), wide)
 
     def test_one_disk_card_spans_the_row_and_more_sit_side_by_side(self):
         for disks, wide in (([disk("vda", "default", "")], ["col-12"]),

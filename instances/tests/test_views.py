@@ -1012,7 +1012,7 @@ class InstancesTestCase(TestCase):
         self.assertEqual(self.instance.networks[0]["state"], "down")
 
     def test_set_unset_qos(self):
-        self.assertEqual(len(self.instance.config_qos.keys()), 0)
+        self.assertFalse(self.instance.config_networks[0]["inbound"])
         net_mac = self.instance.networks[0]["mac"]
         response = self.client.post(
             reverse("instances:set_qos", args=[self.instance.id]),
@@ -1027,8 +1027,8 @@ class InstancesTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 302)
 
-        del self.instance.config_qos
-        self.assertEqual(len(self.instance.config_qos.keys()), 1)
+        del self.instance.config_networks
+        self.assertEqual(self.instance.config_networks[0]["inbound"]["average"], "1")
 
         response = self.client.post(
             reverse("instances:unset_qos", args=[self.instance.id]),
@@ -1039,8 +1039,8 @@ class InstancesTestCase(TestCase):
             HTTP_REFERER=reverse("index"),
         )
         self.assertEqual(response.status_code, 302)
-        del self.instance.config_qos
-        self.assertEqual(len(self.instance.config_qos.keys()), 0)
+        del self.instance.config_networks
+        self.assertFalse(self.instance.config_networks[0]["inbound"])
 
         # test on running instance
         # self.instance.proxy.start()

@@ -1,16 +1,14 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% if request.user.is_superuser %}
-    <button type="button" class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#addInstanceNetwork">
-        <span aria-hidden="true">{% bs_icon 'plus'%} </span>
-    </button>
+    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addInstanceNetwork">{% bs_icon 'plus' %} {% trans "Add network device" %}</button>
 
     <!-- Modal pool -->
     <div class="modal fade" id="addInstanceNetwork" tabindex="-1" role="dialog" aria-labelledby="addInstanceNetworkLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Add Instance Network" %}</h5>
+                    <h5 class="modal-title" id="addInstanceNetworkLabel">{% trans "Add Instance Network" %}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="{% url 'instances:add_network' instance.id %}" method="post" role="form" aria-label="Add instance network form">{% csrf_token %}
