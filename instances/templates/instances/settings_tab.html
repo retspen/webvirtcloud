@@ -92,82 +92,57 @@
         {% endif %}
         {% if request.user.is_superuser %}
         <div role="tabpanel" class="tab-pane active" id="boot_opt">
-            <p class="fw-bold">{% trans 'Autostart' %}</p>
-                <div class="row">
-                    <div class="col-sm-12 text-center">
-                    <p>{% trans "Autostart your instance when host server is power on " %}</p>
-                        {% if instance.autostart == 0 %}
-                            <form action="{% url 'instances:set_autostart' instance.id %}" method="post" class="d-inline">{% csrf_token %}
-                                <button type="submit" class="btn btn-primary">{% trans "Enable" %}</button>
-                            </form>
-                        {% else %}
-                            <form action="{% url 'instances:unset_autostart' instance.id %}" method="post" class="d-inline">{% csrf_token %}
-                                <button type="submit" class="btn btn-danger">{% trans "Disable" %}</button>
-                            </form>
-                        {% endif %}
+            <section class="mb-4" aria-labelledby="startup-heading">
+                <h2 class="h6" id="startup-heading">{% trans "Startup settings" %}</h2>
+                <div class="list-group">
+                    <div class="list-group-item py-3">
+                        <form action="{% if instance.autostart %}{% url 'instances:unset_autostart' instance.id %}{% else %}{% url 'instances:set_autostart' instance.id %}{% endif %}" method="post">{% csrf_token %}
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="autostart" aria-describedby="autostart-help"{% if instance.autostart %} checked{% endif %} onchange="this.form.submit()">
+                                <label class="form-check-label fw-semibold" for="autostart">{% trans "Autostart" %}</label>
+                            </div>
+                            <p class="small text-body-secondary mb-0 mt-1" id="autostart-help">{% trans "Start this VM when the host starts." %}</p>
+                        </form>
+                    </div>
+                    <div class="list-group-item py-3">
+                        <form action="{% if instance.config_bootmenu %}{% url 'instances:unset_bootmenu' instance.id %}{% else %}{% url 'instances:set_bootmenu' instance.id %}{% endif %}" method="post">{% csrf_token %}
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="bootmenu" aria-describedby="bootmenu-help"{% if instance.config_bootmenu %} checked{% endif %} onchange="this.form.submit()">
+                                <label class="form-check-label fw-semibold" for="bootmenu">{% trans "Boot menu" %}</label>
+                            </div>
+                            <p class="small text-body-secondary mb-0 mt-1" id="bootmenu-help">{% trans "Show a device chooser when the VM starts." %}</p>
+                        </form>
                     </div>
                 </div>
-            <p class="fw-bold">{% trans 'Boot Order' %}</p>
-                <div class="row">
-                    <div class="col-sm-12 text-center">
-                    {% if instance.status == 5 %}
-                        <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
-                        {% if instance.config_bootmenu == 0 %}
-                            <form action="{% url 'instances:set_bootmenu' instance.id %}" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
-                                <input type="submit" class="btn btn-primary" name="set_bootmenu" title="{% trans 'Show boot menu' %}" value="{% trans "Enable" %}">
-                            </form>
-                        {% else %}
-                            <form action="{% url 'instances:unset_bootmenu' instance.id %}" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
-                                <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="{% trans 'Hide boot menu' %}" value="{% trans "Disable" %}">
-                            </form>
-                        {% endif %}
-                    {% else %}
-                        {% if instance.config_bootmenu == 0  %}
-                            <p>**** {% trans "Please shutdown instance to modify boot menu" %} ****</p>
-                        {% endif %}
-                    {% endif %}
-                    </div>
-                </div>
-
-            {% if instance.config_bootmenu == 1  %}
-                <div class="d-flex justify-content-center">
-                    <div class="col-sm-6 bg-light rounded shadow-sm">
-                        {% for idx, val in instance.config_boot_order.items %}
-                            <label>{{ idx|add:1 }}:{{ val.target }}, </label>
+            </section>
+            <section aria-labelledby="boot-order-heading">
+                <h2 class="h6" id="boot-order-heading">{% trans "Boot order" %}</h2>
+                <p class="small text-body-secondary" id="boot-order-help">{% trans "Checked devices boot from top to bottom. Up and Down move all checked devices." %}</p>
+                {% if instance.config_boot_order and not instance.config_boot_devices.0.checked %}
+                    <p class="small text-body-secondary" id="boot-by-type">
+                        {% trans "The VM now boots by device type:" %}
+                        {% for b in instance.config_boot_order.values %}{{ b.target }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+                        {% trans "Checking devices replaces this order." %}
+                    </p>
+                {% endif %}
+                <form action="{% url 'instances:set_bootorder' instance.id %}" method="post" aria-labelledby="boot-order-heading" aria-describedby="boot-order-help">{% csrf_token %}
+                    <input type="hidden" id="bootorder" name="bootorder">
+                    <div id="b_order" class="list-group boot-sequence mb-3">
+                        {% for device in instance.config_boot_devices %}
+                            <label class="list-group-item d-flex align-items-center gap-3">
+                                <input class="form-check-input flex-shrink-0 m-0" type="checkbox" value="{{ device.value }}"{% if device.checked %} checked{% endif %}>
+                                <span class="boot-rank small text-body-secondary" aria-hidden="true"></span>
+                                <span class="text-break"><strong>{{ device.name }}</strong><span class="d-block small text-body-secondary">{{ device.kind }} · {{ device.source|default:_("empty") }}</span></span>
+                            </label>
                         {% endfor %}
                     </div>
-                </div>
-                <form action="{% url 'instances:set_bootorder' instance.id %}" method="post" role="form" aria-label="Boot order edit form">{% csrf_token %}
-                    <input id="bootorder" name="bootorder" hidden>
-                    <div class="d-flex justify-content-center">
-                        <div id="b_order" class="list-group me-3">
-                            {% for disk in instance.config_disks %}
-                                <label class="list-group-item"><input class="form-check-input me-2" type="checkbox" name="disk:{{ disk.dev }}" value="disk:{{ disk.dev }}" onclick="set_orderlist($('#bootorder'))">{{ disk.dev }} - {{ disk.image }}</label>
-                            {% endfor %}
-                            {% for cd in instance.config_media %}
-                                <label class="list-group-item"><input class="form-check-input me-2" type="checkbox" name="cdrom:{{ cd.dev }}" value="cdrom:{{ cd.dev }}" onclick="set_orderlist($('#bootorder'))">{{ cd.dev }} - {{ cd.image }}</label>
-                            {% endfor %}
-                            {% for net in instance.config_networks %}
-                                <label class="list-group-item"><input class="form-check-input me-2" type="checkbox" name="network:{{ net.mac }}" value="network:{{ net.mac }}" onclick="set_orderlist($('#bootorder'))">NIC - {{ net.mac|slice:"9:" }}</label>
-                            {% endfor %}
-                        </div>
-                        <div>
-                            <div class="row mt-4">
-                                <a href="#" id="boot_order_up" class="btn btn-light shadow-sm"><span title="{% trans 'up: move selected devices' %}">{% bs_icon 'arrow-up' %} </span></a>
-                            </div>
-                            <div class="row mt-2">
-                                <a href="#" id="boot_order_down" class="btn btn-light shadow-sm"><span title="{% trans 'down: move selected devices' %}">{% bs_icon 'arrow-down' %} </span></a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-center">
-                        <div class="d-grid col-sm-6">
-                            <input type="submit" class="btn btn-primary" name="set_bootorder" value="{% trans "Apply" %}">
-                        </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" id="boot_order_up" class="btn btn-sm btn-secondary">{% bs_icon 'arrow-up' %} {% trans "Up" %}</button>
+                        <button type="button" id="boot_order_down" class="btn btn-sm btn-secondary">{% bs_icon 'arrow-down' %} {% trans "Down" %}</button>
+                        <button type="submit" class="btn btn-sm btn-primary ms-auto">{% trans "Apply order" %}</button>
                     </div>
                 </form>
-            {% endif %}
-            <div class="clearfix"></div>
+            </section>
         </div>
         <div role="tabpanel" class="tab-pane" id="disks">
             {# its CD-ROM drives, then its disks as cards; the forms are those of the actions #}

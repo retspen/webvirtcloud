@@ -68,7 +68,7 @@ class DeviceGettersTestCase(unittest.TestCase):
         order = proxy().get_bootorder()
         self.assertEqual(
             [order[i]["target"] for i in range(4)],
-            ["nic-00:00:02", "nic-00:00:03", "vda", "vdb"],
+            ["52:54:10:00:00:02", "52:54:10:00:00:03", "vda", "vdb"],
         )
 
 

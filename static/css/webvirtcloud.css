@@ -102,3 +102,25 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 .host-nav .breadcrumb-item + .breadcrumb-item::before {
     padding-right: var(--bs-breadcrumb-item-padding-x);
 }
+
+/* the boot order editor numbers its checked devices, top to bottom */
+.boot-sequence {
+    counter-reset: boot;
+}
+
+.boot-sequence > label:has(> input:checked) {
+    counter-increment: boot;
+}
+
+.boot-rank {
+    width: 1rem;
+    text-align: center;
+}
+
+.boot-rank::before {
+    content: "—";
+}
+
+.boot-sequence > label:has(> input:checked) .boot-rank::before {
+    content: counter(boot);
+}

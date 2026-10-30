@@ -1029,9 +1029,8 @@ class wvmInstance(wvmConnect):
                     dev_target = dev.find("target").get("dev")
 
                 elif dev.tag == "interface":  # network, bridge or direct
-                    dev_mac = dev.find("mac").get("address")
                     dev_device = "network"
-                    dev_target = f"nic-{dev_mac[9:]}"
+                    dev_target = dev.find("mac").get("address")
                 # pass dev_type usb
                 boot_order[int(idx) - 1] = {
                     "type": dev_type,
@@ -1045,21 +1044,13 @@ class wvmInstance(wvmConnect):
         if not devorder:
             return
 
-        def remove_bootorder():
-            tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
-            os = tree.find("os")
-            boot = os.findall("boot")
-            # Remove old style boot order
-            for b in boot:
-                os.remove(b)
-            # Remove rest of them
-            for dev in tree.find("devices"):
-                boot_dev = dev.find("boot")
-                if boot_dev is not None:
-                    dev.remove(boot_dev)
-            return tree
-
-        tree = remove_bootorder()
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        # the order lists disks, CD-ROM drives and NICs: it does not drop another device's place
+        if tree.xpath("./devices/*[not(self::disk[@device='disk' or @device='cdrom'] or self::interface)]/boot"):
+            raise util.OperationError("A device other than a disk or NIC is in the boot order: change it in the XML editor")
+        # it replaces the order by device type and every device's place
+        for boot in tree.xpath("./os/boot | ./devices/*/boot"):
+            boot.getparent().remove(boot)
 
         for idx, dev in devorder.items():
             order = etree.fromstring("<boot order='{}'/>".format(idx + 1))

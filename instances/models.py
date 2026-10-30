@@ -202,6 +202,24 @@ class Instance(models.Model):
         return self.proxy.get_bootorder(config=True)
 
     @cached_property
+    def config_boot_devices(self) -> list[dict]:
+        """The disks, CD-ROM drives and NICs the boot order editor lists, those
+        in the boot order first in their position; value is as posted, as in
+        "disk:vda"."""
+        order = [f"{d['dev']}:{d['target']}" for position, d in sorted(self.config_boot_order.items())]
+        devices = (
+            [{"value": f"disk:{d['dev']}", "name": d["dev"], "kind": _("Disk"), "source": d["image"]}
+             for d in self.config_disks]
+            + [{"value": f"cdrom:{d['dev']}", "name": d["dev"], "kind": _("CD-ROM"), "source": d["image"]}
+               for d in self.config_media]
+            + [{"value": f"network:{n['mac']}", "name": n["mac"], "kind": _("NIC"), "source": n["nic"]}
+               for n in self.config_networks]
+        )
+        for device in devices:
+            device["checked"] = device["value"] in order
+        return sorted(devices, key=lambda d: order.index(d["value"]) if d["checked"] else len(order))
+
+    @cached_property
     def config_video_model(self) -> str | None:
         """Video model and console settings of the persistent definition,
         which their forms change."""

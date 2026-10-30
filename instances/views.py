@@ -1658,28 +1658,24 @@ def unset_bootmenu(request, pk):
 def set_bootorder(request, pk):
     instance = get_instance(request.user, pk)
     bootorder = request.POST.get("bootorder", "")
-    if bootorder:
-        order_list = {}
-        for idx, val in enumerate(bootorder.split(",")):
-            dev_type, dev = val.split(":", 1)
-            order_list[idx] = {"type": dev_type, "dev": dev}
-        try:
-            with audit_vm(request, instance, "change boot order"):
-                instance.proxy.set_bootorder(order_list)
-        except util.OperationError as err:
-            messages.error(request, err)
-            return _back(request, pk, "boot_opt")
+    if not bootorder:
+        messages.error(request, _("Check at least one device to boot from."))
+        return _back(request, pk, "boot_opt")
+    order_list = {}
+    for idx, val in enumerate(bootorder.split(",")):
+        dev_type, dev = val.split(":", 1)
+        order_list[idx] = {"type": dev_type, "dev": dev}
+    try:
+        with audit_vm(request, instance, "change boot order"):
+            instance.proxy.set_bootorder(order_list)
+    except util.OperationError as err:
+        messages.error(request, err)
+        return _back(request, pk, "boot_opt")
 
-        if not instance.proxy.get_status() == 5:
-            messages.success(
-                request,
-                _(
-                    "Boot menu changes applied. "
-                    + "But it will be activated after shutdown"
-                ),
-            )
-        else:
-            messages.success(request, _("Boot order changed successfully."))
+    if instance.proxy.get_status() != 5:
+        messages.success(request, _("Boot order changed. It applies at the next start."))
+    else:
+        messages.success(request, _("Boot order changed successfully."))
     return _back(request, pk, "boot_opt")
 
 

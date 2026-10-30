@@ -226,63 +226,39 @@
     });
 </script>
 <script>
-    function set_orderlist(obj){
-        var result = '';
-        $('#b_order label input:checked').each(function () {
-            if (result != '') result += ',';
-            result += $(this).val();
-        });
-        obj.val(result);
+    // the boot order: the checked devices, top to bottom, as "disk:vda,cdrom:sda"
+    function set_orderlist() {
+        var order = $('#b_order input:checked').map(function () { return this.value; }).get();
+        $('#bootorder').val(order.join(','));
     }
-    $(document).ready(function () {
-    {# Boot Order Arragements #}
-    jQuery.fn.multiselect = function() {
-        $(this).each(function() {
-            var checkboxes = $(this).find("input:checkbox");
-            checkboxes.each(function() {
-                var checkbox = $(this);
-                // Highlight pre-selected checkboxes
-                if (checkbox.prop("checked"))
-                    checkbox.parent().addClass("multiselect-on");
-                // Highlight checkboxes that the user selects
-                checkbox.click(function() {
-                    if (checkbox.prop("checked"))
-                        checkbox.parent().addClass("multiselect-on");
-                    else
-                        checkbox.parent().removeClass("multiselect-on");
-                });
+    $(function () {
+        set_orderlist();
+        $('#b_order').on('change', 'input', set_orderlist);
+
+        $('#boot_order_up').on('click', function () {
+            $('#b_order label input:checked').each(function () {
+                var label = $(this).parent();
+                var newPos = label.index() - 1;
+                if (newPos > -1) {
+                    $('#b_order label').eq(newPos).before(label);
+                }
             });
+            set_orderlist();
         });
-    };
-    $(function() {
-     $(".multiselect").multiselect();
-    });
 
-    $('#boot_order_up').bind('click', function() {
-        $('#b_order label input:checked').each( function() {
-            var label = $(this).parent();
-            var newPos = label.index() - 1;
-            if (newPos > -1) {
-                 // moved, not rebuilt: the checkbox keeps its handler
-                 $('#b_order label').eq(newPos).before(label);
-            }
+        $('#boot_order_down').on('click', function () {
+            var countOptions = $('#b_order label').length;
+            var countSelected = $('#b_order label input:checked').length;
+            $('#b_order label input:checked').each(function () {
+                var label = $(this).parent();
+                var newPos = label.index() + countSelected;
+                if (newPos < countOptions) {
+                    $('#b_order label').eq(newPos).after(label);
+                }
+            });
+            set_orderlist();
         });
-        set_orderlist($("#bootorder"));
     });
-
-    $('#boot_order_down').bind('click', function() {
-        var countOptions = $('#b_order label').length;
-        var countSelected = $('#b_order label input:checked').length;
-        $('#b_order label input:checked').each( function() {
-            var label = $(this).parent();
-            var newPos = label.index() + countSelected;
-            if (newPos < countOptions) {
-                $('#b_order label').eq(newPos).after(label);
-            }
-        });
-       set_orderlist($("#bootorder"));
-    });
-});
 </script>
 <script>
     $(function () {

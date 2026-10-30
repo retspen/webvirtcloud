@@ -140,6 +140,16 @@ class DeviceEditsTestCase(unittest.TestCase):
                 p.set_bootorder({0: {"type": "disk", "dev": "vda"}, 1: choice})
         p._defineXML.assert_not_called()
 
+    def test_a_boot_order_holding_a_device_the_list_does_not_show_is_not_replaced(self):
+        for other in ("<hostdev mode='subsystem' type='pci'><boot order='2'/></hostdev>",
+                      "<disk type='file' device='floppy'><target dev='fda'/><boot order='2'/></disk>"):
+            with self.subTest(other):
+                p = proxy()
+                p._XMLDesc = lambda flags, other=other: PERSISTENT.replace("<video>", other + "<video>")
+                with self.assertRaises(util.OperationError):
+                    p.set_bootorder({0: {"type": "disk", "dev": "vda"}})
+                p._defineXML.assert_not_called()
+
     def test_the_default_nic_model_leaves_the_choice_to_libvirt(self):
         p = proxy()
         p.change_network("52:54:10:00:00:01", "52:54:10:00:00:01", "default", "net", "default", "")

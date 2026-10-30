@@ -147,12 +147,23 @@ class PendingEditsTestCase(TestCase):
                 get_console_passwd=("live-pw", "pending-pw"),
             )
         (boot,) = doc.xpath("//form[@action=$a]", a=reverse("instances:set_bootorder", args=[self.instance.id]))
-        self.assertEqual(boot.xpath(".//input[@type='checkbox']/@value"), ["disk:vda", "disk:vdb", "cdrom:sda"])
-        self.assertIn("1:sda", doc.xpath("string(//div[label[contains(., ':')]])"))
+        # the devices in the order first, checked
+        self.assertEqual(boot.xpath(".//input[@type='checkbox']/@value"), ["cdrom:sda", "disk:vda", "disk:vdb"])
+        self.assertEqual(boot.xpath(".//input[@checked]/@value"), ["cdrom:sda"])
+        # the pending boot menu is on: its switch turns it off, also while the VM runs
+        self.assertEqual(doc.xpath("//input[@id='bootmenu']/ancestor::form/@action"),
+                         [reverse("instances:unset_bootmenu", args=[self.instance.id])])
         self.assertEqual(doc.xpath("//select[@name='video_model']/option[@selected]/@value"), ["virtio"])
         self.assertEqual(doc.xpath("//select[@name='keymap']/option[@selected]/@value"), ["de"])
         self.assertEqual(doc.xpath("//select[@name='listen_on']/option[@selected]/@value"), ["0.0.0.0"])
         self.assertEqual(doc.xpath("//input[@name='password']/@value"), ["pending-pw"])
+
+    def test_a_boot_order_by_device_type_is_named_and_no_device_is_checked(self):
+        doc = self.page(live=[disk("vda", "default", "")], config=[disk("vda", "default", "")],
+                        get_bootorder=({}, {0: {"type": "file", "dev": "hd", "target": "disk"},
+                                            1: {"type": "file", "dev": "cdrom", "target": "cdrom"}}))
+        self.assertIn("disk, cdrom.", " ".join(doc.xpath("string(//p[@id='boot-by-type'])").split()))
+        self.assertEqual(doc.xpath("//div[@id='b_order']//input[@checked]"), [])
 
     def test_a_boot_order_choice_not_in_the_definition_is_refused(self):
         with patch("instances.models.wvmInstance") as wvm:
@@ -160,6 +171,12 @@ class PendingEditsTestCase(TestCase):
             response = self.client.post(reverse("instances:set_bootorder", args=[self.instance.id]),
                                         {"bootorder": "disk:vda,disk:vdz"})
         self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Boot device vdz is not in the definition"])
+
+    def test_an_empty_boot_order_is_refused(self):
+        with patch("instances.models.wvmInstance") as wvm:
+            response = self.client.post(reverse("instances:set_bootorder", args=[self.instance.id]), {"bootorder": ""})
+        wvm.return_value.set_bootorder.assert_not_called()
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Check at least one device to boot from."])
 
     def test_an_active_vm_says_its_settings_apply_at_the_next_start(self):
         for status, shown in ((1, True), (3, True), (5, False)):

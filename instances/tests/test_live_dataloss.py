@@ -493,7 +493,7 @@ class LiveDataLossTestCase(TestCase):
 
         page = html.fromstring(self.client.get(reverse("instances:instance", args=[inst.id])).content)
         (boot,) = page.xpath("//form[@action=$a]", a=reverse("instances:set_bootorder", args=[inst.id]))
-        self.assertEqual(boot.xpath(".//input[@type='checkbox']/@value"), ["disk:vda", "network:52:54:00:aa:05:21"])
+        self.assertEqual(boot.xpath(".//input[@type='checkbox']/@value"), ["network:52:54:00:aa:05:21", "disk:vda"])
         self.assertEqual(page.xpath("//select[@name='video_model']/option[@selected]/@value"), [video])
 
         self.post("set_bootorder", inst, {"bootorder": "network:52:54:00:aa:05:22,disk:vda"})
