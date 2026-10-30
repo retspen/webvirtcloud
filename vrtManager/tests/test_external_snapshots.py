@@ -766,7 +766,7 @@ class DestroyFilesTestCase(unittest.TestCase):
                 "<devices/>", f"<devices><disk type='file' device='disk'><source file='{point}'/><target dev='vda'/></disk></devices>"
             )
         p = proxy(external=[snap for snap, _ in snaps], xml=self.TOP)
-        p.get_disk_devices = lambda: [{"path": top}]
+        p.get_disk_devices = lambda config=False: [{"path": top}]
         backing = {
             "/pool/a.two": "/pool/a.one", "/pool/a.one": "/pool/a.qcow2", "/pool/a.qcow2": "/templates/base.qcow2",
         }

@@ -803,14 +803,17 @@ def destroy(request, pk):
         with libvirt_instance_lock(instance):
             with audit_vm(request, instance, "delete"):
                 proxy = instance.proxy
+                # the files to delete are known before the VM is stopped: a
+                # host that cannot be checked refuses the destruction
+                to_delete, shared = [], []
+                if options.validated_data["delete_disk"]:
+                    to_delete, shared = proxy.split_disk_paths_by_use(
+                        lambda own: utils.paths_used_on_other_computes(instance.compute, own))
+
                 # Paused and other active states must stop too, or the VM keeps
                 # running as a transient domain after the undefine.
                 if proxy.instance.isActive():
                     proxy.force_shutdown()
-
-                to_delete, shared = [], []
-                if options.validated_data["delete_disk"]:
-                    to_delete, shared = proxy.split_disk_paths_by_use()
 
                 # Undefine before deleting any disk: if it fails, nothing is lost.
                 # Snapshot metadata goes with the domain; internal snapshot data

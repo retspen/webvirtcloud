@@ -1691,18 +1691,25 @@ class wvmInstance(wvmConnect):
         are this VM's: their backing files do not count."""
         return self.paths_in_use(self.instance.UUIDString(), own)
 
-    def split_disk_paths_by_use(self):
+    def split_disk_paths_by_use(self, elsewhere=None):
         """This VM's disk paths, split into (only this VM, also used by another
-        domain). With external snapshots, the files below a disk that the
-        snapshots were taken on, and their memory files, are the VM's too, and
-        so is its cloud-init seed, in a CD-ROM drive or ejected."""
+        domain). Its disks are those it runs with and those of its next start.
+        With external snapshots, the files below a disk that the snapshots
+        were taken on, and their memory files, are the VM's too, and so is its
+        cloud-init seed, in a CD-ROM drive or ejected. elsewhere(own): the
+        paths of these that other hosts use."""
         self.refresh_instance_pools()
-        own = [disk["path"] for disk in self.get_disk_devices() if disk["path"]]
+        own = []
+        for disk in self.get_disk_devices() + self.get_disk_devices(config=True):
+            if disk["path"] and disk["path"] not in own:
+                own.append(disk["path"])
         own += self._snapshot_chain_files(own)
         seed = self._seed_path()
         if seed:
             own.append(seed)
         used_elsewhere = self.paths_used_by_other_domains(own)
+        if elsewhere:
+            used_elsewhere |= elsewhere(own)
         # a kept file keeps the files below it
         for path in [path for path in own if path in used_elsewhere]:
             while (path := self.backing_path(path)) and path not in used_elsewhere:

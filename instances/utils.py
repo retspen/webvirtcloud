@@ -5,13 +5,16 @@ import string
 
 from accounts.models import UserInstance, UserAttributes
 from appsettings.settings import app_settings
+from computes.models import Compute
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from logs.audit import reason, write
 from operations.models import Operation
+from vrtManager.connection import wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
+from vrtManager.util import OperationError
 
 from .models import Instance
 
@@ -41,6 +44,25 @@ def get_clone_free_names(size=10):
             free_names.append(new_name)
         index += 1
     return free_names
+
+
+def paths_used_on_other_computes(compute, own):
+    """The paths in own that the VMs and volumes of the panel's other computes
+    use (paths_in_use): shared storage holds a file at the same path on every
+    host that mounts it, as migration needs. OperationError naming a compute
+    that cannot be read: it might use them."""
+    used = set()
+    host = wvmConnect(compute.hostname, compute.login, compute.password, compute.type).host_uuid()
+    for other in Compute.objects.exclude(pk=compute.pk):
+        try:
+            conn = wvmConnect(other.hostname, other.login, other.password, other.type)
+            if host and conn.host_uuid() == host:
+                continue  # the VM's own host under another record: its VM is the one going
+            used |= conn.paths_in_use(own=own)
+        except libvirtError as err:
+            raise OperationError(_("The disk files cannot be checked on %(host)s: %(err)s") % {
+                "host": other.name, "err": err.get_error_message()}) from err
+    return used & set(own)
 
 
 def disk_gib(disks):

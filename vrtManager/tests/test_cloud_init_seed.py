@@ -88,7 +88,7 @@ class DeleteWithDisksTestCase(unittest.TestCase):
         vm.wvm = MagicMock()
         vm.refresh_instance_pools = MagicMock()
         vm.get_uuid = lambda: UUID
-        vm.get_disk_devices = lambda: [{"path": "/pool/web-1.qcow2"}]
+        vm.get_disk_devices = lambda config=False: [{"path": "/pool/web-1.qcow2"}]
         vm._snapshot_chain_files = lambda own: []
         vm.paths_used_by_other_domains = lambda own: set()
         vm.backing_path = lambda path: None
@@ -111,6 +111,13 @@ class DeleteWithDisksTestCase(unittest.TestCase):
     def test_a_vm_without_a_seed_deletes_only_its_disks(self):
         vm, _ = self.vm(seed_in_pool=False)
         self.assertEqual(vm.split_disk_paths_by_use(), (["/pool/web-1.qcow2"], []))
+
+    def test_its_next_start_disks_and_the_files_other_hosts_use(self):
+        vm, _ = self.vm(seed_in_pool=False)
+        vm.get_disk_devices = lambda config=False: [{"path": "/pool/web-1.qcow2"}] + (
+            [{"path": "/nfs/pending.qcow2"}] if config else [])
+        self.assertEqual(vm.split_disk_paths_by_use(lambda own: {"/nfs/pending.qcow2"} & set(own)),
+                         (["/pool/web-1.qcow2"], ["/nfs/pending.qcow2"]))
 
 
 class CloneTestCase(unittest.TestCase):

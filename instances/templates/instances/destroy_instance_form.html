@@ -36,7 +36,7 @@
         {% endfor %}
     </ul>
     {% endif %}
-    <p class="small text-body-secondary">{% trans "A file another VM on this host uses, directly or under its own disk, is kept, and so is the template a disk was made from." %}</p>
+    <p class="small text-body-secondary">{% trans "A file another VM uses on any of the panel's hosts, directly or under its own disk, is kept, and so is the template a disk was made from. If a host cannot be checked, the VM is not destroyed." %}</p>
     {% if instance.nvram %}
     <div class="form-check mb-3">
         <input class="form-check-input" type="checkbox" name="delete_nvram" value="true" id="delete_nvram" checked>

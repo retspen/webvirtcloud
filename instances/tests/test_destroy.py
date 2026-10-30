@@ -7,6 +7,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
+from instances.utils import paths_used_on_other_computes
 from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, libvirtError
 from vrtManager.util import OperationError
 
@@ -97,6 +98,32 @@ class DestroyOrderTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         proxy.get_volume_by_path.assert_called_once_with("/pool/a.qcow2")
 
+    def test_the_files_are_checked_before_the_vm_is_stopped(self):
+        with patch("instances.models.wvmInstance") as wvm:
+            proxy = wvm.return_value
+            proxy.instance.isActive.return_value = True
+            proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], [])
+            self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
+        calls = [name for name, *_ in proxy.mock_calls if name in ("split_disk_paths_by_use", "force_shutdown", "delete")]
+        self.assertEqual(calls, ["split_disk_paths_by_use", "force_shutdown", "delete"])
+
+    def test_a_host_that_cannot_be_checked_stops_nothing(self):
+        Compute.objects.create(name="other-host", hostname="192.0.2.50", login="u", password="p", type=1)
+        def connect(host, *args):
+            if host == "192.0.2.50":
+                raise libvirtError("unreachable")
+            return MagicMock()
+
+        with patch("instances.models.wvmInstance") as wvm, patch("instances.utils.wvmConnect", side_effect=connect):
+            proxy = wvm.return_value
+            proxy.instance.isActive.return_value = True
+            proxy.split_disk_paths_by_use.side_effect = lambda elsewhere: elsewhere(["/pool/own.qcow2"])
+            response = self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
+        proxy.force_shutdown.assert_not_called()
+        proxy.delete.assert_not_called()
+        self.assertTrue(Instance.objects.filter(pk=self.instance.pk).exists())
+        self.assertIn("The disk files cannot be checked on other-host", str(list(get_messages(response.wsgi_request))[-1]))
+
     def test_disks_are_deleted_after_the_undefine(self):
         proxy = self.destroy()
         proxy.get_volume_by_path.assert_called_once_with("/pool/own.qcow2")
@@ -153,3 +180,46 @@ class DestroyOrderTestCase(TestCase):
             wvm.return_value.get_status.return_value = 3  # paused
             response = self.client.get(reverse("instances:destroy", args=[self.instance.id]))
         self.assertIn('id="delete_form"', response.content.decode())
+
+
+class OtherComputesTestCase(TestCase):
+    """The files of a VM another host's VM or volume uses: shared storage
+    holds them at the same path on every host that mounts it."""
+
+    def setUp(self):
+        self.source = Compute.objects.create(name="source", hostname="192.0.2.60", login="u", password="p", type=1)
+        Compute.objects.create(name="host-b", hostname="192.0.2.61", login="u", password="p", type=1)
+        Compute.objects.create(name="host-c", hostname="192.0.2.62", login="u", password="p", type=1)
+
+    def test_the_paths_another_host_uses(self):
+        hosts = self.hosts({"192.0.2.61": {"/nfs/a.qcow2", "/nfs/unrelated.qcow2"}, "192.0.2.62": {"/nfs/b.qcow2"}})
+        own = ["/nfs/a.qcow2", "/nfs/b.qcow2", "/local/c.qcow2"]
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
+            self.assertEqual(paths_used_on_other_computes(self.source, own), {"/nfs/a.qcow2", "/nfs/b.qcow2"})
+        # the VM's own host is checked by split_disk_paths_by_use itself; on the
+        # others too, the backing files of the VM's own volumes do not count
+        hosts["192.0.2.60"].paths_in_use.assert_not_called()
+        hosts["192.0.2.61"].paths_in_use.assert_called_once_with(own=own)
+        hosts["192.0.2.62"].paths_in_use.assert_called_once_with(own=own)
+
+    def test_another_record_of_the_vm_s_own_host_is_skipped(self):
+        # there the VM itself uses its files: they would all be kept
+        hosts = self.hosts({"192.0.2.61": {"/pool/a.qcow2"}, "192.0.2.62": set()}, same_host="192.0.2.61")
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
+            self.assertEqual(paths_used_on_other_computes(self.source, ["/pool/a.qcow2"]), set())
+        hosts["192.0.2.61"].paths_in_use.assert_not_called()
+
+    def hosts(self, used, same_host=None):
+        """Connections by host name; same_host is the source host under another record."""
+        hosts = {"192.0.2.60": MagicMock(**{"host_uuid.return_value": "aaaaaaaa-0000-0000-0000-000000000060"})}
+        for n, (host, paths) in enumerate(used.items()):
+            uuid = "aaaaaaaa-0000-0000-0000-000000000060" if host == same_host else f"bbbbbbbb-0000-0000-0000-00000000000{n}"
+            hosts[host] = MagicMock(**{"host_uuid.return_value": uuid, "paths_in_use.return_value": paths})
+        return hosts
+
+    def test_a_host_that_cannot_be_read_is_an_error(self):
+        hosts = self.hosts({"192.0.2.61": set(), "192.0.2.62": set()})
+        hosts["192.0.2.61"].paths_in_use.side_effect = libvirtError("connection refused")
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
+            with self.assertRaisesMessage(OperationError, "The disk files cannot be checked on host-b"):
+                paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"])

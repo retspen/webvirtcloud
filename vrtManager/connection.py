@@ -408,6 +408,10 @@ class wvmConnect(object):
         """The host's capabilities, read once per object (a request): most getters below parse them"""
         return self.wvm.getCapabilities()
 
+    def host_uuid(self):
+        """The host's UUID (capabilities): compute records of one host share it"""
+        return util.get_xml_path(self.capabilities_xml, "/capabilities/host/uuid")
+
     @cached_property
     def host_info(self):
         """The host's info (architecture, memory in MiB, CPUs, ...), read once per object"""
