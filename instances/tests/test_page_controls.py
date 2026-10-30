@@ -87,7 +87,7 @@ class PageControls:
         found = {
             "console": bool(doc.xpath("//button[@id='console_button']")),
             "vv file": bool(doc.xpath("//a[@href=$a]", a=reverse("instances:getvvfile", args=[pk]))),
-            "vdi": bool(doc.xpath("//*[@id='vdiconsole']")),
+            "vdi": bool(doc.xpath("//*[@id='vdi_url']")),
             "power": form("poweron") or bool(doc.xpath("//button[@formaction=$a]", a=reverse("instances:poweroff", args=[pk]))),
             "root password": form("rootpasswd"),
             "ssh key": form("add_public_key"),
@@ -196,6 +196,14 @@ class PageControlsTestCase(PageControls, TestCase):
                     a=reverse("instances:resize_disk", args=[self.instance.id]),
                 )
                 self.assertEqual(bool(buttons), enabled)
+
+    def test_a_remote_viewer_only_for_a_console_beyond_the_host_s_loopback(self):
+        admin = get_user_model().objects.create_superuser("vdi_admin", "vdi@example.com", "x")
+        for listen, shown in (("0.0.0.0", True), ("192.0.2.5", True), ("127.0.0.2", False), ("::1", False)):
+            with self.subTest(listen=listen), patch("instances.models.Instance.console_listener_address",
+                                                    new_callable=PropertyMock, return_value=listen):
+                self.controls(admin)
+                self.assertEqual('id="vdi_url"' in self.last_page, shown)
 
     def test_the_power_tab_offers_the_state_s_actions_and_confirms_a_power_cut(self):
         admin = get_user_model().objects.create_superuser("power_admin", "pa@example.com", "x")

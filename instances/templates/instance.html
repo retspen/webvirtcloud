@@ -198,7 +198,7 @@
             $("#video_model_select option[value='" + video_model + "']").prop('selected', true);
         }
     });
-{% if can_open_console %}
+{% if can_open_console and vdi_reachable %}
     $(document).ready(function () {
         // set vdi url
         $.get("{% url 'vdi_url' compute.id instance.name %}", function(data) {

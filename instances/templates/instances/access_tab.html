@@ -1,121 +1,86 @@
 {% load i18n %}
-<div class="tab-pane" id="access" role="tabpanel" aria-label="Instance access options">
-    <!-- Nav tabs -->
+{% load vm_states %}
+<div class="tab-pane" id="access" role="tabpanel" aria-label="{% trans "Instance access options" %}">
+    {% vm_state instance.status as state %}
     <div class="card">
-    <div class="card-header bg-transparent pb-0">
-    <ul class="nav nav-underline small" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#vnconsole" type="button" role="tab" aria-controls="vnconsole" aria-selected="true">
-                {% trans "Console" %}
-            </button>
-        </li>
-        {% if app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' and can_change %}
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rootpasswd" type="button" role="tab" aria-controls="rootpasswd" aria-selected="false">
-                {% trans "Root Password" %}
-            </button>
-        </li>
-        {% endif %}
-        {% if app_settings.SHOW_ACCESS_SSH_KEYS == 'True' and can_change %}
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sshkeys" type="button" role="tab" aria-controls="sshkeys" aria-selected="false">
-                {% trans "SSH Keys" %}
-            </button>
-        </li>
-        {% endif %}
-        {% if instance.status == 1 and can_open_console %}
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#vdiconsole" type="button" role="tab" aria-controls="vdiconsole" aria-selected="false">
-                {% trans "VDI" %}
-            </button>
-        </li>
-        {% endif %}
-    </ul>
-    </div>
-    <!-- Tab panes -->
-    <div class="tab-content card-body">
-        <div role="tabpanel" class="tab-pane active" id="vnconsole">
-            <p>{% blocktrans with type=instance.console_type|upper %} This action opens a new window with a {{ type }} connection to the console of the instance.{% endblocktrans %}
-            </p>
+        <div class="card-body">
+            <p class="small text-body-secondary mb-2">{% trans "Access" %} · {{ state.0 }} · {{ instance.console_type|upper }}</p>
             {% if not can_open_console %}
-            <p>{% trans "Only the owners of this instance and administrators can open its console." %}</p>
-            {% else %}
-            {% if instance.status == 1 %}
-            {# one window per VM: opening it again reloads it #}
-            <button type="button" class="btn btn-primary float-end" id="console_button"
-                data-url="{% url 'console' compute.id instance.uuid %}" data-window="console-{{ instance.uuid }}"
-                onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')">{% trans "Console" %}</button>
-            {% else %}
-            <button class="btn btn-primary float-end disabled">{% trans "Console" %}</button>
-            {% endif %}
-            {% endif %}
-            <div class="clearfix"></div>
-        </div>
-        {% if app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' and can_change %}
-        <div role="tabpanel" class="tab-pane" id="rootpasswd">
-            <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and enter a new root password." %}</p>
-            <form action="{% url 'instances:rootpasswd' instance.id %}" method="post"
-                role="form" aria-label="Add root password to instance form">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-sm-12">
-                        <input type="text" class="form-control-lg" name="passwd"
-                            placeholder="{% trans "Enter Password" %}" maxlength="24">
-                    </div>
+            <p class="mb-0">{% trans "Only the owners of this instance and administrators can open its console." %}</p>
+            {% elif instance.status == 1 or instance.status == 3 %}
+            {# one window per VM: opening it again reloads it; a paused VM shows its last screen #}
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-auto">
+                    <button type="button" class="btn btn-primary w-100" id="console_button"
+                            data-url="{% url 'console' compute.id instance.uuid %}" data-window="console-{{ instance.uuid }}"
+                            onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')">{% trans "Console" %}</button>
                 </div>
-                {% if instance.status == 5 or instance.status == 1 and instance.guest_agent_ready %}
-                <input type="submit" class="btn btn-primary float-end" name="rootpasswd"
-                    value="{% trans "Reset Root Password" %}">
-                {% else %}
-                <button
-                    class="btn btn-primary float-end disabled">{% trans "Reset Root Password" %}</button>
-                {% endif %}
-            </form>
-            <div class="clearfix"></div>
-        </div>
-        {% endif %}
-        {% if app_settings.SHOW_ACCESS_SSH_KEYS == 'True' and can_change %}
-        <div role="tabpanel" class="tab-pane" id="sshkeys">
-            <p>{% trans "Shut the VM down, or run it with its QEMU guest agent, and choose your public key. The key is added to root's keys." %}</p>
-            <form action="{% url 'instances:add_public_key' instance.id %}"method="post"
-                role="form" aria-label="Add public key to instance form">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-sm-12">
-                        <select name="sshkeyid" class="form-select form-select-lg">
-                            {% if publickeys %}
-                            {% for key in publickeys %}
-                            <option value="{{ key.id }}">{{ key.keyname }}</option>
-                            {% endfor %}
-                            {% else %}
-                            <option value="None">{% trans "None" %}</option>
-                            {% endif %}
-                        </select>
-                    </div>
+                {% if vdi_reachable %}
+                <div class="col-12 col-md">
+                    <label for="vdi_url_input" class="visually-hidden">{% trans "Remote viewer address" %}</label>
+                    <input id="vdi_url_input" class="form-control" type="text" readonly>
                 </div>
-                {% if instance.status == 5 or instance.status == 1 and instance.guest_agent_ready %}
-                <input type="submit" class="btn btn-primary float-end" name="addpublickey"
-                    value="{% trans "Add Public Key" %}">
-                {% else %}
-                <button class="btn btn-primary float-end disabled">{% trans "Add Public Key" %}</button>
+                <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+                    <a href="#" class="btn btn-secondary" id="vdi_url">{% trans "VDI" %}</a>
+                    <a href="{% url 'instances:getvvfile' instance.id %}" class="btn btn-secondary">{% trans "Get console.vv" %}</a>
+                </div>
                 {% endif %}
-            </form>
-            <div class="clearfix"></div>
-        </div>
-        {% endif %}
-        {% if instance.status == 1 and can_open_console %}
-        <div role="tabpanel" class="tab-pane" id="vdiconsole">
-            <p>{% trans "This action opens a remote viewer with a connection to the console of the instance." %}</p>
-            <div class="input-group">
-                <input type="text" class="input-lg disabled form-control" disabled id="vdi_url_input" />
-                <a href="#" class="btn btn-primary" id="vdi_url">{% trans "VDI" %}</a>
             </div>
-            <p>{% trans "To download console.vv file for virt-viewer." %}</p>
-            <a href="{% url 'instances:getvvfile' instance.id %}" class="btn btn-primary float-end">{% trans "Get console.vv" %}</a>
-
-            <div class="clearfix"></div>
+            <p class="small text-body-secondary mt-2 mb-0">
+                {% trans "Console opens a window here." %}
+                {% if vdi_reachable %}{% trans "VDI opens your remote viewer; console.vv sets up virt-viewer." %}
+                {% else %}{% trans "A remote viewer cannot reach this console: it listens on the host only, or it is a serial one." %}{% endif %}
+            </p>
+            {% else %}
+            <p class="mb-0">{% trans "Start the VM to open its console." %}</p>
+            {% endif %}
+            {% if can_change and app_settings.SHOW_ACCESS_ROOT_PASSWORD == 'True' %}
+            <form action="{% url 'instances:rootpasswd' instance.id %}" method="post" class="mt-3">{% csrf_token %}
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-lg-5">
+                        <label for="root-passwd" class="form-label mb-0">{% trans "Reset root password" %}</label>
+                        <p id="root-passwd-help" class="small text-body-secondary mb-0">
+                            {% if guest_access_ready %}{% trans "The guest's root user gets this password." %}
+                            {% elif instance.status == 1 %}{% trans "The guest agent is not connected: connect it, or shut the VM down." %}
+                            {% else %}{% trans "Shut the VM down, or run it with its guest agent." %}{% endif %}
+                        </p>
+                    </div>
+                    <div class="col-12 col-lg-7">
+                        <fieldset aria-describedby="root-passwd-help"{% if not guest_access_ready %} disabled{% endif %}>
+                            <div class="d-flex flex-column flex-sm-row gap-2">
+                                <input id="root-passwd" name="passwd" type="password" class="form-control" autocomplete="new-password" required>
+                                <button type="submit" name="rootpasswd" class="btn btn-secondary flex-shrink-0">{% trans "Reset Root Password" %}</button>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+            {% if can_change and app_settings.SHOW_ACCESS_SSH_KEYS == 'True' %}
+            <form action="{% url 'instances:add_public_key' instance.id %}" method="post" class="mt-3">{% csrf_token %}
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-lg-5">
+                        <label for="root-sshkey" class="form-label mb-0">{% trans "Add SSH key for root" %}</label>
+                        <p id="root-sshkey-help" class="small text-body-secondary mb-0">
+                            {% if not publickeys %}{% trans "You have no saved public key." %} <a href="{% url 'accounts:profile' %}">{% trans "Add one in your profile." %}</a>
+                            {% elif guest_access_ready %}{% trans "One of your public keys joins root's keys in the guest." %}
+                            {% elif instance.status == 1 %}{% trans "The guest agent is not connected: connect it, or shut the VM down." %}
+                            {% else %}{% trans "Shut the VM down, or run it with its guest agent." %}{% endif %}
+                        </p>
+                    </div>
+                    <div class="col-12 col-lg-7">
+                        <fieldset aria-describedby="root-sshkey-help"{% if not publickeys or not guest_access_ready %} disabled{% endif %}>
+                            <div class="d-flex flex-column flex-sm-row gap-2">
+                                <select id="root-sshkey" name="sshkeyid" class="form-select">
+                                    {% for key in publickeys %}<option value="{{ key.id }}">{{ key.keyname }}</option>{% endfor %}
+                                </select>
+                                <button type="submit" name="addpublickey" class="btn btn-secondary flex-shrink-0">{% trans "Add Public Key" %}</button>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
         </div>
-        {% endif %}
-    </div>
     </div>
 </div>

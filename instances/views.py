@@ -265,6 +265,10 @@ def _instance_page(request, pk, instance, compute):
     can_open_console = utils.can_open_console(request.user, instance)
     can_power = request.user.is_superuser or userinstance is not None
     power_actions = allowed_actions(request.user, instance, instance.status)
+    # a remote viewer on the user's computer reaches a VNC or SPICE console that listens beyond the host's loopback
+    vdi_reachable = instance.console_type in ("vnc", "spice") and not util.is_loopback(instance.console_listener_address)
+    # root's password and keys change in a shut-off VM's disk (gstfsd on the host), or through a running VM's agent
+    guest_access_ready = instance.status == 5 or (instance.status == 1 and instance.guest_agent_ready)
     # get_instance(perm_type="delete"): a template only for superusers and staff owners
     can_delete = request.user.is_superuser or bool(
         userinstance and userinstance.is_delete and (request.user.is_staff or not instance.is_template)
@@ -2225,7 +2229,9 @@ def getvvfile(request, pk):
         response.writelines(f"host={proxy.host if listen == '0.0.0.0' else listen}\n")
         response.writelines(f"port={proxy.get_console_port()}\n")
         response.writelines(f"title={proxy.instance.name()}\n")
-        response.writelines(f"password={proxy.get_console_passwd() or ''}\n")
+        # as the console page: without the permission the viewer asks for the password
+        if request.user.has_perm("instances.passwordless_console"):
+            response.writelines(f"password={proxy.get_console_passwd() or ''}\n")
     response.writelines("enable-usbredir=1\n")
     response.writelines("disable-effects=all\n")
     response.writelines("secure-attention=ctrl+alt+ins\n")
