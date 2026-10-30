@@ -266,6 +266,16 @@ class Instance(models.Model):
         return False if self.proxy.get_guest_agent() is None else True
 
     @cached_property
+    def config_guest_agent(self) -> bool:
+        """Whether the next start has the agent channel; the agent form shows it."""
+        return self.proxy.get_guest_agent(config=True) is not None
+
+    @cached_property
+    def config_vcpu_hotplug(self) -> bool:
+        """Whether the next start has hotpluggable vCPUs; the hot plug form shows it."""
+        return any(vcpu["hotpluggable"] == "yes" for vcpu in self.proxy.get_vcpus(config=True).values())
+
+    @cached_property
     def guest_agent_ready(self) -> bool:
         return self.proxy.is_agent_ready()
 

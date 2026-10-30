@@ -110,6 +110,8 @@ CHANGE_VM = {
 # Also needs is_vnc (can_manage_console). Snapshots also need
 # instances.snapshot_instances, which no role here has: refused to all.
 CONSOLE_SETTINGS = {"instances:update_console"}
+# Also needs is_staff: whether the VM is a template.
+TEMPLATE_FLAG = {"instances:set_template"}
 DELETE_VM = {"instances:destroy"}
 
 ROLE_EXPECTATIONS = {
@@ -123,7 +125,7 @@ ROLE_EXPECTATIONS = {
         True,
         False,
         {"is_change": True, "is_vnc": True},
-        VIEW_VM | POWER_AND_CONSOLE | CHANGE_VM | CONSOLE_SETTINGS,
+        VIEW_VM | POWER_AND_CONSOLE | CHANGE_VM | CONSOLE_SETTINGS | TEMPLATE_FLAG,
     ),
 }
 

@@ -1,8 +1,6 @@
 """
-Only superusers and staff may mark or unmark a VM as a template.
-The UI only disables the checkbox for other users, and a disabled checkbox is
-not submitted, so the server must not derive is_template from its absence for
-them.
+Only superusers and staff may mark or unmark a VM as a template, on its own
+form: the title and description form leaves the flag alone.
 """
 from unittest.mock import patch
 
@@ -13,6 +11,7 @@ from django.urls import reverse
 from accounts.models import UserInstance
 from computes.models import Compute
 from instances.models import Instance
+from logs.models import Logs
 
 
 class TemplateFlagTestCase(TestCase):
@@ -36,16 +35,15 @@ class TemplateFlagTestCase(TestCase):
         for user in (self.owner, self.staff_owner):
             UserInstance.objects.create(instance=self.instance, user=user, is_change=True)
 
-    def _change_options(self, user, data, status=302):
+    def _post(self, user, action, data, status=302):
         self.client.force_login(user)
         with patch("instances.models.wvmInstance") as wvm:
+            wvm.return_value.get_status.return_value = 5
             # unmarking a template checks the owner's quota with the VM's size
             wvm.return_value.get_vcpu.return_value = 1
             wvm.return_value.get_memory.return_value = 1024
             wvm.return_value.get_disk_devices.return_value = []
-            res = self.client.post(
-                reverse("instances:change_options", args=[self.instance.id]), data
-            )
+            res = self.client.post(reverse(f"instances:{action}", args=[self.instance.id]), data)
         self.assertEqual(res.status_code, status)
         self.instance.refresh_from_db()
 
@@ -54,23 +52,30 @@ class TemplateFlagTestCase(TestCase):
         self.instance.save(update_fields=["is_template"])
 
     def test_owner_cannot_mark_vm_as_template(self):
-        self._change_options(self.owner, {"title": "t", "is_template": "True"})
+        self._post(self.owner, "set_template", {"is_template": "True"}, status=403)
         self.assertFalse(self.instance.is_template)
 
     def test_owner_cannot_change_a_template(self):
         # a template is changed only by superusers and staff owners
         self._make_template()
-        self._change_options(self.owner, {"title": "new title", "description": ""}, status=403)
+        self._post(self.owner, "change_options", {"title": "new title", "description": ""}, status=403)
         self.assertTrue(self.instance.is_template)
 
     def test_staff_owner_can_mark_and_unmark_template(self):
-        self._change_options(self.staff_owner, {"title": "t", "is_template": "True"})
+        self._post(self.staff_owner, "set_template", {"is_template": "True"})
         self.assertTrue(self.instance.is_template)
-        # An unchecked checkbox is not submitted: for staff that means "not a template".
-        self._change_options(self.staff_owner, {"title": "t"})
+        # an unchecked switch is not submitted: "not a template"
+        self._post(self.staff_owner, "set_template", {})
         self.assertFalse(self.instance.is_template)
+        self.assertEqual(list(Logs.objects.filter(message__startswith="VM").order_by("id").values_list("message", "success")),
+                         [("VM tpl-vm: mark as template", True), ("VM tpl-vm: unmark as template", True)])
 
     def test_superuser_can_unmark_template(self):
         self._make_template()
-        self._change_options(self.superuser, {"title": "t"})
+        self._post(self.superuser, "set_template", {})
         self.assertFalse(self.instance.is_template)
+
+    def test_the_title_form_leaves_the_template_alone(self):
+        self._make_template()
+        self._post(self.superuser, "change_options", {"title": "t", "description": ""})
+        self.assertTrue(self.instance.is_template)

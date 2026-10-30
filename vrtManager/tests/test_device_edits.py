@@ -116,6 +116,24 @@ class DeviceEditsTestCase(unittest.TestCase):
         inbound = defined(p).find("devices/interface[@type='network']/bandwidth/inbound")
         self.assertEqual(inbound.attrib, {"average": "10", "peak": "20", "burst": "30", "floor": "4"})
 
+    def test_a_new_video_model_stays_the_primary_one(self):
+        # the old model's memory sizes are its own: they go
+        p = proxy()
+        p._XMLDesc = lambda flags: PERSISTENT.replace("<model type='vga'/>", "<model type='vga' vram='16384' primary='yes'/>")
+        p.set_video_model("virtio")
+        self.assertEqual(defined(p).find("devices/video/model").attrib, {"type": "virtio", "primary": "yes"})
+
+    def test_the_agent_channel_and_vcpu_hot_plug_are_read_from_either_definition(self):
+        p = proxy()
+        pending = ("<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
+                   "<video>")
+        vcpus = "<vcpus><vcpu id='0' enabled='yes' hotpluggable='no'/><vcpu id='1' enabled='no' hotpluggable='yes'/></vcpus>"
+        p._XMLDesc = lambda flags: (PERSISTENT.replace("<video>", pending).replace("<devices>", vcpus + "<devices>")
+                                    if flags == PERSISTENT_XML else LIVE)
+        self.assertEqual((p.get_guest_agent(), p.get_vcpus()), (None, {}))
+        self.assertIsNotNone(p.get_guest_agent(config=True))
+        self.assertEqual([v["hotpluggable"] for v in p.get_vcpus(config=True).values()], ["no", "yes"])
+
     def test_cpu_title_and_description_are_read_from_either_definition(self):
         p = proxy()
         self.assertEqual((p.get_vcpu(), p.get_cur_vcpu(), p.get_title(), p.get_description()), (1, 1, "", ""))

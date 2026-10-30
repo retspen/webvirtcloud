@@ -544,12 +544,10 @@ class LiveDataLossTestCase(TestCase):
             return (f"<disk type='file' device='disk'><driver name='qemu' type='qcow2'/><source file='{path}'/>"
                     "<target dev='sda' bus='scsi'/></disk>")
 
-        agent = "<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
         cases = (
             ("disk", lambda n: disk(livetest.create_volume(self.conn, P + n + "-pending")),
              lambda vm, n: vm.attach_disk("sda", livetest.create_volume(self.conn, P + n + "-new"),
                                           target_bus="scsi", format_type="qcow2")),
-            ("agent", lambda n: agent, lambda vm, n: vm.add_guest_agent()),
         )
         both = (0, libvirt.VIR_DOMAIN_XML_INACTIVE)
         for paused in (False, True):
@@ -565,6 +563,19 @@ class LiveDataLossTestCase(TestCase):
                     with self.assertRaises(libvirt.libvirtError):
                         attach(inst.proxy, name)
                     self.assertEqual([dom.XMLDesc(flags) for flags in both], before)
+
+    def test_an_agent_channel_pending_the_next_start_is_added_to_the_running_vm_only(self):
+        from lxml import etree
+
+        agent = "<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
+        dom, inst = self.vm("agent-pending", [], extra_devices="<controller type='virtio-serial'/>")
+        dom.create()
+        dom.attachDeviceFlags(agent, libvirt.VIR_DOMAIN_AFFECT_CONFIG)  # pending: persistent only
+        channels = "devices/channel/target[@name='org.qemu.guest_agent.0']"
+        for _attempt in range(2):  # saving Enabled again changes nothing
+            inst.proxy.add_guest_agent()
+            self.assertEqual([len(etree.fromstring(dom.XMLDesc(flags)).xpath(channels))
+                              for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE)], [1, 1])
 
     def test_a_nic_without_a_mac_gets_the_same_one_in_both_definitions(self):
         from lxml import etree

@@ -73,6 +73,7 @@ urlpatterns = [
     path("<int:pk>/clone/", views.clone, name="clone"),
     path("<int:pk>/update_console/", views.update_console, name="update_console"),
     path("<int:pk>/change_options/", views.change_options, name="change_options"),
+    path("<int:pk>/set_template/", views.set_template, name="set_template"),
     path(
         "<int:pk>/getvvfile/", views.getvvfile, name="getvvfile"
     ),  # no links to this one???

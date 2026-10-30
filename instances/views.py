@@ -2165,43 +2165,45 @@ def update_console(request, pk):
 
 
 @require_POST
-@serialize_user_quota
 @serialize_instance_mutation
 def change_options(request, pk):
+    """The title and description of the persistent definition: they apply
+    at the next start, so a running VM's are changed too."""
     instance = get_instance(request.user, pk, perm_type="change")
-    try:
-        userinstance = instance.userinstance_set.get(user=request.user)
-    except UserInstance.DoesNotExist:
-        userinstance = UserInstance(is_change=False)
-
-    if request.user.is_superuser or userinstance.is_change:
-        # Only superusers and staff may (un)mark templates. The
-        # checkbox is disabled for everyone else, and a disabled checkbox is
-        # not submitted, so for them the flag must be left alone.
-        if request.user.is_superuser or request.user.is_staff:
-            is_template = bool(request.POST.get("is_template", False))
-            # A template is not counted and cannot be started: making it a
-            # VM again adds it to the owner's usage, so the quota applies.
-            if instance.is_template and not is_template and not request.user.is_superuser:
-                disk_sum = sum(int(disk.get("size") or 0) >> 30 for disk in instance.disks)
-                quota_msg = utils.check_user_quota(request.user, 1, instance.vcpu, instance.memory, disk_sum)
-                if quota_msg:
-                    messages.error(request, quota_refused(quota_msg, _(
-                        "User %(quota_msg)s quota reached, '%(instance_name)s' stays a template!"
-                    ) % {"quota_msg": quota_msg, "instance_name": instance.name}))
-                    is_template = True
-            instance.is_template = is_template
-            instance.save(update_fields=["is_template"])
-
-        options = {}
-        for post in request.POST:
-            if post in ["title", "description"]:
-                options[post] = request.POST.get(post, "")
-        with audit_vm(request, instance, "edit options"):
-            instance.proxy.set_options(options)
+    options = {key: request.POST.get(key, "") for key in ("title", "description") if key in request.POST}
+    with audit_vm(request, instance, "edit options"):
+        instance.proxy.set_options(options)
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#options"
     )
+
+
+@require_POST
+@serialize_user_quota
+@serialize_instance_mutation
+def set_template(request, pk):
+    """Marks a shut-off VM as a template, or a template as a VM again; only
+    superusers and staff. A template is not counted and cannot be started:
+    making it a VM again adds it to the owner's usage, so the quota applies."""
+    instance = get_instance(request.user, pk, perm_type="change")
+    if not (request.user.is_superuser or request.user.is_staff):
+        raise PermissionDenied
+    is_template = bool(request.POST.get("is_template"))
+    if instance.proxy.get_status() != 5:
+        messages.error(request, _("Shut the VM down to change whether it is a template."))
+        return _back(request, pk, "options")
+    if instance.is_template and not is_template and not request.user.is_superuser:
+        disk_sum = sum(int(disk.get("size") or 0) >> 30 for disk in instance.disks)
+        quota_msg = utils.check_user_quota(request.user, 1, instance.vcpu, instance.memory, disk_sum)
+        if quota_msg:
+            messages.error(request, quota_refused(quota_msg, _(
+                "User %(quota_msg)s quota reached, '%(instance_name)s' stays a template!"
+            ) % {"quota_msg": quota_msg, "instance_name": instance.name}))
+            return _back(request, pk, "options")
+    with audit_vm(request, instance, "mark as template" if is_template else "unmark as template"):
+        instance.is_template = is_template
+        instance.save(update_fields=["is_template"])
+    return _back(request, pk, "options")
 
 
 def getvvfile(request, pk):

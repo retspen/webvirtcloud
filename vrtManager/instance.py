@@ -83,6 +83,7 @@ PERSISTENT_XML = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE
 USB_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='usb']"
 PCI_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='pci']"
 # what of the host a VM holds: host devices, and NICs that are host devices
+GUEST_AGENT_CHANNEL = "/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"
 HOST_DEVICES = "devices/hostdev | devices/interface[@type='hostdev'] | devices/interface/actual[@type='hostdev']"
 
 # External snapshot names become part of overlay and memory file names.
@@ -695,9 +696,9 @@ class wvmInstance(wvmConnect):
         readonly = util.get_xml_path(xml, "/domain/os/loader/@readonly")
         return {"loader": loader, "type": loader_type, "readonly": readonly}
 
-    def get_vcpus(self):
+    def get_vcpus(self, config=False):
         vcpus = OrderedDict()
-        tree = etree.fromstring(self._XMLDesc(0))
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML if config else 0))
         for vcpu in tree.xpath("/domain/vcpus/vcpu"):
             vcpu_id = vcpu.get("id")
             enabled = vcpu.get("enabled")
@@ -1597,7 +1598,8 @@ class wvmInstance(wvmConnect):
                 return model.get("type")
 
     def set_video_model(self, model):
-        """Changes only primary video card"""
+        """Changes only the primary video card, which stays the primary one;
+        the old model's memory and head settings go with it."""
         xml = self._XMLDesc(PERSISTENT_XML)
         tree = etree.fromstring(xml)
         video_models = tree.xpath("/domain/devices/video/model")
@@ -1605,7 +1607,9 @@ class wvmInstance(wvmConnect):
             if video_model.get("primary") == "yes" or len(video_models) == 1:
                 parent = video_model.getparent()
                 parent.remove(video_model)
-                etree.SubElement(parent, "model", type=model)
+                new_model = etree.SubElement(parent, "model", type=model)
+                if video_model.get("primary"):
+                    new_model.set("primary", video_model.get("primary"))
                 self._defineXML(etree.tostring(tree).decode())
                 return
 
@@ -2923,23 +2927,23 @@ class wvmInstance(wvmConnect):
         self._defineXML(etree.tostring(tree).decode())
 
     def add_guest_agent(self):
-        channel_xml = """
-                        <channel type='unix'>
-                            <target type='virtio' name='org.qemu.guest_agent.0'/>
-                        </channel>
-                      """
-        self._attach_device(channel_xml)
+        """Adds the agent channel to the definitions that do not have it."""
+        flags = 0
+        for xml_flags, affect in self._definitions():
+            if not etree.fromstring(self._XMLDesc(xml_flags)).xpath(GUEST_AGENT_CHANNEL):
+                flags |= affect
+        if flags:
+            channel_xml = "<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
+            self.instance.attachDeviceFlags(channel_xml, flags)
 
     def remove_guest_agent(self):
         for xml_flags, affect in self._definitions():
             tree = etree.fromstring(self._XMLDesc(xml_flags))
-            for target in tree.xpath(
-                "/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"
-            ):
+            for target in tree.xpath(GUEST_AGENT_CHANNEL):
                 channel_xml = etree.tostring(target.getparent()).decode()
                 self.instance.detachDeviceFlags(channel_xml, affect)
 
-    def get_guest_agent(self):
+    def get_guest_agent(self, config=False):
         def _get_agent(doc):
             """
             Return agent channel object if it is defined.
@@ -2952,7 +2956,7 @@ class wvmInstance(wvmConnect):
                     return channel
             return None
 
-        return util.get_xml_path(self._XMLDesc(0), func=_get_agent)
+        return util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), func=_get_agent)
 
     def set_user_password(self, user, crypted):
         """Set a user's password in the running guest through its agent;

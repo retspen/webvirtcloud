@@ -84,6 +84,32 @@
                 <button class="btn btn-primary float-end disabled" disabled>{% trans "Resize" %}</button>
             {% endif %}
             <div class="clearfix"></div>
+            {% if request.user.is_superuser %}
+            <form class="border-top pt-3 mt-3" action="{% url 'instances:set_vcpu_hotplug' instance.id %}" method="post">{% csrf_token %}
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label fw-semibold mb-0" for="vcpu_hotplug">{% trans "vCPU hot plug" %}</label>
+                        <p class="small text-body-secondary mb-0" id="vcpu-hotplug-help">
+                            {% trans "Lets vCPUs up to the maximum be turned on and off while the VM runs." %}
+                            {% if instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}
+                        </p>
+                    </div>
+                    <div class="col-12 col-lg-8">
+                        <div class="row g-2">
+                            <div class="col-12 col-sm">
+                                <select id="vcpu_hotplug" class="form-select" name="vcpu_hotplug" aria-describedby="vcpu-hotplug-help">
+                                    <option value="True"{% if instance.config_vcpu_hotplug %} selected{% endif %}>{% trans "Enabled" %}</option>
+                                    <option value="False"{% if not instance.config_vcpu_hotplug %} selected{% endif %}>{% trans "Disabled" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-auto d-grid">
+                                <button class="btn btn-secondary" type="submit" name="set_vcpu_hotplug"{% if instance.status != 5 %} disabled{% endif %}>{% trans "Save" %}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
         </div>
         <div role="tabpanel" class="tab-pane" id="resizevm_mem">
             {% if can_change %}

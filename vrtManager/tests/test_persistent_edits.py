@@ -94,7 +94,8 @@ class DeviceEditsByStateTestCase(unittest.TestCase):
             vm.instance = MagicMock()
             vm.instance.isActive.return_value = active
             vm.get_status = MagicMock(return_value=state)
-            vm._XMLDesc = MagicMock(return_value=AGENT_DOMAIN)
+            # an agent channel is added where there is none, removed where there is one
+            vm._XMLDesc = MagicMock(return_value=DOMAIN if name == "add_guest_agent" else AGENT_DOMAIN)
             edit(vm)
             result[name] = [names[c.args[1]] for c in getattr(vm.instance, method).call_args_list]
         return result
@@ -119,10 +120,24 @@ class DeviceEditsByStateTestCase(unittest.TestCase):
                 vm = wvmInstance.__new__(wvmInstance)
                 vm.instance = MagicMock()
                 vm.instance.isActive.return_value = True
+                vm._XMLDesc = MagicMock(return_value=DOMAIN)
                 vm.instance.attachDeviceFlags.side_effect = libvirtError("target sda already exists")
                 with self.assertRaises(libvirtError):
                     self.EDITS[name][1](vm)
                 vm.instance.attachDeviceFlags.assert_called_once()
+
+    def test_an_agent_channel_is_added_only_where_it_is_missing(self):
+        from libvirt import VIR_DOMAIN_AFFECT_CONFIG, VIR_DOMAIN_AFFECT_LIVE
+
+        for live, persistent, affected in ((AGENT_DOMAIN, AGENT_DOMAIN, []),
+                                           (DOMAIN, AGENT_DOMAIN, [VIR_DOMAIN_AFFECT_LIVE]),
+                                           (AGENT_DOMAIN, DOMAIN, [VIR_DOMAIN_AFFECT_CONFIG])):
+            with self.subTest(affected=affected):
+                vm = wvmInstance.__new__(wvmInstance)
+                vm.instance = MagicMock(**{"isActive.return_value": True})
+                vm._XMLDesc = lambda flags, live=live, persistent=persistent: persistent if flags == PERSISTENT_XML else live
+                vm.add_guest_agent()
+                self.assertEqual([c.args[1] for c in vm.instance.attachDeviceFlags.call_args_list], affected)
 
 
 if __name__ == "__main__":

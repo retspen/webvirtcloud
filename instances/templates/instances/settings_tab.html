@@ -809,110 +809,96 @@
         {% endif %}
         {% if can_change %}
         <div role="tabpanel" class="tab-pane" id="options">
-            <p>{% trans "To set instance template name description, shutdown the instance." %}</p>
-            <form action="{% url 'instances:change_options' instance.id %}" method="post" role="form" aria-label="Set instance template name description form">{% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Title" %}</label>
-                    <div class="col-sm-6">
-                        <input type="text" name="title" class="form-control" value="{{ instance.config_title }}">
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Description" %}</label>
-                    <div class="col-sm-6">
-                        <textarea name="description" class="form-control">{{ instance.config_description }}</textarea>
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Is template" %}</label>
-                    <div class="col-sm-6">
-                        <input type="checkbox"
-                            name="is_template"
-                            value="True"
-                            id="is_template"
-                            {% if instance.is_template %}checked{% endif %}
-                            {% if not request.user.is_superuser and not request.user.is_staff %}disabled{% endif %}>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="d-grid offset-sm-3 col-sm-6">
-                    {% if instance.status == 5 %}
-                        <button type="submit" class="btn btn-primary" name="change_options">{% trans "Change" %}</button>
-                    {% else %}
-                        <button class="btn btn-primary disabled" disabled name="change_options">{% trans "Change" %}</button>
-                    {% endif %}
-                    </div>
-                </div>
-            </form>
-            {% if request.user.is_superuser %}
-            <p class="fw-bold">{% trans "To set instance video model, shutdown the instance." %}</p>
-            <form action="{% url 'instances:set_video_model' instance.id %}" method="post" role="form" aria-label="Set instance video model form">{% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label" for="video_model_select">{% trans "Primary Video Model" %}</label>
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <select id="video_model_select" class="form-select" name="video_model">
-                                <option class="fw-bold" value="">{% trans "please choose" %}</option>
-                                {% for vmodel in instance.video_models %}
-                                    <option value="{{ vmodel }}"{% if vmodel == instance.config_video_model %} selected{% endif %}>{{ vmodel }}</option>
-                                {% endfor %}
-                            </select>
-                            {% if instance.status == 5 %}
-                            <button type="submit" class="btn btn-primary" name="set_video_model">{% trans "Set" %}</button>
-                            {% else %}
-                            <button class="btn btn-primary disabled" disabled name="set_video_model">{% trans "Set" %}</button>
-                            {% endif %}
+            <div class="list-group">
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:change_options' instance.id %}" method="post" aria-labelledby="options-details">{% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-4">
+                            <h2 class="h6" id="options-details">{% bs_icon 'pencil-square' %} {% trans "VM details" %}</h2>
+                            <p class="small text-body-secondary mb-0">{% trans "A title and description to identify the VM." %}</p>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            <label class="form-label" for="options-title">{% trans "Title" %}</label>
+                            <input class="form-control mb-3" type="text" id="options-title" name="title" value="{{ instance.config_title }}">
+                            <label class="form-label" for="options-description">{% trans "Description" %}</label>
+                            <textarea class="form-control mb-3" id="options-description" name="description" rows="2">{{ instance.config_description }}</textarea>
+                            <div class="text-end">
+                                <button class="btn btn-primary" type="submit" name="change_options">{% trans "Save" %}</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </form>
-    
-            <p class="fw-bold">{% trans "To set instance vCPUs hotpluggable" %}</p>
-            <form  action="{% url 'instances:set_vcpu_hotplug' instance.id %}" method="post" role="form" aria-label="Set instance vCPUs hotpluggable form">{% csrf_token %}
-                <div class="row">
-                    <label for="vcpu_hotplug" class="col-sm-3 col-form-label">{% trans "vCPU Hot Plug" %}</label>
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <select id="vcpu_hotplug" class="form-control" name="vcpu_hotplug">
-                                <option value="True" {% if instance.vcpus %} selected {% endif %}>{% trans 'Enabled' %}</option>
-                                <option value="False" {% if not instance.vcpus %} selected {% endif %}>{% trans 'Disabled' %}</option>
-                            </select>
-                            {% if instance.status == 5 %}
-                            <button type="submit" class="btn btn-primary" name="set_vcpu_hotplug">{% trans "Set" %}</button>
-                            {% else %}
-                            <button class="btn btn-primary" name="set_vcpu_hotplug" disabled>{% trans "Set" %}</button>
-                            {% endif %}
+                </form>
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_template' instance.id %}" method="post">{% csrf_token %}
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-semibold mb-0" for="is_template">{% trans "Template" %}</label>
+                            <p class="small text-body-secondary mb-0" id="template-help">{% trans "A template is a VM to clone: it is not counted in quotas and cannot be started." %}</p>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" name="is_template" value="True" id="is_template" aria-describedby="template-help template-state"
+                                       {% if instance.is_template %}checked{% endif %}
+                                       {% if instance.status != 5 or not request.user.is_superuser and not request.user.is_staff %}disabled{% endif %} onchange="this.form.submit()">
+                                <label class="form-check-label" for="is_template">{% trans "Use as a template" %}</label>
+                            </div>
+                            <p class="small text-body-secondary mt-1 mb-0" id="template-state">
+                                {% if not request.user.is_superuser and not request.user.is_staff %}{% trans "Only administrators and staff can change this." %}
+                                {% elif instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}
+                            </p>
                         </div>
                     </div>
-                </div>
-            </form>
-        
-            <p class="fw-bold">{% trans "To Enable/Disable Qemu Guest Agent. Status" %}:
-            {% if instance.status == 1 %}
-                {% if instance.guest_agent_ready %}
-                    <label class="badge bg-success">{% trans 'Connected' %}</label>
-                {% else %}
-                    <label class="badge bg-danger">{% trans 'Disconnected' %}</label>
-                {% endif %}</p>
-            {% else %}
-                <label class="badge bg-default">{% trans 'Unknown' %}</label>
-            {% endif %}
-            <form action="{% url 'instances:set_guest_agent' instance.id %}" method="post" role="form" aria-label="Enable/Disable Qemu Guest Agent form">{% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label" for="guest_agent">{% trans "Qemu Guest Agent" %}</label>
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <select id="guest_agent" class="form-select" name="guest_agent">
-                                <option value="True" {% if instance.guest_agent %} selected {% endif %}>{% trans 'Enabled' %}</option>
-                                <option value="False" {% if not instance.guest_agent %} selected {% endif %}>{% trans 'Disabled' %}</option>
-                            </select>
-                            <button type="submit" class="btn btn-primary" name="set_guest_agent">{% trans "Set" %}</button>
+                </form>
+                {% if request.user.is_superuser %}
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_video_model' instance.id %}" method="post">{% csrf_token %}
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-semibold mb-0" for="video_model_select">{% trans "Primary video model" %}</label>
+                            <p class="small text-body-secondary mb-0" id="video-help">{% trans "The graphics device the guest sees." %}</p>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            <div class="row g-2">
+                                <div class="col-12 col-sm">
+                                    <select id="video_model_select" class="form-select" name="video_model" aria-describedby="video-help">
+                                        {% for vmodel in instance.video_models %}
+                                        <option value="{{ vmodel }}"{% if vmodel == instance.config_video_model %} selected{% endif %}>{{ vmodel }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-auto d-grid">
+                                    <button class="btn btn-secondary" type="submit" name="set_video_model">{% trans "Save" %}</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </form>
-            {% endif %}
-            <div class="clearfix"></div>
+                </form>
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_guest_agent' instance.id %}" method="post">{% csrf_token %}
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-semibold mb-0" for="guest_agent">{% trans "QEMU guest agent" %}</label>
+                            <p class="small text-body-secondary mb-0" id="agent-help">{% trans "The channel to the agent in the guest: a running VM gets it at once." %}</p>
+                            <p class="small mt-2 mb-0">{% trans "Agent" %}:
+                                {% if instance.status != 1 and instance.status != 3 %}<span class="badge bg-secondary">{% trans "VM not running" %}</span>
+                                {% elif not instance.guest_agent %}<span class="badge bg-secondary">{% trans "No channel" %}</span>
+                                {% elif instance.guest_agent_ready %}<span class="badge bg-success">{% trans "Connected" %}</span>
+                                {% else %}<span class="badge bg-danger">{% trans "Not connected" %}</span>{% endif %}
+                            </p>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            <div class="row g-2">
+                                <div class="col-12 col-sm">
+                                    <select id="guest_agent" class="form-select" name="guest_agent" aria-describedby="agent-help">
+                                        <option value="True"{% if instance.config_guest_agent %} selected{% endif %}>{% trans "Enabled" %}</option>
+                                        <option value="False"{% if not instance.config_guest_agent %} selected{% endif %}>{% trans "Disabled" %}</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-auto d-grid">
+                                    <button class="btn btn-secondary" type="submit" name="set_guest_agent">{% trans "Save" %}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
     </div>

@@ -132,16 +132,29 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//select[@name='vcpu']/option[@selected]/@value"), ["4"])
         self.assertEqual(doc.xpath("//select[@name='cur_vcpu']/option[@selected]/@value"), ["3"])
 
+    def test_the_agent_and_vcpu_hot_plug_forms_show_the_pending_definition(self):
+        # running without an agent channel and hot plug, both pending for the next start
+        hotplug = {"0": {"enabled": "yes", "hotpluggable": "no", "order": "1"},
+                   "1": {"enabled": "yes", "hotpluggable": "yes", "order": "2"}}
+        doc = self.page(get_guest_agent=(None, object()), get_vcpus=({}, hotplug))
+        self.assertEqual(doc.xpath("//select[@name='guest_agent']/option[@selected]/@value"), ["True"])
+        self.assertEqual(doc.xpath("//select[@name='vcpu_hotplug']/option[@selected]/@value"), ["True"])
+        self.assertIn("No channel", doc.xpath("string(//form[.//select[@name='guest_agent']])"))
+
     def test_buttons_shown_as_disabled_cannot_submit(self):
-        # running: the CPU, options and video forms wait for a shutdown
+        # running: the CPU resize, vCPU hot plug, template and disk removal forms wait for a shutdown;
+        # the title, description and video model are of the next start, saved at once
         doc = self.page(live=[disk("vda", "default", "")], config=[disk("vda", "default", "")])
-        self.assertGreater(len(doc.xpath("//button[@disabled]")), 5)
+        self.assertGreater(len(doc.xpath("//button[@disabled]")), 4)
         shown = doc.xpath("//button[contains(concat(' ', @class, ' '), ' disabled ')]")
         self.assertEqual([b for b in shown if b.get("disabled") is None], [])
-        for action in ("resizevm_cpu", "change_options", "set_video_model", "detach_vol", "delete_vol"):
+        for action, waits in (("resizevm_cpu", True), ("set_vcpu_hotplug", True), ("set_template", True),
+                              ("detach_vol", True), ("delete_vol", True),
+                              ("change_options", False), ("set_video_model", False)):
             with self.subTest(action):
                 (form,) = doc.xpath("//form[@action=$a]", a=reverse(f"instances:{action}", args=[self.instance.id]))
-                self.assertTrue(all(b.get("disabled") is not None for b in form.xpath(".//button")))
+                controls = form.xpath(".//button | .//input[@type='checkbox']")
+                self.assertEqual([c.get("disabled") is not None for c in controls], [waits] * len(controls))
 
     def test_the_xml_editor_shows_the_definition_for_the_next_start(self):
         # static/js/xml_editor.js opens the review dialog on Change, also while the VM runs
