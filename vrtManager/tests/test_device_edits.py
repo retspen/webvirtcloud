@@ -134,6 +134,42 @@ class DeviceEditsTestCase(unittest.TestCase):
         self.assertIsNotNone(p.get_guest_agent(config=True))
         self.assertEqual([v["hotpluggable"] for v in p.get_vcpus(config=True).values()], ["no", "yes"])
 
+    def test_the_rng_device_is_the_panel_s_own_or_left_to_the_xml_editor(self):
+        p = proxy()
+        self.assertIsNone(p.get_rng())
+        p.set_rng(True)
+        self.assertEqual(etree.tostring(defined(p).find("devices/rng")).decode(),
+                         "<rng model=\"virtio\"><backend model=\"random\">/dev/urandom</backend></rng>")
+        added = etree.tostring(defined(p)).decode()
+        p._XMLDesc = lambda flags: added
+        self.assertEqual(p.get_rng(), "virtio")
+        p.set_rng(False)
+        self.assertIsNone(defined(p).find("devices/rng"))
+        # the panel's device with the address libvirt gives it; another RNG device, or the panel's with
+        # a rate or driver, is shown as custom and changed only in the XML editor
+        backend = "<backend model='random'>{}</backend>"
+        for inner, found in ((backend.format("/dev/urandom") + "<address type='pci' bus='0x08' slot='0x00'/>", "virtio"),
+                             (backend.format("/dev/hwrng"), "custom"),
+                             (backend.format("/dev/urandom") + "<rate bytes='1024' period='1000'/>", "custom"),
+                             (backend.format("/dev/urandom") + "<driver iommu='on'/>", "custom")):
+            with self.subTest(inner):
+                p = proxy()
+                p._XMLDesc = lambda flags, inner=inner: PERSISTENT.replace("<video>", f"<rng model='virtio'>{inner}</rng><video>")
+                self.assertEqual(p.get_rng(), found)
+                if found == "custom":
+                    with self.assertRaises(util.OperationError):
+                        p.set_rng(False)
+                    p._defineXML.assert_not_called()
+
+    def test_the_crash_action_is_restart_or_stop(self):
+        p = proxy()
+        self.assertEqual(p.get_on_crash(), "destroy")  # libvirt's default
+        p.set_on_crash("restart")
+        self.assertEqual(defined(p).findtext("on_crash"), "restart")
+        with self.assertRaises(util.OperationError):
+            p.set_on_crash("preserve")
+        p._defineXML.assert_called_once()
+
     def test_cpu_title_and_description_are_read_from_either_definition(self):
         p = proxy()
         self.assertEqual((p.get_vcpu(), p.get_cur_vcpu(), p.get_title(), p.get_description()), (1, 1, "", ""))

@@ -1752,6 +1752,34 @@ def set_guest_agent(request, pk):
 @require_POST
 @superuser_only
 @serialize_instance_mutation
+def set_rng(request, pk):
+    instance = get_instance(request.user, pk)
+    enabled = bool(request.POST.get("rng"))
+    try:
+        with audit_vm(request, instance, "add RNG device" if enabled else "remove RNG device"):
+            instance.proxy.set_rng(enabled)
+    except util.OperationError as err:
+        messages.error(request, err)
+    return _back(request, pk, "options")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def set_on_crash(request, pk):
+    instance = get_instance(request.user, pk)
+    action = request.POST.get("on_crash", "")
+    try:
+        with audit_vm(request, instance, f"set crash action {action}"):
+            instance.proxy.set_on_crash(action)
+    except util.OperationError as err:
+        messages.error(request, err)
+    return _back(request, pk, "options")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
 def set_video_model(request, pk):
     instance = get_instance(request.user, pk)
     video_model = request.POST.get("video_model", "vga")

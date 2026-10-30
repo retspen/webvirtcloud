@@ -125,6 +125,16 @@ EDITS = {
         lambda t: first(t, "devices/video/model/@type") == "virtio",
         ["devices/video"], True, False,
     ),
+    "set_rng": (
+        lambda vm: vm.set_rng(False),
+        lambda t: not t.xpath("devices/rng"),
+        ["devices/rng"], True, False,
+    ),
+    "set_on_crash": (
+        lambda vm: vm.set_on_crash("restart"),
+        lambda t: t.findtext("on_crash") == "restart",
+        ["on_crash"], True, False,
+    ),
     "resize_cpu": (
         lambda vm: vm.resize_cpu("1", "2"),
         lambda t: t.findtext("vcpu") == "2" and first(t, "vcpu/@current") == "1",

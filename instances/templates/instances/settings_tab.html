@@ -870,6 +870,49 @@
                         </div>
                     </div>
                 </form>
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_rng' instance.id %}" method="post">{% csrf_token %}
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-semibold mb-0" for="rng">{% trans "Random number generator" %}</label>
+                            <p class="small text-body-secondary mb-0" id="rng-help">{% trans "A virtio device that feeds the guest's entropy from the host: a new VM does not wait for it at boot. From the next start." %}</p>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" name="rng" value="True" id="rng" aria-describedby="rng-help rng-state"
+                                       {% if instance.config_rng %}checked{% endif %}{% if instance.config_rng == "custom" %} disabled{% endif %} onchange="this.form.submit()">
+                                <label class="form-check-label" for="rng">{% trans "Virtio RNG" %}</label>
+                            </div>
+                            {% if instance.config_rng == "custom" %}
+                            <p class="small text-body-secondary mt-1 mb-0" id="rng-state">{% trans "The VM has its own RNG device: change it in the XML editor." %}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_on_crash' instance.id %}" method="post">{% csrf_token %}
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-semibold mb-0" for="on_crash">{% trans "When the guest crashes" %}</label>
+                            <p class="small text-body-secondary mb-0" id="on-crash-help">{% trans "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again and again down for a look. From the next start." %}</p>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            {% if instance.config_on_crash == "restart" or instance.config_on_crash == "destroy" %}
+                            <div class="row g-2">
+                                <div class="col-12 col-sm">
+                                    <select id="on_crash" class="form-select" name="on_crash" aria-describedby="on-crash-help">
+                                        <option value="restart"{% if instance.config_on_crash == "restart" %} selected{% endif %}>{% trans "Restart" %}</option>
+                                        <option value="destroy"{% if instance.config_on_crash == "destroy" %} selected{% endif %}>{% trans "Stop" %}</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-auto d-grid">
+                                    <button class="btn btn-secondary" type="submit" name="set_on_crash">{% trans "Save" %}</button>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="small mb-0" id="on_crash">{% blocktrans with action=instance.config_on_crash %}{{ action }}: change it in the XML editor.{% endblocktrans %}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
                 <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_guest_agent' instance.id %}" method="post">{% csrf_token %}
                     <div class="row g-3 align-items-center">
                         <div class="col-12 col-lg-4">

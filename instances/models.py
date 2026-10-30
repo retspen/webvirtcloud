@@ -276,6 +276,14 @@ class Instance(models.Model):
         return any(vcpu["hotpluggable"] == "yes" for vcpu in self.proxy.get_vcpus(config=True).values())
 
     @cached_property
+    def config_rng(self) -> str | None:
+        return self.proxy.get_rng()
+
+    @cached_property
+    def config_on_crash(self) -> str:
+        return self.proxy.get_on_crash()
+
+    @cached_property
     def guest_agent_ready(self) -> bool:
         return self.proxy.is_agent_ready()
 

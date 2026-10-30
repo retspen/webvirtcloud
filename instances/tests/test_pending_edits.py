@@ -141,6 +141,15 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//select[@name='vcpu_hotplug']/option[@selected]/@value"), ["True"])
         self.assertIn("No channel", doc.xpath("string(//form[.//select[@name='guest_agent']])"))
 
+    def test_a_custom_rng_or_crash_action_is_left_to_the_xml_editor(self):
+        doc = self.page(get_rng=("custom", "custom"), get_on_crash=("preserve", "preserve"))
+        self.assertIsNotNone(doc.xpath("//input[@name='rng']")[0].get("disabled"))
+        self.assertEqual(doc.xpath("//select[@name='on_crash']"), [])
+        self.assertIn("preserve: change it in the XML editor.", doc.xpath("string(//p[@id='on_crash'])"))
+        doc = self.page(get_rng=("virtio", "virtio"), get_on_crash=("restart", "restart"))  # read from the persistent definition
+        self.assertEqual(doc.xpath("//input[@name='rng']/@checked"), ["checked"])
+        self.assertEqual(doc.xpath("//select[@name='on_crash']/option[@selected]/@value"), ["restart"])
+
     def test_buttons_shown_as_disabled_cannot_submit(self):
         # running: the CPU resize, vCPU hot plug, template and disk removal forms wait for a shutdown;
         # the title, description and video model are of the next start, saved at once

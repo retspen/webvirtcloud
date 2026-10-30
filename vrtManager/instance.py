@@ -83,6 +83,7 @@ PERSISTENT_XML = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE
 USB_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='usb']"
 PCI_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='pci']"
 # what of the host a VM holds: host devices, and NICs that are host devices
+RNG_DEVICE = "<rng model='virtio'><backend model='random'>/dev/urandom</backend></rng>"
 GUEST_AGENT_CHANNEL = "/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"
 HOST_DEVICES = "devices/hostdev | devices/interface[@type='hostdev'] | devices/interface/actual[@type='hostdev']"
 
@@ -2865,6 +2866,46 @@ class wvmInstance(wvmConnect):
                 if option is None:
                     option = etree.SubElement(tree, o)
                 option.text = option_value
+
+    def get_rng(self):
+        """The persistent definition's RNG device: "virtio" for the panel's
+        own (virtio, from the host's /dev/urandom), "custom" for another one,
+        None without one."""
+        rngs = etree.fromstring(self._XMLDesc(PERSISTENT_XML)).xpath("devices/rng")
+        if not rngs:
+            return None
+        # libvirt adds only its address and alias to the panel's device; a rate or driver makes it another one
+        own = "@model='virtio' and backend[@model='random']='/dev/urandom' and not(*[not(self::backend or self::address or self::alias)])"
+        if len(rngs) == 1 and rngs[0].xpath(own):
+            return "virtio"
+        return "custom"
+
+    def set_rng(self, enabled):
+        """Adds the panel's virtio RNG device to the persistent definition, or
+        removes it; another RNG device is left to the XML editor."""
+        if self.get_rng() == "custom":
+            raise util.OperationError("The VM has its own RNG device: change it in the XML editor")
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        for rng in tree.xpath("devices/rng"):
+            rng.getparent().remove(rng)
+        if enabled:
+            tree.find("devices").append(etree.fromstring(RNG_DEVICE))
+        self._defineXML(etree.tostring(tree).decode())
+
+    def get_on_crash(self):
+        """What the next start does when the guest crashes; libvirt's default is destroy."""
+        return etree.fromstring(self._XMLDesc(PERSISTENT_XML)).findtext("on_crash") or "destroy"
+
+    def set_on_crash(self, action):
+        """restart or destroy (stop) the VM when the guest crashes, from the next start."""
+        if action not in ("restart", "destroy"):
+            raise util.OperationError(f"Unknown crash action {action}")
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        on_crash = tree.find("on_crash")
+        if on_crash is None:
+            on_crash = etree.SubElement(tree, "on_crash")
+        on_crash.text = action
+        self._defineXML(etree.tostring(tree).decode())
 
     def set_options(self, options):
         """
