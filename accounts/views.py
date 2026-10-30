@@ -21,6 +21,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from accounts.apps import admin_password_path
+from computes.utils import lock_ownership
 from logs.audit import audit, audit_vm, changed_fields, failed, snapshot
 
 from accounts.forms import ApiTokenForm, EmailOTPForm, ProfileForm, UserSSHKeyForm
@@ -221,9 +222,16 @@ def user_instance_create(request, user_id):
     form = forms.UserInstanceForm(request.POST or None, initial={"user": user})
     if form.is_valid():
         instance = form.cleaned_data["instance"]
-        with audit_vm(request, instance, f"add owner {form.cleaned_data['user'].username}"):
-            form.save()
-        return redirect(reverse("accounts:account", args=[user.id]))
+        # the form's one-owner check again, with the insert in one step, as on the VM page
+        with audit_vm(request, instance, f"add owner {form.cleaned_data['user'].username}") as entry, \
+                transaction.atomic():
+            lock_ownership()
+            form.full_clean()
+            entry.skip = not form.is_valid()
+            if form.is_valid():
+                form.save()
+        if form.is_valid():
+            return redirect(reverse("accounts:account", args=[user.id]))
 
     return render(
         request,

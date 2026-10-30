@@ -18,7 +18,7 @@ from appsettings.models import AppSettings
 from appsettings.settings import app_settings
 from computes.models import Compute
 from computes.validators import validate_hostname, validate_login
-from computes.utils import libvirt_compute_lock, libvirt_instance_lock, user_quota_lock
+from computes.utils import libvirt_compute_lock, libvirt_instance_lock, lock_ownership, user_quota_lock
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
@@ -26,6 +26,7 @@ from django.contrib.auth.models import User
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponse, JsonResponse
+from django.db import transaction
 from django.db.models import Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -2077,22 +2078,22 @@ def add_owner(request, pk):
         raise Http404
     user = get_object_or_404(User, pk=user_id)
 
-    check_inst = 0
-
-    if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False":
-        check_inst = UserInstance.objects.filter(instance=instance).count()
-
     action = f"add owner {user.username}"
-    if check_inst > 0:
-        failed_vm(request, instance, action, "only one owner is allowed")
-        messages.error(
-            request, _("Only one owner is allowed and the one already added")
-        )
-    else:
-        with audit_vm(request, instance, action) as entry:
+    # the check and the insert in one step: two owners added at once must not
+    # both find the VM without one; the row is written after the transaction
+    with audit_vm(request, instance, action) as entry, transaction.atomic():
+        lock_ownership()
+        taken = (app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False"
+                 and UserInstance.objects.filter(instance=instance).exists())
+        if taken:
+            entry.skip = True
+        else:
             entry.skip = not UserInstance.objects.get_or_create(instance=instance, user=user)[1]
-        if entry.skip:
-            messages.warning(request, _("%(user)s is already an owner") % {"user": user})
+    if taken:
+        failed_vm(request, instance, action, "only one owner is allowed")
+        messages.error(request, _("Only one owner is allowed and the one already added"))
+    elif entry.skip:
+        messages.warning(request, _("%(user)s is already an owner") % {"user": user})
     return _back(request, pk, "users")
 
 

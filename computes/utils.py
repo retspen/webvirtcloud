@@ -53,7 +53,8 @@ OWNERSHIP_LOCK = 0x7776635F6F776E
 def lock_ownership():
     """Hold the ownership step of every compute until this transaction ends:
     a bury and a restore of the same UUID on two computes must not see each
-    other's work half done. SQLite's IMMEDIATE transactions already do this."""
+    other's work half done, nor two owners added at once each other's check.
+    SQLite's IMMEDIATE transactions already do this."""
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:
             cursor.execute("SELECT pg_advisory_xact_lock(%s)", [OWNERSHIP_LOCK])
