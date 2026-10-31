@@ -33,18 +33,23 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 
 ## Features
 
-* QEMU/KVM hypervisor management (multiple compute nodes)
-* Virtual machine lifecycle: create, delete, power management, clone, migrate
+* QEMU/KVM hypervisor management (multiple compute nodes), with each host's capacity and what its VMs were given
+* Virtual machine lifecycle: create, delete, power management, clone (also of a running VM), migrate (with or without shared storage), disk moves between pools
+* Long operations (create, clone, snapshots, migration, ISO upload) run as jobs that the page follows and can cancel
+* External snapshots (memory optional, guest file systems frozen through the agent)
 * **External change detection:** VMs created, deleted or renamed via `virt-manager` or `virsh` are reconciled into the database automatically
 * Real-time hypervisor and VM statistics (CPU, RAM, disk, network)
 * Storage pool and volume management
-* Network and interface management
-* Browser-based VNC console (noVNC)
-* Role-based access control: users only see the VMs assigned to them
+* Network (with DHCP leases), interface, network filter and secret management
+* PCI and USB devices of the host given to VMs
+* Browser-based VNC console (noVNC) and serial console
+* Role-based access control: users only see the VMs assigned to them, within their quota
 * 2FA (OTP / TOTP) and failed-login lockout
-* SSH public key and root password management (via guestfs)
-* Cloud-init datasource interface (OpenStack metadata compatible)
-* REST API — OpenAPI 3.0 (Swagger & ReDoc)
+* SSH public key and root password management (guest agent for a running VM, gstfsd for a shut-off one)
+* Finding VMs by IP or MAC address, and a VM report as an Excel file
+* An audit log of who changed what, with its result
+* Cloud-init datasource interface (OpenStack metadata compatible) and NoCloud seed media
+* REST API — OpenAPI 3.0 (Swagger & ReDoc), with API tokens
 * LDAP / Active Directory integration (optional)
 
 ## Contents
@@ -625,6 +630,10 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 - A shut-off UEFI VM can be migrated: its NVRAM file is copied to the destination host (unless both hosts share the NVRAM directory). A shut-off VM with TPM state still has to be started and migrated live.
 - Manual installs that keep their own `settings.py` copy the SQLite `OPTIONS` and `TEST` entries from `settings.py.template` and add `"operations"` to `INSTALLED_APPS`.
 - A host's Devices page lists its PCI devices by IOMMU group and its USB devices, with what the host itself has on each (network interfaces, disks, its graphics card) and the VMs that name it. Manual installs that keep their own `settings.py` add `"nodedevs"` to `INSTALLED_APPS`.
+- A user's quota counts, for each VM, the larger of its running and its next-start vCPUs, memory and disks, and a queued clone as one VM from the moment it is accepted. A user can be over the quota after the update; nothing is stopped, but new VMs, clones and raises are refused until it fits.
+- A user who is not a superuser names a clone with one of the free names the clone form offers (the first one with automatic names); other names are refused.
+- Deleting a VM with its disk files keeps a file that a VM or volume of another compute uses at the same path (shared storage), and is refused before the VM is stopped when one of the panel's other computes cannot be reached; the message names it.
+- An internal snapshot is reverted only on a shut-off VM; the Snapshots tab offers external snapshots first and internal ones as a fallback.
 - The SQLite database must be on a local file system (WAL).
 - Outside compose, stop the Docker container with `docker stop -t 95` so the worker can finish running jobs.
 - Installer and manual installations run the panel as systemd units (`webvirt-cloud`, `webvirt-novncd`, `webvirt-socketiod`, `webvirt-worker`) and computes run `webvirt-gstfsd`, instead of supervisor; see [Moving from supervisor to systemd](#moving-from-supervisor-to-systemd). Service settings go into `/etc/default/webvirtcloud`, service output into the journal (`journalctl -u webvirt-cloud`); the app log stays in `data/`.
