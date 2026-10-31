@@ -13,8 +13,7 @@
     <form method="post" class="btn-group">{% csrf_token %}
         {% if state %}
         <button type="submit" class="btn btn-outline-secondary" name="stop"
-                data-confirm="{% blocktrans with name=pool %}Stop network {{ name }}? Running VMs on it lose their connection through it at once.{% endblocktrans %}"
-                onclick="return confirm(this.dataset.confirm)">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
+                data-confirm="{% blocktrans with name=pool %}Stop network {{ name }}? Running VMs on it lose their connection through it at once.{% endblocktrans %}">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
         {% else %}
         <button type="submit" class="btn btn-outline-secondary" name="start">{% bs_icon 'play-fill' %} {% trans "Start" %}</button>
         {% endif %}
@@ -25,8 +24,7 @@
             <li><form method="post">{% csrf_token %}
                 {% if autostart %}
                 <button type="submit" class="dropdown-item" name="unset_autostart"
-                        data-confirm="{% blocktrans with name=pool %}Disable autostart of network {{ name }}? After the host restarts it stays stopped, and VMs that use it do not start.{% endblocktrans %}"
-                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'toggle-off' %} {% trans "Disable autostart" %}</button>
+                        data-confirm="{% blocktrans with name=pool %}Disable autostart of network {{ name }}? After the host restarts it stays stopped, and VMs that use it do not start.{% endblocktrans %}">{% bs_icon 'toggle-off' %} {% trans "Disable autostart" %}</button>
                 {% else %}
                 <button type="submit" class="dropdown-item" name="set_autostart">{% bs_icon 'toggle-on' %} {% trans "Enable autostart" %}</button>
                 {% endif %}
@@ -35,8 +33,7 @@
             <li><hr class="dropdown-divider"></li>
             <li><form method="post">{% csrf_token %}
                 <button type="submit" class="dropdown-item text-danger" name="delete"
-                        data-confirm="{% blocktrans with name=pool %}Delete network {{ name }}? VMs that use it no longer start.{% endblocktrans %}"
-                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete network" %}</button>
+                        data-confirm="{% blocktrans with name=pool %}Delete network {{ name }}? VMs that use it no longer start.{% endblocktrans %}">{% bs_icon 'trash' %} {% trans "Delete network" %}</button>
             </form></li>
             {% endif %}
         </ul>
@@ -168,8 +165,7 @@
                                                 <input type="hidden" name="ip_index" value="{{ host.ip_index }}">
                                                 <input type="hidden" name="original" value="{{ host.ip }}">
                                                 <button type="submit" class="dropdown-item text-danger" name="delete_fixed_address"
-                                                        data-confirm="{% blocktrans with address=host.ip %}Delete the fixed address {{ address }}? The VM may get another address when its lease ends.{% endblocktrans %}"
-                                                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete" %}</button>
+                                                        data-confirm="{% blocktrans with address=host.ip %}Delete the fixed address {{ address }}? The VM may get another address when its lease ends.{% endblocktrans %}">{% bs_icon 'trash' %} {% trans "Delete" %}</button>
                                             </form></li>
                                         </ul>
                                     </div>
@@ -305,8 +301,7 @@
                                 <form method="post" class="btn-group">{% csrf_token %}
                                     <input type="hidden" name="qos_direction" value="{{ direction }}">
                                     <button type="submit" class="btn btn-sm btn-outline-secondary" name="unset_qos" aria-label="{% trans "Remove" %}"
-                                            data-confirm="{% blocktrans with name=pool %}Remove the {{ direction }} limit of network {{ name }}? It stays in force until the network is stopped and started.{% endblocktrans %}"
-                                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                            data-confirm="{% blocktrans with name=pool %}Remove the {{ direction }} limit of network {{ name }}? It stays in force until the network is stopped and started.{% endblocktrans %}">{% bs_icon 'trash' %}</button>
                                 </form>
                             </div>
                         </td>

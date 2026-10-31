@@ -13,8 +13,7 @@
     <form method="post" class="btn-group">{% csrf_token %}
         {% if state %}
         <button type="submit" class="btn btn-outline-secondary" name="stop"
-                data-confirm="{% blocktrans with name=iface %}Stop interface {{ name }}? The host and its VMs lose their connections through it at once; if you reach the host through it, you lose the host.{% endblocktrans %}"
-                onclick="return confirm(this.dataset.confirm)">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
+                data-confirm="{% blocktrans with name=iface %}Stop interface {{ name }}? The host and its VMs lose their connections through it at once; if you reach the host through it, you lose the host.{% endblocktrans %}">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
         {% else %}
         <button type="submit" class="btn btn-outline-secondary" name="start">{% bs_icon 'play-fill' %} {% trans "Start" %}</button>
         {% endif %}
@@ -24,8 +23,7 @@
         <ul class="dropdown-menu dropdown-menu-end shadow">
             <li><form method="post">{% csrf_token %}
                 <button type="submit" class="dropdown-item text-danger" name="delete"{% if state %} disabled{% endif %}
-                        data-confirm="{% blocktrans with name=iface %}Delete interface {{ name }}? Its definition is removed from the host; a bridge's members are defined again on their own, its addresses going to its only member.{% endblocktrans %}"
-                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% if state %}{% trans "Delete (stop it first)" %}{% else %}{% trans "Delete interface" %}{% endif %}</button>
+                        data-confirm="{% blocktrans with name=iface %}Delete interface {{ name }}? Its definition is removed from the host; a bridge's members are defined again on their own, its addresses going to its only member.{% endblocktrans %}">{% bs_icon 'trash' %} {% if state %}{% trans "Delete (stop it first)" %}{% else %}{% trans "Delete interface" %}{% endif %}</button>
             </form></li>
         </ul>
     </div>

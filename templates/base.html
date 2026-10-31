@@ -59,6 +59,23 @@
       {% block content %}{% endblock %}
     </div>
 
+    {# the dialog every button with data-confirm asks in (confirm_dialog.js) #}
+    <div class="modal fade" id="confirm-dialog" tabindex="-1" aria-labelledby="confirm-dialog-title" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-break" id="confirm-dialog-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+          </div>
+          <div class="modal-body text-break"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+            <button type="button" class="btn btn-primary" data-confirm-ok></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
@@ -66,6 +83,7 @@
     <script src="{% static 'js/jquery.js' %}"></script>
     <!-- Bootstrap Core JavaScript -->
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/confirm_dialog.js' %}"></script>
     <!-- JavaScript Cookie -->
     <script src="{% static 'js/js.cookie.js' %}"></script>
     <!-- Table sorting -->

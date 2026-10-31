@@ -98,7 +98,7 @@ class StateTests(TestCase):
                 for action in {"force_off", "powercycle"} & ACTIONS[state]:
                     button = page.xpath(f"//form[@action='{reverse(f'instances:{action}', args=[vm.id])}']//button")[0]
                     with self.subTest(url=url, vm=vm.name, action=action):
-                        self.assertEqual(button.get("onclick"), "return confirm(this.dataset.confirm)")
+                        self.assertIsNone(button.get("onclick"))  # the page's dialog asks, not the browser
                         self.assertIn(vm.name, button.get("data-confirm"))
                         self.assertIn("power cut", button.get("data-confirm"))
 

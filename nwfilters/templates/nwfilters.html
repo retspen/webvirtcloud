@@ -60,8 +60,7 @@
                                             <input type="hidden" name="nwfiltername" value="{{ nwf.name }}">
                                             {# a filter in use is not deleted: a VM using it, or a filter referencing it, would not start #}
                                             <button type="submit" class="dropdown-item text-danger" name="del_nwfilter"{% if nwf.vms or nwf.referenced_by %} disabled{% endif %}
-                                                    data-confirm="{% blocktrans with name=nwf.name %}Delete filter {{ name }}?{% endblocktrans %}"
-                                                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% if nwf.vms or nwf.referenced_by %}{% trans "Delete (in use)" %}{% else %}{% trans "Delete filter" %}{% endif %}</button>
+                                                    data-confirm="{% blocktrans with name=nwf.name %}Delete filter {{ name }}?{% endblocktrans %}">{% bs_icon 'trash' %} {% if nwf.vms or nwf.referenced_by %}{% trans "Delete (in use)" %}{% else %}{% trans "Delete filter" %}{% endif %}</button>
                                         </form></li>
                                     </ul>
                                 </div>

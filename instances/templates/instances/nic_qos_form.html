@@ -21,6 +21,6 @@
     <div class="d-flex flex-wrap gap-2 mt-2">
         <button type="submit" class="btn btn-sm btn-primary" name="set_qos">{% trans "Save" %}</button>
         <button type="submit" class="btn btn-sm btn-danger" name="unset_qos" formaction="{% url 'instances:unset_qos' instance.id %}" formnovalidate
-                data-confirm="{% blocktrans with mac=network.mac %}Remove the {{ direction }} limit of {{ mac }}? A running VM keeps it until it is powered off and on.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Delete limit" %}</button>
+                data-confirm="{% blocktrans with mac=network.mac %}Remove the {{ direction }} limit of {{ mac }}? A running VM keeps it until it is powered off and on.{% endblocktrans %}">{% trans "Delete limit" %}</button>
     </div>
 </form>

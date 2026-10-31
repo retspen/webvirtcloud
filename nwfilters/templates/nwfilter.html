@@ -69,8 +69,7 @@
                                 <input type="hidden" name="index" value="{{ forloop.counter0 }}">
                                 <input type="hidden" name="ref" value="{{ ref.text }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" name="del_nwfilter_ref" aria-label="{% blocktrans with ref=ref.filter %}Remove the reference to {{ ref }}{% endblocktrans %}"
-                                        data-confirm="{% blocktrans with ref=ref.filter %}Remove the reference to {{ ref }}? Its rules no longer apply through this filter.{% endblocktrans %}"
-                                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                        data-confirm="{% blocktrans with ref=ref.filter %}Remove the reference to {{ ref }}? Its rules no longer apply through this filter.{% endblocktrans %}">{% bs_icon 'trash' %}</button>
                             </form>
                         </td>
                     </tr>
@@ -125,8 +124,7 @@
                                 <input type="hidden" name="index" value="{{ forloop.counter0 }}">
                                 <input type="hidden" name="rule" value="{{ rule.text }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" name="del_nwfilter_rule" aria-label="{% blocktrans with number=forloop.counter %}Delete rule {{ number }}{% endblocktrans %}"
-                                        data-confirm="{% trans "Delete this rule? Interfaces that use the filter no longer get it." %}"
-                                        onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                        data-confirm="{% trans "Delete this rule? Interfaces that use the filter no longer get it." %}">{% bs_icon 'trash' %}</button>
                             </form>
                         </td>
                     </tr>

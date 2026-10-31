@@ -87,27 +87,27 @@
                         <input type="hidden" name="name" value="{{ snap.name }}">
                         <button type="submit" class="btn btn-sm btn-secondary" name="revert_external_snapshot"
                                 data-confirm="{% blocktrans with name=snap.name %}Revert to snapshot {{ name }}? Changes made since it are lost.{% endblocktrans %}{% if not snap.memory %}{% if instance.status == 1 %} {% trans "The VM is powered off and starts again from the snapshot's disks, as after a power cut." %}{% elif instance.status == 3 %} {% trans "The VM is powered off and comes back paused on the snapshot's disks." %}{% endif %}{% endif %}{% if snap.detaches %} {% trans 'These disks are detached; their writes since the current snapshot are discarded and their files are kept:' %} {% for d in snap.detaches %}{{ d.dev }} ({{ d.path }}){% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}{% if instance.nvram %} {% trans 'Firmware variables (NVRAM) are not restored.' %}{% endif %}"
-                                onclick="return confirm(this.dataset.confirm)"{% if busy or held %} disabled{% endif %}>{% trans "Revert" %}</button>
+                               {% if busy or held %} disabled{% endif %}>{% trans "Revert" %}</button>
                     </form>
                     <form action="{% url 'instances:delete_external_snapshot' instance.id %}" method="post">{% csrf_token %}{% submission_key %}
                         <input type="hidden" name="name" value="{{ snap.name }}">
                         <button type="submit" class="btn btn-sm btn-danger" name="delete_external_snapshot"
                                 data-confirm="{% blocktrans with name=snap.name %}Delete snapshot {{ name }}? Its files are merged with the disks; the VM's data is kept.{% endblocktrans %}"
-                                onclick="return confirm(this.dataset.confirm)"{% if busy or held %} disabled{% endif %}>{% trans "Delete" %}</button>
+                               {% if busy or held %} disabled{% endif %}>{% trans "Delete" %}</button>
                     </form>
                     {% else %}
                     <form action="{% url 'instances:revert_snapshot' instance.id %}" method="post">{% csrf_token %}{% submission_key %}
                         <input type="hidden" name="name" value="{{ snap.name }}">
                         <button type="submit" class="btn btn-sm btn-secondary" name="revert_snapshot"
                                 data-confirm="{% blocktrans with name=snap.name %}Revert to snapshot {{ name }}? Disk changes made since it are lost; a snapshot of a running VM starts it again as it was then.{% endblocktrans %}"
-                                onclick="return confirm(this.dataset.confirm)"{% if instance.status != 5 or busy or held %} disabled{% endif %}
+                               {% if instance.status != 5 or busy or held %} disabled{% endif %}
                                 {% if instance.status != 5 %}title="{% trans "Shut the VM down to revert to an internal snapshot." %}"{% endif %}>{% trans "Revert" %}</button>
                     </form>
                     <form action="{% url 'instances:delete_snapshot' instance.id %}" method="post">{% csrf_token %}
                         <input type="hidden" name="name" value="{{ snap.name }}">
                         <button type="submit" class="btn btn-sm btn-danger"
                                 data-confirm="{% blocktrans with name=snap.name %}Delete snapshot {{ name }}? The VM's current disks are not changed.{% endblocktrans %}"
-                                onclick="return confirm(this.dataset.confirm)"{% if busy or held %} disabled{% endif %}>{% trans "Delete" %}</button>
+                               {% if busy or held %} disabled{% endif %}>{% trans "Delete" %}</button>
                     </form>
                     {% endif %}
                 </li>

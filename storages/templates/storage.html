@@ -15,8 +15,7 @@
         {% if state %}
         <form method="post" class="btn-group">{% csrf_token %}
             <button type="submit" class="btn btn-outline-secondary" name="stop"
-                    data-confirm="{% blocktrans with name=pool %}Stop pool {{ name }}? Its files stay, but until it is started again its volumes cannot be managed and VMs with disks in it may not start.{% endblocktrans %}"
-                    onclick="return confirm(this.dataset.confirm)">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
+                    data-confirm="{% blocktrans with name=pool %}Stop pool {{ name }}? Its files stay, but until it is started again its volumes cannot be managed and VMs with disks in it may not start.{% endblocktrans %}">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
         </form>
         {% else %}
         <form method="post" class="btn-group">{% csrf_token %}
@@ -29,8 +28,7 @@
                 <li><form method="post">{% csrf_token %}
                     {% if autostart %}
                     <button type="submit" class="dropdown-item" name="unset_autostart"
-                            data-confirm="{% blocktrans with name=pool %}Disable autostart of pool {{ name }}? After the host restarts it stays stopped.{% endblocktrans %}"
-                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'toggle-off' %} {% trans "Disable autostart" %}</button>
+                            data-confirm="{% blocktrans with name=pool %}Disable autostart of pool {{ name }}? After the host restarts it stays stopped.{% endblocktrans %}">{% bs_icon 'toggle-off' %} {% trans "Disable autostart" %}</button>
                     {% else %}
                     <button type="submit" class="dropdown-item" name="set_autostart">{% bs_icon 'toggle-on' %} {% trans "Enable autostart" %}</button>
                     {% endif %}
@@ -39,8 +37,7 @@
                 <li><hr class="dropdown-divider"></li>
                 <li><form method="post">{% csrf_token %}
                     <button type="submit" class="dropdown-item text-danger" name="delete"
-                            data-confirm="{% blocktrans with name=pool %}Delete pool {{ name }}? Only its definition goes; its volumes and their files stay.{% endblocktrans %}"
-                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete pool" %}</button>
+                            data-confirm="{% blocktrans with name=pool %}Delete pool {{ name }}? Only its definition goes; its volumes and their files stay.{% endblocktrans %}">{% bs_icon 'trash' %} {% trans "Delete pool" %}</button>
                 </form></li>
                 {% endif %}
             </ul>
@@ -152,8 +149,7 @@
                                     <li><form method="post">{% csrf_token %}
                                         <input type="hidden" name="volname" value="{{ volume.name }}">
                                         <button type="submit" class="dropdown-item text-danger" name="del_volume"
-                                                data-confirm="{% blocktrans with name=volume.name %}Delete volume {{ name }}? Its file and data are removed; a volume a VM uses is not deleted.{% endblocktrans %}"
-                                                onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %} {% trans "Delete" %}</button>
+                                                data-confirm="{% blocktrans with name=volume.name %}Delete volume {{ name }}? Its file and data are removed; a volume a VM uses is not deleted.{% endblocktrans %}">{% bs_icon 'trash' %} {% trans "Delete" %}</button>
                                     </form></li>
                                 </ul>
                             </div>
@@ -257,20 +253,20 @@
                 if (uploadInProgress) return;
 
                 var fileInput = $('#id_file')[0];
+                var errorMessage = $('#upload-error-message');
                 if (fileInput.files.length === 0) {
-                    alert("{% trans 'Please select a file to upload.'|escapejs %}");
+                    errorMessage.text("{% trans 'Please select a file to upload.'|escapejs %}").removeClass("d-none");
                     return;
                 }
 
                 var file = fileInput.files[0];
                 var fileName = file.name;
-                var errorMessage = $('#upload-error-message');
                 if (!/\.iso$/i.test(fileName) || fileName.length <= 4) {
                     errorMessage.text("{% trans 'Only .iso files can be uploaded.'|escapejs %}").removeClass("d-none");
                     return;
                 }
                 if (file.size === 0) {
-                    alert("{% trans 'The selected file is empty.'|escapejs %}");
+                    errorMessage.text("{% trans 'The selected file is empty.'|escapejs %}").removeClass("d-none");
                     return;
                 }
                 var chunkSize = 32 * 1024 * 1024; // Fewer SSH connections per upload

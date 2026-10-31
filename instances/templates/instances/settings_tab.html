@@ -246,7 +246,7 @@
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">
-                                    <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Detach {{ dev }}? Its file is kept.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Detach" %}</button>
+                                    <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Detach {{ dev }}? Its file is kept.{% endblocktrans %}">{% trans "Detach" %}</button>
                                 </form>
                                 <form class="d-inline" action="{% url 'instances:delete_vol' instance.id %}" method="post">
                                     {% csrf_token %}
@@ -254,7 +254,7 @@
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">
-                                    <button type="submit" class="btn btn-sm btn-danger"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Delete {{ dev }}? It is detached and its file and data are removed.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Delete" %}</button>
+                                    <button type="submit" class="btn btn-sm btn-danger"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Delete {{ dev }}? It is detached and its file and data are removed.{% endblocktrans %}">{% trans "Delete" %}</button>
                                 </form>
                             </div>
                         </div>
@@ -328,7 +328,7 @@
                                 {% if network.type != "hostdev" %}
                                 <form action="{% url 'instances:delete_network' instance.id %}" method="post" aria-label="{% trans "Delete network device form" %}">{% csrf_token %}
                                     <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network"
-                                            data-confirm="{% blocktrans with mac=network.mac %}Remove network card {{ mac }}? A running VM loses its connection through it at once.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Delete" %}</button>
+                                            data-confirm="{% blocktrans with mac=network.mac %}Remove network card {{ mac }}? A running VM loses its connection through it at once.{% endblocktrans %}">{% trans "Delete" %}</button>
                                 </form>
                                 {% endif %}
                             </div>
@@ -467,8 +467,7 @@
                                     <input type="hidden" name="product" value="{{ device.product }}">
                                     <input type="hidden" name="address" value="{% if device.address %}{{ device.address.0 }}/{{ device.address.1 }}{% endif %}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Remove the USB device" %}"
-                                            data-confirm="{% trans "Remove this USB device from the VM? A running VM loses it at once." %}"
-                                            onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                            data-confirm="{% trans "Remove this USB device from the VM? A running VM loses it at once." %}">{% bs_icon 'trash' %}</button>
                                 </form>
                             </td>
                             {% endif %}
@@ -501,7 +500,7 @@
                                     <input type="hidden" name="address" value="{{ device.address }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Remove the PCI device" %}"
                                             {% if instance.status != 1 and instance.status != 5 or instance.has_managed_save_image %}disabled title="{% trans "A paused VM, or one with a saved state, does not change its PCI devices" %}"{% endif %}
-                                            data-confirm="{% trans "Remove this PCI device from the VM? A running VM's guest has to let it go." %}" onclick="return confirm(this.dataset.confirm)">{% bs_icon 'trash' %}</button>
+                                            data-confirm="{% trans "Remove this PCI device from the VM? A running VM's guest has to let it go." %}">{% bs_icon 'trash' %}</button>
                                 </form>
                             </td>
                             {% endif %}

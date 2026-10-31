@@ -8,8 +8,7 @@
             <span><strong>{{ flavor.label }}</strong> · {{ flavor.vcpu }} vCPU · {{ flavor.memory }} MiB · {{ flavor.disk }} GiB</span>
             <form class="ms-auto" action="{% url 'instances:flavor_delete' flavor.id %}" method="post">{% csrf_token %}
                 <button type="submit" class="btn btn-sm btn-secondary"
-                        data-confirm="{% blocktrans with name=flavor.label %}Delete flavor {{ name }}? Only the size template goes; VMs made from it keep their size.{% endblocktrans %}"
-                        onclick="return confirm(this.dataset.confirm)">{% trans "Delete" %}</button>
+                        data-confirm="{% blocktrans with name=flavor.label %}Delete flavor {{ name }}? Only the size template goes; VMs made from it keep their size.{% endblocktrans %}">{% trans "Delete" %}</button>
             </form>
         </li>
         {% endfor %}
