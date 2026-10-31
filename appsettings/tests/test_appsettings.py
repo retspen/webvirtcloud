@@ -90,12 +90,17 @@ class AppSettingsTestCase(TestCase):
 
     def test_settings_are_grouped_with_their_descriptions_shown(self):
         page = self.page()
-        titles = [h.text_content().strip() for h in page.xpath("//form//h2")]
-        self.assertEqual(titles[:3], ["New VM defaults", "Disks", "Clones"])
+        titles = [h.text_content().strip() for h in page.xpath("//section/div[@class='card-header']/h2")]
+        self.assertEqual(titles[:4], ["Appearance", "New VM defaults", "Disks", "Clones"])
+        # the index jumps to each group
+        links = page.xpath("//nav[@aria-label='Settings groups']//a/@href")
+        self.assertEqual(links[:3], ["#appearance", "#new-vm-defaults", "#disks"])
+        self.assertEqual([page.get_element_by_id(link[1:]).tag for link in links], ["section"] * len(links))
         # every setting is in one group, with a label tied to its field and its description shown
         keys = page.xpath("//form//*[self::input or self::select][@name and @name!='csrfmiddlewaretoken' and not(starts-with(@name, 'was-'))]/@name")
         names = set(AppSettings.objects.exclude(key="BOOTSTRAP_THEME").values_list("key", flat=True))
-        self.assertEqual(sorted(k for k in keys if k not in ("BOOTSTRAP_THEME", "language")), sorted(names))
+        # a switch has its hidden False under the same name
+        self.assertEqual(sorted({k for k in keys if k not in ("BOOTSTRAP_THEME", "language")}), sorted(names))
         (field,) = page.xpath("//*[@name='LOGS_PER_PAGE']")
         self.assertEqual((field.get("type"), field.get("min"), field.get("max")), ("number", "1", "1000"))
         self.assertEqual(page.xpath(f"//label[@for='{field.get('id')}']/text()"), ["Logs per Page"])
@@ -119,6 +124,21 @@ class AppSettingsTestCase(TestCase):
                          ["Settings: change Console Clip Viewport to True, Console Scale to True"])
         self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
                          ["Saved: Console Clip Viewport, Console Scale"])
+
+    def test_a_true_or_false_setting_is_a_switch(self):
+        AppSettings.objects.filter(key="CONSOLE_SCALE").update(value="True")
+        page = self.page()
+        # in the form's order: the hidden False, the switch, the value the page showed
+        fields = page.xpath("//form//input[@name='CONSOLE_SCALE' or @name='was-CONSOLE_SCALE']")
+        self.assertEqual([(f.get("type"), f.get("value")) for f in fields],
+                         [("hidden", "False"), ("checkbox", "True"), ("hidden", "True")])
+        self.assertEqual((fields[1].get("role"), fields[1].checked), ("switch", True))
+        # the hidden False before it is what an unchecked switch posts; a checked one's True comes last and wins
+        AppSettings.objects.filter(key="CONSOLE_SCALE").update(value="False")
+        self.client.post(reverse("appsettings"), {"CONSOLE_SCALE": ["False", "True"], "was-CONSOLE_SCALE": "False"})
+        self.assertEqual(AppSettings.objects.get(key="CONSOLE_SCALE").value, "True")
+        self.client.post(reverse("appsettings"), {"CONSOLE_SCALE": "False", "was-CONSOLE_SCALE": "True"})
+        self.assertEqual(AppSettings.objects.get(key="CONSOLE_SCALE").value, "False")
 
     def test_a_group_keeps_what_another_administrator_saved_meanwhile(self):
         # both opened the page with 5 and 15; the first saved 10 for the limit

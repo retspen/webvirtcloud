@@ -5,72 +5,101 @@
 
 {% block page_heading %}{% trans "Edit Settings" %}{% endblock page_heading %}
 
-{% block content %}
-<section class="card mb-3" aria-labelledby="appearance-heading">
-    <div class="card-body">
-        <h2 class="h5 card-title" id="appearance-heading">{% trans "Appearance" %}</h2>
-        <form action="{% url 'set_language' %}" method="post" class="row g-2 mb-3 align-items-start">{% csrf_token %}
-            <label class="col-sm-4 col-form-label" for="language">{% trans "Language" %}</label>
-            <div class="col-sm-6">
-                <select id="language" name="language" class="form-select" aria-describedby="language-help">
-                    {% get_current_language as LANGUAGE_CODE %}
-                    {% get_available_languages as LANGUAGES %}
-                    {% get_language_info_list for LANGUAGES as languages %}
-                    {% for language in languages %}
-                        <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>{{ language.name_local }} ({{ language.code }})</option>
-                    {% endfor %}
-                </select>
-                <div id="language-help" class="form-text">{% trans "Yours only, in this browser" %}</div>
-            </div>
-            <div class="col-sm-2"><button type="submit" class="btn btn-outline-primary w-100">{% trans "Change" %}</button></div>
-        </form>
-        <form method="post" class="row g-2 align-items-start">{% csrf_token %}
-            <label class="col-sm-4 col-form-label" for="theme">{% trans bootstrap_theme.name %}</label>
-            <div class="col-sm-6">
-                <select id="theme" class="form-select" name="{{ bootstrap_theme.key }}" aria-describedby="theme-help">
-                {% for theme in themes_list %}
-                    <option value="{{ theme }}"{% if bootstrap_theme.value == theme %} selected{% endif %}>{{ theme }}</option>
-                {% endfor %}
-                </select>
-                <div id="theme-help" class="form-text">{% trans "For every user" %}</div>
-            </div>
-            <div class="col-sm-2"><button type="submit" class="btn btn-outline-primary w-100">{% trans "Change" %}</button></div>
-        </form>
-    </div>
-</section>
+{% block style %}
+<style>
+    /* a group's card stops below the sticky navbar; the group index stays in view */
+    .settings-group { scroll-margin-top: 5rem; }
+    @media (min-width: 992px) {
+        .settings-index { position: sticky; top: 5rem; }
+    }
+</style>
+{% endblock style %}
 
-{% for title, settings in groups %}
-<section class="card mb-3" aria-labelledby="group-{{ forloop.counter }}">
-    <div class="card-body">
-        <form method="post">{% csrf_token %}
-            <h2 class="h5 card-title mb-3" id="group-{{ forloop.counter }}">{% trans title %}</h2>
-            {% for setting in settings %}
-            <div class="row g-2 mb-3">
-                <label class="col-sm-4 col-form-label" for="setting-{{ setting.key }}">{% trans setting.name %}</label>
-                <div class="col-sm-6">
-                {% if setting.choices %}
-                    <select id="setting-{{ setting.key }}" class="form-select" name="{{ setting.key }}" aria-describedby="help-{{ setting.key }}">
-                        {% for choice in setting.choices_as_list %}
-                            <option value="{{ choice }}"{% if setting.value == choice %} selected{% endif %}>{% trans choice %}</option>
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-3">
+        <nav class="settings-index" aria-label="{% trans 'Settings groups' %}">
+            <div class="nav nav-pills flex-wrap flex-lg-column gap-1">
+                <a class="nav-link" href="#appearance">{% trans "Appearance" %}</a>
+                {% for title, settings in groups %}
+                    <a class="nav-link" href="#{{ title|slugify }}">{% trans title %}</a>
+                {% endfor %}
+            </div>
+        </nav>
+    </div>
+    <div class="col-lg-9">
+        <section class="card mb-3 settings-group" id="appearance" aria-labelledby="appearance-heading">
+            <div class="card-header"><h2 class="h5 mb-0" id="appearance-heading">{% trans "Appearance" %}</h2></div>
+            <div class="card-body row g-3">
+                <form action="{% url 'set_language' %}" method="post" class="col-md-6">{% csrf_token %}
+                    <label class="form-label" for="language">{% trans "Language" %}</label>
+                    <select id="language" name="language" class="form-select" aria-describedby="language-help">
+                        {% get_current_language as LANGUAGE_CODE %}
+                        {% get_available_languages as LANGUAGES %}
+                        {% get_language_info_list for LANGUAGES as languages %}
+                        {% for language in languages %}
+                            <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>{{ language.name_local }} ({{ language.code }})</option>
                         {% endfor %}
                     </select>
-                {% elif setting.bounds %}
-                    <input id="setting-{{ setting.key }}" class="form-control" type="number" name="{{ setting.key }}" value="{{ setting.value }}"
-                           min="{{ setting.bounds.0 }}" max="{{ setting.bounds.1 }}" step="1" required aria-describedby="help-{{ setting.key }}">
-                {% else %}
-                    <input id="setting-{{ setting.key }}" class="form-control" type="text" name="{{ setting.key }}" value="{{ setting.value }}"
-                           maxlength="25" aria-describedby="help-{{ setting.key }}">
-                {% endif %}
-                    <input type="hidden" name="was-{{ setting.key }}" value="{{ setting.value }}">
-                    <div id="help-{{ setting.key }}" class="form-text">{% trans setting.description %}</div>
+                    <div id="language-help" class="form-text">{% trans "Yours only, in this browser" %}</div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary mt-2">{% trans "Change language" %}</button>
+                </form>
+                <form method="post" class="col-md-6">{% csrf_token %}
+                    <label class="form-label" for="theme">{% trans bootstrap_theme.name %}</label>
+                    <select id="theme" class="form-select" name="{{ bootstrap_theme.key }}" aria-describedby="theme-help">
+                    {% for theme in themes_list %}
+                        <option value="{{ theme }}"{% if bootstrap_theme.value == theme %} selected{% endif %}>{{ theme }}</option>
+                    {% endfor %}
+                    </select>
+                    <div id="theme-help" class="form-text">{% trans "For every user" %}</div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary mt-2">{% trans "Change theme" %}</button>
+                </form>
+            </div>
+        </section>
+
+        {% for title, settings in groups %}
+        {% trans title as group_title %}
+        <section class="card mb-3 settings-group" id="{{ title|slugify }}" aria-labelledby="group-{{ forloop.counter }}">
+            <div class="card-header"><h2 class="h5 mb-0" id="group-{{ forloop.counter }}">{{ group_title }}</h2></div>
+            <form method="post" class="card-body">{% csrf_token %}
+                <div class="row g-3">
+                {% for setting in settings %}
+                    <div class="col-md-6">
+                    {% if setting.choices == "True,False" %}
+                        {# an unchecked box posts nothing: the hidden False goes first, a checked box's True wins #}
+                        <input type="hidden" name="{{ setting.key }}" value="False">
+                        <div class="form-check form-switch">
+                            <input id="setting-{{ setting.key }}" class="form-check-input" type="checkbox" role="switch" name="{{ setting.key }}" value="True"
+                                   {% if setting.value == "True" %}checked {% endif %}aria-describedby="help-{{ setting.key }}">
+                            <label class="form-check-label" for="setting-{{ setting.key }}">{% trans setting.name %}</label>
+                        </div>
+                    {% else %}
+                        <label class="form-label" for="setting-{{ setting.key }}">{% trans setting.name %}</label>
+                        {% if setting.choices %}
+                            <select id="setting-{{ setting.key }}" class="form-select" name="{{ setting.key }}" aria-describedby="help-{{ setting.key }}">
+                                {% for choice in setting.choices_as_list %}
+                                    <option value="{{ choice }}"{% if setting.value == choice %} selected{% endif %}>{% trans choice %}</option>
+                                {% endfor %}
+                            </select>
+                        {% elif setting.bounds %}
+                            <input id="setting-{{ setting.key }}" class="form-control" type="number" name="{{ setting.key }}" value="{{ setting.value }}"
+                                   min="{{ setting.bounds.0 }}" max="{{ setting.bounds.1 }}" step="1" required aria-describedby="help-{{ setting.key }}">
+                        {% else %}
+                            <input id="setting-{{ setting.key }}" class="form-control" type="text" name="{{ setting.key }}" value="{{ setting.value }}"
+                                   maxlength="25" aria-describedby="help-{{ setting.key }}">
+                        {% endif %}
+                    {% endif %}
+                        <input type="hidden" name="was-{{ setting.key }}" value="{{ setting.value }}">
+                        <div id="help-{{ setting.key }}" class="form-text">{% trans setting.description %}</div>
+                    </div>
+                {% endfor %}
                 </div>
-            </div>
-            {% endfor %}
-            <div class="text-end">
-                <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
-            </div>
-        </form>
+                <div class="border-top mt-3 pt-3 text-end">
+                    <button type="submit" class="btn btn-primary">{% blocktrans %}Save {{ group_title }}{% endblocktrans %}</button>
+                </div>
+            </form>
+        </section>
+        {% endfor %}
     </div>
-</section>
-{% endfor %}
+</div>
 {% endblock %}
