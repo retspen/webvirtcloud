@@ -8,61 +8,59 @@
 {% block page_heading %}{% trans "Logs" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-{# the search runs on the server over every row; the download takes the same rows #}
-<form method="get" class="float-end d-flex flex-wrap gap-2 align-items-center" role="search">
-    <input name="q" value="{{ q }}" class="form-control w-auto" type="search" placeholder="{% trans 'Search' %}"
-           aria-label="{% trans 'Search the logs' %}">
-    <div class="form-check mb-0">
-        <input id="logs-failed" class="form-check-input" type="checkbox" name="failed" value="1"{% if failed %} checked{% endif %}>
-        <label class="form-check-label" for="logs-failed">{% trans "Failed only" %}</label>
-    </div>
-    <button type="submit" class="btn btn-primary">{% trans "Search" %}</button>
-    <a class="btn btn-outline-primary" href="{% url 'admin:logs_export' %}{% if query %}?{{ query }}{% endif %}"
-       title="{% trans 'Download these rows as an Excel file' %}">{% bs_icon 'download' %} {% trans "Excel" %}</a>
-</form>
+<a class="btn btn-outline-primary" href="{% url 'admin:logs_export' %}{% if query %}?{{ query }}{% endif %}"
+   title="{% trans 'Download these rows as an Excel file' %}"><span aria-hidden="true">{% bs_icon 'download' %}</span> {% trans "Excel" %}</a>
 {% endblock page_heading_extra %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-12">
-        {% if not logs %}
-            <div class="alert alert-warning shadow-sm">
-                {% bs_icon 'exclamation-triangle'%}
-                {% if q or failed %}{% trans "No log rows match." %}{% else %}{% trans "There are no log rows yet." %}{% endif %}
-            </div>
-        {% else %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
+<div class="card mb-3">
+    {# the search runs on the server over every row; the download takes the same rows #}
+    <form method="get" class="card-header d-flex flex-wrap align-items-center gap-2" role="search">
+        <span class="me-auto">{% trans "Logs" %} <span class="badge text-bg-light border">{{ logs.paginator.count }}</span></span>
+        <input name="q" value="{{ q }}" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans 'Search' %}"
+               aria-label="{% trans 'Search the logs' %}">
+        <div class="form-check mb-0">
+            <input id="logs-failed" class="form-check-input" type="checkbox" name="failed" value="1"{% if failed %} checked{% endif %}>
+            <label class="form-check-label small" for="logs-failed">{% trans "Failed only" %}</label>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">{% trans "Search" %}</button>
+    </form>
+    {% if not logs %}
+        <div class="card-body text-center text-body-secondary">
+            {% if q or failed %}{% trans "No log rows match." %}{% else %}{% trans "There are no log rows yet." %}{% endif %}
+        </div>
+    {% else %}
+        <div class="table-responsive position-relative">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">{% blocktrans %}Date ({{ time_zone }}){% endblocktrans %}</th>
+                        <th scope="col">{% trans "User" %}</th>
+                        <th scope="col">{% trans "Host" %}</th>
+                        <th scope="col">{% trans "Instance" %}</th>
+                        <th scope="col">{% trans "Message" %}</th>
+                        <th scope="col">{% trans "Result" %}</th>
+                        <th scope="col">{% trans "IP" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
                         <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">{% blocktrans %}Date ({{ time_zone }}){% endblocktrans %}</th>
-                            <th scope="col">{% trans "User" %}</th>
-                            <th scope="col">{% trans "Host" %}</th>
-                            <th scope="col">{% trans "Instance" %}</th>
-                            <th scope="col">{% trans "Message" %}</th>
-                            <th scope="col">{% trans "Result" %}</th>
-                            <th scope="col">{% trans "IP" %}</th>
+                            <td class="small text-body-secondary">{{ log.id }}</td>
+                            <td class="small text-nowrap">{{ log.date|date:"Y-m-d H:i:s" }}</td>
+                            <td>{{ log.user }}</td>
+                            <td>{{ log.host }}</td>
+                            <td>{% if log.vm_pk %}<a href="{% url 'instances:instance' log.vm_pk %}">{{ log.instance }}</a>{% else %}{{ log.instance }}{% endif %}</td>
+                            <td class="log-message">{{ log.message }}</td>
+                            <td>{% if log.success is None %}<span class="small text-body-secondary">{% trans "Unknown" %}</span>{% elif log.success %}<span class="badge text-bg-light border">{% trans "Done" %}</span>{% else %}<span class="badge text-bg-danger">{% trans "Failed" %}</span>{% endif %}</td>
+                            <td class="small font-monospace">{{ log.ip|default:"" }}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in logs %}
-                            <tr{% if log.success is False %} class="table-danger"{% endif %}>
-                                <td>{{ log.id }}</td>
-                                <td class="text-nowrap">{{ log.date|date:"Y-m-d H:i:s" }}</td>
-                                <td>{{ log.user }}</td>
-                                <td>{{ log.host }}</td>
-                                <td>{% if log.vm_pk %}<a href="{% url 'instances:instance' log.vm_pk %}">{{ log.instance }}</a>{% else %}{{ log.instance }}{% endif %}</td>
-                                <td>{{ log.message }}</td>
-                                <td>{% if log.success is None %}{% trans "Unknown" %}{% elif log.success %}{% trans "Done" %}{% else %}{% trans "Failed" %}{% endif %}</td>
-                                <td>{{ log.ip|default:"" }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% bootstrap_pagination logs extra=query %}
-        {% endif %}
-    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
 </div>
+{% if logs %}{% bootstrap_pagination logs extra=query %}{% endif %}
 {% endblock %}

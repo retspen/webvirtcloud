@@ -9,78 +9,84 @@
 {% block page_heading %}{{ title }}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-<a href="{% url 'admin:user_create' %}" class="btn btn-success mt-1 float-end" title="{% trans "Create User" %}">
-    {% bs_icon 'plus-circle-fill' %}
+<a href="{% url 'admin:user_create' %}" class="btn btn-primary">
+    <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New user" %}
 </a>
-{% include 'search_block.html' %}
 {% endblock page_heading_extra %}
 
 {% block content %}
-<div class="row">
-    {% if not users %}
-        <div class="col-lg-12">
-            <div class="alert alert-warning shadow-sm">
-                {% bs_icon 'exclamation-triangle' %} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any user" %}
+<div class="card mb-3">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <span class="me-auto">{% trans "Users" %} <span class="badge text-bg-light border">{{ users|length }}</span></span>
+        <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search users" %}">
+    </div>
+    <div class="list-group list-group-flush searchable">
+    {% for user in users %}
+        {% has_perm user 'instances.clone_instances' as can_clone %}
+        <div class="list-group-item py-3" data-search="{{ user.username }} {{ user.email }}{% for group in user.groups.all %} {{ group.name }}{% endfor %} {% if user.is_superuser %}{% trans "Superuser" %}{% elif user.is_staff %}{% trans "Template editor" %}{% else %}{% trans "User" %}{% endif %} {% if user.is_active %}{% trans "Active" %}{% else %}{% trans "Blocked" %}{% endif %}">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-4">
+                    <a href="{% url 'accounts:account' user.id %}" class="fw-semibold text-break">{{ user.username }}</a>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small text-body-secondary">
+                        {% if user.is_superuser %}
+                            <span class="badge text-bg-secondary">{% trans "Superuser" %}</span>
+                        {% elif user.is_staff %}
+                            <span class="badge text-bg-light border">{% trans "Template editor" %}</span>
+                        {% else %}
+                            <span>{% trans "User" %}</span>
+                        {% endif %}
+                        {% if user.is_active %}
+                            <span>{% trans "Active" %}</span>
+                        {% else %}
+                            <span class="badge text-bg-danger"><span aria-hidden="true">{% bs_icon 'slash-circle' %}</span> {% trans "Blocked" %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12 col-md-5 small">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        {% for group in user.groups.all %}<span class="badge text-bg-light border mw-100 text-wrap text-break">{{ group.name }}</span>{% endfor %}
+                        {# a superuser has every permission: only a granted clone permission is news #}
+                        {% if can_clone and not user.is_superuser %}<span>{% trans "Can clone" %}</span>{% endif %}
+                        {% if user.api_tokens %}
+                            <a href="{% url 'accounts:account' user.id %}#apitokens">{% blocktrans count count=user.api_tokens %}{{ count }} API token{% plural %}{{ count }} API tokens{% endblocktrans %}</a>
+                        {% endif %}
+                        {% if not user.groups.all and not user.api_tokens %}{% if user.is_superuser or not can_clone %}
+                            <span class="text-body-secondary">{% trans "No groups or API tokens" %}</span>
+                        {% endif %}{% endif %}
+                    </div>
+                    <div class="text-body-secondary mt-1">
+                        {% trans "Last login" %}: <span class="text-nowrap">{{ user.last_login|date:"Y-m-d H:i"|default:_("never") }}</span>
+                    </div>
+                </div>
+                <div class="col-12 col-md-3 text-md-end">
+                    <div class="btn-group">
+                        <a href="{% url 'admin:user_update' user.id %}" class="btn btn-sm btn-outline-secondary">{% trans "Edit" %}</a>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false"
+                                data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% blocktrans with name=user.username %}More actions for {{ name }}{% endblocktrans %}">{% bs_icon 'three-dots' %}</button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-item" href="{% url 'accounts:account' user.id %}">{% bs_icon 'person' %} {% trans "View profile" %}</a></li>
+                            {# an administrator does not block or delete their own account #}
+                            <li><form method="post" action="{% if user.is_active %}{% url 'admin:user_block' user.id %}{% else %}{% url 'admin:user_unblock' user.id %}{% endif %}">{% csrf_token %}
+                                <button type="submit" class="dropdown-item"{% if user == request.user %} disabled{% endif %}>
+                                    {% if user.is_active %}{% bs_icon 'slash-circle' %} {% trans "Block" %}{% else %}{% bs_icon 'play' %} {% trans "Unblock" %}{% endif %}
+                                </button>
+                            </form></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>{% if user == request.user %}
+                                <button type="button" class="dropdown-item text-danger" disabled>{% bs_icon 'trash' %} {% trans "Delete" %}</button>
+                            {% else %}
+                                <a class="dropdown-item text-danger" href="{% url 'admin:user_delete' user.id %}">{% bs_icon 'trash' %} {% trans "Delete" %}</a>
+                            {% endif %}</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
-    {% else %}
-        <div class="col-lg-12">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans "Username" %}</th>
-                            <th scope="col">{% trans "Status" %}</th>
-                            <th scope="col">{% trans "Last Login" %}</th>
-                            <th scope="col">{% trans "Template editor" %}</th>
-                            <th scope="col">{% trans "Superuser" %}</th>
-                            <th scope="col">{% trans "Can Clone" %}</th>
-                            <th scope="col">{% trans "API tokens" %}</th>
-                            <th scope="col">{% trans "Actions" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                    {% for user in users %}
-                        {% has_perm user 'instances.clone_instances' as can_clone %}
-                        <tr class="{% if not user.is_active %}danger{% endif %}">
-                            <td>
-                                {{ user.username }}
-                            </td>
-                            <td>
-                                {% if user.is_active %}
-                                    {% trans "Active" %}
-                                {% else %}
-                                    {% trans "Blocked" %}
-                                {% endif %}
-                            </td>
-                            <td>{{ user.last_login|date:"Y-m-d H:i"|default:_("never") }}</td>
-                            <td>{% if user.is_staff %}{% bs_icon 'check' %}{% endif %}</td>
-                            <td>{% if user.is_superuser %}{% bs_icon 'check' %}{% endif %}</td>
-                            <td>{% if can_clone %}{% bs_icon 'check' %}{% endif %}</td>
-                            <td>{% if user.api_tokens %}<a href="{% url 'accounts:account' user.id %}#apitokens">{{ user.api_tokens }}</a>{% endif %}</td>
-                            <td>
-                                <div class="float-end btn-group">
-                                    <a class="btn btn-success" title="{%trans "View Profile" %}" href="{% url 'accounts:account' user.id %}">{% bs_icon 'eye-fill' %}</a>
-                                    <a class="btn btn-primary" title="{%trans "Edit" %}" href="{% url 'admin:user_update' user.id %}">{% bs_icon 'pencil-fill' %}</a>
-                                    {% if user.is_active %}
-                                        <form method="post" action="{% url 'admin:user_block' user.id %}">{% csrf_token %}
-                                            <button type="submit" class="btn btn-warning rounded-0" title="{%trans "Block" %}">{% bs_icon 'stop-fill' %}</button>
-                                        </form>
-                                    {% else %}
-                                        <form method="post" action="{% url 'admin:user_unblock' user.id %}">{% csrf_token %}
-                                            <button type="submit" class="btn btn-success rounded-0" title="{%trans "Unblock" %}">{% bs_icon 'play-fill' %}</button>
-                                        </form>
-                                    {% endif %}
-                                    <a class="btn btn-danger" title="{%trans "Delete" %}" href="{% url 'admin:user_delete' user.id %}">{% bs_icon 'x-circle-fill' %}</a>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    {% endif %}
+    {% endfor %}
+    </div>
+    <div role="status">
+        <div id="no-match" class="text-center text-body-secondary py-3" hidden>{% trans "No user matches the search." %}</div>
+    </div>
 </div>
 {% endblock content %}
 

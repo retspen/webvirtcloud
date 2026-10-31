@@ -2,60 +2,60 @@
 {% load i18n %}
 {% load static %}
 {% load bootstrap_icons %}
-{% block title %}{% trans "Users" %}{% endblock %}
+
+{% block title %}{% trans "Groups" %}{% endblock %}
+
+{% block page_heading %}{% trans "Groups" %}{% endblock page_heading %}
+
+{% block page_heading_extra %}
+<a href="{% url 'admin:group_create' %}" class="btn btn-primary">
+    <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New group" %}
+</a>
+{% endblock page_heading_extra %}
+
 {% block content %}
-<div class="row">
-    <div class="col-lg-12">
-        <a href="{% url 'admin:group_create' %}" class="btn btn-success mt-1 float-end" title="{% trans "Create Group" %}">
-            {% bs_icon 'plus-circle-fill' %}
-        </a>
-        {% include 'search_block.html' %}
-        <h1 class="mb-3">{% trans "Groups" %}</h1>
+{% if not groups %}
+    <div class="alert alert-warning shadow-sm">
+        {% bs_icon 'exclamation-triangle' %} {% trans "There are no groups yet." %}
     </div>
-</div>
-<div class="row">
-    {% if not groups %}
-        <div class="col-lg-12">
-            <div class="alert alert-warning shadow-sm">
-                {% bs_icon 'exclamation-triangle' %} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any groups" %}
-            </div>
+{% else %}
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <span class="me-auto">{% trans "Groups" %} <span class="badge text-bg-light border">{{ groups|length }}</span></span>
+            <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search groups" %}">
         </div>
-    {% else %}
-        <div class="col-lg-12">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans "Group Name" %}</th>
-                            <th scope="col">{% trans "Actions" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                    {% for group in groups %}
-                        <tr>
-                            <td>
-                                <a href=""><strong>{{ group.name }}</strong></a>
-                            </td>
-                            <td>
-                                <div class="float-end btn-group">
-                                    <a class="btn btn-primary" href="{% url 'admin:group_update' group.id %}" title="{%trans "Edit" %}">
-                                        {% bs_icon 'pencil' %}
-                                    </a>
-                                    <a class="btn btn-danger" href="{% url 'admin:group_delete' group.id %}" title="{%trans "Delete" %}">
-                                        {% bs_icon 'x' %}
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+        <div class="list-group list-group-flush searchable">
+        {% for group in groups %}
+            <div class="list-group-item py-3" data-search="{{ group.name }}">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-4">
+                        <a href="{% url 'admin:group_update' group.id %}" class="fw-semibold text-break">{{ group.name }}</a>
+                    </div>
+                    <div class="col-12 col-md-5 small text-body-secondary">
+                        {% blocktrans count count=group.members %}{{ count }} member{% plural %}{{ count }} members{% endblocktrans %}
+                        · {% blocktrans count count=group.perms %}{{ count }} permission{% plural %}{{ count }} permissions{% endblocktrans %}
+                    </div>
+                    <div class="col-12 col-md-3 text-md-end">
+                        <div class="btn-group">
+                            <a href="{% url 'admin:group_update' group.id %}" class="btn btn-sm btn-outline-secondary">{% trans "Edit" %}</a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false"
+                                    data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% blocktrans with name=group.name %}More actions for {{ name }}{% endblocktrans %}">{% bs_icon 'three-dots' %}</button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item text-danger" href="{% url 'admin:group_delete' group.id %}">{% bs_icon 'trash' %} {% trans "Delete" %}</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
+        {% endfor %}
         </div>
-    {% endif %}
-</div>
+        <div role="status">
+            <div id="no-match" class="text-center text-body-secondary py-3" hidden>{% trans "No group matches the search." %}</div>
+        </div>
+    </div>
+{% endif %}
 {% endblock content %}
 
 {% block script %}
-<script src="{% static 'js/table_filter.js' %}"></script>
+{% if groups %}<script src="{% static 'js/table_filter.js' %}"></script>{% endif %}
 {% endblock script %}

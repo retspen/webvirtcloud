@@ -132,3 +132,8 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 .boot-sequence > label:has(> input:checked) .boot-rank::before {
     content: counter(boot);
 }
+
+/* a log message keeps a readable width when its table scrolls on a phone */
+.log-message {
+    min-width: 16rem;
+}

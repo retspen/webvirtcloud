@@ -13,6 +13,21 @@ from instances.models import Instance
 from .models import Permission
 
 
+# what each permission lets a user do, shown beside its switch
+PERMISSION_HELP = {
+    "change_password": _("Change their own password on their profile page"),
+    "clone_instances": _("Clone the VMs they may change and the templates they may view, within their quota"),
+    "passwordless_console": _("Open a console without the VM's console password"),
+    "snapshot_instances": _("Take, revert and delete snapshots of the VMs they may change"),
+    "view_instances": _("See every VM and host in the lists, read-only"),
+}
+
+
+def permission_rows(field):
+    """Each permission's checkbox of a bound field with what it lets a user do."""
+    return [(box, PERMISSION_HELP.get(box.data["value"].instance.codename, "")) for box in field]
+
+
 class GroupForm(forms.ModelForm):
     permissions = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
@@ -31,6 +46,9 @@ class GroupForm(forms.ModelForm):
         instance = getattr(self, "instance", None)
         if instance and instance.id:
             self.fields["users"].initial = self.instance.user_set.all()
+
+    def permission_rows(self):
+        return permission_rows(self["permissions"])
 
     def save_m2m(self):
         self.instance.user_set.set(self.cleaned_data["users"])
@@ -75,6 +93,12 @@ class UserForm(UniqueEmailMixin, forms.ModelForm):
         ]
         labels = {"is_staff": _("Template editor")}
         help_texts = {"is_staff": _("May change and delete the template VMs given to them")}
+
+    def permission_rows(self):
+        return permission_rows(self["user_permissions"])
+
+    def identity_has_errors(self):
+        return any(self.has_error(name) for name in ("username", "password", "first_name", "last_name", "email"))
 
 
 class UserCreateForm(UserForm):

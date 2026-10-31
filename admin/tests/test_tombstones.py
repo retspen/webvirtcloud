@@ -38,8 +38,7 @@ class TombstoneTests(TestCase):
         self.assertContains(response, "ts-vm")
         self.assertContains(response, UUID)
         self.assertContains(response, "ts-owner")
-        self.assertContains(response, "<td>ts-host</td>", html=True)
-        self.assertContains(response, '<th scope="col">Host</th>', html=True)
+        self.assertContains(response, '<span class="fw-semibold">ts-host</span>', html=True)
 
     def test_only_superusers_see_or_remove_them(self):
         self.client.force_login(self.owner)

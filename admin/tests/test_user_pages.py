@@ -44,7 +44,7 @@ class UserPagesTests(TestCase):
     def test_the_form_tells_the_password_state_and_links_its_page(self):
         page = html.fromstring(self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content)
         text = " ".join(page.text_content().split())
-        self.assertIn("Password Set Change password", text)
+        self.assertIn("Password: Set Change password", text)
         self.assertNotIn("No password set", text)
         self.assertEqual(page.xpath("//a[normalize-space()='Change password']/@href"),
                          [reverse("admin:user_update_password", args=[self.alice.pk])])
@@ -57,15 +57,35 @@ class UserPagesTests(TestCase):
         self.assertNotIn("log into this admin site", page)
         self.assertIn("Max memory (MiB)", page)
         self.assertIn("Max disk size (GiB)", page)
-        self.assertIn("-1: no limit; 0: none allowed", page)
+        self.assertIn("-1 means no limit, 0 none allowed", page)
+
+    def test_a_refused_choice_is_said_beside_its_field(self):
+        url = reverse("admin:user_update", args=[self.alice.pk])
+        response = self.client.post(url, {"username": "up-alice", "is_active": "on", "groups": "99999", "user_permissions": "99999",
+                                          "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+        page = html.fromstring(response.content)
+        self.assertEqual(len(page.xpath("//fieldset//div[contains(@class, 'invalid-feedback')]")), 2)
+
+    def test_the_folded_quota_says_what_it_allows(self):
+        UserAttributes.objects.filter(user=self.alice).update(max_instances=-1, max_cpus=1, max_memory=2048, max_disk_size=-1)
+        page = html.fromstring(self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content)
+        (summary,) = [s for s in page.xpath("//summary") if "Quota" in s.text_content()]
+        self.assertEqual(" ".join(summary.text_content().split()), "Quota any number of VMs · 1 vCPU · 2048 MiB · any disk size")
 
     def test_a_missing_users_profile_is_not_found(self):
         self.assertEqual(self.client.get(reverse("accounts:account", args=[99999])).status_code, 404)
 
     def test_a_user_who_never_logged_in_says_never(self):
         page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
-        (row,) = [r for r in page.xpath("//tbody/tr") if r.xpath("td")[0].text_content().strip() == "up-alice"]
-        self.assertEqual(row.xpath("td")[2].text_content().strip(), "never")
+        (row,) = page.xpath("//div[contains(@class, 'list-group-item')][.//a[normalize-space()='up-alice']]")
+        self.assertIn("Last login: never", " ".join(row.text_content().split()))
+
+    def test_the_search_finds_a_user_by_role_and_status(self):
+        self.alice.is_active = False
+        self.alice.save()
+        page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
+        (row,) = page.xpath("//div[contains(@class, 'list-group-item')][.//a[normalize-space()='up-alice']]")
+        self.assertIn("User Blocked", row.get("data-search"))
 
     def test_a_password_set_by_an_administrator_can_be_one_to_change(self):
         url = reverse("admin:user_update_password", args=[self.alice.pk])

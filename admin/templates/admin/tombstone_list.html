@@ -2,66 +2,56 @@
 {% load i18n %}
 {% load static %}
 {% load bootstrap_icons %}
+
 {% block title %}{% trans "Removed VMs" %}{% endblock %}
+
+{% block page_heading %}{% trans "Removed VMs" %}{% endblock page_heading %}
+
 {% block content %}
-<div class="row">
-    <div class="col-lg-12">
-        {% include 'search_block.html' %}
-        <h1 class="mb-3">{% trans "Removed VMs" %}</h1>
-        <p class="text-muted">{% trans "VMs that vanished from their compute. Their owners come back if the same UUID shows up again before the record expires." %}</p>
+<p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners come back if the same UUID shows up again before the record expires." %}</p>
+{% if not tombstones %}
+    <div class="alert alert-info shadow-sm">
+        {% bs_icon 'info-circle' %} {% trans "No removed VMs" %}
     </div>
-</div>
-<div class="row">
-    {% if not tombstones %}
-        <div class="col-lg-12">
-            <div class="alert alert-info shadow-sm">
-                {% bs_icon 'info-circle' %} {% trans "No removed VMs" %}
-            </div>
+{% else %}
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <span class="me-auto">{% trans "Removed VMs" %} <span class="badge text-bg-light border">{{ tombstones|length }}</span></span>
+            <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search removed VMs" %}">
         </div>
-    {% else %}
-        <div class="col-lg-12">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans "Name" %}</th>
-                            <th scope="col">{% trans "UUID" %}</th>
-                            <th scope="col">{% trans "Host" %}</th>
-                            <th scope="col">{% trans "Owners" %}</th>
-                            <th scope="col">{% trans "Removed" %}</th>
-                            <th scope="col">{% trans "Expires" %}</th>
-                            <th scope="col">{% trans "Actions" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                    {% for tombstone in tombstones %}
-                        <tr>
-                            <td>
-                                <strong>{{ tombstone.name }}</strong>
-                                {% if tombstone.is_template %}<span class="badge bg-secondary">{% trans "Template" %}</span>{% endif %}
-                            </td>
-                            <td>{{ tombstone.uuid }}</td>
-                            <td>{{ tombstone.host }}</td>
-                            <td>{{ tombstone.owner_names|join:", " }}</td>
-                            <td>{{ tombstone.removed|date:"Y-m-d H:i" }}</td>
-                            <td>{{ tombstone.expires|date:"Y-m-d H:i" }}</td>
-                            <td>
-                                <div class="float-end btn-group">
-                                    <a class="btn btn-danger" href="{% url 'admin:tombstone_delete' tombstone.id %}" title="{% trans "Delete" %}">
-                                        {% bs_icon 'x' %}
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+        <div class="list-group list-group-flush searchable">
+        {% for tombstone in tombstones %}
+            <div class="list-group-item py-3" data-search="{{ tombstone.name }} {{ tombstone.uuid }} {{ tombstone.host }} {{ tombstone.owner_names|join:' ' }}">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-4">
+                        <span class="fw-semibold text-break">{{ tombstone.name }}</span>
+                        {% if tombstone.is_template %}<span class="badge text-bg-light border">{% trans "Template" %}</span>{% endif %}
+                        <div class="font-monospace small text-body-secondary text-break mt-1">{{ tombstone.uuid }}</div>
+                    </div>
+                    <div class="col-12 col-md-5 small">
+                        <div>
+                            {% trans "Left" %} <span class="fw-semibold">{{ tombstone.host }}</span>
+                            <span class="text-body-secondary">· {% trans "Owners" %}:</span> {{ tombstone.owner_names|join:", "|default:"–" }}
+                        </div>
+                        <div class="text-body-secondary mt-1">
+                            {% trans "Removed" %} <span class="text-nowrap">{{ tombstone.removed|date:"Y-m-d H:i" }}</span>
+                            · {% trans "expires" %} <span class="text-nowrap">{{ tombstone.expires|date:"Y-m-d H:i" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 text-md-end">
+                        <a class="btn btn-sm btn-outline-danger" href="{% url 'admin:tombstone_delete' tombstone.id %}">{% trans "Delete" %}</a>
+                    </div>
+                </div>
             </div>
+        {% endfor %}
         </div>
-    {% endif %}
-</div>
+        <div role="status">
+            <div id="no-match" class="text-center text-body-secondary py-3" hidden>{% trans "No removed VM matches the search." %}</div>
+        </div>
+    </div>
+{% endif %}
 {% endblock content %}
 
 {% block script %}
-<script src="{% static 'js/table_filter.js' %}"></script>
+{% if tombstones %}<script src="{% static 'js/table_filter.js' %}"></script>{% endif %}
 {% endblock script %}

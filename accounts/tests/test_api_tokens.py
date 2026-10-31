@@ -198,11 +198,11 @@ class AdminApiTokenTests(TestCase):
         ApiToken.objects.filter(name="old").update(expiry=timezone.now() - timedelta(days=1))
         self.client.force_login(self.admin)
         page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
-        headers = [th.text_content().strip() for th in page.xpath("//thead//th")]
-        column = headers.index("API tokens")
-        cells = {row.xpath("td")[0].text_content().strip(): row.xpath("td")[column] for row in page.xpath("//tbody/tr")}
+        def tokens(name):
+            return page.xpath(f"//div[contains(@class, 'list-group-item')][.//a[normalize-space()='{name}']]"
+                              "//a[contains(@href, '#apitokens')]")
         # the expired one is not counted; the count opens the user's tokens
-        self.assertEqual(cells["tok-user"].text_content().strip(), "1")
-        self.assertEqual(cells["tok-user"].xpath(".//a/@href"),
-                         [reverse("accounts:account", args=[self.user.id]) + "#apitokens"])
-        self.assertEqual(cells["tok-admin"].text_content().strip(), "")
+        (link,) = tokens("tok-user")
+        self.assertEqual(link.text_content().strip(), "1 API token")
+        self.assertEqual(link.get("href"), reverse("accounts:account", args=[self.user.id]) + "#apitokens")
+        self.assertEqual(tokens("tok-admin"), [])

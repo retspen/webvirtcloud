@@ -31,7 +31,7 @@ def group_snapshot(group):
 
 @superuser_only
 def group_list(request):
-    groups = Group.objects.all()
+    groups = Group.objects.annotate(members=Count("user", distinct=True), perms=Count("permissions", distinct=True)).order_by("name")
     return render(
         request,
         "admin/group_list.html",
@@ -51,7 +51,7 @@ def group_create(request):
 
     return render(
         request,
-        "common/form.html",
+        "admin/group_form.html",
         {
             "form": form,
             "title": _("Create Group"),
@@ -74,9 +74,10 @@ def group_update(request, pk):
 
     return render(
         request,
-        "common/form.html",
+        "admin/group_form.html",
         {
             "form": form,
+            "group": group,
             "title": _("Update Group"),
         },
     )
@@ -106,7 +107,7 @@ OWN_ACCOUNT = _("You cannot block, delete or demote your own account")
 def user_list(request):
     # API tokens that still work: an expired one is deleted only at the user's next create
     live = Q(auth_token_set__expiry__isnull=True) | Q(auth_token_set__expiry__gt=timezone.now())
-    users = User.objects.annotate(api_tokens=Count("auth_token_set", filter=live))
+    users = User.objects.annotate(api_tokens=Count("auth_token_set", filter=live)).prefetch_related("groups")
     return render(
         request,
         "admin/user_list.html",

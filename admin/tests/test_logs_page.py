@@ -50,7 +50,7 @@ class LogsPageTests(TestCase):
     def test_the_failed_rows_only_and_marked(self):
         page = self.page(failed="1")
         self.assertEqual([row[2] for row in self.rows(page)], ["alice"])
-        self.assertIn("table-danger", page.xpath("//tbody/tr")[0].get("class"))
+        self.assertTrue(page.xpath("//tbody/tr[1]//span[contains(@class, 'text-bg-danger')]"))
 
     def test_the_pages_keep_the_search(self):
         page = self.page(q="bob")

@@ -8,29 +8,134 @@
 {% block page_heading %}{{ title }}{% endblock page_heading %}
 
 {% block content %}
-<div class="card col-sm-10 offset-sm-1">
-    <div class="card-body">
-        <form id="create-update" action="" method="post">
-            {% csrf_token %}
-            {% bootstrap_form user_form layout='horizontal' %}
-            {% if edited_user %}
-            <div class="row mb-3">
-                <span class="col-sm-2 col-form-label">{% trans "Password" %}</span>
-                <div class="col-sm-10 col-form-label">
-                    {% if edited_user.has_usable_password %}{% trans "Set" %}{% else %}{% trans "Not set" %}{% endif %}
-                    <a class="ms-2" href="{% url 'admin:user_update_password' edited_user.id %}">{% trans "Change password" %}</a>
-                </div>
-            </div>
-            {% endif %}
-            {% bootstrap_form attributes_form layout='horizontal' %}
-        </form>
-        <div class="float-end">
-            <a class="btn btn-primary" href="javascript:history.back()">
-                {% bs_icon 'x-square-fill' %} {% trans "Cancel" %}</a>
-            <button type="submit" form="create-update" class="btn btn-success">
-                {% bs_icon 'check2' %} {% trans "Save" %}
-            </button>
+{# what the user may do comes first; who they are and their quota fold away #}
+{% if edited_user %}
+<div class="border-bottom pb-3 mb-3">
+    <span class="fs-5 fw-semibold text-break">{{ edited_user.username }}</span>
+    {% if edited_user.email %}<span class="text-body-secondary ms-2 text-break">{{ edited_user.email }}</span>{% endif %}
+    <div class="small text-body-secondary">{% trans "Last login" %} {{ edited_user.last_login|date:"Y-m-d H:i"|default:_("never") }}</div>
+</div>
+{% endif %}
+
+<form id="create-update" method="post">
+    {% csrf_token %}
+    {% bootstrap_form_errors user_form type="non_fields" %}
+
+    <div class="form-check form-switch mb-4">
+        <input id="{{ user_form.is_active.id_for_label }}" class="form-check-input" type="checkbox" role="switch" name="is_active"
+               aria-describedby="active-help"{% if user_form.is_active.value %} checked{% endif %}>
+        <label class="form-check-label fw-semibold" for="{{ user_form.is_active.id_for_label }}">{% trans "Active: may sign in" %}</label>
+        <div id="active-help" class="small text-body-secondary">{% trans "Turn off to block the user while keeping the account." %}</div>
+    </div>
+
+    <h4 class="h5 mb-1">
+        {% if edited_user %}{% blocktrans with name=edited_user.username %}What can {{ name }} do?{% endblocktrans %}{% else %}{% trans "What can the user do?" %}{% endif %}
+    </h4>
+    <p class="small text-body-secondary mb-3">{% trans "The permissions of the user's groups apply too." %}</p>
+
+    <div class="row row-cols-1 row-cols-md-2 g-2 mb-3">
+        <div class="col">
+            <label class="border rounded p-3 h-100 d-flex gap-2">
+                <input class="form-check-input flex-shrink-0 mt-1" type="checkbox" name="is_staff"{% if user_form.is_staff.value %} checked{% endif %}>
+                <span><span class="d-block fw-semibold">{% trans "Template editor" %}</span>
+                    <span class="small text-body-secondary">{% trans "May change and delete the template VMs given to them." %}</span></span>
+            </label>
+        </div>
+        <div class="col">
+            <label class="border rounded p-3 h-100 d-flex gap-2">
+                <input class="form-check-input flex-shrink-0 mt-1" type="checkbox" name="is_superuser"{% if user_form.is_superuser.value %} checked{% endif %}>
+                <span><span class="d-block fw-semibold">{% trans "Superuser" %}</span>
+                    <span class="small text-body-secondary">{% trans "Has every permission and manages the panel, whatever is chosen below." %}</span></span>
+            </label>
         </div>
     </div>
-</div>
+
+    <fieldset class="mb-3">
+        <legend class="fs-6 fw-semibold">{% trans "Groups" %}</legend>
+        <div class="d-flex flex-wrap gap-2">
+            {% for box in user_form.groups %}
+                <label class="border rounded px-2 py-1 text-break">
+                    <input id="{{ box.id_for_label }}" class="form-check-input me-1" type="checkbox" name="groups" value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
+                    {{ box.choice_label }}
+                </label>
+            {% empty %}
+                <span class="small text-body-secondary">{% trans "There are no groups yet." %}</span>
+            {% endfor %}
+        </div>
+        {% for error in user_form.groups.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </fieldset>
+
+    <fieldset class="mb-3">
+        <legend class="fs-6 fw-semibold">{% trans "Own permissions" %}</legend>
+        <p class="small text-body-secondary mb-2">{% trans "Off grants nothing here; it takes away nothing a group grants." %}</p>
+        <div class="border-top">
+            {% for box, help in user_form.permission_rows %}
+                <div class="form-check form-switch border-bottom py-2 ps-5">
+                    <input id="{{ box.id_for_label }}" class="form-check-input" type="checkbox" role="switch" name="user_permissions"
+                           value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
+                    <label class="form-check-label" for="{{ box.id_for_label }}">
+                        <span class="d-block">{{ box.data.value.instance.name }}</span>
+                        <span class="small text-body-secondary">{{ help }}</span>
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+        {% for error in user_form.user_permissions.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </fieldset>
+
+    <details class="border-bottom py-3"{% if not edited_user or user_form.identity_has_errors %} open{% endif %}>
+        <summary>
+            <span class="fw-semibold">{% trans "Name and password" %}</span>
+            {% if edited_user %}
+            <span class="d-block small text-body-secondary ms-3 text-break">
+                {{ edited_user.username }}{% if edited_user.email %} · {{ edited_user.email }}{% endif %} ·
+                {% if edited_user.has_usable_password %}{% trans "password set" %}{% else %}{% trans "no password" %}{% endif %}
+            </span>
+            {% endif %}
+        </summary>
+        <div class="pt-3">
+            {% bootstrap_field user_form.username %}
+            {% if user_form.password %}{% bootstrap_field user_form.password %}{% endif %}
+            <div class="row g-2">
+                <div class="col-sm-6">{% bootstrap_field user_form.first_name %}</div>
+                <div class="col-sm-6">{% bootstrap_field user_form.last_name %}</div>
+            </div>
+            {% bootstrap_field user_form.email %}
+            {% if edited_user %}
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span>{% trans "Password" %}: {% if edited_user.has_usable_password %}{% trans "Set" %}{% else %}{% trans "Not set" %}{% endif %}</span>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin:user_update_password' edited_user.id %}">{% trans "Change password" %}</a>
+            </div>
+            {% endif %}
+        </div>
+    </details>
+
+    {% with quota=attributes_form.instance %}
+    <details class="border-bottom py-3"{% if attributes_form.errors %} open{% endif %}>
+        <summary>
+            <span class="fw-semibold">{% trans "Quota" %}</span>
+            <span class="d-block small text-body-secondary ms-3">
+                {% if quota.max_instances == -1 %}{% trans "any number of VMs" %}{% else %}{% blocktrans count count=quota.max_instances %}{{ count }} VM{% plural %}{{ count }} VMs{% endblocktrans %}{% endif %} ·
+                {% if quota.max_cpus == -1 %}{% trans "any vCPUs" %}{% else %}{% blocktrans count count=quota.max_cpus %}{{ count }} vCPU{% plural %}{{ count }} vCPUs{% endblocktrans %}{% endif %} ·
+                {% if quota.max_memory == -1 %}{% trans "any memory" %}{% else %}{{ quota.max_memory }} MiB{% endif %} ·
+                {% if quota.max_disk_size == -1 %}{% trans "any disk size" %}{% else %}{{ quota.max_disk_size }} GiB{% endif %}
+            </span>
+        </summary>
+        <div class="pt-3">
+            <p class="small text-body-secondary">{% trans "For each limit: -1 means no limit, 0 none allowed." %}</p>
+            <div class="row row-cols-1 row-cols-sm-2 g-2">
+                <div class="col">{% bootstrap_field attributes_form.max_instances show_help=False %}</div>
+                <div class="col">{% bootstrap_field attributes_form.max_cpus show_help=False %}</div>
+                <div class="col">{% bootstrap_field attributes_form.max_memory show_help=False %}</div>
+                <div class="col">{% bootstrap_field attributes_form.max_disk_size show_help=False %}</div>
+            </div>
+        </div>
+    </details>
+    {% endwith %}
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <a class="btn btn-outline-secondary" href="{% url 'admin:user_list' %}">{% trans "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+    </div>
+</form>
 {% endblock content %}
