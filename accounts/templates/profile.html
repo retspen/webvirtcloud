@@ -4,112 +4,93 @@
 {% load bootstrap_icons %}
 {% load tags_fingerprint %}
 
-{% block title %}{% trans "Profile" %}: {{ request.user.first_name }} {{ request.user.last_name}}{% endblock %}
+{% block title %}{% trans "Profile" %}{% endblock %}
 
-{% block page_heading %}{% trans "Profile" %}: {{ request.user.first_name }} {{ request.user.last_name}}{% endblock page_heading %}
+{% block page_heading %}{% trans "Profile" %}{% endblock page_heading %}
 
 {% block content %}
-<ul class="nav nav-tabs">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#editprofile" type="button" role="tab" aria-controls="editprofile" aria-selected="true">
-            {% trans "Edit Profile" %}
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sshkeys" type="button" role="tab" aria-controls="sshkeys" aria-selected="false">
-            {% trans "SSH Keys" %}
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#apitokens" type="button" role="tab" aria-controls="apitokens" aria-selected="false">
-            {% trans "API Tokens" %}
-        </button>
-    </li>
-</ul>
-<div class="tab-content">
-    <div class="tab-pane border border-top-0 p-3 active" id="editprofile">
-        <div class="card">
-            <div class="card-body">
-                <form method="post" action="" role="form" aria-label="Edit user info form">
-                    {% csrf_token %}
-                    {% bootstrap_form profile_form layout='horizontal' %}
-                    {# an LDAP user's password is changed in LDAP #}
-                    {% if perms.accounts.change_password and user.has_usable_password %}
-                        <a href="{% url 'accounts:change_password' %}" class="btn btn-primary">
-                            {% bs_icon 'lock' %} {% trans "Change Password" %}
-                        </a>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <section class="card" aria-labelledby="identity-title">
+            <div class="card-body border-bottom">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <h2 class="h4 mb-0 text-break" id="identity-title">{{ user.get_full_name|default:user.username }}</h2>
+                    {% if user.is_superuser %}
+                        <span class="badge text-bg-secondary">{% trans "Superuser" %}</span>
+                    {% elif user.is_staff %}
+                        <span class="badge text-bg-secondary">{% trans "Template editor" %}</span>
                     {% endif %}
-                    <div class="mb-0 float-end">
-                        <button type="submit" class="btn btn-primary">
-                            {% bs_icon 'pencil' %} {% trans "Update" %}
-                        </button>
-                    </div>
-                </form>
+                </div>
+                <div class="text-body-secondary text-break">{{ user.username }}</div>
+                {% if user.email %}<div class="small text-break mt-2">{{ user.email }}</div>{% endif %}
+                <div class="small text-body-secondary mt-2">{% trans "Last login" %} {{ user.last_login|date:"Y-m-d H:i"|default:_("never") }}</div>
             </div>
-        </div>
+            <form method="post" class="card-body" aria-label="{% trans 'Edit user info form' %}">
+                {% csrf_token %}
+                {% bootstrap_form profile_form %}
+                <button type="submit" class="btn btn-primary w-100">{% trans "Save profile" %}</button>
+            </form>
+            {# an LDAP user's password is changed in LDAP #}
+            {% if perms.accounts.change_password and user.has_usable_password %}
+                <div class="card-footer">
+                    <a href="{% url 'accounts:change_password' %}" class="btn btn-sm btn-outline-secondary">{% bs_icon 'lock' %} {% trans "Change Password" %}</a>
+                </div>
+            {% endif %}
+        </section>
     </div>
-    <div class="tab-pane border border-top-0 p-3 fade" id="sshkeys">
-        {% if publickeys %}
-        <div class="col-lg-12">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <tbody class="text-center">
-                        {% for key in publickeys %}
-                        <tr>
-                            <td>{{ key.keyname }} ({% ssh_to_fingerprint key.keypublic %})</td>
-                            <td>
-                                <a href="{% url 'accounts:ssh_key_delete' key.id %}" title="{% trans "Delete" %}" class="btn btn-sm btn-secondary">
-                                    {% bs_icon 'trash' %}
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+    <div class="col-lg-8">
+        <section class="card mb-4" id="sshkeys" aria-labelledby="sshkeys-title">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <h2 class="h5 mb-0" id="sshkeys-title">{% trans "SSH Keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></h2>
+                <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#add-ssh-key" aria-expanded="false" aria-controls="add-ssh-key">
+                    {% bs_icon 'plus-lg' %} {% trans "Add SSH Key" %}
+                </button>
             </div>
-        </div>
-        {% endif %}
-        <div class="card">
-            <div class="card-header">
-                {%trans "Add SSH Key" %}
-            </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'accounts:ssh_key_create' %}" role="form" aria-label="Add key to user form">
-                    {% csrf_token %}
-                    {% bootstrap_form ssh_key_form layout='horizontal' %}
-                    <div class="mb-0 float-end">
-                        <button type="submit" class="btn btn-primary">
-                            {% bs_icon 'plus-circle-fill' %} {% trans "Add" %}
-                        </button>
+            <div class="card-body small text-body-secondary">{% trans "Offered when you create a VM and on a VM's Access tab." %}</div>
+            <div class="list-group list-group-flush">
+                {% for key in publickeys %}
+                <div class="list-group-item py-3">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <span class="fw-semibold text-break">{{ key.keyname }}</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                    aria-label="{% blocktrans with name=key.keyname %}Actions for SSH key {{ name }}{% endblocktrans %}">{% bs_icon 'three-dots' %}</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item text-danger" href="{% url 'accounts:ssh_key_delete' key.id %}">{% trans "Delete" %}</a></li>
+                            </ul>
+                        </div>
                     </div>
+                    <div class="font-monospace small text-break mt-1">{% ssh_to_fingerprint key.keypublic %}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="collapse" id="add-ssh-key">
+                <form method="post" action="{% url 'accounts:ssh_key_create' %}" class="card-body border-top" aria-label="{% trans 'Add key to user form' %}">
+                    {% csrf_token %}
+                    {% bootstrap_form ssh_key_form %}
+                    <button type="submit" class="btn btn-primary">{% trans "Add" %}</button>
                 </form>
             </div>
-        </div>
-    </div>
-    <div class="tab-pane border border-top-0 p-3 fade" id="apitokens">
-        <p class="text-body-secondary">{% blocktrans %}A token lets a script or a tool use the REST API as you, without your password or OTP: send it as <code>Authorization: Token &lt;token&gt;</code>. A password change does not delete tokens: delete a token you no longer use, or one that may have leaked.{% endblocktrans %}</p>
-        {% if api_tokens %}
-        {% include "api_token_table.html" %}
-        {% endif %}
-        <div class="card">
-            <div class="card-header">
-                {% trans "Create an API token" %}
+        </section>
+
+        <section class="card" id="apitokens" aria-labelledby="apitokens-title">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <h2 class="h5 mb-0" id="apitokens-title">{% trans "API Tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></h2>
+                <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#create-api-token" aria-expanded="false" aria-controls="create-api-token">
+                    {% bs_icon 'plus-lg' %} {% trans "Create an API token" %}
+                </button>
             </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'accounts:api_token_create' %}" role="form" aria-label="{% trans "Create an API token" %}">
+            <div class="card-body small text-body-secondary">{% blocktrans %}A token lets a script or a tool use the REST API as you, without your password or OTP: send it as <code>Authorization: Token &lt;token&gt;</code>. A password change does not delete tokens: delete a token you no longer use, or one that may have leaked.{% endblocktrans %}</div>
+            <div class="list-group list-group-flush">{% include "api_token_list.html" %}</div>
+            <div class="collapse" id="create-api-token">
+                <form method="post" action="{% url 'accounts:api_token_create' %}" class="card-body border-top" aria-label="{% trans 'Create an API token' %}">
                     {% csrf_token %}
-                    {% bootstrap_form api_token_form layout='horizontal' %}
-                    <div class="mb-0 float-end">
-                        <button type="submit" class="btn btn-primary">
-                            {% bs_icon 'plus-circle-fill' %} {% trans "Create" %}
-                        </button>
-                    </div>
+                    {% bootstrap_form api_token_form %}
+                    <button type="submit" class="btn btn-primary">{% trans "Create" %}</button>
                 </form>
             </div>
-        </div>
+        </section>
     </div>
 </div>
-{% endblock %}
-{% block script %}
-{% include "tab_from_hash.html" %}
 {% endblock %}

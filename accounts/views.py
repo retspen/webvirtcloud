@@ -124,7 +124,7 @@ def ssh_key_create(request):
         with audit(request, None, f"SSH key {key_form.cleaned_data['keyname']}", "add"):
             key_form.save()
         messages.success(request, _("SSH key added"))
-        return redirect("accounts:profile")
+        return redirect(reverse("accounts:profile") + "#sshkeys")
 
     return render(
         request,
@@ -142,7 +142,7 @@ def ssh_key_delete(request, pk, user_id=None):
     if user_id is None:
         ssh_key = get_object_or_404(UserSSHKey, pk=pk, user=request.user)
         subject = f"SSH key {ssh_key.keyname}"
-        back = reverse("accounts:profile")
+        back = reverse("accounts:profile") + "#sshkeys"
     elif request.user.is_superuser:
         ssh_key = get_object_or_404(UserSSHKey, pk=pk, user_id=user_id)
         subject = f"SSH key {ssh_key.keyname} of {ssh_key.user.username}"

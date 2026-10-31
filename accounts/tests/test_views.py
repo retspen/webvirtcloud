@@ -236,7 +236,7 @@ class AccountsTestCase(TestCase):
                 "keypublic": self.rsa_key,
             },
         )
-        self.assertRedirects(response, reverse("accounts:profile"))
+        self.assertRedirects(response, reverse("accounts:profile") + "#sshkeys")
 
         key = UserSSHKey.objects.get(keyname="keyname")
         self.assertEqual(key.keyname, "keyname")
@@ -246,7 +246,22 @@ class AccountsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(reverse("accounts:ssh_key_delete", args=[key.id]))
-        self.assertRedirects(response, reverse("accounts:profile"))
+        self.assertRedirects(response, reverse("accounts:profile") + "#sshkeys")
+
+    def test_the_profile_lists_keys_and_tokens_where_links_land(self):
+        admin = get_user_model().objects.get(username="admin")
+        key = UserSSHKey.objects.create(user=admin, keyname="laptop", keypublic=self.rsa_key)
+        response = self.client.get(reverse("accounts:profile"))
+        # other pages link to #sshkeys and #apitokens
+        self.assertContains(response, 'id="sshkeys"')
+        self.assertContains(response, 'id="apitokens"')
+        self.assertContains(response, f'href="{reverse("accounts:ssh_key_delete", args=[key.id])}"')
+        self.assertContains(response, f'href="{reverse("accounts:change_password")}"')
+        # an LDAP user's password is changed in LDAP
+        admin.set_unusable_password()
+        admin.save()
+        self.client.force_login(admin)
+        self.assertNotContains(self.client.get(reverse("accounts:profile")), f'href="{reverse("accounts:change_password")}"')
 
     def test_validate_ssh_key(self):
         self.assertFalse(validate_ssh_key(""))

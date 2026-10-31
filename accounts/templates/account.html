@@ -109,7 +109,7 @@
         </div>
         <div class="tab-pane fade" id="apitokens">
             {% if api_tokens %}
-                {% include "api_token_table.html" with owner=user %}
+                <div class="list-group mt-3">{% include "api_token_list.html" with owner=user %}</div>
             {% else %}
                 <p class="text-body-secondary mt-3">{% trans "No API tokens." %}</p>
             {% endif %}
