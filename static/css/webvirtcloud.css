@@ -20,6 +20,15 @@
     background-color: var(--bs-body-bg) !important;
 }
 
+/* an outlined secondary button (Cancel, a row's menu): Bootstrap draws it
+   in the theme's secondary colour, near the page background in Cyborg,
+   Darkly, Slate, Solar, Superhero and Vapor; the page's own text colours
+   read in every theme, its hover stays the theme's */
+.btn-outline-secondary {
+    color: var(--bs-body-color);
+    border-color: var(--bs-secondary-color);
+}
+
 #editor {
     position: absolute;
     top: 0;
