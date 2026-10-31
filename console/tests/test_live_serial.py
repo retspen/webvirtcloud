@@ -1,13 +1,12 @@
 """Live serial console: socketiod opens a running wvc-test VM's console on the
 TCP host (TEST_LIBVIRT_HOST, with its password) and on the SSH host
 (TEST_LIBVIRT_SSH_HOST). The VM has no graphics and no OS; SeaBIOS writes its
-banner to the serial port. Runs only with TEST_LIBVIRT_HOST set."""
+banner to the serial port, again on each reboot after it finds no boot disk.
+Runs only with TEST_LIBVIRT_HOST set."""
 
 import os
 import time
 import unittest
-
-import libvirt
 
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase
@@ -30,13 +29,14 @@ def wait_for(condition, seconds=30):
 
 
 def serial_vm(conn, name):
-    """A paused VM without graphics whose BIOS writes to the serial console once resumed."""
+    """A running VM without graphics whose BIOS writes to the serial console in a loop:
+    a console opened late still gets the banner."""
     dom = conn.defineXML(
         f"<domain type='kvm'><name>{name}</name><memory unit='MiB'>64</memory><vcpu>1</vcpu>"
-        "<os><type arch='x86_64' machine='q35'>hvm</type><bios useserial='yes'/></os>"
+        "<os><type arch='x86_64' machine='q35'>hvm</type><bios useserial='yes' rebootTimeout='0'/></os>"
         "<devices><serial type='pty'><target port='0'/></serial><console type='pty'/></devices></domain>"
     )
-    dom.createWithFlags(libvirt.VIR_DOMAIN_START_PAUSED)
+    dom.create()
     return dom
 
 
@@ -73,8 +73,6 @@ class LiveSerialConsoleTestCase(TransactionTestCase):
             with self.subTest(host=args[0], type=args[3]):
                 token, dom = self.token(*args)
                 client, received = console(self.port, token)
-                time.sleep(1)  # the console is open on the paused VM; its BIOS writes once it runs
-                dom.resume()
                 deadline = time.monotonic() + 30
                 while "SeaBIOS" not in "".join(received["output"]) and time.monotonic() < deadline:
                     time.sleep(0.2)
@@ -86,6 +84,9 @@ class LiveSerialConsoleTestCase(TransactionTestCase):
                 wait_for(lambda: received["taken_over"])
                 self.assertEqual(received["taken_over"], ["serial-live-admin"])
                 client.disconnect()
+                # the superuser's console is attached before the VM stops
+                wait_for(lambda: "SeaBIOS" in "".join(admin_received["output"]))
+                self.assertIn("SeaBIOS", "".join(admin_received["output"]))
                 # the VM stops: the terminal says so
                 dom.destroy()
                 wait_for(lambda: "not running" in "".join(admin_received["output"]))

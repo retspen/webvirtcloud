@@ -47,19 +47,28 @@ class Console:
         self.domain = connection.lookupByUUIDString(uuid)
         self.connection = connection
         self.stream = None
+        self.active = False  # the VM ran at the last check
         self.running = True
 
     def check(self):
-        """Open the stream while the VM runs, drop it while it does not."""
+        """Open the stream while the VM runs, drop it while it does not. The
+        stream may have ended first: the VM's stop is still reported."""
         active = self.domain.state()[0] in (libvirt.VIR_DOMAIN_RUNNING, libvirt.VIR_DOMAIN_PAUSED)
         if active and self.stream is None:
             stream = self.connection.newStream(libvirt.VIR_STREAM_NONBLOCK)
-            self.domain.openConsole(None, stream, 0)  # a console in use is refused
-            stream.eventAddCallback(libvirt.VIR_STREAM_EVENT_READABLE, from_vm, self)
-            self.stream = stream
-        elif not active and self.stream is not None:
+            try:
+                self.domain.openConsole(None, stream, 0)  # a console in use is refused
+            except libvirt.libvirtError:
+                if self.domain.isActive():
+                    raise
+                active = False  # it stopped meanwhile
+            else:
+                self.stream = stream  # first: the callback may end it at once
+                stream.eventAddCallback(libvirt.VIR_STREAM_EVENT_READABLE, from_vm, self)
+        if not active and self.active:
             self.close_stream()
             say("The VM is not running: its console opens again when it starts")
+        self.active = active
 
     def close_stream(self):
         stream, self.stream = self.stream, None

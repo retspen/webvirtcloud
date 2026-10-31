@@ -1,5 +1,6 @@
 """The serial console worker: a paste reaches the VM whole although its
-stream takes it in parts or is busy, and the stream is dropped once."""
+stream takes it in parts or is busy, the stream is dropped once, and a VM
+that stops is reported."""
 
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
@@ -58,6 +59,30 @@ class ConsoleWorkerTests(TestCase):
         console.close_stream()
         console.close_stream()  # the other thread, a moment later
         stream.abort.assert_called_once_with()
+
+    def test_a_vm_that_stops_is_reported_although_its_stream_ended_first(self):
+        console = self.cb.Console.__new__(self.cb.Console)
+        console.domain = MagicMock()
+        console.stream = None  # from_vm dropped it at the stream's end
+        console.active = True
+        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_SHUTOFF]
+        with patch.object(self.cb, "say") as say:
+            console.check()
+            console.check()
+        say.assert_called_once_with("The VM is not running: its console opens again when it starts")
+
+    def test_a_vm_that_stops_while_its_console_reopens_is_reported(self):
+        console = self.cb.Console.__new__(self.cb.Console)
+        console.domain, console.connection = MagicMock(), MagicMock()
+        console.stream = None
+        console.active = True
+        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_RUNNING]
+        console.domain.openConsole.side_effect = self.cb.libvirt.libvirtError("domain is not running")
+        console.domain.isActive.return_value = 0
+        with patch.object(self.cb, "say") as say:
+            console.check()
+        say.assert_called_once_with("The VM is not running: its console opens again when it starts")
+        self.assertIsNone(console.stream)
 
     def test_a_closed_client_ends_the_worker(self):
         with patch.object(self.cb.os, "read", return_value=b""):
