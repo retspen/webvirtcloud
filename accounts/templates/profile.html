@@ -2,7 +2,6 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
-{% load tags_fingerprint %}
 
 {% block title %}{% trans "Profile" %}{% endblock %}
 
@@ -48,23 +47,7 @@
                 </button>
             </div>
             <div class="card-body small text-body-secondary">{% trans "Offered when you create a VM and on a VM's Access tab." %}</div>
-            <div class="list-group list-group-flush">
-                {% for key in publickeys %}
-                <div class="list-group-item py-3">
-                    <div class="d-flex justify-content-between align-items-center gap-2">
-                        <span class="fw-semibold text-break">{{ key.keyname }}</span>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                    aria-label="{% blocktrans with name=key.keyname %}Actions for SSH key {{ name }}{% endblocktrans %}">{% bs_icon 'three-dots' %}</button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item text-danger" href="{% url 'accounts:ssh_key_delete' key.id %}">{% trans "Delete" %}</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="font-monospace small text-break mt-1">{% ssh_to_fingerprint key.keypublic %}</div>
-                </div>
-                {% endfor %}
-            </div>
+            <div class="list-group list-group-flush">{% include "ssh_key_list.html" %}</div>
             <div class="collapse" id="add-ssh-key">
                 <form method="post" action="{% url 'accounts:ssh_key_create' %}" class="card-body border-top" aria-label="{% trans 'Add key to user form' %}">
                     {% csrf_token %}

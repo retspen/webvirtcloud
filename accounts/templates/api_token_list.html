@@ -20,4 +20,6 @@
         <div class="col-12 col-md-4"><span class="text-body-secondary">{% trans "Last used" %}</span> <span class="text-nowrap">{% if token.last_used %}{{ token.last_used|date:"Y-m-d H:i" }}{% else %}{% trans "never" %}{% endif %}</span></div>
     </div>
 </div>
+{% empty %}
+<div class="list-group-item text-body-secondary">{% trans "No API tokens." %}</div>
 {% endfor %}

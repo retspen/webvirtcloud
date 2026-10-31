@@ -1,0 +1,21 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+{% load tags_fingerprint %}
+{# the keys of the signed-in user, or of owner on a superuser's view of a user: the items of a list-group #}
+{% for key in publickeys %}
+<div class="list-group-item py-3">
+    <div class="d-flex justify-content-between align-items-center gap-2">
+        <span class="fw-semibold text-break">{{ key.keyname }}</span>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    aria-label="{% blocktrans with name=key.keyname %}Actions for SSH key {{ name }}{% endblocktrans %}">{% bs_icon 'three-dots' %}</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item text-danger" href="{% if owner %}{% url 'accounts:account_ssh_key_delete' owner.id key.id %}{% else %}{% url 'accounts:ssh_key_delete' key.id %}{% endif %}">{% trans "Delete" %}</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="font-monospace small text-break mt-1" title="{{ key.keypublic }}">{% ssh_to_fingerprint key.keypublic %}</div>
+</div>
+{% empty %}
+<div class="list-group-item text-body-secondary">{% trans "No SSH keys." %}</div>
+{% endfor %}

@@ -30,9 +30,29 @@ class AccountPageTests(TestCase):
         self.assertContains(response, "ap-vm")
         self.assertNotContains(response, "<td>True</td>", html=True)
         self.assertNotContains(response, "<td>False</td>", html=True)
+        # what the user may do beyond power and console, in the VM Users tab's words, and the VM's host
+        self.assertContains(response, "Power and console only")
+        self.assertNotContains(response, "Change settings")
+        self.assertContains(response, "Host: ap-host")
+        # the console settings come with the right to change the VM
+        UserInstance.objects.filter(user=self.alice).update(is_change=True)
+        response = self.page()
+        self.assertContains(response, "Change settings")
+        self.assertContains(response, "Change console settings")
+        self.assertNotContains(response, "Power and console only")
 
-    def test_a_user_without_vms_is_told_so(self):
-        self.assertContains(self.page(), "No VMs.")
+    def test_a_blocked_user_is_marked(self):
+        self.assertNotContains(self.page(), "Blocked")
+        self.alice.is_active = False
+        self.alice.save()
+        self.assertContains(self.page(), '<span class="badge text-bg-danger">Blocked</span>', html=True)
+
+    def test_a_user_without_vms_or_tokens_is_told_so(self):
+        response = self.page()
+        self.assertContains(response, "No VMs.")
+        self.assertContains(response, "No API tokens.")
+        # the whole key shows over its fingerprint
+        self.assertContains(response, f'title="{KEY}"')
 
     def test_a_superuser_deletes_a_users_key(self):
         url = reverse("accounts:account_ssh_key_delete", args=[self.alice.pk, self.key.pk])
