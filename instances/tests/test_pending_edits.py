@@ -90,13 +90,13 @@ class PendingEditsTestCase(TestCase):
                 doc = self.page(nics=(nics, nics))
                 self.assertEqual(doc.xpath("//div[@id='network']//div[article]/@class"), wide)
 
-    def test_one_disk_card_spans_the_row_and_more_sit_side_by_side(self):
-        for disks, wide in (([disk("vda", "default", "")], ["col-12"]),
-                            ([disk("vda", "default", ""), disk("vdb", "default", "")], ["col-12 col-md-6"] * 2)):
-            with self.subTest(count=len(disks)):
-                doc = self.page(live=disks, config=disks)
-                self.assertEqual(doc.xpath("//div[@id='disks']//div[article[starts-with(@aria-labelledby, 'disk-')]]/@class"),
-                                 wide)
+    def test_the_disks_are_rows_of_one_list(self):
+        disks = [disk("vda", "default", "") | {"used": 1 << 29}, disk("vdb", "default", "") | {"used": (1 << 30) + (1 << 20)}]
+        doc = self.page(live=disks, config=disks)
+        rows = doc.xpath("//div[@id='disks']//div[contains(@class, 'list-group')]/article[starts-with(@aria-labelledby, 'disk-')]")
+        self.assertEqual([row.get("aria-labelledby") for row in rows], ["disk-vda", "disk-vdb"])
+        # the used share as a bar, full when a qcow2 file outgrows its capacity
+        self.assertEqual(doc.xpath("//div[@id='disks']//div[@role='progressbar']/@aria-valuenow"), ["50", "100"])
 
     def test_the_clone_form_lists_the_persistent_devices(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",

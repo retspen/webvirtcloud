@@ -145,7 +145,7 @@
             </section>
         </div>
         <div role="tabpanel" class="tab-pane" id="disks">
-            {# its CD-ROM drives, then its disks as cards; the forms are those of the actions #}
+            {# its CD-ROM drives, then its disks as list rows; the forms are those of the actions #}
             {% if instance.status != 5 %}
             <p class="small text-body-secondary">{% bs_icon 'lock' %} {% trans "The VM is running: CD-ROM drives added now use the SCSI bus. Shut it down to detach other CD-ROM drives, or to detach or delete disks." %}</p>
             {% endif %}
@@ -203,41 +203,34 @@
                     <h2 class="h6 mb-0" id="disks-heading">{% trans "Disks" %} <span class="text-body-secondary fw-normal">· {{ instance.config_disks|length }}</span></h2>
                     {% include 'add_instance_volume.html' %}
                 </div>
-                <div class="row g-3">
+                <div class="card">
+                <div class="list-group list-group-flush">
                 {% for disk in instance.config_disks %}
-                    <div class="col-12{% if instance.config_disks|length > 1 %} col-md-6{% endif %}">
-                        <article class="card h-100" aria-labelledby="disk-{{ disk.dev }}">
-                            <div class="card-body small">
-                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                                    <h3 class="h6 mb-0" id="disk-{{ disk.dev }}">{% bs_icon 'device-hdd' %} {{ disk.dev }}</h3>
-                                    <span class="text-body-secondary">{{ disk.bus }} · {{ disk.format }}</span>
-                                </div>
+                    <article class="list-group-item py-3" aria-labelledby="disk-{{ disk.dev }}">
+                        <div class="row g-3 align-items-start small">
+                            <div class="col-12 col-md-2">
+                                <h3 class="h6 mb-1" id="disk-{{ disk.dev }}">{% bs_icon 'device-hdd' %} {{ disk.dev }}</h3>
+                                <div class="text-body-secondary">{{ disk.bus }} · {{ disk.format }}</div>
+                            </div>
+                            <div class="col-12 col-md-6">
                                 {% if disk.storage is None %}
                                 <div class="alert alert-danger mb-0">{% trans "Error getting disk info" %}</div>
                                 {% else %}
-                                <div class="text-body-secondary">{% trans "Capacity" %}</div>
-                                <p class="fs-4 fw-semibold lh-sm mb-0">{{ disk.size|filesizeformat }}</p>
-                                <p class="text-body-secondary mb-2">{% blocktrans with used=disk.used|filesizeformat %}{{ used }} used{% endblocktrans %}</p>
-                                <div class="border-top pt-2">
-                                    <div class="mb-1"><span class="text-body-secondary">{% trans "Storage pool" %}</span> <strong class="ms-1">{{ disk.storage }}</strong></div>
-                                    <div class="text-body-secondary">{% trans "Source" %}</div>
-                                    <p class="text-break mb-2">{{ disk.path }}</p>
+                                {% widthratio disk.used disk.size 100 as used_percent %}
+                                {# a qcow2 file's metadata can take it past its capacity: the bar stops full #}
+                                {% if used_percent|add:0 > 100 %}{% widthratio 100 1 1 as used_percent %}{% endif %}
+                                <div class="d-flex flex-wrap justify-content-between gap-1">
+                                    <strong>{% trans "Capacity" %} {{ disk.size|filesizeformat }}</strong>
+                                    <span class="text-body-secondary">{% blocktrans with used=disk.used|filesizeformat %}{{ used }} used{% endblocktrans %}</span>
                                 </div>
+                                <div class="progress my-2" style="height: .25rem;" role="progressbar" aria-label="{% blocktrans with dev=disk.dev %}{{ dev }} used{% endblocktrans %}" aria-valuenow="{{ used_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar" style="width: {{ used_percent }}%"></div>
+                                </div>
+                                <div><span class="text-body-secondary">{% trans "Storage pool" %}</span> <strong>{{ disk.storage }}</strong></div>
+                                <div class="text-body-secondary text-break"><span class="visually-hidden">{% trans "Source" %}: </span>{{ disk.path }}</div>
                                 {% endif %}
-                                <details>
-                                    <summary class="text-body-secondary">{% trans "Device details" %}</summary>
-                                    <dl class="row mb-0 mt-2" style="max-width: 32rem">
-                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Cache" %}</dt><dd class="col-6 mb-1">{{ disk.cache }}</dd>
-                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "IO mode" %}</dt><dd class="col-6 mb-1">{{ disk.io }}</dd>
-                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Discard" %}</dt><dd class="col-6 mb-1">{{ disk.discard }}</dd>
-                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Detect zeroes" %}</dt><dd class="col-6 mb-1">{{ disk.detect_zeroes }}</dd>
-                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Serial" %}</dt><dd class="col-6 mb-1">{{ disk.serial|default:"—" }}</dd>
-                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Read-only" %}</dt><dd class="col-6 mb-1">{{ disk.readonly|yesno }}</dd>
-                                        <dt class="col-6 fw-normal text-body-secondary">{% trans "Shareable" %}</dt><dd class="col-6 mb-0">{{ disk.shareable|yesno }}</dd>
-                                    </dl>
-                                </details>
                             </div>
-                            <div class="card-footer bg-transparent d-flex flex-wrap gap-2">
+                            <div class="col-12 col-md-4 d-flex flex-wrap justify-content-md-end gap-2">
                                 <form class="d-inline" action="{% url 'instances:edit_volume' instance.id %}" method="post" aria-label="{% trans "Edit instance volume form" %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="path" value="{{ disk.path }}">
@@ -264,9 +257,22 @@
                                     <button type="submit" class="btn btn-sm btn-danger"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Delete {{ dev }}? It is detached and its file and data are removed.{% endblocktrans %}" onclick="return confirm(this.dataset.confirm)">{% trans "Delete" %}</button>
                                 </form>
                             </div>
-                        </article>
-                    </div>
+                        </div>
+                        <details class="small mt-2">
+                            <summary class="text-body-secondary">{% trans "Device details" %}</summary>
+                            <dl class="row mb-0 mt-2" style="max-width: 32rem">
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Cache" %}</dt><dd class="col-6 mb-1">{{ disk.cache }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "IO mode" %}</dt><dd class="col-6 mb-1">{{ disk.io }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Discard" %}</dt><dd class="col-6 mb-1">{{ disk.discard }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Detect zeroes" %}</dt><dd class="col-6 mb-1">{{ disk.detect_zeroes }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Serial" %}</dt><dd class="col-6 mb-1">{{ disk.serial|default:"—" }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Read-only" %}</dt><dd class="col-6 mb-1">{{ disk.readonly|yesno }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Shareable" %}</dt><dd class="col-6 mb-0">{{ disk.shareable|yesno }}</dd>
+                            </dl>
+                        </details>
+                    </article>
                 {% endfor %}
+                </div>
                 </div>
             </section>
         </div>
