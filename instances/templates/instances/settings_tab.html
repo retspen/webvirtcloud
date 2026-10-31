@@ -343,48 +343,60 @@
                         <div class="modal fade" id="editInstanceNetwork{{ forloop.counter0 }}" tabindex="-1" aria-labelledby="editInstanceNetworkLabel{{ forloop.counter0 }}" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="editInstanceNetworkLabel{{ forloop.counter0 }}">{% blocktrans with nic=forloop.counter0 %}Edit eth{{ nic }}{% endblocktrans %}</h5>
+                                    <div class="modal-header align-items-start">
+                                        <div>
+                                            <h5 class="modal-title" id="editInstanceNetworkLabel{{ forloop.counter0 }}">{% blocktrans with nic=forloop.counter0 %}Edit eth{{ nic }}{% endblocktrans %}</h5>
+                                            <p class="small text-body-secondary mb-0 mt-1">{{ network.model|default:"—" }} · {{ network.mac }}</p>
+                                        </div>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                                     </div>
                                     <div class="modal-body">
+                                        {% if instance.status != 5 %}
+                                            <p class="small text-body-secondary">{% trans "The VM is running: the changes apply at its next start." %}</p>
+                                        {% endif %}
                                         <input type="hidden" name="net-old-mac-{{ forloop.counter0 }}" value="{{ network.mac }}">
-                                        <div class="mb-3">
-                                            <label class="form-label" for="net-mac-{{ forloop.counter0 }}">{% trans "MAC" %}</label>
-                                            <input class="form-control" type="text" id="net-mac-{{ forloop.counter0 }}" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label" for="net-source-{{ forloop.counter0 }}">{% trans "Net Source" %}</label>
-                                            <select class="form-select" id="net-source-{{ forloop.counter0 }}" name="net-source-{{ forloop.counter0 }}">
-                                                {% for c_net in networks_host %}
-                                                <option value="net:{{ c_net }}"{% if c_net == network.nic %} selected{% endif %}>{% trans 'Network' %} {{ c_net }}</option>
-                                                {% endfor %}
-                                                {% for c_iface in interfaces_host %}
-                                                <option value="iface:{{ c_iface }}"{% if c_iface == network.nic %} selected{% endif %}>{% trans 'Interface' %} {{ c_iface }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label" for="net-nwfilter-{{ forloop.counter0 }}">{% trans "NWFilter" %}</label>
-                                            <select class="form-select" id="net-nwfilter-{{ forloop.counter0 }}" name="net-nwfilter-{{ forloop.counter0 }}">
-                                                <option value="">{% trans "None" %}</option>
-                                                {% for c_filters in nwfilters_host %}
-                                                <option value="{{ c_filters }}"{% if c_filters == network.filterref %} selected{% endif %}>{{ c_filters }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="form-label" for="net-model-{{ forloop.counter0 }}">{% trans "Model" %}</label>
-                                            <select class="form-select" id="net-model-{{ forloop.counter0 }}" name="net-model-{{ forloop.counter0 }}">
-                                                {% for model in net_models_host %}
-                                                <option value="{{ model }}"{% if model == network.model %} selected{% endif %}>{{ model }}</option>
-                                                {% endfor %}
-                                            </select>
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label" for="net-source-{{ forloop.counter0 }}">{% trans "Source" %}</label>
+                                                <select class="form-select" id="net-source-{{ forloop.counter0 }}" name="net-source-{{ forloop.counter0 }}">
+                                                    <optgroup label="{% trans "Networks" %}">
+                                                        {% for c_net in networks_host %}
+                                                        <option value="net:{{ c_net }}"{% if c_net == network.nic %} selected{% endif %}>{{ c_net }}</option>
+                                                        {% endfor %}
+                                                    </optgroup>
+                                                    <optgroup label="{% trans "Interfaces" %}">
+                                                        {% for c_iface in interfaces_host %}
+                                                        <option value="iface:{{ c_iface }}"{% if c_iface == network.nic %} selected{% endif %}>{{ c_iface }}</option>
+                                                        {% endfor %}
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <label class="form-label" for="net-model-{{ forloop.counter0 }}">{% trans "Model" %}</label>
+                                                <select class="form-select" id="net-model-{{ forloop.counter0 }}" name="net-model-{{ forloop.counter0 }}">
+                                                    {% for model in net_models_host %}
+                                                    <option value="{{ model }}"{% if model == network.model %} selected{% endif %}>{{ model }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <label class="form-label" for="net-nwfilter-{{ forloop.counter0 }}">{% trans "NWFilter" %}</label>
+                                                <select class="form-select" id="net-nwfilter-{{ forloop.counter0 }}" name="net-nwfilter-{{ forloop.counter0 }}">
+                                                    <option value="">{% trans "None" %}</option>
+                                                    {% for c_filters in nwfilters_host %}
+                                                    <option value="{{ c_filters }}"{% if c_filters == network.filterref %} selected{% endif %}>{{ c_filters }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label" for="net-mac-{{ forloop.counter0 }}">{% trans "MAC" %}</label>
+                                                <input class="form-control font-monospace" type="text" id="net-mac-{{ forloop.counter0 }}" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}">
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">{% trans 'Close' %}</button>
-                                        <button class="btn btn-primary" name="change_network">{% trans "Apply" %}</button>
+                                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                        <button class="btn btn-primary" name="change_network">{% trans "Save" %}</button>
                                     </div>
                                 </div>
                             </div>

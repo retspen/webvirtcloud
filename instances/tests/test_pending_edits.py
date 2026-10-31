@@ -85,11 +85,18 @@ class PendingEditsTestCase(TestCase):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
                "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}
         nics = [nic, {**nic, "mac": "52:54:10:00:00:02"}]
-        doc = self.page(nics=(nics, nics))
+        doc = self.page(nics=(nics, nics), get_networks=(["default", "isolated"],) * 2, get_ifaces=(["br0"],) * 2)
         rows = doc.xpath("//div[@id='network']//div[contains(@class, 'list-group')]/*")
         # nothing but the rows sits in the list: each row holds its Edit and Add QoS dialogs
         self.assertEqual([row.get("aria-labelledby") for row in rows], ["nic-0", "nic-1"])
         self.assertEqual([len(row.xpath(".//div[contains(@class, 'modal')][@id]")) for row in rows], [2, 2])
+        # the Edit dialog picks the source by kind and posts it as before
+        (source,) = doc.xpath("//select[@name='net-source-0']")
+        self.assertEqual(source.xpath("./optgroup/@label"), ["Networks", "Interfaces"])
+        self.assertEqual(source.xpath(".//option/@value"), ["net:default", "net:isolated", "iface:br0"])
+        self.assertEqual(source.xpath(".//option[@selected]/@value"), ["net:default"])
+        self.assertEqual(doc.xpath("//div[@id='editInstanceNetwork0']//input[@name='net-old-mac-0']/@value"), [nic["mac"]])
+        self.assertTrue(doc.xpath("//div[@id='editInstanceNetwork0']//button[@name='change_network']"))
 
     def test_the_disks_are_rows_of_one_list(self):
         disks = [disk("vda", "default", "") | {"used": 1 << 29}, disk("vdb", "default", "") | {"used": (1 << 30) + (1 << 20)}]
