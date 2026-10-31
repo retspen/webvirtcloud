@@ -6,7 +6,7 @@
 
     {# one form: a card per disk source, the fields of the chosen one (the others hidden and disabled, so not sent); the source chooses the form's action #}
     <div class="modal fade" id="addvol" tabindex="-1" role="dialog" aria-labelledby="addInstanceVolumeLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
             <form class="modal-content" id="addvol-form" method="post" action="{% url 'instances:add_new_vol' instance.id %}"
                   data-new="{% url 'instances:add_new_vol' instance.id %}" data-existing="{% url 'instances:add_existing_vol' instance.id %}"
                   aria-label="{% trans "Add disk form" %}">{% csrf_token %}
