@@ -1,12 +1,13 @@
 from django.core.management.color import no_style
 from django.db import migrations
+from django.utils.translation import gettext_noop as _
 
 
 SETTINGS = [
-    ("Login Failure Limit", "LOGIN_FAILURE_LIMIT", "5",
-     "Failed logins of a user from one address before it is locked"),
-    ("Login Lockout Minutes", "LOGIN_LOCKOUT_MINUTES", "15",
-     "How long a locked login stays locked, in minutes"),
+    (_("Login Failure Limit"), "LOGIN_FAILURE_LIMIT", "5",
+     _("Failed logins of a user from one address before it is locked")),
+    (_("Login Lockout Minutes"), "LOGIN_LOCKOUT_MINUTES", "15",
+     _("How long a locked login stays locked, in minutes")),
 ]
 
 

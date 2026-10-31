@@ -1,12 +1,13 @@
 from django.core.management.color import no_style
 from django.db import migrations
+from django.utils.translation import gettext_noop as _
 
 
 SETTINGS = [
-    ("Snapshot Free Percent", "SNAPSHOT_FREE_SPACE_PERCENT", "10",
-     "Free space a storage pool keeps for a snapshot, in percent of the VM's disks in it (0: none)"),
-    ("Snapshot Free Min GiB", "SNAPSHOT_FREE_SPACE_MIN_GIB", "1",
-     "Free space a storage pool keeps for a snapshot at least, in GiB (0: none)"),
+    (_("Snapshot Free Percent"), "SNAPSHOT_FREE_SPACE_PERCENT", "10",
+     _("Free space a storage pool keeps for a snapshot, in percent of the VM's disks in it (0: none)")),
+    (_("Snapshot Free Min GiB"), "SNAPSHOT_FREE_SPACE_MIN_GIB", "1",
+     _("Free space a storage pool keeps for a snapshot at least, in GiB (0: none)")),
 ]
 
 

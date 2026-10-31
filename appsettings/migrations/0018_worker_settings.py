@@ -1,10 +1,11 @@
 from django.core.management.color import no_style
 from django.db import migrations
+from django.utils.translation import gettext_noop as _
 
 
 SETTINGS = [
-    ("Worker Concurrency", "WORKER_CONCURRENCY", "4", "Jobs the worker runs at the same time (1-16)"),
-    ("Job Retention Days", "JOB_RETENTION_DAYS", "30", "Days finished jobs stay in the job history (1-3650)"),
+    (_("Worker Concurrency"), "WORKER_CONCURRENCY", "4", _("Jobs the worker runs at the same time (1-16)")),
+    (_("Job Retention Days"), "JOB_RETENTION_DAYS", "30", _("Days finished jobs stay in the job history (1-3650)")),
 ]
 
 
