@@ -277,51 +277,34 @@
             </section>
         </div>
         <div role="tabpanel" class="tab-pane" id="network">
-            {# a card per NIC, the only one across the row; its QoS limits fold out like its device details #}
+            {# a row per NIC in one list, as the disks; its QoS limits fold out like its device details #}
             <section aria-labelledby="nics-heading">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                     <h2 class="h6 mb-0" id="nics-heading">{% trans "Network devices" %} <span class="text-body-secondary fw-normal">· {{ instance.config_networks|length }}</span></h2>
                     {% include 'add_instance_network_block.html' %}
                 </div>
-                <div class="row g-3">
+                <div class="card">
+                <div class="list-group list-group-flush">
                 {% for network in instance.config_networks %}
-                    <div class="col-12{% if instance.config_networks|length > 1 %} col-md-6{% endif %}">
-                        <article class="card h-100" aria-labelledby="nic-{{ forloop.counter0 }}">
-                            <div class="card-body small">
-                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                                    <h3 class="h6 mb-0" id="nic-{{ forloop.counter0 }}">{% bs_icon 'ethernet' %} eth{{ forloop.counter0 }} <span class="text-body-secondary fw-normal">· {{ network.target|default:_("no target") }}</span></h3>
-                                    <form action="{% url 'instances:set_link_state' instance.id %}" method="post" aria-label="{% trans "Link state form" %}">{% csrf_token %}
-                                        <input type="hidden" name="mac" value="{{ network.mac }}">
-                                        <input type="hidden" name="set_link_state" value="{{ network.state }}">
-                                        <div class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" role="switch" id="link-{{ forloop.counter0 }}"{% if network.state == 'up' %} checked{% endif %} onchange="this.form.submit()">
-                                            <label class="form-check-label" for="link-{{ forloop.counter0 }}">{% if network.state == 'up' %}{% trans "Link up" %}{% else %}{% trans "Link down" %}{% endif %}</label>
-                                        </div>
-                                    </form>
-                                </div>
-                                <p class="text-break mb-1"><span class="text-body-secondary">{% trans "Source" %}</span> <strong class="ms-1">{{ network.nic|default:"—" }}</strong></p>
-                                <p class="mb-2"><span class="text-body-secondary">{% trans "IPv4" %}</span> <span class="ms-1">{{ network.ipv4|join:", "|default:_("unknown") }}</span></p>
-                                <details>
-                                    <summary class="text-body-secondary">{% trans "Device details" %}</summary>
-                                    <dl class="row mb-0 mt-2" style="max-width: 32rem">
-                                        <dt class="col-4 fw-normal text-body-secondary">{% trans "Type" %}</dt><dd class="col-8 mb-1">{{ network.type }}</dd>
-                                        <dt class="col-4 fw-normal text-body-secondary">{% trans "MAC" %}</dt><dd class="col-8 mb-1 text-break">{{ network.mac }}</dd>
-                                        <dt class="col-4 fw-normal text-body-secondary">{% trans "Model" %}</dt><dd class="col-8 mb-1">{{ network.model|default:"—" }}</dd>
-                                        <dt class="col-4 fw-normal text-body-secondary">{% trans "NWFilter" %}</dt><dd class="col-8 mb-1 text-break">{{ network.filterref|default:_("None") }}</dd>
-                                        <dt class="col-4 fw-normal text-body-secondary">{% trans "IPv6" %}</dt><dd class="col-8 mb-1 text-break">{{ network.ipv6|join:", "|default:_("unknown") }}</dd>
-                                    </dl>
-                                </details>
-                                <details>
-                                    <summary class="text-body-secondary">{% trans "QoS limits" %} · {% if network.inbound and network.outbound %}{% trans "inbound, outbound" %}{% elif network.inbound %}{% trans "inbound" %}{% elif network.outbound %}{% trans "outbound" %}{% else %}{% trans "none" %}{% endif %}</summary>
-                                    {% if network.inbound %}{% include 'instances/nic_qos_form.html' with nic=forloop.counter0 direction="inbound" limit=network.inbound %}{% endif %}
-                                    {% if network.outbound %}{% include 'instances/nic_qos_form.html' with nic=forloop.counter0 direction="outbound" limit=network.outbound %}{% endif %}
-                                    <p class="text-body-secondary mt-2 mb-0">{% trans "Average and peak are in KiB/s, burst in KiB. A running VM gets a change after it is powered off and on." %}</p>
-                                </details>
-                                {% if network.type == 'direct' %}
-                                <p class="text-body-secondary border-top pt-2 mt-2 mb-0">{% bs_icon 'info-circle' %} {% trans "In most configurations, macvtap does not work for host to guest network communication" %}</p>
-                                {% endif %}
+                    <article class="list-group-item py-3" aria-labelledby="nic-{{ forloop.counter0 }}">
+                        <div class="row g-3 align-items-start small">
+                            <div class="col-12 col-md-2">
+                                <h3 class="h6 mb-1" id="nic-{{ forloop.counter0 }}">{% bs_icon 'ethernet' %} eth{{ forloop.counter0 }}</h3>
+                                <div class="text-body-secondary text-break">{{ network.target|default:_("no target") }}</div>
                             </div>
-                            <div class="card-footer bg-transparent d-flex flex-wrap gap-2">
+                            <div class="col-12 col-md-6">
+                                <div class="text-break"><span class="text-body-secondary">{% trans "Source" %}</span> <strong class="ms-1">{{ network.nic|default:"—" }}</strong></div>
+                                <div class="mb-2"><span class="text-body-secondary">{% trans "IPv4" %}</span> <span class="ms-1">{{ network.ipv4|join:", "|default:_("unknown") }}</span></div>
+                                <form action="{% url 'instances:set_link_state' instance.id %}" method="post" aria-label="{% trans "Link state form" %}">{% csrf_token %}
+                                    <input type="hidden" name="mac" value="{{ network.mac }}">
+                                    <input type="hidden" name="set_link_state" value="{{ network.state }}">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="link-{{ forloop.counter0 }}"{% if network.state == 'up' %} checked{% endif %} onchange="this.form.submit()">
+                                        <label class="form-check-label" for="link-{{ forloop.counter0 }}">{% if network.state == 'up' %}{% trans "Link up" %}{% else %}{% trans "Link down" %}{% endif %}</label>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-12 col-md-4 d-flex flex-wrap justify-content-md-end gap-2">
                                 {# a NIC that is a host device is changed in the XML editor #}
                                 {% if network.type != "hostdev" %}
                                 <button class="btn btn-sm btn-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editInstanceNetwork{{ forloop.counter0 }}">{% trans "Edit" %}</button>
@@ -334,7 +317,27 @@
                                 </form>
                                 {% endif %}
                             </div>
-                        </article>
+                        </div>
+                        <details class="small mt-2">
+                            <summary class="text-body-secondary">{% trans "Device details" %}</summary>
+                            <dl class="row mb-0 mt-2" style="max-width: 32rem">
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "Type" %}</dt><dd class="col-8 mb-1">{{ network.type }}</dd>
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "MAC" %}</dt><dd class="col-8 mb-1 text-break">{{ network.mac }}</dd>
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "Model" %}</dt><dd class="col-8 mb-1">{{ network.model|default:"—" }}</dd>
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "NWFilter" %}</dt><dd class="col-8 mb-1 text-break">{{ network.filterref|default:_("None") }}</dd>
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "IPv6" %}</dt><dd class="col-8 mb-1 text-break">{{ network.ipv6|join:", "|default:_("unknown") }}</dd>
+                            </dl>
+                        </details>
+                        <details class="small">
+                            <summary class="text-body-secondary">{% trans "QoS limits" %} · {% if network.inbound and network.outbound %}{% trans "inbound, outbound" %}{% elif network.inbound %}{% trans "inbound" %}{% elif network.outbound %}{% trans "outbound" %}{% else %}{% trans "none" %}{% endif %}</summary>
+                            {% if network.inbound %}{% include 'instances/nic_qos_form.html' with nic=forloop.counter0 direction="inbound" limit=network.inbound %}{% endif %}
+                            {% if network.outbound %}{% include 'instances/nic_qos_form.html' with nic=forloop.counter0 direction="outbound" limit=network.outbound %}{% endif %}
+                            <p class="text-body-secondary mt-2 mb-0">{% trans "Average and peak are in KiB/s, burst in KiB. A running VM gets a change after it is powered off and on." %}</p>
+                        </details>
+                        {% if network.type == 'direct' %}
+                        <p class="small text-body-secondary border-top pt-2 mt-2 mb-0">{% bs_icon 'info-circle' %} {% trans "In most configurations, macvtap does not work for host to guest network communication" %}</p>
+                        {% endif %}
+                    {# the dialogs of Edit and Add QoS #}
                     {% if network.type != "hostdev" %}
                     <form action="{% url 'instances:change_network' instance.id %}" method="post" name="edit_network{{ forloop.counter0 }}">{% csrf_token %}
                         <div class="modal fade" id="editInstanceNetwork{{ forloop.counter0 }}" tabindex="-1" aria-labelledby="editInstanceNetworkLabel{{ forloop.counter0 }}" aria-hidden="true">
@@ -392,10 +395,11 @@
                         <input type="hidden" name="net-mac" value="{{ network.mac }}">
                         {% include 'add_network_qos.html' with id=forloop.counter0 %}
                     </form>
-                    </div>
+                    </article>
                 {% empty %}
-                    <p class="small text-body-secondary mb-0">{% trans "The VM has no network device." %}</p>
+                    <div class="list-group-item small text-body-secondary">{% trans "The VM has no network device." %}</div>
                 {% endfor %}
+                </div>
                 </div>
             </section>
         </div>

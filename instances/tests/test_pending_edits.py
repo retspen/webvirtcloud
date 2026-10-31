@@ -81,14 +81,15 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//form[.//input[@name='qos_average']]//input[@name='qos_direction']/@value"),
                          ["inbound", "outbound"])
 
-    def test_one_nic_card_spans_the_row_and_more_sit_side_by_side(self):
+    def test_the_nics_are_rows_of_one_list_with_their_dialogs(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
                "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}
-        second = {**nic, "mac": "52:54:10:00:00:02"}
-        for nics, wide in (([nic], ["col-12"]), ([nic, second], ["col-12 col-md-6"] * 2)):
-            with self.subTest(count=len(nics)):
-                doc = self.page(nics=(nics, nics))
-                self.assertEqual(doc.xpath("//div[@id='network']//div[article]/@class"), wide)
+        nics = [nic, {**nic, "mac": "52:54:10:00:00:02"}]
+        doc = self.page(nics=(nics, nics))
+        rows = doc.xpath("//div[@id='network']//div[contains(@class, 'list-group')]/*")
+        # nothing but the rows sits in the list: each row holds its Edit and Add QoS dialogs
+        self.assertEqual([row.get("aria-labelledby") for row in rows], ["nic-0", "nic-1"])
+        self.assertEqual([len(row.xpath(".//div[contains(@class, 'modal')][@id]")) for row in rows], [2, 2])
 
     def test_the_disks_are_rows_of_one_list(self):
         disks = [disk("vda", "default", "") | {"used": 1 << 29}, disk("vdb", "default", "") | {"used": (1 << 30) + (1 << 20)}]
