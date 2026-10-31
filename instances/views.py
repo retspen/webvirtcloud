@@ -1856,7 +1856,9 @@ def change_network(request, pk):
         messages.error(request, err)
         return redirect(back)
 
-    (source, source_type) = utils.get_network_tuple(request.POST.get(f"net-source-{num}", ""))
+    # no source: the NIC keeps the one it has, which the host's lists may not show
+    raw_source = request.POST.get(f"net-source-{num}", "")
+    (source, source_type) = utils.get_network_tuple(raw_source) if raw_source else (None, None)
     try:
         with audit_vm(request, instance, f"change interface {old_mac}"):
             if source_type == "iface":

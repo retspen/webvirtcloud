@@ -34,6 +34,10 @@ class ChangeNetworkViewTestCase(TestCase):
         })
         change.assert_called_once_with("52:54:00:00:00:02", "52:54:00:00:00:03", "default", "net", "e1000", "")
 
+    def test_no_source_keeps_the_nics_own(self):
+        change = self.post({"net-old-mac-1": "52:54:00:00:00:02", "net-source-1": "", "net-model-1": "e1000"})
+        change.assert_called_once_with("52:54:00:00:00:02", "52:54:00:00:00:02", None, None, "e1000", "")
+
     def test_a_shut_off_vm_is_told_the_change_is_made(self):
         with patch("instances.models.wvmInstance") as wvm:
             wvm.return_value.get_status.return_value = 5

@@ -14,6 +14,7 @@ DOMAIN_XML = """<domain><devices>
 <interface type='network'><mac address='52:54:00:00:00:02'/><source network='default'/><model type='virtio'/>
 <bandwidth><outbound average='1000'/></bandwidth><link state='down'/>
 <address type='pci' domain='0x0000' bus='0x02' slot='0x00' function='0x0'/></interface>
+<interface type='direct'><mac address='52:54:00:00:00:04'/><source dev='eth0' mode='vepa'/><model type='virtio'/></interface>
 </devices></domain>"""
 
 
@@ -34,7 +35,7 @@ class TestChangeNetwork(unittest.TestCase):
         inst.change_network("52:54:00:00:00:02", "52:54:00:00:00:03", "br0", "bridge", "e1000", "clean-traffic")
 
         defined = etree.fromstring(inst.wvm.defineXML.call_args[0][0])
-        first, second = defined.findall("devices/interface")
+        first, second, _direct = defined.findall("devices/interface")
         self.assertEqual(first.find("mac").get("address"), "52:54:00:00:00:01")
         self.assertEqual(second.get("type"), "bridge")
         self.assertEqual(second.find("mac").get("address"), "52:54:00:00:00:03")
@@ -45,6 +46,18 @@ class TestChangeNetwork(unittest.TestCase):
         self.assertEqual(second.find("bandwidth/outbound").get("average"), "1000")
         self.assertEqual(second.find("link").get("state"), "down")
         self.assertEqual(second.find("address").get("bus"), "0x02")
+
+    def defined_nic(self, *args):
+        from lxml import etree
+
+        inst = stopped_instance()
+        inst.change_network(*args)
+        return etree.fromstring(inst.wvm.defineXML.call_args[0][0]).findall("devices/interface")[2]
+
+    def test_no_source_keeps_the_one_the_nic_has(self):
+        nic = self.defined_nic("52:54:00:00:00:04", "52:54:00:00:00:04", None, None, "e1000", "")
+        self.assertEqual((nic.get("type"), nic.find("source").attrib), ("direct", {"dev": "eth0", "mode": "vepa"}))
+        self.assertEqual(nic.find("model").get("type"), "e1000")
 
     def test_unknown_old_mac_changes_nothing(self):
         inst = stopped_instance()

@@ -93,10 +93,16 @@ class PendingEditsTestCase(TestCase):
         # the Edit dialog picks the source by kind and posts it as before
         (source,) = doc.xpath("//select[@name='net-source-0']")
         self.assertEqual(source.xpath("./optgroup/@label"), ["Networks", "Interfaces"])
-        self.assertEqual(source.xpath(".//option/@value"), ["net:default", "net:isolated", "iface:br0"])
-        self.assertEqual(source.xpath(".//option[@selected]/@value"), ["net:default"])
+        self.assertEqual(source.xpath(".//option/@value"), ["", "net:default", "net:isolated", "iface:br0"])
+        # the NIC keeps its source unless another is chosen
+        self.assertEqual(source.xpath(".//option[@selected]/text()"), ["default, as it is"])
         self.assertEqual(doc.xpath("//div[@id='editInstanceNetwork0']//input[@name='net-old-mac-0']/@value"), [nic["mac"]])
         self.assertTrue(doc.xpath("//div[@id='editInstanceNetwork0']//button[@name='change_network']"))
+        # so does one the host's lists do not show, or one whose name is in both
+        doc = self.page(nics=([{**nic, "type": "bridge", "nic": "br0"}],) * 2,
+                        get_networks=(["br0"],) * 2, get_ifaces=(["br0"],) * 2)
+        (source,) = doc.xpath("//select[@name='net-source-0']")
+        self.assertEqual(source.xpath(".//option[@selected]/@value"), [""])
 
     def test_the_disks_are_rows_of_one_list(self):
         disks = [disk("vda", "default", "") | {"used": 1 << 29}, disk("vdb", "default", "") | {"used": (1 << 30) + (1 << 20)}]

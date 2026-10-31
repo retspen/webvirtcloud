@@ -359,14 +359,16 @@
                                             <div class="col-12">
                                                 <label class="form-label" for="net-source-{{ forloop.counter0 }}">{% trans "Source" %}</label>
                                                 <select class="form-select" id="net-source-{{ forloop.counter0 }}" name="net-source-{{ forloop.counter0 }}">
+                                                    {# the NIC keeps its source, whatever its kind, unless another is chosen #}
+                                                    <option value="" selected>{% blocktrans with nic=network.nic|default:_("none") %}{{ nic }}, as it is{% endblocktrans %}</option>
                                                     <optgroup label="{% trans "Networks" %}">
                                                         {% for c_net in networks_host %}
-                                                        <option value="net:{{ c_net }}"{% if c_net == network.nic %} selected{% endif %}>{{ c_net }}</option>
+                                                        <option value="net:{{ c_net }}">{{ c_net }}</option>
                                                         {% endfor %}
                                                     </optgroup>
                                                     <optgroup label="{% trans "Interfaces" %}">
                                                         {% for c_iface in interfaces_host %}
-                                                        <option value="iface:{{ c_iface }}"{% if c_iface == network.nic %} selected{% endif %}>{{ c_iface }}</option>
+                                                        <option value="iface:{{ c_iface }}">{{ c_iface }}</option>
                                                         {% endfor %}
                                                     </optgroup>
                                                 </select>

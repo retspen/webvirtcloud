@@ -2706,7 +2706,8 @@ class wvmInstance(wvmConnect):
         """Edit the NIC with old_mac in the persistent definition, in place.
 
         Settings this form does not edit (QoS, link state, driver, PCI address)
-        stay. A running VM gets the change at its next start.
+        stay, and so does the source when source is None. A running VM gets
+        the change at its next start.
         """
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         found = tree.xpath("./devices/interface[mac/@address=$mac]", mac=old_mac)
@@ -2716,14 +2717,15 @@ class wvmInstance(wvmConnect):
         if iface.get("type") == "hostdev":
             raise util.OperationError("A network interface that is a host device is changed in the XML editor")
 
-        iface_type = {"net": "network", "bridge": "bridge"}.get(source_type, "direct")
-        iface.set("type", iface_type)
-        for old_source in iface.findall("source"):
-            iface.remove(old_source)
-        source_attrs = {"network": {"network": source}, "bridge": {"bridge": source}}.get(
-            iface_type, {"dev": source, "mode": "bridge"}
-        )
-        iface.insert(1, etree.Element("source", **source_attrs))
+        if source is not None:
+            iface_type = {"net": "network", "bridge": "bridge"}.get(source_type, "direct")
+            iface.set("type", iface_type)
+            for old_source in iface.findall("source"):
+                iface.remove(old_source)
+            source_attrs = {"network": {"network": source}, "bridge": {"bridge": source}}.get(
+                iface_type, {"dev": source, "mode": "bridge"}
+            )
+            iface.insert(1, etree.Element("source", **source_attrs))
 
         iface.find("mac").set("address", mac)
         for old_model in iface.findall("model"):
