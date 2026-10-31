@@ -162,6 +162,16 @@ class Instance(models.Model):
         return networks
 
     @cached_property
+    def pcie_slots(self) -> tuple[int, int] | None:
+        """(PCIe slots, free ones) the VM has now; None: not a PCIe machine."""
+        return self.proxy.get_pcie_slots()
+
+    @cached_property
+    def config_pcie_slots(self) -> tuple[int, int] | None:
+        """The same at its next start, which added slots wait for while it runs."""
+        return self.proxy.get_pcie_slots(config=True)
+
+    @cached_property
     def config_disks(self) -> list[dict]:
         """Disks of the persistent definition, which the disk list, its edit
         form and a clone use: on a running VM a pending change shows, and an

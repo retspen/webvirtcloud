@@ -35,6 +35,7 @@ urlpatterns = [
     path("<int:pk>/edit_volume/", views.edit_volume, name="edit_volume"),
     path("<int:pk>/detach_vol/", views.detach_vol, name="detach_vol"),
     path("<int:pk>/add_cdrom/", views.add_cdrom, name="add_cdrom"),
+    path("<int:pk>/add_pcie_slots/", views.add_pcie_slots, name="add_pcie_slots"),
     path("<int:pk>/detach_cdrom/<str:dev>/", views.detach_cdrom, name="detach_cdrom"),
     path("<int:pk>/unmount_iso/", views.unmount_iso, name="unmount_iso"),
     path("<int:pk>/mount_iso/", views.mount_iso, name="mount_iso"),

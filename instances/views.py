@@ -715,10 +715,12 @@ def invalid_disk_options(
 PCI_SLOTS_FULL = "No more available PCI slots"
 # a disk on the scsi bus needs no slot of its own when the VM already has a SCSI controller
 DISK_NO_PCI_SLOT = _("The running VM has no free PCI slot for another disk on this bus: choose the scsi bus "
-                     "if the VM has a SCSI controller, or shut the VM down and add the disk then. A new volume "
-                     "stays in its pool, to attach as an existing volume.")
+                     "if the VM has a SCSI controller, or shut the VM down and add the disk then; Add PCIe slots "
+                     "on the Disks tab gives it free ones from its next start. A new volume stays in its pool, "
+                     "to attach as an existing volume.")
 SCSI_NO_PCI_SLOT = _("The running VM has no free PCI slot for the SCSI controller the disk needs: shut the VM "
-                     "down and add the disk then. A new volume stays in its pool, to attach as an existing volume.")
+                     "down and add the disk then; Add PCIe slots on the Disks tab gives it free ones from its next "
+                     "start. A new volume stays in its pool, to attach as an existing volume.")
 
 
 def no_pci_slot(request, err, advice):
@@ -1331,6 +1333,29 @@ def add_new_vol(request, pk):
         # the new volume stays in the pool, to attach from Existing volume: it is never deleted unasked
         if not no_pci_slot(request, err, SCSI_NO_PCI_SLOT if bus == "scsi" else DISK_NO_PCI_SLOT):
             raise
+    return _back(request, pk, "disks")
+
+
+# the PCIe slots the Add slots button adds at a time
+PCIE_SLOTS_ADDED = 4
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def add_pcie_slots(request, pk):
+    """Free PCIe slots for devices added later: a running VM gets them at its next start."""
+    instance = get_instance(request.user, pk, perm_type="change")
+    if instance.pcie_slots is None:
+        messages.error(request, _("The VM's machine has no PCIe slots to add"))
+        return _back(request, pk, "disks")
+    with audit_vm(request, instance, f"add {PCIE_SLOTS_ADDED} PCIe slots"):
+        instance.proxy.add_pcie_slots(PCIE_SLOTS_ADDED)
+    if instance.proxy.get_status() == 5:
+        messages.success(request, _("%(count)s PCIe slots added") % {"count": PCIE_SLOTS_ADDED})
+    else:
+        messages.success(request, _("%(count)s PCIe slots added: the VM gets them at its next start")
+                         % {"count": PCIE_SLOTS_ADDED})
     return _back(request, pk, "disks")
 
 
@@ -1947,7 +1972,8 @@ def add_network(request, pk):
             instance.proxy.add_network(mac, source, source_type, model=model, nwfilter=nwfilter)
     except libvirtError as err:
         if not no_pci_slot(request, err, _("The running VM has no free PCI slot for another network device: "
-                                           "shut it down and add the device then.")):
+                                           "shut it down and add the device then; Add PCIe slots on the Disks "
+                                           "tab gives it free ones from its next start.")):
             raise
     return _back(request, pk, "network")
 

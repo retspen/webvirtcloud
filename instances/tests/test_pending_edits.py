@@ -154,6 +154,19 @@ class PendingEditsTestCase(TestCase):
                 doc = self.page(live=disks, config=disks, get_storages=(pools,) * 2)
                 self.assertEqual(doc.xpath("//div[@id='movedisk0']//button[@type='submit']/@disabled"), disabled)
 
+    def test_the_disks_tab_counts_free_pcie_slots_now_and_from_the_next_start(self):
+        doc = self.page(get_pcie_slots=((7, 0), (12, 5)))
+        (form,) = doc.xpath("//form[@action=$a]", a=reverse("instances:add_pcie_slots", args=[self.instance.id]))
+        line = " ".join(form.getparent().xpath("./span")[0].text_content().split())
+        self.assertEqual(line, "PCIe slots: 0 free of 7 · 5 free from the next start")
+        # a persistent definition without root ports shows the running VM's count only
+        doc = self.page(get_pcie_slots=((7, 2), None))
+        (form,) = doc.xpath("//form[@action=$a]", a=reverse("instances:add_pcie_slots", args=[self.instance.id]))
+        self.assertEqual(" ".join(form.getparent().xpath("./span")[0].text_content().split()), "PCIe slots: 2 free of 7")
+        # not a PCIe machine: no line
+        doc = self.page(get_pcie_slots=(None, None))
+        self.assertFalse(doc.xpath("//form[@action=$a]", a=reverse("instances:add_pcie_slots", args=[self.instance.id])))
+
     def test_the_clone_form_lists_the_persistent_devices(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
                "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}

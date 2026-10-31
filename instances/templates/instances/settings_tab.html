@@ -274,6 +274,21 @@
                 {% endfor %}
                 </div>
                 </div>
+                {% if instance.pcie_slots %}
+                {# a PCIe machine gives each virtio disk and network device a slot; a running VM gets no new one #}
+                {% with total=instance.pcie_slots.0 free=instance.pcie_slots.1 next=instance.config_pcie_slots %}
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small mt-3">
+                    <span class="{% if not free %}text-danger{% else %}text-body-secondary{% endif %}">
+                        {% blocktrans %}PCIe slots: {{ free }} free of {{ total }}{% endblocktrans %}{% if next and next.1 != free %} · {% blocktrans with next_free=next.1 %}{{ next_free }} free from the next start{% endblocktrans %}{% endif %}
+                    </span>
+                    {% if request.user.is_superuser %}
+                    <form action="{% url 'instances:add_pcie_slots' instance.id %}" method="post">{% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Add PCIe slots" %}</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endwith %}
+                {% endif %}
             </section>
         </div>
         <div role="tabpanel" class="tab-pane" id="network">

@@ -102,3 +102,82 @@ class NoPciSlotTests(TestCase):
                                        NO_SLOT)
         self.assertEqual(len(texts), 1)
         self.assertIn("shut it down", texts[0])
+
+
+DOMAIN = """<domain><devices>
+<controller type='pci' index='0' model='pcie-root'/>
+<controller type='pci' index='1' model='pcie-root-port'><address type='pci' bus='0x00' slot='0x02'/></controller>
+<controller type='pci' index='2' model='pcie-root-port'><address type='pci' bus='0x00' slot='0x02' function='0x1'/></controller>
+<controller type='pci' index='3' model='pcie-root-port'><address type='pci' bus='0x00' slot='0x02' function='0x2'/></controller>
+<interface type='network'><address type='pci' bus='0x01' slot='0x00'/></interface>
+<disk type='file' device='disk'><address type='pci' bus='0x03' slot='0x00'/></disk>
+<video><address type='pci' bus='0x00' slot='0x01'/></video>
+</devices></domain>"""
+
+
+def proxy(xml=DOMAIN):
+    from vrtManager.instance import wvmInstance
+
+    p = wvmInstance.__new__(wvmInstance)
+    p._XMLDesc = MagicMock(return_value=xml)
+    p._defineXML = MagicMock()
+    return p
+
+
+class PcieSlotsTests(SimpleTestCase):
+    def test_a_port_no_device_sits_behind_is_free(self):
+        self.assertEqual(proxy().get_pcie_slots(), (3, 1))
+
+    def test_a_port_numbered_above_nine_is_matched_to_its_hex_bus(self):
+        ports = "".join(f"<controller type='pci' index='{i}' model='pcie-root-port'/>" for i in range(1, 13))
+        xml = (f"<domain><devices>{ports}<disk type='file' device='disk'><address type='pci' bus='0x0a'/></disk>"
+               "<interface type='network'><address type='pci' bus='0x0c'/></interface></devices></domain>")
+        self.assertEqual(proxy(xml).get_pcie_slots(), (12, 10))
+
+    def test_a_machine_without_ports_has_none(self):
+        self.assertIsNone(proxy("<domain><devices><video/></devices></domain>").get_pcie_slots())
+
+    def test_added_ports_are_bare_for_libvirt_to_number(self):
+        p = proxy()
+        p.add_pcie_slots(4)
+        (defined,), _ = p._defineXML.call_args
+        ports = etree.fromstring(defined).findall("devices/controller[@model='pcie-root-port']")
+        self.assertEqual([port.get("index") for port in ports], ["1", "2", "3", None, None, None, None])
+
+
+class AddPcieSlotsViewTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("pa-admin", "pa@example.com", "x")
+        compute = Compute.objects.create(name="pa", hostname="127.0.0.1:1", login="root", password="", type=1)
+        self.instance = Instance.objects.create(compute=compute, name="pa-vm",
+                                                uuid="aaaaaaaa-8888-2222-3333-444444444444")
+        self.url = reverse("instances:add_pcie_slots", args=[self.instance.id])
+
+    def post(self, status=1, slots=(7, 0), user=None):
+        self.client.force_login(user or self.admin)
+        with patch("instances.models.wvmInstance") as wvm:
+            wvm.return_value.get_status.return_value = status
+            wvm.return_value.get_pcie_slots.return_value = slots
+            response = self.client.post(self.url, HTTP_REFERER=reverse("instances:instance", args=[self.instance.id]))
+        return response, wvm.return_value.add_pcie_slots, [str(m) for m in get_messages(response.wsgi_request)]
+
+    def test_a_running_vm_gets_them_at_its_next_start(self):
+        _response, add, texts = self.post(status=1)
+        add.assert_called_once_with(4)
+        self.assertEqual(texts, ["4 PCIe slots added: the VM gets them at its next start"])
+        self.assertTrue(Logs.objects.get(instance="pa-vm").success)
+
+    def test_a_shut_off_vm_has_them_at_once(self):
+        _response, _add, texts = self.post(status=5)
+        self.assertEqual(texts, ["4 PCIe slots added"])
+
+    def test_a_machine_without_pcie_slots_is_refused(self):
+        _response, add, texts = self.post(slots=None)
+        add.assert_not_called()
+        self.assertEqual(texts, ["The VM's machine has no PCIe slots to add"])
+
+    def test_only_a_superuser_adds_them(self):
+        user = get_user_model().objects.create_user("pa-user", password="x")
+        response, add, _texts = self.post(user=user)
+        self.assertEqual(response.status_code, 403)
+        add.assert_not_called()

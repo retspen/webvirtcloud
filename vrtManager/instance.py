@@ -706,6 +706,26 @@ class wvmInstance(wvmConnect):
     def get_machine_type(self):
         return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@machine")
 
+    def get_pcie_slots(self, config=False):
+        """(PCIe root ports, free ones) of the running or the persistent
+        definition, None when it has none (not a PCIe machine): each PCIe
+        device takes a port, the one whose index is its address's bus."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML if config else 0))
+        ports = tree.xpath("./devices/controller[@type='pci'][@model='pcie-root-port']/@index")
+        if not ports:
+            return None
+        used = {int(bus, 16) for bus in tree.xpath("./devices/*/address[@type='pci']/@bus")}
+        return len(ports), sum(int(index) not in used for index in ports)
+
+    def add_pcie_slots(self, count):
+        """Add count PCIe root ports to the persistent definition, which libvirt
+        numbers and places; a running VM gets them at its next start."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        devices = tree.find("devices")
+        for _ in range(count):
+            etree.SubElement(devices, "controller", type="pci", model="pcie-root-port")
+        self._defineXML(etree.tostring(tree).decode())
+
     def get_dom_emulator(self):
         return util.get_xml_path(self._XMLDesc(0), "/domain/devices/emulator")
 
