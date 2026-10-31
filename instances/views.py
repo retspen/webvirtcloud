@@ -711,6 +711,26 @@ def invalid_disk_options(
     ]
 
 
+# libvirt's words when a running q35 VM has no free root port for a PCIe device
+PCI_SLOTS_FULL = "No more available PCI slots"
+# a disk on the scsi bus needs no slot of its own when the VM already has a SCSI controller
+DISK_NO_PCI_SLOT = _("The running VM has no free PCI slot for another disk on this bus: choose the scsi bus "
+                     "if the VM has a SCSI controller, or shut the VM down and add the disk then. A new volume "
+                     "stays in its pool, to attach as an existing volume.")
+SCSI_NO_PCI_SLOT = _("The running VM has no free PCI slot for the SCSI controller the disk needs: shut the VM "
+                     "down and add the disk then. A new volume stays in its pool, to attach as an existing volume.")
+
+
+def no_pci_slot(request, err, advice):
+    """True, with advice shown, when libvirt refused a running VM's new device
+    for want of a PCI slot: q35 gives each PCIe device a root port of its own
+    and a running VM gets no new one."""
+    if PCI_SLOTS_FULL not in str(err):
+        return False
+    messages.error(request, advice)
+    return True
+
+
 def reject_disk_options(request, pk, invalid):
     messages.error(
         request,
@@ -1255,57 +1275,62 @@ def add_new_vol(request, pk):
     if invalid:
         return reject_disk_options(request, pk, invalid)
 
-    with audit_vm(request, instance, f"attach new disk {storage}/{name}"):
-        conn_create = wvmCreate(
-            instance.compute.hostname,
-            instance.compute.login,
-            instance.compute.password,
-            instance.compute.type,
-        )
-        # a name either definition uses is taken: on an active VM a disk can be
-        # pending in the persistent one only
-        target_dev = utils.get_new_disk_dev(
-            instance.media + instance.config_media, instance.disks + instance.config_disks, bus
-        )
+    try:
+        with audit_vm(request, instance, f"attach new disk {storage}/{name}"):
+            conn_create = wvmCreate(
+                instance.compute.hostname,
+                instance.compute.login,
+                instance.compute.password,
+                instance.compute.type,
+            )
+            # a name either definition uses is taken: on an active VM a disk can be
+            # pending in the persistent one only
+            target_dev = utils.get_new_disk_dev(
+                instance.media + instance.config_media, instance.disks + instance.config_disks, bus
+            )
 
-        source = conn_create.create_volume(
-            storage,
-            name,
-            size,
-            format,
-            meta_prealloc,
-            int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
-            int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
-        )
+            source = conn_create.create_volume(
+                storage,
+                name,
+                size,
+                format,
+                meta_prealloc,
+                int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
+                int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
+            )
 
-        conn_pool = wvmStorage(
-            instance.compute.hostname,
-            instance.compute.login,
-            instance.compute.password,
-            instance.compute.type,
-            storage,
-        )
+            conn_pool = wvmStorage(
+                instance.compute.hostname,
+                instance.compute.login,
+                instance.compute.password,
+                instance.compute.type,
+                storage,
+            )
 
-        pool_type = conn_pool.get_type()
-        disk_type = conn_pool.get_volume_type(os.path.basename(source))
-        # the pool decides: only a dir pool keeps the asked format, the others create raw
-        format = util.vol_driver_type(conn_pool.get_volume_format_type(os.path.basename(source)), pool_type)
+            pool_type = conn_pool.get_type()
+            disk_type = conn_pool.get_volume_type(os.path.basename(source))
+            # the pool decides: only a dir pool keeps the asked format, the others create raw
+            format = util.vol_driver_type(conn_pool.get_volume_format_type(os.path.basename(source)), pool_type)
 
-        if pool_type == "rbd":
-            source_info = conn_pool.get_rbd_source()
-        else:  # add more disk types to handle different pool and disk types
-            source_info = None
+            if pool_type == "rbd":
+                source_info = conn_pool.get_rbd_source()
+            else:  # add more disk types to handle different pool and disk types
+                source_info = None
 
-        instance.proxy.attach_disk(
-            target_dev,
-            source,
-            source_info=source_info,
-            pool_type=pool_type,
-            disk_type=disk_type,
-            target_bus=bus,
-            format_type=format,
-            cache_mode=cache,
-        )
+            instance.proxy.attach_disk(
+                target_dev,
+                source,
+                source_info=source_info,
+                pool_type=pool_type,
+                disk_type=disk_type,
+                target_bus=bus,
+                format_type=format,
+                cache_mode=cache,
+            )
+    except libvirtError as err:
+        # the new volume stays in the pool, to attach from Existing volume: it is never deleted unasked
+        if not no_pci_slot(request, err, SCSI_NO_PCI_SLOT if bus == "scsi" else DISK_NO_PCI_SLOT):
+            raise
     return _back(request, pk, "disks")
 
 
@@ -1352,17 +1377,21 @@ def add_existing_vol(request, pk):
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
     )
 
-    with audit_vm(request, instance, f"attach disk {storage}/{name} as {target_dev}"):
-        instance.proxy.attach_disk(
-            target_dev,
-            source,
-            source_info=source_info,
-            pool_type=pool_type,
-            disk_type=disk_type,
-            target_bus=bus,
-            format_type=format_type,
-            cache_mode=cache,
-        )
+    try:
+        with audit_vm(request, instance, f"attach disk {storage}/{name} as {target_dev}"):
+            instance.proxy.attach_disk(
+                target_dev,
+                source,
+                source_info=source_info,
+                pool_type=pool_type,
+                disk_type=disk_type,
+                target_bus=bus,
+                format_type=format_type,
+                cache_mode=cache,
+            )
+    except libvirtError as err:
+        if not no_pci_slot(request, err, SCSI_NO_PCI_SLOT if bus == "scsi" else DISK_NO_PCI_SLOT):
+            raise
     return _back(request, pk, "disks")
 
 
@@ -1904,17 +1933,22 @@ def add_network(request, pk):
     (source, source_type) = utils.get_network_tuple(network)
     model = request.POST.get("add-net-model")
 
-    with audit_vm(request, instance, f"add interface on {source}"):
-        if source_type == "iface":
-            iface = wvmInterface(
-                instance.compute.hostname,
-                instance.compute.login,
-                instance.compute.password,
-                instance.compute.type,
-                source,
-            )
-            source_type = iface.get_type()
-        instance.proxy.add_network(mac, source, source_type, model=model, nwfilter=nwfilter)
+    try:
+        with audit_vm(request, instance, f"add interface on {source}"):
+            if source_type == "iface":
+                iface = wvmInterface(
+                    instance.compute.hostname,
+                    instance.compute.login,
+                    instance.compute.password,
+                    instance.compute.type,
+                    source,
+                )
+                source_type = iface.get_type()
+            instance.proxy.add_network(mac, source, source_type, model=model, nwfilter=nwfilter)
+    except libvirtError as err:
+        if not no_pci_slot(request, err, _("The running VM has no free PCI slot for another network device: "
+                                           "shut it down and add the device then.")):
+            raise
     return _back(request, pk, "network")
 
 

@@ -9,6 +9,8 @@ from vrtManager.connection import wvmConnect
 
 # libvirt's CPU modes a new VM can have; any other value is a CPU model's name (mode custom)
 CPU_MODES = ("host-model", "host-passthrough", "maximum")
+# the PCIe root ports of a new q35 VM, its devices' and the spare ones together
+PCIE_ROOT_PORTS = 14
 
 
 def cpu_choices(dom_caps):
@@ -379,7 +381,14 @@ class wvmCreate(wvmConnect):
 
         xml += f""" <video>
                       <model type='{video}'/>
-                   </video>
+                   </video>"""
+        # q35 plugs each PCIe device (a virtio disk, a NIC) into a root port of
+        # its own and libvirt makes only as many as the VM is defined with: as
+        # virt-install, 14 ports, so a running VM can take more devices
+        if "q35" in machine:
+            xml += "<controller type='pci' model='pcie-root'/>"
+            xml += "<controller type='pci' model='pcie-root-port'/>" * PCIE_ROOT_PORTS
+        xml += """
               </devices>
             </domain>"""
         return self._defineXML(xml)
