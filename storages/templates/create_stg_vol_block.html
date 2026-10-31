@@ -8,22 +8,18 @@
                 <span aria-hidden="true">{% bs_icon 'upload' %}</span> {% trans "Upload ISO" %}
             </button>
 
-            <!-- Modal Upload -->
             <div class="modal fade" id="IsoUpload" tabindex="-1" role="dialog" aria-labelledby="IsoUploadLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="IsoUploadLabel">{% trans "Upload ISO Image" %}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                         </div>
-                        <form id="isoUploadForm" enctype="multipart/form-data" method="post" role="form" aria-label="Upload iso form">{% csrf_token %}
+                        <form id="isoUploadForm" enctype="multipart/form-data" method="post" aria-label="{% trans "Upload iso form" %}">{% csrf_token %}
                             <div class="modal-body">
-                                <div class="row mb-3">
-                                    <label for="id_file" class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                    <div class="col-sm-9">
-                                        <input type="file" name="file" id="id_file" class="form-control" accept=".iso" required>
-                                    </div>
-                                </div>
+                                <label for="id_file" class="form-label">{% trans "ISO file" %}</label>
+                                <input type="file" name="file" id="id_file" class="form-control" accept=".iso" required aria-describedby="id_file_help">
+                                <div class="form-text" id="id_file_help">{% trans "The browser sends it: keep the page open until the upload ends." %}</div>
                                 <div id="upload-status" class="d-none align-items-center gap-2 text-primary mt-3" role="status" aria-live="polite">
                                     <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                                     <span id="upload-status-text">{% trans "Starting upload..." %}</span>
@@ -32,7 +28,7 @@
                             </div>
                             <div class="modal-footer">
                                 <input type="hidden" name="iso_upload" value="true">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
                                 <button type="submit" class="btn btn-primary">{% trans "Upload" %}</button>
                             </div>
                         </form>
@@ -45,22 +41,26 @@
                 <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New volume" %}
             </button>
 
-            <!-- Modal Image -->
             <div class="modal fade" id="AddImage" tabindex="-1" role="dialog" aria-labelledby="AddImageLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="AddImageLabel">{% trans "Add New Volume" %}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <h5 class="modal-title" id="AddImageLabel">{% trans "New volume" %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                         </div>
                         <div class="modal-body">
-                            <form action="{% url 'create_volume' compute_id pool %}" id="create-volume" method="post" role="form" aria-label="Create volume to storage form">
+                            <form action="{% url 'create_volume' compute_id pool %}" id="create-volume" method="post" aria-label="{% trans "Create volume to storage form" %}">
                                 {% csrf_token %}
-                                {% bootstrap_form form layout='horizontal' %}
+                                <div class="row">
+                                    <div class="col-12">{% bootstrap_field form.name %}</div>
+                                    <div class="col-sm-6">{% bootstrap_field form.size %}</div>
+                                    <div class="col-sm-6">{% bootstrap_field form.format %}</div>
+                                    <div class="col-12">{% bootstrap_field form.meta_prealloc %}</div>
+                                </div>
                             </form>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
                             <button type="submit" form="create-volume" class="btn btn-primary">{% trans "Create" %}</button>
                         </div>
                     </div> <!-- /.modal-content -->

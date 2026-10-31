@@ -41,6 +41,20 @@ class PoolPageTests(TestCase):
         self.assertIn("size", form.errors)
         self.assertIn("Size (GiB)", str(form["size"].label_tag()))
 
+    def test_the_dialogs_label_every_field_above_it(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.get_status.return_value = 1  # running: the add dialogs show
+        for pool, dialog in (("default", "AddImage"), ("default", "CloneVolume"), ("iso", "IsoUpload")):
+            with self.subTest(pool=pool, dialog=dialog):
+                doc = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, pool])).content)
+                fields = doc.xpath("//div[@id=$d]//*[self::input or self::select][not(@type='hidden')]", d=dialog)
+                self.assertTrue(fields)
+                for field in fields:
+                    self.assertTrue(doc.xpath("//label[@for=$i]", i=field.get("id") or "-"), field.get("name"))
+                self.assertFalse(doc.xpath("//div[@id=$d]//*[contains(@class, 'col-form-label')]", d=dialog))
+                self.assertEqual(doc.xpath("//div[@id=$d]//button[@data-bs-dismiss='modal'][not(@aria-label)]/text()",
+                                           d=dialog), ["Cancel"])
+
     def test_the_pool_is_measured_after_its_refresh(self):
         # update_volumes refreshes the pool: libvirt's space figures are as of the last refresh
         self.conn.get_size.return_value = (10, 4)

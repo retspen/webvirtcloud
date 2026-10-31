@@ -174,43 +174,36 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="CloneVolumeLabel">{% trans "Clone image" %} <span class="text-danger" id="clone-image-name"></span></h5>
+                        <h5 class="modal-title" id="CloneVolumeLabel">{% trans "Clone image" %} <span class="font-monospace text-break" id="clone-image-name"></span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                     </div>
                     <form method="post" aria-labelledby="CloneVolumeLabel">{% csrf_token %}{% submission_key %}
                         <div class="modal-body">
                             <input type="hidden" name="image" id="clone-image">
-                            <div class="row mb-3">
-                                <label class="col-sm-3 col-form-label" for="clone-name">{% trans "Name" %}</label>
-                                <div class="col-sm-6">
-                                    <input type="text" class="form-control" name="name" id="clone-name" required pattern="[a-zA-Z0-9\.\-_]+">
-                                </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="clone-name">{% trans "Name of the copy" %}</label>
+                                <input type="text" class="form-control" name="name" id="clone-name" required pattern="[a-zA-Z0-9\.\-_]+" aria-describedby="clone-name-help">
+                                <div class="form-text" id="clone-name-help">{% trans "Letters, digits, dot, dash and underscore." %}</div>
                             </div>
-                            <div class="row mb-3">
-                                <label class="col-sm-3 col-form-label" for="clone-convert">{% trans "Convert" %}</label>
-                                <div class="col-sm-6">
-                                    <input class="form-check-input mt-2" type="checkbox" name="convert" value="true" id="clone-convert">
-                                </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="convert" value="true" id="clone-convert">
+                                <label class="form-check-label" for="clone-convert">{% trans "Convert it to another format" %}</label>
                             </div>
-                            <div class="row mb-3 d-none" id="clone-format-row">
-                                <label class="col-sm-3 col-form-label" for="clone-format">{% trans "Format" %}</label>
-                                <div class="col-sm-6">
-                                    <select name="format" class="form-select" id="clone-format">
-                                        <option value="raw">{% trans "raw" %}</option>
-                                        <option value="qcow">{% trans "qcow" %}</option>
-                                        <option value="qcow2">{% trans "qcow2" %}</option>
-                                    </select>
-                                </div>
+                            <div class="mt-3 d-none" id="clone-format-row">
+                                <label class="form-label" for="clone-format">{% trans "Format" %}</label>
+                                <select name="format" class="form-select" id="clone-format">
+                                    <option value="raw">{% trans "raw" %}</option>
+                                    <option value="qcow">{% trans "qcow" %}</option>
+                                    <option value="qcow2">{% trans "qcow2" %}</option>
+                                </select>
                             </div>
-                            <div class="row d-none" id="clone-prealloc-row">
-                                <label class="col-sm-3 col-form-label" for="clone-prealloc">{% trans "Metadata" %}</label>
-                                <div class="col-sm-6">
-                                    <input class="form-check-input mt-2" type="checkbox" name="meta_prealloc" value="true" id="clone-prealloc">
-                                </div>
+                            <div class="form-check mt-3 d-none" id="clone-prealloc-row">
+                                <input class="form-check-input" type="checkbox" name="meta_prealloc" value="true" id="clone-prealloc">
+                                <label class="form-check-label" for="clone-prealloc">{% trans "Preallocate metadata (qcow2)" %}</label>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
                             <button type="submit" class="btn btn-primary" name="cln_volume">{% trans "Clone" %}</button>
                         </div>
                     </form>

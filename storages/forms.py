@@ -86,13 +86,13 @@ class AddStgPool(forms.Form):
 
 
 class CreateVolumeForm(forms.Form):
-    name = forms.CharField(max_length=120)
+    name = forms.CharField(max_length=120, help_text=_("Letters, digits, dot, dash and underscore."))
     format = forms.ChoiceField(
         required=True,
         choices=(("qcow2", "qcow2 (recommended)"), ("qcow", "qcow"), ("raw", "raw")),
     )
     size = forms.IntegerField(label=_("Size (GiB)"), min_value=1)
-    meta_prealloc = forms.BooleanField(required=False)
+    meta_prealloc = forms.BooleanField(label=_("Preallocate metadata (qcow2)"), required=False)
 
     def clean_name(self):
         name = self.cleaned_data["name"]
@@ -112,7 +112,7 @@ class CloneImage(forms.Form):
         required=False,
         choices=(("qcow2", "qcow2 (recommended)"), ("qcow", "qcow"), ("raw", "raw")),
     )
-    meta_prealloc = forms.BooleanField(required=False)
+    meta_prealloc = forms.BooleanField(label=_("Preallocate metadata (qcow2)"), required=False)
 
     def clean_name(self):
         name = self.cleaned_data["name"]
