@@ -1,27 +1,29 @@
 {% extends "base.html" %}
-{% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 {% load i18n %}
 
 {% block title %}{% trans "Delete" %} {{ object }}{% endblock %}
 
-{% block page_heading %}{% trans "Delete" %} {{ object }}{% endblock page_heading %}
+{% block page_header %}
+<div class="row justify-content-center">
+    <div class="col-lg-8"><h3 class="mb-3 text-break">{% trans "Delete" %} {{ object }}</h3></div>
+</div>
+{% endblock page_header %}
 
 {% block content %}
-<div class="row">
-    <div class="offset-3 col-6">
+<div class="row justify-content-center">
+    <div class="col-lg-8">
         <form method="post">
             {% csrf_token %}
-            <div class="alert alert-warning">
-                {% blocktrans %}Delete "{{ object }}"?{% endblocktrans %} {{ consequence }}
+            <div class="card mb-3">
+                <div class="card-body border-start border-danger border-4 rounded-start">
+                    <h4 class="h5 text-break">{% bs_icon 'trash' %} {% blocktrans %}Delete <strong>{{ object }}</strong>?{% endblocktrans %}</h4>
+                    {% if consequence %}<p class="mb-0">{{ consequence }}</p>{% endif %}
+                </div>
             </div>
-            <div class="mb-0 float-end">
-                <a class="btn btn-primary" href="javascript:history.back()">
-                    {% bs_icon 'x-circle-fill' %} {% trans "Cancel" %}
-                </a>
-                <button type="submit" class="btn btn-danger">
-                    {% bs_icon 'trash-fill' %} {% trans "Delete" %}
-                </button>
+            <div class="d-flex flex-wrap justify-content-end gap-2">
+                <a class="btn btn-outline-secondary" href="javascript:history.back()">{% trans "Cancel" %}</a>
+                <button type="submit" class="btn btn-danger">{% trans "Delete" %}</button>
             </div>
         </form>
     </div>

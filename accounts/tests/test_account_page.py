@@ -71,3 +71,12 @@ class AccountPageTests(TestCase):
         url = reverse("accounts:account_ssh_key_delete", args=[self.alice.pk, self.key.pk])
         self.assertEqual(self.client.post(url).status_code, 403)
         self.assertTrue(UserSSHKey.objects.exists())
+
+    def test_the_owner_form_names_the_rights_as_the_vm_page_does(self):
+        compute = Compute.objects.create(name="ap-host2", hostname="localhost", login="", password="", details="", type=4)
+        vm = Instance.objects.create(compute=compute, name="ap-vm2", uuid="00000000-0000-0000-0000-000000000002")
+        owner = UserInstance.objects.create(user=self.alice, instance=vm)
+        response = self.client.get(reverse("accounts:user_instance_update", args=[owner.pk]))
+        for label in ("Change settings", "Delete the VM", "Change console settings"):
+            self.assertContains(response, label)
+        self.assertNotContains(response, "Is vnc")

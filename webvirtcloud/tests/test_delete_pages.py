@@ -34,7 +34,7 @@ class DeletePageTests(TestCase):
         self.client.force_login(admin)
         for url, consequence in pages.items():
             with self.subTest(url=url):
-                alert = html.fromstring(self.client.get(url).content).xpath("//div[contains(@class, 'alert-warning')]")
-                self.assertEqual(len(alert), 1)
-                self.assertIn(consequence, alert[0].text_content())
-                self.assertNotIn("Are you sure", alert[0].text_content())
+                card = html.fromstring(self.client.get(url).content).xpath("//div[contains(@class, 'border-danger')]")
+                self.assertEqual(len(card), 1)
+                self.assertIn(consequence, card[0].text_content())
+                self.assertNotIn("Are you sure", card[0].text_content())

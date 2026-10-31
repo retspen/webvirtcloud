@@ -1,27 +1,28 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
-{% load bootstrap_icons %}
 {% load i18n %}
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block page_heading %}{{ title }}{% endblock page_heading %}
+{% block page_header %}
+<div class="row justify-content-center">
+    <div class="col-lg-8"><h3 class="mb-3">{{ title }}</h3></div>
+</div>
+{% endblock page_header %}
 
 {% block content %}
-<div class="card">
-    <div class="card-body">
-        <form id="create-update" action="" method="post">
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <form method="post">
             {% csrf_token %}
-            {% bootstrap_form form layout='horizontal' %}
+            <div class="card mb-3">
+                <div class="card-body">{% bootstrap_form form %}</div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-end gap-2">
+                <a class="btn btn-outline-secondary" href="javascript:history.back()">{% trans "Cancel" %}</a>
+                <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+            </div>
         </form>
-    </div>
-    <div class="card-footer">
-        <div class="mb-0 float-end">
-            <a class="btn btn-primary" href="javascript:history.back()">{% bs_icon 'x' %} {% trans "Cancel" %}</a>
-            <button type="submit" form="create-update" class="btn btn-success">
-                {% bs_icon 'check2' %} {% trans "Save" %}
-            </button>
-        </div>
     </div>
 </div>
 {% endblock content %}

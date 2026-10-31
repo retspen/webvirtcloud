@@ -32,6 +32,10 @@ class UserInstanceForm(ModelForm):
     class Meta:
         model = UserInstance
         fields = "__all__"
+        # the rights beyond power and console, as the VM's Users tab names them
+        labels = {"is_change": _("Change settings"), "is_delete": _("Delete the VM"),
+                  "is_vnc": _("Change console settings")}
+        help_texts = {"is_vnc": _("Only together with Change settings")}
 
 
 class UniqueEmailMixin:
