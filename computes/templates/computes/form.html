@@ -1,29 +1,49 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
-{% load bootstrap_icons %}
 {% load i18n %}
 
-{% block title %}{% if form.instance.pk %}{% trans "Edit Compute" %}{% else %}{% trans "Add Compute" %}{% endif %}{% endblock %}
+{% block title %}{% if form.instance.pk %}{% trans "Edit host" %}{% else %}{% trans "Add host" %}{% endif %}{% endblock %}
+
+{% block page_heading %}
+    <span class="text-break">{% if form.instance.pk %}{% blocktrans with name=form.instance.name %}Edit host: {{ name }}{% endblocktrans %}{% else %}{% trans "Add host" %}{% endif %}</span>
+    <span class="badge text-bg-light border align-middle fs-6">{{ form.kind }}</span>
+{% endblock page_heading %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-12">
-        <h2 class="mb-3">{% if form.instance.pk %}{% trans "Edit Compute" %}{% else %}{% trans "Add Compute" %}{% endif %}</h2>
-    </div>
-</div>
-<div class="row">
-    <div class="col-sm-10 offset-sm-1">
-        <form id="create-update" action="" method="post">
-            {% csrf_token %}
-            {% bootstrap_form form layout='horizontal' %}
-        </form>
-        <div class="float-end">
-            <a class="btn btn-primary" href="javascript:history.back()">
-                {% bs_icon 'x-square-fill' %} {% trans "Cancel" %}</a>
-            <button type="submit" form="create-update" class="btn btn-success">
-                {% bs_icon 'check-circle-fill' %} {% trans "Save" %}
-            </button>
+<p class="text-body-secondary">{{ form.about }}</p>
+<form method="post">
+    {% csrf_token %}
+    {% bootstrap_form_errors form type='non_fields' %}
+    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+    <section class="card mb-3" aria-labelledby="connection-title">
+        <div class="card-header"><h2 class="h5 mb-0" id="connection-title">{% trans "Connection" %}</h2></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">{% bootstrap_field form.name %}</div>
+                {% if not form.hostname.is_hidden %}<div class="col-md-6">{% bootstrap_field form.hostname %}</div>{% endif %}
+                {% if "login" in form.fields %}<div class="col-md-6">{% bootstrap_field form.login %}</div>{% endif %}
+                {% if "password" in form.fields %}<div class="col-md-6">{% bootstrap_field form.password %}</div>{% endif %}
+                <div class="col-12">{% bootstrap_field form.details %}</div>
+            </div>
+            {# open when one of them is set or refused #}
+            <details class="border-top pt-3"{% if form.migration_address.value or form.migration_address.errors or form.gstfsd_key.errors %} open{% endif %}>
+                <summary>
+                    <span class="fw-semibold">{% trans "Advanced" %}</span>
+                    <span class="d-block small text-body-secondary text-break ms-3">
+                        {% trans "Migration address" %}: {{ form.migration_address.value|default:_("the host name") }}
+                        &middot; {% trans "gstfsd key" %}: {% if form.instance.gstfsd_key %}{% trans "stored" %}{% else %}{% trans "none" %}{% endif %}
+                    </span>
+                </summary>
+                <div class="mt-3">
+                    {% bootstrap_field form.migration_address %}
+                    {% bootstrap_field form.gstfsd_key %}
+                </div>
+            </details>
         </div>
+    </section>
+    <div class="d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'computes' %}">{% trans "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
     </div>
-</div>
+</form>
 {% endblock content %}

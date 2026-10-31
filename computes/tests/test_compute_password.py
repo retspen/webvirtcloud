@@ -29,8 +29,22 @@ class ComputePasswordTests(TestCase):
 
     def test_a_long_password_is_kept_and_the_page_says_edit(self):
         compute = Compute.objects.create(name="cp-long", hostname="192.0.2.7", login="admin", password="", type=1)
-        self.assertContains(self.client.get(reverse("compute_update", args=[compute.id])), "Edit Compute")
+        self.assertContains(self.client.get(reverse("compute_update", args=[compute.id])), "Edit host")
         self.assertEqual(self.edit(compute, "p" * 40), "p" * 40)
+
+    def test_the_form_says_a_secret_is_stored_and_names_the_connection(self):
+        compute = Compute.objects.create(name="cp-stored", hostname="192.0.2.9", login="admin", password="secret",
+                                         type=1)
+        response = self.client.get(reverse("compute_update", args=[compute.id]))
+        self.assertContains(response, 'placeholder="Stored, leave empty to keep"', count=1)  # the password only
+        self.assertContains(response, "libvirt over TCP, with a SASL login")
+        self.assertContains(response, "SASL password")
+        self.assertNotContains(self.client.get(reverse("add_tcp_host")), "Stored, leave empty to keep")
+        # the advanced fields fold away unless one is set
+        self.assertNotContains(response, "<details class=\"border-top pt-3\" open>")
+        Compute.objects.filter(pk=compute.pk).update(migration_address="192.0.2.19")
+        self.assertContains(self.client.get(reverse("compute_update", args=[compute.id])),
+                            "<details class=\"border-top pt-3\" open>")
 
     def test_the_api_keeps_the_password_when_it_is_left_empty(self):
         compute = Compute.objects.create(name="cp-api", hostname="192.0.2.8", login="admin", password="secret", type=1)
