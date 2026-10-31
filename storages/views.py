@@ -117,7 +117,6 @@ def storage(request, compute_id, pool):
     :return:
     """
     compute = get_object_or_404(Compute, pk=compute_id)
-    meta_prealloc = False
     form = CreateVolumeForm()
 
     conn = wvmStorage(
@@ -178,6 +177,27 @@ def storage(request, compute_id, pool):
                 )
             return redirect(reverse("storage", args=[compute.id, pool]))
             # return HttpResponseRedirect(request.get_full_path())
+        if "create_volume" in request.POST:
+            form = CreateVolumeForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data
+                with audit(request, compute, subject, f"add volume {data['name']}") as entry:
+                    name = conn.create_volume(
+                        data["name"],
+                        data["size"],
+                        data["format"],
+                        data["meta_prealloc"] and data["format"] == "qcow2",
+                        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
+                        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
+                    )
+                    entry.action = f"add volume {name}"
+                messages.success(request, _("Image file %(name)s is created successfully") % {"name": name})
+                return redirect(reverse("storage", args=[compute.id, pool]))
+            # refused: the page shows the dialog again, with what was entered and why;
+            # a pool stopped meanwhile has no dialog, so the reasons go to the page
+            if not state:
+                for msg_err in form.errors.values():
+                    messages.error(request, msg_err.as_text())
         if "cln_volume" in request.POST:
             form = CloneImage(request.POST)
             if form.is_valid():
@@ -199,7 +219,7 @@ def storage(request, compute_id, pool):
                     messages.error(request, msg_err.as_text())
             return redirect(reverse("storage", args=[compute.id, pool]))
 
-    # read only for the page: every action above redirects
+    # read only for the page: every action above redirects, but a refused new volume
     # first: it refreshes the pool, and libvirt measures a pool's space only then
     volumes = conn.update_volumes() if state else None
     for volume in volumes or []:
@@ -222,50 +242,6 @@ def storage(request, compute_id, pool):
     conn.close()
 
     return render(request, "storage.html", locals())
-
-
-@superuser_only
-def create_volume(request, compute_id, pool):
-    """
-    :param request:
-    :param compute_id: compute id
-    :param pool: pool name
-    :return:
-    """
-    compute = get_object_or_404(Compute, pk=compute_id)
-    meta_prealloc = False
-
-    conn = wvmStorage(
-        compute.hostname, compute.login, compute.password, compute.type, pool
-    )
-
-    form = CreateVolumeForm(request.POST or None)
-    if form.is_valid():
-        data = form.cleaned_data
-        if data["meta_prealloc"] and data["format"] == "qcow2":
-            meta_prealloc = True
-
-        disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
-        disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
-
-        with audit(request, compute, f"Storage pool {pool}", f"add volume {data['name']}") as entry:
-            name = conn.create_volume(
-                data["name"],
-                data["size"],
-                data["format"],
-                meta_prealloc,
-                disk_owner_uid,
-                disk_owner_gid,
-            )
-            entry.action = f"add volume {name}"
-        messages.success(
-            request, _("Image file %(name)s is created successfully") % {"name": name}
-        )
-    else:
-        for msg_err in form.errors.values():
-            messages.error(request, msg_err.as_text())
-
-    return redirect(reverse("storage", args=[compute.id, pool]))
 
 
 def get_volumes(request, compute_id, pool):

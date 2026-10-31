@@ -238,6 +238,13 @@
         });
         $('#clone-convert, #clone-format').on('change', showCloneRows);
 
+        // a refused new volume: its dialog opens again on what was entered, at the refused field
+        var addImage = document.getElementById('AddImage');
+        if (addImage && addImage.hasAttribute('data-open')) {
+            addImage.addEventListener('shown.bs.modal', focusFirstError, {once: true});
+            bootstrap.Modal.getOrCreateInstance(addImage).show();
+        }
+
         $(document).ready(function() {
             var pendingUpload = null;
             var uploadInProgress = false;

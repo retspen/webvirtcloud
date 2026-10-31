@@ -153,18 +153,6 @@ class InstancesTestCase(TestCase):
         )
         self.assertRaises(Http404)
 
-    # def test_create_volume(self):
-    #     response = self.client.post(
-    #         reverse('create_volume', args=[self.compute.id, 'default']),
-    #         {
-    #             'name': 'test',
-    #             'format': 'qcow2',
-    #             'size': '1',
-    #             'meta_prealloc': False,
-    #         },
-    #     )
-    #     self.assertRedirects(response, reverse('storage', args=[self.compute.id, 'default']))
-
     def test_create_destroy_instance(self):
         # Create
         response = self.client.get(
@@ -1125,18 +1113,6 @@ class InstancesTestCase(TestCase):
     #     self.instance.proxy.start()
     #     del self.instance.status
     #     self.assertEqual(self.instance.status, 1)
-
-    # # create volume
-    # response = self.client.post(
-    #     reverse('create_volume', args=[compute.id, 'default']),
-    #     {
-    #         'name': 'test3',
-    #         'format': 'qcow2',
-    #         'size': '1',
-    #         'meta_prealloc': False,
-    #     },
-    # )
-    # self.assertRedirects(response, reverse('storage', args=[compute.id, 'default']))
 
     # # delete volume
     # response = self.client.post(

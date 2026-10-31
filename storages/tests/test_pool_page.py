@@ -55,6 +55,34 @@ class PoolPageTests(TestCase):
                 self.assertEqual(doc.xpath("//div[@id=$d]//button[@data-bs-dismiss='modal'][not(@aria-label)]/text()",
                                            d=dialog), ["Cancel"])
 
+    def test_a_new_volume_is_made_from_the_pool_page(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.create_volume.return_value = "disk1.qcow2"
+        url = reverse("storage", args=[self.compute.pk, "default"])
+        response = self.client.post(url, {"name": "disk1", "size": "2", "format": "qcow2", "meta_prealloc": "on",
+                                          "create_volume": ""})
+        self.assertRedirects(response, url, fetch_redirect_response=False)
+        self.conn.create_volume.assert_called_once_with("disk1", 2, "qcow2", True, 0, 0)
+
+    def test_a_refused_new_volume_comes_back_with_what_was_entered(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.get_status.return_value = 1
+        response = self.client.post(reverse("storage", args=[self.compute.pk, "default"]),
+                                    {"name": "bad name!", "size": "3", "format": "raw", "create_volume": ""})
+        self.assertEqual(response.status_code, 200)
+        self.conn.create_volume.assert_not_called()
+        doc = html.fromstring(response.content)
+        # the dialog opens again on the values sent, the name marked with why
+        self.assertEqual(doc.xpath("//div[@id='AddImage']/@data-open"), [""])
+        self.assertEqual(doc.xpath("//div[@id='AddImage']//input[@name='name']/@value"), ["bad name!"])
+        self.assertEqual(doc.xpath("//div[@id='AddImage']//input[@name='size']/@value"), ["3"])
+        self.assertTrue(doc.xpath("//div[@id='AddImage']//input[@name='name'][contains(@class, 'is-invalid')]"))
+        # a pool stopped meanwhile shows no dialog: the page says why
+        self.conn.is_active.return_value = False
+        response = self.client.post(reverse("storage", args=[self.compute.pk, "default"]),
+                                    {"name": "bad name!", "size": "3", "format": "raw", "create_volume": ""})
+        self.assertContains(response, "The image name must not contain any special characters")
+
     def test_the_pool_is_measured_after_its_refresh(self):
         # update_volumes refreshes the pool: libvirt's space figures are as of the last refresh
         self.conn.get_size.return_value = (10, 4)

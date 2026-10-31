@@ -41,7 +41,8 @@
                 <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New volume" %}
             </button>
 
-            <div class="modal fade" id="AddImage" tabindex="-1" role="dialog" aria-labelledby="AddImageLabel" aria-hidden="true">
+            <div class="modal fade" id="AddImage" tabindex="-1" role="dialog" aria-labelledby="AddImageLabel" aria-hidden="true"
+                 {% if form.errors %}data-open{% endif %}>
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -49,7 +50,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                         </div>
                         <div class="modal-body">
-                            <form action="{% url 'create_volume' compute_id pool %}" id="create-volume" method="post" aria-label="{% trans "Create volume to storage form" %}">
+                            <form id="create-volume" method="post" aria-label="{% trans "Create volume to storage form" %}">
                                 {% csrf_token %}
                                 <div class="row">
                                     <div class="col-12">{% bootstrap_field form.name %}</div>
@@ -61,7 +62,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
-                            <button type="submit" form="create-volume" class="btn btn-primary">{% trans "Create" %}</button>
+                            <button type="submit" form="create-volume" class="btn btn-primary" name="create_volume">{% trans "Create" %}</button>
                         </div>
                     </div> <!-- /.modal-content -->
                 </div> <!-- /.modal-dialog -->

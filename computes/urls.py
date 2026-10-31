@@ -6,7 +6,7 @@ from interfaces.views import interface, interfaces
 from networks.views import network, networks
 from nodedevs.views import nodedevs
 from nwfilters.views import nwfilter, nwfilters
-from storages.views import create_volume, get_volumes, storage, storages
+from storages.views import get_volumes, storage, storages
 
 from . import forms, views
 
@@ -66,11 +66,6 @@ urlpatterns = [
                 path("storages/", storages, name="storages"),
                 path("storage/<str:pool>/volumes/", get_volumes, name="volumes"),
                 path("storage/<str:pool>/", storage, name="storage"),
-                path(
-                    "storage/<str:pool>/create_volume/",
-                    create_volume,
-                    name="create_volume",
-                ),
                 path("networks/", networks, name="networks"),
                 path("network/<str:pool>/", network, name="network"),
                 path("interfaces/", interfaces, name="interfaces"),

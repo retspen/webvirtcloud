@@ -179,8 +179,7 @@ class PoolAndVolumeRowTests(TransactionTestCase):
         ])
 
     def test_volume_add_and_delete(self):
-        self.client.post(reverse("create_volume", args=[self.compute.pk, "default"]),
-                         {"name": "disk1", "format": "qcow2", "size": 1})
+        self.client.post(self.url, {"name": "disk1", "format": "qcow2", "size": 1, "create_volume": ""})
         self.client.post(self.url, {"del_volume": "1", "volname": "disk1.qcow2"})
         with patch("storages.views.libvirt_compute_lock", side_effect=claims.Busy("compute:1")):
             self.client.post(self.url, {"del_volume": "1", "volname": "disk1.qcow2"})
