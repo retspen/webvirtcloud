@@ -86,7 +86,8 @@ class LiveLvmTestCase(TestCase):
         except libvirt.libvirtError:
             self.client.post(
                 reverse("storages", args=[self.compute.id]),
-                {"create": "", "name": POOL, "stg_type": "logical", "source": os.environ["TEST_LIBVIRT_LVM_DEVICE"]},
+                {"create": "", "name": POOL, "stg_type": "logical", "source": os.environ["TEST_LIBVIRT_LVM_DEVICE"],
+                 "erase_device": "on"},
             )
         pool = self.conn.storagePoolLookupByName(POOL)
         self.assertTrue(pool.isActive())
