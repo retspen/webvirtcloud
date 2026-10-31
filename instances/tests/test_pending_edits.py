@@ -122,6 +122,38 @@ class PendingEditsTestCase(TestCase):
             (switch,) = doc.xpath("//div[@id='editvol0']//input[@name=$n]", n=name)
             self.assertEqual(doc.xpath("//div[@id='editvol0']//label[@for=$i]", i=switch.get("id"))[0].tag, "label")
 
+    def test_the_add_dialogs_label_their_fields_and_units(self):
+        disks = [disk("vda", "default", "")]
+        nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
+               "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}
+        doc = self.page(live=disks, config=disks, nics=([nic], [nic]), get_networks=(["default"],) * 2,
+                        get_ifaces=(["br0"],) * 2, get_storages=(["default"],) * 2)
+        # every field of the Add disk, Add network device and bandwidth dialogs has its label
+        for dialog in ("addvol", "addInstanceNetwork", "AddQos0"):
+            # a radio card's label wraps its radio
+            fields = doc.xpath("//div[@id=$d]//*[self::input or self::select][not(@type='hidden' or @type='radio')]",
+                               d=dialog)
+            self.assertTrue(fields, dialog)
+            for field in fields:
+                self.assertTrue(doc.xpath("//label[@for=$i]", i=field.get("id") or "-"), (dialog, field.get("name")))
+        self.assertEqual(doc.xpath("//div[@id='addvol']//span[@class='input-group-text']/text()"), ["GiB"])
+        # Add disk: the source is a radio card, each source's fields a fieldset; the script sets the form's action
+        self.assertEqual(doc.xpath("//div[@id='addvol']//input[@name='disk_source']/@value"), ["new", "existing"])
+        self.assertEqual(doc.xpath("//div[@id='addvol']//fieldset/@data-kinds"), ["new", "existing"])
+        (form,) = doc.xpath("//form[@id='addvol-form']")
+        self.assertEqual((form.get("data-new"), form.get("data-existing")),
+                         (reverse("instances:add_new_vol", args=[self.instance.id]),
+                          reverse("instances:add_existing_vol", args=[self.instance.id])))
+        self.assertEqual(doc.xpath("//select[@name='add-net-network']//option/@value"), ["net:default", "iface:br0"])
+        self.assertEqual(doc.xpath("//div[@id='AddQos0']//label/text()"),
+                         ["Direction", "Average (KiB/s)", "Peak (KiB/s)", "Burst (KiB)"])
+        # Move needs a pool other than the disk's own
+        for pools, disabled in (([], ["disabled"]), (["default"], ["disabled"]), (["other"], []),
+                                (["default", "other"], [])):
+            with self.subTest(pools=pools):
+                doc = self.page(live=disks, config=disks, get_storages=(pools,) * 2)
+                self.assertEqual(doc.xpath("//div[@id='movedisk0']//button[@type='submit']/@disabled"), disabled)
+
     def test_the_clone_form_lists_the_persistent_devices(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
                "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}

@@ -3,63 +3,59 @@
 {% if request.user.is_superuser %}
     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addInstanceNetwork">{% bs_icon 'plus' %} {% trans "Add network device" %}</button>
 
-    <!-- Modal pool -->
     <div class="modal fade" id="addInstanceNetwork" tabindex="-1" role="dialog" aria-labelledby="addInstanceNetworkLabel" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content">
+            <form class="modal-content" action="{% url 'instances:add_network' instance.id %}" method="post" aria-label="{% trans "Add instance network form" %}">{% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addInstanceNetworkLabel">{% trans "Add Instance Network" %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="addInstanceNetworkLabel">{% trans "Add network device" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
-                <form action="{% url 'instances:add_network' instance.id %}" method="post" role="form" aria-label="Add instance network form">{% csrf_token %}
-                    <div class="modal-body">
-                        <div class="row">
-                            <label class="col-sm-4 col-form-label">{% trans "MAC" %}</label>
-                            <div class="col-sm-6">
-                                <input type="text" class="form-control" name="add-net-mac">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <label class="col-sm-4 col-form-label">{% trans "Network" %}</label>
-                            <div class="col-sm-6">
-                                <select class="form-select" name="add-net-network">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="add-net-network">{% trans "Source" %}</label>
+                            <select class="form-select" id="add-net-network" name="add-net-network">
+                                <optgroup label="{% trans "Networks" %}">
                                     {% for c_net in networks_host %}
-                                        <option value="net:{{ c_net }}">Network {{ c_net }}</option>
+                                    <option value="net:{{ c_net }}">{{ c_net }}</option>
                                     {% endfor %}
+                                </optgroup>
+                                <optgroup label="{% trans "Interfaces" %}">
                                     {% for c_iface in interfaces_host %}
-                                        <option value="iface:{{ c_iface }}">Interface {{ c_iface }}</option>
+                                    <option value="iface:{{ c_iface }}">{{ c_iface }}</option>
                                     {% endfor %}
-                                </select>
-                            </div>
+                                </optgroup>
+                            </select>
                         </div>
-                        <div class="row">
-                            <label class="col-sm-4 col-form-label">{% trans "NWFilter" %}</label>
-                            <div class="col-sm-6">
-                                <select class="form-select" name="add-net-nwfilter">
-                                    <option value="">{% trans "None" %}</option>
-                                    {% for nwfilter in nwfilters_host %}
-                                        <option value="{{ nwfilter }}">{{ nwfilter }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="add-net-model">{% trans "Model" %}</label>
+                            <select class="form-select" id="add-net-model" name="add-net-model">
+                                {% for model in net_models_host %}
+                                <option value="{{ model }}"{% if model == 'default' %} selected{% endif %}>{{ model }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="row">
-                            <label class="col-sm-4 col-form-label">{% trans "NIC Type" %} </label>
-                            <div class="col-sm-6">
-                                <select class="form-select" name="add-net-model">
-                                    {% for model in net_models_host %}
-                                    <option value="{{ model }}" {% if model == 'default'  %} selected {% endif %}>{{ model }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="add-net-nwfilter">{% trans "NWFilter" %}</label>
+                            <select class="form-select" id="add-net-nwfilter" name="add-net-nwfilter">
+                                <option value="">{% trans "None" %}</option>
+                                {% for nwfilter in nwfilters_host %}
+                                <option value="{{ nwfilter }}">{{ nwfilter }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+                        <div class="col-12">
+                            <label class="form-label" for="add-net-mac">{% trans "MAC" %}</label>
+                            <input type="text" class="form-control font-monospace" id="add-net-mac" name="add-net-mac" aria-describedby="add-net-mac-help">
+                            <div class="form-text" id="add-net-mac-help">{% trans "A random address is filled in; empty: libvirt chooses one." %}</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
                     <button type="submit" class="btn btn-primary" name="add_network">{% trans "Add" %}</button>
                 </div>
-                    </form>
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-    </div> <!-- /.modal -->
+            </form>
+        </div>
+    </div>
 {% endif %}

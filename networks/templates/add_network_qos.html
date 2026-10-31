@@ -1,52 +1,41 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <!-- Modal pool -->
-    <div class="modal fade" id="AddQos{{ id }}" tabindex="-1" role="dialog" aria-labelledby="AddQosLabel{{ id }}"
-         aria-hidden="true">
+    <div class="modal fade" id="AddQos{{ id }}" tabindex="-1" role="dialog" aria-labelledby="AddQosLabel{{ id }}" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="AddQosLabel{{ id }}">{% trans "Add QoS for Network" %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="AddQosLabel{{ id }}">{% blocktrans with nic=id %}Bandwidth limit of eth{{ nic }}{% endblocktrans %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <label class="col-sm-4 col-form-label">{% trans "Direction" %}:</label>
-                        <div class="col-sm-6">
-                            <select class="form-select" name="qos_direction">
-                                <option value="inbound">{% trans 'Inbound' %}</option>
-                                <option value="outbound">{% trans 'Outbound' %}</option>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="qos_direction{{ id }}">{% trans "Direction" %}</label>
+                            <select class="form-select" id="qos_direction{{ id }}" name="qos_direction">
+                                <option value="inbound">{% trans "Inbound: to the VM" %}</option>
+                                <option value="outbound">{% trans "Outbound: from the VM" %}</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label class="col-sm-4 col-form-label">{% trans "Average" %}:</label>
-                        <div class="col-sm-6">
-                        <input class="form-control" name="qos_average" placeholder="{% trans "kilobytes" %}"
-                               required pattern="[0-9]+"/>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="qos_average{{ id }}">{% trans "Average (KiB/s)" %}</label>
+                            <input class="form-control" id="qos_average{{ id }}" name="qos_average" required pattern="[0-9]+" inputmode="numeric">
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="qos_peak{{ id }}">{% trans "Peak (KiB/s)" %}</label>
+                            <input class="form-control" id="qos_peak{{ id }}" name="qos_peak" pattern="[0-9]+" inputmode="numeric">
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="qos_burst{{ id }}">{% trans "Burst (KiB)" %}</label>
+                            <input class="form-control" id="qos_burst{{ id }}" name="qos_burst" pattern="[0-9]+" inputmode="numeric">
                         </div>
                     </div>
-                    <div class="row">
-                        <label class="col-sm-4 col-form-label">{% trans "Peak" %}:</label>
-                        <div class="col-sm-6">
-                        <input class="form-control" name="qos_peak" placeholder="{% trans "kilobytes" %}"
-                               pattern="[0-9]+"/>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <label class="col-sm-4 col-form-label">{% trans "Burst" %}:</label>
-                        <div class="col-sm-6">
-                        <input class="form-control" name="qos_burst" placeholder="{% trans "kilobytes" %}"
-                               pattern="[0-9]+"/>
-                        </div>
-                    </div>
+                    <p class="small text-body-secondary mt-3 mb-0">{% trans "A running VM gets a change after it is powered off and on." %}</p>
                 </div>
-
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans 'Close' %}</button>
-                    <button type="submit" class="btn btn-primary" name="set_qos">{% trans 'Save' %}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="set_qos">{% trans "Save" %}</button>
                 </div>
             </div>
-        </div> <!-- /.modal-dialog -->
-    </div> <!-- /.modal -->
+        </div>
+    </div>
 {% endif %}

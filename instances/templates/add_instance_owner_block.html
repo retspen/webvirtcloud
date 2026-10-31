@@ -3,13 +3,12 @@
 {% if request.user.is_superuser %}
     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addInstanceOwner">{% bs_icon 'plus' %} {% trans "Add owner" %}</button>
 
-    <!-- Modal pool -->
     <div class="modal fade" id="addInstanceOwner" tabindex="-1" role="dialog" aria-labelledby="addInstanceOwnerLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addInstanceOwnerLabel">{% trans "Add owner" %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
                 <div class="modal-body">
                     <form id="add-owner-form" method="post" action="{% url 'instances:add_owner' instance.id %}" role="form" aria-label="Add instance owner form">{% csrf_token %}
@@ -27,7 +26,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
                     <button type="submit" class="btn btn-primary" form="add-owner-form"{% if not users %} disabled{% endif %}>{% trans "Add" %}</button>
                 </div>
             </div> <!-- /.modal-content -->

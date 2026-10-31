@@ -17,11 +17,15 @@
                 <select class="form-select" name="pool" id="movedisk{{ id }}-pool" required>
                     {% for storage in storages_host %}{% if storage != disk.storage %}<option value="{{ storage }}">{{ storage }}</option>{% endif %}{% endfor %}
                 </select>
+                {# no pool but the disk's own #}
+                {% if not storages_host or storages_host|length == 1 and disk.storage in storages_host %}
+                    <div class="form-text text-danger">{% trans "The host has no other storage pool to move the disk to." %}</div>
+                {% endif %}
                 <div class="form-text text-break">{% blocktrans with path=disk.path %}The disk is copied into the pool, a running VM's without stopping it, and the VM uses the copy; {{ path }} is deleted then, unless a VM or volume of any host uses it.{% endblocktrans %}</div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
-                <button type="submit" class="btn btn-primary">{% trans "Move" %}</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary"{% if not storages_host or storages_host|length == 1 and disk.storage in storages_host %} disabled{% endif %}>{% trans "Move" %}</button>
             </div>
         </form>
     </div>

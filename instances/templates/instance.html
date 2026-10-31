@@ -109,27 +109,14 @@
 {% block script %}
 <script src="{% static 'js/ace/ace.js' %}" type="text/javascript" charset="utf-8"></script>
 <script>
+    // the volumes of the pool chosen in the Add disk dialog
     function get_volumes(compute_id, pool) {
-        get_vol_url = "/computes/" + compute_id + "/storage/" + pool + "/volumes";
-        $.getJSON(get_vol_url, function (data) {
-            $("#vols").find('option').remove();
-            $("#vols").removeAttr("disabled");
-
-            $.each(data['vols'], function(i, item) {
-                $("#vols").append($("<option>").val(item).text(item));
-            })
+        $.getJSON("/computes/" + compute_id + "/storage/" + encodeURIComponent(pool) + "/volumes/", function (data) {
+            var vols = $("#vols").empty();
+            $.each(data['vols'], function (i, item) {
+                vols.append($("<option>").val(item).text(item));
+            });
         });
-
-        var sto_drop = document.getElementById('select_storage');
-        sto_drop.value = pool;
-        sto_drop.textContent = pool;
-        var caret = document.createElement("span");
-        caret.className = "caret";
-        sto_drop.appendChild(caret);
-
-        var sto_input = document.getElementById('selected_storage');
-        sto_input.setAttribute('value', pool);
-        //sto_input.innerHTML = pool;
     }
 </script>
 <script src="{% static 'js/xml_editor.js' %}"></script>
