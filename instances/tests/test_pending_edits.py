@@ -112,6 +112,16 @@ class PendingEditsTestCase(TestCase):
         # the used share as a bar, full when a qcow2 file outgrows its capacity
         self.assertEqual(doc.xpath("//div[@id='disks']//div[@role='progressbar']/@aria-valuenow"), ["50", "100"])
 
+    def test_the_disk_edit_dialog_keeps_an_empty_serial_empty(self):
+        disks = [disk("vda", "default", None)]
+        doc = self.page(live=disks, config=disks)
+        # saved untouched, the dialog must not give the disk the serial "None"
+        self.assertEqual(doc.xpath("//div[@id='editvol0']//input[@name='vol_serial']/@value"), [""])
+        # each switch's label toggles it
+        for name in ("vol_readonly", "vol_shareable"):
+            (switch,) = doc.xpath("//div[@id='editvol0']//input[@name=$n]", n=name)
+            self.assertEqual(doc.xpath("//div[@id='editvol0']//label[@for=$i]", i=switch.get("id"))[0].tag, "label")
+
     def test_the_clone_form_lists_the_persistent_devices(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
                "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}

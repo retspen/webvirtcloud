@@ -1,117 +1,117 @@
 {% load i18n %}
-{% load bootstrap_icons %}
 {% if request.user.is_superuser %}
     <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal">{% trans "Edit" %}</button>
 
-    <!-- Modal pool -->
     <div class="modal fade" id="editvol{{ id }}" tabindex="-1" role="dialog" aria-labelledby="editInstanceVolumeLabel{{ id }}" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editInstanceVolumeLabel{{ id }}">{% blocktrans with dev=disk.dev %}Edit {{ dev }}{% endblocktrans %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header align-items-start">
+                    <div>
+                        <h5 class="modal-title" id="editInstanceVolumeLabel{{ id }}">{% blocktrans with dev=disk.dev %}Edit {{ dev }}{% endblocktrans %}</h5>
+                        <p class="small text-body-secondary mb-0 mt-1">{{ disk.bus }} · {{ disk.format|default:"—" }} · {{ disk.size|filesizeformat }}</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
 
                 <div class="modal-body">
-                    <ul class="nav nav-tabs mb-3" role="tablist" aria-label="Disk options">
-                        <li class="nav-item"  role="presentation">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#VirtualDisk{{ id }}" type="button" role="tab" aria-controls="VirtualDisk{{ id }}" aria-selected="true">
-                                {% trans 'Virtual Disk' %}
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#PerformanceVolume{{ id }}" type="button" role="tab" aria-controls="PerformanceVolume{{ id }}" aria-selected="false">
-                                {% trans 'Performance' %}
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#AdvancedVolume{{ id }}" type="button" role="tab" aria-controls="AdvancedVolume{{ id }}" aria-selected="false">
-                                {% trans 'Advanced' %}
-                            </button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content">
-                        <div class="tab-pane active" role="tabpanel" id="VirtualDisk{{ id }}">
+                    {% if instance.status != 5 %}
+                        <p class="small text-body-secondary">{% trans "The VM is running: the changes apply at its next start." %}</p>
+                    {% endif %}
+                    <section class="card mb-4" aria-labelledby="vol_source{{ id }}">
+                        <div class="card-header"><h6 class="mb-0" id="vol_source{{ id }}">{% trans "Source" %}</h6></div>
+                        <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label" for="vol_path{{ id }}">{% trans 'Volume Path' %}</label>
-                                <input class="form-control" id="vol_path{{ id }}" name="vol_path" value="{{ disk.path }}"/>
+                                <label class="form-label" for="vol_path{{ id }}">{% trans "Volume path" %}</label>
+                                <input class="form-control" id="vol_path{{ id }}" name="vol_path" value="{{ disk.path }}">
                             </div>
-                            <div class="mb-3 form-check form-switch">
-                                <label class="form-check-label">{% trans 'Readonly' %}</label>
-                                <input class="form-check-input" type="checkbox" name="vol_readonly" value="True" {% if disk.readonly %}checked{% endif %}/>
-                            </div>
-                            <div class="mb-3 form-check form-switch">
-                                <label class="form-check-label">{% trans 'Shareable' %}</label>
-                                <input class="form-check-input" type="checkbox" name="vol_shareable" value="True" {% if disk.shareable %}checked{% endif %}/>
+                            <div class="row g-3">
+                                <div class="col-sm-6 form-check form-switch ps-5">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="vol_readonly{{ id }}" name="vol_readonly" value="True"{% if disk.readonly %} checked{% endif %}>
+                                    <label class="form-check-label" for="vol_readonly{{ id }}">{% trans "Read-only" %}</label>
+                                </div>
+                                <div class="col-sm-6 form-check form-switch ps-5">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="vol_shareable{{ id }}" name="vol_shareable" value="True"{% if disk.shareable %} checked{% endif %}>
+                                    <label class="form-check-label" for="vol_shareable{{ id }}">{% trans "Shareable" %}</label>
+                                </div>
                             </div>
                         </div>
+                    </section>
 
-                        <div class="tab-pane" role="tabpanel" id="PerformanceVolume{{ id }}">
-                            <div class="mb-3">
-                                <label class="form-label" for="vol_cache{{ id }}">{% trans 'Cache mode' %}</label>
+                    <section class="mb-4" aria-labelledby="vol_performance{{ id }}">
+                        <h6 id="vol_performance{{ id }}">{% trans "Performance" %}</h6>
+                        <p class="small text-body-secondary">{% trans "Default leaves the setting to libvirt." %}</p>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label" for="vol_cache{{ id }}">{% trans "Cache mode" %}</label>
                                 <select class="form-select" id="vol_cache{{ id }}" name="vol_cache">
                                     {% for key, val in instance.cache_modes %}
-                                    <option value="{{ key }}" {% if key == disk.cache %}selected{% endif %}>{{ val }}</option>
+                                    <option value="{{ key }}"{% if key == disk.cache %} selected{% endif %}>{{ val }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="vol_io_mode{{ id }}">{% trans 'IO mode' %}</label>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="vol_io_mode{{ id }}">{% trans "IO mode" %}</label>
                                 <select class="form-select" id="vol_io_mode{{ id }}" name="vol_io_mode">
                                     {% for key, val in instance.io_modes %}
-                                    <option value="{{ key }}" {% if key == disk.io %}selected{% endif %}>{{ val }}</option>
+                                    <option value="{{ key }}"{% if key == disk.io %} selected{% endif %}>{{ val }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="vol_discard_mode{{ id }}">{% trans 'Discard mode' %}</label>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="vol_discard_mode{{ id }}">{% trans "Discard mode" %}</label>
                                 <select class="form-select" id="vol_discard_mode{{ id }}" name="vol_discard_mode">
                                     {% for key, val in instance.discard_modes %}
-                                    <option value="{{ key }}" {% if key == disk.discard %}selected{% endif %}>{{ val }}</option>
+                                    <option value="{{ key }}"{% if key == disk.discard %} selected{% endif %}>{{ val }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="vol_detect_zeroes{{ id }}">{% trans 'Detect zeroes' %}</label>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="vol_detect_zeroes{{ id }}">{% trans "Detect zeroes" %}</label>
                                 <select class="form-select" id="vol_detect_zeroes{{ id }}" name="vol_detect_zeroes">
                                     {% for key, val in instance.detect_zeroes_modes %}
-                                    <option value="{{ key }}" {% if key == disk.detect_zeroes %}selected{% endif %}>{{ val }}</option>
+                                    <option value="{{ key }}"{% if key == disk.detect_zeroes %} selected{% endif %}>{{ val }}</option>
                                     {% endfor %}
-                                </select> 
-                            </div>
-                            <input class="form-control" name="vol_bus_old" value="{{ disk.bus }}" hidden/>
-                        </div>
-
-                        <div class="tab-pane" role="tabpanel" id="AdvancedVolume{{ id }}">
-                            <div class="mb-3">
-                                <label class="form-label" for="vol_bus{{ id }}">{% trans 'Bus' %}</label>    
-                                <select class="form-select" id="vol_bus{{ id }}" name="vol_bus" {% if instance.status != 5 %} disabled {% endif %}>
-                                {% for bus in bus_host %}
-                                    <option value="{{ bus }}" {% if bus == disk.bus %}selected{% endif %}>{{ bus }}</option>
-                                {% endfor %}
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="vol_serial{{ id }}">{% trans 'Serial Number' %}</label>
-                                <input class="form-control" id="vol_serial{{ id }}" name="vol_serial" type="text" value="{{ disk.serial }}"/>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="vol_format{{ id }}">{% trans 'Storage Format' %}</label>
-                                <input class="form-control" id="vol_format{{ id }}" name="vol_format" type="text" value="{{ disk.format }}"/>
-                            </div>    
                         </div>
-                        
-                    </div><!-- /.tab-content -->
-                </div> <!-- /.modal-body -->
-                <div class="clearfix"></div>
+                    </section>
+
+                    <details class="border-top pt-3">
+                        <summary>
+                            <span class="fw-semibold">{% trans "Device" %}</span>
+                            <span class="d-block small text-body-secondary text-break ms-3">{% trans "Bus" %}: {{ disk.bus }} · {% trans "Serial" %}: {{ disk.serial|default:_("none") }} · {% trans "Format" %}: {{ disk.format|default:_("none") }}</span>
+                        </summary>
+                        <input type="hidden" name="vol_bus_old" value="{{ disk.bus }}">
+                        <div class="row g-3 mt-1">
+                            <div class="col-12">
+                                <label class="form-label" for="vol_bus{{ id }}">{% trans "Bus" %}</label>
+                                <select class="form-select" id="vol_bus{{ id }}" name="vol_bus"{% if instance.status != 5 %} disabled aria-describedby="vol_bus_help{{ id }}"{% endif %}>
+                                {% for bus in bus_host %}
+                                    <option value="{{ bus }}"{% if bus == disk.bus %} selected{% endif %}>{{ bus }}</option>
+                                {% endfor %}
+                                </select>
+                                {% if instance.status != 5 %}
+                                    <div class="form-text" id="vol_bus_help{{ id }}">{% trans "Shut the VM down to change the bus." %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="vol_serial{{ id }}">{% trans "Serial number" %}</label>
+                                <input class="form-control" id="vol_serial{{ id }}" name="vol_serial" type="text" value="{{ disk.serial|default:"" }}">
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="vol_format{{ id }}">{% trans "Image format" %}</label>
+                                <input class="form-control" id="vol_format{{ id }}" name="vol_format" type="text" value="{{ disk.format|default:"" }}" aria-describedby="vol_format_help{{ id }}">
+                                <div class="form-text" id="vol_format_help{{ id }}">{% trans "The format the image is in: changing it does not convert the image." %}</div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
                     <button type="submit" class="btn btn-primary" name="edit_volume">{% trans "Save" %}</button>
-                </div><!-- /.modal-footer -->
-
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-
-    </div> <!-- /.modal -->
+                </div>
+            </div>
+        </div>
+    </div>
 {% endif %}
