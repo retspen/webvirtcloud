@@ -12,6 +12,14 @@
     }
 }
 
+/* a count or label badge: text-bg-light keeps a light background with the
+   theme's light-text colour, white on grey in Darkly, Superhero and Vapor;
+   the page's own colours read in every theme */
+.badge.text-bg-light.border {
+    color: var(--bs-body-color) !important;
+    background-color: var(--bs-body-bg) !important;
+}
+
 #editor {
     position: absolute;
     top: 0;
