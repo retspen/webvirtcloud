@@ -4,7 +4,8 @@ import uuid
 from django import template
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
-from django.utils.translation import pgettext_lazy
+from django.utils.timesince import timesince
+from django.utils.translation import ngettext, pgettext_lazy
 
 from operations.jobs import take_remembered
 from operations.models import Operation
@@ -49,6 +50,16 @@ def state_color(state):
 @register.filter
 def state_label(state):
     return STATE_LABELS[state]
+
+
+@register.filter
+def duration(start, end):
+    """The time from start to end, in seconds under a minute: timesince counts minutes.
+    Never negative: the worker and the panel may run on hosts whose clocks differ."""
+    seconds = max(0, int((end - start).total_seconds()))
+    if seconds < 60:
+        return ngettext("%(count)d second", "%(count)d seconds", seconds) % {"count": seconds}
+    return timesince(start, end)
 
 
 @register.filter

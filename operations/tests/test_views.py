@@ -128,9 +128,24 @@ class JobsPageTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         for response in (self.client.get(reverse("operations:jobs")),
                          self.client.get(reverse("operations:job", args=[self.op.pk]))):
-            self.assertContains(response, "2026-10-13 23:04:00")
-            self.assertContains(response, f"Created ({django_timezone.get_current_timezone_name()})")
+            self.assertContains(response, "2026-10-13 23:04:00 +03")
             self.assertNotContains(response, "2026-10-13T20:04")
+
+    def test_the_job_page_shows_how_long_it_waited_and_ran(self):
+        at = datetime(2026, 10, 13, 20, 4, 0, tzinfo=timezone.utc)
+        Operation.objects.filter(pk=self.op.pk).update(created_at=at, started_at=at + timedelta(seconds=3),
+                                                       finished_at=at + timedelta(minutes=4, seconds=3),
+                                                       state=Operation.SUCCEEDED)
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("operations:job", args=[self.op.pk]))
+        self.assertContains(response, "queued for 3 seconds")
+        self.assertContains(response, "ran for 4\xa0minutes")
+        # cancelled while queued: it never started
+        Operation.objects.filter(pk=self.op.pk).update(started_at=None, state=Operation.CANCELLED)
+        response = self.client.get(reverse("operations:job", args=[self.op.pk]))
+        self.assertNotContains(response, "queued for")
+        self.assertNotContains(response, "ran for")
+        self.assertContains(response, "Finished")
 
     def test_list_and_detail_refresh_while_a_job_is_active(self):
         self.client.force_login(self.user)
@@ -199,22 +214,28 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(self.client.get(reverse("operations:jobs")),
                             '<span class="badge bg-warning text-dark">uncertain</span>')
 
-    def test_a_narrow_list_shows_resource_date_and_user_under_the_job(self):
+    def test_a_narrow_list_shows_resource_and_user_under_the_job(self):
         Operation.objects.filter(pk=self.op.pk).update(resource_label="wvc-test-host/wvc-test-vm")
         self.client.force_login(self.admin)
         html = self.client.get(reverse("operations:jobs")).content.decode()
         # below md only Job and State are columns
-        for header in (f"Created ({django_timezone.get_current_timezone_name()})", "Resource", "User"):
+        for header in ("Resource", "User"):
             self.assertIn(f'<th scope="col" class="d-none d-md-table-cell">{header}</th>', html)
-        narrow = re.search(r'<div class="d-md-none small text-body-secondary">(.*?)</div>', html, re.S).group(1)
-        for text in ('<span class="text-nowrap">wvc-test-vm</span>', "page_user"):
-            self.assertIn(text, narrow)
-        self.assertRegex(narrow, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
-        # a plain user's narrow line has no user
+        self.assertIn('<span class="d-md-none"> &middot; page_user</span>', html)
+        narrow = re.search(r'<div class="d-md-none small">(.*?)</div>', html, re.S).group(1)
+        self.assertIn('<span class="text-nowrap">wvc-test-vm</span>', narrow)
+        # a plain user's list has no user
         self.client.force_login(self.user)
-        html = self.client.get(reverse("operations:jobs")).content.decode()
-        narrow = re.search(r'<div class="d-md-none small text-body-secondary">(.*?)</div>', html, re.S).group(1)
-        self.assertNotIn("page_user", narrow)
+        self.assertNotContains(self.client.get(reverse("operations:jobs")), "&middot; page_user")
+
+    def test_the_list_shows_an_active_jobs_progress(self):
+        Operation.objects.filter(pk=self.op.pk).update(state=Operation.RUNNING, progress_done=3, progress_total=10)
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("operations:jobs"))
+        self.assertContains(response, "3 / 10")
+        self.assertContains(response, 'aria-valuenow="30"')
+        Operation.objects.filter(pk=self.op.pk).update(state=Operation.SUCCEEDED)
+        self.assertNotContains(self.client.get(reverse("operations:jobs")), 'role="progressbar"')
 
     def test_states_and_phases_show_translated(self):
         Operation.objects.filter(pk=self.op.pk).update(state=Operation.RUNNING, phase="Merging the snapshot")

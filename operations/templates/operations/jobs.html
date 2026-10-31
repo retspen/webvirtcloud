@@ -3,96 +3,106 @@
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 {% load operations %}
-{% load tz %}
 
 {% block title %}{% trans "Jobs" %}{% endblock %}
 
 {% block page_heading %}{% trans "Jobs" %}{% endblock page_heading %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-12">
-        {% if worker_unavailable %}
-            <div class="alert alert-warning shadow-sm">
-                {% bs_icon 'exclamation-triangle' %} {% trans "Worker unavailable, last seen" %}
-                {% if worker_last_seen %}{{ worker_last_seen|date:"Y-m-d H:i:s" }}{% else %}{% trans "never" %}{% endif %}
-            </div>
-        {% endif %}
+{% if worker_unavailable %}
+    <div class="alert alert-warning shadow-sm">
+        {% bs_icon 'exclamation-triangle' %} {% trans "Worker unavailable, last seen" %}
+        {% if worker_last_seen %}{{ worker_last_seen|date:"Y-m-d H:i:s T" }}{% else %}{% trans "never" %}{% endif %}
+    </div>
+{% endif %}
+<div class="card mb-3">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <span class="me-auto">{% trans "Jobs" %} <span class="badge text-bg-light border">{{ page.paginator.count }}</span></span>
         {% if request.user.is_superuser %}
-            <form method="get" class="row g-2 mb-3" role="search" aria-label="{% trans 'Filter jobs' %}">
-                <div class="col-6 col-md">
-                    <input class="form-control" name="compute" placeholder="{% trans 'Host' %}" aria-label="{% trans 'Host' %}" value="{{ filters.compute }}">
+            <form method="get" class="row g-2 col-12 col-xl-10" role="search" aria-label="{% trans 'Filter jobs' %}">
+                <div class="col-6 col-lg">
+                    <input class="form-control form-control-sm" name="compute" placeholder="{% trans 'Host' %}" aria-label="{% trans 'Host' %}" value="{{ filters.compute }}">
                 </div>
-                <div class="col-6 col-md">
-                    <input class="form-control" name="username" placeholder="{% trans 'User' %}" aria-label="{% trans 'User' %}" value="{{ filters.username }}">
+                <div class="col-6 col-lg">
+                    <input class="form-control form-control-sm" name="username" placeholder="{% trans 'User' %}" aria-label="{% trans 'User' %}" value="{{ filters.username }}">
                 </div>
-                <div class="col-6 col-md">
-                    <select class="form-select" name="kind" aria-label="{% trans 'Kind' %}">
+                <div class="col-6 col-lg">
+                    <select class="form-select form-select-sm" name="kind" aria-label="{% trans 'Kind' %}">
                         <option value="">{% trans "All kinds" %}</option>
                         {% for name, label in kinds %}
                             <option value="{{ name }}"{% if filters.kind == name %} selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-6 col-md">
-                    <select class="form-select" name="state" aria-label="{% trans 'State' %}">
+                <div class="col-6 col-lg">
+                    <select class="form-select form-select-sm" name="state" aria-label="{% trans 'State' %}">
                         <option value="">{% trans "All states" %}</option>
                         {% for state in states %}
                             <option value="{{ state }}"{% if filters.state == state %} selected{% endif %}>{{ state|state_label }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-12 col-md-auto d-flex gap-2 justify-content-end">
-                    <button class="btn btn-primary" type="submit">{% trans "Filter" %}</button>
-                    <a class="btn btn-outline-secondary" href="{% url 'operations:jobs' %}">{% trans "Reset" %}</a>
+                <div class="col-12 col-lg-auto d-flex gap-2 justify-content-end">
+                    <button class="btn btn-sm btn-primary" type="submit">{% trans "Filter" %}</button>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'operations:jobs' %}">{% trans "Reset" %}</a>
                 </div>
             </form>
         {% endif %}
-        {% if not rows %}
-            <div class="alert alert-warning shadow-sm">
-                {% bs_icon 'exclamation-triangle' %} {% trans "No jobs" %}
-            </div>
-        {% else %}
-            <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle">
-                    <thead>
-                        <tr>
-                            {% get_current_timezone as TIME_ZONE %}
-                            <th scope="col" class="d-none d-md-table-cell">{% blocktrans %}Created ({{ TIME_ZONE }}){% endblocktrans %}</th>
-                            <th scope="col">{% trans "Job" %}</th>
-                            <th scope="col">{% trans "State" %}</th>
-                            <th scope="col" class="d-none d-md-table-cell">{% trans "Resource" %}</th>
-                            {% if request.user.is_superuser %}<th scope="col" class="d-none d-md-table-cell">{% trans "User" %}</th>{% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for op, row in rows %}
-                            <tr>
-                                <td class="text-nowrap d-none d-md-table-cell">{{ op.created_at|date:"Y-m-d H:i:s" }}</td>
-                                <td style="min-width: 10rem;">
-                                    <a href="{% url 'operations:job' row.id %}">{{ row.label }}</a>
-                                    {% if op.state in active_states and op.phase %}
-                                        <div class="small text-body-secondary">{% translate op.phase %}</div>
-                                    {% elif op.state == "failed" or op.state == "uncertain" %}
-                                        <div class="small text-body-secondary" title="{{ op.error }}">{{ op.error|truncatechars:80 }}</div>
-                                    {% endif %}
-                                    {# below md the hidden columns show here #}
-                                    <div class="d-md-none small text-body-secondary">{{ row.resource_label|wrap_at_slash }}<br>{{ op.created_at|date:"Y-m-d H:i:s" }}{% if request.user.is_superuser %} &middot; {{ row.username }}{% endif %}</div>
-                                </td>
-                                <td>{% include "operations/state_badge.html" with state=op.state %}</td>
-                                <td class="d-none d-md-table-cell">{{ row.resource_label|wrap_at_slash }}</td>
-                                {% if request.user.is_superuser %}<td class="text-nowrap d-none d-md-table-cell">{{ row.username }}</td>{% endif %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% if page.has_other_pages %}
-                {% bootstrap_pagination page extra=page_query %}
-            {% endif %}
-        {% endif %}
     </div>
+    {% if not rows %}
+        <div class="card-body text-center text-body-secondary">{% trans "No jobs" %}</div>
+    {% else %}
+        <div class="table-responsive position-relative">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "Job" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Resource" %}</th>
+                        {% if request.user.is_superuser %}<th scope="col" class="d-none d-md-table-cell">{% trans "User" %}</th>{% endif %}
+                        <th scope="col" class="text-end">{% trans "State" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op, row in rows %}
+                        <tr>
+                            <td style="min-width: 12rem;">
+                                <a href="{% url 'operations:job' row.id %}">{{ row.label }}</a>
+                                {% if op.state in active_states %}
+                                    {% if op.phase or op.progress_total %}
+                                        <div class="small text-body-secondary">
+                                            {% if op.phase %}{% translate op.phase %}{% endif %}
+                                            {% if op.progress_total %}
+                                                {% if op.phase %}&middot;{% endif %}
+                                                {% if op.kind in bytes_kinds %}{{ op.progress_done|default:0|filesizeformat }} / {{ op.progress_total|filesizeformat }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                    {% if op.progress_total %}
+                                        {% widthratio op.progress_done|default:0 op.progress_total 100 as percent %}
+                                        <div class="progress my-1" style="height: .25rem;" role="progressbar" aria-label="{% trans 'Progress' %}" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar" style="width: {{ percent }}%"></div>
+                                        </div>
+                                    {% endif %}
+                                {% elif op.state == "failed" or op.state == "uncertain" %}
+                                    <div class="small text-body-secondary" title="{{ op.error }}">{{ op.error|truncatechars:80 }}</div>
+                                {% endif %}
+                                <div class="small text-body-secondary">{{ op.created_at|date:"Y-m-d H:i:s T" }}{% if request.user.is_superuser %}<span class="d-md-none"> &middot; {{ row.username }}</span>{% endif %}</div>
+                                {# below md the hidden columns show here #}
+                                <div class="d-md-none small">{{ row.resource_label|wrap_at_slash }}</div>
+                            </td>
+                            <td class="d-none d-md-table-cell">{{ row.resource_label|wrap_at_slash }}</td>
+                            {% if request.user.is_superuser %}<td class="text-nowrap d-none d-md-table-cell">{{ row.username }}</td>{% endif %}
+                            <td class="text-end">{% include "operations/state_badge.html" with state=op.state %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
 </div>
+{% if page.has_other_pages %}
+    {% bootstrap_pagination page extra=page_query %}
+{% endif %}
 {% endblock %}
 {% block script %}
     {% if follow %}{% include "operations/follow_active.html" %}{% endif %}

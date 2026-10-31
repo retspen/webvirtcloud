@@ -2,105 +2,122 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% load operations %}
-{% load tz %}
 
 {% block title %}{{ job.label }}{% endblock %}
 
 {% block page_heading %}{{ job.label }}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-    <div class="d-flex gap-2">
-        {% if job.cancellable %}
-            <form method="post" action="{% url 'operations:cancel' job.id %}" aria-label="{% trans 'Cancel job form' %}">
-                {% csrf_token %}
-                <button class="btn btn-warning" type="submit">{% trans "Cancel" %}</button>
-            </form>
-        {% endif %}
-        <a class="btn btn-outline-secondary" href="{% url 'operations:jobs' %}">{% trans "Jobs" %}</a>
-    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'operations:jobs' %}">{% trans "Jobs" %}</a>
 {% endblock page_heading_extra %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-12">
-        {% if op.error %}
-            <div class="alert alert-{{ op.state|state_color }}" role="alert">
-                {% bs_icon 'exclamation-triangle' %} {{ op.error }}
-            </div>
-        {% endif %}
-        <dl class="row">
-            <dt class="col-sm-3">{% trans "Resource" %}</dt><dd class="col-sm-9 text-break">{{ job.resource_label }}</dd>
-            <dt class="col-sm-3">{% trans "User" %}</dt><dd class="col-sm-9">{{ job.username }}</dd>
-            <dt class="col-sm-3">{% trans "State" %}</dt>
-            <dd class="col-sm-9">{% include "operations/state_badge.html" with state=op.state %}</dd>
-            {% if op.phase %}<dt class="col-sm-3">{% trans "Phase" %}</dt><dd class="col-sm-9">{% translate op.phase %}</dd>{% endif %}
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-semibold text-break me-auto">{{ job.resource_label }}</span>
+            {% include "operations/state_badge.html" with state=op.state %}
+        </div>
+        <div class="small text-body-secondary mt-1">{% trans "User" %}: {{ job.username }}</div>
+    </div>
+    {% if op.phase or op.progress_total or job.cancellable or op.error or job.result.links or job.result.warning or job.result.left_behind or job.resolution %}
+        <div class="card-body pb-0">
+            {% if op.phase or job.cancellable %}
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <span class="me-auto">{% if op.phase %}{% translate op.phase %}{% endif %}</span>
+                    {% if job.cancellable %}
+                        <form method="post" action="{% url 'operations:cancel' job.id %}" aria-label="{% trans 'Cancel job form' %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-warning" type="submit">{% trans "Cancel" %}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endif %}
             {% if op.progress_total %}
                 {% widthratio op.progress_done|default:0 op.progress_total 100 as percent %}
-                <dt class="col-sm-3">{% trans "Progress" %}</dt>
-                <dd class="col-sm-9">
-                    <div class="progress mb-1" role="progressbar" aria-label="{% trans 'Progress' %}" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
-                        <div class="progress-bar" style="width: {{ percent }}%">{{ percent }}%</div>
-                    </div>
-                    <span class="small text-body-secondary">
+                <div class="d-flex flex-wrap justify-content-between gap-2 small mb-2">
+                    <span class="text-body-secondary">
                         {% if progress_bytes %}{{ op.progress_done|default:0|filesizeformat }} / {{ op.progress_total|filesizeformat }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
                     </span>
-                </dd>
+                    <strong>{{ percent }}%</strong>
+                </div>
+                <div class="progress mb-3" style="height: .5rem;" role="progressbar" aria-label="{% trans 'Progress' %}" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: {{ percent }}%"></div>
+                </div>
             {% endif %}
-            {% get_current_timezone as TIME_ZONE %}
-            <dt class="col-sm-3">{% blocktrans %}Created ({{ TIME_ZONE }}){% endblocktrans %}</dt><dd class="col-sm-9">{{ op.created_at|date:"Y-m-d H:i:s" }}</dd>
-            {% if op.started_at %}<dt class="col-sm-3">{% trans "Started" %}</dt><dd class="col-sm-9">{{ op.started_at|date:"Y-m-d H:i:s" }}</dd>{% endif %}
-            {% if op.finished_at %}<dt class="col-sm-3">{% trans "Finished" %}</dt><dd class="col-sm-9">{{ op.finished_at|date:"Y-m-d H:i:s" }}</dd>{% endif %}
-            {% if job.result.left_behind %}
-                <dt class="col-sm-3">{% trans "Left behind" %}</dt>
-                <dd class="col-sm-9">
-                    <ul class="list-unstyled mb-0">
-                        {% for item in job.result.left_behind %}<li class="text-break"><code>{{ item }}</code></li>{% endfor %}
-                    </ul>
-                </dd>
-            {% endif %}
-            {% if job.result.warning %}
-                <dt class="col-sm-3">{% trans "Warning" %}</dt><dd class="col-sm-9 text-break">{{ job.result.warning }}</dd>
+            {% if op.error %}
+                <div class="alert alert-{{ op.state|state_color }}" role="alert">
+                    {% bs_icon 'exclamation-triangle' %} {{ op.error }}
+                </div>
             {% endif %}
             {% if job.result.links %}
-                <dt class="col-sm-3">{% trans "Results" %}</dt>
-                <dd class="col-sm-9">
-                    <ul class="list-unstyled mb-0">
-                        {% for link in job.result.links %}<li><a href="{{ link.url }}">{{ link.label }}</a></li>{% endfor %}
-                    </ul>
-                </dd>
+                <h2 class="h6">{% trans "Results" %}</h2>
+                <ul class="list-unstyled mb-3">
+                    {% for link in job.result.links %}<li><a href="{{ link.url }}">{{ link.label }}</a></li>{% endfor %}
+                </ul>
+            {% endif %}
+            {% if job.result.warning %}
+                <div class="alert alert-warning text-break" role="alert">{{ job.result.warning }}</div>
+            {% endif %}
+            {% if job.result.left_behind %}
+                <h2 class="h6">{% trans "Left behind" %}</h2>
+                <ul class="list-unstyled mb-3">
+                    {% for item in job.result.left_behind %}<li class="text-break"><code>{{ item }}</code></li>{% endfor %}
+                </ul>
             {% endif %}
             {% if job.resolution %}
-                <dt class="col-sm-3">{% trans "Resolution" %}</dt>
-                <dd class="col-sm-9">{{ job.resolution|state_label }}: {{ job.resolution_note }}</dd>
+                <h2 class="h6">{% trans "Resolution" %}</h2>
+                <p class="mb-3">{{ job.resolution|state_label }}: {{ job.resolution_note }}</p>
             {% endif %}
-        </dl>
+        </div>
+    {% endif %}
+    <ol class="list-group list-group-flush">
+        <li class="list-group-item d-flex flex-wrap justify-content-between gap-1 small">
+            <span>{% bs_icon 'plus-circle' %} {% trans "Created" %}</span>
+            <span class="text-body-secondary">{{ op.created_at|date:"Y-m-d H:i:s T" }}</span>
+        </li>
+        {% if op.started_at %}
+            <li class="list-group-item d-flex flex-wrap justify-content-between gap-1 small">
+                <span>{% bs_icon 'play-circle' %} {% trans "Started" %} &middot; {% blocktrans with time=op.created_at|duration:op.started_at %}queued for {{ time }}{% endblocktrans %}</span>
+                <span class="text-body-secondary">{{ op.started_at|date:"Y-m-d H:i:s T" }}</span>
+            </li>
+        {% endif %}
+        {% if op.finished_at %}
+            <li class="list-group-item d-flex flex-wrap justify-content-between gap-1 small">
+                <span>{% bs_icon 'stop-circle' %} {% trans "Finished" %}{% if op.started_at %} &middot; {% blocktrans with time=op.started_at|duration:op.finished_at %}ran for {{ time }}{% endblocktrans %}{% endif %}</span>
+                <span class="text-body-secondary">{{ op.finished_at|date:"Y-m-d H:i:s T" }}</span>
+            </li>
+        {% endif %}
+    </ol>
+</div>
 
-        {% if request.user.is_superuser and op.state == "uncertain" %}
-            <h5 class="mt-4">{% trans "Resolve" %}</h5>
+{% if request.user.is_superuser and op.state == "uncertain" %}
+    <details class="card border-warning">
+        <summary class="card-header">
+            <span class="fw-semibold">{% trans "Resolve" %}</span>
+            <span class="d-block small text-body-secondary mt-1">{% trans "Record what you checked; the job is marked succeeded or failed." %}</span>
+        </summary>
+        <div class="card-body">
             <form method="post" action="{% url 'operations:resolve' job.id %}" aria-label="{% trans 'Resolve job form' %}">
                 {% csrf_token %}
-                <div class="row mb-3">
-                    <label class="col-sm-3 col-form-label" for="resolve-outcome">{% trans "Outcome" %}</label>
-                    <div class="col-sm-9">
-                        <select class="form-select" name="outcome" id="resolve-outcome">
-                            <option value="succeeded">{% trans "Succeeded" %}</option>
-                            <option value="failed">{% trans "Failed" %}</option>
-                        </select>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label" for="resolve-outcome">{% trans "Outcome" %}</label>
+                    <select class="form-select" name="outcome" id="resolve-outcome">
+                        <option value="succeeded">{% trans "Succeeded" %}</option>
+                        <option value="failed">{% trans "Failed" %}</option>
+                    </select>
                 </div>
-                <div class="row mb-3">
-                    <label class="col-sm-3 col-form-label" for="resolve-note">{% trans "Note" %}</label>
-                    <div class="col-sm-9">
-                        <textarea class="form-control" name="note" id="resolve-note" rows="3" required placeholder="{% trans 'What was checked' %}"></textarea>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label" for="resolve-note">{% trans "What you checked" %}</label>
+                    <textarea class="form-control" name="note" id="resolve-note" rows="3" required></textarea>
                 </div>
                 <div class="text-end">
                     <button class="btn btn-primary" type="submit">{% trans "Resolve" %}</button>
                 </div>
             </form>
-        {% endif %}
-    </div>
-</div>
+        </div>
+    </details>
+{% endif %}
 {% endblock %}
 {% block script %}
     {% if follow %}{% include "operations/follow_active.html" %}{% endif %}
