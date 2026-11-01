@@ -11,9 +11,10 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import MigrateInstance
 from instances.models import Instance
-from libvirt import VIR_DOMAIN_XML_INACTIVE, libvirtError
+from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, libvirtError
 from operations.jobs import Cancelled, Context, get_kind
 from operations.models import Claim, Operation, acquire
+from operations.utils import public_error_text
 
 UUID = "31313131-4242-5353-6464-757575757575"
 
@@ -155,6 +156,18 @@ class MigrateJobTestCase(TransactionTestCase):
             get_kind(op.kind).run(op, ctx)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.source)
+
+    def test_a_failed_migration_says_what_libvirt_said(self):
+        # libvirt reports the source host's failure to reach the destination's migration
+        # port as a connection error; only superusers migrate, so its text is shown
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        err = libvirtError("Unable to resolve address 'kvm2.example.com' service '49152': Name or service not known")
+        err.err = (VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, str(err), 2, None, None, None, 0, 0)
+        self.dest_conn.moveto.side_effect = err
+        with self.assertRaises(Exception) as raised:
+            get_kind(op.kind).run(op, ctx)
+        self.assertIn("Unable to resolve address 'kvm2.example.com'", public_error_text(raised.exception))
 
     def test_cancel_and_progress_ask_the_source_vm(self):
         op = self.queue(live_migrate="true")

@@ -898,11 +898,13 @@ class MigrateInstance(Kind):
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
                                    disk_pools=p["disk_pools"],
                                    **{k: p[k] for k in MIGRATE_OPTIONS})
-        except libvirtError:
+        except libvirtError as err:
             op.refresh_from_db(fields=["cancel_requested"])
             if op.cancel_requested:
                 raise Cancelled from None
-            raise
+            # a superuser's job: libvirt's words, which a host the source cannot
+            # reach for the migration would hide behind "cannot be reached"
+            raise util.OperationError(str(err)) from err
         return {}
 
     def progress(self, op):
