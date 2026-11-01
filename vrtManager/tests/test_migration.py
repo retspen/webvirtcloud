@@ -474,9 +474,13 @@ class NvramCopyTestCase(unittest.TestCase):
 
     def test_a_directory_whose_sharing_cannot_be_told_stops_the_move(self):
         self.shared.stop()
-        with mock.patch.object(wvmInstances, "same_directory", side_effect=libvirt.libvirtError("no marker")):
-            with self.assertRaisesRegex(libvirt.libvirtError, "no marker"):
+        # the raised error is this one: its message can be another libvirt
+        # error the thread recorded (a closed connection of an earlier live test)
+        error = libvirt.libvirtError("no marker")
+        with mock.patch.object(wvmInstances, "same_directory", side_effect=error):
+            with self.assertRaises(libvirt.libvirtError) as raised:
                 self.move()
+        self.assertIs(raised.exception, error)
         self.shared.start()
         self.assertEqual(self.host.defined, [])
 
