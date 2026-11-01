@@ -69,7 +69,7 @@
             </dl>
         </div>
         <div class="card-footer p-2">
-            <ul class="nav nav-pills flex-wrap flex-lg-nowrap gap-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
+            <ul class="nav nav-pills nav-fill flex-wrap flex-lg-nowrap gap-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
                 {# a template is cloned, not run: no power, access, snapshots or stats #}
                 {% if not instance.is_template %}
                 <li class="nav-item" role="presentation">
