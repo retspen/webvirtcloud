@@ -340,7 +340,7 @@ def record_migration(instance, new_compute):
 
 def migration_target(compute):
     """The destination for the log: its host name, and the migration address
-    when one is set and differs."""
+    when one is set and differs (else the migration goes to the host name)."""
     if compute.migration_address not in ("", compute.hostname):
         return _("%(hostname)s via %(address)s") % {"hostname": compute.hostname, "address": compute.migration_address}
     return compute.hostname

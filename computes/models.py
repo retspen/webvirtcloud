@@ -26,7 +26,7 @@ class Compute(Model):
         validators=[validate_migration_address],
         help_text=_(
             "IP address or host name the other hosts send migrating VMs to; "
-            "empty: the host's own host name, which they must be able to resolve"
+            "empty: the address the panel reaches the host at"
         ),
     )
     gstfsd_key = CharField(
@@ -43,16 +43,18 @@ class Compute(Model):
 
     @property
     def migration_uri(self):
-        """The native migration URI for VMs migrated to this host, or None for
-        libvirt's default."""
-        if not self.migration_address:
-            return None
+        """The native migration URI for VMs migrated to this host: its
+        migration address, or else the address the panel reaches it at, so
+        that the other hosts need not resolve its own name. None, libvirt's
+        default (that name), for a host the panel reaches on its loopback."""
+        address = self.migration_address or self.hostname
         try:
-            if ip_address(self.migration_address).version == 6:
-                return f"tcp://[{self.migration_address}]"
+            ip = ip_address(address)
         except ValueError:
-            pass
-        return f"tcp://{self.migration_address}"
+            ip = None
+        if not self.migration_address and (address.lower().rstrip(".") == "localhost" or ip and ip.is_loopback):
+            return None
+        return f"tcp://[{address}]" if ip and ip.version == 6 else f"tcp://{address}"
 
     @cached_property
     def status(self):

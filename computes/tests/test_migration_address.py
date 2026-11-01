@@ -26,11 +26,19 @@ class MigrationAddressTests(TestCase):
                 validate_migration_address(value)
 
     def test_migration_uri(self):
-        cases = {"": None, "192.0.2.12": "tcp://192.0.2.12", "kvm102.example.org": "tcp://kvm102.example.org",
+        cases = {"192.0.2.12": "tcp://192.0.2.12", "kvm102.example.org": "tcp://kvm102.example.org",
                  "2001:db8::12": "tcp://[2001:db8::12]"}
         for address, uri in cases.items():
             with self.subTest(address=address):
-                self.assertEqual(Compute(migration_address=address).migration_uri, uri)
+                self.assertEqual(Compute(hostname="192.0.2.40", migration_address=address).migration_uri, uri)
+
+    def test_without_a_migration_address_the_panel_s_address_of_the_host_is_used(self):
+        # no DNS name of the host's own; a host the panel reaches on its loopback: libvirt's default
+        cases = {"192.0.2.40": "tcp://192.0.2.40", "kvm103.example.org": "tcp://kvm103.example.org",
+                 "localhost": None, "LOCALHOST": None, "localhost.": None, "127.0.0.1": None}
+        for hostname, uri in cases.items():
+            with self.subTest(hostname=hostname):
+                self.assertEqual(Compute(hostname=hostname, migration_address="").migration_uri, uri)
 
     def test_the_compute_form_saves_it(self):
         self.client.force_login(get_user_model().objects.create_superuser("ma-admin", "ma@example.com", "pw"))

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-01 14:22+0000\n"
+"POT-Creation-Date: 2026-11-01 15:30+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -1797,10 +1797,8 @@ msgstr "taşıma adresi"
 #: computes/models.py:28
 msgid ""
 "IP address or host name the other hosts send migrating VMs to; empty: the "
-"host's own host name, which they must be able to resolve"
-msgstr ""
-"Diğer sunucuların taşınan sanal makineleri gönderdiği IP adresi veya sunucu "
-"adı; boş: sunucunun kendi adı, diğer sunucular bu adı çözümleyebilmelidir"
+"address the panel reaches the host at"
+msgstr "Diğer sunucuların taşınan sanal makineleri gönderdiği IP adresi veya ana bilgisayar adı; boş: panelin bu sunucuya ulaştığı adres"
 
 #: computes/models.py:33 computes/templates/computes/form.html:34
 msgid "gstfsd key"
@@ -2816,15 +2814,15 @@ msgstr "Sanal makineyi taşı"
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:927
+#: instances/jobs.py:929
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:968
+#: instances/jobs.py:970
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:999
+#: instances/jobs.py:1001
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
@@ -3909,7 +3907,9 @@ msgstr ""
 #: instances/templates/instances/destroy_instance_form.html:47
 msgid ""
 "Its TPM state is deleted with it, and the keys in it, such as BitLocker's."
-msgstr "TPM durumu da onunla birlikte silinir, içindeki anahtarlar da, örneğin BitLocker'ınkiler."
+msgstr ""
+"TPM durumu da onunla birlikte silinir, içindeki anahtarlar da, örneğin "
+"BitLocker'ınkiler."
 
 #: instances/templates/instances/destroy_instance_form.html:50
 msgid "This cannot be undone."
@@ -5109,7 +5109,9 @@ msgstr "Kaynak sanal makine: %(name)s"
 msgid ""
 "The clone gets a new, empty TPM: keys in this VM's TPM, such as BitLocker's, "
 "do not come along."
-msgstr "Klon yeni ve boş bir TPM alır: bu sanal makinenin TPM'indeki anahtarlar, örneğin BitLocker'ınkiler, klona geçmez."
+msgstr ""
+"Klon yeni ve boş bir TPM alır: bu sanal makinenin TPM'indeki anahtarlar, "
+"örneğin BitLocker'ınkiler, klona geçmez."
 
 #: instances/templates/instances/settings_tab.html:765
 #: instances/templates/instances/settings_tab.html:776

@@ -169,6 +169,26 @@ class MigrateJobTestCase(TransactionTestCase):
             get_kind(op.kind).run(op, ctx)
         self.assertIn("Unable to resolve address 'kvm2.example.com'", public_error_text(raised.exception))
 
+    def test_each_way_goes_to_the_destination_s_migration_address_or_its_panel_address(self):
+        # one host with a migration address, the other without: no name resolution either way
+        self.dest.migration_address = ""
+        self.dest.save()
+        self.source.migration_address = "198.51.100.50"
+        self.source.save()
+        for target, uri, key in ((self.dest, "tcp://192.0.2.51", "key-mig00011"), (self.source, "tcp://198.51.100.50", "key-mig00012")):
+            with self.subTest(target=target.name):
+                self.vm.compute = self.source if target == self.dest else self.dest
+                self.vm.save()
+                self.client.post(reverse("instances:migrate", args=[self.vm.pk]),
+                                 {"compute_id": target.pk, "submission_key": key, "live_migrate": "true"})
+                op = Operation.objects.latest("created_at")
+                ctx = self.start(op)
+                get_kind(op.kind).precheck(op, ctx)
+                get_kind(op.kind).run(op, ctx)
+                self.assertEqual(self.dest_conn.moveto.call_args.kwargs["uri"], uri)
+                Operation.objects.all().delete()
+                Claim.objects.all().delete()
+
     def test_cancel_and_progress_ask_the_source_vm(self):
         op = self.queue(live_migrate="true")
         with patch("instances.jobs.wvmInstance") as proxy:
