@@ -165,4 +165,7 @@ if __name__ == "__main__":
         web=False,
         target_host="ignore",
         target_port="ignore",
+        # a ping while the VM's screen stays the same: nginx, and a proxy on
+        # the way, end a websocket that sends nothing for 60 seconds
+        heartbeat=30,
     ).start_server()

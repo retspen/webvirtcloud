@@ -51,7 +51,9 @@ def open_tunnel(host, user, target):
     """A socket connected to target on host, and the Tunnel carrying it.
     ssh never asks for anything: a missing key or an unknown host key fails."""
     ours, theirs = socket.socketpair()
-    argv = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-W", target]
+    # ServerAliveInterval: a console whose screen stays the same sends nothing,
+    # and a firewall on the way may end an idle connection
+    argv = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=30", "-W", target]
     if user:
         argv += ["-l", user]
     tunnel = Tunnel(argv + ["--", host], theirs)

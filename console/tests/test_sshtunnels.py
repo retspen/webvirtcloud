@@ -15,7 +15,7 @@ class SshTunnelTests(TestCase):
             sock, tunnel = sshtunnels.open_tunnel("kvm1.example.com", "root", "127.0.0.1:5900")
         sock.close()
         self.assertEqual(popen.call_args.args[0], [
-            "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-W", "127.0.0.1:5900",
+            "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=30", "-W", "127.0.0.1:5900",
             "-l", "root", "--", "kvm1.example.com"])
         self.assertIs(tunnel.process, popen.return_value)
 
