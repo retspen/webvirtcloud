@@ -43,6 +43,9 @@
         <label class="form-check-label" for="delete_nvram">{% trans "Delete the NVRAM file (firmware settings). Untick to keep it." %}</label>
     </div>
     {% endif %}
+    {% if instance.config_tpm == "emulator" %}
+    <p class="small text-body-secondary" id="destroy-tpm">{% trans "Its TPM state is deleted with it, and the keys in it, such as BitLocker's." %}</p>
+    {% endif %}
     <div class="border-top pt-3 d-flex flex-wrap align-items-center gap-2">
         <span class="small text-danger me-auto">{% trans "This cannot be undone." %}</span>
         <a class="btn btn-secondary" href="{% url 'instances:instance' instance.id %}">{% trans "Cancel" %}</a>

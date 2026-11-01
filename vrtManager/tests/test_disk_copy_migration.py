@@ -3,7 +3,9 @@ the disks a pool is chosen for (NON_SHARED_DISK, only those targets), the
 definitions name the new paths; every other file disk must be on storage
 both hosts share. A shut-off VM is started paused for the copy and shut off
 on the destination. Disks that cannot be copied are refused before anything
-changes; the copies of a failed migration are removed again."""
+changes; the copies of a failed migration are removed again. A shut-off VM
+with TPM state migrates paused too, copies or not: a live migration carries
+that state, a file of the source host."""
 
 import unittest
 from unittest import mock
@@ -70,6 +72,7 @@ class Source:
         self.instance = mock.Mock()
         self.instance.XMLDesc.side_effect = lambda flags: inactive if inactive and flags & 2 else xml
         self.instance.snapshotNum.return_value = 0
+        self.instance.hasManagedSaveImage.return_value = 0
         self.instance.UUIDString.return_value = "u-1"
         self.wvm = mock.Mock()
         volume = self.wvm.storageVolLookupByPath.return_value
@@ -157,6 +160,26 @@ class DiskCopyTestCase(unittest.TestCase):
         flags = source.instance.migrate3.call_args.args[2]
         self.assertFalse(flags & (libvirt.VIR_MIGRATE_OFFLINE | libvirt.VIR_MIGRATE_LIVE))
         dest.wvm.lookupByUUIDString.return_value.destroy.assert_called_once_with()
+
+    def test_a_shut_off_vm_with_tpm_state_runs_paused_for_the_migration(self):
+        tpm = "<tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>"
+        source = Source(5, domain(disk(f"{IMAGES}/vm.qcow2"), tpm))
+        dest = destination(Pool("default", IMAGES), shared=True, vm_here=True)
+        self.assertEqual(migrate(dest, source, {}), ("offline", []))
+        source.instance.createWithFlags.assert_called_once_with(libvirt.VIR_DOMAIN_START_PAUSED)
+        params, flags = source.instance.migrate3.call_args.args[1:]
+        # no disk is copied: they are on storage both hosts share
+        self.assertNotIn(libvirt.VIR_MIGRATE_PARAM_MIGRATE_DISKS, params)
+        self.assertFalse(flags & (libvirt.VIR_MIGRATE_NON_SHARED_DISK | libvirt.VIR_MIGRATE_OFFLINE))
+        dest.wvm.lookupByUUIDString.return_value.destroy.assert_called_once_with()
+
+    def test_a_shut_off_vm_with_a_saved_state_is_refused_before_it_starts(self):
+        # started paused, it would resume the saved memory, then lose it
+        source = Source(5, domain(disk(f"{IMAGES}/vm.qcow2")))
+        source.instance.hasManagedSaveImage.return_value = 1
+        with self.assertRaisesRegex(util.OperationError, "saved state"):
+            migrate(destination(Pool("default", IMAGES)), source, {"vda": "default"})
+        source.instance.createWithFlags.assert_not_called()
 
     def test_a_shut_off_vm_whose_migration_fails_is_shut_off_on_the_source_again(self):
         source = Source(5, domain(disk(f"{IMAGES}/vm.qcow2")))

@@ -225,17 +225,6 @@ class ShutOffMigrationTestCase(unittest.TestCase):
         self.assertEqual(source.instance.calls, [])
         self.assertEqual(source.instance.undefined, libvirt.VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
 
-    def test_a_vm_with_tpm_state_is_refused(self):
-        """That state stays on the source host: the VM would start on the
-        destination with a new TPM."""
-        host = FakeHost()
-        xml = "<domain><devices><tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm></devices></domain>"
-        source = FakeSource(5, xml=xml)
-        with self.assertRaisesRegex(util.OperationError, "migrate it live"):
-            destination(host).moveto(source, "vm", live=False, unsafe=False, offline=True)
-        self.assertEqual(host.defined, [])
-        self.assertIsNone(source.instance.undefined)
-
     def test_a_tpm_without_local_state_moves(self):
         xml = "<domain><devices><tpm model='tpm-tis'><backend type='passthrough'/></tpm></devices></domain>"
         host = FakeHost()

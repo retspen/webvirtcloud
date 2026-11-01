@@ -756,6 +756,9 @@
                 <header class="mb-4">
                     <h2 class="h6 mb-1" id="clone-heading">{% trans "Create a clone" %}</h2>
                     <p class="small text-body-secondary mb-0">{% blocktrans with name=instance.name %}Source VM: {{ name }}{% endblocktrans %}</p>
+                    {% if instance.config_tpm == "emulator" %}
+                    <p class="small text-body-secondary mb-0" id="clone-tpm">{% trans "The clone gets a new, empty TPM: keys in this VM's TPM, such as BitLocker's, do not come along." %}</p>
+                    {% endif %}
                 </header>
                 <div class="mb-4">
                     {% if request.user.is_superuser %}

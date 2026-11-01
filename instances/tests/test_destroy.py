@@ -175,6 +175,14 @@ class DestroyOrderTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(calls, [])
 
+    def test_the_confirmation_page_says_the_tpm_state_goes(self):
+        for tpm, shown in (("emulator", True), (None, False), ("custom", False)):
+            with self.subTest(tpm=tpm), patch("instances.models.wvmInstance") as wvm:
+                wvm.return_value.get_status.return_value = 5
+                wvm.return_value.get_tpm.return_value = tpm
+                response = self.client.get(reverse("instances:destroy", args=[self.instance.id]))
+                self.assertEqual(b"Its TPM state is deleted" in response.content, shown)
+
     def test_the_confirmation_page_of_a_paused_vm_offers_the_form(self):
         with patch("instances.models.wvmInstance") as wvm:
             wvm.return_value.get_status.return_value = 3  # paused

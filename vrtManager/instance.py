@@ -158,8 +158,9 @@ class wvmInstances(wvmConnect):
         # not carry it to the destination.
         if dom.snapshotNum(0):
             raise util.OperationError("A VM with snapshots cannot be migrated")
-        if state == 5:
-            self.refuse_local_state(dom.XMLDesc(0))
+        # a shut-off VM moves as its definition or started paused: either loses the saved memory
+        if state == 5 and dom.hasManagedSaveImage(0):
+            raise util.OperationError("A VM with a saved state cannot be migrated")
         # the definition the migration carries first: it has the disks a migration copies
         definitions = [dom.XMLDesc(0)]
         if state != 5:
@@ -185,8 +186,10 @@ class wvmInstances(wvmConnect):
                 "Destination host emulator is different. Cannot be migrated"
             )
 
-        if copies:
-            note = self.migrate_copying(conn, state, flags, uri, copies)
+        # the TPM state is a file of the source host: a live migration carries it
+        tpm_state = etree.fromstring(definitions[0]).xpath("devices/tpm/backend[@type='emulator']")
+        if copies or (state == 5 and tpm_state):
+            note = self.migrate_running(conn, state, flags, uri, copies)
             if note:
                 mode.append(note)
         elif state == 5:
@@ -199,22 +202,24 @@ class wvmInstances(wvmConnect):
             dom.migrate(self.wvm, flags, None, uri, 0)
         return ", ".join(mode), [copy["path"] for copy in copies]
 
-    def migrate_copying(self, conn, state, flags, uri, copies):
-        """Migrates the VM of conn while libvirt copies the disks of copies
-        into their pools here (NON_SHARED_DISK), the definitions naming the
-        new paths. libvirt copies the disks of a running or paused VM only: a
-        shut-off VM is started paused for it, its CPUs never run, and is shut
-        off here after it; its UEFI variables are copied first, as this host
-        would start from the firmware's template. Returns a note for the log
-        when the VM could not be shut off here."""
+    def migrate_running(self, conn, state, flags, uri, copies):
+        """Migrates the VM of conn as a running VM, which carries its TPM
+        state, while libvirt copies the disks of copies into their pools here
+        (NON_SHARED_DISK), the definitions naming the new paths. A shut-off
+        VM is started paused for it, its CPUs never run, and is shut off here
+        after it; its UEFI variables are copied first, as this host would
+        start from the firmware's template. Returns a note for the log when
+        the VM could not be shut off here."""
         dom = conn.instance
         nvram = None
         xml_flags = VIR_DOMAIN_XML_SECURE | VIR_DOMAIN_XML_MIGRATABLE
         params = {
-            VIR_MIGRATE_PARAM_MIGRATE_DISKS: [copy["target"] for copy in copies],
             VIR_MIGRATE_PARAM_DEST_XML: self.moved_disks(dom.XMLDesc(xml_flags), copies),
             VIR_MIGRATE_PARAM_PERSIST_XML: self.moved_disks(dom.XMLDesc(xml_flags | VIR_DOMAIN_XML_INACTIVE), copies),
         }
+        if copies:
+            params[VIR_MIGRATE_PARAM_MIGRATE_DISKS] = [copy["target"] for copy in copies]
+            flags |= VIR_MIGRATE_NON_SHARED_DISK
         if uri:
             params[VIR_MIGRATE_PARAM_URI] = uri
         try:
@@ -222,7 +227,7 @@ class wvmInstances(wvmConnect):
                 flags &= ~VIR_MIGRATE_OFFLINE
                 nvram = self.copy_nvram(conn)
                 dom.createWithFlags(VIR_DOMAIN_START_PAUSED)
-            dom.migrate3(self.wvm, params, flags | VIR_MIGRATE_NON_SHARED_DISK)
+            dom.migrate3(self.wvm, params, flags)
         except libvirtError as error:
             if state == 5:
                 with contextlib.suppress(libvirtError):
@@ -390,18 +395,6 @@ class wvmInstances(wvmConnect):
                 f"{error}; remove the partial disk copies from the destination host: {', '.join(left)}"
             ) from error
 
-    @staticmethod
-    def refuse_local_state(xml):
-        """A shut-off VM moves without its TPM state, a file of the source
-        host: on the destination it would get a new TPM that no longer
-        unlocks its disks. A live migration carries it. (The UEFI variables
-        are copied: copy_nvram.)"""
-        if ElementTree.fromstring(xml).find("devices/tpm/backend[@type='emulator']") is not None:
-            raise util.OperationError(
-                "A shut-off VM with TPM state cannot be migrated: the state stays on the source host. "
-                "Start the VM and migrate it live."
-            )
-
     def copy_nvram(self, conn):
         """Copies the UEFI variables file of the shut-off VM of conn (on the
         source) from libvirt's NVRAM directory there to the same path here,
@@ -506,7 +499,7 @@ class wvmInstances(wvmConnect):
     def move_definition(self, dom, conn):
         """Migrates a shut-off VM: that is only its definition, as the disks
         are on storage both hosts share, and its UEFI variables file
-        (copy_nvram; moveto refuses a VM with TPM state). The destination's
+        (copy_nvram; a VM with TPM state migrates paused: migrate_running). The destination's
         qemu migration hook does not run for it.
 
         Workaround, to be removed in a later version: libvirt's own offline
@@ -517,8 +510,6 @@ class wvmInstances(wvmConnect):
         first (RHEL-145770) and tracks the fix as RHEL-156800; RHEL/Rocky 9.8
         with libvirt 11.10.0-12.el9_8 is affected. When supported hosts all
         have the fix, offline migration can go back to dom.migrate."""
-        if dom.hasManagedSaveImage(0):
-            raise util.OperationError("A VM with a saved state cannot be migrated")
         for lookup, key in ((self.wvm.lookupByUUIDString, dom.UUIDString()), (self.wvm.lookupByName, dom.name())):
             try:
                 lookup(key)

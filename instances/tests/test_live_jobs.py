@@ -6,6 +6,7 @@ migration address. The ISO upload runs on both hosts: TCP writes through a
 libvirt stream, SSH through SFTP."""
 
 import os
+import subprocess
 import time
 import unittest
 
@@ -257,6 +258,32 @@ class LiveJobsTestCase(TransactionTestCase):
             self.run_job(jobs.submit("instance.migrate", self.admin, offline, f"key-uefi{n:04d}"))
             self.assertEqual(nvram(target), content)
             self.assertIsNone(nvram(source))
+
+    def test_a_shut_off_vm_with_tpm_state_migrates_with_it_there_and_back(self):
+        dest, dest_conn = self.second_host()
+        tpm = "<tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>"
+        # UEFI with a TPM, as a Windows 11 VM: its NVRAM file is copied, its TPM state migrated
+        dom = livetest.define_vm(self.conn, P + "tpm", [], uefi=True, extra_devices=tpm)
+        dom.createWithFlags(libvirt.VIR_DOMAIN_START_PAUSED)  # swtpm makes the state
+        dom.destroy()
+        uuid = dom.UUIDString()
+
+        def state_on_dest():
+            """The checksum of the TPM state file on the destination (an SSH host, as root)."""
+            path = f"/var/lib/libvirt/swtpm/{uuid}/tpm2/tpm2-00.permall"
+            return subprocess.run(["ssh", "-o", "BatchMode=yes", "-l", dest.login, dest.hostname,
+                                   f"sha256sum {path} 2>/dev/null"], capture_output=True, text=True).stdout.split()[:1]
+
+        instance = Instance.objects.create(compute=self.compute, name=dom.name(), uuid=uuid)
+        sums = []
+        for n, target in enumerate((dest, self.compute, dest)):
+            offline = {"instance": instance.pk, "target": target.pk, "offline": True}
+            self.run_job(jobs.submit("instance.migrate", self.admin, offline, f"key-tpm{n:05d}"))
+            sums.append(state_on_dest())
+        self.assertFalse(dest_conn.lookupByUUIDString(uuid).isActive())  # shut off again after the move
+        # the same state went there, back and there again; none stays behind
+        self.assertTrue(sums[0])
+        self.assertEqual((sums[1], sums[2]), ([], sums[0]))
 
     def upload(self, compute, key, chunks):
         """Post chunks of a two-chunk ISO upload to the storage view; returns the job."""

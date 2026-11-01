@@ -235,6 +235,11 @@ class PendingEditsTestCase(TestCase):
         doc = self.page(get_tpm=("emulator", "emulator"), tpm_model=None)
         self.assertEqual(doc.xpath(f"{tpm}/@disabled"), [])
 
+    def test_the_clone_tab_says_a_clone_gets_a_new_tpm(self):
+        self.assertIn("new, empty TPM", self.page(get_tpm=("emulator", "emulator")).xpath("string(//p[@id='clone-tpm'])"))
+        for tpm in (None, "custom"):  # a passthrough TPM or one with its own state path comes along
+            self.assertEqual(self.page(get_tpm=(tpm, tpm)).xpath("//p[@id='clone-tpm']"), [])
+
     def test_the_users_tab_shows_each_owner_and_offers_only_new_owners(self):
         from accounts.models import UserInstance
 
