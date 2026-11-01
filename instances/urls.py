@@ -56,6 +56,7 @@ urlpatterns = [
     path("<int:pk>/set_guest_agent/", views.set_guest_agent, name="set_guest_agent"),
     path("<int:pk>/set_video_model/", views.set_video_model, name="set_video_model"),
     path("<int:pk>/set_rng/", views.set_rng, name="set_rng"),
+    path("<int:pk>/set_tpm/", views.set_tpm, name="set_tpm"),
     path("<int:pk>/set_on_crash/", views.set_on_crash, name="set_on_crash"),
     path("<int:pk>/change_network/", views.change_network, name="change_network"),
     path("<int:pk>/add_network/", views.add_network, name="add_network"),

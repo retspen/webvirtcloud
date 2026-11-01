@@ -2968,6 +2968,37 @@ class wvmInstance(wvmConnect):
             tree.find("devices").append(etree.fromstring(RNG_DEVICE))
         self._defineXML(etree.tostring(tree).decode())
 
+    def get_tpm(self):
+        """The persistent definition's TPM: "emulator" for a plain emulated
+        TPM 2.0, the panel's own, "custom" for another one, None without one."""
+        tpms = etree.fromstring(self._XMLDesc(PERSISTENT_XML)).xpath("devices/tpm")
+        if not tpms:
+            return None
+        # libvirt adds only an alias; encryption, a state path or another
+        # backend setting is kept by the XML editor, not dropped by the switch
+        own = ("backend[@type='emulator' and (not(@version) or @version='2.0') and not(*)"
+               " and not(@*[name()!='type' and name()!='version'])] and not(*[not(self::backend or self::alias)])")
+        if len(tpms) == 1 and tpms[0].xpath(own):
+            return "emulator"
+        return "custom"
+
+    def set_tpm(self, enabled):
+        """Adds an emulated TPM 2.0 to the persistent definition, or removes it;
+        another TPM is left to the XML editor. Its state stays on the host until
+        the VM is undefined, so a TPM added again has it back."""
+        if self.get_tpm() == "custom":
+            raise util.OperationError("The VM has its own TPM: change it in the XML editor")
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        for tpm in tree.xpath("devices/tpm"):
+            tpm.getparent().remove(tpm)
+        if enabled:
+            model = self.get_tpm_model(self.get_arch(), self.get_machine_type())
+            if not model:
+                raise util.OperationError("This host offers no TPM 2.0: install swtpm on it")
+            tree.find("devices").append(
+                etree.fromstring(f"<tpm model='{model}'><backend type='emulator' version='2.0'/></tpm>"))
+        self._defineXML(etree.tostring(tree).decode())
+
     def get_on_crash(self):
         """What the next start does when the guest crashes; libvirt's default is destroy."""
         return etree.fromstring(self._XMLDesc(PERSISTENT_XML)).findtext("on_crash") or "destroy"

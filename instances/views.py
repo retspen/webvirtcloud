@@ -308,6 +308,7 @@ def _instance_page(request, pk, instance, compute):
     memory_host = instance.proxy.get_max_memory()
     bus_host = instance.proxy.get_disk_bus_types(instance.arch, instance.machine)
     cdrom_buses = cdrom_bus_choices(instance)
+    tpm_support = bool(instance.proxy.get_tpm_model(instance.arch, instance.machine))
     networks_host = sorted(instance.proxy.get_networks())
     interfaces_host = sorted(instance.proxy.get_ifaces())
     nwfilters_host = instance.proxy.get_nwfilters()
@@ -1878,6 +1879,20 @@ def set_rng(request, pk):
     try:
         with audit_vm(request, instance, "add RNG device" if enabled else "remove RNG device"):
             instance.proxy.set_rng(enabled)
+    except util.OperationError as err:
+        messages.error(request, err)
+    return _back(request, pk, "options")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def set_tpm(request, pk):
+    instance = get_instance(request.user, pk)
+    enabled = bool(request.POST.get("tpm"))
+    try:
+        with audit_vm(request, instance, "add TPM" if enabled else "remove TPM"):
+            instance.proxy.set_tpm(enabled)
     except util.OperationError as err:
         messages.error(request, err)
     return _back(request, pk, "options")

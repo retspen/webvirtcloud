@@ -936,6 +936,26 @@
                         </div>
                     </div>
                 </form>
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_tpm' instance.id %}" method="post">{% csrf_token %}
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-semibold mb-0" for="tpm">{% trans "TPM" %}</label>
+                            <p class="small text-body-secondary mb-0" id="tpm-help">{% trans "An emulated TPM 2.0, as Windows 11 needs with UEFI Secure Boot. Its state stays on the host until the VM is destroyed: a TPM added again has it back. From the next start." %}</p>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" name="tpm" value="True" id="tpm" aria-describedby="tpm-help tpm-state"
+                                       {% if instance.config_tpm %}checked{% endif %}{% if instance.config_tpm == "custom" or not instance.config_tpm and not tpm_support %} disabled{% endif %} onchange="this.form.submit()">
+                                <label class="form-check-label" for="tpm">{% trans "TPM 2.0" %}</label>
+                            </div>
+                            {% if instance.config_tpm == "custom" %}
+                            <p class="small text-body-secondary mt-1 mb-0" id="tpm-state">{% trans "The VM has its own TPM: change it in the XML editor." %}</p>
+                            {% elif not instance.config_tpm and not tpm_support %}
+                            <p class="small text-body-secondary mt-1 mb-0" id="tpm-state">{% trans "This host offers no TPM 2.0: install swtpm on it." %}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
                 <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_on_crash' instance.id %}" method="post">{% csrf_token %}
                     <div class="row g-3 align-items-center">
                         <div class="col-12 col-lg-4">

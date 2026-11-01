@@ -176,6 +176,45 @@ class DeviceEditsTestCase(unittest.TestCase):
                         p.set_rng(False)
                     p._defineXML.assert_not_called()
 
+    def test_an_emulated_tpm_2_is_added_with_the_host_s_model_or_left_to_the_xml_editor(self):
+        p = proxy()
+        p.get_tpm_model = lambda arch, machine: "tpm-crb"
+        p.get_arch, p.get_machine_type = lambda: "x86_64", lambda: "q35"
+        self.assertIsNone(p.get_tpm())
+        p.set_tpm(True)
+        tpm = defined(p).find("devices/tpm")
+        self.assertEqual((tpm.get("model"), dict(tpm.find("backend").attrib)), ("tpm-crb", {"type": "emulator", "version": "2.0"}))
+        added = etree.tostring(defined(p)).decode()
+        p._XMLDesc = lambda flags: added
+        self.assertEqual(p.get_tpm(), "emulator")
+        p.set_tpm(False)
+        self.assertIsNone(defined(p).find("devices/tpm"))
+        # a host without swtpm adds none
+        p = proxy()
+        p.get_tpm_model = lambda arch, machine: None
+        p.get_arch, p.get_machine_type = lambda: "x86_64", lambda: "q35"
+        with self.assertRaises(util.OperationError):
+            p.set_tpm(True)
+        p._defineXML.assert_not_called()
+        # libvirt's alias leaves it the panel's
+        p = proxy()
+        p._XMLDesc = lambda flags: PERSISTENT.replace(
+            "<video>", "<tpm model='tpm-crb'><backend type='emulator' version='2.0'/><alias name='tpm0'/></tpm><video>")
+        self.assertEqual(p.get_tpm(), "emulator")
+        # a passthrough TPM, a TPM 1.2, an encrypted one or one with its own state path is the VM's own
+        for backend in ("<backend type='passthrough'><device path='/dev/tpm0'/></backend>",
+                        "<backend type='emulator' version='1.2'/>",
+                        "<backend type='emulator' version='2.0'><encryption secret='aaaaaaaa-0000-4000-8000-000000000001'/></backend>",
+                        "<backend type='emulator' version='2.0'><source type='dir' path='/srv/tpm'/></backend>",
+                        "<backend type='emulator' version='2.0' persistent_state='yes'/>"):
+            with self.subTest(backend):
+                p = proxy()
+                p._XMLDesc = lambda flags, b=backend: PERSISTENT.replace("<video>", f"<tpm model='tpm-tis'>{b}</tpm><video>")
+                self.assertEqual(p.get_tpm(), "custom")
+                with self.assertRaises(util.OperationError):
+                    p.set_tpm(False)
+                p._defineXML.assert_not_called()
+
     def test_the_crash_action_is_restart_or_stop(self):
         p = proxy()
         self.assertEqual(p.get_on_crash(), "destroy")  # libvirt's default

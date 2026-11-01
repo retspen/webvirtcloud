@@ -130,6 +130,11 @@ EDITS = {
         lambda t: not t.xpath("devices/rng"),
         ["devices/rng"], True, False,
     ),
+    "set_tpm": (
+        lambda vm: vm.set_tpm(True),
+        lambda t: first(t, "devices/tpm/backend/@version") == "2.0",
+        ["devices/tpm"], True, False,
+    ),
     "set_on_crash": (
         lambda vm: vm.set_on_crash("restart"),
         lambda t: t.findtext("on_crash") == "restart",

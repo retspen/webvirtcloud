@@ -290,6 +290,10 @@ class Instance(models.Model):
         return self.proxy.get_rng()
 
     @cached_property
+    def config_tpm(self) -> str | None:
+        return self.proxy.get_tpm()
+
+    @cached_property
     def config_on_crash(self) -> str:
         return self.proxy.get_on_crash()
 

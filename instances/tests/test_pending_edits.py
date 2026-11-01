@@ -29,9 +29,9 @@ class PendingEditsTestCase(TestCase):
         compute = Compute.objects.create(name="pe", hostname="127.0.0.1:1", login="root", password="", type=1)
         self.instance = Instance.objects.create(compute=compute, name="pe-vm", uuid="aaaaaaaa-1111-2222-3333-444444444444")
 
-    def page(self, live=(), config=(), nics=((), ()), status=1, **getters):
+    def page(self, live=(), config=(), nics=((), ()), status=1, tpm_model="tpm-crb", **getters):
         """live and config: disks; nics and getters (get_vcpu=(2, 4)): values of
-        the live and the persistent definition."""
+        the live and the persistent definition; tpm_model: the host's TPM."""
         with patch("instances.models.wvmInstance") as wvm, patch.object(
             Compute, "status", new_callable=PropertyMock, return_value=True
         ):
@@ -54,6 +54,7 @@ class PendingEditsTestCase(TestCase):
             proxy.get_console_type.return_value = "vnc"
             proxy.get_video_models.return_value = ["vga", "virtio"]
             proxy.get_cache_modes.return_value = {"default": "Default", "none": "Disabled"}
+            proxy.get_tpm_model.return_value = tpm_model
             response = self.client.get(reverse("instances:instance", args=[self.instance.id]))
         self.assertEqual(response.status_code, 200)
         return html.fromstring(response.content)
@@ -219,6 +220,20 @@ class PendingEditsTestCase(TestCase):
         doc = self.page(get_rng=("virtio", "virtio"), get_on_crash=("restart", "restart"))  # read from the persistent definition
         self.assertEqual(doc.xpath("//input[@name='rng']/@checked"), ["checked"])
         self.assertEqual(doc.xpath("//select[@name='on_crash']/option[@selected]/@value"), ["restart"])
+
+    def test_the_tpm_switch_is_off_where_it_cannot_change(self):
+        tpm = "//input[@name='tpm']"
+        doc = self.page(get_tpm=("emulator", "emulator"))
+        self.assertEqual((doc.xpath(f"{tpm}/@checked"), doc.xpath(f"{tpm}/@disabled")), (["checked"], []))
+        doc = self.page(get_tpm=("custom", "custom"))
+        self.assertTrue(doc.xpath(f"{tpm}/@disabled"))
+        self.assertIn("change it in the XML editor", doc.xpath("string(//p[@id='tpm-state'])"))
+        # no swtpm: none can be added, one the VM has can still go
+        doc = self.page(get_tpm=(None, None), tpm_model=None)
+        self.assertTrue(doc.xpath(f"{tpm}/@disabled"))
+        self.assertIn("install swtpm", doc.xpath("string(//p[@id='tpm-state'])"))
+        doc = self.page(get_tpm=("emulator", "emulator"), tpm_model=None)
+        self.assertEqual(doc.xpath(f"{tpm}/@disabled"), [])
 
     def test_the_users_tab_shows_each_owner_and_offers_only_new_owners(self):
         from accounts.models import UserInstance
