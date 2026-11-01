@@ -103,8 +103,31 @@ def index(request):
         {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
          "reachable_computes": [c for c in computes if c.status is True],
          "unreachable_computes": [c for c in computes if c.status is not True],
-         "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]]},
+         "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
+         "states_url": reverse("instances:states")},
     )
+
+
+def _listed_computes(user, computes):
+    """The hosts of the VM list: every host for a user who sees hosts, else
+    only those of the user's own VMs."""
+    if user.is_superuser or user.has_perm("instances.view_instances"):
+        return computes
+    own = set(Instance.objects.filter(userinstance__user=user).values_list("compute_id", flat=True))
+    return [c for c in computes if c.pk in own]
+
+
+def states(request):
+    """The VM lists' poll: utils.vm_states of the list's hosts; ?compute=id
+    for one host's list (administrators)."""
+    computes = list(Compute.objects.all())
+    if request.GET.get("compute"):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        computes = [get_object_or_404(Compute, pk=request.GET["compute"])]
+    response = JsonResponse({"computes": utils.vm_states(request.user, _listed_computes(request.user, computes))})
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 def _address_scope(user):

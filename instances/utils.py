@@ -338,6 +338,25 @@ def record_migration(instance, new_compute):
             instance.save()
 
 
+def vm_states(user, computes):
+    """{compute pk: {"ok": True, "vms": {uuid: [name, state]}}, or {"ok": False}
+    for a host that cannot be read}: what the VM lists poll, read from libvirt;
+    for a user who does not see hosts only their own VMs (a VM is its host and
+    UUID: one UUID may be defined on two hosts)."""
+    show_hosts = user.is_superuser or user.has_perm("instances.view_instances")
+    own = None if show_hosts else set(
+        Instance.objects.filter(userinstance__user=user).values_list("compute_id", "uuid"))
+    result = {}
+    for compute in computes:
+        try:
+            vms = compute.proxy.get_domain_states() if compute.status is True else None
+        except libvirtError:
+            vms = None
+        result[str(compute.pk)] = {"ok": False} if vms is None else {
+            "ok": True, "vms": {u: s for u, s in vms.items() if own is None or (compute.pk, u) in own}}
+    return result
+
+
 def migration_target(compute):
     """The destination for the log: its host name, and the migration address
     when one is set and differs (else the migration goes to the host name)."""

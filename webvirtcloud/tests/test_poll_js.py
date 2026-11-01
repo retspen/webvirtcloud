@@ -25,6 +25,17 @@ class PollTestCase(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_vm_states_js(self):
+        result = subprocess.run(
+            ["node", str(BASE / "webvirtcloud/tests/js/vm_states.test.js"), str(BASE / "static/js/poll.js"),
+             str(BASE / "static/js/vm_states.js")],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_pages_poll_through_poll_js(self):
         for template in POLLING_TEMPLATES:
             with self.subTest(template=template):

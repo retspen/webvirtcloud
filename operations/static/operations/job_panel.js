@@ -120,14 +120,6 @@ function jobPanel(element, urls, csrfToken, initialIds) {
         return job.state === "succeeded" && !result.warning && !(result.left_behind || []).length;
     }
 
-    // a dialog open, a field in use or an XML edit not saved: its outcome waits in the panel, with Refresh
-    function interacting() {
-        var active = document.activeElement;
-        return !!document.querySelector(".modal.show")
-            || !!(active && active.matches && active.matches("input, select, textarea"))
-            || !!(window.xmlEditUnsaved && window.xmlEditUnsaved());
-    }
-
     function fetchOutcome(id) {
         if (inflight[id]) { return; }
         inflight[id] = true;
@@ -140,7 +132,8 @@ function jobPanel(element, urls, csrfToken, initialIds) {
                 delete pending[id];
                 // only when no other job runs, is shown or awaited: a reload would lose its outcome
                 var others = Object.keys(outcomes).length + Object.keys(pending).length + Object.keys(shown).length;
-                if (quiet(job) && !interacting() && !others) {
+                // the page in use (poll.js): its outcome waits in the panel, with Refresh
+                if (quiet(job) && !pageInUse() && !others) {
                     window.location.reload(); // the job is not remembered again: no loop
                     return;
                 }

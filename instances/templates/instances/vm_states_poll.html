@@ -1,0 +1,5 @@
+{% load static %}
+{# the VM list reloads when its VMs change: vm_states.js #}
+{{ states_url|json_script:"vm-states-url" }}
+<script src="{% static 'js/vm_states.js' %}"></script>
+<script>followVmStates(JSON.parse(document.getElementById("vm-states-url").textContent));</script>

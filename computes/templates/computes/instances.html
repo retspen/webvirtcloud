@@ -88,5 +88,6 @@
 {% block script %}
 <script src="{% static 'js/poll.js' %}"></script>
 {% job_panel_script job_resource %}
+{% include "instances/vm_states_poll.html" %}
 <script src="{% static 'js/table_filter.js' %}"></script>
 {% endblock %}

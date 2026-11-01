@@ -1011,6 +1011,11 @@ class wvmConnect(object):
             instances.append(name)
         return instances
 
+    def get_domain_states(self):
+        """{uuid: [name, state]} of every domain, in one call."""
+        return {dom.UUIDString(): [dom.name(), stats["state.state"]]
+                for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE)}
+
     def domain_trees(self, running_only=False):
         """Each domain's name with its definitions, parsed: the live one, and
         for a persistent domain the one saved for its next boot too, read
