@@ -248,30 +248,39 @@ class TemplatePageControlsTestCase(PageControls, TestCase):
         self.assertEqual(self.controls(viewer, status=5), {"clone"})
 
     def test_only_staff_owners_change_a_template(self):
+        # its access (root password, SSH key) is for a VM that runs: not on a template's page
         owner = self.user("tpl_plain_changer", owner={"is_change": True})
         staff = self.user("tpl_staff_owner", staff=True, owner={"is_change": True})
         self.assertEqual(self.controls(owner, status=5) & CHANGE, set())
-        self.assertEqual(self.controls(staff, status=5) & CHANGE, CHANGE)
+        self.assertEqual(self.controls(staff, status=5) & CHANGE, {"resize", "options"})
 
-    def test_console_settings_of_a_template_are_for_staff_owners(self):
+    def test_a_template_s_page_has_no_console_settings_or_snapshots(self):
+        # a template is cloned, not run
         flags = {"is_change": True, "is_vnc": True}
-        owner = self.user("tpl_vnc_owner", owner=flags)
-        staff = self.user("tpl_vnc_staff", staff=True, owner=flags)
-        self.assertNotIn("console settings", self.controls(owner, status=5))
-        self.assertIn("console settings", self.controls(staff, status=5))
+        perms = ("clone_instances", "snapshot_instances")
+        for user in (self.user("tpl_vnc_owner", perms=perms, owner=flags),
+                     self.user("tpl_vnc_staff", staff=True, perms=perms, owner=flags)):
+            with self.subTest(user=user.username):
+                controls = self.controls(user, status=5)
+                self.assertNotIn("console settings", controls)
+                self.assertNotIn("snapshots", controls)
+
+    def test_a_template_s_page_opens_on_its_clone_form(self):
+        viewer = self.user("tpl_cloner", perms=("view_instances", "clone_instances"))
+        self.controls(viewer, status=5)
+        doc = lxml_html.fromstring(self.last_page)
+        self.assertEqual(doc.xpath("string(//section[@aria-labelledby='vm-name']//span[@class='badge text-bg-light border'])"),
+                         "Template")
+        self.assertTrue(doc.xpath("//button[contains(@onclick, \"show_tab('#clone')\")]"))
+        self.assertIn('location.hash || "#clone"', self.last_page)
+        for pane in ("power", "access", "graphics", "vncsettings", "hostdevs"):
+            self.assertEqual(doc.xpath("//*[@id=$p]", p=pane), [], pane)
 
     def test_only_staff_owners_destroy_a_template(self):
         owner = self.user("tpl_deleter", owner={"is_delete": True})
         staff = self.user("tpl_staff_deleter", staff=True, owner={"is_delete": True})
         self.assertNotIn("destroy", self.controls(owner, status=5))
         self.assertIn("destroy", self.controls(staff, status=5))
-
-    def test_snapshots_of_a_template_are_for_staff_owners(self):
-        perms = ("clone_instances", "snapshot_instances")
-        owner = self.user("tpl_changer", perms=perms, owner={"is_change": True})
-        staff = self.user("tpl_staff_changer", staff=True, perms=perms, owner={"is_change": True})
-        self.assertNotIn("snapshots", self.controls(owner, status=5))
-        self.assertIn("snapshots", self.controls(staff, status=5))
 
 
 class TemplateSnapshotRuleTestCase(PageControls, TestCase):

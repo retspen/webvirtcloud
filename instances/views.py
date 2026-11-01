@@ -273,7 +273,8 @@ def _instance_page(request, pk, instance, compute):
     keymaps = settings.QEMU_KEYMAPS
     # The console form renders the VNC password, so only users who may manage
     # console settings get the form (and the password) at all.
-    can_manage_console = utils.can_manage_console(request.user, instance)
+    # a template is cloned, not run: no console settings or host devices on its page
+    can_manage_console = utils.can_manage_console(request.user, instance) and not instance.is_template
     console_form = None
     if can_manage_console:
         console_form = ConsoleForm(instance=instance, is_superuser=request.user.is_superuser)
@@ -350,7 +351,8 @@ def _instance_page(request, pk, instance, compute):
         for row in pci_hostdevs:
             row["name"] = names.get(row["address"], "")
     # owners see the devices their VM has; only superusers change them
-    show_hostdevs = request.user.is_superuser or bool(usb_hostdevs or pci_hostdevs or other_hostdevs)
+    show_hostdevs = not instance.is_template and (
+        request.user.is_superuser or bool(usb_hostdevs or pci_hostdevs or other_hostdevs))
     show_settings = show_settings or show_hostdevs
 
     # what keeps the Migrate tab from migrating the VM to any destination

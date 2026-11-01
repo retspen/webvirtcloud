@@ -20,17 +20,22 @@
                         <h1 class="h4 mb-0" id="vm-name">{{ instance.name }}</h1>
                         {% vm_state instance.status as state %}
                         <span class="badge text-bg-{{ state.1 }}">{{ state.0 }}</span>
+                        {% if instance.is_template %}<span class="badge text-bg-light border">{% trans "Template" %}</span>{% endif %}
                     </div>
                     {% if instance.title %}<p class="text-body-secondary mb-1">{{ instance.title }}</p>{% endif %}
                     {% include 'instances/host_link.html' %}
                 </div>
                 <div class="d-flex gap-2">
+                    {% if instance.is_template and can_clone %}
+                    <button type="button" class="btn btn-sm btn-primary" onclick="show_tab('#settings'); show_tab('#clone');">{% bs_icon 'copy' %} {% trans "Clone" %}</button>
+                    {% endif %}
                     {% if instance.guest_agent_ready %}
                     <button type="button" class="btn btn-sm btn-secondary" onclick="get_osinfo();">{% bs_icon 'info-circle' %} {% trans "OS details" %}</button>
                     {% endif %}
                     <a class="btn btn-sm btn-secondary" href="{% url 'instances:instance' instance.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh" %}</a>
                 </div>
             </div>
+            {% if not instance.is_template %}
             <div class="d-flex flex-wrap column-gap-3 row-gap-1 small mt-2">
                 {% if not instance.guest_agent %}
                     <span>{% bs_icon 'dash-circle' %} {% trans "Guest agent off" %}</span>
@@ -41,6 +46,7 @@
                 {% endif %}
                 <span>{% bs_icon 'camera' %} {% blocktrans count counter=instance.snapshots|length %}{{ counter }} snapshot{% plural %}{{ counter }} snapshots{% endblocktrans %}</span>
             </div>
+            {% endif %}
             <dl class="row g-2 small mb-0 mt-1">
                 <div class="col-6 col-lg-2">
                     <dt class="fw-normal text-body-secondary">{% trans "CPU" %}</dt>
@@ -54,24 +60,29 @@
                     <dt class="fw-normal text-body-secondary">{% trans "Disks" %}</dt>
                     <dd class="mb-0">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|filesizeformat }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
                 </div>
+                {% if not instance.is_template %}
                 <div class="col-6 col-lg-3">
                     <dt class="fw-normal text-body-secondary">{% trans "IPv4" %}</dt>
                     <dd class="mb-0 font-monospace">{{ ipv4_addresses|join:", "|default:"—" }}</dd>
                 </div>
+                {% endif %}
             </dl>
         </div>
         <div class="card-footer p-2">
             <ul class="nav nav-pills flex-wrap flex-lg-nowrap gap-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
+                {# a template is cloned, not run: no power, access, snapshots or stats #}
+                {% if not instance.is_template %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-nowrap active" id="power-tab" aria-controls="power" data-bs-toggle="pill" data-bs-target="#power" type="button" role="tab" aria-selected="true">{% bs_icon 'power' %} {% trans "Power" %}</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-nowrap" id="access-tab" aria-controls="access" data-bs-toggle="pill" data-bs-target="#access" type="button" role="tab" aria-selected="false">{% bs_icon 'lock' %} {% trans "Access" %}</button>
                 </li>
+                {% endif %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-nowrap" id="resize-tab" aria-controls="resize" data-bs-toggle="pill" data-bs-target="#resize" type="button" role="tab" aria-selected="false">{% bs_icon 'arrows-angle-expand' %} {% trans "Resize" %}</button>
                 </li>
-                {% if can_snapshot %}
+                {% if can_snapshot and not instance.is_template %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-nowrap" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">{% bs_icon 'camera' %} {% trans "Snapshot" %}</button>
                 </li>
@@ -81,9 +92,11 @@
                     <button class="nav-link text-nowrap" id="settings-tab" aria-controls="settings" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab" aria-selected="false">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</button>
                 </li>
                 {% endif %}
+                {% if not instance.is_template %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-nowrap" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">{% bs_icon 'bar-chart-line' %} {% trans "Stats" %}</button>
                 </li>
+                {% endif %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-nowrap" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">{% bs_icon 'trash' %} {% trans "Destroy" %}</button>
                 </li>
@@ -95,12 +108,14 @@
     <div id="mainTabMenu">
         <!-- Tab panes -->
         <div class="tab-content" id=mainTabMenuContent>
+            {% if not instance.is_template %}
             {% include 'instances/power_tab.html' %}
             {% include 'instances/access_tab.html' %}
+            {% endif %}
             {% include 'instances/resize_tab.html' %}
-            {% if can_snapshot %}{% include 'instances/snapshots_tab.html' %}{% endif %}
+            {% if can_snapshot and not instance.is_template %}{% include 'instances/snapshots_tab.html' %}{% endif %}
             {% if show_settings %}{% include 'instances/settings_tab.html' %}{% endif %}
-            {% include 'instances/stats_tab.html' %}
+            {% if not instance.is_template %}{% include 'instances/stats_tab.html' %}{% endif %}
             {% include 'instances/destroy_tab.html' %}
         </div>
     </div>
@@ -248,6 +263,7 @@
 <script src="{% static 'js/chart.umd.min.js' %}"></script>
 <script src="{% static 'js/charts.js' %}"></script>
 <script src="{% static 'js/poll.js' %}"></script>
+{% if not instance.is_template %}
 <script>
     {% trans "average over" as average_over %}
     {% trans "In" as rx_label %}{% trans "Out" as tx_label %}{% trans "Read" as rd_label %}{% trans "Write" as wr_label %}
@@ -331,6 +347,7 @@
         }, 0);
     });
 </script>
+{% endif %}
 <script>
     backgroundJobRunning = false;
     // not "status": that is window.status, which the browser may not keep
@@ -366,7 +383,13 @@
     }
     // after the whole page is parsed: load_osinfo is defined further down
     document.addEventListener('DOMContentLoaded', function () {
-        restoreInstanceTab(document, location.hash, show_tab, load_osinfo);
+        // a template opens on its clone form
+        restoreInstanceTab(document, location.hash || "{% if instance.is_template and can_clone %}#clone{% endif %}", show_tab, load_osinfo);
+        // none open (a template has no Power tab): the first section the page has
+        if (!document.querySelector("#navbtn .nav-link.active")) {
+            var first = document.querySelector("#navbtn .nav-link");
+            if (first) { show_tab(first.getAttribute("data-bs-target")); }
+        }
     });
 </script>
 <script>
