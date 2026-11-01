@@ -1141,7 +1141,8 @@ class wvmInstance(wvmConnect):
                     raise util.OperationError(f"Media of {dev} changed in the running VM only: {err}") from err
                 raise
 
-    def mount_iso(self, dev, image):
+    def get_iso_path(self, image):
+        """The path of the ISO image of that name, in one of the active pools."""
         paths = []
         for storage in self.get_storages(only_actives=True):
             stg = self.get_storage(storage)
@@ -1151,7 +1152,10 @@ class wvmInstance(wvmConnect):
             raise util.OperationError(f"ISO image {image} was not found")
         if len(paths) > 1:
             raise util.OperationError(f"ISO image {image} is in more than one storage pool")
-        self._set_cdrom_media(dev, paths[0])
+        return paths[0]
+
+    def mount_iso(self, dev, image):
+        self._set_cdrom_media(dev, self.get_iso_path(image))
 
     def umount_iso(self, dev, image=None):
         self._set_cdrom_media(dev, None)
@@ -1199,7 +1203,10 @@ class wvmInstance(wvmConnect):
         if detect_zeroes_mode is not None and detect_zeroes_mode != "default":
             additionals += f"detect_zeroes='{detect_zeroes_mode}' "
 
-        xml_disk = f"<disk type='{disk_type}' device='{disk_device}'>"
+        # a USB CD-ROM is a CD drive on usb-bot only: usb-storage, which libvirt
+        # takes where QEMU has no usb-bot (RHEL 9), shows the guest a hard disk
+        usb_cd = " model='usb-bot'" if disk_device == "cdrom" and target_bus == "usb" else ""
+        xml_disk = f"<disk type='{disk_type}' device='{disk_device}'{usb_cd}>"
         if disk_device == "cdrom":
             xml_disk += f"<driver name='{driver_name}' type='{format_type}'/>"
         elif disk_device == "disk":

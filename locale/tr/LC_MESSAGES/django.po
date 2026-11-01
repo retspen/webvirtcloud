@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-01 10:56+0000\n"
+"POT-Creation-Date: 2026-11-01 13:18+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -271,6 +271,7 @@ msgstr "Parola Değiştir"
 #: admin/templates/admin/user_form.html:137
 #: computes/templates/computes/form.html:45
 #: console/templates/console-vnc.html:86
+#: instances/templates/add_instance_cdrom.html:38
 #: instances/templates/add_instance_network_block.html:55
 #: instances/templates/add_instance_owner_block.html:29
 #: instances/templates/add_instance_volume.html:108
@@ -504,6 +505,7 @@ msgid "Add key to user form"
 msgstr "Kullanıcıya anahtar ekleme formu"
 
 #: accounts/templates/profile.html:55
+#: instances/templates/add_instance_cdrom.html:39
 #: instances/templates/add_instance_network_block.html:56
 #: instances/templates/add_instance_owner_block.html:30
 #: instances/templates/create_flavors.html:20
@@ -2465,6 +2467,7 @@ msgid "Connect"
 msgstr "Bağlan"
 
 #: console/templates/console-vnc.html:98
+#: instances/templates/add_instance_cdrom.html:10
 #: instances/templates/add_instance_network_block.html:11
 #: instances/templates/add_instance_owner_block.html:11
 #: instances/templates/add_instance_volume.html:15
@@ -2728,7 +2731,7 @@ msgstr "libvirt diskleri hâlâ kopyalıyor"
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:685 instances/views.py:2408
+#: instances/jobs.py:685 instances/views.py:2427
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
@@ -2865,7 +2868,7 @@ msgid "Disk"
 msgstr "Disk"
 
 #: instances/models.py:223 instances/templates/create_instance_w2.html:309
-#: instances/templates/instances/settings_tab.html:167
+#: instances/templates/instances/settings_tab.html:165
 msgid "CD-ROM"
 msgstr "CD-ROM"
 
@@ -2946,6 +2949,45 @@ msgstr "Çöktü"
 msgid "PM suspended"
 msgstr "Güç yönetimiyle askıya alındı"
 
+#: instances/templates/add_instance_cdrom.html:3
+#: instances/templates/add_instance_cdrom.html:9
+msgid "Add CD-ROM"
+msgstr "CD-ROM Ekle"
+
+#: instances/templates/add_instance_cdrom.html:7
+msgid "Add CD-ROM form"
+msgstr "CD-ROM ekleme formu"
+
+#: instances/templates/add_instance_cdrom.html:15
+#: instances/templates/add_instance_volume.html:90
+#: instances/templates/create_instance_w2.html:181
+#: instances/templates/instances/edit_instance_volume.html:82
+#: instances/templates/instances/edit_instance_volume.html:87
+msgid "Bus"
+msgstr "Veriyolu"
+
+#: instances/templates/add_instance_cdrom.html:23
+#: instances/templates/instances/settings_tab.html:179
+msgid "ISO image"
+msgstr "ISO imajı"
+
+#: instances/templates/add_instance_cdrom.html:28
+#: instances/templates/instances/settings_tab.html:166
+msgid "No media"
+msgstr "Ortam yok"
+
+#: instances/templates/add_instance_cdrom.html:32
+msgid ""
+"Windows sees USB, SATA and IDE drives without a driver; SCSI ones need the "
+"virtio driver."
+msgstr "Windows USB, SATA ve IDE sürücüleri sürücü yazılımı olmadan görür; SCSI olanlar için virtio sürücüsü gerekir."
+
+#: instances/templates/add_instance_cdrom.html:33
+msgid ""
+"A running VM takes USB and SCSI drives. A USB drive needs an ISO image, is "
+"detached instead of ejected, and needs a QEMU with usb-bot (not RHEL 9's)."
+msgstr "Çalışan bir sanal makineye USB ve SCSI sürücüler eklenebilir. USB sürücü bir ISO imajı ister, çıkarılmaz, ayrılır ve usb-bot destekli bir QEMU gerektirir (RHEL 9'unki desteklemez)."
+
 #: instances/templates/add_instance_network_block.html:4
 #: instances/templates/add_instance_network_block.html:10
 msgid "Add network device"
@@ -3016,7 +3058,7 @@ msgid "Disk source"
 msgstr "Disk kaynağı"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:131 instances/views.py:2427
+#: instances/templates/create_instance_w2.html:131 instances/views.py:2446
 msgid "New disk"
 msgstr "Yeni disk"
 
@@ -3075,13 +3117,6 @@ msgstr "Birim"
 #: instances/templates/add_instance_volume.html:82
 msgid "Choose a pool first"
 msgstr "Önce bir havuz seçin"
-
-#: instances/templates/add_instance_volume.html:90
-#: instances/templates/create_instance_w2.html:181
-#: instances/templates/instances/edit_instance_volume.html:82
-#: instances/templates/instances/edit_instance_volume.html:87
-msgid "Bus"
-msgstr "Veriyolu"
 
 #: instances/templates/add_instance_volume.html:98
 #: instances/templates/instances/edit_instance_volume.html:45
@@ -3385,7 +3420,7 @@ msgstr "Özel CPU modelleri"
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
-#: instances/templates/create_instance_w2.html:158 instances/views.py:2428
+#: instances/templates/create_instance_w2.html:158 instances/views.py:2447
 msgid "Existing volumes"
 msgstr "Mevcut birimler"
 
@@ -3420,7 +3455,7 @@ msgstr "Aygıt"
 msgid "Remove"
 msgstr "Kaldır"
 
-#: instances/templates/create_instance_w2.html:191 instances/views.py:2429
+#: instances/templates/create_instance_w2.html:191 instances/views.py:2448
 msgid "Clone from template"
 msgstr "Şablondan klonla"
 
@@ -3755,7 +3790,7 @@ msgstr ""
 msgid "Start the VM to open its console."
 msgstr "Konsolunu açmak için sanal makineyi başlatın."
 
-#: instances/templates/instances/access_tab.html:41 instances/views.py:1075
+#: instances/templates/instances/access_tab.html:41 instances/views.py:1076
 msgid "Reset root password"
 msgstr "Root parolasını sıfırla"
 
@@ -4538,30 +4573,15 @@ msgstr "Sırayı uygula"
 
 #: instances/templates/instances/settings_tab.html:150
 msgid ""
-"The VM is running: CD-ROM drives added now use the SCSI bus. Shut it down to "
-"detach other CD-ROM drives, or to detach or delete disks."
-msgstr ""
-"Sanal makine çalışıyor: şimdi eklenen CD-ROM sürücüleri SCSI veri yolunu "
-"kullanır. Diğer CD-ROM sürücülerini ayırmak ya da diskleri ayırmak veya "
-"silmek için sanal makineyi kapatın."
+"The VM is running: CD-ROM drives added now use the USB or SCSI bus. Shut it "
+"down to detach a SATA or IDE CD-ROM drive, or to detach or delete disks."
+msgstr "Sanal makine çalışıyor: şimdi eklenen CD-ROM sürücüleri USB veya SCSI veri yolunu kullanır. SATA veya IDE bir CD-ROM sürücüsünü ayırmak ya da diskleri ayırmak veya silmek için sanal makineyi kapatın."
 
 #: instances/templates/instances/settings_tab.html:154
 msgid "Removable media"
 msgstr "Çıkarılabilir ortam"
 
-#: instances/templates/instances/settings_tab.html:155
-msgid "Add CD-ROM form"
-msgstr "CD-ROM ekleme formu"
-
-#: instances/templates/instances/settings_tab.html:156
-msgid "Add CD-ROM"
-msgstr "CD-ROM Ekle"
-
-#: instances/templates/instances/settings_tab.html:168
-msgid "No media"
-msgstr "Ortam yok"
-
-#: instances/templates/instances/settings_tab.html:172
+#: instances/templates/instances/settings_tab.html:170
 #: instances/templates/instances/settings_tab.html:249
 msgid "Detach"
 msgstr "Ayır"
@@ -4569,10 +4589,6 @@ msgstr "Ayır"
 #: instances/templates/instances/settings_tab.html:177
 msgid "Unmount"
 msgstr "Ayır"
-
-#: instances/templates/instances/settings_tab.html:179
-msgid "ISO image"
-msgstr "ISO imajı"
 
 #: instances/templates/instances/settings_tab.html:191
 msgid "Mount"
@@ -5542,16 +5558,16 @@ msgstr "'%(name)s' sanal makinesinin sunucusuna şu anda erişilemiyor."
 msgid " Jobs on it can be followed under Jobs in the menu."
 msgstr " Üzerindeki işler menüdeki İşler bölümünden izlenebilir."
 
-#: instances/views.py:333
+#: instances/views.py:334
 msgid "There is no other host to migrate to."
 msgstr "Taşınacak başka bir sunucu yok."
 
-#: instances/views.py:335
+#: instances/views.py:336
 msgid "A VM migrates when it is running, paused or shut off."
 msgstr ""
 "Sanal makine çalışırken, duraklatılmışken ya da kapalıyken taşınabilir."
 
-#: instances/views.py:337
+#: instances/views.py:338
 msgid ""
 "A VM with snapshots cannot be migrated: its snapshots stay on this host. "
 "Delete them first."
@@ -5559,7 +5575,7 @@ msgstr ""
 "Anlık görüntüsü olan bir sanal makine taşınamaz: anlık görüntüleri bu "
 "sunucuda kalır. Önce onları silin."
 
-#: instances/views.py:339
+#: instances/views.py:340
 msgid ""
 "A VM with host devices cannot be migrated: the destination may not have "
 "them. Remove them first."
@@ -5567,11 +5583,11 @@ msgstr ""
 "Sunucu aygıtları olan bir sanal makine taşınamaz: hedefte bu aygıtlar "
 "olmayabilir. Önce onları kaldırın."
 
-#: instances/views.py:605
+#: instances/views.py:606
 msgid "The VM was moved meanwhile; try again."
 msgstr "Sanal makine bu arada taşındı; yeniden deneyin."
 
-#: instances/views.py:636
+#: instances/views.py:637
 msgid ""
 "The quota cannot be checked because a host of your virtual machines cannot "
 "be reached. Nothing was changed."
@@ -5579,7 +5595,7 @@ msgstr ""
 "Sanal makinelerinizin bir sunucusuna erişilemediği için kota denetlenemiyor. "
 "Hiçbir şey değiştirilmedi."
 
-#: instances/views.py:717
+#: instances/views.py:718
 msgid ""
 "The running VM has no free PCI slot for another disk on this bus: choose the "
 "scsi bus if the VM has a SCSI controller, or shut the VM down and add the "
@@ -5592,7 +5608,7 @@ msgstr ""
 "yuvaları ekle, sonraki başlatmadan itibaren ona boş yuvalar verir. Yeni bir "
 "birim havuzunda kalır, mevcut birim olarak eklenebilir."
 
-#: instances/views.py:721
+#: instances/views.py:722
 msgid ""
 "The running VM has no free PCI slot for the SCSI controller the disk needs: "
 "shut the VM down and add the disk then; Add PCIe slots on the Disks tab "
@@ -5604,82 +5620,82 @@ msgstr ""
 "PCIe yuvaları ekle, sonraki başlatmadan itibaren ona boş yuvalar verir. Yeni "
 "bir birim havuzunda kalır, mevcut birim olarak eklenebilir."
 
-#: instances/views.py:739
+#: instances/views.py:740
 #, python-format
 msgid "Invalid disk options: %(options)s"
 msgstr "Geçersiz disk seçenekleri: %(options)s"
 
-#: instances/views.py:749 instances/views.py:764
+#: instances/views.py:750 instances/views.py:765
 msgid "Templates cannot be started."
 msgstr "Şablon makineler başlatılamaz."
 
-#: instances/views.py:860
+#: instances/views.py:861
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/views.py:866
+#: instances/views.py:867
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/views.py:875
+#: instances/views.py:876
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/views.py:997
+#: instances/views.py:998
 #, python-format
 msgid "Set the gstfsd key of %(compute)s first (Computes, edit the host)"
 msgstr ""
 "Önce %(compute)s sunucusunun gstfsd anahtarını ayarlayın (Sunucular, "
 "sunucuyu düzenle)"
 
-#: instances/views.py:1003 instances/views.py:1017 instances/views.py:1026
+#: instances/views.py:1004 instances/views.py:1018 instances/views.py:1027
 #, python-format
 msgid "gstfsd error: %(err)s"
 msgstr "gstfsd hatası: %(err)s"
 
-#: instances/views.py:1027
+#: instances/views.py:1028
 msgid "the reply is not signed with the key"
 msgstr "yanıt anahtarla imzalanmamış"
 
-#: instances/views.py:1035
+#: instances/views.py:1036
 msgid "Shut the VM down, or start its QEMU guest agent, and try again"
 msgstr ""
 "Sanal makineyi kapatın ya da QEMU konuk ajanını başlatın ve yeniden deneyin"
 
-#: instances/views.py:1048
+#: instances/views.py:1049
 msgid "The change may still be made when the agent answers again."
 msgstr "Ajan yeniden yanıt verdiğinde değişiklik yine de yapılabilir."
 
-#: instances/views.py:1079
+#: instances/views.py:1080
 msgid "Enter a password"
 msgstr "Bir parola girin"
 
-#: instances/views.py:1093
+#: instances/views.py:1094
 msgid "Select an SSH public key"
 msgstr "Bir SSH açık anahtarı seçin"
 
-#: instances/views.py:1115
+#: instances/views.py:1116
 #, python-format
 msgid "Installed new SSH public key %(keyname)s"
 msgstr "Yeni %(keyname)s SSH açık anahtarı yüklendi"
 
-#: instances/views.py:1135
+#: instances/views.py:1136
 msgid "Enter a whole number of vCPUs"
 msgstr "vCPU sayısı için bir tam sayı girin"
 
-#: instances/views.py:1139
+#: instances/views.py:1140
 msgid "Shut off the VM to change its vCPUs"
 msgstr "vCPU'larını değiştirmek için sanal makineyi kapatın"
 
-#: instances/views.py:1142
+#: instances/views.py:1143
 msgid "The current vCPUs cannot be more than the maximum"
 msgstr "Geçerli vCPU sayısı en fazla değerden büyük olamaz"
 
-#: instances/views.py:1150
+#: instances/views.py:1151
 #, python-format
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
@@ -5687,20 +5703,20 @@ msgstr ""
 "%(quota_msg)s kullanıcısı kotası doldu, '%(instance_name)s' in CPU su "
 "yeniden boyutlandırılamıyor!"
 
-#: instances/views.py:1161
+#: instances/views.py:1162
 #, python-format
 msgid "vCPUs set to %(cur)s (maximum %(max)s)"
 msgstr "vCPU sayısı %(cur)s olarak ayarlandı (en fazla %(max)s)"
 
-#: instances/views.py:1180
+#: instances/views.py:1181
 msgid "Enter a whole number for memory"
 msgstr "Bellek için bir tam sayı girin"
 
-#: instances/views.py:1183
+#: instances/views.py:1184
 msgid "The current memory cannot be more than the maximum"
 msgstr "Geçerli bellek en fazla değerden büyük olamaz"
 
-#: instances/views.py:1188
+#: instances/views.py:1189
 #, python-format
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize memory of "
@@ -5709,25 +5725,25 @@ msgstr ""
 "%(quota_msg)s kullanıcı kotası doldu, '%(instance_name)s' in belleği yeniden "
 "boyutlandırılamıyor!"
 
-#: instances/views.py:1197
+#: instances/views.py:1198
 #, python-format
 msgid "Memory set to %(cur)s MiB (maximum %(max)s MiB)"
 msgstr "Bellek %(cur)s MiB olarak ayarlandı (en fazla %(max)s MiB)"
 
-#: instances/views.py:1217
+#: instances/views.py:1218
 msgid "Enter disk sizes as whole GiB"
 msgstr "Disk boyutlarını tam GiB olarak girin"
 
-#: instances/views.py:1221
+#: instances/views.py:1222
 #, python-format
 msgid "%(dev)s is %(size)s: a disk cannot shrink"
 msgstr "%(dev)s boyutu %(size)s: disk küçültülemez"
 
-#: instances/views.py:1229
+#: instances/views.py:1230
 msgid "No disks were selected or valid for resizing."
 msgstr "Boyutlandırma için seçilmiş ya da geçerli disk yok."
 
-#: instances/views.py:1239
+#: instances/views.py:1240
 #, python-format
 msgid ""
 "User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
@@ -5735,61 +5751,61 @@ msgstr ""
 "%(quota_msg)s kullanıcı kotası doldu, '%(instance_name)s' in diski yeniden "
 "boyutlandırılamıyor!"
 
-#: instances/views.py:1254
+#: instances/views.py:1255
 #, python-format
 msgid "The storage pool of %(dev)s cannot resize its volumes"
 msgstr "%(dev)s diskinin depolama havuzu birimlerini boyutlandıramaz"
 
-#: instances/views.py:1256
+#: instances/views.py:1257
 #, python-format
 msgid "Disk is resized: %(dev)s"
 msgstr "Disk boyutu değiştirildi: %(dev)s"
 
-#: instances/views.py:1350
+#: instances/views.py:1351
 msgid "The VM's machine has no PCIe slots to add"
 msgstr "Sanal makinenin makine tipinde eklenecek PCIe yuvası yok"
 
-#: instances/views.py:1355
+#: instances/views.py:1356
 #, python-format
 msgid "%(count)s PCIe slots added"
 msgstr "%(count)s PCIe yuvası eklendi"
 
-#: instances/views.py:1357
+#: instances/views.py:1358
 #, python-format
 msgid "%(count)s PCIe slots added: the VM gets them at its next start"
 msgstr ""
 "%(count)s PCIe yuvası eklendi: sanal makine bunları sonraki başlatmasında "
 "alır"
 
-#: instances/views.py:1488
+#: instances/views.py:1489
 msgid "Volume changes are applied. But it will be activated after shutdown"
 msgstr ""
 "Birim değişiklikleri uygulandı. Ama yeniden başlatıldıktan sonra uygulanacak"
 
-#: instances/views.py:1493
+#: instances/views.py:1494
 msgid "Volume is changed successfully."
 msgstr "Birim başarıyla değiştirildi."
 
-#: instances/views.py:1511
+#: instances/views.py:1512
 #, python-format
 msgid "Disk %(dev)s is not a storage volume of this instance"
 msgstr "%(dev)s diski bu sanal makinenin bir depolama birimi değil"
 
-#: instances/views.py:1518
+#: instances/views.py:1519
 #, python-format
 msgid "Disk %(dev)s has a pending change; delete it once the VM is shut down"
 msgstr ""
 "%(dev)s diskinin bekleyen bir değişikliği var; sanal makine kapatıldığında "
 "silin"
 
-#: instances/views.py:1533
+#: instances/views.py:1534
 #, python-format
 msgid "Volume %(vol)s is used by another VM; detach it instead"
 msgstr ""
 "%(vol)s birimi başka bir sanal makine tarafından kullanılıyor; onun yerine "
 "ayırın"
 
-#: instances/views.py:1545
+#: instances/views.py:1546
 #, python-format
 msgid ""
 "The guest has not released disk %(dev)s yet; volume %(vol)s was kept. Delete "
@@ -5798,43 +5814,52 @@ msgstr ""
 "Konuk sistem %(dev)s diskini henüz bırakmadı; %(vol)s birimi korundu. Sanal "
 "makine kapatıldığında depolama havuzundan silin."
 
-#: instances/views.py:1556
+#: instances/views.py:1557
 #, python-format
 msgid "Disk %(dev)s was detached, but its volume was kept: %(err)s"
 msgstr "%(dev)s diski ayrıldı, ancak birimi korundu: %(err)s"
 
-#: instances/views.py:1660
+#: instances/views.py:1583
+#, python-format
+msgid "This VM cannot take a CD-ROM on the %(bus)s bus now"
+msgstr "Bu sanal makineye şu anda %(bus)s veri yolunda CD-ROM eklenemez"
+
+#: instances/views.py:1586
+msgid "A USB CD-ROM needs an ISO image: libvirt has no empty USB drive"
+msgstr "USB CD-ROM bir ISO imajı ister: libvirt boş USB sürücü desteklemiyor"
+
+#: instances/views.py:1679
 #, python-format
 msgid "Snapshot was not deleted: %(err)s"
 msgstr "Anlık görüntü silinmedi: %(err)s"
 
-#: instances/views.py:1775
+#: instances/views.py:1794
 msgid "Check at least one device to boot from."
 msgstr "Önyükleme için en az bir aygıt işaretleyin."
 
-#: instances/views.py:1789
+#: instances/views.py:1808
 msgid "Boot order changed. It applies at the next start."
 msgstr "Ön yükleme sırası değiştirildi. Sonraki başlatmada uygulanır."
 
-#: instances/views.py:1791
+#: instances/views.py:1810
 msgid "Boot order changed successfully."
 msgstr "Ön yükleme sırası başarıyla değiştirildi."
 
-#: instances/views.py:1811
+#: instances/views.py:1830
 msgid "The XML is empty"
 msgstr "XML boş"
 
-#: instances/views.py:1815 instances/views.py:2418
+#: instances/views.py:1834 instances/views.py:2437
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML düzgün biçimlendirilmemiş: %(error)s"
 
-#: instances/views.py:1817
+#: instances/views.py:1836
 #, python-format
 msgid "The XML must keep the VM's UUID %(uuid)s."
 msgstr "XML, sanal makinenin %(uuid)s UUID'sini korumalıdır."
 
-#: instances/views.py:1821
+#: instances/views.py:1840
 msgid ""
 "The definition has changed since the editor was opened. Reload the page to "
 "edit the current one."
@@ -5842,35 +5867,35 @@ msgstr ""
 "Düzenleyici açıldığından beri tanım değişti. Geçerli tanımı düzenlemek için "
 "sayfayı yeniden yükleyin."
 
-#: instances/views.py:1833
+#: instances/views.py:1852
 msgid "The XML definition was saved."
 msgstr "XML tanımı kaydedildi."
 
-#: instances/views.py:1835
+#: instances/views.py:1854
 msgid "The XML definition was saved; the VM uses it from its next start."
 msgstr ""
 "XML tanımı kaydedildi; sanal makine onu sonraki başlatmasından itibaren "
 "kullanır."
 
-#: instances/views.py:1902
+#: instances/views.py:1921
 msgid "Select one network interface to change"
 msgstr "Değiştirilecek bir ağ arabirimi seçin"
 
-#: instances/views.py:1940
+#: instances/views.py:1959
 msgid "Network Device Config is changed. Please shutdown instance to activate."
 msgstr ""
 "Ağ aygıtı yapılandırması değiştirildi. Aktifleştirmek için lütfen sanal "
 "makineyi kapatın."
 
-#: instances/views.py:1942
+#: instances/views.py:1961
 msgid "Network device changed"
 msgstr "Ağ aygıtı değiştirildi"
 
-#: instances/views.py:1954
+#: instances/views.py:1973
 msgid "No network selected"
 msgstr "Ağ seçilmedi"
 
-#: instances/views.py:1974
+#: instances/views.py:1993
 msgid ""
 "The running VM has no free PCI slot for another network device: shut it down "
 "and add the device then; Add PCIe slots on the Disks tab gives it free ones "
@@ -5880,21 +5905,21 @@ msgstr ""
 "aygıtı sonra ekleyin; Diskler sekmesindeki PCIe yuvaları ekle, sonraki "
 "başlatmadan itibaren ona boş yuvalar verir."
 
-#: instances/views.py:2011 instances/views.py:2017
+#: instances/views.py:2030 instances/views.py:2036
 msgid "The VM has it"
 msgstr "Sanal makinede var"
 
-#: instances/views.py:2048
+#: instances/views.py:2067
 #, python-format
 msgid "The host has no USB device %(device)s"
 msgstr "Sunucuda %(device)s USB aygıtı yok"
 
-#: instances/views.py:2069
+#: instances/views.py:2088
 #, python-format
 msgid "The host has no PCI device %(device)s"
 msgstr "Sunucuda %(device)s PCI aygıtı yok"
 
-#: instances/views.py:2087
+#: instances/views.py:2106
 #, python-format
 msgid ""
 "Removal of PCI device %(address)s requested: the guest has not let it go "
@@ -5904,20 +5929,20 @@ msgstr ""
 "bırakmadı; bırakana ya da sanal makine durana kadar çalışan sanal makinede "
 "kalır."
 
-#: instances/views.py:2132 instances/views.py:2162
+#: instances/views.py:2151 instances/views.py:2181
 msgid "Select a network interface and a QoS direction"
 msgstr "Bir ağ arabirimi ve bir QoS yönü seçin"
 
-#: instances/views.py:2135
+#: instances/views.py:2154
 msgid "QoS rates must be whole numbers"
 msgstr "QoS hızları tam sayı olmalıdır"
 
-#: instances/views.py:2142 networks/views.py:229
+#: instances/views.py:2161 networks/views.py:229
 #, python-format
 msgid "%(qos_dir)s QoS is set"
 msgstr "%(qos_dir)s QoS ayarlandı"
 
-#: instances/views.py:2147
+#: instances/views.py:2166
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is set. A running VM gets it after it is powered off and on."
@@ -5925,12 +5950,12 @@ msgstr ""
 "%(qos_dir)s QoS ayarlandı. Çalışan bir sanal makine, kapatılıp açıldıktan "
 "sonra bunu alır."
 
-#: instances/views.py:2169 networks/views.py:255
+#: instances/views.py:2188 networks/views.py:255
 #, python-format
 msgid "%(qos_dir)s QoS is deleted"
 msgstr "%(qos_dir)s QoS silindi"
 
-#: instances/views.py:2174
+#: instances/views.py:2193
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is deleted. A running VM keeps the old limit until it is "
@@ -5939,21 +5964,21 @@ msgstr ""
 "%(qos_dir)s QoS silindi. Çalışan bir sanal makine, kapatılıp açılana kadar "
 "eski sınırı korur."
 
-#: instances/views.py:2202
+#: instances/views.py:2221
 msgid "Only one owner is allowed and the one already added"
 msgstr "Sadece bir sahibe izin verilmiştir ve bir sahip zaten eklenmiş"
 
-#: instances/views.py:2204
+#: instances/views.py:2223
 #, python-format
 msgid "%(user)s is already an owner"
 msgstr "%(user)s zaten bir sahip"
 
-#: instances/views.py:2248
+#: instances/views.py:2267
 #, python-format
 msgid "Console settings were not saved: %(errors)s"
 msgstr "Konsol ayarları kaydedilmedi: %(errors)s"
 
-#: instances/views.py:2270
+#: instances/views.py:2289
 msgid ""
 "Error setting console password. You should check that your instance have an "
 "graphic device."
@@ -5961,67 +5986,67 @@ msgstr ""
 "Konsol parolası ayarlanırken hata oluştu. Sanal makinenin bir grafik "
 "aygıtına sahip olduğundan emin olunuz."
 
-#: instances/views.py:2317
+#: instances/views.py:2336
 msgid "Shut the VM down to change whether it is a template."
 msgstr "Şablon olup olmadığını değiştirmek için sanal makineyi kapatın."
 
-#: instances/views.py:2324
+#: instances/views.py:2343
 #, python-format
 msgid "User %(quota_msg)s quota reached, '%(instance_name)s' stays a template!"
 msgstr ""
 "Kullanıcının %(quota_msg)s kotası doldu, '%(instance_name)s' şablon olarak "
 "kalıyor!"
 
-#: instances/views.py:2406
+#: instances/views.py:2425
 msgid "The XML has no name"
 msgstr "XML'de ad yok"
 
-#: instances/views.py:2420 webvirtcloud/middleware.py:75
+#: instances/views.py:2439 webvirtcloud/middleware.py:75
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
 
-#: instances/views.py:2427
+#: instances/views.py:2446
 msgid "An empty disk of the size you set"
 msgstr "Belirlediğiniz boyutta boş bir disk"
 
-#: instances/views.py:2428
+#: instances/views.py:2447
 msgid "Volumes already in a pool"
 msgstr "Bir havuzda zaten bulunan birimler"
 
-#: instances/views.py:2429
+#: instances/views.py:2448
 msgid "A copy of a template volume"
 msgstr "Bir şablon biriminin kopyası"
 
-#: instances/views.py:2518
+#: instances/views.py:2537
 msgid "You haven't defined any storage pools"
 msgstr "Hiç bir depolama havuzu tanımlamadınız"
 
-#: instances/views.py:2520
+#: instances/views.py:2539
 msgid "You haven't defined any network pools"
 msgstr "Hiç bir ağ havuzu tanımlamadınız"
 
-#: instances/views.py:2583
+#: instances/views.py:2602
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:2591
+#: instances/views.py:2610
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:2606
+#: instances/views.py:2625
 msgid "Flavor Updated"
 msgstr "Flavor Güncellendi"
 
-#: instances/views.py:2612
+#: instances/views.py:2631
 msgid "Update Flavor"
 msgstr "Flavor Güncelle"
 
-#: instances/views.py:2624
+#: instances/views.py:2643
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: instances/views.py:2630
+#: instances/views.py:2649
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr ""
 "Yalnızca boyut şablonu silinir; ondan oluşturulan sanal makineler "

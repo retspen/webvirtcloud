@@ -307,6 +307,7 @@ def _instance_page(request, pk, instance, compute):
     vcpu_host = len(instance.vcpu_range)
     memory_host = instance.proxy.get_max_memory()
     bus_host = instance.proxy.get_disk_bus_types(instance.arch, instance.machine)
+    cdrom_buses = cdrom_bus_choices(instance)
     networks_host = sorted(instance.proxy.get_networks())
     interfaces_host = sorted(instance.proxy.get_ifaces())
     nwfilters_host = instance.proxy.get_nwfilters()
@@ -1575,29 +1576,47 @@ def detach_vol(request, pk):
 @serialize_instance_mutation
 def add_cdrom(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
-    if instance.status == 5:
-        default_bus = "ide" if instance.machine == "pc" else "sata"
-    else:  # IDE and SATA drives cannot be plugged into a running VM, SCSI ones can
-        default_bus = "scsi"
-    bus = request.POST.get("bus", default_bus)
-    invalid = invalid_disk_options(instance, bus=bus)
-    if invalid:
-        return reject_disk_options(request, pk, invalid)
+    buses = cdrom_bus_choices(instance)
+    bus = request.POST.get("bus", buses[0] if buses else "")
+    image = request.POST.get("media", "")
+    if bus not in buses:
+        messages.error(request, _("This VM cannot take a CD-ROM on the %(bus)s bus now") % {"bus": bus})
+        return _back(request, pk, "disks")
+    if bus == "usb" and not image:
+        messages.error(request, _("A USB CD-ROM needs an ISO image: libvirt has no empty USB drive"))
+        return _back(request, pk, "disks")
 
     target = utils.get_new_disk_dev(
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
     )
-    with audit_vm(request, instance, f"add CD-ROM {target}"):
-        instance.proxy.attach_disk(
-            target,
-            "",
-            disk_device="cdrom",
-            cache_mode="none",
-            target_bus=bus,
-            readonly=True,
-        )
+    try:
+        with audit_vm(request, instance, f"add CD-ROM {target}" + (f" with {image}" if image else "")):
+            instance.proxy.attach_disk(
+                target,
+                instance.proxy.get_iso_path(image) if image else "",
+                disk_device="cdrom",
+                cache_mode="none",
+                target_bus=bus,
+                readonly=True,
+            )
+    except (libvirtError, util.OperationError) as err:
+        messages.error(request, err)
 
     return _back(request, pk, "disks")
+
+
+def cdrom_bus_choices(instance):
+    """The buses a CD-ROM can be added on now, the default first. A running VM
+    takes USB and SCSI drives only; Windows sees USB, SATA and IDE ones
+    without a driver."""
+    if instance.status != 5:
+        order = ("usb", "scsi")
+    elif instance.machine == "pc":
+        order = ("ide", "sata", "scsi", "usb")
+    else:
+        order = ("sata", "scsi", "usb")
+    offered = instance.proxy.get_disk_bus_types(instance.arch, instance.machine)
+    return [bus for bus in order if bus in offered]
 
 
 @require_POST

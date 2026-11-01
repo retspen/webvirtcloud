@@ -147,14 +147,12 @@
         <div role="tabpanel" class="tab-pane" id="disks">
             {# its CD-ROM drives, then its disks as list rows; the forms are those of the actions #}
             {% if instance.status != 5 %}
-            <p class="small text-body-secondary">{% bs_icon 'lock' %} {% trans "The VM is running: CD-ROM drives added now use the SCSI bus. Shut it down to detach other CD-ROM drives, or to detach or delete disks." %}</p>
+            <p class="small text-body-secondary">{% bs_icon 'lock' %} {% trans "The VM is running: CD-ROM drives added now use the USB or SCSI bus. Shut it down to detach a SATA or IDE CD-ROM drive, or to detach or delete disks." %}</p>
             {% endif %}
             <section class="mb-4" aria-labelledby="media-heading">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                     <h2 class="h6 mb-0" id="media-heading">{% trans "Removable media" %}</h2>
-                    <form action="{% url 'instances:add_cdrom' instance.id %}" method="post" aria-label="{% trans "Add CD-ROM form" %}">{% csrf_token %}
-                        <button class="btn btn-sm btn-secondary" type="submit">{% bs_icon 'plus' %} {% trans "Add CD-ROM" %}</button>
-                    </form>
+                    {% include 'add_instance_cdrom.html' %}
                 </div>
                 {% for cd in instance.media %}
                 <div class="card mb-2">
@@ -168,11 +166,13 @@
                                     <div class="small text-body-secondary">{{ cd.dev }} · {{ cd.bus }} · {% if cd.image %}{{ cd.image }}{% else %}{% trans "No media" %}{% endif %}</div>
                                 </div>
                             </div>
-                            {% if not cd.image %}
-                            <button type="submit" class="btn btn-sm btn-secondary" formaction="{% url 'instances:detach_cdrom' instance.id cd.dev %}" formmethod="post"{% if instance.status != 5 and cd.bus != "scsi" %} disabled{% endif %}>{% trans "Detach" %}</button>
+                            {% if not cd.image or cd.bus == "usb" %}
+                            <button type="submit" class="btn btn-sm btn-secondary" formaction="{% url 'instances:detach_cdrom' instance.id cd.dev %}" formmethod="post"{% if instance.status != 5 and cd.bus != "scsi" and cd.bus != "usb" %} disabled{% endif %}>{% trans "Detach" %}</button>
                             {% endif %}
                         </div>
-                        {% if cd.image %}
+                        {% if cd.bus == "usb" %}
+                        {# libvirt has no empty USB drive: it is detached, not ejected #}
+                        {% elif cd.image %}
                         <input type="hidden" name="path" value="{{ cd.path }}">
                         <button type="submit" class="btn btn-sm btn-primary" value="{{ cd.dev }}" name="umount_iso">{% bs_icon 'eject' %} {% trans "Unmount" %}</button>
                         {% else %}

@@ -91,6 +91,16 @@ class DeviceEditsTestCase(unittest.TestCase):
         xml, _ = p.instance.attachDeviceFlags.call_args.args
         self.assertEqual(etree.fromstring(xml).find("source").attrib, {"dev": "/dev/vg/c"})
 
+    def test_a_usb_cdrom_is_a_cd_drive_on_usb_bot(self):
+        # usb-storage, libvirt's choice where QEMU has no usb-bot, shows a hard disk
+        for bus, model in (("usb", "usb-bot"), ("sata", None)):
+            with self.subTest(bus=bus):
+                p = proxy(active=False)
+                p._definitions = lambda: [(PERSISTENT_XML, VIR_DOMAIN_AFFECT_CONFIG)]
+                p.attach_disk("sdb", "/iso/virtio-win.iso", disk_device="cdrom", target_bus=bus, readonly=True)
+                xml, _ = p.instance.attachDeviceFlags.call_args.args
+                self.assertEqual(etree.fromstring(xml).get("model"), model)
+
     def test_a_bridge_nic_can_be_a_boot_device(self):
         p = proxy()
         p.set_bootorder({0: {"type": "network", "dev": "52:54:10:00:00:02"}, 1: {"type": "disk", "dev": "vdb"}})

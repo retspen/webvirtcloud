@@ -601,6 +601,33 @@ class LiveDataLossTestCase(TestCase):
             tree = etree.fromstring(dom.XMLDesc(flags))
             self.assertEqual(tree.xpath("devices/disk[@device='cdrom']/target/@dev"), ["sda"])
 
+    def test_a_usb_cdrom_with_its_iso_is_plugged_into_a_running_vm_and_detached(self):
+        from lxml import etree
+
+        pool = self.conn.storagePoolLookupByName(livetest.POOL)
+        iso = pool.createXML(f"<volume><name>{P}usb.iso</name><capacity unit='MiB'>1</capacity>"
+                             "<target><format type='raw'/></target></volume>", 0)
+        dom, inst = self.vm("cdrom-usb", [], extra_devices="<controller type='usb' model='qemu-xhci'/>")
+        dom.create()
+
+        def cdroms(flags):
+            tree = etree.fromstring(dom.XMLDesc(flags))
+            return [(d.find("target").get("bus"), d.get("model"), d.xpath("string(source/@file)"))
+                    for d in tree.xpath("devices/disk[@device='cdrom']")]
+
+        response = self.client.post(reverse("instances:add_cdrom", args=[inst.id]),
+                                    {"bus": "usb", "media": f"{P}usb.iso"}, follow=True)
+        if not cdroms(0):  # a QEMU without usb-bot (RHEL 9): refused, nothing added
+            self.assertIn("usb-bot", " ".join(str(m) for m in response.context["messages"]))
+            self.assertEqual(cdroms(libvirt.VIR_DOMAIN_XML_INACTIVE), [])
+            return
+        for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE):
+            self.assertEqual(cdroms(flags), [("usb", "usb-bot", iso.path())])
+        self.client.post(reverse("instances:detach_cdrom", args=[inst.id, "sda"]),
+                         HTTP_REFERER=reverse("instances:instance", args=[inst.id]))
+        for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE):
+            self.assertEqual(cdroms(flags), [])
+
     def test_pending_qos_change_is_shown_and_kept_by_the_next_edit(self):
         from lxml import etree, html
 
