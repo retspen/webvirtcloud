@@ -287,7 +287,7 @@ class MigrationModeTestCase(unittest.TestCase):
         return mode, source.instance.calls[0][0] if source.instance.calls else None
 
     def test_refused_requests(self):
-        for state, request in ((5, {"live": True}), (1, {"offline": True}), (3, {"offline": True}),
+        for state, request in ((1, {"offline": True}), (3, {"offline": True}),
                                (1, {"live": True, "offline": True}), (6, {}), (4, {}), (7, {}), (0, {})):
             with self.subTest(state=state, request=request):
                 source = FakeSource(state)
@@ -325,6 +325,8 @@ class MigrationModeTestCase(unittest.TestCase):
         self.assertEqual(flags & (live | unsafe | converge | compressed), live)
         self.assertEqual(self.migrate(5), ("offline", None))
         self.assertEqual(self.migrate(5, offline=True), ("offline", None))
+        # asked while it ran, then shut down: it moves offline, the tuning options unused
+        self.assertEqual(self.migrate(5, live=True, autoconverge=True, compress=True), ("offline", None))
 
 
 def with_disks(*disks):

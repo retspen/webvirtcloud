@@ -116,8 +116,9 @@ class wvmInstances(wvmConnect):
 
         The mode follows the VM's state, read once: a running VM migrates
         live or, without live, paused for the transfer (non-live); a paused
-        VM stays paused; a shut-off VM moves offline. A request that does not
-        fit the state is refused. unsafe, autoconverge (live only) and
+        VM stays paused; a shut-off VM moves offline, also when the request
+        was made while it ran (live). An offline request for a running or
+        paused VM is refused. unsafe, autoconverge (live only) and
         compress apply to a running VM. uri: the native migration URI
         (tcp://address) on the destination; None lets libvirt use the
         destination's own hostname. pools: {target: pool here} of the disks
@@ -126,8 +127,6 @@ class wvmInstances(wvmConnect):
         and options used, for the log, and the paths of the copied disks."""
         state = conn.get_status()
         if state == 5:
-            if live:
-                raise util.OperationError("A shut-off VM cannot be migrated live")
             mode = ["offline"]
         elif state in (1, 3):
             if offline:
