@@ -665,11 +665,11 @@ class CreateInstance(Kind):
     def normalize(self, raw):
         # what the API leaves out means what create_instance did by default
         params = {"template": "", "images": "", "firmware": "", "net_model": "virtio", "add_cdrom": "sata",
-                  "add_input": "default", "meta_prealloc": False, "hdd_size": 0, "cloud_init": False}
+                  "add_input": "default", "meta_prealloc": False, "hdd_size": 0, "cloud_init": False, "tpm": False}
         params.update({k: v for k, v in raw.items() if k not in ("submission_key", "create", "csrfmiddlewaretoken")})
         params.update(compute=int(raw["compute"]), devices=[list(d) for d in raw.get("devices", [])])
-        if "UEFI" in params["firmware"] and "secboot" in params["firmware"].partition(":")[2]:
-            params["machine"] = "q35"  # a secure boot loader needs SMM, on q35 only
+        if params["firmware"] == "UEFI Secure Boot" and "q35" not in params["machine"]:
+            params["machine"] = "q35"  # Secure Boot needs SMM, on q35 only
         return params
 
     def validate(self, user, params):
@@ -708,8 +708,10 @@ class CreateInstance(Kind):
             utils.nic_macs(data["mac"], data["networks"])
         except ValueError as err:
             raise util.OperationError(str(err))
-        if "UEFI" in data["firmware"] and ":" not in data["firmware"]:
-            raise util.OperationError(_("Invalid firmware"))
+        if data["firmware"] and data["firmware"] not in conn.get_firmwares(data["arch"], data["machine"]):
+            raise util.OperationError(_("This host offers no firmware %(firmware)s") % {"firmware": data["firmware"]})
+        if data["tpm"] and not conn.get_tpm_model(data["arch"], data["machine"]):
+            raise util.OperationError(_("This host offers no TPM 2.0: install swtpm on it"))
 
     def plan(self, user, params):
         compute = Compute.objects.get(pk=params["compute"])
@@ -726,13 +728,6 @@ class CreateInstance(Kind):
         default_disk_format = app_settings.INSTANCE_VOLUME_DEFAULT_FORMAT
         default_disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
         default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
-
-        firmware = dict()
-        if "UEFI" in data["firmware"]:
-            firmware["loader"] = data["firmware"].split(":")[1].strip()
-            firmware["secure"] = "yes" if "secboot" in firmware["loader"] else "no"
-            firmware["readonly"] = "yes"
-            firmware["type"] = "pflash"
 
         def volume(path, device="disk", bus=default_bus):
             return {
@@ -783,7 +778,7 @@ class CreateInstance(Kind):
                 uuid=op.intent["uuid"],
                 arch=data["arch"],
                 machine=data["machine"],
-                firmware=firmware,
+                firmware=data["firmware"],
                 volumes=volume_list,
                 networks=data["networks"],
                 virtio=data["virtio"],
@@ -796,6 +791,7 @@ class CreateInstance(Kind):
                 qemu_ga=data["qemu_ga"],
                 add_cdrom=data["add_cdrom"],
                 add_input=data["add_input"],
+                tpm_model=conn.get_tpm_model(data["arch"], data["machine"]) if data["tpm"] else None,
             )
         except Exception as err:
             # the VM is not defined: its new volumes go

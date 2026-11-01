@@ -47,11 +47,24 @@ class CreateInstanceViewTests(TestCase):
 
     @patch("instances.views.wvmCreate", new=wvm_create)
     @patch("instances.views.NewVMForm")
-    def test_secure_boot_loader_on_q35_requests_secure_boot(self, form_class):
-        _, conn = self.create(form_class, firmware="UEFI x86_64: /usr/share/edk2/ovmf/OVMF_CODE.secboot.fd")
+    def test_secure_boot_and_a_tpm_reach_the_definition(self, form_class):
+        _, conn = self.create(form_class, firmware="UEFI Secure Boot", tpm=True)
         run(Operation.objects.get())
-        firmware = conn.create_instance.call_args.kwargs["firmware"]
-        self.assertEqual(firmware["secure"], "yes")
+        kwargs = conn.create_instance.call_args.kwargs
+        self.assertEqual((kwargs["firmware"], kwargs["machine"], kwargs["tpm_model"]),
+                         ("UEFI Secure Boot", "q35", "tpm-crb"))
+
+    @patch("instances.views.wvmCreate", new=wvm_create)
+    @patch("instances.views.NewVMForm")
+    def test_a_firmware_or_a_tpm_the_host_does_not_offer_is_refused(self, form_class):
+        for data, host in (({"firmware": "UEFI Secure Boot"}, {"get_firmwares": ["BIOS", "UEFI"]}),
+                           ({"tpm": True}, {"get_tpm_model": None})):
+            with self.subTest(data):
+                Instance.objects.all().delete()
+                response, conn = self.create(form_class, host=host, **data)
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(Operation.objects.exists())
+                conn.create_instance.assert_not_called()
 
     @patch("instances.views.wvmCreate", new=wvm_create)
     @patch("instances.views.NewVMForm")
@@ -71,7 +84,9 @@ class CreateInstanceViewTests(TestCase):
                 conn.create_volume.assert_not_called()
                 conn.create_instance.assert_not_called()
 
-    def create(self, form_class, **data):
+    def create(self, form_class, host=None, **data):
+        """POST the create form with data over the form's defaults; host: what
+        the mocked host answers, over its defaults."""
         user = get_user_model().objects.filter(username="create-test-admin").first() or (
             get_user_model().objects.create_superuser(
                 username="create-test-admin", password="password", email="create@example.com"
@@ -95,8 +110,10 @@ class CreateInstanceViewTests(TestCase):
         conn.get_storages.return_value = ["default"]
         conn.get_dom_capabilities.return_value = {"loader_enums": [], "loaders": [], "cpu_modes": ["host-model"]}
         conn.get_capabilities.return_value = {}
-        conn.label_for_firmware_path.return_value = None
-        conn.find_uefi_path_for_arch.return_value = None
+        conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
+        conn.get_tpm_model.return_value = "tpm-crb"
+        for method, value in (host or {}).items():
+            getattr(conn, method).return_value = value
         conn.get_volume_path.return_value = "/var/lib/libvirt/images/base.qcow2"
         conn.get_volume_format_type.return_value = "qcow2"
 
@@ -110,7 +127,7 @@ class CreateInstanceViewTests(TestCase):
             "virtio": True, "listener_addr": "0.0.0.0", "nwfilter": "",
             "graphics": "vnc", "video": "vga",
             "mac": "52:54:00:00:00:01", "qemu_ga": False,
-            "add_cdrom": "sata", "add_input": "default",
+            "add_cdrom": "sata", "add_input": "default", "tpm": False,
             **data,
         }
 
@@ -138,13 +155,13 @@ class CreateInstanceViewTests(TestCase):
         # A host without loader support has no "loaders"/"loader_enums" keys
         conn.get_dom_capabilities.return_value = {"loader_support": "no", "cpu_modes": ["host-model"]}
         conn.get_capabilities.return_value = {}
-        conn.label_for_firmware_path.return_value = None
-        conn.find_uefi_path_for_arch.return_value = None
+        conn.get_firmwares.return_value = ["BIOS"]
+        conn.get_tpm_model.return_value = None
 
         response = self.client.get(reverse("instances:create_instance", args=[compute.id, "x86_64", "q35"]))
 
         self.assertEqual(response.status_code, 200)
-        conn.find_uefi_path_for_arch.assert_called_once_with("x86_64", "q35")
+        conn.get_firmwares.assert_called_once_with("x86_64", "q35")
 
 
 class NicMacsTestCase(TestCase):

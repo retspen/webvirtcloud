@@ -1189,48 +1189,47 @@ class wvmConnect(object):
         # self.wvm.close()
         pass
 
-    def find_uefi_path_for_arch(self, arch, machine):
-        """
-        Search the loader paths for one that matches the passed arch
-        """
-        if not self.arch_can_uefi(arch):
-            return
+    def get_firmwares(self, arch, machine):
+        """The firmware a new VM can have: BIOS on x86, UEFI without Secure Boot
+        when libvirt picks the firmware itself, and on x86_64 UEFI Secure Boot
+        with Microsoft's keys enrolled, as Windows 11 needs."""
 
-        loaders = self.get_os_loaders(arch, machine)
-        patterns = util.UEFI_ARCH_PATTERNS.get(arch)
-        for pattern in patterns:
-            for path in loaders:
-                if re.match(pattern, path):
-                    return path
+        def firmwares(ctx):
+            os_caps = "/domainCapabilities/os[@supported='yes']"
+            features = f"{os_caps}/firmwareFeatures[@supported='yes']"
+            if ctx.xpath(features):  # libvirt 12.1 and later: what its firmware offers
+                secure_boot = ctx.xpath(f"{features}/enum[@name='secureBoot']/value/text()")
+                enrolled_keys = ctx.xpath(f"{features}/enum[@name='enrolledKeys']/value/text()")
+            else:  # earlier: the loaders; libvirt refuses the VM if no firmware has the keys
+                secure_boot = ctx.xpath(f"{os_caps}/loader[@supported='yes']/enum[@name='secure']/value/text()") or ["no"]
+                enrolled_keys = secure_boot
+            choices = ["BIOS"] if arch in ("i686", "x86_64") else []
+            if "efi" in ctx.xpath(f"{os_caps}/enum[@name='firmware']/value/text()"):
+                if "no" in secure_boot:
+                    choices.append("UEFI")
+                if arch == "x86_64" and "yes" in secure_boot and "yes" in enrolled_keys:
+                    choices.append("UEFI Secure Boot")
+            return choices
 
-    def label_for_firmware_path(self, arch, path):
-        """
-        Return a pretty label for passed path, based on if we know
-        about it or not
-        """
-        if not path:
-            if arch in ["i686", "x86_64"]:
-                return "BIOS"
-            return
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=firmwares)
 
-        for arch, patterns in util.UEFI_ARCH_PATTERNS.items():
-            for pattern in patterns:
-                if re.match(pattern, path):
-                    return "UEFI %(arch)s: %(path)s" % {"arch": arch, "path": path}
+    def get_tpm_model(self, arch, machine):
+        """The model of an emulated TPM 2.0 for a new VM; None when the host has
+        none (no swtpm)."""
 
-        return "Custom: %(path)s" % {"path": path}
+        def tpm_model(ctx):
+            tpm = "/domainCapabilities/devices/tpm[@supported='yes']"
+            if ("emulator" not in ctx.xpath(f"{tpm}/enum[@name='backendModel']/value/text()")
+                    or "2.0" not in ctx.xpath(f"{tpm}/enum[@name='backendVersion']/value/text()")):
+                return None
+            models = ctx.xpath(f"{tpm}/enum[@name='model']/value/text()")
+            # x86: CRB, which Windows takes, or TIS; another machine: its own
+            for model in ("tpm-crb", "tpm-tis", *models):
+                if model in models:
+                    return model
+            return None
 
-    def arch_can_uefi(self, arch):
-        """
-        Return True if we know how to setup UEFI for the passed arch
-        """
-        return arch in list(util.UEFI_ARCH_PATTERNS.keys())
-
-    def supports_uefi_xml(self, loader_enums):
-        """
-        Return True if libvirt advertises support for proper UEFI setup
-        """
-        return "readonly" in loader_enums and "yes" in loader_enums.get("readonly")
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=tpm_model)
 
     def is_supports_virtio(self, arch, machine):
         if not self.is_qemu():

@@ -28,7 +28,7 @@ def defined_controllers(machine):
             patch.object(wvmCreate, "get_dom_capabilities", return_value=DOM_CAPS):
         conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode="host-model",
                              uuid="00000000-0000-4000-8000-0000000000c2", arch="x86_64", machine=machine,
-                             firmware={}, volumes=[], networks="default", nwfilter="", virtio=True,
+                             firmware="BIOS", volumes=[], networks="default", nwfilter="", virtio=True,
                              listener_addr="0.0.0.0", add_cdrom="None", add_input="None")
     domain = etree.fromstring(conn.wvm.defineXML.call_args.args[0])
     return [c.get("model") for c in domain.findall("devices/controller[@type='pci']")]

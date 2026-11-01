@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-31 18:13+0000\n"
+"POT-Creation-Date: 2026-11-01 10:56+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -275,7 +275,7 @@ msgstr "Parola Değiştir"
 #: instances/templates/add_instance_owner_block.html:29
 #: instances/templates/add_instance_volume.html:108
 #: instances/templates/create_instance_w1.html:39
-#: instances/templates/create_instance_w2.html:345
+#: instances/templates/create_instance_w2.html:352
 #: instances/templates/instances/destroy_instance_form.html:48
 #: instances/templates/instances/edit_instance_volume.html:111
 #: instances/templates/instances/move_disk.html:27
@@ -1395,7 +1395,9 @@ msgstr "Oturum açma hata sınırı"
 
 #: appsettings/migrations/0014_login_lockout_settings.py:8
 msgid "Failed logins of a user from one address before it is locked"
-msgstr "Bir kullanıcının bir adresten kilitlenmeden önceki başarısız oturum açma sayısı"
+msgstr ""
+"Bir kullanıcının bir adresten kilitlenmeden önceki başarısız oturum açma "
+"sayısı"
 
 #: appsettings/migrations/0014_login_lockout_settings.py:9
 msgid "Login Lockout Minutes"
@@ -1413,7 +1415,9 @@ msgstr "Anlık görüntü boş alan yüzdesi"
 msgid ""
 "Free space a storage pool keeps for a snapshot, in percent of the VM's disks "
 "in it (0: none)"
-msgstr "Bir depolama havuzunun anlık görüntü için ayırdığı boş alan; sanal makinenin bu havuzdaki disklerinin yüzdesi olarak (0: yok)"
+msgstr ""
+"Bir depolama havuzunun anlık görüntü için ayırdığı boş alan; sanal makinenin "
+"bu havuzdaki disklerinin yüzdesi olarak (0: yok)"
 
 #: appsettings/migrations/0017_snapshot_free_space_settings.py:9
 msgid "Snapshot Free Min GiB"
@@ -1422,7 +1426,9 @@ msgstr "Anlık görüntü en az boş alan (GiB)"
 #: appsettings/migrations/0017_snapshot_free_space_settings.py:10
 msgid ""
 "Free space a storage pool keeps for a snapshot at least, in GiB (0: none)"
-msgstr "Bir depolama havuzunun anlık görüntü için en az ayırdığı boş alan, GiB olarak (0: yok)"
+msgstr ""
+"Bir depolama havuzunun anlık görüntü için en az ayırdığı boş alan, GiB "
+"olarak (0: yok)"
 
 #: appsettings/migrations/0018_worker_settings.py:7
 msgid "Worker Concurrency"
@@ -1459,7 +1465,9 @@ msgstr "Yeni bir sanal makine için önce seçilen CPU modu"
 #: appsettings/migrations/0021_setting_descriptions.py:10
 msgid ""
 "Network card model chosen first for a new VM (default: libvirt's choice)"
-msgstr "Yeni bir sanal makine için önce seçilen ağ kartı modeli (default: libvirt'in seçimi)"
+msgstr ""
+"Yeni bir sanal makine için önce seçilen ağ kartı modeli (default: libvirt'in "
+"seçimi)"
 
 #: appsettings/migrations/0021_setting_descriptions.py:11
 msgid "Video device chosen first for a new VM"
@@ -1467,7 +1475,8 @@ msgstr "Yeni bir sanal makine için önce seçilen video aygıtı"
 
 #: appsettings/migrations/0021_setting_descriptions.py:12
 msgid "Input device chosen first for a new VM (None: no input device)"
-msgstr "Yeni bir sanal makine için önce seçilen girdi aygıtı (None: girdi aygıtı yok)"
+msgstr ""
+"Yeni bir sanal makine için önce seçilen girdi aygıtı (None: girdi aygıtı yok)"
 
 #: appsettings/migrations/0021_setting_descriptions.py:13
 msgid "Bus of the CD-ROM a new VM gets (None: no CD-ROM)"
@@ -1487,16 +1496,21 @@ msgstr "Yeni disklerin önbellek modu"
 
 #: appsettings/migrations/0021_setting_descriptions.py:17
 msgid "I/O mode of new disks (native needs cache none or directsync)"
-msgstr "Yeni disklerin G/Ç modu (native, önbellek modu none veya directsync gerektirir)"
+msgstr ""
+"Yeni disklerin G/Ç modu (native, önbellek modu none veya directsync "
+"gerektirir)"
 
 #: appsettings/migrations/0021_setting_descriptions.py:18
 msgid "Discard of new disks (unmap: the guest's TRIM frees space in the image)"
-msgstr "Yeni disklerin discard ayarı (unmap: konuğun TRIM komutu imajda yer açar)"
+msgstr ""
+"Yeni disklerin discard ayarı (unmap: konuğun TRIM komutu imajda yer açar)"
 
 #: appsettings/migrations/0021_setting_descriptions.py:19
 msgid ""
 "Detect zeroes of new disks: how blocks of zeros the guest writes are stored"
-msgstr "Yeni disklerin sıfır algılama ayarı: konuğun yazdığı sıfır bloklarının nasıl saklanacağı"
+msgstr ""
+"Yeni disklerin sıfır algılama ayarı: konuğun yazdığı sıfır bloklarının nasıl "
+"saklanacağı"
 
 #: appsettings/migrations/0021_setting_descriptions.py:20
 msgid "Controller model for disks on the SCSI bus"
@@ -1549,15 +1563,21 @@ msgstr "Bir sanal makine birden fazla kullanıcıya verilebilir"
 #: appsettings/migrations/0021_setting_descriptions.py:32
 msgid ""
 "A quota refusal shows the numbers: what would be used and what is allowed"
-msgstr "Kota reddi sayıları gösterir: ne kadar kullanılacağını ve ne kadarına izin verildiğini"
+msgstr ""
+"Kota reddi sayıları gösterir: ne kadar kullanılacağını ve ne kadarına izin "
+"verildiğini"
 
 #: appsettings/migrations/0021_setting_descriptions.py:33
 msgid "Instances page for administrators: VMs under their host, or one list"
-msgstr "Yöneticiler için Sanal Makineler sayfası: sanal makineler sunucularının altında ya da tek bir listede"
+msgstr ""
+"Yöneticiler için Sanal Makineler sayfası: sanal makineler sunucularının "
+"altında ya da tek bir listede"
 
 #: appsettings/migrations/0021_setting_descriptions.py:34
 msgid "A VM's page shows a bar with its host's links at the bottom"
-msgstr "Sanal makinenin sayfası, altta sunucusunun bağlantılarını içeren bir çubuk gösterir"
+msgstr ""
+"Sanal makinenin sayfası, altta sunucusunun bağlantılarını içeren bir çubuk "
+"gösterir"
 
 #: appsettings/migrations/0021_setting_descriptions.py:35
 msgid "The Instances page shows each VM's DRBD state"
@@ -1921,7 +1941,7 @@ msgid "Connection"
 msgstr "Bağlantı"
 
 #: computes/templates/computes/form.html:31
-#: instances/templates/create_instance_w2.html:248
+#: instances/templates/create_instance_w2.html:255
 msgid "Advanced"
 msgstr "Gelişmiş"
 
@@ -1978,8 +1998,8 @@ msgstr "Depolama"
 #: computes/templates/computes/host_nav.html:19
 #: computes/templates/computes/host_nav.html:20
 #: instances/templates/add_instance_network_block.html:18
-#: instances/templates/create_instance_w2.html:220
-#: instances/templates/create_instance_w2.html:222
+#: instances/templates/create_instance_w2.html:227
+#: instances/templates/create_instance_w2.html:229
 #: instances/templates/instances/settings_tab.html:379
 #: networks/templates/networks.html:5 networks/templates/networks.html:7
 msgid "Networks"
@@ -2376,9 +2396,9 @@ msgstr "Ölçekleme"
 
 #: console/templates/console-vnc.html:29
 #: instances/templates/add_instance_network_block.html:41
-#: instances/templates/create_instance_w2.html:275
-#: instances/templates/create_instance_w2.html:304
-#: instances/templates/create_instance_w2.html:314
+#: instances/templates/create_instance_w2.html:282
+#: instances/templates/create_instance_w2.html:311
+#: instances/templates/create_instance_w2.html:321
 #: instances/templates/instance.html:55
 #: instances/templates/instances/settings_tab.html:186
 #: instances/templates/instances/settings_tab.html:342
@@ -2451,7 +2471,7 @@ msgstr "Bağlan"
 #: instances/templates/allinstances.html:32
 #: instances/templates/allinstances.html:88
 #: instances/templates/create_inst_block.html:12
-#: instances/templates/create_instance_w2.html:357
+#: instances/templates/create_instance_w2.html:364
 #: instances/templates/instances/edit_instance_volume.html:13
 #: instances/templates/instances/move_disk.html:13
 #: instances/templates/instances/settings_tab.html:366
@@ -2695,7 +2715,7 @@ msgstr "libvirt sanal makineyi hâlâ geri döndürüyor"
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:495 instances/jobs.py:503 instances/jobs.py:751
+#: instances/jobs.py:495 instances/jobs.py:503 instances/jobs.py:746
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
@@ -2704,7 +2724,7 @@ msgid "libvirt is still copying the disks"
 msgstr "libvirt diskleri hâlâ kopyalıyor"
 
 #: instances/jobs.py:662 instances/templates/create_instance_w1.html:58
-#: instances/templates/create_instance_w2.html:346
+#: instances/templates/create_instance_w2.html:353
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
@@ -2754,49 +2774,54 @@ msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 
 #: instances/jobs.py:712
-msgid "Invalid firmware"
-msgstr "Geçersiz donanım yazılımı"
+#, python-format
+msgid "This host offers no firmware %(firmware)s"
+msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:770
+#: instances/jobs.py:714
+msgid "This host offers no TPM 2.0: install swtpm on it"
+msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
+
+#: instances/jobs.py:765
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:777
+#: instances/jobs.py:772
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:833
+#: instances/jobs.py:829
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:835
+#: instances/jobs.py:831
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:837
+#: instances/jobs.py:833
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:855
+#: instances/jobs.py:851
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:899
+#: instances/jobs.py:895
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:931
+#: instances/jobs.py:927
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:972
+#: instances/jobs.py:968
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1003
+#: instances/jobs.py:999
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
@@ -2832,14 +2857,14 @@ msgstr "oluşturuldu"
 msgid "drbd"
 msgstr "drbd"
 
-#: instances/models.py:221 instances/templates/create_instance_w2.html:108
+#: instances/models.py:221 instances/templates/create_instance_w2.html:115
 #: instances/templates/instances/resize_tab.html:20
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:49
 msgid "Disk"
 msgstr "Disk"
 
-#: instances/models.py:223 instances/templates/create_instance_w2.html:302
+#: instances/models.py:223 instances/templates/create_instance_w2.html:309
 #: instances/templates/instances/settings_tab.html:167
 msgid "CD-ROM"
 msgstr "CD-ROM"
@@ -2872,27 +2897,27 @@ msgstr "Güvenli olmayan"
 msgid "No Virtual Machine name has been entered"
 msgstr "Sanal makine adı girilmedi"
 
-#: instances/models.py:406
+#: instances/models.py:408
 msgid "No VCPU has been entered"
 msgstr "VCPU belirtilmedi"
 
-#: instances/models.py:412
+#: instances/models.py:414
 msgid "No RAM size has been entered"
 msgstr "RAM boyutu belirtilmedi"
 
-#: instances/models.py:416
+#: instances/models.py:418
 msgid "No Network pool has been choosen"
 msgstr "Ağ havuzu seçilmedi"
 
-#: instances/models.py:424
+#: instances/models.py:426
 msgid "Please select HDD cache mode"
 msgstr "Lütfen HDD ön bellek modunu seçin"
 
-#: instances/models.py:436
+#: instances/models.py:438
 msgid "Please select a video driver"
 msgstr "Lütfen bir video sürücüsü seçin"
 
-#: instances/models.py:473
+#: instances/models.py:475
 msgid "Can access console without password"
 msgstr "Parolasız konsol erişimi yapabilir"
 
@@ -2986,12 +3011,12 @@ msgid "Add disk form"
 msgstr "Disk ekleme formu"
 
 #: instances/templates/add_instance_volume.html:19
-#: instances/templates/create_instance_w2.html:110
+#: instances/templates/create_instance_w2.html:117
 msgid "Disk source"
 msgstr "Disk kaynağı"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:124 instances/views.py:2427
+#: instances/templates/create_instance_w2.html:131 instances/views.py:2427
 msgid "New disk"
 msgstr "Yeni disk"
 
@@ -3009,8 +3034,8 @@ msgstr "Sunucunun bir havuzunda zaten bulunan bir birim."
 
 #: instances/templates/add_instance_volume.html:31
 #: instances/templates/add_instance_volume.html:70
-#: instances/templates/create_instance_w2.html:127
-#: instances/templates/create_instance_w2.html:155
+#: instances/templates/create_instance_w2.html:134
+#: instances/templates/create_instance_w2.html:162
 #: instances/templates/instances/move_disk.html:16
 #: instances/templates/instances/settings_tab.html:229
 msgid "Storage pool"
@@ -3033,8 +3058,8 @@ msgid "Format"
 msgstr "Biçem"
 
 #: instances/templates/add_instance_volume.html:61
-#: instances/templates/create_instance_w2.html:144
-#: instances/templates/create_instance_w2.html:210 storages/forms.py:95
+#: instances/templates/create_instance_w2.html:151
+#: instances/templates/create_instance_w2.html:217 storages/forms.py:95
 #: storages/forms.py:115 storages/templates/storage.html:198
 msgid "Preallocate metadata (qcow2)"
 msgstr "Meta veriyi önceden ayır (qcow2)"
@@ -3052,7 +3077,7 @@ msgid "Choose a pool first"
 msgstr "Önce bir havuz seçin"
 
 #: instances/templates/add_instance_volume.html:90
-#: instances/templates/create_instance_w2.html:174
+#: instances/templates/create_instance_w2.html:181
 #: instances/templates/instances/edit_instance_volume.html:82
 #: instances/templates/instances/edit_instance_volume.html:87
 msgid "Bus"
@@ -3335,43 +3360,51 @@ msgstr "Hazır boyutları yönet"
 msgid "Firmware"
 msgstr "Üretici yazılımı"
 
+#: instances/templates/create_instance_w2.html:83
+msgid "TPM 2.0"
+msgstr "TPM 2.0"
+
 #: instances/templates/create_instance_w2.html:84
+msgid "Windows 11 needs it, with UEFI Secure Boot"
+msgstr "Windows 11, UEFI Secure Boot ile birlikte bunu ister"
+
+#: instances/templates/create_instance_w2.html:91
 msgid "CPU mode"
 msgstr "CPU modu"
 
-#: instances/templates/create_instance_w2.html:86
+#: instances/templates/create_instance_w2.html:93
 #: storages/templates/create_stg_block.html:118
 msgid "Choose…"
 msgstr "Seçin…"
 
-#: instances/templates/create_instance_w2.html:89
+#: instances/templates/create_instance_w2.html:96
 msgid "Custom CPU Models"
 msgstr "Özel CPU modelleri"
 
-#: instances/templates/create_instance_w2.html:136 storages/forms.py:94
+#: instances/templates/create_instance_w2.html:143 storages/forms.py:94
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
-#: instances/templates/create_instance_w2.html:151 instances/views.py:2428
+#: instances/templates/create_instance_w2.html:158 instances/views.py:2428
 msgid "Existing volumes"
 msgstr "Mevcut birimler"
 
-#: instances/templates/create_instance_w2.html:157
-#: instances/templates/create_instance_w2.html:189
+#: instances/templates/create_instance_w2.html:164
+#: instances/templates/create_instance_w2.html:196
 msgid "Select pool"
 msgstr "Havuz seçin"
 
-#: instances/templates/create_instance_w2.html:162
-#: instances/templates/create_instance_w2.html:163
+#: instances/templates/create_instance_w2.html:169
+#: instances/templates/create_instance_w2.html:170
 #: storages/templates/storage.html:116 storages/templates/storages.html:47
 msgid "Volumes"
 msgstr "Birimler"
 
-#: instances/templates/create_instance_w2.html:167
+#: instances/templates/create_instance_w2.html:174
 msgid "Chosen volumes"
 msgstr "Seçilen birimler"
 
-#: instances/templates/create_instance_w2.html:171
+#: instances/templates/create_instance_w2.html:178
 #: instances/templates/instances/edit_instance_volume.html:81
 #: interfaces/templates/create_iface_block.html:78
 #: interfaces/templates/interface.html:113 networks/templates/networks.html:39
@@ -3380,91 +3413,91 @@ msgstr "Seçilen birimler"
 msgid "Device"
 msgstr "Aygıt"
 
-#: instances/templates/create_instance_w2.html:178
-#: instances/templates/create_instance_w2.html:236
+#: instances/templates/create_instance_w2.html:185
+#: instances/templates/create_instance_w2.html:243
 #: instances/templates/instances/settings_tab.html:678
 #: networks/templates/network.html:303
 msgid "Remove"
 msgstr "Kaldır"
 
-#: instances/templates/create_instance_w2.html:184 instances/views.py:2429
+#: instances/templates/create_instance_w2.html:191 instances/views.py:2429
 msgid "Clone from template"
 msgstr "Şablondan klonla"
 
-#: instances/templates/create_instance_w2.html:187
+#: instances/templates/create_instance_w2.html:194
 msgid "Template pool"
 msgstr "Şablon havuzu"
 
-#: instances/templates/create_instance_w2.html:194
+#: instances/templates/create_instance_w2.html:201
 msgid "Template volume"
 msgstr "Şablon birimi"
 
-#: instances/templates/create_instance_w2.html:199
+#: instances/templates/create_instance_w2.html:206
 msgid "Copy into pool"
 msgstr "Havuza kopyala"
 
-#: instances/templates/create_instance_w2.html:221
+#: instances/templates/create_instance_w2.html:228
 msgid "Add networks"
 msgstr "Ağ ekle"
 
-#: instances/templates/create_instance_w2.html:228
+#: instances/templates/create_instance_w2.html:235
 msgid "Network interfaces"
 msgstr "Ağ arabirimleri"
 
-#: instances/templates/create_instance_w2.html:235
+#: instances/templates/create_instance_w2.html:242
 msgid "MAC address"
 msgstr "MAC adresi"
 
-#: instances/templates/create_instance_w2.html:255
+#: instances/templates/create_instance_w2.html:262
 msgid "Disk cache mode"
 msgstr "Disk önbellek modu"
 
-#: instances/templates/create_instance_w2.html:264
+#: instances/templates/create_instance_w2.html:271
 msgid "NIC type"
 msgstr "NIC tipi"
 
-#: instances/templates/create_instance_w2.html:273
+#: instances/templates/create_instance_w2.html:280
 #: nwfilters/templates/nwfilter.html:6 nwfilters/templates/nwfilter.html:8
 msgid "Network filter"
 msgstr "Ağ filtresi"
 
-#: instances/templates/create_instance_w2.html:283 vrtManager/nodedevs.py:29
+#: instances/templates/create_instance_w2.html:290 vrtManager/nodedevs.py:29
 msgid "Video"
 msgstr "Görüntü"
 
-#: instances/templates/create_instance_w2.html:293
+#: instances/templates/create_instance_w2.html:300
 msgid "Console access"
 msgstr "Konsol erişimi"
 
-#: instances/templates/create_instance_w2.html:312
+#: instances/templates/create_instance_w2.html:319
 msgid "Input device"
 msgstr "Girdi aygıtı"
 
-#: instances/templates/create_instance_w2.html:324
+#: instances/templates/create_instance_w2.html:331
 msgid "Guest agent"
 msgstr "Misafir aracı"
 
-#: instances/templates/create_instance_w2.html:328
+#: instances/templates/create_instance_w2.html:335
 msgid "Cloud-init seed"
 msgstr "Cloud-init tohumu"
 
-#: instances/templates/create_instance_w2.html:329
+#: instances/templates/create_instance_w2.html:336
 msgid "The hostname and your SSH keys on the CD-ROM, for cloud images"
 msgstr "Bulut imajları için CD-ROM'da sunucuadı ve SSH anahtarlarınız"
 
-#: instances/templates/create_instance_w2.html:334
+#: instances/templates/create_instance_w2.html:341
 msgid "VirtIO devices"
 msgstr "VirtIO aygıtları"
 
-#: instances/templates/create_instance_w2.html:356
+#: instances/templates/create_instance_w2.html:363
 msgid "Flavors"
 msgstr "Hazır boyutlar"
 
-#: instances/templates/create_instance_w2.html:375
+#: instances/templates/create_instance_w2.html:382
 msgid "Add volume"
 msgstr "Birim ekle"
 
-#: instances/templates/create_instance_w2.html:382
+#: instances/templates/create_instance_w2.html:389
 msgid "Add network"
 msgstr "Ağ ekle"
 
@@ -5960,35 +5993,35 @@ msgstr "Bir havuzda zaten bulunan birimler"
 msgid "A copy of a template volume"
 msgstr "Bir şablon biriminin kopyası"
 
-#: instances/views.py:2527
+#: instances/views.py:2518
 msgid "You haven't defined any storage pools"
 msgstr "Hiç bir depolama havuzu tanımlamadınız"
 
-#: instances/views.py:2529
+#: instances/views.py:2520
 msgid "You haven't defined any network pools"
 msgstr "Hiç bir ağ havuzu tanımlamadınız"
 
-#: instances/views.py:2592
+#: instances/views.py:2583
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:2600
+#: instances/views.py:2591
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:2615
+#: instances/views.py:2606
 msgid "Flavor Updated"
 msgstr "Flavor Güncellendi"
 
-#: instances/views.py:2621
+#: instances/views.py:2612
 msgid "Update Flavor"
 msgstr "Flavor Güncelle"
 
-#: instances/views.py:2633
+#: instances/views.py:2624
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: instances/views.py:2639
+#: instances/views.py:2630
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr ""
 "Yalnızca boyut şablonu silinir; ondan oluşturulan sanal makineler "

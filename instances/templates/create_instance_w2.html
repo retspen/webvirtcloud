@@ -77,6 +77,13 @@
                                 {% endfor %}
                             </select>
                             {% field_error vm_form.firmware "vm_firmware" %}
+                            {% if tpm_support %}
+                            <div class="form-check mt-2">
+                                <input id="vm_tpm" class="form-check-input" type="checkbox" name="tpm" value="true"{% if vm_form.tpm.value %} checked{% endif %} aria-describedby="vm_tpm_help">
+                                <label for="vm_tpm" class="form-check-label">{% trans "TPM 2.0" %}</label>
+                                <div id="vm_tpm_help" class="form-text">{% trans "Windows 11 needs it, with UEFI Secure Boot" %}</div>
+                            </div>
+                            {% endif %}
                         </div>
                         {% endif %}
                         {% if dom_caps.cpu_modes %}

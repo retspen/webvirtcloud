@@ -182,8 +182,8 @@ class CreateFormValuesTests(TestCase):
         self.assertIn("Networks: This field is required.", self.summary(page))
 
     def test_a_firmware_error_without_a_firmware_choice_is_in_the_summary(self):
-        # an architecture with no firmware label renders no firmware select
-        with patch("vrtManager.connection.wvmConnect.label_for_firmware_path", return_value=None):
+        # an architecture with no firmware choice renders no firmware select
+        with patch("vrtManager.connection.wvmConnect.get_firmwares", return_value=[]):
             fields = valid()
             del fields["firmware"]
             _, response = render_create_page(self, fields)

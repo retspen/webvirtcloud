@@ -72,6 +72,8 @@ class DestroyOptionsSerializer(serializers.Serializer):
 
 
 class CreateInstanceSerializer(serializers.ModelSerializer):
+    # BIOS, UEFI or UEFI Secure Boot, as the host offers; left out: the machine's default
+    firmware = serializers.CharField(required=False)
     video = serializers.CharField(initial="vga")
     storage = serializers.CharField(initial="default")
     cache_mode = serializers.CharField(initial="none")
@@ -90,6 +92,8 @@ class CreateInstanceSerializer(serializers.ModelSerializer):
         model = CreateInstance
         fields = [
             "name",
+            "firmware",
+            "tpm",
             "vcpu",
             "vcpu_mode",
             "memory",

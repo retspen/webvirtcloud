@@ -195,31 +195,6 @@ def validate_macaddr(val):
         raise ValueError("MAC address must be of the format AA:BB:CC:DD:EE:FF, was {}".format(val))
 
 
-# Mapping of UEFI binary names to their associated architectures. We
-# only use this info to do things automagically for the user, it shouldn't
-# validate anything the user explicitly enters.
-UEFI_ARCH_PATTERNS = {
-    "i686": [
-        r".*ovmf-ia32.*",  # fedora, gerd's firmware repo
-    ],
-    "x86_64": [
-        r".*OVMF_CODE\.fd",  # RHEL
-        r".*ovmf-x64/OVMF.*\.fd",  # gerd's firmware repo
-        r".*ovmf-x86_64-.*",  # SUSE
-        r".*ovmf.*",
-        ".*OVMF.*",  # generic attempt at a catchall
-    ],
-    "aarch64": [
-        r".*AAVMF_CODE\.fd",  # RHEL
-        r".*aarch64/QEMU_EFI.*",  # gerd's firmware repo
-        r".*aarch64.*",  # generic attempt at a catchall
-    ],
-    "armv7l": [
-        r".*arm/QEMU_EFI.*",  # fedora, gerd's firmware repo
-    ],
-}
-
-
 def vol_dev_type(vol_bus):
     if vol_bus == "ide":
         return "hd"

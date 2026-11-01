@@ -203,10 +203,12 @@ class wvmCreate(wvmConnect):
         mac=None,
         qemu_ga=True,
         add_cdrom="sata",
-        add_input="default"
+        add_input="default",
+        tpm_model=None,
     ):
         """
-        Create VM function
+        Create VM function. firmware: BIOS, UEFI or UEFI Secure Boot, of
+        get_firmwares; tpm_model: an emulated TPM 2.0 of get_tpm_model, or none.
         """
         caps = self.get_capabilities(arch)
         dom_caps = self.get_dom_capabilities(arch, machine)
@@ -221,33 +223,30 @@ class wvmCreate(wvmConnect):
                   <memory unit='KiB'>{memory}</memory>
                   <vcpu>{vcpu}</vcpu>"""
 
+        secure_boot = firmware == "UEFI Secure Boot"
         if dom_caps["os_support"] == "yes":
-            xml += f"""<os>
+            # UEFI: libvirt picks the firmware and its variables, for Secure
+            # Boot one with Microsoft's keys enrolled
+            efi = " firmware='efi'" if firmware in ("UEFI", "UEFI Secure Boot") else ""
+            xml += f"""<os{efi}>
                           <type arch='{arch}' machine='{machine}'>{caps["os_type"]}</type>"""
+            if secure_boot:
+                xml += """<firmware>
+                            <feature enabled='yes' name='secure-boot'/>
+                            <feature enabled='yes' name='enrolled-keys'/>
+                          </firmware>"""
+            elif efi:
+                xml += """<firmware><feature enabled='no' name='secure-boot'/></firmware>"""
             xml += """    <boot dev='hd'/>
                           <boot dev='cdrom'/>
                           <bootmenu enable='yes'/>"""
-            if firmware:
-                if firmware["secure"] == "yes":
-                    xml += """<loader readonly='%s' type='%s' secure='%s'>%s</loader>""" % (
-                        firmware["readonly"],
-                        firmware["type"],
-                        firmware["secure"],
-                        firmware["loader"],
-                    )
-                if firmware["secure"] == "no":
-                    xml += """<loader readonly='%s' type='%s'>%s</loader>""" % (
-                        firmware["readonly"],
-                        firmware["type"],
-                        firmware["loader"],
-                    )
             xml += """</os>"""
 
         if caps["features"]:
             xml += """<features>"""
             for feat in [x for x in ("acpi", "apic", "pae",) if x in caps["features"]]:
                 xml += f"""<{feat}/>"""
-            if firmware.get("secure", "no") == "yes":
+            if secure_boot:
                 xml += """<smm state="on"/>"""
             xml += """</features>"""
 
@@ -382,6 +381,8 @@ class wvmCreate(wvmConnect):
         xml += f""" <video>
                       <model type='{video}'/>
                    </video>"""
+        if tpm_model:
+            xml += f"""<tpm model='{tpm_model}'><backend type='emulator' version='2.0'/></tpm>"""
         # q35 plugs each PCIe device (a virtio disk, a NIC) into a root port of
         # its own and libvirt makes only as many as the VM is defined with: as
         # virt-install, 14 ports, so a running VM can take more devices

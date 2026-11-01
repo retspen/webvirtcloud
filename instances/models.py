@@ -402,6 +402,8 @@ class CreateInstance(models.Model):
         error_messages={"required": _("No Virtual Machine name has been entered")},
     )
     firmware = models.CharField(max_length=64)
+    # an emulated TPM 2.0, as Windows 11 needs
+    tpm = models.BooleanField(default=False)
     vcpu = models.IntegerField(
         error_messages={"required": _("No VCPU has been entered")}, validators=[MinValueValidator(1)]
     )

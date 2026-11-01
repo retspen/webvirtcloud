@@ -117,8 +117,8 @@ class LiveCreateTestCase(TransactionTestCase):
     def test_invalid_cache_mode_allocates_nothing(self):
         self.assert_nothing_left("cr-cache", self.create("cr-cache", cache_mode="bogus"))
 
-    def test_malformed_uefi_firmware_allocates_nothing(self):
-        self.assert_nothing_left("cr-uefi", self.create("cr-uefi", firmware="UEFI"))
+    def test_a_firmware_the_host_does_not_offer_allocates_nothing(self):
+        self.assert_nothing_left("cr-uefi", self.create("cr-uefi", firmware="Coreboot"))
 
     def test_rejected_definition_removes_the_new_disk(self):
         self.assert_nothing_left("cr-define", self.create("cr-define", video="no-such-model"))
@@ -129,36 +129,37 @@ class LiveCreateTestCase(TransactionTestCase):
         self.assertTrue(self.domain_exists(P + "cr-ok"))
         self.assertEqual(len(self.volumes()), 1)
 
-    def test_offered_uefi_firmware_boots_on_q35(self):
+    def offered(self):
         page = self.client.get(reverse("instances:create_instance", args=[self.compute.id, "x86_64", "q35"]))
-        uefi = [f for f in page.context["firmwares"] if f.startswith("UEFI")]
-        self.assertTrue(uefi, "no UEFI firmware offered for q35")
+        return page.context["firmwares"], page.context["tpm_support"]
 
-        self.create("cr-uefi-ok", firmware=uefi[0])
+    def test_uefi_boots_without_secure_boot(self):
+        self.assertIn("UEFI", self.offered()[0], "no UEFI offered for q35")
+
+        self.create("cr-uefi-ok", firmware="UEFI")
 
         dom = self.conn.lookupByName(P + "cr-uefi-ok")
-        loader = etree.fromstring(dom.XMLDesc(0)).findtext("os/loader")
-        self.assertEqual(loader, uefi[0].split(":", 1)[1].strip())
-        # Listed by libvirt for q35, so the domain starts with it
-        caps = etree.fromstring(self.conn.getDomainCapabilities(None, "x86_64", "q35", "kvm"))
-        self.assertIn(loader, caps.xpath("os/loader/value/text()"))
         dom.create()
-        self.assertTrue(dom.isActive())
+        tree = etree.fromstring(dom.XMLDesc(0))
+        self.assertEqual(tree.find("os").get("firmware"), "efi")
+        self.assertNotEqual(tree.find("os/loader").get("secure"), "yes")
+        self.assertTrue(tree.findtext("os/nvram"))
 
-    def test_secure_boot_loader_on_q35_gets_secure_boot(self):
-        caps = etree.fromstring(self.conn.getDomainCapabilities(None, "x86_64", "q35", "kvm"))
-        secboot = [p for p in caps.xpath("os/loader/value/text()") if "secboot" in p and "OVMF_CODE" in p]
-        if not secboot:
-            self.skipTest("the host has no secure boot loader for q35")
+    def test_secure_boot_with_a_tpm_boots_as_windows_11_needs(self):
+        firmwares, tpm_support = self.offered()
+        if "UEFI Secure Boot" not in firmwares or not tpm_support:
+            self.skipTest("the host offers no Secure Boot with Microsoft's keys, or no swtpm")
 
-        self.create("cr-secboot", firmware=f"UEFI x86_64: {secboot[0]}")
+        self.create("cr-secboot", firmware="UEFI Secure Boot", tpm="true")
 
         dom = self.conn.lookupByName(P + "cr-secboot")
+        dom.create()
         tree = etree.fromstring(dom.XMLDesc(0))
         self.assertEqual(tree.find("os/loader").get("secure"), "yes")
         self.assertEqual(tree.find("features/smm").get("state"), "on")
-        dom.create()
-        self.assertTrue(dom.isActive())
+        # the variables libvirt chose come with Microsoft's keys enrolled
+        self.assertEqual(tree.xpath("os/firmware/feature[@name='enrolled-keys']/@enabled"), ["yes"])
+        self.assertEqual(tree.xpath("devices/tpm/backend/@version"), ["2.0"])
 
     def test_every_offered_cdrom_bus_creates_a_vm_that_starts(self):
         page = self.client.get(reverse("instances:create_instance", args=[self.compute.id, "x86_64", "q35"]))

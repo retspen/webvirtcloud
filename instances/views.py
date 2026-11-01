@@ -2459,7 +2459,6 @@ def create_instance(request, compute_id, arch, machine):
     storages = list()
     networks = list()
     hypervisors = list()
-    firmwares = list()
     meta_prealloc = False
     compute = get_object_or_404(Compute, pk=compute_id)
     flavors = Flavor.objects.filter().order_by("id")
@@ -2512,16 +2511,8 @@ def create_instance(request, compute_id, arch, machine):
         caps = conn.get_capabilities(arch)
 
         virtio_support = conn.is_supports_virtio(arch, machine)
-        # Add BIOS
-        label = conn.label_for_firmware_path(arch, None)
-        if label:
-            firmwares.append(label)
-        # Add UEFI
-        loader_path = conn.find_uefi_path_for_arch(arch, machine)
-        label = conn.label_for_firmware_path(arch, loader_path)
-        if label:
-            firmwares.append(label)
-        firmwares = list(set(firmwares))
+        firmwares = conn.get_firmwares(arch, machine)
+        tpm_support = bool(conn.get_tpm_model(arch, machine))
 
         if not storages:
             raise util.OperationError(_("You haven't defined any storage pools"))

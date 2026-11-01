@@ -31,6 +31,7 @@ class CreateJobTestCase(TransactionTestCase):
         self.addCleanup(patcher.stop)
         self.conn.get_instances.return_value = []
         self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
+        self.conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
         self.conn.get_disk_bus_types.return_value = ["virtio", "sata"]
         self.conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model", "custom"],
                                                        "cpu_custom_models": ["Skylake-Server-noTSX-IBRS"]}
@@ -50,6 +51,19 @@ class CreateJobTestCase(TransactionTestCase):
         CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
         self.assertEqual(self.conn.create_instance.call_args.kwargs["uuid"], op.intent["uuid"])
         self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"], name="api-vm").exists())
+
+    def test_the_api_takes_secure_boot_and_a_tpm(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/pc/"
+        body = {**BODY, "firmware": "UEFI Secure Boot", "tpm": True}
+        self.assertEqual(self.client.post(url, body, content_type="application/json").status_code, 202)
+        params = Operation.objects.get().params
+        self.assertEqual((params["firmware"], params["tpm"], params["machine"]), ("UEFI Secure Boot", True, "q35"))
+
+    def test_secure_boot_keeps_a_versioned_q35_machine(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/pc-q35-9.2/"
+        body = {**BODY, "firmware": "UEFI Secure Boot"}
+        self.assertEqual(self.client.post(url, body, content_type="application/json").status_code, 202)
+        self.assertEqual(Operation.objects.get().params["machine"], "pc-q35-9.2")
 
     def test_a_refused_create_queues_nothing(self):
         url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"

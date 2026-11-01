@@ -22,7 +22,7 @@ def defined_cpu(vcpu_mode):
             patch.object(wvmCreate, "get_dom_capabilities", return_value=DOM_CAPS):
         conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode=vcpu_mode,
                              uuid="00000000-0000-4000-8000-0000000000c1", arch="x86_64", machine="q35",
-                             firmware={}, volumes=[], networks="", nwfilter="", virtio=True, listener_addr="0.0.0.0",
+                             firmware="BIOS", volumes=[], networks="", nwfilter="", virtio=True, listener_addr="0.0.0.0",
                              add_cdrom="None", add_input="None")
     return etree.fromstring(conn.wvm.defineXML.call_args.args[0]).find("cpu")
 

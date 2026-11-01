@@ -42,6 +42,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * Storage pool and volume management
 * Network (with DHCP leases), interface, network filter and secret management
 * PCI and USB devices of the host given to VMs
+* UEFI Secure Boot and TPM 2.0 for new VMs, as Windows 11 needs
 * Browser-based VNC console (noVNC) and serial console
 * Role-based access control: users only see the VMs assigned to them, within their quota
 * 2FA (OTP / TOTP) and failed-login lockout
@@ -237,6 +238,8 @@ A compute node is a KVM host the panel manages over libvirt.
    curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/dev/libvirt-bootstrap.sh | sudo sh
    # or, from a cloned repository: sudo sh ./dev/libvirt-bootstrap.sh
    ```
+
+   The new VM form offers UEFI, UEFI Secure Boot (with Microsoft's keys, for Windows 11) and a TPM 2.0 only when the host's libvirt finds the UEFI firmware and swtpm: install `ovmf swtpm-tools` (Debian / Ubuntu) or `edk2-ovmf swtpm swtpm-tools` (RHEL family) if they are missing.
 
 2. For SSH connections, give the user the panel runs as an SSH key and copy it to the compute node. **Use only the block for your installation type:** a key set up with the host commands is not seen by the panel in Docker. `ssh-copy-id` asks for the compute node's root password once. `accept-new` accepts a new host's key on first connect and refuses a changed one.
 
