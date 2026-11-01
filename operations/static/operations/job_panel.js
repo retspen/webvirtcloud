@@ -1,6 +1,7 @@
 // The job panel of a resource page (operations framework). It polls the
 // resource's jobs, shows progress and outcomes, and keeps the page's own
 // status poll from reloading (backgroundJobRunning) while it shows anything.
+// A job that succeeds without a warning reloads the page instead.
 
 // The Bootstrap colour of each job state, for badges and alerts; the jobs
 // pages use the same map (operations/templatetags/operations.py)
@@ -113,6 +114,20 @@ function jobPanel(element, urls, csrfToken, initialIds) {
         holding = busy;
     }
 
+    // a job that did what it was asked, with nothing more to read: the page shows its effect
+    function quiet(job) {
+        var result = job.result || {};
+        return job.state === "succeeded" && !result.warning && !(result.left_behind || []).length;
+    }
+
+    // a dialog open, a field in use or an XML edit not saved: its outcome waits in the panel, with Refresh
+    function interacting() {
+        var active = document.activeElement;
+        return !!document.querySelector(".modal.show")
+            || !!(active && active.matches && active.matches("input, select, textarea"))
+            || !!(window.xmlEditUnsaved && window.xmlEditUnsaved());
+    }
+
     function fetchOutcome(id) {
         if (inflight[id]) { return; }
         inflight[id] = true;
@@ -123,6 +138,12 @@ function jobPanel(element, urls, csrfToken, initialIds) {
                 // ends; the next poll asks for it again
                 if (["queued", "running", "cancelling"].indexOf(job.state) >= 0) { return; }
                 delete pending[id];
+                // only when no other job runs, is shown or awaited: a reload would lose its outcome
+                var others = Object.keys(outcomes).length + Object.keys(pending).length + Object.keys(shown).length;
+                if (quiet(job) && !interacting() && !others) {
+                    window.location.reload(); // the job is not remembered again: no loop
+                    return;
+                }
                 outcomes[id] = job;
                 render();
             })

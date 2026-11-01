@@ -18,7 +18,7 @@ function advance(ms) {
 }
 const realNow = Date.now;
 Date.now = () => 1700000000000 + now;
-global.document = { hidden: false, addEventListener() {} };
+global.document = { hidden: false, addEventListener() {}, activeElement: null, querySelector: () => null };
 global.window = { backgroundJobRunning: false, location: { reload() { window.reloaded = true; } } };
 
 // requests settle only when the test says so; callbacks run in registration order
@@ -259,8 +259,65 @@ assert.strictEqual(window.backgroundJobRunning, true, "still followed");
 advance(3000);
 answer("/r", empty);
 assert.strictEqual(open.filter((r) => !r.settled && r.url === "/j/u").length, 1, "asked again once per poll");
+window.reloaded = false;
 answer("/j/u", { ...running, id: "u", label: "Upload", state: "succeeded" });
-assert.ok(el11.innerHTML.includes("Upload") && el11.innerHTML.includes('<span class="badge bg-success">succeeded</span>'),
-    "the outcome shows once the job ends");
+assert.ok(window.reloaded, "a job that succeeds without a warning reloads the page: it shows the job's effect");
+assert.ok(!el11.innerHTML.includes('<span class="badge bg-success">succeeded</span>'), "not shown as well");
+
+// a dialog open or a field in use: the outcome waits in the panel, with Refresh
+for (const [label, doc] of [["dialog", { querySelector: (s) => s === ".modal.show" ? {} : null }],
+                            ["field", { activeElement: { matches: (s) => s === "input, select, textarea" } }]]) {
+    open = []; timers = []; window.reloaded = false;
+    Object.assign(document, { activeElement: null, querySelector: () => null }, doc);
+    const elm = { innerHTML: "", addEventListener() {} };
+    jobPanel(elm, urls, "tok", ["m"]);
+    advance(0);
+    answer("/r", empty);
+    answer("/j/m", { ...running, id: "m", label: "Clone", state: "succeeded" });
+    assert.ok(!window.reloaded && elm.innerHTML.includes('<span class="badge bg-success">succeeded</span>')
+        && elm.innerHTML.includes("data-refresh"), "with a " + label + ": the outcome with Refresh, no reload");
+}
+Object.assign(document, { activeElement: null, querySelector: () => null });
+
+// an XML edit not saved: no reload, as for the page's status poll
+open = []; timers = []; window.reloaded = false;
+window.xmlEditUnsaved = () => true;
+const elx = { innerHTML: "", addEventListener() {} };
+jobPanel(elx, urls, "tok", ["x"]);
+advance(0);
+answer("/r", empty);
+answer("/j/x", { ...running, id: "x", state: "succeeded" });
+assert.ok(!window.reloaded && elx.innerHTML.includes("data-refresh"), "an unsaved XML edit keeps the page");
+delete window.xmlEditUnsaved;
+
+// another job's outcome shown or still awaited: a quiet success does not wipe it
+open = []; timers = []; window.reloaded = false;
+const elo = { innerHTML: "", addEventListener() {} };
+jobPanel(elo, urls, "tok", ["f", "s", "w"]);
+advance(0);
+answer("/r", empty);
+answer("/j/f", { ...running, id: "f", label: "Migrate", state: "failed", error: "no route" });
+answer("/j/s", { ...running, id: "s", label: "Clone", state: "succeeded" });
+assert.ok(!window.reloaded && elo.innerHTML.includes("no route") && elo.innerHTML.includes("Clone"),
+    "the failure stays, the success shows beside it");
+answer("/j/w", { ...running, id: "w", label: "Snapshot", state: "succeeded" });
+assert.ok(!window.reloaded, "still not while an outcome is shown");
+open = []; timers = []; window.reloaded = false;
+const elp = { innerHTML: "", addEventListener() {} };
+jobPanel(elp, urls, "tok", ["s2", "f2"]);
+advance(0);
+answer("/r", empty);
+answer("/j/s2", { ...running, id: "s2", state: "succeeded" });
+assert.ok(!window.reloaded, "not while another outcome is awaited");
+answer("/j/f2", { ...running, id: "f2", state: "failed", error: "refused" });
+assert.ok(elp.innerHTML.includes("refused"), "which then shows");
+// another job still running: its outcome would be lost to a reload
+open = []; timers = []; window.reloaded = false;
+const elr = { innerHTML: "", addEventListener() {} };
+jobPanel(elr, urls, "tok", ["s3"]);
+advance(0);
+answer("/r", { ...empty, jobs: [{ ...running, id: "r3" }] });
+answer("/j/s3", { ...running, id: "s3", state: "succeeded" });
+assert.ok(!window.reloaded, "not while another job runs");
 Date.now = realNow;
 console.log("ok");
