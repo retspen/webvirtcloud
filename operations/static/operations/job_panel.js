@@ -74,7 +74,8 @@ function jobPanel(element, urls, csrfToken, initialIds) {
         var note = job.result && job.result.warning ? '<div class="small mt-2">' + esc(job.result.warning) + "</div>" : "";
         var warn = note + (left.length ? '<div class="small mt-2">Files not removed:</div><ul class="list-unstyled small mb-0">'
             + left.map(function (path) { return '<li class="text-break"><code>' + esc(path) + "</code></li>"; }).join("") + "</ul>" : "");
-        var buttons = '<button type="button" class="btn btn-sm btn-primary" data-refresh="1">Refresh</button>'
+        var buttons = (opens(job) ? '<a class="btn btn-sm btn-primary" href="' + esc(job.result.open) + '">Open</a>' : "")
+            + '<button type="button" class="btn btn-sm btn-primary" data-refresh="1">Refresh</button>'
             + '<button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="' + esc(job.id)
             + '">Dismiss</button>';
         return alertHtml(job.state, header(job.label, job.state, "", buttons) + errorHtml(job) + warn);
@@ -114,6 +115,11 @@ function jobPanel(element, urls, csrfToken, initialIds) {
         holding = busy;
     }
 
+    // the page of what the job made, a path of this site
+    function opens(job) {
+        return !!(job.result && /^\/[^\/]/.test(job.result.open || ""));
+    }
+
     // a job that did what it was asked, with nothing more to read: the page shows its effect
     function quiet(job) {
         var result = job.result || {};
@@ -134,7 +140,13 @@ function jobPanel(element, urls, csrfToken, initialIds) {
                 var others = Object.keys(outcomes).length + Object.keys(pending).length + Object.keys(shown).length;
                 // the page in use (poll.js): its outcome waits in the panel, with Refresh
                 if (quiet(job) && !pageInUse() && !others) {
-                    window.location.reload(); // the job is not remembered again: no loop
+                    // a job that made a VM opens its page (result.open); another reloads this one,
+                    // where the job is not remembered again: no loop
+                    if (opens(job)) {
+                        window.location.assign(job.result.open);
+                    } else {
+                        window.location.reload();
+                    }
                     return;
                 }
                 outcomes[id] = job;

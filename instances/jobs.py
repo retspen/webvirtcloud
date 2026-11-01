@@ -8,6 +8,7 @@ import time
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
@@ -112,7 +113,7 @@ def _snapshot_free_space():
 
 
 CLONE_POST_KEY_RE = re.compile(r"^(clone-net-mac-\d+|disk-[a-z0-9]+|meta-[a-z0-9]+)$")
-CLONE_FIELDS = ("name", "clone-title", "clone-description")
+CLONE_FIELDS = ("name", "clone-title", "clone-description", "clone-vcpu", "clone-memory", "clone-start")
 
 
 def clone_data(user, instance, fields):
@@ -126,9 +127,19 @@ def clone_data(user, instance, fields):
     data["clone-title"] = fields.get("clone-title", "").strip()
     data["clone-description"] = fields.get("clone-description", "").strip()
 
-    # the clone copies the persistent definition
-    quota = {"cpus": instance.proxy.get_vcpu(config=True), "memory": instance.proxy.get_memory(config=True),
-             "disk": utils.disk_gib(instance.config_disks)}
+    # the clone copies the persistent definition, with the size the form gives
+    charged = {}
+    for key, source, label in (("vcpu", instance.config_vcpu, _("vCPUs")),
+                               ("memory", instance.config_memory, _("memory (MiB)"))):
+        value = fields.get(f"clone-{key}") or str(source)
+        if not value.isdigit() or int(value) < 1:
+            raise util.OperationError(_("Enter a whole number of %(what)s for the clone") % {"what": label})
+        # None: as the VM, nothing to change after the copy
+        data[key] = int(value) if int(value) != source else None
+        # the larger: a resize that fails after the copy leaves the clone at the VM's size
+        charged[key] = max(int(value), source)
+    data["start"] = fields.get("clone-start") == "true"
+    quota = {"cpus": charged["vcpu"], "memory": charged["memory"], "disk": utils.disk_gib(instance.config_disks)}
     quota_msg = utils.check_user_quota(user, 1, quota["cpus"], quota["memory"], quota["disk"])
 
     data["disk_owner_uid"] = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
@@ -186,6 +197,37 @@ def clone_data(user, instance, fields):
         raise util.OperationError(
             _("Disk name '%(disk_name)s' contains invalid characters!") % {"disk_name": ", ".join(str(v) for v in invalid_disks)})
     return data, quota
+
+
+def _finish_clone(op, clone, warning):
+    """The clone, defined but not recorded yet (the quota counts the job, at the
+    size it charged, until then): the size the form gave, and started if
+    asked. It is made either way: a step that fails is a warning of the job."""
+    c = Compute.objects.get(pk=op.intent["compute"])
+    proxy = wvmInstance(c.hostname, c.login, c.password, c.type, op.intent["name"], uuid=op.intent["uuid"])
+    notes = [warning] if warning else []
+    try:
+        if clone.get("vcpu"):
+            proxy.resize_cpu(str(clone["vcpu"]), str(clone["vcpu"]))
+        if clone.get("memory"):
+            proxy.resize_mem(clone["memory"], clone["memory"])
+        if clone.get("start"):
+            proxy.start()
+    except libvirtError as err:
+        notes.append(_("The clone is made, but not as asked: %(error)s") % {"error": err})
+    return {"warning": " ".join(notes)} if notes else {}
+
+
+def _clone_made(op, result):
+    """Records the clone; the job's result, with the clone's page, which the
+    job panel opens: the page the job ran from is the VM cloned."""
+    record_vm(op, owner=True)
+    return {**result, "open": _clone_page(op)}
+
+
+def _clone_page(op):
+    clone = Instance.objects.get(compute_id=op.intent["compute"], uuid=op.intent["uuid"])
+    return reverse("instances:instance", args=[clone.pk])
 
 
 def vm_claims(compute, name):
@@ -494,8 +536,7 @@ class CloneInstance(Kind):
             ctx.record_intent(live=False)
             ctx.set_phase(gettext_noop("Copying disks"))
             proxy.clone_instance(clone, uuid)
-            record_vm(op, owner=True)
-            return {}
+            return _clone_made(op, _finish_clone(op, clone, ""))
         if status not in (1, 3):
             raise util.OperationError(CLONE_STATE_REFUSED)
         targets = proxy.live_clone_targets(clone, **_snapshot_free_space())
@@ -555,8 +596,7 @@ class CloneInstance(Kind):
         success, errmsg = result
         if success:
             proxy.define_clone(clone, uuid, {c["dev"]: c["path"] for c in copies})
-            record_vm(op, owner=True)
-            return {"warning": warning} if warning else {}
+            return _clone_made(op, _finish_clone(op, clone, warning))
         _delete_created(proxy, op)
         op.refresh_from_db(fields=["cancel_requested"])
         if op.cancel_requested:
@@ -578,7 +618,10 @@ class CloneInstance(Kind):
     def reconcile(self, op):
         if not op.intent.get("live"):
             disks = [v for k, v in op.intent["clone"].items() if k.startswith("disk-") and v]
-            return vm_outcome(op, owner=True, volumes=disks)
+            outcome = vm_outcome(op, owner=True, volumes=disks)
+            if outcome.state == Operation.SUCCEEDED:
+                outcome.result = {**outcome.result, "open": _clone_page(op)}
+            return outcome
         proxy = _recovery_proxy(op)
         if proxy is None:
             created = ", ".join(c["path"] for c in op.intent.get("created", []))
@@ -597,8 +640,7 @@ class CloneInstance(Kind):
         """The spec's recovery table: a defined clone first, then a volume
         still being created, since it comes before the copy."""
         if _domain(op.intent["compute"], op.intent["uuid"]) is not None:
-            record_vm(op, owner=True)
-            return Outcome(Operation.SUCCEEDED)
+            return Outcome(Operation.SUCCEEDED, result=_clone_made(op, {}))
         created = op.intent.get("created", [])
         paths = [c["path"] for c in created]
         ended = Operation.CANCELLED if op.cancel_requested else Operation.FAILED
@@ -637,8 +679,7 @@ class CloneInstance(Kind):
             _delete_created(proxy, op)
             return Outcome(ended, error=errmsg or "The copy failed")
         proxy.define_clone(op.intent["clone"], op.intent["uuid"], {c["dev"]: c["path"] for c in created})
-        record_vm(op, owner=True)
-        return Outcome(Operation.SUCCEEDED)
+        return Outcome(Operation.SUCCEEDED, result=_clone_made(op, _finish_clone(op, op.intent["clone"], "")))
 
     def log_entry(self, op, state):
         source = op.resource_label.rpartition("/")[2]

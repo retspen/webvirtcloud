@@ -19,7 +19,8 @@ function advance(ms) {
 const realNow = Date.now;
 Date.now = () => 1700000000000 + now;
 global.document = { hidden: false, addEventListener() {}, activeElement: null, querySelector: () => null };
-global.window = { backgroundJobRunning: false, location: { reload() { window.reloaded = true; } } };
+global.window = { backgroundJobRunning: false,
+                  location: { reload() { window.reloaded = true; }, assign(url) { window.opened = url; } } };
 
 // requests settle only when the test says so; callbacks run in registration order
 let open = [];
@@ -263,6 +264,26 @@ window.reloaded = false;
 answer("/j/u", { ...running, id: "u", label: "Upload", state: "succeeded" });
 assert.ok(window.reloaded, "a job that succeeds without a warning reloads the page: it shows the job's effect");
 assert.ok(!el11.innerHTML.includes('<span class="badge bg-success">succeeded</span>'), "not shown as well");
+
+// a job that made a VM opens its page; a warning keeps the outcome, with Open; only a path of this site
+open = []; timers = []; window.reloaded = false; window.opened = null;
+const elv = { innerHTML: "", addEventListener() {} };
+jobPanel(elv, urls, "tok", ["v"]);
+advance(0);
+answer("/r", empty);
+answer("/j/v", { ...running, id: "v", label: "Clone VM", state: "succeeded", result: { open: "/instances/9/" } });
+assert.ok(window.opened === "/instances/9/" && !window.reloaded, "opens the clone's page");
+for (const [result, shown] of [[{ open: "/instances/9/", warning: "not started" }, true],
+                               [{ open: "//evil.example.com/" }, false], [{ open: "javascript:alert(1)" }, false]]) {
+    open = []; timers = []; window.reloaded = false; window.opened = null;
+    const elw = { innerHTML: "", addEventListener() {} };
+    jobPanel(elw, urls, "tok", ["w"]);
+    advance(0);
+    answer("/r", empty);
+    answer("/j/w", { ...running, id: "w", state: "succeeded", result });
+    assert.strictEqual(window.opened, null, JSON.stringify(result));
+    assert.strictEqual(elw.innerHTML.includes('href="/instances/9/">Open</a>'), shown, JSON.stringify(result));
+}
 
 // a dialog open or a field in use: the outcome waits in the panel, with Refresh
 for (const [label, doc] of [["dialog", { querySelector: (s) => s === ".modal.show" ? {} : null }],

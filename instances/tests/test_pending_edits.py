@@ -183,7 +183,7 @@ class PendingEditsTestCase(TestCase):
                 # the DHCP entry of the clone's name holds one address: only the first NIC guesses it
                 self.assertEqual(len(form.xpath(".//button[contains(@onclick, 'guess_mac_address')]")), 1)
                 # a running or paused VM is copied by a backup, which does not preallocate
-                self.assertEqual(form.xpath(".//input[@type='checkbox']/@name"), metadata)
+                self.assertEqual(form.xpath(".//input[@type='checkbox']/@name"), [*metadata, "clone-start"])
 
     def test_a_disk_with_a_pending_source_is_not_deleted(self):
         # running: vda is A, its definition for the next start uses B

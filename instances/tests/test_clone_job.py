@@ -43,9 +43,11 @@ class CloneJobTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         self.compute = Compute.objects.create(name="clone-c", hostname="192.0.2.30", login="root", password="", type=1)
         self.source = Instance.objects.create(compute=self.compute, name="src", uuid="12121212-3434-5656-7878-909090909090")
-        patcher = patch("instances.models.wvmInstance", return_value=proxy())
-        self.proxy = patcher.start().return_value
-        self.addCleanup(patcher.stop)
+        self.proxy = proxy()
+        for target_name in ("instances.models.wvmInstance", "instances.jobs.wvmInstance"):
+            patcher = patch(target_name, return_value=self.proxy)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def test_the_page_queues_the_clone_and_the_worker_makes_and_records_it(self):
         response = self.client.post(reverse("instances:clone", args=[self.source.pk]),
@@ -68,6 +70,56 @@ class CloneJobTestCase(TransactionTestCase):
         self.proxy.clone_instance.assert_called_once_with(op.intent["clone"], op.intent["uuid"])
         clone = Instance.objects.get(uuid=op.intent["uuid"])
         self.assertTrue(UserInstance.objects.filter(instance=clone, user=self.admin).exists())
+
+    def clone_with(self, **fields):
+        self.client.post(reverse("instances:clone", args=[self.source.pk]),
+                         {"name": "copy", "disk-vda": "copy.qcow2", "clone-net-mac-0": "52:54:00:00:00:01",
+                          "submission_key": f"key-{uuid4().hex[:12]}", **fields})
+        op = Operation.objects.filter(kind="instance.clone").first()
+        if op is None:
+            return None, None
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        return op, CloneInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+
+    def test_the_clone_takes_the_size_given_and_starts(self):
+        # before the clone is recorded: until then the quota counts the job, at the size charged
+        self.proxy.resize_cpu.side_effect = lambda *a: self.assertFalse(Instance.objects.filter(name="copy").exists())
+        op, result = self.clone_with(**{"clone-vcpu": "4", "clone-memory": "2048", "clone-start": "true"})
+        self.assertEqual((op.intent["quota"]["cpus"], op.intent["quota"]["memory"]), (4, 2048))  # what the quota counts
+        self.proxy.resize_cpu.assert_called_once_with("4", "4")
+        self.proxy.resize_mem.assert_called_once_with(2048, 2048)
+        self.proxy.start.assert_called_once_with()
+        # the job panel opens the clone's page
+        clone = Instance.objects.get(uuid=op.intent["uuid"])
+        self.assertEqual(result, {"open": reverse("instances:instance", args=[clone.pk])})
+
+    def test_a_smaller_clone_is_charged_the_vm_s_size(self):
+        # a shrink that fails after the copy leaves the clone at the VM's size, which the quota allowed
+        op, _result = self.clone_with(**{"clone-vcpu": "1", "clone-memory": "256"})
+        self.assertEqual((op.intent["quota"]["cpus"], op.intent["quota"]["memory"]), (1, 512))
+        self.proxy.resize_mem.assert_called_once_with(256, 256)
+
+    def test_the_vm_s_size_changes_nothing_after_the_copy(self):
+        _op, result = self.clone_with(**{"clone-vcpu": "1", "clone-memory": "512"})
+        self.proxy.resize_cpu.assert_not_called()
+        self.proxy.resize_mem.assert_not_called()
+        self.proxy.start.assert_not_called()
+        self.assertEqual(list(result), ["open"])
+
+    def test_a_size_that_is_not_a_whole_number_is_refused(self):
+        for value in ("0", "abc", "-2"):
+            with self.subTest(value=value):
+                op, _result = self.clone_with(**{"clone-vcpu": value})
+                self.assertIsNone(op)
+                self.proxy.clone_instance.assert_not_called()
+
+    def test_a_clone_that_cannot_start_is_made_with_a_warning(self):
+        self.proxy.start.side_effect = libvirt.libvirtError("no memory")
+        op, result = self.clone_with(**{"clone-start": "true"})
+        self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"]).exists())
+        self.assertIn("The clone is made, but not as asked", result["warning"])
 
     def queued(self):
         self.client.post(reverse("instances:clone", args=[self.source.pk]),
@@ -93,8 +145,10 @@ class CloneJobTestCase(TransactionTestCase):
     def test_recovery(self, conn):
         op = Operation(user=self.admin, intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
                                                 "name": "copy", "clone": {"name": "copy", "disk-vda": "copy.qcow2"}})
-        self.assertEqual(CloneInstance().reconcile(op).state, Operation.SUCCEEDED)  # the VM is defined
-        self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"]).exists())
+        recovered = CloneInstance().reconcile(op)
+        self.assertEqual(recovered.state, Operation.SUCCEEDED)  # the VM is defined
+        clone = Instance.objects.get(uuid=op.intent["uuid"])
+        self.assertEqual(recovered.result["open"], reverse("instances:instance", args=[clone.pk]))
         missing = libvirt.libvirtError("no domain")
         missing.err = (libvirt.VIR_ERR_NO_DOMAIN, libvirt.VIR_FROM_QEMU, "no domain")
         conn.return_value.wvm.lookupByUUIDString.side_effect = missing
@@ -248,7 +302,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
 
     def test_the_live_run_records_each_step_before_it(self):
         op = self.op()
-        self.assertEqual(self.run_job(op), {})
+        result = self.run_job(op)
         self.assertEqual(self.events, [
             ("intent", "live", "targets"),
             ("intent", "planned"), ("create", "vda"), ("intent", "created"),
@@ -269,6 +323,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
         clone = Instance.objects.get(uuid=op.intent["uuid"])
         self.assertTrue(UserInstance.objects.filter(instance=clone, user=self.admin).exists())
         self.assertEqual(self.deleted(), [])
+        self.assertEqual(result, {"open": reverse("instances:instance", args=[clone.pk])})
 
     def test_a_paused_vm_or_one_without_a_ready_agent_is_not_frozen(self):
         for status, agent in ((3, True), (1, False)):
@@ -505,13 +560,23 @@ class LiveCloneJobTestCase(TransactionTestCase):
                 Instance.objects.filter(uuid=op.intent["uuid"]).delete()
                 op.delete()
 
+    def test_recovery_gives_the_clone_the_size_asked_and_starts_it(self):
+        clone = {"name": "copy", "disk-vda": "copy-vda.qcow2", "disk_owner_uid": 107, "disk_owner_gid": 107,
+                 "vcpu": 2, "memory": None, "start": True}
+        outcome, _op = self.recovered(copy_result=[True, ""], clone=clone)
+        self.assertEqual(outcome.state, Operation.SUCCEEDED)
+        self.proxy.resize_cpu.assert_called_once_with("2", "2")
+        self.proxy.resize_mem.assert_not_called()
+        self.proxy.start.assert_called_once_with()
+
     def test_recovery_of_a_defined_clone_succeeds(self):
         self.proxy.backup_result.return_value = None  # libvirtd restarted after the clone was defined
         self.proxy.backup_targets.return_value = {"/other/x.qcow2"}  # checked after it
         outcome, op = self.recovered(defined=True)
         self.assertEqual(outcome.state, Operation.SUCCEEDED)
         self.assertNotIn("define_clone", self.events)
-        self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"]).exists())
+        clone = Instance.objects.get(uuid=op.intent["uuid"])
+        self.assertEqual(outcome.result["open"], reverse("instances:instance", args=[clone.pk]))
 
     def test_recovery_of_a_failed_copy_deletes_what_was_created(self):
         outcome, _op = self.recovered(copy_result=[False, "No space left on device"])

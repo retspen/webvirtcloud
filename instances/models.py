@@ -188,6 +188,11 @@ class Instance(models.Model):
         return self.proxy.get_cur_vcpu(config=True)
 
     @cached_property
+    def config_memory(self) -> int:
+        """Memory (MiB) of the persistent definition, which a clone starts from."""
+        return self.proxy.get_memory(config=True)
+
+    @cached_property
     def config_title(self) -> str:
         """Title and description of the persistent definition, which the
         options form changes."""

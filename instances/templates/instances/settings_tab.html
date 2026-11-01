@@ -834,6 +834,24 @@
                     </div>
                 </div>
                 {% endif %}
+                <fieldset class="mb-4" aria-describedby="clone-size-help">
+                    <legend class="h6">{% trans "Size" %}</legend>
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label" for="clone-vcpu">{% trans "vCPUs" %}</label>
+                            <input class="form-control" id="clone-vcpu" name="clone-vcpu" type="number" min="1" max="{{ vcpu_host }}" inputmode="numeric" value="{{ instance.config_vcpu }}">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label" for="clone-memory">{% trans "Memory (MiB)" %}</label>
+                            <input class="form-control" id="clone-memory" name="clone-memory" type="number" min="1" inputmode="numeric" value="{{ instance.config_memory }}">
+                        </div>
+                    </div>
+                    <p class="small text-body-secondary mt-1 mb-2" id="clone-size-help">{% trans "The VM's size to start from; the quota counts the larger of the two." %}</p>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="clone-start" name="clone-start" value="true">
+                        <label class="form-check-label" for="clone-start">{% trans "Start the clone when it is made" %}</label>
+                    </div>
+                </fieldset>
                 <fieldset class="mb-4">
                     <legend class="h6">{% trans "Optional details" %}</legend>
                     <label class="form-label" for="clone-title">{% trans "Title" %}</label>
