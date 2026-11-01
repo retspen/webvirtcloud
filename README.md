@@ -275,7 +275,15 @@ A compute node is a KVM host the panel manages over libvirt.
    sudo cat /etc/default/webvirt-gstfsd   # the key for step 4
    ```
 
-   gstfsd does only what the panel signs with this key. It listens on 127.0.0.1:16510 only, which serves a panel on the same host. For a remote panel, add `GSTFSD_BIND_HOST=0.0.0.0` and `GSTFSD_ALLOW_REMOTE=1` on lines of their own to `/etc/default/webvirt-gstfsd` and restart it. Its traffic is not encrypted, and a password hash crosses it: allow TCP 16510 only from the panel's IP, on a network you trust.
+   gstfsd does only what the panel signs with this key. It listens on 127.0.0.1:16510 only, which serves a panel installed on the compute itself. A panel on another machine or in a container (the Docker setup, also on the compute) reaches it at the compute's address; let it in:
+
+   ```bash
+   sudo sed -i '/^GSTFSD_BIND_HOST=/d; /^GSTFSD_ALLOW_REMOTE=/d' /etc/default/webvirt-gstfsd
+   printf 'GSTFSD_BIND_HOST=0.0.0.0\nGSTFSD_ALLOW_REMOTE=1\n' | sudo tee -a /etc/default/webvirt-gstfsd > /dev/null
+   sudo systemctl restart webvirt-gstfsd
+   ```
+
+   Its traffic is not encrypted, and a password hash crosses it: allow TCP 16510 only from the panel's IP, on a network you trust.
 
    A running VM gets them through its QEMU guest agent instead, without gstfsd. On RHEL-family guests, SELinux lets the agent add SSH keys only after `sudo setsebool -P virt_qemu_ga_manage_ssh on` inside the guest.
 
