@@ -14,6 +14,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import MoveDisk
 from instances.models import Instance
+from operations.utils import words
 from operations.jobs import Cancelled, Context, get_kind
 from operations.models import Claim, Operation, acquire
 
@@ -116,7 +117,7 @@ class MoveDiskJobTestCase(TransactionTestCase):
     def test_recovery_reads_the_definitions(self):
         self.assertEqual(self.reconcile({NEW}).state, Operation.SUCCEEDED)
         failed = self.reconcile({OLD})
-        self.assertEqual((failed.state, failed.error), (Operation.FAILED, f"The disk stayed in {OLD}; remove {NEW} "
+        self.assertEqual((failed.state, words(failed.error)), (Operation.FAILED, f"The disk stayed in {OLD}; remove {NEW} "
                                                                            "if it is there"))
         self.assertEqual(self.reconcile({OLD, NEW}).state, Operation.UNCERTAIN)
         self.proxy.instance.blockJobAbort.assert_not_called()

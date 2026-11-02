@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 20:32+0000\n"
+"POT-Creation-Date: 2026-11-02 20:42+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -2125,8 +2125,7 @@ msgid "of %(memory)s"
 msgstr "/ %(memory)s"
 
 #: computes/templates/computes/list.html:58 computes/templates/overview.html:58
-#: instances/forms.py:15 instances/jobs.py:132
-#: instances/templates/allinstances_index_grouped.html:16
+#: instances/forms.py:15 instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
 #: instances/templates/instances/settings_tab.html:852
@@ -2654,200 +2653,363 @@ msgstr ""
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "Sanal makine adı özel karakterler içeremez"
 
-#: instances/jobs.py:133
-msgid "memory (MiB)"
-msgstr "bellek (MiB)"
+#: instances/jobs.py:68
+msgid "The VM moved to another compute after the job was queued"
+msgstr "İş kuyruğa alındıktan sonra sanal makine başka bir sunucuya taşındı"
 
 #: instances/jobs.py:136
-#, python-format
-msgid "Enter a whole number of %(what)s for the clone"
-msgstr "Klon için %(what)s olarak bir tam sayı girin"
+msgid "Enter a whole number of vCPUs for the clone"
+msgstr "Klon için vCPU sayısını tam sayı olarak girin"
 
-#: instances/jobs.py:160
+#: instances/jobs.py:138
+msgid "Enter a whole number of memory (MiB) for the clone"
+msgstr "Klon için belleği (MiB) tam sayı olarak girin"
+
+#: instances/jobs.py:165
 msgid "Choose the clone's name from the list of free names"
 msgstr "Klonun adını boş adlar listesinden seçin"
 
-#: instances/jobs.py:187
+#: instances/jobs.py:192
 #, python-format
 msgid "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
 msgstr ""
 "%(quota_msg)s' Kullanıcı kotası doldu, '%(clone_name)s' in CPU su yeniden "
 "boyutlandırılamıyor!"
 
-#: instances/jobs.py:190 instances/jobs.py:527
+#: instances/jobs.py:195 instances/jobs.py:532
 #, python-format
 msgid "Instance '%(clone_name)s' already exists!"
 msgstr "'%(clone_name)s' sanal makinesi zaten mevcut!"
 
-#: instances/jobs.py:193
+#: instances/jobs.py:197
 #, python-format
 msgid "Instance name '%(clone_name)s' contains invalid characters!"
 msgstr "Sanal makine adı '%(clone_name)s' geçersiz karakterler içermektedir!"
 
-#: instances/jobs.py:195
+#: instances/jobs.py:200
 #, python-format
 msgid "Instance MAC '%(clone_mac)s' invalid format!"
 msgstr "Sanal makine MAC adresi '%(clone_mac)s' geçersiz biçemde belirtilmiş!"
 
-#: instances/jobs.py:198
+#: instances/jobs.py:202
 #, python-format
 msgid "Disk name '%(disk_name)s' contains invalid characters!"
 msgstr "Disk adı '%(disk_name)s' geçersiz karakterler içeriyor!"
 
-#: instances/jobs.py:217
+#: instances/jobs.py:222
 #, python-format
 msgid "The clone is made, but not as asked: %(error)s"
 msgstr "Klon oluşturuldu, ama istendiği gibi değil: %(error)s"
 
-#: instances/jobs.py:288
+#: instances/jobs.py:270
+msgid "The VM was not defined and no volume of it was left."
+msgstr "Sanal makine tanımlanmadı ve ondan geriye birim kalmadı."
+
+#: instances/jobs.py:272
+#, python-format
+msgid ""
+"The VM was not defined; check these volumes, then resolve this job: "
+"%(volumes)s"
+msgstr ""
+"Sanal makine tanımlanmadı; şu birimleri kontrol edin, sonra bu işi çözün: "
+"%(volumes)s"
+
+#: instances/jobs.py:293
 msgid "Delete snapshot"
 msgstr "Anlık görüntüyü sil"
 
-#: instances/jobs.py:311
+#: instances/jobs.py:303
+#, python-format
+msgid "The VM has no external snapshot named %(name)s"
+msgstr "Sanal makinede %(name)s adında harici anlık görüntü yok"
+
+#: instances/jobs.py:316
 msgid "Merging the snapshot"
 msgstr "Anlık görüntü birleştiriliyor"
 
-#: instances/jobs.py:333
+#: instances/jobs.py:335
+msgid "The VM is no longer on its compute"
+msgstr "Sanal makine artık kendi sunucusunda değil"
+
+#: instances/jobs.py:338
 msgid "libvirt is still merging the snapshot"
 msgstr "libvirt anlık görüntüyü hâlâ birleştiriyor"
 
-#: instances/jobs.py:354
+#: instances/jobs.py:346
+msgid ""
+"The snapshot is still listed and no merge runs. It cannot be told whether "
+"the disks changed; check the VM before deleting the snapshot again or "
+"reverting to it."
+msgstr ""
+"Anlık görüntü hâlâ listede ve çalışan bir birleştirme yok. Disklerin değişip "
+"değişmediği bilinemiyor; anlık görüntüyü yeniden silmeden ya da ona dönmeden "
+"önce sanal makineyi kontrol edin."
+
+#: instances/jobs.py:353
+msgid "The VM is no longer on the compute the job ran on"
+msgstr "Sanal makine artık işin çalıştığı sunucuda değil"
+
+#: instances/jobs.py:359
 msgid "Take snapshot"
 msgstr "Anlık görüntü al"
 
-#: instances/jobs.py:378
+#: instances/jobs.py:371
+#, python-format
+msgid "A snapshot named %(name)s already exists"
+msgstr "%(name)s adında bir anlık görüntü zaten var"
+
+#: instances/jobs.py:383
 msgid "Taking the snapshot"
 msgstr "Anlık görüntü alınıyor"
 
-#: instances/jobs.py:391
+#: instances/jobs.py:396
 msgid "libvirt is still taking the snapshot"
 msgstr "libvirt anlık görüntüyü hâlâ alıyor"
 
-#: instances/jobs.py:417
+#: instances/jobs.py:399
+msgid "The snapshot was not taken"
+msgstr "Anlık görüntü alınmadı"
+
+#: instances/jobs.py:422
 msgid "Revert snapshot"
 msgstr "Snapshota dön"
 
-#: instances/jobs.py:446
+#: instances/jobs.py:451
 msgid "Reverting the VM"
 msgstr "Sanal makine geri döndürülüyor"
 
-#: instances/jobs.py:457
+#: instances/jobs.py:462
 msgid "libvirt is still reverting the VM"
 msgstr "libvirt sanal makineyi hâlâ geri döndürüyor"
 
-#: instances/jobs.py:498
+#: instances/jobs.py:466
+msgid ""
+"It cannot be told whether the VM was reverted; check it, then revert again "
+"or resolve this job."
+msgstr ""
+"Sanal makinenin geri döndürülüp döndürülmediği bilinemiyor; kontrol edin, "
+"sonra yeniden geri döndürün ya da bu işi çözün."
+
+#: instances/jobs.py:483
+msgid "The VM must be running, paused or shut off to be cloned"
+msgstr ""
+"Klonlanmak için sanal makine çalışıyor, duraklatılmış ya da kapalı olmalı"
+
+#: instances/jobs.py:484
+#, python-format
+msgid ""
+"The guest's file systems could not be thawed (%(error)s); thaw them with: "
+"virsh domfsthaw %(vm)s"
+msgstr ""
+"Konuğun dosya sistemleri çözülemedi (%(error)s); şununla çözün: virsh "
+"domfsthaw %(vm)s"
+
+#: instances/jobs.py:503
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:537 instances/jobs.py:544 instances/jobs.py:787
+#: instances/jobs.py:542 instances/jobs.py:549 instances/jobs.py:805
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
-#: instances/jobs.py:671
+#: instances/jobs.py:600
+msgid "libvirt has no result of the copy"
+msgstr "libvirt'te kopyanın sonucu yok"
+
+#: instances/jobs.py:611
+#, python-format
+msgid ""
+"The copy failed: %(error)s. The guest's file systems could not be thawed "
+"(%(thaw)s); thaw them with: virsh domfsthaw %(vm)s"
+msgstr ""
+"Kopyalama başarısız oldu: %(error)s. Konuğun dosya sistemleri çözülemedi "
+"(%(thaw)s); şununla çözün: virsh domfsthaw %(vm)s"
+
+#: instances/jobs.py:614 instances/jobs.py:698
+msgid "The copy failed"
+msgstr "Kopyalama başarısız oldu"
+
+#: instances/jobs.py:639
+#, python-format
+msgid ""
+"The VM is no longer on the compute the job ran on; check these volumes, then "
+"resolve this job: %(volumes)s"
+msgstr ""
+"Sanal makine artık işin çalıştığı sunucuda değil; şu birimleri kontrol edin, "
+"sonra bu işi çözün: %(volumes)s"
+
+#: instances/jobs.py:674
+#, python-format
+msgid ""
+"A volume of the clone was being created; check these volumes, then resolve "
+"this job: %(volumes)s"
+msgstr ""
+"Klonun bir birimi oluşturuluyordu; şu birimleri kontrol edin, sonra bu işi "
+"çözün: %(volumes)s"
+
+#: instances/jobs.py:678
+msgid "The job stopped before the copy started"
+msgstr "İş, kopyalama başlamadan durdu"
+
+#: instances/jobs.py:685
 msgid "libvirt is still copying the disks"
 msgstr "libvirt diskleri hâlâ kopyalıyor"
 
-#: instances/jobs.py:703 instances/templates/create_instance_w1.html:60
+#: instances/jobs.py:688
+#, python-format
+msgid ""
+"Another backup runs on the VM; check these volumes, then resolve this job: "
+"%(volumes)s"
+msgstr ""
+"Sanal makinede başka bir yedekleme çalışıyor; şu birimleri kontrol edin, "
+"sonra bu işi çözün: %(volumes)s"
+
+#: instances/jobs.py:693
+#, python-format
+msgid ""
+"libvirt has no result of the copy; check these volumes, then resolve this "
+"job: %(volumes)s"
+msgstr ""
+"libvirt'te kopyanın sonucu yok; şu birimleri kontrol edin, sonra bu işi "
+"çözün: %(volumes)s"
+
+#: instances/jobs.py:721 instances/templates/create_instance_w1.html:60
 #: instances/templates/create_instance_w2.html:356
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:726 instances/views.py:2477
+#: instances/jobs.py:744 instances/views.py:2477
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/jobs.py:728
+#: instances/jobs.py:746
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
-#: instances/jobs.py:731
+#: instances/jobs.py:749
 msgid "First you need to create or select an image"
 msgstr "Öncelikle bir imaj oluşturun ya da mevcut bir imajı seçin"
 
-#: instances/jobs.py:733
+#: instances/jobs.py:751
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr ""
 "Tek bir disk kaynağı seçin: yeni bir disk, mevcut birimler ya da bir şablon"
 
-#: instances/jobs.py:735
+#: instances/jobs.py:753
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 "İmaj zaten mevcut. Lütfen ya makine adını değişin ya da disk alanlarını "
 "kontrol edin"
 
-#: instances/jobs.py:737
+#: instances/jobs.py:755
 msgid "Invalid cache mode"
 msgstr "Geçersiz önbellek modu"
 
-#: instances/jobs.py:739
+#: instances/jobs.py:757
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "Bu sunucu %(mode)s CPU modunu veya modelini sunmuyor"
 
-#: instances/jobs.py:741
+#: instances/jobs.py:759
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM %(bus)s veri yolunu kullanamaz"
 
-#: instances/jobs.py:744
+#: instances/jobs.py:762
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init tohumu bir CD-ROM'dan okunur: veri yolunu seçin"
 
-#: instances/jobs.py:747
+#: instances/jobs.py:765
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 
-#: instances/jobs.py:753
+#: instances/jobs.py:771
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:755
+#: instances/jobs.py:773
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
-#: instances/jobs.py:806
+#: instances/jobs.py:824
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:813
+#: instances/jobs.py:831
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:870
+#: instances/jobs.py:864
+#, python-format
+msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
+msgstr "%(error)s. Şu birimleri elle silin: %(volumes)s"
+
+#: instances/jobs.py:889
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:872
+#: instances/jobs.py:891
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:874
+#: instances/jobs.py:893
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:892
+#: instances/jobs.py:911
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:936
+#: instances/jobs.py:955
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:970
+#: instances/jobs.py:989
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1011
+#: instances/jobs.py:996
+msgid "The VM stayed on the source host"
+msgstr "Sanal makine kaynak sunucuda kaldı"
+
+#: instances/jobs.py:998
+msgid ""
+"The VM is on both computes or on neither; check them, then resolve this job."
+msgstr ""
+"Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, "
+"sonra bu işi çözün."
+
+#: instances/jobs.py:1030
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1042
+#: instances/jobs.py:1037
+msgid "Choose a disk of the VM"
+msgstr "Sanal makinenin bir diskini seçin"
+
+#: instances/jobs.py:1061
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
+
+#: instances/jobs.py:1104
+#, python-format
+msgid "Another block job runs on %(dev)s; check the VM"
+msgstr ""
+"%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
+
+#: instances/jobs.py:1110
+#, python-format
+msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
+msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
+
+#: instances/jobs.py:1112
+#, python-format
+msgid "The definitions of %(dev)s name %(paths)s; check the VM"
+msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
 #: instances/models.py:18
 msgid "label"
@@ -7438,10 +7600,34 @@ msgstr ""
 "Harfler, rakamlar, nokta, tire ve alt çizgi. Kopya, filtrenin kurallarını ve "
 "başvurularını içerir."
 
-#: operations/api/serializers.py:35
+#: operations/api/serializers.py:37
 #, python-format
 msgid "%(phase)s (over its time limit)"
 msgstr "%(phase)s (süre sınırını aştı)"
+
+#: operations/jobs.py:157
+msgid "The form has no valid submission key; reload the page"
+msgstr "Formun geçerli bir gönderim anahtarı yok; sayfayı yeniden yükleyin"
+
+#: operations/jobs.py:203
+msgid "This job cannot be cancelled once it has started"
+msgstr "Bu iş başladıktan sonra iptal edilemez"
+
+#: operations/jobs.py:206
+msgid "The job has already ended"
+msgstr "İş zaten bitti"
+
+#: operations/jobs.py:254
+msgid "Choose succeeded or failed"
+msgstr "Başarılı ya da başarısız seçin"
+
+#: operations/jobs.py:257
+msgid "Write a note on what was checked"
+msgstr "Neyin kontrol edildiğine dair bir not yazın"
+
+#: operations/jobs.py:261
+msgid "Only an uncertain job can be resolved"
+msgstr "Yalnızca belirsiz bir iş çözülebilir"
 
 #: operations/templates/operations/job.html:11
 #: operations/templates/operations/jobs.html:7
@@ -7629,12 +7815,12 @@ msgstr "İptal edilemedi: sunucuya ulaşılamadı."
 msgid "The host of this virtual machine cannot be reached right now."
 msgstr "Bu sanal makinenin sunucusuna şu anda ulaşılamıyor."
 
-#: operations/utils.py:120
+#: operations/utils.py:146
 msgid ""
 "A short operation is in progress on this resource; try again in a moment."
 msgstr "Bu kaynakta kısa bir işlem sürüyor; birazdan yeniden deneyin."
 
-#: operations/utils.py:123
+#: operations/utils.py:149
 #, python-format
 msgid ""
 "%(label)s is %(state)s on this resource (started by %(user)s, %(since)s "
@@ -7643,14 +7829,35 @@ msgstr ""
 "%(label)s bu kaynakta %(state)s (%(user)s başlattı, %(since)s önce); İşler "
 "sayfasına bakın."
 
-#: operations/utils.py:125
+#: operations/utils.py:151
 #, python-format
 msgid "%(label)s is %(state)s on this resource (since %(since)s)."
 msgstr "%(label)s bu kaynakta %(state)s (%(since)s beri)."
 
+#: operations/worker.py:38
+msgid ""
+"libvirt's merge finished copying but never completed (for example after a "
+"libvirtd restart); check the VM before resolving"
+msgstr ""
+"libvirt'in birleştirmesi kopyalamayı bitirdi ama hiç tamamlanmadı (örneğin "
+"libvirtd yeniden başlatıldıktan sonra); çözmeden önce sanal makineyi kontrol "
+"edin"
+
+#: operations/worker.py:40
+msgid ""
+"The worker that ran this job stopped responding; an administrator must make "
+"sure it is no longer running, then resolve this job"
+msgstr ""
+"Bu işi çalıştıran worker yanıt vermeyi bıraktı; bir yönetici artık "
+"çalışmadığından emin olmalı, sonra bu işi çözmeli"
+
 #: operations/worker.py:42
 msgid "Waiting for recovery"
 msgstr "Kurtarma bekleniyor"
+
+#: operations/worker.py:393
+msgid "The worker stopped before the job changed anything"
+msgstr "Worker, iş herhangi bir şeyi değiştirmeden önce durdu"
 
 #: storages/forms.py:30 storages/templates/storage.html:102
 #: storages/templates/storages.html:43
@@ -7718,9 +7925,33 @@ msgstr "İmaj adı 120 karakterden fazla olamaz"
 msgid "Clone volume"
 msgstr "Birimi klonla"
 
+#: storages/jobs.py:58
+#, python-format
+msgid "The pool has no volume named %(name)s"
+msgstr "Havuzda %(name)s adında birim yok"
+
+#: storages/jobs.py:60
+msgid "An ISO image is not cloned"
+msgstr "ISO imajı klonlanmaz"
+
+#: storages/jobs.py:63
+msgid "Name of volume already in use"
+msgstr "Birim adı zaten kullanılıyor"
+
 #: storages/jobs.py:72
 msgid "Copying the volume"
 msgstr "Birim kopyalanıyor"
+
+#: storages/jobs.py:84
+msgid ""
+"The copy exists, but the job did not see it finish; check it, then resolve "
+"this job."
+msgstr ""
+"Kopya var, ancak iş bittiğini görmedi; kontrol edin, sonra bu işi çözün."
+
+#: storages/jobs.py:85
+msgid "The copy was not made"
+msgstr "Kopya oluşturulmadı"
 
 #: storages/jobs.py:96
 msgid "Upload ISO image"
@@ -8102,77 +8333,91 @@ msgstr "Boyut yok"
 msgid "Space unavailable while stopped"
 msgstr "Durdurulmuşken alan bilgisi yok"
 
-#: storages/upload.py:132 storages/upload.py:153 storages/upload.py:181
+#: storages/upload.py:27
+msgid "The upload was idle for over an hour; its partial file was deleted"
+msgstr "Yükleme bir saatten uzun süre boşta kaldı; yarım dosyası silindi"
+
+#: storages/upload.py:134 storages/upload.py:155 storages/upload.py:183
 msgid "Destination file already exists"
 msgstr "Hedef dosya zaten mevcut"
 
-#: storages/upload.py:155
+#: storages/upload.py:157
 msgid "Filesystem does not support atomic no-replace finalization: {}"
 msgstr "Dosya sistemi, üzerine yazmadan atomik sonlandırmayı desteklemiyor: {}"
 
-#: storages/upload.py:212
+#: storages/upload.py:214
 msgid "Unsupported connection type for file upload."
 msgstr "Dosya yükleme için desteklenmeyen bağlantı türü."
 
-#: storages/upload.py:224
+#: storages/upload.py:226
 msgid "Security issues with file uploading: path traversal detected"
 msgstr ""
 "Dosya yüklemede güvenlik sorunu: dizin geçişi (path traversal) algılandı"
 
-#: storages/upload.py:280
+#: storages/upload.py:282
 msgid "The SFTP session did not start in time"
 msgstr "SFTP oturumu zamanında başlamadı"
 
-#: storages/upload.py:303
+#: storages/upload.py:305
 msgid "Security issues with file uploading: symlink detected"
 msgstr "Dosya yüklemede güvenlik sorunu: sembolik bağlantı algılandı"
 
-#: storages/upload.py:395
+#: storages/upload.py:397
 msgid "Libvirt stream stopped during upload"
 msgstr "Libvirt akışı yükleme sırasında durdu"
 
-#: storages/upload.py:399
+#: storages/upload.py:401
 msgid "Upload chunk size changed during transfer"
 msgstr "Yükleme parça boyutu aktarım sırasında değişti"
 
-#: storages/upload.py:431 storages/upload.py:526
+#: storages/upload.py:433 storages/upload.py:528
 msgid "The upload has ended"
 msgstr "Yükleme sona erdi"
 
-#: storages/upload.py:444
+#: storages/upload.py:445 storages/upload.py:446
 msgid "The uploaded image is missing"
 msgstr "Yüklenen imaj bulunamadı"
 
-#: storages/upload.py:515
+#: storages/upload.py:450
+msgid ""
+"An image of this name appeared before the upload finished; the upload was "
+"deleted"
+msgstr "Yükleme bitmeden bu adda bir imaj belirdi; yükleme silindi"
+
+#: storages/upload.py:484
+msgid "The compute was deleted"
+msgstr "Sunucu silindi"
+
+#: storages/upload.py:517
 msgid "Upload session not found or expired"
 msgstr "Yükleme oturumu bulunamadı veya süresi doldu"
 
-#: storages/upload.py:517
+#: storages/upload.py:519
 msgid "Upload session parameters changed"
 msgstr "Yükleme oturumu parametreleri değişti"
 
-#: storages/upload.py:531 storages/upload.py:563
+#: storages/upload.py:533 storages/upload.py:565
 msgid "The upload was cancelled"
 msgstr "Yükleme iptal edildi"
 
-#: storages/upload.py:533
+#: storages/upload.py:535
 #, python-format
 msgid "Invalid chunk sequence. Expected chunk %(exp)d, got %(got)d"
 msgstr "Geçersiz parça sırası. Beklenen parça %(exp)d, gelen %(got)d"
 
-#: storages/upload.py:543
+#: storages/upload.py:545
 msgid "Empty upload chunk"
 msgstr "Boş yükleme parçası"
 
-#: storages/upload.py:545
+#: storages/upload.py:547
 msgid "Upload exceeds declared file size"
 msgstr "Yükleme, bildirilen dosya boyutunu aşıyor"
 
-#: storages/upload.py:547
+#: storages/upload.py:549
 msgid "Final chunk does not match declared file size"
 msgstr "Son parça bildirilen dosya boyutuyla eşleşmiyor"
 
-#: storages/upload.py:553
+#: storages/upload.py:554 storages/upload.py:555
 msgid "The partial upload is missing"
 msgstr "Kısmi yükleme bulunamadı"
 

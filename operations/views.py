@@ -14,6 +14,7 @@ from vrtManager.util import OperationError
 from . import jobs as jobs_module
 from .api.serializers import OperationSerializer
 from .models import Operation, last_seen
+from .utils import said, words
 
 
 def _visible(user):
@@ -71,7 +72,7 @@ def cancel(request, pk):
     try:
         jobs_module.cancel(op.pk, request.user)
     except OperationError as err:
-        messages.error(request, str(err))
+        messages.error(request, words(said(err)))
     return redirect("operations:job", pk=op.pk)
 
 
@@ -83,5 +84,5 @@ def resolve(request, pk):
     try:
         jobs_module.resolve(op.pk, request.user, request.POST.get("outcome", ""), request.POST.get("note", ""))
     except OperationError as err:
-        messages.error(request, str(err))
+        messages.error(request, words(said(err)))
     return redirect("operations:job", pk=op.pk)

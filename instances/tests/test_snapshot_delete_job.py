@@ -15,6 +15,7 @@ from computes.models import Compute
 from instances.jobs import DeleteExternalSnapshot
 from instances.models import Instance
 from logs.models import Logs
+from operations.utils import say, words
 from operations import jobs
 from operations.jobs import Context, Outcome
 from operations.models import Claim, Operation, acquire
@@ -109,7 +110,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
             Logs.objects.all().delete()
             Operation.objects.all().delete()
             op = self.submitted()
-            jobs.finish(op, Outcome(state, error="x"))
+            jobs.finish(op, Outcome(state, error=say("x")))
             self.assertEqual(self.logged(), [("job_admin", "job-compute", "job-vm",
                                               f"VM job-vm: delete external snapshot one ({state})")])
         Logs.objects.all().delete()
@@ -125,7 +126,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
 
     def test_a_resolved_job_is_logged_on_its_vm(self):
         op = self.submitted()
-        jobs.finish(op, Outcome(Operation.UNCERTAIN, error="x"))
+        jobs.finish(op, Outcome(Operation.UNCERTAIN, error=say("x")))
         Logs.objects.all().delete()
         jobs.resolve(op.pk, self.admin, Operation.FAILED, "disks checked")
         self.assertEqual(self.logged(), [("job_admin", "job-compute", "job-vm",
@@ -134,7 +135,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
 
     def test_retention_keeps_the_log(self):
         op = self.submitted()
-        jobs.finish(op, Outcome(Operation.FAILED, error="x"))
+        jobs.finish(op, Outcome(Operation.FAILED, error=say("x")))
         Operation.objects.filter(pk=op.pk).update(finished_at=timezone.now() - timedelta(days=400))
         housekeeping()
         self.assertFalse(Operation.objects.filter(pk=op.pk).exists())
@@ -171,7 +172,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
         interrupted = self.reconcile()
         self.assertEqual(interrupted.state, Operation.UNCERTAIN)
         self.assertIn("It cannot be told whether the disks changed; check the VM before deleting the snapshot again",
-                      interrupted.error)
+                      words(interrupted.error))
 
     def test_reconcile_reports_a_merge_that_stays_at_its_end_as_stalled(self):
         at_end = self.reconcile(jobs=[{"dev": "vda", "cur": 2, "end": 2}, {"dev": "vdb", "cur": 5, "end": 5}])

@@ -6,12 +6,14 @@ from rest_framework import serializers
 
 from operations.jobs import KINDS, label_of
 from operations.models import Operation
-from operations.utils import shown_label
+from operations.utils import shown_label, words
 
 
 class OperationSerializer(serializers.ModelSerializer):
     label = serializers.SerializerMethodField()
     phase = serializers.SerializerMethodField()
+    error = serializers.SerializerMethodField()
+    result = serializers.SerializerMethodField()
     resource_label = serializers.SerializerMethodField()
     cancellable = serializers.SerializerMethodField()
     in_request = serializers.SerializerMethodField()
@@ -34,6 +36,15 @@ class OperationSerializer(serializers.ModelSerializer):
                 and timezone.now() - op.started_at > timedelta(seconds=op.time_limit):
             return (_("%(phase)s (over its time limit)") % {"phase": phase}).strip()
         return phase
+
+    def get_error(self, op) -> str:
+        return words(op.error)
+
+    def get_result(self, op) -> dict:
+        """What the job made; its warning in the viewer's language."""
+        if op.result.get("warning"):
+            return {**op.result, "warning": words(op.result["warning"])}
+        return op.result
 
     def get_resource_label(self, op) -> str:
         return shown_label(op, self.context["request"].user)

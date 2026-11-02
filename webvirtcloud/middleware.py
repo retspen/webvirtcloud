@@ -5,7 +5,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from operations import claims, jobs
-from operations.utils import busy_message, public_error_text, summary
+from operations.utils import busy_message, public_error_text, said, summary, words
 
 API_PREFIX = "/api/"
 # scripts only from this site: no inline script or event handler runs (inline styles still do);
@@ -34,7 +34,7 @@ def error_text(request, exception):
     """
     user = getattr(request, "user", None)
     if user and (user.is_superuser or user.has_perm("instances.view_instances")):
-        return str(exception)
+        return words(said(exception))
     return public_error_text(exception)
 
 

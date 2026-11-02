@@ -13,6 +13,7 @@ from django.db import transaction
 from django.db.models import F, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.utils.translation import gettext_noop
 
 from logs.audit import write
 from vrtManager.util import OperationError
@@ -44,7 +45,7 @@ class Outcome:
 
     state: str
     result: dict = field(default_factory=dict)
-    error: str = ""
+    error: list = field(default_factory=list)  # messages (utils.say)
     phase: str = ""
     stalled: bool = False
     progress: tuple | None = None
@@ -153,7 +154,7 @@ def _existing(user, key, kind_name, params):
 
 def submit(kind_name, user, raw_params, submission_key):
     if not KEY_RE.fullmatch(submission_key or ""):
-        raise OperationError("The form has no valid submission key; reload the page")
+        raise OperationError(gettext_noop("The form has no valid submission key; reload the page"))
     kind = get_kind(kind_name)
     params = kind.normalize(raw_params)
     utils.check_params(params)
@@ -199,10 +200,10 @@ def cancel(op_id, user):
                 _log(op.username, *entry, None)
         elif op.state == Operation.RUNNING:
             if not get_kind(op.kind).cancellable:
-                raise OperationError("This job cannot be cancelled once it has started")
+                raise OperationError(gettext_noop("This job cannot be cancelled once it has started"))
             Operation.objects.filter(pk=op.pk).update(state=Operation.CANCELLING, cancel_requested=True)
         elif op.state != Operation.CANCELLING:
-            raise OperationError("The job has already ended")
+            raise OperationError(gettext_noop("The job has already ended"))
     op.refresh_from_db()
     if request_job:  # no worker signals it: the request stops it
         get_kind(op.kind).cancel(op)
@@ -226,14 +227,13 @@ def _log(user, host, instance, uuid, message, success):
 def finish(op, outcome, *, worker=None):
     """Terminal state, claims and history together, once. With a worker,
     only while it holds the lease and owns the job. Uncertain keeps the claims."""
-    error = utils.safe_text(outcome.error)
     with fenced(worker.identity) if worker is not None else transaction.atomic():
         q = Operation.objects.filter(pk=op.pk, state__in=Operation.ACTIVE)
         if worker is not None:
             q = q.filter(worker=worker.identity)
         # success clears the phase and completes the progress; another end keeps the last ones
         done = outcome.state == Operation.SUCCEEDED
-        if not q.update(state=outcome.state, result=outcome.result, error=error,
+        if not q.update(state=outcome.state, result=outcome.result, error=outcome.error,
                         phase=Value(outcome.phase[:255]) if outcome.phase else ("" if done else F("phase")),
                         progress_done=Coalesce(F("progress_total"), F("progress_done")) if done else F("progress_done"),
                         finished_at=timezone.now()):
@@ -251,14 +251,14 @@ def resolve(op_id, user, outcome_state, note):
     if not user.is_superuser:
         raise PermissionDenied
     if outcome_state not in (Operation.SUCCEEDED, Operation.FAILED):
-        raise OperationError("Choose succeeded or failed")
+        raise OperationError(gettext_noop("Choose succeeded or failed"))
     note = note.strip()
     if not note:
-        raise OperationError("Write a note on what was checked")
+        raise OperationError(gettext_noop("Write a note on what was checked"))
     with transaction.atomic():
         op = Operation.objects.select_for_update().get(pk=op_id)
         if op.state != Operation.UNCERTAIN:
-            raise OperationError("Only an uncertain job can be resolved")
+            raise OperationError(gettext_noop("Only an uncertain job can be resolved"))
         Operation.objects.filter(pk=op.pk).update(state=outcome_state, resolution=outcome_state,
                                                   resolution_note=note, resolved_by=user, resolved_at=timezone.now())
         Claim.objects.filter(operation=op).delete()

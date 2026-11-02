@@ -35,10 +35,10 @@ HOUSEKEEPING_EVERY = 600.0
 BACKOFF = (30, 60, 120, 300, 600)
 WATCH_EVERY = 15
 STALL_LIMIT = 600  # a block job left at cur == end after a libvirtd restart never ends
-STALLED = ("libvirt's merge finished copying but never completed (for example after a libvirtd restart); "
-           "check the VM before resolving")
-ABANDONED = ("The worker that ran this job stopped responding; an administrator must make sure it is no longer "
-             "running, then resolve this job")
+STALLED = gettext_noop("libvirt's merge finished copying but never completed (for example after a "
+                       "libvirtd restart); check the VM before resolving")
+ABANDONED = gettext_noop("The worker that ran this job stopped responding; an administrator must make sure it "
+                         "is no longer running, then resolve this job")
 WAITING = gettext_noop("Waiting for recovery")
 ACTIVE = (Operation.RUNNING, Operation.CANCELLING)
 
@@ -197,7 +197,7 @@ class Worker:
                 if (err := future.exception()) is not None:
                     # execute raised before it could finish the job itself
                     logger.error("job %s ended unfinished: %s", op_id, utils.safe_text(err))
-                    self.control.submit(_guarded, self.recovery.inspect_now, op_id, utils.public_error_text(err))
+                    self.control.submit(_guarded, self.recovery.inspect_now, op_id, utils.public_error(err))
 
     def _slots(self):
         return (self.fixed_concurrency or utils.concurrency()) - len(self.jobs)
@@ -288,9 +288,9 @@ def execute(worker, op_id):
         try:
             # jobs have no request: the error users see never names a host
             if ctx.effects_started:
-                worker.recovery.inspect_now(op.pk, error=utils.public_error_text(err))
+                worker.recovery.inspect_now(op.pk, error=utils.public_error(err))
             else:
-                jobs.finish(op, jobs.Outcome(Operation.FAILED, error=utils.public_error_text(err)), worker=worker)
+                jobs.finish(op, jobs.Outcome(Operation.FAILED, error=utils.public_error(err)), worker=worker)
         except LeaseLost:
             pass
     finally:
@@ -330,7 +330,7 @@ class Scheduler:
                       .values_list("pk", flat=True)):
             self.next_try.setdefault(op_id, 0)
 
-    def inspect_now(self, op_id, error=""):
+    def inspect_now(self, op_id, error=()):
         self.errors[op_id] = error
         self.next_try[op_id] = 0
 
@@ -358,7 +358,7 @@ class Scheduler:
             op.refresh_from_db()
             if previous_host != self.worker.host:
                 # the error is shown to the job's owner: the host goes to the worker log only
-                self._finish(op, jobs.Outcome(Operation.UNCERTAIN, error=ABANDONED))
+                self._finish(op, jobs.Outcome(Operation.UNCERTAIN, error=utils.say(ABANDONED)))
                 logger.warning("job %s ended uncertain: its worker %s stopped responding", op.pk, previous)
                 return False
         return True
@@ -369,8 +369,7 @@ class Scheduler:
 
     def _error(self, op_id, finding):
         """What an unproven end stores: the error the job raised, then what libvirt shows."""
-        raised = self.errors.get(op_id, "")
-        return f"{raised.rstrip('.')}. {finding}" if raised and finding else finding or raised
+        return [*self.errors.get(op_id, ()), *finding]
 
     def _phase(self, op_id, text, progress=None):
         fields = {"phase": utils.safe_text(text)[:255]} if text else {}
@@ -390,8 +389,8 @@ class Scheduler:
             if op.worker != self.worker.identity and not self._take_over(op):
                 return
             if not op.effects_started:
-                self._finish(op, jobs.Outcome(Operation.FAILED, error=self.errors.get(op_id)
-                                         or "The worker stopped before the job changed anything"))
+                self._finish(op, jobs.Outcome(Operation.FAILED, error=list(self.errors.get(op_id, ()))
+                                         or utils.say(gettext_noop("The worker stopped before the job changed anything"))))
                 return
             try:
                 outcome = jobs.get_kind(op.kind).reconcile(op)
@@ -407,7 +406,7 @@ class Scheduler:
                 if not outcome.stalled:
                     self.stalled_since.pop(op_id, None)
                 elif now - self.stalled_since.setdefault(op_id, now) >= STALL_LIMIT:
-                    self._finish(op, jobs.Outcome(Operation.UNCERTAIN, error=self._error(op_id, STALLED)))
+                    self._finish(op, jobs.Outcome(Operation.UNCERTAIN, error=self._error(op_id, utils.say(STALLED))))
                     return
                 self.next_try[op_id] = now + WATCH_EVERY
                 self._phase(op_id, outcome.phase, outcome.progress)

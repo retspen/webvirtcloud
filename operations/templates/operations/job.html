@@ -20,7 +20,7 @@
         </div>
         <div class="small text-body-secondary mt-1">{% trans "User" %}: {{ job.username }}</div>
     </div>
-    {% if job.phase or op.progress_total or job.cancellable or op.error or job.result.links or job.result.warning or job.result.left_behind or job.resolution %}
+    {% if job.phase or op.progress_total or job.cancellable or job.error or job.result.links or job.result.warning or job.result.left_behind or job.resolution %}
         <div class="card-body pb-0">
             {% if job.phase or job.cancellable %}
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -45,9 +45,9 @@
                     <div class="progress-bar" style="width: {{ percent }}%"></div>
                 </div>
             {% endif %}
-            {% if op.error %}
+            {% if job.error %}
                 <div class="alert alert-{{ op.state|state_color }}" role="alert">
-                    {% bs_icon 'exclamation-triangle' %} {{ op.error }}
+                    {% bs_icon 'exclamation-triangle' %} {{ job.error }}
                 </div>
             {% endif %}
             {% if job.result.links %}

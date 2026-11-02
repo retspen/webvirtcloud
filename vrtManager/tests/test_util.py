@@ -152,6 +152,15 @@ class OperationErrorTestCase(unittest.TestCase):
         self.assertEqual(str(error), "own message")
         self.assertIsInstance(error, libvirt.libvirtError)
 
+    def test_keeps_its_text_and_values_apart_for_translation(self):
+        from vrtManager.util import OperationError
+
+        error = OperationError("The pool has no volume named %(name)s", name="a.qcow2")
+        self.assertEqual(str(error), "The pool has no volume named a.qcow2")
+        self.assertEqual((error.text, error.values), ("The pool has no volume named %(name)s", {"name": "a.qcow2"}))
+        # a text without values is not formatted: libvirt's may hold a %
+        self.assertEqual(str(OperationError("100% used")), "100% used")
+
 
 if __name__ == "__main__":
     unittest.main()

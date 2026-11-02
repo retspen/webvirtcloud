@@ -13,13 +13,13 @@ from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
 from django.utils.translation import pgettext
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext_noop
 from libvirt import libvirtError
 
 from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from instances.models import Instance
-from vrtManager.util import ConnectionFailed
+from vrtManager.util import ConnectionFailed, OperationError
 
 from . import jobs
 
@@ -49,7 +49,7 @@ TRANSPORT_ERROR_CODES = {
     libvirt.VIR_ERR_SSH,
     libvirt.VIR_ERR_LIBSSH,
 }
-UNREACHABLE = gettext_lazy("The host of this virtual machine cannot be reached right now.")
+UNREACHABLE = gettext_noop("The host of this virtual machine cannot be reached right now.")
 
 BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30)}
 
@@ -61,7 +61,29 @@ def safe_text(text):
     return text
 
 
-def public_error_text(exception):
+# A text a job keeps for later (its error, its result's warning) is a list of
+# messages, each our English text, marked with gettext_noop, and its values:
+# words() puts them in the language of whoever reads them. A text that is not
+# ours (libvirt's) is a message without values and stays as it is.
+def say(text, **values):
+    return [{"text": safe_text(text), "values": {key: safe_text(value) for key, value in values.items()}}]
+
+
+def said(exception):
+    """The messages of an exception: an OperationError's text and values, else its text."""
+    if isinstance(exception, OperationError):
+        return say(exception.text, **exception.values)
+    return say(exception)
+
+
+def words(messages):
+    """messages in the active language, each a sentence of its own."""
+    parts = [_(m["text"]) % m["values"] if m["values"] else _(m["text"]) for m in messages]
+    return " ".join(part if last or part.endswith((".", "。", "!", "?")) else part + "."
+                    for last, part in ((i == len(parts) - 1, part) for i, part in enumerate(parts)))
+
+
+def public_error(exception):
     """The error for users who do not see the hosts: a connection error names
     the host and how it is reached, so they learn only that it cannot be reached."""
     connection_error = isinstance(exception, ConnectionFailed) or (
@@ -69,7 +91,11 @@ def public_error_text(exception):
         and exception.get_error_domain() in TRANSPORT_ERROR_DOMAINS
         and exception.get_error_code() in TRANSPORT_ERROR_CODES
     )
-    return str(UNREACHABLE) if connection_error else str(exception)
+    return say(UNREACHABLE) if connection_error else said(exception)
+
+
+def public_error_text(exception):
+    return words(public_error(exception))
 
 
 def check_params(params):

@@ -11,6 +11,7 @@ from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase
 from instances.jobs import CreateInstance
+from operations.utils import words
 from operations.jobs import Context
 from operations.models import Operation, acquire
 from vrtManager.util import OperationError
@@ -97,4 +98,4 @@ class CloudInitCreateTestCase(TransactionTestCase):
             SimpleNamespace(listVolumes=lambda: ["cidata-abababab-0000-1111-2222-333333333333.iso"])]
         outcome = CreateInstance().reconcile(op)
         self.assertEqual(outcome.state, Operation.UNCERTAIN)
-        self.assertIn("cidata-abababab-0000-1111-2222-333333333333.iso", outcome.error)
+        self.assertIn("cidata-abababab-0000-1111-2222-333333333333.iso", words(outcome.error))
