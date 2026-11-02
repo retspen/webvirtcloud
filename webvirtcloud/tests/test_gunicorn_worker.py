@@ -50,6 +50,17 @@ class WorkerTestCase(unittest.TestCase):
                 w.notify()
         exit_.assert_called_once_with(1)
         notify.assert_not_called()
+        w.log.critical.assert_called_once()
+
+    def test_a_log_that_blocks_does_not_keep_the_worker_from_exiting(self):
+        w = worker()
+        w.started[1] = time.monotonic() - 601
+        w.log.critical.side_effect = lambda *args: threading.Event().wait(30)
+        started = time.monotonic()
+        with patch("os._exit", side_effect=SystemExit) as exit_, self.assertRaises(SystemExit):
+            w.notify()
+        exit_.assert_called_once_with(1)
+        self.assertLess(time.monotonic() - started, 2)
 
 
 if __name__ == "__main__":

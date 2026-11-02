@@ -33,6 +33,10 @@ class Worker(ThreadWorker):
         with self.started_lock:
             oldest = min(self.started.values(), default=None)
         if oldest is not None and time.monotonic() - oldest > self.cfg.timeout:
-            self.log.critical("A request ran past %s s: the worker exits", self.cfg.timeout)
+            # a log write can block (a full pipe, a handler a stuck thread holds): it gets a second
+            log = threading.Thread(target=self.log.critical, daemon=True,
+                                   args=("A request ran past %s s: the worker exits", self.cfg.timeout))
+            log.start()
+            log.join(1)
             os._exit(1)  # its threads cannot be stopped, and exit() would wait for them
         super().notify()
