@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% load i18n %}
 
 {% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign In" %}{% endblock title %}
@@ -44,7 +45,7 @@
 
                     <input type="hidden" name="next" value="{{ next }}">
 
-                    <button id="btn-signin" class="btn btn-primary w-100 py-2" type="submit">
+                    <button id="btn-signin" class="btn btn-primary w-100 py-2" type="submit" data-busy-text="{% trans "Signing in..." %}">
                         <i class="bi bi-box-arrow-in-right me-1"></i>
                         <span id="btn-text">{% trans "Sign In" %}</span>
                     </button>
@@ -61,31 +62,5 @@
 {% endblock %}
 
 {% block script %}
-<script>
-    $(document).ready(function() {
-        // Toggle password visibility
-        $('#btn-toggle-pwd').on('click', function(e) {
-            e.preventDefault();
-            var $pwd = $('#id_password');
-            var $icon = $('#toggle-icon');
-            if ($pwd.attr('type') === 'password') {
-                $pwd.attr('type', 'text');
-                $icon.removeClass('bi-eye').addClass('bi-eye-slash');
-            } else {
-                $pwd.attr('type', 'password');
-                $icon.removeClass('bi-eye-slash').addClass('bi-eye');
-            }
-        });
-
-        // Submit loading state
-        $('#form-signin').on('submit', function() {
-            var $btn = $('#btn-signin');
-            $btn.prop('disabled', true);
-            $btn.html(
-                '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
-                '{% trans "Signing in..." %}'
-            );
-        });
-    });
-</script>
+<script src="{% static 'js/login_form.js' %}"></script>
 {% endblock script %}

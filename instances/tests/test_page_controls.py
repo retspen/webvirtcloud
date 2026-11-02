@@ -116,7 +116,7 @@ class PageControlsTestCase(PageControls, TestCase):
         viewer = self.user("ctl_js_viewer", perms=("view_instances",))
         for user in (superuser, viewer):
             self.controls(user)
-            scripts = lxml_html.fromstring(self.last_page).xpath("//script[not(@src)]/text()")
+            scripts = lxml_html.fromstring(self.last_page).xpath("//script[not(@src) and not(@type='application/json')]/text()")
             for number, script in enumerate(scripts):
                 with self.subTest(user=user.username, script=number):
                     result = subprocess.run(

@@ -1,9 +1,4 @@
 {% load static %}
+{{ settings|json_script:"job-panel-settings" }}
 <script src="{% static 'operations/job_panel.js' %}"></script>
-<script>
-    window.resourceJobPanel = jobPanel(document.getElementById("job-panel"), {
-        resource: "{% url 'operation-resource' %}?key={{ resource|urlencode:'' }}",
-        job: function (id) { return "{% url 'operation-list' %}" + id + "/"; },
-        cancel: function (id) { return "{% url 'operation-list' %}" + id + "/cancel/"; },
-    }, "{{ csrf_token }}", {{ remembered|safe }});
-</script>
+<script src="{% static 'operations/job_panel_start.js' %}"></script>

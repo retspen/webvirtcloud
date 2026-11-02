@@ -1,9 +1,8 @@
-"""After a refused submission the page starts at the error: base.html's
-script focuses the first visible invalid field, else the error message.
+"""After a refused submission the page starts at the error: error_focus.js
+focuses the first visible invalid field, else the error message.
 The script runs in Node against a stand-in document."""
 
 import json
-import re
 import shutil
 import subprocess
 import unittest
@@ -11,11 +10,7 @@ from pathlib import Path
 
 from django.conf import settings
 
-SCRIPT = re.search(
-    r"<script>\s*(// After a refused submission.*?)</script>",
-    Path(settings.BASE_DIR, "templates/base.html").read_text(),
-    re.S,
-).group(1)
+SCRIPT = Path(settings.BASE_DIR, "static/js/error_focus.js").read_text()
 
 HARNESS = """
 const els = %s;

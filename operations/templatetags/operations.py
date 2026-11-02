@@ -1,7 +1,9 @@
-import json
 import uuid
+from urllib.parse import quote
 
 from django import template
+from django.middleware.csrf import get_token
+from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.timesince import timesince
@@ -71,5 +73,9 @@ def wrap_at_slash(label):
 @register.inclusion_tag("operations/job_panel_script.html", takes_context=True)
 def job_panel_script(context, resource):
     """The job panel's script for the page of resource."""
-    return {"resource": resource, "csrf_token": context.get("csrf_token"),
-            "remembered": json.dumps(take_remembered(context["request"], resource))}
+    return {"settings": {
+        "resource": reverse("operation-resource") + "?key=" + quote(resource, safe=""),
+        "jobs": reverse("operation-list"),
+        "csrf_token": get_token(context["request"]),
+        "remembered": take_remembered(context["request"], resource),
+    }}
