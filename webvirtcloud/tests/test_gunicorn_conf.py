@@ -24,3 +24,9 @@ class GunicornConfTestCase(unittest.TestCase):
 
     def test_unknown_cpu_count_falls_back(self):
         self.assertEqual(load(-1)["workers"], 3)
+
+    def test_workers_run_requests_in_threads(self):
+        conf = load(2)
+        self.assertEqual((conf["worker_class"], conf["threads"]), ("webvirtcloud.gunicorn_worker.Worker", 4))
+        # a worker with every thread busy takes no new connection
+        self.assertEqual((conf["worker_connections"], conf["keepalive"]), (4, 0))

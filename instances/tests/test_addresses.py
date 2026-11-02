@@ -290,6 +290,16 @@ class FindTests(unittest.TestCase):
         finally:
             addresses._running = 0
 
+    def test_a_second_search_waits_for_none(self):
+        # threads of one worker search at once: a second search of the process is refused
+        addresses._searching.acquire()
+        try:
+            with self.assertRaises(addresses.Busy):
+                self.find(addresses.Target(compute("c1"), None))
+        finally:
+            addresses._searching.release()
+        self.find(addresses.Target(compute("c1"), None))  # the search lets the next one in
+
     def test_a_failed_agent_read_is_not_a_read(self):
         dom = FakeDomain({AGENT: libvirtError("guest-network-get-interfaces is disabled")})
         result = self.find(addresses.Target(compute("c1", dom), None))

@@ -85,10 +85,16 @@ def get_workers():
 
 
 workers = get_workers()
-# worker_class = 'egg:gunicorn#eventlet'
-worker_connections = 1000
+# threads of a worker: a request waiting on a host that does not answer
+# holds one thread, not the whole worker
+worker_class = 'webvirtcloud.gunicorn_worker.Worker'
+threads = 4
+# a worker takes no more connections than it has threads: one whose threads
+# are all busy leaves new requests to the others. nginx opens a connection
+# per request, so none is kept alive.
+worker_connections = threads
 timeout = 600
-keepalive = 2
+keepalive = 0
 # gunicorn 26's control socket is unused, and the service user cannot create it
 control_socket_disable = True
 
