@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 20:06+0000\n"
+"POT-Creation-Date: 2026-11-02 20:32+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -103,6 +103,7 @@ msgstr "bir yıl içinde"
 #: admin/templates/admin/user_form.html:16
 #: admin/templates/admin/user_list.html:58
 #: operations/templates/operations/jobs.html:15
+#: operations/templatetags/operations.py:91
 msgid "never"
 msgstr "hiçbir zaman"
 
@@ -290,6 +291,7 @@ msgstr "Parola Değiştir"
 #: nwfilters/templates/create_nwfilter_block.html:33
 #: nwfilters/templates/nwfilter.html:178 nwfilters/templates/nwfilters.html:93
 #: operations/templates/operations/job.html:31
+#: operations/templatetags/operations.py:83
 #: storages/templates/create_stg_block.html:183
 #: storages/templates/create_stg_vol_block.html:35
 #: storages/templates/create_stg_vol_block.html:68
@@ -3596,6 +3598,7 @@ msgid "OS details"
 msgstr "İşletim sistemi ayrıntıları"
 
 #: instances/templates/instance.html:39
+#: operations/templatetags/operations.py:85
 msgid "Refresh"
 msgstr "Yenile"
 
@@ -7435,6 +7438,11 @@ msgstr ""
 "Harfler, rakamlar, nokta, tire ve alt çizgi. Kopya, filtrenin kurallarını ve "
 "başvurularını içerir."
 
+#: operations/api/serializers.py:35
+#, python-format
+msgid "%(phase)s (over its time limit)"
+msgstr "%(phase)s (süre sınırını aştı)"
+
 #: operations/templates/operations/job.html:11
 #: operations/templates/operations/jobs.html:7
 #: operations/templates/operations/jobs.html:9
@@ -7509,6 +7517,7 @@ msgid "What you checked"
 msgstr "Neyi kontrol ettiniz"
 
 #: operations/templates/operations/jobs.html:14
+#: operations/templatetags/operations.py:90
 msgid "Worker unavailable, last seen"
 msgstr "İşçi kullanılamıyor, son görülme"
 
@@ -7585,6 +7594,36 @@ msgid "%(count)d second"
 msgid_plural "%(count)d seconds"
 msgstr[0] "%(count)d saniye"
 msgstr[1] "%(count)d saniye"
+
+#: operations/templatetags/operations.py:84
+msgctxt "verb"
+msgid "Open"
+msgstr "Aç"
+
+#: operations/templatetags/operations.py:86
+msgid "Dismiss"
+msgstr "Kapat"
+
+#: operations/templatetags/operations.py:87
+msgid "Finishing…"
+msgstr "Bitiriliyor…"
+
+#: operations/templatetags/operations.py:88
+msgid "Files not removed:"
+msgstr "Silinmeyen dosyalar:"
+
+#: operations/templatetags/operations.py:89
+msgid "A short operation is in progress."
+msgstr "Kısa bir işlem sürüyor."
+
+#: operations/templatetags/operations.py:92
+#, python-format
+msgid "Cancel failed (HTTP %(status)s)."
+msgstr "İptal edilemedi (HTTP %(status)s)."
+
+#: operations/templatetags/operations.py:93
+msgid "Cancel failed: the server could not be reached."
+msgstr "İptal edilemedi: sunucuya ulaşılamadı."
 
 #: operations/utils.py:52
 msgid "The host of this virtual machine cannot be reached right now."

@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.timesince import timesince
-from django.utils.translation import ngettext, pgettext_lazy
+from django.utils.translation import gettext, ngettext, pgettext, pgettext_lazy
 
 from operations.jobs import take_remembered
 from operations.models import Operation
@@ -78,4 +78,18 @@ def job_panel_script(context, resource):
         "jobs": reverse("operation-list"),
         "csrf_token": get_token(context["request"]),
         "remembered": take_remembered(context["request"], resource),
+        "states": {state: str(label) for state, label in STATE_LABELS.items()},
+        "text": {
+            "cancel": gettext("Cancel"),
+            "open": pgettext("verb", "Open"),
+            "refresh": gettext("Refresh"),
+            "dismiss": gettext("Dismiss"),
+            "finishing": gettext("Finishing…"),
+            "not_removed": gettext("Files not removed:"),
+            "short_operation": gettext("A short operation is in progress."),
+            "worker_unavailable": gettext("Worker unavailable, last seen"),
+            "never": gettext("never"),
+            "cancel_failed": gettext("Cancel failed (HTTP %(status)s)."),
+            "cancel_unreachable": gettext("Cancel failed: the server could not be reached."),
+        },
     }}

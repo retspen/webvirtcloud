@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TransactionTestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import UserInstance
 from computes.models import Compute
@@ -23,6 +26,14 @@ class OperationsApiTestCase(TransactionTestCase):
         UserInstance.objects.create(user=self.other, instance=self.vm)
         UserInstance.objects.create(user=self.owner, instance=self.vm2)
         self.op = jobs.submit("test.noop", self.owner, {"uuid": "u1"}, "key-00000001")
+
+    def test_the_phase_comes_in_the_users_language_and_says_when_it_is_past_its_limit(self):
+        Operation.objects.filter(pk=self.op.pk).update(state=Operation.RUNNING, phase="Merging the snapshot")
+        self.client.force_login(self.owner)
+        url = f"/api/v1/operations/{self.op.pk}/"
+        self.assertEqual(self.client.get(url, HTTP_ACCEPT_LANGUAGE="tr").json()["phase"], "Anlık görüntü birleştiriliyor")
+        Operation.objects.filter(pk=self.op.pk).update(time_limit=60, started_at=timezone.now() - timedelta(seconds=61))
+        self.assertEqual(self.client.get(url).json()["phase"], "Merging the snapshot (over its time limit)")
 
     def test_users_list_only_their_own_jobs(self):
         self.client.force_login(self.other)

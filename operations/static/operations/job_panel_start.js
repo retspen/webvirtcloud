@@ -5,5 +5,5 @@
         resource: settings.resource,
         job: function (id) { return settings.jobs + id + "/"; },
         cancel: function (id) { return settings.jobs + id + "/cancel/"; },
-    }, settings.csrf_token, settings.remembered);
+    }, settings.csrf_token, settings.remembered, settings.states, settings.text);
 })();

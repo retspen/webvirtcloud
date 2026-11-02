@@ -68,11 +68,11 @@
                             <td style="min-width: 12rem;">
                                 <a href="{% url 'operations:job' row.id %}">{{ row.label }}</a>
                                 {% if op.state in active_states %}
-                                    {% if op.phase or op.progress_total %}
+                                    {% if row.phase or op.progress_total %}
                                         <div class="small text-body-secondary">
-                                            {% if op.phase %}{% translate op.phase %}{% endif %}
+                                            {{ row.phase }}
                                             {% if op.progress_total %}
-                                                {% if op.phase %}&middot;{% endif %}
+                                                {% if row.phase %}&middot;{% endif %}
                                                 {% if op.kind in bytes_kinds %}{{ op.progress_done|default:0|filesizeformat }} / {{ op.progress_total|filesizeformat }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
                                             {% endif %}
                                         </div>

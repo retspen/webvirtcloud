@@ -10,7 +10,9 @@ var JOB_STATE_COLORS = {
     failed: "danger", cancelled: "secondary", uncertain: "warning",
 };
 
-function jobPanel(element, urls, csrfToken, initialIds) {
+// states: the label of each state; text: the panel's own texts, both in the
+// page's language (job_panel_script)
+function jobPanel(element, urls, csrfToken, initialIds, states, text) {
     var shown = {};     // id -> job in the last active list
     var pending = {};   // id -> true: left the list (or just submitted), outcome not fetched yet
     var inflight = {};  // id -> true: its outcome is being fetched
@@ -41,7 +43,7 @@ function jobPanel(element, urls, csrfToken, initialIds) {
         return '<div class="progress mt-2" role="progressbar" aria-valuenow="' + (finishing ? 100 : pct)
             + '" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar'
             + (finishing ? " progress-bar-striped progress-bar-animated" : "") + '" style="width:'
-            + (finishing ? 100 : pct) + '%">' + (finishing ? "Finishing\u2026" : pct + "%") + "</div></div>";
+            + (finishing ? 100 : pct) + '%">' + (finishing ? esc(text.finishing) : pct + "%") + "</div></div>";
     }
 
     // label, state badge and muted phase on one line, the buttons on its right
@@ -49,7 +51,7 @@ function jobPanel(element, urls, csrfToken, initialIds) {
         return '<div class="d-flex flex-wrap align-items-center gap-2"><strong>' + esc(label) + "</strong>"
             + '<span class="badge bg-' + JOB_STATE_COLORS[state]
             // the theme draws white text on a warning badge
-            + (JOB_STATE_COLORS[state] === "warning" ? " text-dark" : "") + '">' + esc(state) + "</span>"
+            + (JOB_STATE_COLORS[state] === "warning" ? " text-dark" : "") + '">' + esc(states[state] || state) + "</span>"
             + (phase ? '<span class="small text-body-secondary">' + esc(phase) + "</span>" : "")
             + (buttons ? '<div class="ms-auto d-flex gap-2">' + buttons + "</div>" : "") + "</div>";
     }
@@ -64,7 +66,7 @@ function jobPanel(element, urls, csrfToken, initialIds) {
 
     function jobHtml(job) {
         var cancel = job.cancellable ? '<button type="button" class="btn btn-sm btn-outline-danger" data-cancel="'
-            + esc(job.id) + '"' + (cancelling[job.id] ? " disabled" : "") + ">Cancel</button>" : "";
+            + esc(job.id) + '"' + (cancelling[job.id] ? " disabled" : "") + ">" + esc(text.cancel) + "</button>" : "";
         // an uncertain job keeps its claims, so it stays in the list with its error
         return alertHtml(job.state, header(job.label, job.state, job.phase, cancel) + errorHtml(job) + bar(job));
     }
@@ -72,26 +74,26 @@ function jobPanel(element, urls, csrfToken, initialIds) {
     function outcomeHtml(job) {
         var left = (job.result && job.result.left_behind) || [];
         var note = job.result && job.result.warning ? '<div class="small mt-2">' + esc(job.result.warning) + "</div>" : "";
-        var warn = note + (left.length ? '<div class="small mt-2">Files not removed:</div><ul class="list-unstyled small mb-0">'
+        var warn = note + (left.length ? '<div class="small mt-2">' + esc(text.not_removed) + '</div><ul class="list-unstyled small mb-0">'
             + left.map(function (path) { return '<li class="text-break"><code>' + esc(path) + "</code></li>"; }).join("") + "</ul>" : "");
-        var buttons = (opens(job) ? '<a class="btn btn-sm btn-primary" href="' + esc(job.result.open) + '">Open</a>' : "")
-            + '<button type="button" class="btn btn-sm btn-primary" data-refresh="1">Refresh</button>'
+        var buttons = (opens(job) ? '<a class="btn btn-sm btn-primary" href="' + esc(job.result.open) + '">' + esc(text.open) + "</a>" : "")
+            + '<button type="button" class="btn btn-sm btn-primary" data-refresh="1">' + esc(text.refresh) + "</button>"
             + '<button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="' + esc(job.id)
-            + '">Dismiss</button>';
+            + '">' + esc(text.dismiss) + "</button>";
         return alertHtml(job.state, header(job.label, job.state, "", buttons) + errorHtml(job) + warn);
     }
 
     function render() {
         var html = notice ? alertHtml("failed", '<div class="d-flex flex-wrap align-items-center gap-2"><span>'
             + esc(notice) + '</span><div class="ms-auto"><button type="button" class="btn btn-sm btn-outline-secondary"'
-            + ' data-dismiss-error="1">Dismiss</button></div></div>') : "";
+            + ' data-dismiss-error="1">' + esc(text.dismiss) + "</button></div></div>") : "";
         last.jobs.forEach(function (job) { html += jobHtml(job); });
         Object.keys(outcomes).forEach(function (id) { html += outcomeHtml(outcomes[id]); });
         last.others.forEach(function (o) {
             html += '<div class="alert alert-secondary mb-3" role="status">' + header(o.label, o.state, "", "") + "</div>";
         });
         if (last.short_operation) {
-            html += '<div class="alert alert-secondary mb-3" role="status">A short operation is in progress.</div>';
+            html += '<div class="alert alert-secondary mb-3" role="status">' + esc(text.short_operation) + "</div>";
         }
         // a job the worker has to start, run or stop, not one a request runs (the Jobs page uses the same rule)
         var waiting = last.jobs.some(function (j) {
@@ -99,8 +101,8 @@ function jobPanel(element, urls, csrfToken, initialIds) {
         });
         var seen = last.worker_last_seen ? new Date(last.worker_last_seen) : null;
         if (waiting && (!seen || Date.now() - seen.getTime() > 60000)) {
-            html += '<div class="alert alert-warning mb-3" role="status">Worker unavailable, last seen '
-                + esc(seen ? seen.toLocaleString() : "never") + ".</div>";
+            html += '<div class="alert alert-warning mb-3" role="status">' + esc(text.worker_unavailable) + " "
+                + esc(seen ? seen.toLocaleString() : text.never) + ".</div>";
         }
         if (html !== rendered) {
             element.innerHTML = html;
@@ -189,7 +191,7 @@ function jobPanel(element, urls, csrfToken, initialIds) {
             .fail(function (xhr) {
                 // e.g. a queued job started meanwhile and cannot be stopped any more
                 notice = (xhr.responseJSON && xhr.responseJSON.detail)
-                    || (xhr.status ? "Cancel failed (HTTP " + xhr.status + ")." : "Cancel failed: the server could not be reached.");
+                    || (xhr.status ? text.cancel_failed.replace("%(status)s", xhr.status) : text.cancel_unreachable);
             })
             .always(function () {
                 delete cancelling[id];

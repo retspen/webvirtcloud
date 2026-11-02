@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 20:06+0000\n"
+"POT-Creation-Date: 2026-11-02 20:32+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -99,6 +99,7 @@ msgstr "一年后"
 #: admin/templates/admin/user_form.html:16
 #: admin/templates/admin/user_list.html:58
 #: operations/templates/operations/jobs.html:15
+#: operations/templatetags/operations.py:91
 msgid "never"
 msgstr "永不"
 
@@ -286,6 +287,7 @@ msgstr "修改密码"
 #: nwfilters/templates/create_nwfilter_block.html:33
 #: nwfilters/templates/nwfilter.html:178 nwfilters/templates/nwfilters.html:93
 #: operations/templates/operations/job.html:31
+#: operations/templatetags/operations.py:83
 #: storages/templates/create_stg_block.html:183
 #: storages/templates/create_stg_vol_block.html:35
 #: storages/templates/create_stg_vol_block.html:68
@@ -3498,6 +3500,7 @@ msgid "OS details"
 msgstr "操作系统详情"
 
 #: instances/templates/instance.html:39
+#: operations/templatetags/operations.py:85
 msgid "Refresh"
 msgstr "刷新"
 
@@ -7120,6 +7123,11 @@ msgid ""
 "rules and references."
 msgstr "字母、数字、点、短横线和下划线。副本包含该过滤器的规则和引用。"
 
+#: operations/api/serializers.py:35
+#, python-format
+msgid "%(phase)s (over its time limit)"
+msgstr "%(phase)s（已超出时间限制）"
+
 #: operations/templates/operations/job.html:11
 #: operations/templates/operations/jobs.html:7
 #: operations/templates/operations/jobs.html:9
@@ -7192,6 +7200,7 @@ msgid "What you checked"
 msgstr "检查内容"
 
 #: operations/templates/operations/jobs.html:14
+#: operations/templatetags/operations.py:90
 msgid "Worker unavailable, last seen"
 msgstr "工作进程不可用，最后在线时间"
 
@@ -7267,6 +7276,36 @@ msgstr "不确定"
 msgid "%(count)d second"
 msgid_plural "%(count)d seconds"
 msgstr[0] "%(count)d 秒"
+
+#: operations/templatetags/operations.py:84
+msgctxt "verb"
+msgid "Open"
+msgstr "打开"
+
+#: operations/templatetags/operations.py:86
+msgid "Dismiss"
+msgstr "关闭"
+
+#: operations/templatetags/operations.py:87
+msgid "Finishing…"
+msgstr "即将完成…"
+
+#: operations/templatetags/operations.py:88
+msgid "Files not removed:"
+msgstr "未删除的文件："
+
+#: operations/templatetags/operations.py:89
+msgid "A short operation is in progress."
+msgstr "有一个短操作正在进行。"
+
+#: operations/templatetags/operations.py:92
+#, python-format
+msgid "Cancel failed (HTTP %(status)s)."
+msgstr "取消失败（HTTP %(status)s）。"
+
+#: operations/templatetags/operations.py:93
+msgid "Cancel failed: the server could not be reached."
+msgstr "取消失败：无法连接到服务器。"
 
 #: operations/utils.py:52
 msgid "The host of this virtual machine cannot be reached right now."
