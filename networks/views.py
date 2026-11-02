@@ -221,12 +221,12 @@ def network(request, compute_id, pool):
                         _(
                             "%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network to activate new config"
                         )
-                        % {"qos_dir": qos_dir.capitalize()},
+                        % {"qos_dir": _(qos_dir.capitalize())},
                     )
                 else:
                     messages.success(
                         request,
-                        _("%(qos_dir)s QoS is set") % {"qos_dir": qos_dir.capitalize()},
+                        _("%(qos_dir)s QoS is set") % {"qos_dir": _(qos_dir.capitalize())},
                     )
             except (libvirtError, ValueError) as err:
                 messages.error(request, err)
@@ -247,12 +247,12 @@ def network(request, compute_id, pool):
                         "%(qos_dir)s QoS is deleted. Network XML is changed. "
                         "Stop and start network to activate new config"
                     )
-                    % {"qos_dir": qos_dir.capitalize()},
+                    % {"qos_dir": _(qos_dir.capitalize())},
                 )
             else:
                 messages.success(
                     request,
-                    _("%(qos_dir)s QoS is deleted") % {"qos_dir": qos_dir.capitalize()},
+                    _("%(qos_dir)s QoS is deleted") % {"qos_dir": _(qos_dir.capitalize())},
                 )
             return HttpResponseRedirect(here)
     # read only for the page: every action above redirects

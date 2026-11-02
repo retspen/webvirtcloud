@@ -16,6 +16,18 @@ from operations.templatetags.operations import STATE_COLORS, STATE_LABELS, state
 from operations.tests import fakes
 
 
+class BusyMessageTestCase(SimpleTestCase):
+    def test_the_state_of_the_job_in_the_way_is_named_in_the_users_language(self):
+        from types import SimpleNamespace
+
+        from operations.utils import busy_message
+        op = Operation(kind="snapshot.create", state=Operation.RUNNING, created_at=django_timezone.now())
+        with translation.override("tr"):
+            text = busy_message(SimpleNamespace(blocker=op), SimpleNamespace(is_superuser=False, pk=1))
+        self.assertIn(" çalışıyor ", text)
+        self.assertNotIn("running", text)
+
+
 class StateColorsTestCase(SimpleTestCase):
     def test_every_state_has_its_colour(self):
         # job_panel.test.js checks the same map in job_panel.js

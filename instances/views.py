@@ -35,7 +35,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.template.defaultfilters import filesizeformat
 from django.utils import timezone
-from django.utils.translation import gettext_noop as _
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from django.views.decorators.http import require_POST
 from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_RUNNING,
@@ -741,11 +742,11 @@ def invalid_disk_options(
 # libvirt's words when a running q35 VM has no free root port for a PCIe device
 PCI_SLOTS_FULL = "No more available PCI slots"
 # a disk on the scsi bus needs no slot of its own when the VM already has a SCSI controller
-DISK_NO_PCI_SLOT = _("The running VM has no free PCI slot for another disk on this bus: choose the scsi bus "
+DISK_NO_PCI_SLOT = gettext_lazy("The running VM has no free PCI slot for another disk on this bus: choose the scsi bus "
                      "if the VM has a SCSI controller, or shut the VM down and add the disk then; Add PCIe slots "
                      "on the Disks tab gives it free ones from its next start. A new volume stays in its pool, "
                      "to attach as an existing volume.")
-SCSI_NO_PCI_SLOT = _("The running VM has no free PCI slot for the SCSI controller the disk needs: shut the VM "
+SCSI_NO_PCI_SLOT = gettext_lazy("The running VM has no free PCI slot for the SCSI controller the disk needs: shut the VM "
                      "down and add the disk then; Add PCIe slots on the Disks tab gives it free ones from its next "
                      "start. A new volume stays in its pool, to attach as an existing volume.")
 
@@ -1059,7 +1060,7 @@ def gstfsd_request(compute, data):
 
 # root password and SSH key: gstfsd changes a shut-off VM's disk, the QEMU
 # guest agent a running VM
-AGENT_OR_SHUT_OFF = _("Shut the VM down, or start its QEMU guest agent, and try again")
+AGENT_OR_SHUT_OFF = gettext_lazy("Shut the VM down, or start its QEMU guest agent, and try again")
 
 
 # libvirt's value; bindings built against older libvirt (Ubuntu 24.04's) lack
@@ -2207,13 +2208,13 @@ def set_qos(request, pk):
         instance.proxy.set_qos(mac, qos_dir, average, peak, burst)
     if instance.proxy.get_status() == 5:
         messages.success(
-            request, _("%(qos_dir)s QoS is set") % {"qos_dir": qos_dir.capitalize()}
+            request, _("%(qos_dir)s QoS is set") % {"qos_dir": _(qos_dir.capitalize())}
         )
     else:
         messages.success(
             request,
             _("%(qos_dir)s QoS is set. A running VM gets it after it is powered off and on.")
-            % {"qos_dir": qos_dir.capitalize()},
+            % {"qos_dir": _(qos_dir.capitalize())},
         )
 
     return _back(request, pk, "network")
@@ -2234,13 +2235,13 @@ def unset_qos(request, pk):
 
     if instance.proxy.get_status() == 5:
         messages.success(
-            request, _("%(qos_dir)s QoS is deleted") % {"qos_dir": qos_dir.capitalize()}
+            request, _("%(qos_dir)s QoS is deleted") % {"qos_dir": _(qos_dir.capitalize())}
         )
     else:
         messages.success(
             request,
             _("%(qos_dir)s QoS is deleted. A running VM keeps the old limit until it is powered off and on.")
-            % {"qos_dir": qos_dir.capitalize()},
+            % {"qos_dir": _(qos_dir.capitalize())},
         )
     return _back(request, pk, "network")
 
@@ -2492,9 +2493,9 @@ def create_instance_select_type(request, compute_id):
 
 # the create form's disk sources: (value, title, help)
 DISK_SOURCES = [
-    ("new", _("New disk"), _("An empty disk of the size you set")),
-    ("existing", _("Existing volumes"), _("Volumes already in a pool")),
-    ("template", _("Clone from template"), _("A copy of a template volume")),
+    ("new", gettext_lazy("New disk"), gettext_lazy("An empty disk of the size you set")),
+    ("existing", gettext_lazy("Existing volumes"), gettext_lazy("Volumes already in a pool")),
+    ("template", gettext_lazy("Clone from template"), gettext_lazy("A copy of a template volume")),
 ]
 
 

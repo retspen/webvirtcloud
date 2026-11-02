@@ -12,6 +12,7 @@ import libvirt
 from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
+from django.utils.translation import pgettext
 from django.utils.translation import gettext_lazy
 from libvirt import libvirtError
 
@@ -117,7 +118,7 @@ def busy_message(busy, user):
     op = busy.blocker
     if op is None:
         return _("A short operation is in progress on this resource; try again in a moment.")
-    values = {"label": _(jobs.label_of(op.kind)), "state": op.state, "since": timesince(op.created_at, timezone.now())}
+    values = {"label": _(jobs.label_of(op.kind)), "state": pgettext("job state", op.state), "since": timesince(op.created_at, timezone.now())}
     if may_see(op, user):
         return _("%(label)s is %(state)s on this resource (started by %(user)s, %(since)s ago); "
                  "see the Jobs page.") % {**values, "user": op.username}

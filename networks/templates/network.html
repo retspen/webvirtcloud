@@ -288,6 +288,7 @@
                 </thead>
                 <tbody>
                 {% for direction, limit in qos.items %}
+                    {% if direction == "inbound" %}{% trans "inbound" as direction_name %}{% else %}{% trans "outbound" as direction_name %}{% endif %}
                     <tr>
                         <td>{% if direction == "inbound" %}{% trans "Inbound" %}{% else %}{% trans "Outbound" %}{% endif %}</td>
                         <td>{% if limit.average %}{{ limit.average }} KiB/s{% else %}–{% endif %}</td>
@@ -301,7 +302,7 @@
                                 <form method="post" class="btn-group">{% csrf_token %}
                                     <input type="hidden" name="qos_direction" value="{{ direction }}">
                                     <button type="submit" class="btn btn-sm btn-outline-secondary" name="unset_qos" aria-label="{% trans "Remove" %}"
-                                            data-confirm="{% blocktrans with name=pool %}Remove the {{ direction }} limit of network {{ name }}? It stays in force until the network is stopped and started.{% endblocktrans %}">{% bs_icon 'trash' %}</button>
+                                            data-confirm="{% blocktrans with direction=direction_name name=pool %}Remove the {{ direction }} limit of network {{ name }}? It stays in force until the network is stopped and started.{% endblocktrans %}">{% bs_icon 'trash' %}</button>
                                 </form>
                             </div>
                         </td>
