@@ -20,6 +20,10 @@ class FakeWorker:
     def __init__(self):
         self.control = ThreadPoolExecutor(1)
 
+    def run_control(self, hosts, fn, *args):
+        self.control.submit(fn, *args)
+        return True
+
 
 class RecoveryTestCase(TransactionTestCase):
     def setUp(self):

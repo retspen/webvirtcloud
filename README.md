@@ -599,6 +599,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 - Changing one's own password is the "Can change password" permission (per user or group; new users have it); `SHOW_PROFILE_EDIT_PASSWORD` is gone.
 - The admin's first-login password change survives losing `data/admin_password` (migration `accounts.0007`); run `migrate` as a user who can read that file.
 - "VM Clone Auto Migrate" is removed; a clone stays on its source host.
+- The job worker runs at most half of its concurrency (Settings, at least one) of one host's jobs at a time; that host's other jobs wait in the queue, so a host that does not answer cannot take every slot.
 - A template VM is changed or deleted only by superusers and staff owners with the matching permission; other owners can still view, open the console and clone it. Power cycle no longer starts a template.
 - A VM that vanishes from its compute, or whose compute is deleted, keeps its owners for `INSTANCE_OWNERSHIP_RETENTION_DAYS` (30) in case the same UUID comes back; superusers list and remove these records on the "Removed VMs" admin page.
 - The log rotates (10 MB × 5) in `data/webvirtcloud.log`.
