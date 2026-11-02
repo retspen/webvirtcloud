@@ -104,7 +104,7 @@ class MigrateJobTestCase(TransactionTestCase):
                 {"target": "vda", "path": "/i/mig-vm.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None,
                  "free_pools": ["default", "fast"], "default": "default"},
                 {"target": "vdb", "path": "/i/data.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None,
-                 "free_pools": ["default"], "default": "default"},
+                 "free_pools": ["default"], "default": "default", "same_name": True},
                 {"target": "sda", "path": "/i/os.iso", "capacity": 1 << 20, "shared": False,
                  "refusal": "an image is not copied; eject it first", "free_pools": [], "default": None}],
                 # the next start's disks the migration does not carry
@@ -120,6 +120,7 @@ class MigrateJobTestCase(TransactionTestCase):
         self.assertIn('<option value="fast">Copy to fast (8.0\xa0GB free)</option>', page)
         self.assertIn('<option value="fast" disabled>fast has a file of this name</option>', page)
         self.assertIn("Cannot be copied: an image is not copied; eject it first", page)
+        self.assertEqual(page.count("Another disk of the VM has this file name: copy them to different pools."), 1)
         self.assertIn("A shut-off VM is started paused for a copy", page)
         self.assertIn("/nfs/new.qcow2</span>:\n            on storage both hosts share", page)
         # a disk that cannot go keeps the form from being sent, as does a destination that does not answer
