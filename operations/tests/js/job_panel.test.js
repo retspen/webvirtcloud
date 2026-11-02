@@ -50,12 +50,20 @@ eval(fs.readFileSync(process.argv[2], "utf8"));
 eval(fs.readFileSync(process.argv[3], "utf8"));
 
 const urls = { resource: "/r", job: (id) => "/j/" + id, cancel: (id) => "/c/" + id };
+// the labels and texts the page gives (job_panel_script), here as in English
+const STATES = { queued: "queued", running: "running", cancelling: "cancelling", succeeded: "succeeded",
+                 failed: "failed", cancelled: "cancelled", uncertain: "uncertain" };
+const TEXT = { cancel: "Cancel", open: "Open", refresh: "Refresh", dismiss: "Dismiss", finishing: "Finishing\u2026",
+               not_removed: "Files not removed:", short_operation: "A short operation is in progress.",
+               worker_unavailable: "Worker unavailable, last seen", never: "never",
+               cancel_failed: "Cancel failed (HTTP %(status)s).",
+               cancel_unreachable: "Cancel failed: the server could not be reached." };
 const seen = new Date(1700000000000).toISOString();
 const running = { id: "a", label: "Delete snapshot", state: "running", phase: "Merging", progress_done: 1,
                   progress_total: 4, cancellable: false, result: {}, error: "" };
 const empty = { jobs: [], others: [], short_operation: false, worker_last_seen: seen };
 
-jobPanel(el, urls, "tok");
+jobPanel(el, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", { ...empty, jobs: [running] });
 assert.ok(el.innerHTML.includes("Delete snapshot") && el.innerHTML.includes("25%"), "shows the job and real progress");
@@ -108,7 +116,7 @@ assert.ok(!window.reloaded);
 // a job that ended before the first poll: shown from the submitted ids
 open = []; timers = [];
 const el2 = { innerHTML: "", addEventListener() {} };
-jobPanel(el2, urls, "tok", ["b"]);
+jobPanel(el2, urls, "tok", ["b"], STATES, TEXT);
 advance(0);
 answer("/r", empty);
 answer("/j/b", { ...running, id: "b", state: "failed", error: "refused" });
@@ -118,7 +126,7 @@ assert.ok(el2.innerHTML.includes("refused") && el2.innerHTML.includes('class="al
 // a late answer for a dismissed job does not bring it back
 const el3 = { innerHTML: "", addEventListener(ev, f) { listeners3 = f; } };
 let listeners3;
-jobPanel(el3, urls, "tok", ["c"]);
+jobPanel(el3, urls, "tok", ["c"], STATES, TEXT);
 advance(0);
 answer("/r", empty);
 listeners3({ target: { dataset: { dismiss: "c" } } });
@@ -130,7 +138,7 @@ open = []; timers = [];
 let writes = 0, html4 = "";
 const el4 = { addEventListener() {},
               get innerHTML() { return html4; }, set innerHTML(v) { writes++; html4 = v; } };
-jobPanel(el4, urls, "tok");
+jobPanel(el4, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", { ...empty, jobs: [{ ...running, state: "uncertain", error: "check the disks" }] });
 assert.ok(el4.innerHTML.includes('<span class="badge bg-warning text-dark">uncertain</span>'), "dark text on the yellow badge");
@@ -153,7 +161,7 @@ assert.strictEqual(window.backgroundJobRunning, true, "a foreground operation ke
 open = []; timers = [];
 const el6 = { innerHTML: "", addEventListener() {} };
 window.backgroundJobRunning = false;
-jobPanel(el6, urls, "tok");
+jobPanel(el6, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", { ...empty, jobs: [{ ...running, id: "d" }] });
 assert.strictEqual(window.backgroundJobRunning, true);
@@ -169,7 +177,7 @@ assert.ok(!open.some((r) => r.url === "/j/d" && !r.settled), "a missing job is n
 open = []; timers = [];
 window.backgroundJobRunning = false;
 const el7 = { innerHTML: "", addEventListener() {} };
-jobPanel(el7, urls, "tok", ["e"]);
+jobPanel(el7, urls, "tok", ["e"], STATES, TEXT);
 assert.strictEqual(window.backgroundJobRunning, true, "set at init, not after the first poll");
 advance(0);
 answer("/r", empty, false); // a failed first poll keeps it
@@ -183,7 +191,7 @@ assert.strictEqual(window.backgroundJobRunning, false, "released once the rememb
 open = []; timers = [];
 const el8 = { innerHTML: "", addEventListener() {} };
 const stale = new Date(Date.now() - 120000).toISOString();
-jobPanel(el8, urls, "tok");
+jobPanel(el8, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", { ...empty, worker_last_seen: stale, jobs: [running] });
 assert.ok(el8.innerHTML.includes("Worker unavailable"), "a running job with a stale lease warns");
@@ -209,7 +217,7 @@ open = []; timers = [];
 let click9;
 const el9 = { innerHTML: "", addEventListener(ev, f) { click9 = f; } };
 const queued = { ...running, id: "q", state: "queued", cancellable: true, progress_total: null };
-jobPanel(el9, urls, "tok");
+jobPanel(el9, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", { ...empty, jobs: [queued] });
 assert.ok(el9.innerHTML.includes('data-cancel="q">Cancel</button>'), "an enabled cancel button");
@@ -234,7 +242,7 @@ assert.ok(el9.innerHTML.includes("could not be reached"), "a network error shows
 open = []; timers = [];
 window.backgroundJobRunning = false;
 const el10 = { innerHTML: "", addEventListener() {} };
-const panel = jobPanel(el10, urls, "tok");
+const panel = jobPanel(el10, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", empty);
 assert.strictEqual(window.backgroundJobRunning, false);
@@ -249,7 +257,7 @@ assert.ok(el10.innerHTML.includes("Upload") && el10.innerHTML.includes('<span cl
 // a list answer older than the job, then its detail still active: the panel keeps following it
 open = []; timers = [];
 const el11 = { innerHTML: "", addEventListener() {} };
-const panel11 = jobPanel(el11, urls, "tok");
+const panel11 = jobPanel(el11, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", empty);
 panel11.track("u");
@@ -268,7 +276,7 @@ assert.ok(!el11.innerHTML.includes('<span class="badge bg-success">succeeded</sp
 // a job that made a VM opens its page; a warning keeps the outcome, with Open; only a path of this site
 open = []; timers = []; window.reloaded = false; window.opened = null;
 const elv = { innerHTML: "", addEventListener() {} };
-jobPanel(elv, urls, "tok", ["v"]);
+jobPanel(elv, urls, "tok", ["v"], STATES, TEXT);
 advance(0);
 answer("/r", empty);
 answer("/j/v", { ...running, id: "v", label: "Clone VM", state: "succeeded", result: { open: "/instances/9/" } });
@@ -277,7 +285,7 @@ for (const [result, shown] of [[{ open: "/instances/9/", warning: "not started" 
                                [{ open: "//evil.example.com/" }, false], [{ open: "javascript:alert(1)" }, false]]) {
     open = []; timers = []; window.reloaded = false; window.opened = null;
     const elw = { innerHTML: "", addEventListener() {} };
-    jobPanel(elw, urls, "tok", ["w"]);
+    jobPanel(elw, urls, "tok", ["w"], STATES, TEXT);
     advance(0);
     answer("/r", empty);
     answer("/j/w", { ...running, id: "w", state: "succeeded", result });
@@ -291,7 +299,7 @@ for (const [label, doc] of [["dialog", { querySelector: (s) => s === ".modal.sho
     open = []; timers = []; window.reloaded = false;
     Object.assign(document, { activeElement: null, querySelector: () => null }, doc);
     const elm = { innerHTML: "", addEventListener() {} };
-    jobPanel(elm, urls, "tok", ["m"]);
+    jobPanel(elm, urls, "tok", ["m"], STATES, TEXT);
     advance(0);
     answer("/r", empty);
     answer("/j/m", { ...running, id: "m", label: "Clone", state: "succeeded" });
@@ -304,7 +312,7 @@ Object.assign(document, { activeElement: null, querySelector: () => null });
 open = []; timers = []; window.reloaded = false;
 window.xmlEditUnsaved = () => true;
 const elx = { innerHTML: "", addEventListener() {} };
-jobPanel(elx, urls, "tok", ["x"]);
+jobPanel(elx, urls, "tok", ["x"], STATES, TEXT);
 advance(0);
 answer("/r", empty);
 answer("/j/x", { ...running, id: "x", state: "succeeded" });
@@ -314,7 +322,7 @@ delete window.xmlEditUnsaved;
 // another job's outcome shown or still awaited: a quiet success does not wipe it
 open = []; timers = []; window.reloaded = false;
 const elo = { innerHTML: "", addEventListener() {} };
-jobPanel(elo, urls, "tok", ["f", "s", "w"]);
+jobPanel(elo, urls, "tok", ["f", "s", "w"], STATES, TEXT);
 advance(0);
 answer("/r", empty);
 answer("/j/f", { ...running, id: "f", label: "Migrate", state: "failed", error: "no route" });
@@ -325,7 +333,7 @@ answer("/j/w", { ...running, id: "w", label: "Snapshot", state: "succeeded" });
 assert.ok(!window.reloaded, "still not while an outcome is shown");
 open = []; timers = []; window.reloaded = false;
 const elp = { innerHTML: "", addEventListener() {} };
-jobPanel(elp, urls, "tok", ["s2", "f2"]);
+jobPanel(elp, urls, "tok", ["s2", "f2"], STATES, TEXT);
 advance(0);
 answer("/r", empty);
 answer("/j/s2", { ...running, id: "s2", state: "succeeded" });
@@ -335,10 +343,21 @@ assert.ok(elp.innerHTML.includes("refused"), "which then shows");
 // another job still running: its outcome would be lost to a reload
 open = []; timers = []; window.reloaded = false;
 const elr = { innerHTML: "", addEventListener() {} };
-jobPanel(elr, urls, "tok", ["s3"]);
+jobPanel(elr, urls, "tok", ["s3"], STATES, TEXT);
 advance(0);
 answer("/r", { ...empty, jobs: [{ ...running, id: "r3" }] });
 answer("/j/s3", { ...running, id: "s3", state: "succeeded" });
 assert.ok(!window.reloaded, "not while another job runs");
 Date.now = realNow;
 console.log("ok");
+
+// the page's language: the badge, the buttons and the panel's texts come from its settings
+{
+    const elt = { innerHTML: "", addEventListener() {} };
+    const states = { ...STATES, running: "çalışıyor" };
+    jobPanel(elt, urls, "tok", undefined, states, { ...TEXT, cancel: "İptal" });
+    advance(0);
+    answer("/r", { ...empty, jobs: [{ ...running, id: "t", cancellable: true }] });
+    assert.ok(elt.innerHTML.includes('<span class="badge bg-primary">çalışıyor</span>')
+        && elt.innerHTML.includes(">İptal</button>"), "labels and texts of the page's language");
+}

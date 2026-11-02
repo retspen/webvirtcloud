@@ -229,10 +229,9 @@ class Worker:
         now = timezone.now()
         for op in Operation.objects.filter(pk__in=list(self.jobs), time_limit__isnull=False):
             if op.started_at and now - op.started_at > timedelta(seconds=op.time_limit):
+                # one that cannot be cancelled runs on; its page says it is over its limit
                 if jobs.get_kind(op.kind).cancellable and not op.cancel_requested:
                     self._fenced_update([op.pk], state=Operation.CANCELLING, cancel_requested=True)
-                elif "(over its time limit)" not in op.phase:
-                    self._fenced_update([op.pk], phase=f"{op.phase} (over its time limit)"[:255])
 
     def _progress(self):
         """At most one query per job and none waiting for a thread, so queries

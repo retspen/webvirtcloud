@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -8,6 +11,7 @@ from operations.utils import shown_label
 
 class OperationSerializer(serializers.ModelSerializer):
     label = serializers.SerializerMethodField()
+    phase = serializers.SerializerMethodField()
     resource_label = serializers.SerializerMethodField()
     cancellable = serializers.SerializerMethodField()
     in_request = serializers.SerializerMethodField()
@@ -21,6 +25,15 @@ class OperationSerializer(serializers.ModelSerializer):
 
     def get_label(self, op) -> str:
         return str(_(label_of(op.kind)))
+
+    def get_phase(self, op) -> str:
+        """The phase in the viewer's language; a job running past its time
+        limit says so (one that can be cancelled is cancelled instead)."""
+        phase = _(op.phase) if op.phase else ""
+        if op.state == Operation.RUNNING and op.time_limit and op.started_at \
+                and timezone.now() - op.started_at > timedelta(seconds=op.time_limit):
+            return (_("%(phase)s (over its time limit)") % {"phase": phase}).strip()
+        return phase
 
     def get_resource_label(self, op) -> str:
         return shown_label(op, self.context["request"].user)
