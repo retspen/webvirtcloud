@@ -319,7 +319,7 @@ Where to set them:
 
 - **Docker:** the `environment:` list of `docker-compose.override.yml`; every process in the container gets it.
 - **Installer and manual installation:** edit `webvirtcloud/settings.py`, or put them in `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); all four services read it. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
-- **gunicorn** runs at most 8 workers (fewer on hosts with under 4 CPUs); to change it, set `GUNICORN_CMD_ARGS=--workers N` in a drop-in of `webvirt-cloud` (`systemctl edit webvirt-cloud`: `[Service]` and `Environment="GUNICORN_CMD_ARGS=--workers N"`) or in `docker-compose.override.yml`.
+- **gunicorn** runs at most 8 workers (fewer on hosts with under 4 CPUs) of 4 threads each; to change it, set `GUNICORN_CMD_ARGS=--workers N` in a drop-in of `webvirt-cloud` (`systemctl edit webvirt-cloud`: `[Service]` and `Environment="GUNICORN_CMD_ARGS=--workers N"`) or in `docker-compose.override.yml`.
 
 ### HTTPS and reverse proxy
 

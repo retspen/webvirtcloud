@@ -36,11 +36,12 @@ SOURCES = {
 # A read may outlast the search (a guest agent has AGENT_TIMEOUT seconds, a
 # host its connection's timeouts): its thread goes on after the search
 # answers, so a search starts only while its threads fit in MAX_RUNNING
-# search threads in this process.
+# search threads in this process, and one search at a time.
 MAX_WORKERS = 8
 MAX_RUNNING = 16
 _running = 0
 _running_lock = threading.Lock()
+_searching = threading.Lock()
 
 
 class Busy(Exception):
@@ -221,7 +222,7 @@ def _survey(targets, network, deadline, everything, with_os=False, mac=None):
     (late or failed). Returns the VMs' records, the observations, the agents'
     OS by vm, and the counts.
     """
-    if _running > MAX_RUNNING - MAX_WORKERS:
+    if _running > MAX_RUNNING - MAX_WORKERS or not _searching.acquire(blocking=False):
         raise Busy
     end = time.monotonic() + deadline
     records, observations, hosts_down, agent_reads, os_reads, systems = [], [], [], [], {}, {}
@@ -267,6 +268,7 @@ def _survey(targets, network, deadline, everything, with_os=False, mac=None):
                 systems[vm] = done.result()
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
+        _searching.release()
     return records, observations, systems, {
         "checked": checked, "no_agent": no_agent, "unread": unread, "hosts_down": sorted(hosts_down),
         "hosts_unfinished": sorted(hosts[future].name for future in waiting)}
