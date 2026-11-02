@@ -6,7 +6,8 @@ from django.contrib import messages
 from django.db import DatabaseError, transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from django.utils.translation import gettext_noop as _
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_noop
 from logs.audit import audit
 from operations.utils import BOUNDS
 
@@ -30,23 +31,24 @@ NUMBERS = {
 }
 
 
-# the Settings page's groups, in order; a setting in none shows under Other
+# the Settings page's groups, in order; a setting in none shows under Other. The
+# titles stay English here: the page links them by slug and translates them
 GROUPS = [
-    (_("New VM defaults"), ["INSTANCE_ARCH_DEFAULT_TYPE", "INSTANCE_MACHINE_DEFAULT_TYPE",
+    (gettext_noop("New VM defaults"), ["INSTANCE_ARCH_DEFAULT_TYPE", "INSTANCE_MACHINE_DEFAULT_TYPE",
                             "INSTANCE_FIRMWARE_DEFAULT_TYPE", "INSTANCE_CPU_DEFAULT_MODE", "INSTANCE_NIC_DEFAULT_TYPE",
                             "INSTANCE_VIDEO_DEFAULT_TYPE", "INSTANCE_INPUT_DEFAULT_DEVICE", "INSTANCE_CDROM_ADD"]),
-    (_("Disks"), ["INSTANCE_VOLUME_DEFAULT_BUS", "INSTANCE_VOLUME_DEFAULT_FORMAT", "INSTANCE_VOLUME_DEFAULT_CACHE",
+    (gettext_noop("Disks"), ["INSTANCE_VOLUME_DEFAULT_BUS", "INSTANCE_VOLUME_DEFAULT_FORMAT", "INSTANCE_VOLUME_DEFAULT_CACHE",
                   "INSTANCE_VOLUME_DEFAULT_IO", "INSTANCE_VOLUME_DEFAULT_DISCARD",
                   "INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES", "INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER",
                   "INSTANCE_VOLUME_DEFAULT_OWNER_UID", "INSTANCE_VOLUME_DEFAULT_OWNER_GID"]),
-    (_("Clones"), ["CLONE_INSTANCE_AUTO_NAME", "CLONE_INSTANCE_DEFAULT_PREFIX"]),
-    (_("Console"), ["CONSOLE_SCALE", "CONSOLE_VIEW_ONLY", "CONSOLE_RESIZE_SESSION", "CONSOLE_CLIP_VIEWPORT"]),
-    (_("VM access and owners"), ["SHOW_ACCESS_ROOT_PASSWORD", "SHOW_ACCESS_SSH_KEYS",
+    (gettext_noop("Clones"), ["CLONE_INSTANCE_AUTO_NAME", "CLONE_INSTANCE_DEFAULT_PREFIX"]),
+    (gettext_noop("Console"), ["CONSOLE_SCALE", "CONSOLE_VIEW_ONLY", "CONSOLE_RESIZE_SESSION", "CONSOLE_CLIP_VIEWPORT"]),
+    (gettext_noop("VM access and owners"), ["SHOW_ACCESS_ROOT_PASSWORD", "SHOW_ACCESS_SSH_KEYS",
                                  "ALLOW_INSTANCE_MULTIPLE_OWNER", "QUOTA_DEBUG"]),
-    (_("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
+    (gettext_noop("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
                                "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
-    (_("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
-    (_("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE"]),
+    (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
+    (gettext_noop("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE"]),
 ]
 
 
@@ -117,7 +119,7 @@ def appsettings(request):
     for title, keys in GROUPS:
         groups.append((title, [settings_by_key.pop(key) for key in keys if key in settings_by_key]))
     if settings_by_key:
-        groups.append((_("Other"), sorted(settings_by_key.values(), key=lambda s: s.name)))
+        groups.append((gettext_noop("Other"), sorted(settings_by_key.values(), key=lambda s: s.name)))
     for _title, settings_list in groups:
         for setting in settings_list:
             setting.bounds = NUMBERS.get(setting.key)

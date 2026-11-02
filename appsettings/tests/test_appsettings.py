@@ -30,6 +30,12 @@ class AppSettingsTestCase(TestCase):
         choice = choice[:choice.index("</select>")]
         self.assertEqual(re.findall(r'<option value="([^"]+)"', choice), ["en", "tr", "zh-hans"])
 
+    def test_the_page_answers_in_the_users_language(self):
+        response = self.client.post(reverse("appsettings"), {}, HTTP_ACCEPT_LANGUAGE="tr", follow=True)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Hiçbir şey değişmedi"])
+        # the groups' links stay the English slugs: the page translates only their titles
+        self.assertContains(response, 'href="#new-vm-defaults"')
+
     def test_appsettings_update_setting(self):
         setting = AppSettings.objects.get(key="SHOW_ACCESS_ROOT_PASSWORD")
         original_value = setting.value
