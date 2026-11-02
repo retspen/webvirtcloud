@@ -45,7 +45,7 @@ class Operation(models.Model):
     progress_done = models.BigIntegerField(null=True)
     progress_total = models.BigIntegerField(null=True)
     result = models.JSONField(default=dict)
-    error = models.TextField(blank=True)
+    error = models.JSONField(default=list)  # messages (operations.utils.say), shown in the reader's language
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     started_at = models.DateTimeField(null=True)
     finished_at = models.DateTimeField(null=True)

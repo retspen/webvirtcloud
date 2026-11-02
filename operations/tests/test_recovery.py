@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase
 
+from operations.utils import say, words
 from operations import jobs
 from operations.jobs import Outcome
 from operations.models import Claim, Operation, WorkerLease, acquire
@@ -55,20 +56,20 @@ class RecoveryTestCase(TransactionTestCase):
 
     def test_a_proven_success_does_not_carry_the_raised_error(self):
         op = self.orphan({}, worker=self.worker.identity)
-        self.scheduler.inspect_now(op.pk, error="failed after effects")
+        self.scheduler.inspect_now(op.pk, error=say("failed after effects"))
         with patch.object(fakes.ScriptedKind, "reconcile", return_value=Outcome(Operation.SUCCEEDED)):
             self.run_due()
         op = self.reload(op)
-        self.assertEqual((op.state, op.error), (Operation.SUCCEEDED, ""))
+        self.assertEqual((op.state, words(op.error)), (Operation.SUCCEEDED, ""))
 
     def test_an_uncertain_outcome_keeps_the_error_the_job_raised(self):
         op = self.orphan({}, worker=self.worker.identity)
-        self.scheduler.inspect_now(op.pk, error="resource busy: X")
+        self.scheduler.inspect_now(op.pk, error=say("resource busy: X"))
         with patch.object(fakes.ScriptedKind, "reconcile",
-                          return_value=Outcome(Operation.UNCERTAIN, error="check the VM")):
+                          return_value=Outcome(Operation.UNCERTAIN, error=say("check the VM"))):
             self.run_due()
         op = self.reload(op)
-        self.assertEqual((op.state, op.error), (Operation.UNCERTAIN, "resource busy: X. check the VM"))
+        self.assertEqual((op.state, words(op.error)), (Operation.UNCERTAIN, "resource busy: X. check the VM"))
 
     def test_uncertain_keeps_the_claims(self):
         op = self.orphan({"outcome": "uncertain"})
@@ -116,31 +117,31 @@ class RecoveryTestCase(TransactionTestCase):
         self.run_at(1000, Outcome(Operation.RUNNING, stalled=True))
         self.run_at(1000 + STALL_LIMIT, Outcome(Operation.RUNNING, stalled=True))
         op = self.reload(op)
-        self.assertEqual((op.state, op.error), (Operation.UNCERTAIN, STALLED))
+        self.assertEqual((op.state, words(op.error)), (Operation.UNCERTAIN, STALLED))
         self.assertTrue(Claim.objects.filter(operation=op).exists())
         self.assertNotIn(op.pk, self.scheduler.stalled_since)
 
     def test_a_stalled_merge_keeps_the_error_the_job_raised(self):
         op = self.orphan({}, worker=self.worker.identity)
-        self.scheduler.inspect_now(op.pk, error="resource busy: X")
+        self.scheduler.inspect_now(op.pk, error=say("resource busy: X"))
         self.run_at(1000, Outcome(Operation.RUNNING, stalled=True))
         self.scheduler.next_try[op.pk] = 0
         self.run_at(1000 + STALL_LIMIT, Outcome(Operation.RUNNING, stalled=True))
-        self.assertEqual(self.reload(op).error, f"resource busy: X. {STALLED}")
+        self.assertEqual(words(self.reload(op).error), f"resource busy: X. {STALLED}")
 
     def test_a_raised_error_ending_with_a_dot_is_not_doubled(self):
         op = self.orphan({}, worker=self.worker.identity)
-        self.scheduler.inspect_now(op.pk, error="refused.")
-        with patch.object(fakes.ScriptedKind, "reconcile", return_value=Outcome(Operation.UNCERTAIN, error="check")):
+        self.scheduler.inspect_now(op.pk, error=say("refused."))
+        with patch.object(fakes.ScriptedKind, "reconcile", return_value=Outcome(Operation.UNCERTAIN, error=say("check"))):
             self.run_due()
-        self.assertEqual(self.reload(op).error, "refused. check")
+        self.assertEqual(words(self.reload(op).error), "refused. check")
 
     def test_an_outcome_without_an_error_stores_the_raised_one(self):
         op = self.orphan({}, worker=self.worker.identity)
-        self.scheduler.inspect_now(op.pk, error="resource busy: X")
+        self.scheduler.inspect_now(op.pk, error=say("resource busy: X"))
         with patch.object(fakes.ScriptedKind, "reconcile", return_value=Outcome(Operation.FAILED)):
             self.run_due()
-        self.assertEqual(self.reload(op).error, "resource busy: X")
+        self.assertEqual(words(self.reload(op).error), "resource busy: X")
 
     def test_progress_resets_the_stall_timer(self):
         op = self.orphan({})
@@ -171,8 +172,8 @@ class RecoveryTestCase(TransactionTestCase):
         reconcile.assert_not_called()
         op = self.reload(op)
         # the stored error is shown to the job's owner: the host goes to the worker log only
-        self.assertEqual((op.state, op.error), (Operation.UNCERTAIN, ABANDONED))
-        self.assertNotIn("other-host", op.error)
+        self.assertEqual((op.state, words(op.error)), (Operation.UNCERTAIN, ABANDONED))
+        self.assertNotIn("other-host", words(op.error))
         self.assertIn("other-host", "\n".join(logs.output))
         self.assertTrue(Claim.objects.filter(operation=op).exists())
 
@@ -196,7 +197,7 @@ class RecoveryTestCase(TransactionTestCase):
 
     def test_an_own_job_that_raised_before_its_effects_fails_and_releases(self):
         op = self.orphan({"outcome": "uncertain"}, worker=self.worker.identity, effects=False)
-        self.scheduler.inspect_now(op.pk, error="refused before effects")
+        self.scheduler.inspect_now(op.pk, error=say("refused before effects"))
         self.run_due()
         op = self.reload(op)
         self.assertEqual(op.state, Operation.FAILED)

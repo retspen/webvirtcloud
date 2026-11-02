@@ -84,7 +84,7 @@
                                         </div>
                                     {% endif %}
                                 {% elif op.state == "failed" or op.state == "uncertain" %}
-                                    <div class="small text-body-secondary" title="{{ op.error }}">{{ op.error|truncatechars:80 }}</div>
+                                    <div class="small text-body-secondary" title="{{ row.error }}">{{ row.error|truncatechars:80 }}</div>
                                 {% endif %}
                                 <div class="small text-body-secondary">{{ op.created_at|date:"Y-m-d H:i:s T" }}{% if request.user.is_superuser %}<span class="d-md-none"> &middot; {{ row.username }}</span>{% endif %}</div>
                                 {# below md the hidden columns show here #}

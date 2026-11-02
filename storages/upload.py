@@ -13,16 +13,18 @@ from xml.sax.saxutils import escape
 import paramiko
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from libvirt import VIR_ERR_NO_STORAGE_VOL, libvirtError
 
 from computes.models import Compute
 from logs.audit import audit
 from operations import claims, jobs
 from operations.models import Claim, Operation
+from operations.utils import say, words
 from vrtManager.connection import CONN_SSH, CONN_SOCKET, CONN_TCP, CONN_TLS
 from vrtManager.storage import wvmStorage
 
-IDLE = "The upload was idle for over an hour; its partial file was deleted"
+IDLE = gettext_noop("The upload was idle for over an hour; its partial file was deleted")
 IDLE_SECONDS = 3600
 SSH_CONNECT_TIMEOUT_SECONDS = 10
 SSH_IO_TIMEOUT_SECONDS = 30
@@ -440,29 +442,29 @@ def _complete(target, op):
         if target.present():
             target.finalize()
         elif not target.done():
-            jobs.finish(op, jobs.Outcome(Operation.FAILED, error="The uploaded image is missing"))
+            jobs.finish(op, jobs.Outcome(Operation.FAILED, error=say(gettext_noop("The uploaded image is missing"))))
             raise ValueError(_("The uploaded image is missing"))
     except FileExistsError:
         target.remove()
-        jobs.finish(op, jobs.Outcome(Operation.FAILED, error="An image of this name appeared before the upload "
-                                                             "finished; the upload was deleted"))
+        jobs.finish(op, jobs.Outcome(Operation.FAILED, error=say(gettext_noop(
+            "An image of this name appeared before the upload finished; the upload was deleted"))))
         raise
     jobs.finish(op, jobs.Outcome(Operation.SUCCEEDED))
 
 
-def _end(target, op, state, error=""):
+def _end(target, op, state, error=()):
     if op.intent.get("created"):
         target.remove()
-    jobs.finish(op, jobs.Outcome(state, error=error))
+    jobs.finish(op, jobs.Outcome(state, error=list(error)))
 
 
-def _refuse(target, op, state, message, error=""):
+def _refuse(target, op, state, message, error=()):
     """End the upload and refuse the chunk."""
     _end(target, op, state, error)
     raise ValueError(message)
 
 
-def end(op, state, error=""):
+def end(op, state, error=()):
     """Delete what the upload made and end it, unless a chunk request holds
     it: that request sees the cancel, or the next expiry pass retries. A
     requested cancel ends it cancelled. An upload whose every chunk is in is
@@ -470,16 +472,16 @@ def end(op, state, error=""):
     try:
         with claims.hold({_session_key(op): Claim.EXCLUSIVE}):
             op.refresh_from_db()
-            if op.state not in Operation.ACTIVE or (error == IDLE and not _idle(op)):
+            if op.state not in Operation.ACTIVE or (error == say(IDLE) and not _idle(op)):
                 return  # ended already, or expiry of an upload that is not idle
             if op.cancel_requested:
-                state, error = Operation.CANCELLED, ""
+                state, error = Operation.CANCELLED, ()
             if not op.intent.get("created"):
-                jobs.finish(op, jobs.Outcome(state, error=error))
+                jobs.finish(op, jobs.Outcome(state, error=list(error)))
                 return
             compute = Compute.objects.filter(pk=op.params["compute"]).first()
             if compute is None:
-                jobs.finish(op, jobs.Outcome(Operation.FAILED, error="The compute was deleted"))
+                jobs.finish(op, jobs.Outcome(Operation.FAILED, error=say(gettext_noop("The compute was deleted"))))
                 return
             conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, op.params["pool"])
             try:
@@ -523,7 +525,7 @@ def write_chunk(request, conn, compute, pool, upload_id, raw, chunk_index, chunk
         if op.state == Operation.SUCCEEDED and last:
             return op  # the answer to the last chunk was lost
         if op.state not in Operation.ACTIVE:
-            raise ValueError(op.error or _("The upload has ended"))
+            raise ValueError(words(op.error) or _("The upload has ended"))
         with _target(conn, op) as target:
             expected = op.intent["chunk"]
             # once every chunk is in, a cancel comes too late: a retry completes it below
@@ -537,7 +539,7 @@ def write_chunk(request, conn, compute, pool, upload_id, raw, chunk_index, chunk
                     _complete(target, op)
                 return op
             if _idle(op):
-                _refuse(target, op, Operation.FAILED, IDLE, IDLE)
+                _refuse(target, op, Operation.FAILED, _(IDLE), say(IDLE))
             offset = op.progress_done or 0
             if chunk.size <= 0:
                 raise ValueError(_("Empty upload chunk"))
@@ -549,7 +551,7 @@ def write_chunk(request, conn, compute, pool, upload_id, raw, chunk_index, chunk
             # a first write that failed before creating it is retried as new
             new = not (op.intent["created"] and present)
             if new and offset:
-                jobs.finish(op, jobs.Outcome(Operation.FAILED, error="The partial upload is missing"))
+                jobs.finish(op, jobs.Outcome(Operation.FAILED, error=say(gettext_noop("The partial upload is missing"))))
                 raise ValueError(_("The partial upload is missing"))
             if not op.intent["created"]:
                 _commit(op, intent={"chunk": expected, "created": True})

@@ -18,6 +18,7 @@ from django.utils import timezone
 from libvirt import VIR_ERR_NO_STORAGE_VOL, VIR_ERR_SYSTEM_ERROR, libvirtError
 
 from computes.models import Compute
+from operations.utils import words
 from operations import claims, jobs
 from operations.models import Claim, Operation
 from operations.worker import housekeeping
@@ -137,7 +138,7 @@ class LocalUploadTests(LocalPool, UploadTestCase):
         with self.assertRaisesRegex(ValueError, "The uploaded image is missing"):
             self.send(1, b"bbb", total=2, size=6)
         op.refresh_from_db()
-        self.assertEqual((op.state, op.error), (Operation.FAILED, "The uploaded image is missing"))
+        self.assertEqual((op.state, words(op.error)), (Operation.FAILED, "The uploaded image is missing"))
         self.assertFalse(Claim.objects.exists())
 
     def test_the_first_write_syncs_the_pool_directory_before_the_commit(self):
@@ -315,7 +316,7 @@ class LocalUploadTests(LocalPool, UploadTestCase):
             self.compute.delete()
         Compute.objects.filter(pk=self.compute.pk).delete()  # the row gone without Compute.delete()
         op = jobs.cancel(op.pk, self.admin)
-        self.assertEqual((op.state, op.error), (Operation.FAILED, "The compute was deleted"))
+        self.assertEqual((op.state, words(op.error)), (Operation.FAILED, "The compute was deleted"))
 
     def test_ending_before_anything_was_created_needs_no_connection(self):
         op = jobs.submit("volume.upload", self.admin, {"compute": self.compute.pk, "pool": "default",
@@ -338,7 +339,7 @@ class LocalUploadTests(LocalPool, UploadTestCase):
         Operation.objects.filter(pk=op.pk).update(heartbeat_at=timezone.now() - timedelta(seconds=3601))
         housekeeping()
         op.refresh_from_db()
-        self.assertEqual((op.state, op.error), (Operation.FAILED, IDLE))
+        self.assertEqual((op.state, words(op.error)), (Operation.FAILED, IDLE))
         self.assertFalse(os.path.exists(self.part(op)))
         self.assertFalse(Claim.objects.exists())
 
@@ -348,7 +349,7 @@ class LocalUploadTests(LocalPool, UploadTestCase):
                                                   heartbeat_at=timezone.now() - timedelta(seconds=3601))
         housekeeping()
         op.refresh_from_db()
-        self.assertEqual((op.state, op.error), (Operation.CANCELLED, ""))
+        self.assertEqual((op.state, words(op.error)), (Operation.CANCELLED, ""))
         self.assertFalse(os.path.exists(self.part(op)))
 
     def test_a_chunk_after_the_idle_timeout_ends_the_job(self):
@@ -357,7 +358,7 @@ class LocalUploadTests(LocalPool, UploadTestCase):
         with self.assertRaisesRegex(ValueError, "idle"):
             self.send(1, b"bbb")
         op.refresh_from_db()
-        self.assertEqual((op.state, op.error), (Operation.FAILED, IDLE))
+        self.assertEqual((op.state, words(op.error)), (Operation.FAILED, IDLE))
         self.assertFalse(os.path.exists(self.part(op)))
 
     def test_a_symlinked_part_file_is_refused(self):
@@ -583,7 +584,7 @@ class LibvirtStreamUploadTests(UploadTestCase):
         del self.volumes["disk.iso"]
         Operation.objects.filter(pk=self.job().pk).update(heartbeat_at=timezone.now() - timedelta(seconds=3601))
         housekeeping()
-        self.assertEqual((self.job().state, self.job().error), (Operation.FAILED, "The uploaded image is missing"))
+        self.assertEqual((self.job().state, words(self.job().error)), (Operation.FAILED, "The uploaded image is missing"))
 
     def test_a_failed_volume_lookup_is_raised(self):
         error = libvirtError("connection lost")

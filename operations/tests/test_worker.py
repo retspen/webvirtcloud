@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from appsettings.models import AppSettings
 from appsettings.settings import app_settings
+from operations.utils import words
 from operations import jobs
 from operations.models import Claim, Operation, WorkerLease
 from operations.tests import fakes
@@ -77,7 +78,7 @@ class WorkerTestCase(TransactionTestCase):
             self.start()
             self.assertTrue(wait_for(lambda: state(op) in Operation.TERMINAL))
         op.refresh_from_db()
-        self.assertEqual((op.state, op.result), (Operation.SUCCEEDED, {"value": "42"}), op.error)
+        self.assertEqual((op.state, op.result), (Operation.SUCCEEDED, {"value": "42"}), words(op.error))
 
     def test_an_error_before_effects_fails_the_job(self):
         op = self.submit("test.scripted", {"fail_before": True}, "key-00000001")
@@ -90,7 +91,7 @@ class WorkerTestCase(TransactionTestCase):
         with patch.object(fakes.NoopKind, "precheck", side_effect=failure):
             self.start()
             self.assertTrue(wait_for(lambda: state(op) == Operation.FAILED))
-        error = Operation.objects.get(pk=op.pk).error
+        error = words(Operation.objects.get(pk=op.pk).error)
         self.assertEqual(error, "The host of this virtual machine cannot be reached right now.")
         self.assertNotIn("example.com", error)
 
@@ -221,7 +222,7 @@ class WorkerTestCase(TransactionTestCase):
         with patch("operations.jobs.Context", side_effect=RuntimeError("no context")):
             self.start()
             self.assertTrue(wait_for(lambda: state(op) == Operation.FAILED))
-        self.assertIn("no context", Operation.objects.get(pk=op.pk).error)
+        self.assertIn("no context", words(Operation.objects.get(pk=op.pk).error))
         self.assertFalse(Claim.objects.filter(operation=op).exists())
 
     def test_a_failing_manager_loop_ends_the_process(self):

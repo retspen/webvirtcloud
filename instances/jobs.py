@@ -27,6 +27,7 @@ from computes.models import Compute
 from instances import utils
 from instances.models import Instance
 from operations import claims
+from operations.utils import safe_text, say
 from operations.jobs import Cancelled, Kind, Outcome, Plan, register
 from operations.models import Claim, Operation
 
@@ -64,11 +65,14 @@ def _vm_plan(params):
     )
 
 
+MOVED = _("The VM moved to another compute after the job was queued")
+
+
 def _checked_proxy(op):
     """In the worker: the user may still change the VM, and it did not move."""
     instance = _authorized(op.user, op.params["instance"])
     if instance.compute_id != op.intent["compute"]:
-        raise util.OperationError("The VM moved to another compute after the job was queued")
+        raise util.OperationError(MOVED)
     return _proxy(instance)
 
 
@@ -129,11 +133,12 @@ def clone_data(user, instance, fields):
 
     # the clone copies the persistent definition, with the size the form gives
     charged = {}
-    for key, source, label in (("vcpu", instance.config_vcpu, _("vCPUs")),
-                               ("memory", instance.config_memory, _("memory (MiB)"))):
+    for key, source, refusal in (("vcpu", instance.config_vcpu, _("Enter a whole number of vCPUs for the clone")),
+                                 ("memory", instance.config_memory,
+                                  _("Enter a whole number of memory (MiB) for the clone"))):
         value = fields.get(f"clone-{key}") or str(source)
         if not value.isdigit() or int(value) < 1:
-            raise util.OperationError(_("Enter a whole number of %(what)s for the clone") % {"what": label})
+            raise util.OperationError(refusal)
         # None: as the VM, nothing to change after the copy
         data[key] = int(value) if int(value) != source else None
         # the larger: a resize that fails after the copy leaves the clone at the VM's size
@@ -185,17 +190,17 @@ def clone_data(user, instance, fields):
     if not user.is_superuser and quota_msg:
         raise util.OperationError(quota_refused(quota_msg, _(
             "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
-        ) % {"quota_msg": quota_msg, "clone_name": data["name"]}))
+        )), quota_msg=quota_msg, clone_name=data["name"])
     if check_instance:
-        raise util.OperationError(_("Instance '%(clone_name)s' already exists!") % {"clone_name": data["name"]})
+        raise util.OperationError(_("Instance '%(clone_name)s' already exists!"), clone_name=data["name"])
     if not re.match(r"^[a-zA-Z0-9-]+$", data["name"]):
-        raise util.OperationError(
-            _("Instance name '%(clone_name)s' contains invalid characters!") % {"clone_name": data["name"]})
+        raise util.OperationError(_("Instance name '%(clone_name)s' contains invalid characters!"),
+                                  clone_name=data["name"])
     if invalid_macs:
-        raise util.OperationError(_("Instance MAC '%(clone_mac)s' invalid format!") % {"clone_mac": ", ".join(invalid_macs)})
+        raise util.OperationError(_("Instance MAC '%(clone_mac)s' invalid format!"), clone_mac=", ".join(invalid_macs))
     if invalid_disks:
-        raise util.OperationError(
-            _("Disk name '%(disk_name)s' contains invalid characters!") % {"disk_name": ", ".join(str(v) for v in invalid_disks)})
+        raise util.OperationError(_("Disk name '%(disk_name)s' contains invalid characters!"),
+                                  disk_name=", ".join(str(v) for v in invalid_disks))
     return data, quota
 
 
@@ -205,7 +210,7 @@ def _finish_clone(op, clone, warning):
     asked. It is made either way: a step that fails is a warning of the job."""
     c = Compute.objects.get(pk=op.intent["compute"])
     proxy = wvmInstance(c.hostname, c.login, c.password, c.type, op.intent["name"], uuid=op.intent["uuid"])
-    notes = [warning] if warning else []
+    notes = list(warning)
     try:
         if clone.get("vcpu"):
             proxy.resize_cpu(str(clone["vcpu"]), str(clone["vcpu"]))
@@ -214,8 +219,8 @@ def _finish_clone(op, clone, warning):
         if clone.get("start"):
             proxy.start()
     except libvirtError as err:
-        notes.append(_("The clone is made, but not as asked: %(error)s") % {"error": err})
-    return {"warning": " ".join(notes)} if notes else {}
+        notes += say(_("The clone is made, but not as asked: %(error)s"), error=err)
+    return {"warning": notes} if notes else {}
 
 
 def _clone_made(op, result):
@@ -262,9 +267,9 @@ def vm_outcome(op, owner, volumes):
             held.update(pool.listVolumes())
         left = sorted(held & set(volumes))
         if not left:
-            return Outcome(Operation.FAILED, error="The VM was not defined and no volume of it was left.")
-        return Outcome(Operation.UNCERTAIN,
-                       error=f"The VM was not defined; check these volumes, then resolve this job: {', '.join(left)}")
+            return Outcome(Operation.FAILED, error=say(_("The VM was not defined and no volume of it was left.")))
+        return Outcome(Operation.UNCERTAIN, error=say(
+            _("The VM was not defined; check these volumes, then resolve this job: %(volumes)s"), volumes=", ".join(left)))
     record_vm(op, owner)
     return Outcome(Operation.SUCCEEDED)
 
@@ -295,7 +300,7 @@ class DeleteExternalSnapshot(Kind):
     def validate(self, user, params):
         instance = _authorized(user, params["instance"])
         if params["name"] not in _proxy(instance).instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
-            raise util.OperationError(f"The VM has no external snapshot named {params['name']}")
+            raise util.OperationError(_("The VM has no external snapshot named %(name)s"), name=params["name"])
 
     def plan(self, user, params):
         return _vm_plan(params)
@@ -318,7 +323,7 @@ class DeleteExternalSnapshot(Kind):
     def reconcile(self, op):
         instance = Instance.objects.select_related("compute").filter(pk=op.params["instance"]).first()
         if instance is None or instance.compute_id != op.intent.get("compute"):
-            return Outcome(Operation.UNCERTAIN, error="The VM is no longer on the compute the job ran on")
+            return Outcome(Operation.UNCERTAIN, error=say(GONE))
         try:
             proxy = _proxy(instance)
             listed = op.params["name"] in proxy.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL)
@@ -327,7 +332,7 @@ class DeleteExternalSnapshot(Kind):
             raise  # unreachable: recovery waits and retries
         except libvirtError as err:  # OperationError is a libvirtError too
             if err.get_error_code() == VIR_ERR_NO_DOMAIN:
-                return Outcome(Operation.UNCERTAIN, error="The VM is no longer on its compute")
+                return Outcome(Operation.UNCERTAIN, error=say(_("The VM is no longer on its compute")))
             raise
         if jobs:
             return Outcome(Operation.RUNNING, phase=gettext_noop("libvirt is still merging the snapshot"),
@@ -337,15 +342,15 @@ class DeleteExternalSnapshot(Kind):
             before = op.intent.get("before")  # recorded with effects_started; absent only if run never began
             left = proxy.left_behind_since(before) if before else []
             return Outcome(Operation.SUCCEEDED, result={"left_behind": left})
-        return Outcome(Operation.UNCERTAIN,
-                       error="The snapshot is still listed and no merge runs. It cannot be told whether the disks "
-                             "changed; check the VM before deleting the snapshot again or reverting to it.")
+        return Outcome(Operation.UNCERTAIN, error=say(_(
+            "The snapshot is still listed and no merge runs. It cannot be told whether the disks changed; "
+            "check the VM before deleting the snapshot again or reverting to it.")))
 
     def log_entry(self, op, state):
         return _log(op, state, f"delete external snapshot {op.params['name']}")
 
 
-GONE = "The VM is no longer on the compute the job ran on"
+GONE = _("The VM is no longer on the compute the job ran on")
 
 
 @register
@@ -363,7 +368,7 @@ class CreateSnapshot(Kind):
         check_snapshot_name(params["name"])
         # recovery counts a listed snapshot as taken by the job
         if params["name"] in _proxy(_authorized(user, params["instance"])).instance.snapshotListNames(0):
-            raise util.OperationError(f"A snapshot named {params['name']} already exists")
+            raise util.OperationError(_("A snapshot named %(name)s already exists"), name=params["name"])
 
     def plan(self, user, params):
         return _vm_plan(params)
@@ -386,12 +391,12 @@ class CreateSnapshot(Kind):
     def reconcile(self, op):
         proxy = _recovery_proxy(op)
         if proxy is None:
-            return Outcome(Operation.UNCERTAIN, error=GONE)
+            return Outcome(Operation.UNCERTAIN, error=say(GONE))
         if _libvirt_busy(proxy.instance):
             return Outcome(Operation.RUNNING, phase=gettext_noop("libvirt is still taking the snapshot"))
         if op.params["name"] in proxy.instance.snapshotListNames(0):
             return Outcome(Operation.SUCCEEDED)
-        return Outcome(Operation.FAILED, error="The snapshot was not taken")
+        return Outcome(Operation.FAILED, error=say(_("The snapshot was not taken")))
 
     def log_entry(self, op, state):
         kind = "external snapshot" if op.params["external"] else "snapshot"
@@ -452,13 +457,13 @@ class RevertSnapshot(Kind):
     def reconcile(self, op):
         proxy = _recovery_proxy(op)
         if proxy is None:
-            return Outcome(Operation.UNCERTAIN, error=GONE)
+            return Outcome(Operation.UNCERTAIN, error=say(GONE))
         if _libvirt_busy(proxy.instance):
             return Outcome(Operation.RUNNING, phase=gettext_noop("libvirt is still reverting the VM"))
         if _current(proxy) == op.params["name"] != op.intent.get("was_current"):
             return Outcome(Operation.SUCCEEDED)
-        return Outcome(Operation.UNCERTAIN, error="It cannot be told whether the VM was reverted; "
-                                                  "check it, then revert again or resolve this job.")
+        return Outcome(Operation.UNCERTAIN, error=say(_(
+            "It cannot be told whether the VM was reverted; check it, then revert again or resolve this job.")))
 
     def log_entry(self, op, state):
         kind = "external snapshot" if op.params["external"] else "snapshot"
@@ -475,8 +480,8 @@ def _delete_created(proxy, op):
                 raise
 
 
-CLONE_STATE_REFUSED = "The VM must be running, paused or shut off to be cloned"
-THAW_FAILED = "The guest's file systems could not be thawed ({error}); thaw them with: virsh domfsthaw {vm}"
+CLONE_STATE_REFUSED = _("The VM must be running, paused or shut off to be cloned")
+THAW_FAILED = _("The guest's file systems could not be thawed (%(error)s); thaw them with: virsh domfsthaw %(vm)s")
 
 
 def _check_clone_state(proxy, data):
@@ -521,10 +526,10 @@ class CloneInstance(Kind):
     def precheck(self, op, ctx):
         instance = _clonable(op.user, op.params["instance"])
         if instance.compute_id != op.intent["compute"]:
-            raise util.OperationError("The VM moved to another compute after the job was queued")
+            raise util.OperationError(MOVED)
         # a VM found on a host since the job was queued may have taken the name
         if Instance.objects.filter(name=op.intent["name"]).exists():
-            raise util.OperationError(_("Instance '%(clone_name)s' already exists!") % {"clone_name": op.intent["name"]})
+            raise util.OperationError(_("Instance '%(clone_name)s' already exists!"), clone_name=op.intent["name"])
         _check_clone_state(instance.proxy, op.intent["clone"])
 
     def run(self, op, ctx):
@@ -560,7 +565,7 @@ class CloneInstance(Kind):
             raise Cancelled
 
         freeze = status == 1 and proxy.is_agent_ready()
-        warning = ""
+        thaw_error = None
         try:
             try:
                 if freeze:
@@ -572,13 +577,13 @@ class CloneInstance(Kind):
                     try:
                         proxy.fs_thaw()
                     except libvirtError as err:  # frozen stays recorded: recovery thaws again
-                        warning = THAW_FAILED.format(error=err, vm=instance.name)
+                        thaw_error = err
                     else:
                         ctx.record_intent(frozen=False)
         except libvirtError as err:
             # no backup of ours runs: the copy failed (if this read fails, recovery decides)
             if proxy.backup_targets() != {c["path"] for c in copies}:
-                ctx.record_intent(copy_result=[False, str(err)])
+                ctx.record_intent(copy_result=[False, safe_text(err)])
             raise
         op.refresh_from_db(fields=["cancel_requested"])
         if op.cancel_requested:  # the cancel hook may have run before the backup began
@@ -590,18 +595,24 @@ class CloneInstance(Kind):
         while proxy.backup_progress() is not None:
             time.sleep(2)
         result = proxy.backup_result()
-        ctx.record_intent(copy_result=list(result) if result else None)
+        # libvirt's error text, like every stored text, without secrets
+        ctx.record_intent(copy_result=[result[0], safe_text(result[1] or "")] if result else None)
         if result is None:
-            raise util.OperationError("libvirt has no result of the copy")  # recovery decides
+            raise util.OperationError(_("libvirt has no result of the copy"))  # recovery decides
         success, errmsg = result
         if success:
             proxy.define_clone(clone, uuid, {c["dev"]: c["path"] for c in copies})
-            return _clone_made(op, _finish_clone(op, clone, warning))
+            thawed = say(THAW_FAILED, error=thaw_error, vm=instance.name) if thaw_error else []
+            return _clone_made(op, _finish_clone(op, clone, thawed))
         _delete_created(proxy, op)
         op.refresh_from_db(fields=["cancel_requested"])
         if op.cancel_requested:
             raise Cancelled
-        raise util.OperationError(" ".join(filter(None, [errmsg or "The copy failed", warning])))
+        if thaw_error:
+            raise util.OperationError(_("The copy failed: %(error)s. The guest's file systems could not be thawed "
+                                        "(%(thaw)s); thaw them with: virsh domfsthaw %(vm)s"),
+                                      error=errmsg or "", thaw=thaw_error, vm=instance.name)
+        raise util.OperationError(errmsg or _("The copy failed"))
 
     def progress(self, op):
         return _proxy(_instance(op.params["instance"])).backup_progress() if op.intent.get("live") else None
@@ -625,15 +636,17 @@ class CloneInstance(Kind):
         proxy = _recovery_proxy(op)
         if proxy is None:
             created = ", ".join(c["path"] for c in op.intent.get("created", []))
-            return Outcome(Operation.UNCERTAIN, error=f"{GONE}; check these volumes, then resolve this job: {created}")
-        warning = ""
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "The VM is no longer on the compute the job ran on; check these volumes, then resolve this job: "
+                "%(volumes)s"), volumes=created))
+        thawed = []
         if op.intent.get("frozen") and proxy.get_status() == 1:
             try:
                 proxy.fs_thaw()
             except libvirtError as err:
-                warning = " " + THAW_FAILED.format(error=err, vm=op.resource_label.rpartition("/")[2])
+                thawed = say(THAW_FAILED, error=err, vm=op.resource_label.rpartition("/")[2])
         outcome = self._live_outcome(proxy, op)
-        outcome.error += warning
+        outcome.error += thawed
         return outcome
 
     def _live_outcome(self, proxy, op):
@@ -656,12 +669,14 @@ class CloneInstance(Kind):
                     raise
             else:
                 paths.append(t["path"])
-        check = f"check these volumes, then resolve this job: {', '.join(paths)}"
+        volumes = ", ".join(paths)
         if len(paths) > len(created):
-            return Outcome(Operation.UNCERTAIN, error=f"A volume of the clone was being created; {check}")
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "A volume of the clone was being created; check these volumes, then resolve this job: %(volumes)s"),
+                volumes=volumes))
         if not op.intent.get("copy_started"):
             _delete_created(proxy, op)
-            return Outcome(ended, error="The job stopped before the copy started")
+            return Outcome(ended, error=say(_("The job stopped before the copy started")))
         # recorded only once this job's backup ended or never started
         result = op.intent.get("copy_result")
         if result is None:
@@ -670,16 +685,20 @@ class CloneInstance(Kind):
                 if targets == set(paths):
                     return Outcome(Operation.RUNNING, phase=gettext_noop("libvirt is still copying the disks"),
                                    progress=proxy.backup_progress())
-                return Outcome(Operation.UNCERTAIN, error=f"Another backup runs on the VM; {check}")
+                return Outcome(Operation.UNCERTAIN, error=say(_(
+                    "Another backup runs on the VM; check these volumes, then resolve this job: %(volumes)s"),
+                    volumes=volumes))
             result = proxy.backup_result()
         if result is None:
-            return Outcome(Operation.UNCERTAIN, error=f"libvirt has no result of the copy; {check}")
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "libvirt has no result of the copy; check these volumes, then resolve this job: %(volumes)s"),
+                volumes=volumes))
         success, errmsg = result
         if not success:
             _delete_created(proxy, op)
-            return Outcome(ended, error=errmsg or "The copy failed")
+            return Outcome(ended, error=say(errmsg or _("The copy failed")))
         proxy.define_clone(op.intent["clone"], op.intent["uuid"], {c["dev"]: c["path"] for c in created})
-        return Outcome(Operation.SUCCEEDED, result=_clone_made(op, _finish_clone(op, op.intent["clone"], "")))
+        return Outcome(Operation.SUCCEEDED, result=_clone_made(op, _finish_clone(op, op.intent["clone"], [])))
 
     def log_entry(self, op, state):
         source = op.resource_label.rpartition("/")[2]
@@ -736,9 +755,9 @@ class CreateInstance(Kind):
         if data["cache_mode"] not in conn.get_cache_modes():
             raise util.OperationError(_("Invalid cache mode"))
         if data["vcpu_mode"] not in cpu_choices(conn.get_dom_capabilities(data["arch"], data["machine"])):
-            raise util.OperationError(_("This host offers no CPU mode or model %(mode)s") % {"mode": data["vcpu_mode"]})
+            raise util.OperationError(_("This host offers no CPU mode or model %(mode)s"), mode=data["vcpu_mode"])
         if data["add_cdrom"] != "None" and data["add_cdrom"] not in cdrom_buses:
-            raise util.OperationError(_("A CD-ROM cannot use the %(bus)s bus") % {"bus": data["add_cdrom"]})
+            raise util.OperationError(_("A CD-ROM cannot use the %(bus)s bus"), bus=data["add_cdrom"])
         if data["cloud_init"]:
             if data["add_cdrom"] == "None":
                 raise util.OperationError(_("The cloud-init seed is read from a CD-ROM: choose its bus"))
@@ -750,7 +769,7 @@ class CreateInstance(Kind):
         except ValueError as err:
             raise util.OperationError(str(err))
         if data["firmware"] and data["firmware"] not in conn.get_firmwares(data["arch"], data["machine"]):
-            raise util.OperationError(_("This host offers no firmware %(firmware)s") % {"firmware": data["firmware"]})
+            raise util.OperationError(_("This host offers no firmware %(firmware)s"), firmware=data["firmware"])
         if data["tpm"] and not conn.get_tpm_model(data["arch"], data["machine"]):
             raise util.OperationError(_("This host offers no TPM 2.0: install swtpm on it"))
 
@@ -843,7 +862,8 @@ class CreateInstance(Kind):
                 except libvirtError:
                     leftovers.append(path)
             if leftovers:
-                raise util.OperationError(f"{err}. Remove these volumes by hand: {', '.join(leftovers)}") from err
+                raise util.OperationError(_("%(error)s. Remove these volumes by hand: %(volumes)s"),
+                                          error=err, volumes=", ".join(leftovers)) from err
             raise
         record_vm(op, owner=False)
         return {}
@@ -867,11 +887,11 @@ def migration_target(instance, target_pk):
     another record of its host, or it cannot be reached."""
     target = Compute.objects.get(pk=target_pk)
     if target.pk == instance.compute_id:
-        raise util.OperationError(_("The instance is already on %(compute)s") % {"compute": target.name})
+        raise util.OperationError(_("The instance is already on %(compute)s"), compute=target.name)
     if not target.status:
-        raise util.OperationError(_("%(compute)s is not reachable") % {"compute": target.name})
+        raise util.OperationError(_("%(compute)s is not reachable"), compute=target.name)
     if target.proxy.host_uuid() == instance.proxy.host_uuid():
-        raise util.OperationError(_("%(compute)s is the VM's own host under another name") % {"compute": target.name})
+        raise util.OperationError(_("%(compute)s is the VM's own host under another name"), compute=target.name)
     return target
 
 
@@ -926,7 +946,7 @@ class MigrateInstance(Kind):
             raise PermissionDenied
         instance = _instance(op.params["instance"])
         if instance.compute_id != op.intent["compute"]:
-            raise util.OperationError("The VM moved to another compute after the job was queued")
+            raise util.OperationError(MOVED)
         migration_target(instance, op.params["target"])
 
     def run(self, op, ctx):
@@ -944,7 +964,10 @@ class MigrateInstance(Kind):
             if op.cancel_requested:
                 raise Cancelled from None
             # a superuser's job: libvirt's words, which a host the source cannot
-            # reach for the migration would hide behind "cannot be reached"
+            # reach for the migration would hide behind "cannot be reached";
+            # ours keep their text and values
+            if isinstance(err, util.OperationError):
+                raise
             raise util.OperationError(str(err)) from err
         return {}
 
@@ -974,9 +997,9 @@ class MigrateInstance(Kind):
                 utils.record_migration(instance, Compute.objects.get(pk=op.params["target"]))
             return Outcome(Operation.SUCCEEDED)
         if source is not None and dest is None:
-            return Outcome(Operation.FAILED, error="The VM stayed on the source host")
-        return Outcome(Operation.UNCERTAIN, error="The VM is on both computes or on neither; "
-                                                  "check them, then resolve this job.")
+            return Outcome(Operation.FAILED, error=say(_("The VM stayed on the source host")))
+        return Outcome(Operation.UNCERTAIN, error=say(_(
+            "The VM is on both computes or on neither; check them, then resolve this job.")))
 
 
 DISK_DEV = re.compile(r"[a-z][a-z0-9]*")
@@ -1015,7 +1038,7 @@ class MoveDisk(Kind):
     def normalize(self, raw):
         dev = str(raw.get("dev", ""))
         if not DISK_DEV.fullmatch(dev):
-            raise util.OperationError("Choose a disk of the VM")
+            raise util.OperationError(_("Choose a disk of the VM"))
         return {"instance": int(raw["instance"]), "dev": dev, "pool": str(raw.get("pool", ""))}
 
     def validate(self, user, params):
@@ -1033,7 +1056,7 @@ class MoveDisk(Kind):
     def precheck(self, op, ctx):
         instance, _move = _movable(op.user, op.params)
         if instance.compute_id != op.intent["compute"]:
-            raise util.OperationError("The VM moved to another compute after the job was queued")
+            raise util.OperationError(MOVED)
 
     def run(self, op, ctx):
         instance, move = _movable(op.user, op.params)
@@ -1075,22 +1098,23 @@ class MoveDisk(Kind):
     def reconcile(self, op):
         proxy = _recovery_proxy(op)
         if proxy is None:
-            return Outcome(Operation.UNCERTAIN, error=GONE)
+            return Outcome(Operation.UNCERTAIN, error=say(GONE))
         dev, path, dest = op.params["dev"], op.intent.get("path"), op.intent.get("dest")
         dom = proxy.instance
         # a copy no worker waits for mirrors forever: it ends here
         if dest and dom.isActive() and dom.blockJobInfo(dev, 0):
             mirror = etree.fromstring(dom.XMLDesc(0)).xpath(f"devices/disk[target/@dev='{dev}']/mirror/source/@file")
             if mirror != [dest]:
-                return Outcome(Operation.UNCERTAIN, error=f"Another block job runs on {dev}; check the VM")
+                return Outcome(Operation.UNCERTAIN, error=say(_("Another block job runs on %(dev)s; check the VM"), dev=dev))
             dom.blockJobAbort(dev, 0)
         named = proxy.disk_named(dev)
         if named == {dest}:
             return Outcome(Operation.SUCCEEDED, result={"left_behind": [path]})
         if named == {path}:
-            return Outcome(Operation.FAILED, error=f"The disk stayed in {path}; remove {dest} if it is there")
-        return Outcome(Operation.UNCERTAIN, error=f"The definitions of {dev} name {', '.join(sorted(map(str, named)))}; "
-                                                  "check the VM")
+            return Outcome(Operation.FAILED, error=say(_("The disk stayed in %(path)s; remove %(dest)s if it is there"),
+                                                       path=path, dest=dest))
+        return Outcome(Operation.UNCERTAIN, error=say(_("The definitions of %(dev)s name %(paths)s; check the VM"),
+                                                      dev=dev, paths=", ".join(sorted(map(str, named)))))
 
     def log_entry(self, op, state):
         return _log(op, state, f"move disk {op.params['dev']} to pool {op.params['pool']}")

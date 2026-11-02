@@ -9,6 +9,7 @@ from django.utils import timezone
 from vrtManager.util import OperationError
 
 from logs.models import Logs
+from operations.utils import say, words
 from operations import claims, jobs
 from operations.jobs import Outcome
 from operations.models import Claim, LeaseLost, Operation, WorkerLease, acquire
@@ -153,7 +154,7 @@ class CancelFinishResolveTestCase(TransactionTestCase):
     def test_a_failure_keeps_the_phase_stored_after_the_job_was_loaded(self):
         op = jobs.submit("test.noop", self.user, {}, KEY)
         Operation.objects.filter(pk=op.pk).update(phase="merging")  # op in memory still has ""
-        jobs.finish(op, Outcome(Operation.FAILED, error="x"))
+        jobs.finish(op, Outcome(Operation.FAILED, error=say("x")))
         op.refresh_from_db()
         self.assertEqual(op.phase, "merging")
 
@@ -161,14 +162,14 @@ class CancelFinishResolveTestCase(TransactionTestCase):
         op = jobs.submit("test.noop", self.user, {}, KEY)
         Operation.objects.filter(pk=op.pk).update(phase="merging", progress_done=5, progress_total=10)
         op.refresh_from_db()
-        jobs.finish(op, Outcome(Operation.FAILED, error="x"))
+        jobs.finish(op, Outcome(Operation.FAILED, error=say("x")))
         op.refresh_from_db()
         self.assertEqual((op.phase, op.progress_done), ("merging", 5))
 
     def test_finish_happens_once(self):
         op = jobs.submit("test.noop", self.user, {}, KEY)
         self.assertTrue(jobs.finish(op, Outcome(Operation.SUCCEEDED, result={"x": 1})))
-        self.assertFalse(jobs.finish(op, Outcome(Operation.FAILED, error="late")))
+        self.assertFalse(jobs.finish(op, Outcome(Operation.FAILED, error=say("late"))))
         op.refresh_from_db()
         self.assertEqual((op.state, op.result), (Operation.SUCCEEDED, {"x": 1}))
         self.assertEqual(Logs.objects.count(), 1)
@@ -187,14 +188,14 @@ class CancelFinishResolveTestCase(TransactionTestCase):
         op = jobs.submit("test.noop", self.user, {}, KEY)
         Operation.objects.filter(pk=op.pk).update(username="u" * 150)
         op.refresh_from_db()
-        jobs.finish(op, Outcome(Operation.FAILED, error="qemu+tcp://admin:s3cret@192.0.2.5/system failed"))
+        jobs.finish(op, Outcome(Operation.FAILED, error=say("qemu+tcp://admin:s3cret@192.0.2.5/system failed")))
         op.refresh_from_db()
-        self.assertNotIn("s3cret", op.error)
+        self.assertNotIn("s3cret", words(op.error))
         self.assertLessEqual(len(Logs.objects.get().user), 150)
 
     def test_an_uncertain_job_keeps_its_claims_until_resolved(self):
         op = jobs.submit("test.noop", self.user, {}, KEY)
-        jobs.finish(op, Outcome(Operation.UNCERTAIN, error="check the disks"))
+        jobs.finish(op, Outcome(Operation.UNCERTAIN, error=say("check the disks")))
         self.assertTrue(Claim.objects.filter(operation=op).exists())
         with self.assertRaises(PermissionDenied):
             jobs.resolve(op.pk, self.user, Operation.FAILED, "checked")

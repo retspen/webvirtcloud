@@ -15,6 +15,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import CloneInstance
 from instances.models import Instance
+from operations.utils import words
 from operations.jobs import Cancelled, Context
 from vrtManager.util import OperationError
 from operations.models import Claim, Operation, acquire
@@ -119,7 +120,7 @@ class CloneJobTestCase(TransactionTestCase):
         self.proxy.start.side_effect = libvirt.libvirtError("no memory")
         op, result = self.clone_with(**{"clone-start": "true"})
         self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"]).exists())
-        self.assertIn("The clone is made, but not as asked", result["warning"])
+        self.assertIn("The clone is made, but not as asked", words(result["warning"]))
 
     def queued(self):
         self.client.post(reverse("instances:clone", args=[self.source.pk]),
@@ -155,7 +156,7 @@ class CloneJobTestCase(TransactionTestCase):
         conn.return_value.wvm.listAllStoragePools.return_value = [pool(["copy.qcow2", "other.qcow2"])]
         outcome = CloneInstance().reconcile(op)
         self.assertEqual(outcome.state, Operation.UNCERTAIN)
-        self.assertIn("copy.qcow2", outcome.error)
+        self.assertIn("copy.qcow2", words(outcome.error))
 
     @patch("instances.jobs.wvmConnect")
     def test_a_clone_that_left_nothing_failed(self, conn):
@@ -360,7 +361,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
         self.assertLess(self.events.index("discard_backup_result"), self.events.index(("intent", "copy_started")))
         self.assertEqual(self.deleted(), [])  # recovery deletes them
         outcome = self.recover(op)
-        self.assertEqual((outcome.state, outcome.error), (Operation.FAILED, "libvirt error"))
+        self.assertEqual((outcome.state, words(outcome.error)), (Operation.FAILED, "libvirt error"))
         self.assertNotIn("define_clone", self.events)
         self.assertEqual(self.deleted(), ["/real/copy-vda.qcow2", "/real/copy-vdb.qcow2"])
 
@@ -386,7 +387,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
         outcome = self.recover(op)
         self.assertEqual(self.events[0], "fs_thaw")
         self.assertEqual(outcome.state, Operation.FAILED)
-        self.assertIn("virsh domfsthaw src", outcome.error)
+        self.assertIn("virsh domfsthaw src", words(outcome.error))
 
     def test_a_lost_connection_while_the_backup_starts_is_recoverys(self):
         self.track("begin_clone_backup", libvirt_error(libvirt.VIR_ERR_INTERNAL_ERROR))
@@ -418,8 +419,8 @@ class LiveCloneJobTestCase(TransactionTestCase):
     def test_a_thaw_error_is_a_warning_of_the_result(self):
         self.track("fs_thaw", libvirt_error(libvirt.VIR_ERR_AGENT_UNRESPONSIVE))
         result = self.run_job(self.op())
-        self.assertIn("could not be thawed", result["warning"])
-        self.assertIn("thaw them with: virsh domfsthaw src", result["warning"])
+        self.assertIn("could not be thawed", words(result["warning"]))
+        self.assertIn("thaw them with: virsh domfsthaw src", words(result["warning"]))
         self.proxy.define_clone.assert_called_once()
 
     def test_a_failed_copy_deletes_only_what_the_job_created(self):
@@ -528,7 +529,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
         outcome, _op = self.recovered(copy_started=None, created=[],
                                       planned=[{"dev": "vda", "path": "/pool/copy-vda.qcow2"}])
         self.assertEqual(outcome.state, Operation.UNCERTAIN)
-        self.assertIn("/pool/copy-vda.qcow2", outcome.error)
+        self.assertIn("/pool/copy-vda.qcow2", words(outcome.error))
         self.proxy.wvm.storagePoolLookupByName.assert_called_with("default")
         self.proxy.wvm.storagePoolLookupByName.return_value.storageVolLookupByName.assert_called_with("copy-vda.qcow2")
         self.proxy.get_volume_by_path.return_value.delete.assert_not_called()
@@ -581,7 +582,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
     def test_recovery_of_a_failed_copy_deletes_what_was_created(self):
         outcome, _op = self.recovered(copy_result=[False, "No space left on device"])
         self.assertEqual(outcome.state, Operation.FAILED)
-        self.assertIn("No space left on device", outcome.error)
+        self.assertIn("No space left on device", words(outcome.error))
         self.assertEqual(self.deleted(), ["/real/copy-vda.qcow2"])
         outcome, _op = self.recovered(copy_result=[False, "Operation canceled"], cancel=True)
         self.assertEqual(outcome.state, Operation.CANCELLED)
@@ -589,7 +590,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
     def test_a_recorded_failure_wins_over_another_tools_backup(self):
         self.proxy.backup_targets.return_value = {"/other/x.qcow2"}
         outcome, _op = self.recovered(copy_result=[False, "another backup runs"])
-        self.assertEqual((outcome.state, outcome.error), (Operation.FAILED, "another backup runs"))
+        self.assertEqual((outcome.state, words(outcome.error)), (Operation.FAILED, "another backup runs"))
         self.assertEqual(self.deleted(), ["/real/copy-vda.qcow2"])
         outcome, _op = self.recovered(copy_result=[False, "another backup runs"], cancel=True)
         self.assertEqual(outcome.state, Operation.CANCELLED)
@@ -598,7 +599,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
         self.proxy.backup_result.return_value = None
         outcome, _op = self.recovered()
         self.assertEqual(outcome.state, Operation.UNCERTAIN)
-        self.assertIn("/real/copy-vda.qcow2", outcome.error)
+        self.assertIn("/real/copy-vda.qcow2", words(outcome.error))
         self.assertEqual(self.deleted(), [])
 
     def test_recovery_thaws_a_guest_left_frozen_first(self):

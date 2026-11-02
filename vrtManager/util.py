@@ -12,14 +12,17 @@ from django.conf import settings
 
 
 class OperationError(libvirt.libvirtError):
-    """An error with WebVirtCloud's own message.
+    """An error with WebVirtCloud's own message: text, with %(name)s for each
+    of values. str() is the English message; a page or a job shows text
+    translated, with the values (operations.utils.said).
 
     libvirtError(msg) reports the thread's last libvirt error instead of msg
     when there is one, so an earlier, unrelated failure would be shown.
     """
 
-    def __init__(self, msg):
-        Exception.__init__(self, msg)
+    def __init__(self, text, **values):
+        Exception.__init__(self, text % values if values else text)
+        self.text, self.values = str(text), values
         self.err = None
 
 

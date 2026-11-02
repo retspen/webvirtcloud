@@ -55,12 +55,12 @@ class CloneVolume(Kind):
         compute, stg = _storage(params)
         volumes = stg.get_volumes()
         if params["image"] not in volumes:
-            raise util.OperationError(f"The pool has no volume named {params['image']}")
+            raise util.OperationError(gettext_noop("The pool has no volume named %(name)s"), name=params["image"])
         if is_iso(params["image"]):
-            raise util.OperationError("An ISO image is not cloned")
+            raise util.OperationError(gettext_noop("An ISO image is not cloned"))
         target = stg.clone_name(params["name"], params["format"] or stg.get_volume_format_type(params["image"]))
         if target in volumes:
-            raise util.OperationError("Name of volume already in use")
+            raise util.OperationError(gettext_noop("Name of volume already in use"))
         pool = claims.pool_key(compute.pk, params["pool"])
         return Plan(claims={claims.compute_key(compute.pk): Claim.SHARED, pool: Claim.SHARED,
                             claims.volume_key(compute.pk, params["pool"], target): Claim.EXCLUSIVE},
@@ -80,9 +80,9 @@ class CloneVolume(Kind):
             return Outcome(Operation.SUCCEEDED)
         _compute, stg = _storage(op.params)  # unreachable: recovery waits and retries
         if op.intent["target"] in stg.get_volumes():
-            return Outcome(Operation.UNCERTAIN, error="The copy exists, but the job did not see it finish; "
-                                                      "check it, then resolve this job.")
-        return Outcome(Operation.FAILED, error="The copy was not made")
+            return Outcome(Operation.UNCERTAIN, error=utils.say(gettext_noop(
+                "The copy exists, but the job did not see it finish; check it, then resolve this job.")))
+        return Outcome(Operation.FAILED, error=utils.say(gettext_noop("The copy was not made")))
 
     def log_entry(self, op, state):
         return _log(op, state, f"clone volume {op.params['image']} as {op.intent['target']}")
@@ -134,7 +134,7 @@ class UploadVolume(Kind):
             logger.error("cancelling upload %s failed: %s", op.pk, utils.safe_text(err))
 
     def expire(self, op):
-        upload.end(op, Operation.FAILED, upload.IDLE)
+        upload.end(op, Operation.FAILED, utils.say(upload.IDLE))
 
     def log_entry(self, op, state):
         return _log(op, state, f"upload volume {op.params['name']}")

@@ -12,6 +12,7 @@ from instances.models import Instance
 from operations import claims, jobs
 from operations.models import Claim, Operation
 from operations.tests import fakes
+from operations.utils import say
 
 
 class OperationsApiTestCase(TransactionTestCase):
@@ -34,6 +35,17 @@ class OperationsApiTestCase(TransactionTestCase):
         self.assertEqual(self.client.get(url, HTTP_ACCEPT_LANGUAGE="tr").json()["phase"], "Anlık görüntü birleştiriliyor")
         Operation.objects.filter(pk=self.op.pk).update(time_limit=60, started_at=timezone.now() - timedelta(seconds=61))
         self.assertEqual(self.client.get(url).json()["phase"], "Merging the snapshot (over its time limit)")
+
+    def test_the_error_and_warning_come_in_the_users_language_with_their_values(self):
+        # ours with its values; libvirt's text as it is
+        Operation.objects.filter(pk=self.op.pk).update(
+            state=Operation.FAILED,
+            error=say("The pool has no volume named %(name)s", name="disk.qcow2") + say("unable to open: busy"),
+            result={"warning": say("The copy was not made")})
+        self.client.force_login(self.owner)
+        job = self.client.get(f"/api/v1/operations/{self.op.pk}/", HTTP_ACCEPT_LANGUAGE="tr").json()
+        self.assertEqual(job["error"], "Havuzda disk.qcow2 adında birim yok. unable to open: busy")
+        self.assertEqual(job["result"]["warning"], "Kopya oluşturulmadı")
 
     def test_users_list_only_their_own_jobs(self):
         self.client.force_login(self.other)

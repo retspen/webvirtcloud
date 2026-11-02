@@ -14,6 +14,7 @@ from operations.jobs import Outcome
 from operations.models import Claim, Operation, WorkerLease
 from operations.templatetags.operations import STATE_COLORS, STATE_LABELS, state_color, state_label
 from operations.tests import fakes
+from operations.utils import say
 
 
 class BusyMessageTestCase(SimpleTestCase):
@@ -74,7 +75,7 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertNotContains(self.client.get(reverse("operations:jobs"), {"username": "other"}), link)
 
     def test_resolve_needs_a_superuser_an_outcome_and_a_note(self):
-        jobs.finish(self.op, Outcome(Operation.UNCERTAIN, error="check"))
+        jobs.finish(self.op, Outcome(Operation.UNCERTAIN, error=say("check")))
         self.client.force_login(self.user)
         self.assertEqual(self.client.post(reverse("operations:resolve", args=[self.op.pk]),
                                           {"outcome": "failed", "note": "x"}).status_code, 403)
@@ -85,7 +86,7 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertFalse(Claim.objects.filter(operation=self.op).exists())
 
     def test_the_detail_shows_what_recovery_saw_escaped(self):
-        Operation.objects.filter(pk=self.op.pk).update(error="<script>x</script>", phase="Waiting for recovery",
+        Operation.objects.filter(pk=self.op.pk).update(error=say("<script>x</script>"), phase="Waiting for recovery",
                                                        state=Operation.UNCERTAIN)
         self.client.force_login(self.user)
         response = self.client.get(reverse("operations:job", args=[self.op.pk]))
@@ -93,7 +94,7 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(response, "Waiting for recovery")
 
     def test_the_detail_shows_the_results_warning_escaped(self):
-        Operation.objects.filter(pk=self.op.pk).update(result={"warning": "not <b>thawed</b>"},
+        Operation.objects.filter(pk=self.op.pk).update(result={"warning": say("not <b>thawed</b>")},
                                                        state=Operation.SUCCEEDED)
         self.client.force_login(self.user)
         response = self.client.get(reverse("operations:job", args=[self.op.pk]))
@@ -169,7 +170,7 @@ class JobsPageTestCase(TransactionTestCase):
             self.assertNotContains(self.client.get(url), 'id="follow-active-jobs"')
 
     def test_list_and_detail_show_a_state_badge(self):
-        Operation.objects.filter(pk=self.op.pk).update(state=Operation.FAILED, error="disk busy")
+        Operation.objects.filter(pk=self.op.pk).update(state=Operation.FAILED, error=say("disk busy"))
         self.client.force_login(self.admin)
         for response in (self.client.get(reverse("operations:jobs")),
                          self.client.get(reverse("operations:job", args=[self.op.pk]))):
@@ -178,12 +179,12 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(detail, 'class="alert alert-danger"')
 
     def test_the_list_shows_the_phase_while_active_and_the_error_after_a_failure(self):
-        Operation.objects.filter(pk=self.op.pk).update(state=Operation.RUNNING, phase="Copying", error="")
+        Operation.objects.filter(pk=self.op.pk).update(state=Operation.RUNNING, phase="Copying", error=say(""))
         self.client.force_login(self.admin)
         self.assertContains(self.client.get(reverse("operations:jobs")), "Copying")
         Operation.objects.filter(pk=self.op.pk).update(state=Operation.SUCCEEDED)
         self.assertNotContains(self.client.get(reverse("operations:jobs")), "Copying")
-        Operation.objects.filter(pk=self.op.pk).update(state=Operation.FAILED, error="x" * 200)
+        Operation.objects.filter(pk=self.op.pk).update(state=Operation.FAILED, error=say("x" * 200))
         response = self.client.get(reverse("operations:jobs"))
         self.assertNotContains(response, "Copying")
         self.assertContains(response, "x" * 79 + "\u2026")
