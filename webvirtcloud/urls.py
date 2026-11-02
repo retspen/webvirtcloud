@@ -3,7 +3,7 @@ from django.urls import include, path, re_path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
-    SpectacularSwaggerView,
+    SpectacularSwaggerSplitView,
 )
 from appsettings.views import appsettings
 from console.views import console
@@ -35,7 +35,7 @@ urlpatterns = [
     path('api/v1/', include("webvirtcloud.urls-api")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     re_path(r"^swagger\.(?P<format>json|yaml)$", SpectacularAPIView.as_view(), name="schema-json"),
-    path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="schema-swagger-ui"),
+    path("swagger/", SpectacularSwaggerSplitView.as_view(url_name="schema"), name="schema-swagger-ui"),
     path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="schema-redoc"),
 ]
 
