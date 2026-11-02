@@ -613,7 +613,6 @@ class wvmInstance(wvmConnect):
 
     def __init__(self, host, login, passwd, conn, vname, uuid=None):
         wvmConnect.__init__(self, host, login, passwd, conn)
-        self._ip_cache = None
         # A known VM is found by UUID: a name can be renamed or swapped
         # outside WebVirtCloud. No fallback to the name.
         self.instance = self.wvm.lookupByUUIDString(uuid) if uuid else self.get_instance(vname)
@@ -787,61 +786,38 @@ class wvmInstance(wvmConnect):
         return range(1, int(pcpus + 1))
 
     def get_interface_addresses(self, iface_mac):
-        if self._ip_cache is None:
-            self.refresh_interface_addresses()
+        """The running VM's addresses of the NIC with iface_mac: (IPv4, IPv6
+        with prefix), from the guest agent when it has some, else from the
+        host's ARP table; (None, None) when neither has one. Read once in a
+        cached_reads block: the agent may take its whole timeout."""
+        return self._cached("addresses", self._read_addresses).get(iface_mac, (None, None))
 
-        qemuga = self._ip_cache["qemuga"]
-        arp = self._ip_cache["arp"]
-        leases = []
-
-        def extract_dom(info):
-            ipv4 = []
-            ipv6 = []
-            for addrs in info.values():
-                if addrs["hwaddr"] != iface_mac:
-                    continue
-                if not addrs["addrs"]:
-                    continue
-                for addr in addrs["addrs"]:
+    def _read_addresses(self):
+        """{MAC: (IPv4 list, IPv6 list)}: each MAC's addresses from the first source that has some."""
+        if self.get_status() != 1:
+            return {}
+        sources = []
+        if self.is_agent_ready():
+            with contextlib.suppress(libvirtError):
+                sources.append(agent_interfaces(self.instance))
+        with contextlib.suppress(libvirtError):
+            sources.append(self.instance.interfaceAddresses(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP))
+        found = {}
+        for interfaces in sources:
+            here = {}
+            for interface in interfaces.values():
+                if not interface["hwaddr"]:
+                    continue  # the loopback, a tunnel
+                ipv4, ipv6 = here.setdefault(interface["hwaddr"], ([], []))
+                for addr in interface["addrs"] or []:
                     if addr["type"] == 0:
                         ipv4.append(addr["addr"])
                     elif addr["type"] == 1 and not str(addr["addr"]).startswith("fe80"):
-                        ipv6.append(addr["addr"] + "/" + str(addr["prefix"]))
-            return ipv4, ipv6
-
-        def extract_lease(info):
-            ipv4 = []
-            ipv6 = []
-            if info["mac"] == iface_mac:
-                if info["type"] == 0:
-                    ipv4.append(info["ipaddr"])
-                elif info["type"] == 1:
-                    ipv6.append(info["ipaddr"])
-            return ipv4, ipv6
-
-        for ips in [qemuga] + leases + [arp]:
-            ipv4, ipv6 = extract_lease(ips) if "expirytime" in ips else extract_dom(ips)
-            if ipv4 or ipv6:
-                return ipv4, ipv6
-        return None, None
-
-    def _get_interface_addresses(self, source):
-        # ("Calling interfaceAddresses source=%s", source)
-        with contextlib.suppress(libvirtError):
-            return self.instance.interfaceAddresses(source)
-        return {}
-
-    def refresh_interface_addresses(self):
-        self._ip_cache = {"qemuga": {}, "arp": {}}
-
-        if self.get_status() != 1:
-            return
-
-        if self.is_agent_ready():
-            with contextlib.suppress(libvirtError):
-                self._ip_cache["qemuga"] = agent_interfaces(self.instance)
-
-        self._ip_cache["arp"] = self._get_interface_addresses(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
+                        ipv6.append(f"{addr['addr']}/{addr['prefix']}")
+            for mac, (ipv4, ipv6) in here.items():
+                if (ipv4 or ipv6) and mac not in found:
+                    found[mac] = (ipv4, ipv6)
+        return found
 
     def get_net_devices(self, config=False):
         def networks(ctx):

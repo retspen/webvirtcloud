@@ -16,6 +16,7 @@ import unittest
 
 import libvirt
 import libvirt_qemu
+from vrtManager.instance import agent_interfaces
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -267,9 +268,7 @@ class LiveGuestTestCase(TestCase):
         # The NIC is matched by MAC in the agent's report. Whether the guest has
         # an address depends on its network configuration, not on WebVirtCloud.
         mac = self.live(dom).xpath("devices/interface/mac/@address")[0]
-        proxy = inst.proxy
-        proxy.refresh_interface_addresses()
-        self.assertIn(mac, [nic["hwaddr"] for nic in proxy._ip_cache["qemuga"].values()])
+        self.assertIn(mac, [nic["hwaddr"] for nic in agent_interfaces(inst.proxy.instance).values()])
 
     def test_poweroff_shuts_the_guest_down(self):
         dom, inst = self.boot("goff")
