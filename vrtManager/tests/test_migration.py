@@ -512,6 +512,23 @@ class MigrationPlanTestCase(unittest.TestCase):
         dest._find_volume = lambda pool, name: object() if pool is pools["default"][0] else None
         disks, pending = dest.migration_plan(None, "live", "next")
         self.assertEqual((disks[0]["free_pools"], disks[0]["default"]), (["fast", "slow"], "fast"))
+        self.assertFalse(disks[0]["same_name"])
         self.assertEqual(pending, [vdb])
         for pool, directory in pools.values():
             pool.refresh.assert_called_once_with(0)  # a file made since is seen
+
+    def test_disks_of_one_file_name_go_to_different_pools(self):
+        dest = wvmInstances.__new__(wvmInstances)
+        pools = {"fast": (mock.MagicMock(), "/srv/fast"), "slow": (mock.MagicMock(), "/srv/slow")}
+        dest.file_pools = lambda: pools
+        dest._find_volume = lambda pool, name: None
+        rows = [{"target": "vda", "path": "/x/data.qcow2", "shared": False, "refusal": None},
+                {"target": "vdb", "path": "/nfs/data.qcow2", "shared": True, "refusal": None},
+                {"target": "vdc", "path": "/y/data.qcow2", "shared": False, "refusal": None},
+                {"target": "vdd", "path": "/z/data.qcow2", "shared": False, "refusal": None},
+                {"target": "vde", "path": "/x/os.qcow2", "shared": False, "refusal": None}]
+        dest.disk_plan = lambda conn, xml: [dict(row) for row in rows]
+        disks, pending = dest.migration_plan(None, "live", "next")
+        # the shared disk stays where it is by default: it takes no pool; the fourth finds none left
+        self.assertEqual([disk["default"] for disk in disks if not disk["shared"]], ["fast", "slow", None, "fast"])
+        self.assertEqual([disk["same_name"] for disk in disks], [True, True, True, True, False])

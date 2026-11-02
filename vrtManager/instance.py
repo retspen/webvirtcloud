@@ -285,20 +285,26 @@ class wvmInstances(wvmConnect):
         live_xml), each with the pools here it can be copied into, as
         disk_copies takes them: {free_pools, default} added, and the file
         disks of next_xml (the next start's definition) that the migration
-        does not carry, which must be on shared storage."""
+        does not carry, which must be on shared storage. Disks of one file
+        name ({same_name} added) are copied into different pools by default."""
         here = self.file_pools()
         for pool, directory in here.values():
             pool.refresh(0)
         disks = self.disk_plan(conn, live_xml)
-        for disk in disks:
-            file = os.path.basename(disk["path"])
+        files = [os.path.basename(disk["path"]) for disk in disks]
+        taken = {}  # file name: the pools the disks before of that name are copied into by default
+        for disk, file in zip(disks, files):
             # a copy never replaces a file: a pool that has one of its name cannot take it
             disk["free_pools"] = [name for name, (pool, directory) in sorted(here.items())
                                   if self._find_volume(pool, file) is None]
-            # a copy goes by default to the pool on the same directory, else the first
-            names = [name for name in disk["free_pools"] if here[name][1] == os.path.dirname(disk["path"])]
-            names = names or disk["free_pools"]
+            # a copy goes by default to the pool on the same directory, else the first,
+            # but not where another disk of its name goes
+            free = [name for name in disk["free_pools"] if name not in taken.get(file, [])]
+            names = [name for name in free if here[name][1] == os.path.dirname(disk["path"])] or free
             disk["default"] = names[0] if names else None
+            disk["same_name"] = files.count(file) > 1
+            if not disk["shared"]:
+                taken.setdefault(file, []).append(disk["default"])
         carried = {disk["path"] for disk in disks}
         pending = [row for row in self.disk_plan(conn, next_xml) if row["path"] not in carried]
         return disks, pending
