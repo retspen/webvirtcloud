@@ -31,7 +31,7 @@ XML = """<domain>
 
 def proxy():
     p = wvmInstance.__new__(wvmInstance)  # no connection: only these calls
-    p._ip_cache = {"qemuga": {}, "arp": {}}
+    p._read_addresses = dict  # no addresses
     p._XMLDesc = lambda flags: XML
     volumes = {"/iso/x.iso": ("x.iso", "iso")}
 

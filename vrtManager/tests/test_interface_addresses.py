@@ -27,7 +27,6 @@ AGENT = [{"name": "lo", "ip-addresses": [{"ip-address-type": "ipv4", "ip-address
 
 def vm(agent):
     inst = wvmInstance.__new__(wvmInstance)
-    inst._ip_cache = None
     inst.instance = MagicMock()
     inst.instance.interfaceAddresses.side_effect = lambda source: {VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP: ARP}[source]
     patch.object(inst, "get_status", return_value=1).start()
@@ -53,6 +52,19 @@ class InterfaceAddressesTestCase(unittest.TestCase):
         self.agent.assert_called_once_with(inst.instance, '{"execute": "guest-network-get-interfaces"}', 10, 0)
         self.assertEqual([c.args for c in inst.instance.interfaceAddresses.call_args_list],
                          [(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,)])
+
+    def test_the_addresses_are_read_once_in_a_page_and_again_after_it(self):
+        inst = vm(agent=True)
+        with inst.cached_reads():
+            inst.get_interface_addresses(MAC)
+            inst.get_interface_addresses("52:54:00:00:00:02")
+        self.assertEqual(self.agent.call_count, 1)
+        # outside a page's block, a new read: a NIC's address can change
+        inst.get_interface_addresses(MAC)
+        self.assertEqual(self.agent.call_count, 2)
+
+    def test_a_mac_without_addresses_has_none(self):
+        self.assertEqual(vm(agent=False).get_interface_addresses("52:54:00:00:00:02"), (None, None))
 
     def test_an_agent_that_does_not_answer_leaves_the_arp_address(self):
         self.agent.side_effect = libvirtError("guest agent didn't respond to command within '10' seconds")
