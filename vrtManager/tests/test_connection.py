@@ -295,6 +295,25 @@ class HostRequestsTestCase(unittest.TestCase):
         self.end_requests()
         self.assertEqual(self.request("h") + self.request("h"), [])
 
+    def test_a_request_back_from_other_hosts_counts_on_its_own_again(self):
+        def run():
+            request_started.send(sender=None)
+            self.manager.get_connection("h", "u", "p", CONN_TCP)
+            with connection.other_hosts():
+                self.manager.get_connection("g", "u", "p", CONN_TCP)
+            back.set()
+            self.done.wait(5)
+            request_finished.send(sender=None)
+
+        back = threading.Event()
+        thread = threading.Thread(target=run)
+        thread.start()
+        self.threads.append(thread)
+        back.wait(5)
+        # it holds h again (one of two) and left g
+        self.assertEqual(self.request("h") + self.request("g") + self.request("g"), [])
+        self.assertEqual(len(self.request("h")), 1)
+
     def test_threads_outside_a_request_are_not_counted(self):
         self.assertEqual(self.request("h") + self.request("h"), [])
         self.manager.get_connection("h", "u", "p", CONN_TCP)

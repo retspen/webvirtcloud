@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from logs.audit import reason, write
 from operations.models import Operation
-from vrtManager.connection import wvmConnect
+from vrtManager.connection import other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.util import OperationError
 
@@ -46,6 +46,7 @@ def get_clone_free_names(size=10):
     return free_names
 
 
+@other_hosts()
 def paths_used_on_other_computes(compute, own):
     """The paths in own that the VMs and volumes of the panel's other computes
     use (paths_in_use): shared storage holds a file at the same path on every
@@ -74,6 +75,7 @@ def disk_gib(disks):
 QUOTA_UNVERIFIED = "unverified"
 
 
+@other_hosts()
 def check_user_quota(user, instance, cpu, memory, disk_size):
     """
     Which quota the user would exceed by adding these amounts (instances,

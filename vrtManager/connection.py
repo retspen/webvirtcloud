@@ -135,6 +135,17 @@ def _count_on(connection):
     _request.held = connection
 
 
+@contextlib.contextmanager
+def other_hosts():
+    """For code that reads other hosts in the middle of a web request, which
+    then goes on with the host it used before, through the objects it kept:
+    the request counts on that host again after the block (HOST_REQUESTS)."""
+    held = getattr(_request, "held", None)
+    yield
+    if held is not None:
+        _count_on(held)
+
+
 request_started.connect(_request_started, dispatch_uid="vrtManager.connection.request_started")
 request_finished.connect(_request_finished, dispatch_uid="vrtManager.connection.request_finished")
 
