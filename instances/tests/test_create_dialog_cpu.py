@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import PropertyMock, patch
 
 from computes.models import Compute
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -95,7 +96,8 @@ class CreateDialogCpuTestCase(TestCase):
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_the_dialog_reads_host_by_host_two_at_a_time(self):
         page = self.page()
-        script = next(s for s in html.fromstring(page).xpath("//script[not(@src)]/text()") if "show.bs.modal" in s)
+        self.assertIn("/static/js/new_vm_dialog.js", html.fromstring(page).xpath("//script/@src"))
+        script = (settings.BASE_DIR / "static/js/new_vm_dialog.js").read_text()
         cpu = [reverse("compute_graph", args=[c.id]) for c in self.computes]
         line = [reverse("compute_capacity", args=[c.id]) for c in self.computes]
         js = RUN.replace("SCRIPT", json.dumps(script)).replace("CPU_URLS", json.dumps(cpu)).replace("LINE_URLS", json.dumps(line))

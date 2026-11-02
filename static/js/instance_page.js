@@ -50,10 +50,6 @@
         show_tab('#clone');
     });
 
-    // one window per VM: opening it again reloads it
-    on("console_button", "click", function () {
-        window.open(this.dataset.url, this.dataset.window, 'width=850,height=650');
-    });
     if (summary.dataset.vdiUrl) {
         $.get(summary.dataset.vdiUrl, function (data) {
             $("#vdi_url_input").attr("value", data);
@@ -88,7 +84,7 @@
     var pool = document.getElementById("selected_storage");
     if (pool) {
         pool.addEventListener("change", function () {
-            $.getJSON(pool.dataset.volumesUrl.replace("POOL", encodeURIComponent(pool.value)), function (data) {
+            $.getJSON(pool.dataset.volumesUrl.replace("__pool__", encodeURIComponent(pool.value)), function (data) {
                 var vols = $("#vols").empty();
                 $.each(data['vols'], function (i, item) {
                     vols.append($("<option>").val(item).text(item));
@@ -109,7 +105,7 @@
     var cloneName = document.getElementById("clone_name");
     // the DHCP host entry of the clone's name holds one address: the first NIC's
     function guess_mac_address() {
-        $.getJSON(cloneName.dataset.guessMacUrl.replace("NAME", encodeURIComponent(cloneName.value)), function (data) {
+        $.getJSON(cloneName.dataset.guessMacUrl.replace("__name__", encodeURIComponent(cloneName.value)), function (data) {
             $('input[name="clone-net-mac-0"]').val(data['mac']);
         });
     }

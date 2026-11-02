@@ -69,7 +69,7 @@
                             <div class="col-sm-6">
                                 <label class="form-label" for="selected_storage">{% trans "Storage pool" %}</label>
                                 <select id="selected_storage" name="selected_storage" class="form-select" required
-                                        data-volumes-url="{% url 'volumes' instance.compute.id 'POOL' %}">
+                                        data-volumes-url="{% url 'volumes' instance.compute.id '__pool__' %}">
                                     <option value="" selected disabled>{% trans "Choose a pool" %}</option>
                                     {% for storage in storages_host %}
                                     <option value="{{ storage }}">{{ storage }}</option>
