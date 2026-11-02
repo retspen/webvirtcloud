@@ -91,11 +91,19 @@ class IsoListTestCase(unittest.TestCase):
         self.assertEqual(inst.get_iso_media(), ["b.iso"])
 
     def test_refresh_reads_every_active_pool_again(self):
-        a, b = pool([], refresh_error=True), pool([])
+        a, b = pool([]), pool([])
         inst = self.wvm(a, b)
-        inst.refresh_iso_pools()
+        self.assertEqual(inst.refresh_iso_pools(), {})
         inst.wvm.listAllStoragePools.assert_called_once_with(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE)
         a.refresh.assert_called_once_with(0)
+        b.refresh.assert_called_once_with(0)
+
+    def test_a_failed_refresh_is_returned_and_the_others_still_run(self):
+        a, b = pool([], refresh_error=True), pool([])
+        a.name.return_value = "busy"
+        failed = self.wvm(a, b).refresh_iso_pools()
+        self.assertEqual(list(failed), ["busy"])
+        self.assertIsInstance(failed["busy"], libvirtError)
         b.refresh.assert_called_once_with(0)
 
 

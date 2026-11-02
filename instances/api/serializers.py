@@ -12,8 +12,7 @@ class InstanceSerializer(serializers.ModelSerializer):
 class InstanceDetailsSerializer(serializers.ModelSerializer):
     def get_fields(self):
         fields = super().get_fields()
-        # the host's ISO images are a superuser's, as on the VM page; reading
-        # them refreshes every pool of the host
+        # the host's ISO images are a superuser's, as on the VM page
         request = self.context.get("request")
         if not (request and request.user.is_superuser):
             del fields["media_iso"]

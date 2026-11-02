@@ -1715,10 +1715,15 @@ class wvmInstance(wvmConnect):
 
     def refresh_iso_pools(self):
         """Refresh the active pools, so that an image copied to one by hand
-        is listed by get_iso_media."""
+        is listed by get_iso_media. A pool that fails does not stop the
+        others; returns the errors, by pool name."""
+        failed = {}
         for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
-            with contextlib.suppress(libvirtError):  # stopped or removed meanwhile
+            try:
                 pool.refresh(0)
+            except libvirtError as err:
+                failed[pool.name()] = err
+        return failed
 
     def get_iso_media(self):
         """The .iso volumes libvirt knows in the active pools; one copied in
