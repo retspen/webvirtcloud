@@ -201,6 +201,11 @@ LOGOUT_REDIRECT_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL="/instances/"
 
 LANGUAGE_CODE = "en-us"
+# the languages the panel is translated into, each with a full catalog in locale/
+LANGUAGES = [
+    ("en", "English"),
+    ("tr", "Türkçe"),
+]
 
 TIME_ZONE = "UTC"
 

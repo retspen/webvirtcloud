@@ -1,3 +1,5 @@
+import re
+
 from django.contrib.messages import get_messages
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
@@ -21,6 +23,12 @@ class AppSettingsTestCase(TestCase):
     def test_appsettings_view_get(self):
         response = self.client.get(reverse("appsettings"))
         self.assertEqual(response.status_code, 200)
+
+    def test_the_language_choice_offers_the_translated_languages(self):
+        page = self.client.get(reverse("appsettings")).content.decode()
+        choice = page[page.index('<select id="language"'):]
+        choice = choice[:choice.index("</select>")]
+        self.assertEqual(re.findall(r'<option value="([^"]+)"', choice), ["en", "tr"])
 
     def test_appsettings_update_setting(self):
         setting = AppSettings.objects.get(key="SHOW_ACCESS_ROOT_PASSWORD")
