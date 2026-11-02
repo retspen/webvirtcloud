@@ -46,7 +46,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="add-net-mac">{% trans "MAC" %}</label>
-                            <input type="text" class="form-control font-monospace" id="add-net-mac" name="add-net-mac" aria-describedby="add-net-mac-help">
+                            <input type="text" class="form-control font-monospace" id="add-net-mac" name="add-net-mac" aria-describedby="add-net-mac-help"{% if request.user.is_superuser %} data-new-mac{% endif %}>
                             <div class="form-text" id="add-net-mac-help">{% trans "A random address is filled in; empty: libvirt chooses one." %}</div>
                         </div>
                     </div>

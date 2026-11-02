@@ -21,6 +21,7 @@ from vrtManager.instance import USAGE_MAX_WINDOW
 
 # the page script runs after the shared chart helpers
 CHARTS_JS = settings.BASE_DIR / "static" / "js" / "charts.js"
+STATS_JS = settings.BASE_DIR / "static" / "js" / "instance_stats.js"
 
 SAMPLE = {"key": [7, 4, ["vda"], [["52:54:00:00:00:01", "vnet0"]]], "counters": [1, [[2, 3]], [[4, 5]], 100.0]}
 
@@ -144,7 +145,15 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
         return response.content.decode()
 
     def test_the_next_poll_sends_the_previous_sample(self):
-        script = next(s for s in html.fromstring(self.page()).xpath("//script[not(@src)]/text()") if "statsSample" in s)
+        doc = html.fromstring(self.page())
+        self.assertTrue(doc.xpath("//script[@src=$s]", s=settings.STATIC_URL + "js/instance_stats.js"))
+        (pane,) = doc.xpath("//div[@id='graphics']")
+        dataset = {"url": pane.get("data-url"), "averageOver": pane.get("data-average-over"),
+                   "read": pane.get("data-read"), "write": pane.get("data-write"),
+                   "in": pane.get("data-in"), "out": pane.get("data-out")}
+        canvases = [{"dataset": {"disk": c.get("data-disk")}} for c in doc.xpath("//canvas[@data-disk]")]
+        canvases += [{"dataset": {"mac": c.get("data-mac")}} for c in doc.xpath("//canvas[@data-mac]")]
+        script = STATS_JS.read_text()
         js = """
         const vm = require("vm");
         const charts = [], requests = [], handlers = {};
@@ -155,9 +164,18 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
             requests.push(params);
             return {fail: (callback) => { if (fail) callback(); return {}; }};
         };
+        // the Stats pane with its data and charts; no Logs view; any other element
+        function getElementById(id) {
+            if (id === "graphics") {
+                return {dataset: DATASET,
+                        querySelectorAll: (selector) => CANVASES.filter((c) => selector.includes(Object.keys(c.dataset)[0]))};
+            }
+            if (id === "logs-tab") return null;
+            return {};
+        }
         const page = {
             $,
-            document: {body: {}, getElementById: () => ({}),
+            document: {body: {}, getElementById,
                        querySelector: () => ({addEventListener: (name, handler) => { handlers[name] = handler; }})},
             // Chart.js adds the lists a config leaves out
             getComputedStyle: () => ({getPropertyValue: () => ""}),
@@ -194,7 +212,8 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
         console.log(JSON.stringify({requests, label, every: [poll.interval, poll.first], cpu: charts[0].data.datasets[0].data,
                                     disk: charts[2].data.datasets[1].data, net: charts[3].data.datasets[0].data,
                                     mem: charts[1].data.datasets[0].data, memMax: charts[1].options.scales.y.max}));
-        """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text()))
+        """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text())).replace(
+            "DATASET", json.dumps(dataset)).replace("CANVASES", json.dumps(canvases))
         out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
         self.assertEqual(out.returncode, 0, out.stderr)
         result = json.loads(out.stdout)

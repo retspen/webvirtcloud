@@ -110,13 +110,13 @@ class TemplateHtmlConcatenationTestCase(TestCase):
         return (ROOT / relative).read_text()
 
     def test_logs_table_does_not_concatenate_log_fields_into_html(self):
-        src = self._read("instances/templates/instances/stats_tab.html")
+        src = self._read("static/js/instance_stats.js")
         for field in ("date", "user", "message"):
             self.assertNotIn(f"+row['{field}']+", src)
-        self.assertNotIn('$("#logs_table > tbody").html(', src)
+        self.assertNotIn(".html(", src)
 
     def test_volume_dropdown_does_not_concatenate_volume_names_into_html(self):
-        src = self._read("instances/templates/instance.html")
+        src = self._read("static/js/instance_page.js")
         self.assertNotIn("'<option value=' + item", src)
         self.assertNotIn('pool + "<span', src)
 
@@ -129,13 +129,16 @@ class TemplateHtmlConcatenationTestCase(TestCase):
         self.assertNotIn("'<option value=' + item", src)
 
 
-# Every template line that builds HTML from JavaScript must be listed here with
-# a reason; a new one fails the test and has to be reviewed (use .text() /
-# .val() / DOM APIs for server data instead).
+# Every line of a template or of the app's own scripts that builds HTML from
+# JavaScript must be listed here with a reason; a new one fails the test and
+# has to be reviewed (use .text() / .val() / DOM APIs for server data instead).
 HTML_SINK = re.compile(r"""\.html\(|innerHTML\s*=|append\(\s*['"]<""")
+# the libraries kept as published, not the app's scripts
+VENDORED_SCRIPTS = {"jquery.js", "js.cookie.js", "socket.io.js"}
 ALLOWED_HTML_SINKS = {
-    ("instances/templates/instance.html", "hostDevices.innerHTML = html;"): "the panel's own fragment, host_devices_form.html, escaped by Django",
-    ("instances/templates/instance.html", "migratePlan.innerHTML = html;"): "the panel's own fragment, migrate_plan.html, escaped by Django",
+    ("static/js/instance_page.js", "hostDevices.innerHTML = html;"): "the panel's own fragment, host_devices_form.html, escaped by Django",
+    ("static/js/instance_page.js", "migratePlan.innerHTML = html;"): "the panel's own fragment, migrate_plan.html, escaped by Django",
+    ("operations/static/operations/job_panel.js", "element.innerHTML = html;"): "built by the panel, every job value through esc()",
 }
 
 
@@ -149,6 +152,14 @@ class TemplateHtmlSinkInventoryTestCase(TestCase):
                     found.add((rel, line.strip()))
         templates_root = ROOT / "templates"
         for path in templates_root.glob("**/*.html"):
+            rel = str(path.relative_to(ROOT))
+            for line in path.read_text().splitlines():
+                if HTML_SINK.search(line):
+                    found.add((rel, line.strip()))
+        scripts = [*(ROOT / "static/js").glob("*.js"), *ROOT.glob("*/static/**/*.js")]
+        for path in scripts:
+            if path.name in VENDORED_SCRIPTS or path.name.endswith(".min.js"):
+                continue
             rel = str(path.relative_to(ROOT))
             for line in path.read_text().splitlines():
                 if HTML_SINK.search(line):

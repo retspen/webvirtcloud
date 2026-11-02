@@ -30,7 +30,7 @@
                 <div class="d-flex flex-wrap column-gap-4 mt-2">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="memory" id="snapshot-memory"{% if instance.status != 1 %} disabled{% endif %}
-                               onchange="var q = document.getElementById('snapshot-quiesce'); if (q.dataset.offered) { if (this.checked) q.dataset.was = q.checked; q.disabled = this.checked; q.checked = !this.checked && q.dataset.was !== 'false'; }">
+                              >
                         <label class="form-check-label" for="snapshot-memory">{% trans "Save memory too" %}</label>
                     </div>
                     <div class="form-check">

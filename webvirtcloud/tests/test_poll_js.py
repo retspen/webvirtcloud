@@ -2,7 +2,6 @@
 none while the page is hidden. Its behaviour is checked with Node."""
 
 import json
-import re
 import shutil
 import subprocess
 import unittest
@@ -11,7 +10,7 @@ from pathlib import Path
 from django.conf import settings
 
 BASE = Path(settings.BASE_DIR)
-POLLING_TEMPLATES = ["instances/templates/instance.html", "computes/templates/overview.html"]
+POLLING_SOURCES = ["static/js/instance_status.js", "static/js/instance_stats.js", "computes/templates/overview.html"]
 
 
 class PollTestCase(unittest.TestCase):
@@ -37,9 +36,9 @@ class PollTestCase(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_pages_poll_through_poll_js(self):
-        for template in POLLING_TEMPLATES:
-            with self.subTest(template=template):
-                source = (BASE / template).read_text()
+        for path in POLLING_SOURCES:
+            with self.subTest(path=path):
+                source = (BASE / path).read_text()
                 self.assertNotIn("setInterval", source)
                 self.assertIn("pollWhileVisible(", source)
 
@@ -47,11 +46,7 @@ class PollTestCase(unittest.TestCase):
     def test_the_vm_page_reloads_only_when_the_state_changes(self):
         # "status" is a property of the browser's window: a page variable of
         # that name holds what the browser makes of it (a string, or nothing)
-        source = (BASE / "instances/templates/instance.html").read_text()
-        script = re.search(r"<script>\s*(backgroundJobRunning = false;.*?)</script>", source, re.S).group(1)
-        script = script.replace("{{ instance.status|lower }}", "1").replace(
-            "{% url 'instances:status' instance.id %}", "/instances/1/status/"
-        )
+        script = (BASE / "static/js/instance_status.js").read_text()
         js = """
         const vm = require("vm");
         const results = {};
@@ -60,6 +55,7 @@ class PollTestCase(unittest.TestCase):
             const page = {
                 pollWhileVisible: (interval, request, onData) => { onData({status: answer}); return {stop() {}}; },
                 $: () => ({submit() {}}),
+                document: {getElementById: () => ({dataset: {status: "1", statusUrl: "/instances/1/status/"}})},
             };
             page.window = {location: {reload: () => reloads++}};
             Object.defineProperty(page, "status", {get: () => "", set: () => {}});
