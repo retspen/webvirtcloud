@@ -69,7 +69,7 @@
                             <div class="col-sm-6">
                                 <label class="form-label" for="selected_storage">{% trans "Storage pool" %}</label>
                                 <select id="selected_storage" name="selected_storage" class="form-select" required
-                                        onchange="get_volumes({{ instance.compute.id }}, this.value)">
+                                        data-volumes-url="{% url 'volumes' instance.compute.id 'POOL' %}">
                                     <option value="" selected disabled>{% trans "Choose a pool" %}</option>
                                     {% for storage in storages_host %}
                                     <option value="{{ storage }}">{{ storage }}</option>
@@ -112,12 +112,4 @@
         </div>
     </div>
     <script src="{% static 'js/choice_dialog.js' %}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var form = document.getElementById('addvol-form');
-            choiceDialog(document.getElementById('addvol'), 'disk_source', function (source) {
-                form.action = form.dataset[source];
-            });
-        });
-    </script>
 {% endif %}

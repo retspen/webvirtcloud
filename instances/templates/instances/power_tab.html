@@ -12,7 +12,7 @@
             {% if "poweroff" in power_actions or "suspend" in power_actions or "resume" in power_actions or "poweron" in power_actions or "force_off" in power_actions or "powercycle" in power_actions %}
             <div class="row g-3">
                 {% if "poweroff" in power_actions or "suspend" in power_actions or "resume" in power_actions or "poweron" in power_actions %}
-                <form class="col-12 col-md-6" method="post"{% if "poweron" in power_actions %} action="{% url 'instances:poweron' instance.id %}" onsubmit="showPleaseWaitDialog()"{% endif %}>{% csrf_token %}
+                <form class="col-12 col-md-6" method="post"{% if "poweron" in power_actions %} action="{% url 'instances:poweron' instance.id %}" data-please-wait{% endif %}>{% csrf_token %}
                     <div class="btn-group mb-2" role="group" aria-label="{% trans "Power actions that keep the guest's data" %}">
                         {% if "poweron" in power_actions %}<button type="submit" class="btn btn-primary" name="poweron">{% trans "Power On" %}</button>{% endif %}
                         {% if "poweroff" in power_actions %}<button type="submit" class="btn btn-primary" name="poweroff" formaction="{% url 'instances:poweroff' instance.id %}">{% trans "Power Off" %}</button>{% endif %}

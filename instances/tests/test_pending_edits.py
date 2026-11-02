@@ -181,7 +181,7 @@ class PendingEditsTestCase(TestCase):
                 self.assertEqual(form.xpath(".//input[@type='text']/@name"),
                                  ["name", "clone-net-mac-0", "clone-net-mac-1", "disk-vda", "disk-vdb", "clone-title"])
                 # the DHCP entry of the clone's name holds one address: only the first NIC guesses it
-                self.assertEqual(len(form.xpath(".//button[contains(@onclick, 'guess_mac_address')]")), 1)
+                self.assertEqual(len(form.xpath(".//button[@id='guess-clone-mac']")), 1)
                 # a running or paused VM is copied by a backup, which does not preallocate
                 self.assertEqual(form.xpath(".//input[@type='checkbox']/@name"), [*metadata, "clone-start"])
 

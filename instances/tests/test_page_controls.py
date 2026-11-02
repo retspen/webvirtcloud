@@ -219,7 +219,7 @@ class PageControlsTestCase(PageControls, TestCase):
                 if user == owner:
                     self.assertIn("The VM is paused. An administrator can resume it.", tab.text_content())
                 if status == 5:
-                    self.assertEqual(tab.xpath(".//form/@onsubmit"), ["showPleaseWaitDialog()"])
+                    self.assertEqual(tab.xpath(".//form/@data-please-wait"), [""])
 
     def test_a_running_paused_or_shut_off_vm_can_be_cloned(self):
         changer = self.user("vm_cloner", perms=("clone_instances",), owner={"is_change": True})
@@ -271,8 +271,8 @@ class TemplatePageControlsTestCase(PageControls, TestCase):
         doc = lxml_html.fromstring(self.last_page)
         self.assertEqual(doc.xpath("string(//section[@aria-labelledby='vm-name']//span[@class='badge text-bg-light border'])"),
                          "Template")
-        self.assertTrue(doc.xpath("//button[contains(@onclick, \"show_tab('#clone')\")]"))
-        self.assertIn('location.hash || "#clone"', self.last_page)
+        self.assertTrue(doc.xpath("//button[@id='clone-button']"))
+        self.assertEqual(doc.xpath("string(//section[@id='vm-summary']/@data-opens-on)"), "#clone")
         for pane in ("power", "access", "graphics", "vncsettings", "hostdevs"):
             self.assertEqual(doc.xpath("//*[@id=$p]", p=pane), [], pane)
 

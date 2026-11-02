@@ -12,8 +12,7 @@
             <div class="row g-2 align-items-center">
                 <div class="col-12 col-md-auto">
                     <button type="button" class="btn btn-primary w-100" id="console_button"
-                            data-url="{% url 'console' compute.id instance.uuid %}" data-window="console-{{ instance.uuid }}"
-                            onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')">{% trans "Console" %}</button>
+                            data-url="{% url 'console' compute.id instance.uuid %}" data-window="console-{{ instance.uuid }}">{% trans "Console" %}</button>
                 </div>
                 {% if vdi_reachable %}
                 <div class="col-12 col-md">
