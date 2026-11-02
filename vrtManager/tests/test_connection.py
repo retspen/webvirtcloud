@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
+from django.core.signals import request_finished, request_started
 
 if not settings.configured:
     settings.configure(MAC_OUI="52:54:10")
@@ -212,6 +213,91 @@ class BoundedOpenTestCase(unittest.TestCase):
         self.assertTrue(os.access(SSH_COMMAND, os.X_OK))
         with open(SSH_COMMAND) as script:
             self.assertIn("ConnectTimeout", script.read())
+
+
+class HostRequestsTestCase(unittest.TestCase):
+    """At most HOST_REQUESTS web requests of a process use one host at a
+    time; another waits CONNECT_TIMEOUT and is refused."""
+
+    def setUp(self):
+        for name, value in (("wvmEventLoop", MagicMock()), ("CONNECT_TIMEOUT", 0.2)):
+            patcher = patch(f"vrtManager.connection.{name}", value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        patcher = patch("vrtManager.connection.libvirt.openAuth", side_effect=lambda *args: alive_connection())
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.manager = wvmConnectionManager()
+        self.done = threading.Event()
+        self.threads = []
+        self.addCleanup(self.end_requests)
+
+    def end_requests(self):
+        self.done.set()
+        for thread in self.threads:
+            thread.join(5)
+        self.threads, self.done = [], threading.Event()
+
+    def request(self, *hosts, login="u"):
+        """A web request on its own thread: it connects to hosts in turn and
+        ends when self.done is set. Returns its errors, filled once connected."""
+        errors, connected, done = [], threading.Event(), self.done
+
+        def run():
+            request_started.send(sender=None)
+            try:
+                for host in hosts:
+                    self.manager.get_connection(host, login, "p", CONN_TCP)
+            except libvirt.libvirtError as err:
+                errors.append(str(err))
+            connected.set()
+            done.wait(5)
+            request_finished.send(sender=None)
+
+        thread = threading.Thread(target=run)
+        thread.start()
+        self.threads.append(thread)
+        connected.wait(5)
+        return errors
+
+    def test_a_third_request_to_a_host_is_refused_and_other_hosts_answer(self):
+        self.assertEqual(self.request("h") + self.request("h"), [])
+        started = time.monotonic()
+        self.assertEqual(self.request("h"), ["Connection Failed: h does not answer: 2 requests still wait for it"])
+        self.assertGreaterEqual(time.monotonic() - started, 0.2)
+        self.assertEqual(self.request("g"), [])
+
+    def test_a_host_counts_its_requests_whatever_the_login(self):
+        # two records of one host (another login, or credentials changed meanwhile)
+        self.assertEqual(self.request("h") + self.request("h", login="other"), [])
+        self.assertEqual(len(self.request("h", login="third")), 1)
+
+    def test_a_request_without_request_finished_leaves_its_host_at_the_next_one(self):
+        self.assertEqual(self.request("h"), [])
+        request_started.send(sender=None)  # this thread: a request that never got request_finished
+        try:
+            self.manager.get_connection("h", "u", "p", CONN_TCP)
+            request_started.send(sender=None)  # its next request on the thread
+            self.assertEqual(self.request("h"), [])
+        finally:
+            request_finished.send(sender=None)
+
+    def test_a_request_counts_once_on_a_host(self):
+        self.assertEqual(self.request("h", "h", "h") + self.request("h"), [])
+        self.assertEqual(len(self.request("h")), 1)
+
+    def test_a_request_counts_on_the_host_it_connected_to_last(self):
+        self.assertEqual(self.request("h", "g") + self.request("h") + self.request("h"), [])
+        self.assertEqual(len(self.request("g", "h")), 1)
+
+    def test_an_ended_request_lets_the_next_one_in(self):
+        self.assertEqual(self.request("h") + self.request("h"), [])
+        self.end_requests()
+        self.assertEqual(self.request("h") + self.request("h"), [])
+
+    def test_threads_outside_a_request_are_not_counted(self):
+        self.assertEqual(self.request("h") + self.request("h"), [])
+        self.manager.get_connection("h", "u", "p", CONN_TCP)
 
 
 class EventLoopTestCase(unittest.TestCase):
