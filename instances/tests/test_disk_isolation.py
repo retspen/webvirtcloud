@@ -23,6 +23,7 @@ DISK_ENDPOINTS = [
     ("detach_cdrom", ["hda"]),
     ("mount_iso", []),
     ("unmount_iso", []),
+    ("refresh_iso", []),
 ]
 
 VM_DISK = {
@@ -85,6 +86,13 @@ class DiskViewsTenantIsolationTestCase(TestCase):
                 mock_wvm.assert_not_called()
                 mock_storage.assert_not_called()
                 mock_create.assert_not_called()
+
+    def test_refresh_iso_reads_the_pools_again_and_returns_to_the_disks_tab(self):
+        self.client.force_login(self.superuser)
+        with patch("instances.models.wvmInstance") as mock_wvm:
+            res = self._post("refresh_iso", {})
+        self.assertRedirects(res, self.referer + "#disks", fetch_redirect_response=False)
+        mock_wvm.return_value.refresh_iso_pools.assert_called_once_with()
 
     def test_delete_vol_deletes_the_volume_attached_to_dev_not_the_posted_one(self):
         self.client.force_login(self.superuser)

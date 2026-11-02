@@ -152,7 +152,13 @@
             <section class="mb-4" aria-labelledby="media-heading">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                     <h2 class="h6 mb-0" id="media-heading">{% trans "Removable media" %}</h2>
-                    {% include 'add_instance_cdrom.html' %}
+                    <div class="d-flex gap-2">
+                        {# the pools are read again: an ISO image copied to one by hand is listed then #}
+                        <form method="post" action="{% url 'instances:refresh_iso' instance.id %}">{% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans "Read the storage pools again: an ISO image copied to a pool by hand is listed then" %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh ISO list" %}</button>
+                        </form>
+                        {% include 'add_instance_cdrom.html' %}
+                    </div>
                 </div>
                 {% for cd in instance.media %}
                 <div class="card mb-2">
