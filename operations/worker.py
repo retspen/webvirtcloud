@@ -12,6 +12,7 @@ import socket
 import threading
 import time
 import uuid
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from pathlib import Path
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 MAX_SLOTS = 16
 PROGRESS_THREADS = 2
+CONTROL_THREADS = 4
 HOUSEKEEPING_EVERY = 600.0
 
 BACKOFF = (30, 60, 120, 300, 600)
@@ -89,8 +91,17 @@ class Worker:
         self.signalled = set()
         self.progress_pending = set()
         self.progress_asked = {}  # job -> monotonic time its progress was last asked
+        # A libvirt call to a host that is up but stuck waits as long as the
+        # host does: so a host's jobs take at most half of the slots, and it
+        # has at most one progress read and one control task (cancel or
+        # recovery) at a time, which leaves one control thread to housekeeping.
+        self.job_hosts = {}  # job -> its computes ("compute:<id>" claims), while it runs here
+        self.progress_hosts = set()
+        self.control_hosts = set()
+        self.control_tasks = 0  # control tasks for hosts that run
+        self.hosts_lock = threading.Lock()
         self.pool = ThreadPoolExecutor(MAX_SLOTS, thread_name_prefix="wvc-job")
-        self.control = ThreadPoolExecutor(4, thread_name_prefix="wvc-control")
+        self.control = ThreadPoolExecutor(CONTROL_THREADS, thread_name_prefix="wvc-control")
         self.progress_pool = ThreadPoolExecutor(PROGRESS_THREADS, thread_name_prefix="wvc-progress")
         self.recovery = Scheduler(self)
         self._last = {"heartbeat": 0.0, "progress": 0.0, "housekeeping": 0.0}
@@ -192,22 +203,34 @@ class Worker:
         for op_id, future in list(self.jobs.items()):
             if future.done():
                 del self.jobs[op_id]
+                self.job_hosts.pop(op_id, None)
                 self.signalled.discard(op_id)
                 self.progress_asked.pop(op_id, None)
                 if (err := future.exception()) is not None:
                     # execute raised before it could finish the job itself
                     logger.error("job %s ended unfinished: %s", op_id, utils.safe_text(err))
-                    self.control.submit(_guarded, self.recovery.inspect_now, op_id, utils.public_error(err))
+                    self.recovery.inspect_now(op_id, utils.public_error(err))
+
+    def _concurrency(self):
+        return self.fixed_concurrency or utils.concurrency()
 
     def _slots(self):
-        return (self.fixed_concurrency or utils.concurrency()) - len(self.jobs)
+        return self._concurrency() - len(self.jobs)
 
     def _claim(self):
-        while self._slots() > 0 and not self.stopping.is_set():
-            candidate = (Operation.objects.filter(state=Operation.QUEUED).order_by("created_at")
-                         .values_list("pk", flat=True).first())
-            if candidate is None:
+        """The oldest queued jobs, but none of a host that has half the slots
+        already (a job of two hosts counts on both): one that does not answer
+        leaves the others' jobs the rest."""
+        if self._slots() <= 0:
+            return
+        per_host = max(1, self._concurrency() // 2)
+        running = Counter(host for hosts in self.job_hosts.values() for host in hosts)
+        queued = Operation.objects.filter(state=Operation.QUEUED).order_by("created_at").values_list("pk", flat=True)
+        for candidate, hosts in hosts_of(list(queued)).items():
+            if self._slots() <= 0 or self.stopping.is_set():
                 return
+            if any(running[host] >= per_host for host in hosts):
+                continue
             try:
                 with fenced(self.identity):
                     now = timezone.now()
@@ -217,13 +240,36 @@ class Worker:
                 self._lose_lease()
                 return
             if taken:
+                self.job_hosts[candidate] = hosts
+                running.update(hosts)
                 self.jobs[candidate] = self.pool.submit(execute, self, candidate)
+
+    def run_control(self, hosts, fn, *args):
+        """fn on a control thread, unless one of hosts has a control task
+        still running, or it would take the thread left to housekeeping.
+        True if it started."""
+        with self.hosts_lock:
+            if not hosts.isdisjoint(self.control_hosts) or (hosts and self.control_tasks >= CONTROL_THREADS - 1):
+                return False
+            self.control_hosts |= hosts
+            self.control_tasks += bool(hosts)
+
+        def task():
+            try:
+                fn(*args)
+            finally:
+                with self.hosts_lock:
+                    self.control_hosts -= hosts
+                    self.control_tasks -= bool(hosts)
+
+        self.control.submit(task)
+        return True
 
     def _cancels(self):
         for op in Operation.objects.filter(pk__in=list(self.jobs), cancel_requested=True):
-            if op.pk not in self.signalled:
+            if op.pk not in self.signalled and self.run_control(
+                    self.job_hosts.get(op.pk, frozenset()), _guarded, jobs.get_kind(op.kind).cancel, op):
                 self.signalled.add(op.pk)
-                self.control.submit(_guarded, jobs.get_kind(op.kind).cancel, op)
 
     def _limits(self):
         now = timezone.now()
@@ -240,12 +286,16 @@ class Worker:
         for op in sorted(ops, key=lambda op: self.progress_asked.get(op.pk, 0.0)):
             if len(self.progress_pending) >= PROGRESS_THREADS:
                 return
-            if op.pk not in self.progress_pending:
-                self.progress_pending.add(op.pk)
-                self.progress_asked[op.pk] = time.monotonic()
-                self.progress_pool.submit(self._read_progress, op)
+            hosts = self.job_hosts.get(op.pk, frozenset())
+            with self.hosts_lock:
+                if op.pk in self.progress_pending or not hosts.isdisjoint(self.progress_hosts):
+                    continue  # one read a host: one that does not answer holds one thread
+                self.progress_hosts |= hosts
+            self.progress_pending.add(op.pk)
+            self.progress_asked[op.pk] = time.monotonic()
+            self.progress_pool.submit(self._read_progress, op, hosts)
 
-    def _read_progress(self, op):
+    def _read_progress(self, op, hosts):
         try:
             value = jobs.get_kind(op.kind).progress(op)
             if value is not None:
@@ -254,8 +304,19 @@ class Worker:
         except Exception as err:
             logger.debug("progress of job %s: %s", op.pk, utils.safe_text(err))
         finally:
+            with self.hosts_lock:
+                self.progress_hosts -= hosts
             self.progress_pending.discard(op.pk)
             close_old_connections()
+
+
+def hosts_of(op_ids):
+    """Each job's computes, by its "compute:<id>" claims, in the order of op_ids."""
+    hosts = {op_id: set() for op_id in op_ids}
+    for op_id, resource in Claim.objects.filter(operation_id__in=op_ids, resource__startswith="compute:") \
+            .values_list("operation_id", "resource"):
+        hosts[op_id].add(resource)
+    return {op_id: frozenset(found) for op_id, found in hosts.items()}
 
 
 def _guarded(fn, *args):
@@ -336,10 +397,11 @@ class Scheduler:
 
     def due(self):
         now = time.monotonic()
-        for op_id, at in list(self.next_try.items()):
-            if at <= now and op_id not in self.inflight:
-                self.inflight.add(op_id)
-                self.worker.control.submit(self._inspect, op_id)
+        due = [op_id for op_id, at in list(self.next_try.items()) if at <= now and op_id not in self.inflight]
+        for op_id, hosts in hosts_of(due).items():
+            self.inflight.add(op_id)  # before it starts: _inspect discards it when it ends
+            if not self.worker.run_control(hosts, self._inspect, op_id):
+                self.inflight.discard(op_id)  # its host's control task still runs: a later tick
 
     def _done(self, op_id):
         for table in (self.next_try, self.attempts, self.errors, self.stalled_since):

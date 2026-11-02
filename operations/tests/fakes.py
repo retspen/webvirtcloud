@@ -21,6 +21,8 @@ def reset():
     BARRIERS.clear()
     CANCELLED.clear()
     EXPIRED.clear()
+    STUCK.clear()
+    HOST_CALLS.clear()
 
 
 def start_worker(worker):
@@ -127,3 +129,46 @@ class RequestKind(NoopKind):
         if op.params["fail_expire"]:
             raise RuntimeError("expire failed")
         EXPIRED.append(str(op.id))
+
+
+STUCK = {}  # compute id -> threading.Event: test.host's libvirt calls on it wait until it is set
+HOST_CALLS = []  # (call, compute id) as test.host's progress and cancel begin
+
+
+@register
+class HostKind(NoopKind):
+    """A job on compute params["host"], whose calls wait while STUCK holds it,
+    as calls to a host that is up but does not answer do."""
+
+    name = "test.host"
+    label = "Host"
+    cancellable = True
+
+    def normalize(self, raw):
+        return {"host": int(raw["host"]), "n": int(raw["n"])}
+
+    def plan(self, user, params):
+        key = f"instance:host-{params['host']}-{params['n']}"
+        return Plan(claims={f"compute:{params['host']}": Claim.SHARED, key: Claim.EXCLUSIVE}, resource=key,
+                    label="c/vm")
+
+    def _call(self, name, op):
+        HOST_CALLS.append((name, op.params["host"]))
+        if (stuck := STUCK.get(op.params["host"])) is not None:
+            stuck.wait(30)
+
+    def run(self, op, ctx):
+        ctx.record_intent(step="effect")
+        self._call("run", op)
+        if (release := BARRIERS.get(op.submission_key)) is not None:
+            release.wait(30)
+        return {}
+
+    def progress(self, op):
+        self._call("progress", op)
+        return (1, 2)
+
+    def cancel(self, op):
+        self._call("cancel", op)
+        if (release := BARRIERS.get(op.submission_key)) is not None:
+            release.set()

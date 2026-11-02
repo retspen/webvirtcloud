@@ -51,11 +51,42 @@ class WorkerTestCase(TransactionTestCase):
         self.thread = fakes.start_worker(self.worker)
 
     def tearDown(self):
-        for barrier in fakes.BARRIERS.values():
-            barrier.set()
+        for event in [*fakes.BARRIERS.values(), *fakes.STUCK.values()]:
+            event.set()
         if self.thread:
             fakes.stop_worker(self.worker, self.thread)
         connection.close()
+
+    def job(self, host, n):
+        return self.submit("test.host", {"host": host, "n": n}, f"key-h{host}-{n:04d}")
+
+    def test_a_stuck_host_takes_half_the_slots_and_one_progress_read(self):
+        fakes.STUCK[1] = threading.Event()
+        stuck = [self.job(1, n) for n in range(4)]
+        self.start(concurrency=4)
+        self.assertTrue(wait_for(lambda: sum(state(op) == Operation.RUNNING for op in stuck) == 2))
+        # the other host's job runs beside them, and its progress is read
+        healthy = self.submit("test.host", {"host": 2, "n": 0}, "key-h2-0000", barrier=True)
+        self.assertTrue(wait_for(lambda: ("progress", 2) in fakes.HOST_CALLS))
+        self.assertEqual(sum(state(op) == Operation.RUNNING for op in stuck), 2)
+        self.assertEqual(fakes.HOST_CALLS.count(("progress", 1)), 1)
+        fakes.BARRIERS["key-h2-0000"].set()
+        self.assertTrue(wait_for(lambda: state(healthy) == Operation.SUCCEEDED))
+
+    def test_a_stuck_host_takes_one_control_thread(self):
+        fakes.STUCK[1] = threading.Event()
+        # they run until cancelled
+        stuck = [self.submit("test.host", {"host": 1, "n": n}, f"key-h1-{n:04d}", barrier=True) for n in range(2)]
+        healthy = self.submit("test.host", {"host": 2, "n": 0}, "key-h2-0000", barrier=True)
+        self.start(concurrency=4)
+        self.assertTrue(wait_for(lambda: all(state(op) == Operation.RUNNING for op in [*stuck, healthy])))
+        for op in [*stuck, healthy]:
+            jobs.cancel(op.pk, self.user)
+        # the other host's cancel goes through; the stuck host's second cancel waits for its first
+        self.assertTrue(wait_for(lambda: ("cancel", 2) in fakes.HOST_CALLS))
+        self.assertEqual(fakes.HOST_CALLS.count(("cancel", 1)), 1)
+        fakes.STUCK[1].set()
+        self.assertTrue(wait_for(lambda: fakes.HOST_CALLS.count(("cancel", 1)) == 2))
 
     def submit(self, kind, params, key, barrier=False):
         if barrier:
@@ -316,3 +347,4 @@ class HostIdentityTestCase(TransactionTestCase):
             first = host_identity(self.dir)
         with patch("operations.worker.socket.gethostname", return_value="wvc-test-b"):
             self.assertEqual(host_identity(self.dir), first)
+
