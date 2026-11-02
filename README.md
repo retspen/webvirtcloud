@@ -736,6 +736,16 @@ python3 dev/console_layout.py us "English (US)" --model pc104  # a keyboard with
 
 It lists the dead keys it leaves out: a character only a dead key types cannot be typed. Type a sample with every character group of the layout into a VM set to that layout before committing the file.
 
+### Translations
+
+The panel is translated into the languages of `LANGUAGES` in `settings.py`, each with a full catalog in `locale/`. A new or changed text needs its translation in each before CI passes (needs `gettext`):
+
+```bash
+python manage.py makemessages -l tr --no-obsolete --ignore=staticfiles --ignore=.venv
+# translate the new and fuzzy entries of locale/tr/LC_MESSAGES/django.po
+python manage.py compilemessages -l tr
+```
+
 ### Running tests
 
 ```bash

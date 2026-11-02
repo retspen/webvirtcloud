@@ -71,7 +71,8 @@ jobs:
             libldap2-dev \
             libsasl2-dev \
             pkg-config \
-            gcc
+            gcc \
+            gettext
 
       - name: Install Python Dependencies
         run: |
@@ -89,6 +90,19 @@ jobs:
 
       - name: Run Django Migrations
         run: python manage.py migrate --noinput
+
+      # Each catalog of LANGUAGES translates every message, and its compiled
+      # .mo is the .po's: a changed text needs its translations
+      - name: Check Translation Catalogs
+        if: matrix.python-version == '3.12' && matrix.database == 'sqlite'
+        run: |
+          python manage.py makemessages -l tr --no-obsolete --ignore=staticfiles -v0
+          for dir in locale/tr/LC_MESSAGES; do
+            msgfmt --check -o /tmp/django.mo "$dir/django.po"
+            missing=$(msgattrib --untranslated "$dir/django.po"; msgattrib --only-fuzzy "$dir/django.po")
+            if [ -n "$missing" ]; then echo "$missing"; echo "::error file=$dir/django.po::untranslated or fuzzy messages"; exit 1; fi
+            cmp <(msgunfmt "$dir/django.mo") <(msgunfmt /tmp/django.mo) || { echo "::error file=$dir/django.mo::not compiled from django.po (compilemessages)"; exit 1; }
+          done
 
       # Includes the vrtManager tests; fails below the coverage floor in pyproject.toml
       - name: Run Test Suite
