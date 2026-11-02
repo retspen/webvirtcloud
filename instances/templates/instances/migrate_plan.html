@@ -25,7 +25,8 @@
     </select>
     {% if disk.same_name %}<div class="form-text">{% trans "Another disk of the VM has this file name: copy them to different pools." %}</div>{% endif %}
     {% elif disk.refusal %}
-    <p class="small text-danger mb-0" data-refused>{% blocktrans with reason=disk.refusal %}Cannot be copied: {{ reason }}{% endblocktrans %}</p>
+    {% trans disk.refusal as reason %}
+    <p class="small text-danger mb-0" data-refused>{% blocktrans %}Cannot be copied: {{ reason }}{% endblocktrans %}</p>
     {% elif pools %}
     <p class="small text-danger mb-0" data-refused>{% trans "Every pool of the destination host has a file of this name" %}</p>
     {% else %}

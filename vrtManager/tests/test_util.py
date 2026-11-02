@@ -161,6 +161,32 @@ class OperationErrorTestCase(unittest.TestCase):
         # a text without values is not formatted: libvirt's may hold a %
         self.assertEqual(str(OperationError("100% used")), "100% used")
 
+    def test_reads_in_the_active_language_and_keeps_english_in_its_args(self):
+        from django.utils import translation
+        from vrtManager.util import OperationError, message
+
+        error = OperationError("The disks cannot be migrated: %(problems)s", problems=[
+            message("%(target)s: the VM has no disk file to copy", target="vda"),
+            message("%(target)s (%(path)s): %(refusal)s", target="sda", path="/i/os.iso",
+                    refusal=[message("an image is not copied; eject it first")])])
+        english = ("The disks cannot be migrated: vda: the VM has no disk file to copy; "
+                   "sda (/i/os.iso): an image is not copied; eject it first")
+        self.assertEqual(error.args[0], english)
+        with translation.override("tr"):
+            self.assertNotEqual(str(error), english)
+            self.assertEqual(error.args[0], english)  # logs and the audit log stay English
+            self.assertIn("vda", str(error))
+
+    def test_a_job_keeps_number_values_for_their_formats(self):
+        from operations.utils import said, words
+        from vrtManager.util import OperationError
+
+        error = OperationError("Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB "
+                               "(the copied disks, plus %(percent)g%% of them, at least %(minimum)g GiB)",
+                               pool="default", free=1.25, size=3.0, percent=10, minimum=2)
+        self.assertEqual(words(said(error)), "Storage pool default has 1.2 GiB free; the clone needs 3.0 GiB "
+                                             "(the copied disks, plus 10% of them, at least 2 GiB)")
+
 
 if __name__ == "__main__":
     unittest.main()

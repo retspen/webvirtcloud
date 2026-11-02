@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_noop
 import copy
 import ipaddress
 from datetime import datetime, timezone
@@ -295,15 +296,13 @@ class wvmNetwork(wvmConnect):
     def stop(self):
         """Refused while a running VM is on it: that VM would be cut off."""
         if vms := self._vms_on_it(running_only=True):
-            raise util.OperationError(f"Network {self.net.name()} is in use by the running VMs {', '.join(vms)}; "
-                                      "shut them down or remove their network cards first")
+            raise util.OperationError(gettext_noop("Network %(net)s is in use by the running VMs %(vms)s; shut them down or remove their network cards first"), net=self.net.name(), vms=', '.join(vms))
         self.net.destroy()
 
     def delete(self):
         """Refused while a VM's definition names it: that VM would no longer start."""
         if vms := self._vms_on_it(running_only=False):
-            raise util.OperationError(f"VMs {', '.join(vms)} use network {self.net.name()} and would no longer "
-                                      "start; remove their network cards first")
+            raise util.OperationError(gettext_noop("VMs %(vms)s use network %(net)s and would no longer start; remove their network cards first"), vms=', '.join(vms), net=self.net.name())
         self.net.undefine()
 
     def update(self, command, section, xml, parentIndex):
@@ -312,8 +311,7 @@ class wvmNetwork(wvmConnect):
         active = self.is_active()
         if active and self._addresses(self.tree) != self._addresses(self.config()):
             # parentIndex names the same <ip> in both only when they list the same addresses
-            raise util.OperationError(f"Network {self.net.name()} runs with other addresses than it has saved; "
-                                      "stop and start it first")
+            raise util.OperationError(gettext_noop("Network %(net)s runs with other addresses than it has saved; stop and start it first"), net=self.net.name())
         flags = VIR_NETWORK_UPDATE_AFFECT_CONFIG | (VIR_NETWORK_UPDATE_AFFECT_LIVE if active else 0)
         self.net.update(command, section, parentIndex, xml, flags)
         self._forget()
@@ -338,8 +336,18 @@ class wvmNetwork(wvmConnect):
         tree = self.config()
         ips = tree.findall("ip")
         if not 0 <= index < len(ips):
-            raise util.OperationError(f"Network {self.net.name()} has no such address")
+            raise util.OperationError(gettext_noop("Network %(net)s has no such address"), net=self.net.name())
         return tree, ips[index], ip_networks(tree)[index]
+
+    # an address outside the network: (with its subnet, without one)
+    OUTSIDE = {
+        "range start": (gettext_noop("The range start %(address)s is not in %(subnet)s"),
+                        gettext_noop("The range start %(address)s is not in the network")),
+        "range end": (gettext_noop("The range end %(address)s is not in %(subnet)s"),
+                      gettext_noop("The range end %(address)s is not in the network")),
+        "fixed address": (gettext_noop("The fixed address %(address)s is not in %(subnet)s"),
+                          gettext_noop("The fixed address %(address)s is not in the network")),
+    }
 
     def _checked_address(self, ip, address, what):
         """address as an address of the <ip> ip (ip_networks): of its family and
@@ -347,27 +355,28 @@ class wvmNetwork(wvmConnect):
         try:
             address = ipaddress.ip_address(address)
         except ValueError:
-            raise util.OperationError(f"{address} is not an IP address") from None
+            raise util.OperationError(gettext_noop("%(address)s is not an IP address"), address=address) from None
         if ip["subnet"] is None or address not in ip["subnet"]:
-            raise util.OperationError(f"The {what} {address} is not in {ip['subnet'] or 'the network'}")
+            outside = self.OUTSIDE[what][ip["subnet"] is None]
+            raise util.OperationError(outside, address=address, subnet=ip["subnet"])
         if address == ipaddress.ip_address(ip["address"]):
-            raise util.OperationError(f"{address} is the host's own address on the network")
+            raise util.OperationError(gettext_noop("%(address)s is the host's own address on the network"), address=address)
         return address
 
     def modify_dhcp_range(self, index, range_start, range_end):
         """Refused while the network runs: the running network would keep the old range."""
         if self.is_active():
-            raise util.OperationError(f"Stop network {self.net.name()} to change its DHCP range")
+            raise util.OperationError(gettext_noop("Stop network %(net)s to change its DHCP range"), net=self.net.name())
         tree, ip, info = self._ip(index)
         dhcp_range = ip.find("dhcp/range")
         if dhcp_range is None:
-            raise util.OperationError(f"This address of network {self.net.name()} has no DHCP range")
+            raise util.OperationError(gettext_noop("This address of network %(net)s has no DHCP range"), net=self.net.name())
         start = self._checked_address(info, range_start, "range start")
         end = self._checked_address(info, range_end, "range end")
         if start > end:
-            raise util.OperationError(f"The range starts at {start}, after its end {end}")
+            raise util.OperationError(gettext_noop("The range starts at %(start)s, after its end %(end)s"), start=start, end=end)
         if start <= ipaddress.ip_address(info["address"]) <= end:
-            raise util.OperationError(f"The range takes in {info['address']}, the host's own address")
+            raise util.OperationError(gettext_noop("The range takes in %(address)s, the host's own address"), address=info['address'])
         dhcp_range.set("start", str(start))
         dhcp_range.set("end", str(end))
         self._define(tree)
@@ -376,7 +385,7 @@ class wvmNetwork(wvmConnect):
         _tree, ip, _info = self._ip(index)
         host = next((h for h in ip.findall("dhcp/host") if h.get("ip") == address), None)
         if host is None:
-            raise util.OperationError(f"Network {self.net.name()} has no fixed address {address}")
+            raise util.OperationError(gettext_noop("Network %(net)s has no fixed address %(address)s"), net=self.net.name(), address=address)
         # the host as it is: a host may have only a name and an address
         self.update(VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_SECTION_IP_DHCP_HOST,
                     etree.tostring(host, with_tail=False).decode(), index)
@@ -398,16 +407,16 @@ class wvmNetwork(wvmConnect):
         if original:
             old = next((h for h in hosts if h.get("ip") == original), None)
             if old is None:
-                raise util.OperationError(f"The fixed address {original} is gone meanwhile; reload the page")
+                raise util.OperationError(gettext_noop("The fixed address %(original)s is gone meanwhile; reload the page"), original=original)
         for other in hosts:
             if other is old:
                 continue
             if other.get("ip") == str(address):
-                raise util.OperationError(f"{address} is another entry's fixed address")
+                raise util.OperationError(gettext_noop("%(address)s is another entry's fixed address"), address=address)
             if mac_duid and other.get(key, "").lower() == mac_duid.lower():
-                raise util.OperationError(f"{mac_duid} has another fixed address, {other.get('ip')}")
+                raise util.OperationError(gettext_noop("%(mac_duid)s has another fixed address, %(other)s"), mac_duid=mac_duid, other=other.get('ip'))
             if name and other.get("name") == name:
-                raise util.OperationError(f"The name {name} has another fixed address, {other.get('ip')}")
+                raise util.OperationError(gettext_noop("The name %(name)s has another fixed address, %(other)s"), name=name, other=other.get('ip'))
         new = copy.deepcopy(old) if old is not None else etree.Element("host")
         new.tail = None
         for attribute, value in ((key, mac_duid), ("name", name), ("ip", str(address))):
@@ -443,11 +452,11 @@ class wvmNetwork(wvmConnect):
 
     def set_qos(self, direction, average, peak, burst):
         if direction not in ("inbound", "outbound"):
-            raise ValueError("Direction must be inbound or outbound")
+            raise util.OperationError(gettext_noop("Direction must be inbound or outbound"))
         try:
             average, peak, burst = int(average), int(peak), int(burst)
         except ValueError:
-            raise ValueError("QoS rates must be whole numbers")
+            raise util.OperationError(gettext_noop("QoS rates must be whole numbers")) from None
         tree = self.config()
         band = tree.find("bandwidth")
         if band is None:
@@ -470,8 +479,8 @@ class wvmNetwork(wvmConnect):
         names one, the same UUID, not another network."""
         tree = util.parse_xml(new_xml)
         if tree.tag != "network" or tree.findtext("name") != self.net.name():
-            raise util.OperationError(f"The XML must define network {self.net.name()}")
+            raise util.OperationError(gettext_noop("The XML must define network %(net)s"), net=self.net.name())
         if tree.findtext("uuid") not in (None, self.net.UUIDString()):
-            raise util.OperationError("The XML must keep the network's UUID")
+            raise util.OperationError(gettext_noop("The XML must keep the network's UUID"))
         self.wvm.networkDefineXML(new_xml)
         self._forget()

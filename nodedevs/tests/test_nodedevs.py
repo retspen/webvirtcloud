@@ -14,6 +14,7 @@ from django.urls import reverse
 from instances.models import Instance
 from lxml import html
 from vrtManager.connection import wvmConnect
+from vrtManager import util
 from vrtManager.nodedevs import hostdev_problems, node_devices, pci_address
 
 
@@ -116,7 +117,8 @@ class NodeDevicesTests(SimpleTestCase):
 
     def test_a_usb_device_on_a_controller_given_to_a_vm_is_not_given_to_another(self):
         pci_devices, usb_devices = devices(domains=[vm("db-1", PCI_01)])
-        reasons = hostdev_problems("kiosk-1", pci_devices, usb_devices, set(), [("0x0627", "0x0001", (1, 2))])
+        reasons = [util.render(m["text"], m["values"], str) for m in hostdev_problems(
+            "kiosk-1", pci_devices, usb_devices, set(), [("0x0627", "0x0001", (1, 2))])]
         self.assertIn("USB device 1/2 (QEMU Tablet) is on the PCI controller 0000:00:01.0, given to db-1", reasons)
 
     def test_a_usb_device_is_named_as_libvirt_picks_one(self):
