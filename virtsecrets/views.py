@@ -8,7 +8,7 @@ from libvirt import libvirtError
 from logs.audit import audit
 from vrtManager.virtsecrets import wvmSecrets
 
-from virtsecrets.forms import AddSecret
+from virtsecrets.forms import USAGE_TEXTS, AddSecret
 
 
 @superuser_only
@@ -60,4 +60,4 @@ def secrets(request, compute_id):
 
     usage_choices = AddSecret.base_fields["usage_type"].choices
     return render(request, "secrets.html", {"secrets_all": secrets_all, "compute": compute,
-                                            "usage_choices": usage_choices})
+                                            "usage_choices": usage_choices, "usage_texts": USAGE_TEXTS})

@@ -11,3 +11,21 @@ class AddSecret(forms.Form):
     value = forms.CharField(required=False, strip=False)
     ephemeral = forms.BooleanField(required=False)
     private = forms.BooleanField(required=False)
+
+
+# what a secret's usage and value are, per usage type, for the page's labels
+USAGE_TEXTS = {
+    "ceph": {"usage": _("Ceph secret name"),
+             "usageHelp": _("The name a disk or pool names it by, e.g. client.libvirt secret, not the Ceph user; one secret per name."),
+             "value": _("Key"), "valueHelp": _("The key as ceph auth get-key prints it.")},
+    "iscsi": {"usage": _("iSCSI target"), "usageHelp": _("The name a disk or pool names it by, e.g. the target IQN."),
+              "value": _("CHAP password"), "valueHelp": _("The password as it is typed.")},
+    "volume": {"usage": _("Volume path"), "usageHelp": _("The path of the encrypted volume it unlocks."),
+               "value": _("Passphrase"), "valueHelp": _("The passphrase as it is typed.")},
+    "tls": {"usage": _("Name"), "usageHelp": _("A name for it; qemu.conf names it by its UUID."),
+            "value": _("Passphrase"), "valueHelp": _("The passphrase of the TLS key, as it is typed.")},
+    "vtpm": {"usage": _("Name"), "usageHelp": _("A name for it; a VM's vTPM names it by its UUID."),
+             "value": _("Passphrase"), "valueHelp": _("The passphrase as it is typed.")},
+    "none": {"value": _("Value"), "valueHelp": _("The value as it is typed.")},
+    "later": _("Leave it blank to give it later."),
+}

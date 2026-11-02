@@ -143,12 +143,17 @@ class GraphScriptTestCase(TestCase):
             details.return_value.get_node_info.return_value = ("h", "x86_64", 1024, 2, "cpu", "qemu+tcp://h/system")
             details.return_value.get_cpu_topology.return_value = TOPOLOGY
             page = self.client.get(reverse("overview", args=[compute.id])).content.decode()
-        script = next(s for s in html.fromstring(page).xpath("//script[not(@src)]/text()") if "pollWhileVisible(" in s)
+        doc = html.fromstring(page)
+        self.assertIn("/static/js/host_graphs.js", doc.xpath("//script/@src"))
+        (state,) = doc.xpath("//span[@id='graph_state']")
+        dataset = {"url": state.get("data-url"), "averageOver": state.get("data-average-over"),
+                   "updated": "Updated at %(time)s.", "stale": "Not updated since %(time)s."}
+        script = (settings.BASE_DIR / "static/js/host_graphs.js").read_text()
         js = """
         const vm = require("vm");
         const charts = [], requests = [];
         const element = (dataset) => ({dataset, textContent: "", classList: {add: () => {}, remove: () => {}}});
-        const elements = {graph_state: element({updated: "Updated at %(time)s.", stale: "Not updated since %(time)s."}),
+        const elements = {graph_state: element(DATASET),
                           cpu_now: element({}), mem_now: element({})};
         let poll;
         const page = {
@@ -180,7 +185,8 @@ class GraphScriptTestCase(TestCase):
         console.log(JSON.stringify({requests, label, shown, state: elements.graph_state.textContent,
                                     cpu: charts[0].data.datasets[0].data,
                                     mem: charts[1].data.datasets[0].data, memMax: charts[1].options.scales.y.max}));
-        """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text()))
+        """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text())).replace(
+            "DATASET", json.dumps(dataset))
         out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
         self.assertEqual(out.returncode, 0, out.stderr)
         result = json.loads(out.stdout)

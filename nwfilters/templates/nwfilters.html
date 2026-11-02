@@ -100,28 +100,7 @@
 {% endblock %}
 
 {% block script %}
-{% if nwfilters %}
-<script src="{% static 'js/table_filter.js' %}"></script>
-<script>
-    document.getElementById("CloneNWFilter").addEventListener("show.bs.modal", function (event) {
-        var name = event.relatedTarget.dataset.name;
-        this.querySelector("form").elements.nwfiltername.value = name;
-        document.getElementById("clone_source").textContent = name;
-        document.getElementById("clone_name").value = name + "-copy";
-    });
-</script>
-{% endif %}
+{% if nwfilters %}<script src="{% static 'js/table_filter.js' %}"></script>{% endif %}
 <script src="{% static 'js/ace/ace.js' %}"></script>
-<script>
-    var editor = ace.edit("create_editor");
-    editor.getSession().setMode("ace/mode/xml");
-    editor.setOption("textInputAriaLabel", "{{ _('Filter XML')|escapejs }}");
-    var input = $('input[name="nwfilter_xml"]');
-    input.val(editor.getSession().getValue());  // the starter too, if sent as it is
-    editor.getSession().on("change", function () {
-        input.val(editor.getSession().getValue());
-    });
-    // the editor measures itself when its dialog is shown
-    document.getElementById("AddNWFilter").addEventListener("shown.bs.modal", () => editor.resize());
-</script>
+<script src="{% static 'js/nwfilters_page.js' %}"></script>
 {% endblock %}
