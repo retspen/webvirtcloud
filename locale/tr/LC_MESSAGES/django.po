@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 19:48+0000\n"
+"POT-Creation-Date: 2026-11-02 20:01+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/"
@@ -5110,9 +5110,12 @@ msgid "No password is set."
 msgstr "Parola ayarlanmamış."
 
 #: instances/templates/instances/settings_tab.html:750
-msgid "Up to 8 characters (an accented letter counts as two), used with \\"
+msgid ""
+"Up to 8 characters (an accented letter counts as two), used with \"Set a new "
+"one\"."
 msgstr ""
-"En fazla 8 karakter (aksanlı bir harf iki sayılır), şununla kullanılır: \\"
+"En fazla 8 karakter (aksanlı bir harf iki sayılır), \"Yenisini belirle\" ile "
+"kullanılır."
 
 #: instances/templates/instances/settings_tab.html:757
 msgid "Save console settings"
@@ -8543,10 +8546,10 @@ msgstr "Kablosuz"
 msgid "Vendor specific"
 msgstr "Üreticiye özgü"
 
-#: webvirtcloud/settings.py:319
+#: webvirtcloud/settings.py:325
 msgid "Localhost"
 msgstr "Yerel sunucu"
 
-#: webvirtcloud/settings.py:320
+#: webvirtcloud/settings.py:326
 msgid "All interfaces"
 msgstr "Tüm arabirimler"
