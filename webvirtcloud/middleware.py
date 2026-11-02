@@ -8,8 +8,12 @@ from operations import claims, jobs
 from operations.utils import busy_message, public_error_text, summary
 
 API_PREFIX = "/api/"
-# the directives that need no change to the templates' inline scripts and styles
-CONTENT_SECURITY_POLICY = "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+# scripts only from this site: no inline script or event handler runs (inline styles still do);
+# the XML editor (Ace) and the API docs (Redoc) start their workers from blob: URLs
+CONTENT_SECURITY_POLICY = (
+    "script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; "
+    "frame-ancestors 'none'"
+)
 
 
 def same_origin_referer(request, default):
