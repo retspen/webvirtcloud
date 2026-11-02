@@ -121,11 +121,11 @@ class TemplateHtmlConcatenationTestCase(TestCase):
         self.assertNotIn('pool + "<span', src)
 
     def test_create_wizard_chipset_list_does_not_concatenate_into_html(self):
-        src = self._read("instances/templates/create_instance_w1.html")
+        src = self._read("static/js/create_machine.js")
         self.assertNotIn("""append('<option value="' + item""", src)
 
     def test_create_wizard_volume_lists_do_not_concatenate_volume_names_into_html(self):
-        src = self._read("instances/templates/create_instance_w2.html")
+        src = self._read("static/js/create_instance.js")
         self.assertNotIn("'<option value=' + item", src)
 
 

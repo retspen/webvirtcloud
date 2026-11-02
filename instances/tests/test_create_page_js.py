@@ -8,6 +8,7 @@ import subprocess
 import unittest
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from instances.forms import NewVMForm
@@ -58,13 +59,16 @@ class TomSelect {
 }
 """
 
-ROWS = ("make_pickers", "new_row", "add_disk_row", "add_network_row", "row_for", "remove_row", "sync_lists",
+# the page's script, with the form's data in a stand-in #create-vm-form
+SCRIPT = (settings.BASE_DIR / "static/js/create_instance.js").read_text()
+
+ROWS = ("form_data", "make_pickers", "new_row", "add_disk_row", "add_network_row", "row_for", "remove_row", "sync_lists",
         "random_mac", "load_buses")
 
 
-def functions(page, *names):
-    """The page's script functions of these names, in this order."""
-    return "".join(re.search(rf"\n    function {name}\(.*?\n    }}\n", page, re.S).group(0) for name in names)
+def functions(*names):
+    """The page script's functions of these names, in this order."""
+    return "".join(re.search(rf"\nfunction {name}\(.*?\n}}\n", SCRIPT, re.S).group(0) for name in names)
 
 
 def node(script):
@@ -84,19 +88,20 @@ class CreatePageScriptTests(TestCase):
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_the_disk_bus_list_is_asked_for_the_page_architecture_and_machine(self):
         compute, page = self.page()
-        out = node(f"const COMPUTE = {compute.id}; let asked; const $ = {{getJSON: url => {{ asked = url; }}}};"
-                   + functions(page, "load_list", "load_buses")
+        buses_url = html.fromstring(page).get_element_by_id("create-vm-form").get("data-buses-url")
+        out = node(f"const document = {{querySelector: () => ({{dataset: {{busesUrl: {json.dumps(buses_url)}}}}})}};"
+                   "let asked; const $ = {getJSON: url => { asked = url; }};"
+                   + functions("form_data", "load_list", "load_buses")
                    + "load_buses({replaceChildren() {}}, 'cdrom'); console.log(JSON.stringify(asked));")
         self.assertEqual(out, reverse("buses", args=[compute.id, "i686", "pc", "cdrom"]))
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_a_list_is_empty_while_it_loads_and_a_newer_load_aborts_the_older(self):
-        compute, page = self.page()
-        out = node(f"const COMPUTE = {compute.id}; const requests = [];"
+        out = node("const document = {querySelector: () => ({dataset: {busesUrl: '/__disk__/'}})}; const requests = [];"
                    "const $ = {getJSON: (url, fill) => { const r = {fill, abort() { r.aborted = true; }}; requests.push(r); return r; }};"
                    "const Option = function (text) { this.text = text; };"
                    "const bus = {children: ['ide'], replaceChildren(...items) { this.children = items; }};"
-                   + functions(page, "load_list", "load_buses")
+                   + functions("form_data", "load_list", "load_buses")
                    + "load_buses(bus, 'disk'); const loading = bus.children; load_buses(bus, 'cdrom');"
                    "requests[1].fill({bus: ['sata']});"
                    "console.log(JSON.stringify({loading, aborted: requests.map(r => !!r.aborted), filled: bus.children.map(o => o.text)}));")
@@ -123,8 +128,7 @@ class CreatePageScriptTests(TestCase):
 
     def run_rows(self, test):
         """Run the page's row script against the fake DOM, then test."""
-        _, page = self.page()
-        return node(FAKE_DOM + "let images_control, networks_control;" + functions(page, *ROWS)
+        return node(FAKE_DOM + "let images_control, networks_control;" + functions(*ROWS)
                     + "make_pickers();" + test)
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
@@ -199,9 +203,7 @@ const pressed = () => presets.map(b => [b.attrs["aria-pressed"], [...b.classes].
 """
 
     def run_script(self, test):
-        _, response = render_create_page(self)
-        page = response.content.decode()
-        return node(self.HARNESS + functions(page, "show_source", "apply_preset", "clear_presets") + test)
+        return node(self.HARNESS + functions("show_source", "apply_preset", "clear_presets") + test)
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_only_the_chosen_source_is_shown_and_sent(self):
@@ -238,10 +240,8 @@ class NewFormScriptTests(TestCase):
     template's pool unless the user picks another."""
 
     def script(self, test):
-        _, response = render_create_page(self)
-        page = response.content.decode()
-        return node(FAKE_DOM + "let images_control, networks_control;" + functions(page, *ROWS)
-                    + functions(page, "add_first_network", "select_value", "template_pool_chosen") + "make_pickers();" + test)
+        return node(FAKE_DOM + "let images_control, networks_control;" + functions(*ROWS)
+                    + functions("add_first_network", "select_value", "template_pool_chosen") + "make_pickers();" + test)
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_a_new_form_starts_on_default_if_the_host_has_it(self):
@@ -273,10 +273,8 @@ class RestoreScriptTests(TestCase):
     def run_restore(self, test, lists=LISTS):
         """Run restore_submitted against the fake DOM, with loaders that
         answer when the test calls answer()."""
-        _, response = render_create_page(self)
-        page = response.content.decode()
         harness = FAKE_DOM + "let images_control, networks_control;" \
-            + functions(page, *ROWS[:-1], "select_value", "restore_submitted") + """
+            + functions(*ROWS[:-1], "select_value", "restore_submitted") + """
 templates["submitted-lists"] = {textContent: %s};
 $.when = (...loading) => Promise.all(loading);
 const log = [], answers = [];
