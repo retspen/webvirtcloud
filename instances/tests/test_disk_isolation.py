@@ -6,6 +6,7 @@ views must not act on volumes or option values taken blindly from the client.
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 
@@ -90,9 +91,17 @@ class DiskViewsTenantIsolationTestCase(TestCase):
     def test_refresh_iso_reads_the_pools_again_and_returns_to_the_disks_tab(self):
         self.client.force_login(self.superuser)
         with patch("instances.models.wvmInstance") as mock_wvm:
+            mock_wvm.return_value.refresh_iso_pools.return_value = {}
             res = self._post("refresh_iso", {})
         self.assertRedirects(res, self.referer + "#disks", fetch_redirect_response=False)
         mock_wvm.return_value.refresh_iso_pools.assert_called_once_with()
+
+    def test_refresh_iso_reports_the_pools_that_failed(self):
+        self.client.force_login(self.superuser)
+        with patch("instances.models.wvmInstance") as mock_wvm:
+            mock_wvm.return_value.refresh_iso_pools.return_value = {"busy": "pool is busy"}
+            res = self._post("refresh_iso", {})
+        self.assertEqual([str(m) for m in get_messages(res.wsgi_request)], ["Pool busy was not read again: pool is busy"])
 
     def test_delete_vol_deletes_the_volume_attached_to_dev_not_the_posted_one(self):
         self.client.force_login(self.superuser)

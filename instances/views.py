@@ -1689,7 +1689,8 @@ def mount_iso(request, pk):
 @superuser_only
 def refresh_iso(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
-    instance.proxy.refresh_iso_pools()
+    for pool, err in instance.proxy.refresh_iso_pools().items():
+        messages.error(request, _("Pool %(pool)s was not read again: %(err)s") % {"pool": pool, "err": err})
     return _back(request, pk, "disks")
 
 
