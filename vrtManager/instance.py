@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_noop
 import base64
 import contextlib
 import ipaddress
@@ -130,10 +131,10 @@ class wvmInstances(wvmConnect):
             mode = ["offline"]
         elif state in (1, 3):
             if offline:
-                raise util.OperationError("A running or paused VM cannot be migrated offline")
+                raise util.OperationError(gettext_noop("A running or paused VM cannot be migrated offline"))
             mode = ["live" if live else "non-live"]
         else:
-            raise util.OperationError("The VM can be migrated when it is running, paused or shut off")
+            raise util.OperationError(gettext_noop("The VM can be migrated when it is running, paused or shut off"))
 
         # The source definition always goes: one left behind points at the
         # same (shared) disks as the migrated VM and could be started again.
@@ -156,33 +157,32 @@ class wvmInstances(wvmConnect):
         # libvirt keeps snapshot metadata on the source host: shared disks do
         # not carry it to the destination.
         if dom.snapshotNum(0):
-            raise util.OperationError("A VM with snapshots cannot be migrated")
+            raise util.OperationError(gettext_noop("A VM with snapshots cannot be migrated"))
         # a shut-off VM moves as its definition or started paused: either loses the saved memory
         if state == 5 and dom.hasManagedSaveImage(0):
-            raise util.OperationError("A VM with a saved state cannot be migrated")
+            raise util.OperationError(gettext_noop("A VM with a saved state cannot be migrated"))
         # the definition the migration carries first: it has the disks a migration copies
         definitions = [dom.XMLDesc(0)]
         if state != 5:
             definitions.append(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
         # a host device is of the source host: the destination may have none, or another one
         if any(etree.fromstring(xml).xpath(HOST_DEVICES) for xml in definitions):
-            raise util.OperationError("A VM with host devices cannot be migrated; remove them first")
+            raise util.OperationError(gettext_noop("A VM with host devices cannot be migrated; remove them first"))
         copies = self.disk_copies(conn, definitions, pools or {})
         if copies:
             mode.append("disks copied: " + ", ".join(f"{copy['target']} to {copy['pool'].name()}" for copy in copies))
         missing = self.missing_disks(definitions, copied={copy["path"] for copy in copies})
         if missing:
-            raise util.OperationError(
-                "The destination host does not have these disks of the VM: "
-                + ", ".join(f"{target} ({source})" for target, source in missing)
-            )
+            raise util.OperationError(gettext_noop("The destination host does not have these disks of the VM: %(disks)s"),
+                                      disks=[util.message(gettext_noop("%(target)s (%(source)s)"), target=target,
+                                                          source=source) for target, source in missing])
 
         dom_arch = conn.get_arch()
         dom_emulator = conn.get_dom_emulator()
 
         if dom_emulator != self.get_emulator(dom_arch):
             raise util.OperationError(
-                "Destination host emulator is different. Cannot be migrated"
+                gettext_noop("Destination host emulator is different. Cannot be migrated")
             )
 
         # the TPM state is a file of the source host: a live migration carries it
@@ -313,17 +313,17 @@ class wvmInstances(wvmConnect):
     def copy_refusal(disk, volume):
         """Why the disk (its volume on the source, None if no pool has it) cannot be copied, or None."""
         if disk.get("device") != "disk":
-            return "an image is not copied; eject it first"
+            return gettext_noop("an image is not copied; eject it first")
         if disk.find("readonly") is not None or disk.find("encryption") is not None \
                 or disk.find("source/encryption") is not None:
-            return "a read-only or encrypted disk is not copied"
+            return gettext_noop("a read-only or encrypted disk is not copied")
         driver = disk.find("driver")
         if driver is None or driver.get("type") not in ("raw", "qcow2"):
-            return "only raw and qcow2 disks are copied"
+            return gettext_noop("only raw and qcow2 disks are copied")
         if volume is None:
-            return "no storage pool of the source host has it"
+            return gettext_noop("no storage pool of the source host has it")
         if ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path"):
-            return "a disk with a backing file is not copied"
+            return gettext_noop("a disk with a backing file is not copied")
         return None
 
     def disk_copies(self, conn, definitions, pools):
@@ -339,34 +339,44 @@ class wvmInstances(wvmConnect):
             targets.add(row["target"])
             carried.add(row["path"])
             name = pools.get(row["target"])
-            label = f"{row['target']} ({row['path']})"
+            disk = {"target": row["target"], "path": row["path"]}
             if not name:
                 if not row["shared"]:
-                    problems.append(f"{label}: the destination host does not share it; choose a pool to copy it to")
+                    problems.append(util.message(gettext_noop(
+                        "%(target)s (%(path)s): the destination host does not share it; choose a pool to copy it to"),
+                        **disk))
                 continue
             if row["refusal"]:
-                problems.append(f"{label}: {row['refusal']}")
+                problems.append(util.message(gettext_noop("%(target)s (%(path)s): %(refusal)s"), **disk,
+                                             refusal=[util.message(row["refusal"])]))
                 continue
             if name not in here:
-                problems.append(f"{label}: the destination host has no pool {name} for disk files")
+                problems.append(util.message(gettext_noop(
+                    "%(target)s (%(path)s): the destination host has no pool %(pool)s for disk files"), **disk, pool=name))
                 continue
             pool, directory = here[name]
             pool.refresh(0)
             file = os.path.basename(row["path"])
             if self._find_volume(pool, file) is not None:
-                problems.append(f"{label}: pool {name} of the destination host already has a file {file}")
+                problems.append(util.message(gettext_noop(
+                    "%(target)s (%(path)s): pool %(pool)s of the destination host already has a file %(file)s"),
+                    **disk, pool=name, file=file))
                 continue
             if any(copy["dest"] == f"{directory}/{file}" for copy in copies):
-                problems.append(f"{label}: another disk is copied to {directory}/{file}")
+                problems.append(util.message(gettext_noop("%(target)s (%(path)s): another disk is copied to %(dest)s"),
+                                             **disk, dest=f"{directory}/{file}"))
                 continue
             copies.append({"target": row["target"], "path": row["path"], "dest": f"{directory}/{file}",
                            "pool": pool})
-        problems += [f"{target}: the VM has no disk file to copy" for target in pools.keys() - targets if pools[target]]
+        problems += [util.message(gettext_noop("%(target)s: the VM has no disk file to copy"), target=target)
+                     for target in pools.keys() - targets if pools[target]]
         for xml in definitions[1:]:
-            problems += [f"{row['target']} ({row['path']}) of the next start: the destination host does not share it"
-                         for row in self.disk_plan(conn, xml) if row["path"] not in carried and not row["shared"]]
+            problems += [util.message(gettext_noop(
+                "%(target)s (%(path)s) of the next start: the destination host does not share it"),
+                target=row["target"], path=row["path"])
+                for row in self.disk_plan(conn, xml) if row["path"] not in carried and not row["shared"]]
         if problems:
-            raise util.OperationError("The disks cannot be migrated: " + "; ".join(problems))
+            raise util.OperationError(gettext_noop("The disks cannot be migrated: %(problems)s"), problems=problems)
         return copies
 
     def remove_partial_copies(self, uuid, copies, error, nvram=None):
@@ -379,9 +389,8 @@ class wvmInstances(wvmConnect):
         except libvirtError as lookup_error:
             if lookup_error.get_error_code() != VIR_ERR_NO_DOMAIN:
                 raise util.OperationError(
-                    f"{error}; remove the partial disk copies from the destination host: "
-                    + ", ".join(copy["dest"] for copy in copies)
-                ) from error
+                    gettext_noop("%(error)s; remove the partial disk copies from the destination host: %(copies)s"),
+                    error=error, copies=", ".join(copy["dest"] for copy in copies)) from error
         left = []
         for copy in copies:
             copy["pool"].refresh(0)
@@ -397,7 +406,7 @@ class wvmInstances(wvmConnect):
             left.append(f"{NVRAM_DIR}/{nvram}")
         if left:
             raise util.OperationError(
-                f"{error}; remove the partial disk copies from the destination host: {', '.join(left)}"
+                gettext_noop("%(error)s; remove the partial disk copies from the destination host: %(left)s"), error=error, left=', '.join(left)
             ) from error
 
     def copy_nvram(self, conn):
@@ -414,7 +423,7 @@ class wvmInstances(wvmConnect):
                 return None  # never started: libvirt creates it at the first start
             if self.same_directory(source, target):
                 if self._find_volume(target, name) is None:
-                    raise util.OperationError(f"The destination host cannot see the NVRAM file {path}")
+                    raise util.OperationError(gettext_noop("The destination host cannot see the NVRAM file %(path)s"), path=path)
                 return None
             chunks = []
             stream = conn.wvm.newStream(0)
@@ -482,7 +491,7 @@ class wvmInstances(wvmConnect):
     @staticmethod
     def disk_label(pool, name):
         if name is None:
-            return f"{pool} disk, cannot be checked"
+            return [util.message(gettext_noop("%(type)s disk, cannot be checked"), type=pool)]
         return name if pool is None else f"{pool}/{name}"
 
     def find_volume(self, pool, name):
@@ -522,7 +531,7 @@ class wvmInstances(wvmConnect):
                 if error.get_error_code() != VIR_ERR_NO_DOMAIN:
                     raise
             else:
-                raise util.OperationError(f"The destination host already has a VM {key}")
+                raise util.OperationError(gettext_noop("The destination host already has a VM %(key)s"), key=key)
 
         xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE | VIR_DOMAIN_XML_MIGRATABLE)
         autostart = dom.autostart()
@@ -544,7 +553,7 @@ class wvmInstances(wvmConnect):
             if started:
                 # started meanwhile by another client: it stays on the source
                 dom.connect().defineXML(xml).setAutostart(autostart)
-                raise util.OperationError("The VM was started on the source host during the migration")
+                raise util.OperationError(gettext_noop("The VM was started on the source host during the migration"))
         except Exception as error:
             self.undo_definition(dom, new, error)  # raises when the destination keeps the VM
             self.delete_nvram(nvram)
@@ -560,19 +569,19 @@ class wvmInstances(wvmConnect):
             on_source = False
         if not on_source:
             raise util.OperationError(
-                f"{error}; the VM may now be defined only on the destination host: check both hosts"
+                gettext_noop("%(error)s; the VM may now be defined only on the destination host: check both hosts"), error=error
             ) from error
         try:
             new.undefineFlags(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
         except libvirtError as undo_error:
             raise util.OperationError(
-                f"{error}; the VM is now defined on both hosts, remove it from the destination: {undo_error}"
+                gettext_noop("%(error)s; the VM is now defined on both hosts, remove it from the destination: %(undo_error)s"), error=error, undo_error=undo_error
             ) from error
 
 
 def check_snapshot_name(name):
     if not SNAPSHOT_NAME.fullmatch(name):
-        raise util.OperationError("Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start with '.'")
+        raise util.OperationError(gettext_noop("Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start with '.'"))
 
 
 def agent_command(dom, command, arguments=None):
@@ -1088,7 +1097,7 @@ class wvmInstance(wvmConnect):
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         # the order lists disks, CD-ROM drives and NICs: it does not drop another device's place
         if tree.xpath("./devices/*[not(self::disk[@device='disk' or @device='cdrom'] or self::interface)]/boot"):
-            raise util.OperationError("A device other than a disk or NIC is in the boot order: change it in the XML editor")
+            raise util.OperationError(gettext_noop("A device other than a disk or NIC is in the boot order: change it in the XML editor"))
         # it replaces the order by device type and every device's place
         for boot in tree.xpath("./os/boot | ./devices/*/boot"):
             boot.getparent().remove(boot)
@@ -1100,10 +1109,10 @@ class wvmInstance(wvmConnect):
             elif dev["type"] == "network":  # any NIC type: network, bridge, direct
                 devices = tree.xpath("./devices/interface[mac/@address=$mac]", mac=dev["dev"])
             else:
-                raise util.OperationError("Invalid Device Type for boot order")
+                raise util.OperationError(gettext_noop("Invalid Device Type for boot order"))
             # nothing is defined until every choice is found: the order above is cleared
             if not devices:
-                raise util.OperationError(f"Boot device {dev['dev']} is not in the definition")
+                raise util.OperationError(gettext_noop("Boot device %(dev)s is not in the definition"), dev=dev['dev'])
             for d in devices:
                 d.append(order)
         self._defineXML(etree.tostring(tree).decode())
@@ -1123,7 +1132,9 @@ class wvmInstance(wvmConnect):
             tree = etree.fromstring(self._XMLDesc(xml_flags))
             found = tree.xpath("./devices/disk[@device='cdrom'][target/@dev=$dev]", dev=dev)
             if not found:
-                raise util.OperationError(f"CD-ROM {dev} is not in the {label} definition")
+                missing = (gettext_noop("CD-ROM %(dev)s is not in the running definition") if label == "running"
+                           else gettext_noop("CD-ROM %(dev)s is not in the persistent definition"))
+                raise util.OperationError(missing, dev=dev)
             devices.append(found[0])
         for (label, _, affect), disk in zip(definitions, devices):
             for source in disk.findall("source"):
@@ -1134,7 +1145,7 @@ class wvmInstance(wvmConnect):
                 self.instance.updateDeviceFlags(etree.tostring(disk).decode(), affect)
             except libvirtError as err:
                 if label == "persistent" and len(definitions) == 2:
-                    raise util.OperationError(f"Media of {dev} changed in the running VM only: {err}") from err
+                    raise util.OperationError(gettext_noop("Media of %(dev)s changed in the running VM only: %(err)s"), dev=dev, err=err) from err
                 raise
 
     def get_iso_path(self, image):
@@ -1145,9 +1156,9 @@ class wvmInstance(wvmConnect):
             if image in stg.listVolumes():
                 paths.append(stg.storageVolLookupByName(image).path())
         if not paths:
-            raise util.OperationError(f"ISO image {image} was not found")
+            raise util.OperationError(gettext_noop("ISO image %(image)s was not found"), image=image)
         if len(paths) > 1:
-            raise util.OperationError(f"ISO image {image} is in more than one storage pool")
+            raise util.OperationError(gettext_noop("ISO image %(image)s is in more than one storage pool"), image=image)
         return paths[0]
 
     def mount_iso(self, dev, image):
@@ -1254,7 +1265,7 @@ class wvmInstance(wvmConnect):
                 found = True
                 self.instance.detachDeviceFlags(etree.tostring(disks[0]).decode(), affect)
         if not found:
-            raise util.OperationError(f"Disk {target_dev} is not in the VM's definition")
+            raise util.OperationError(gettext_noop("Disk %(target_dev)s is not in the VM's definition"), target_dev=target_dev)
 
     def has_disk(self, target_dev):
         """True while the live or the persistent definition still has target_dev."""
@@ -1382,7 +1393,7 @@ class wvmInstance(wvmConnect):
                     self._defineXML(etree.tostring(tree).decode())
         else:
             raise util.OperationError(
-                "Please shutdown the instance then try to enable vCPU hotplug"
+                gettext_noop("Please shutdown the instance then try to enable vCPU hotplug")
             )
 
     def mem_usage(self):
@@ -1845,7 +1856,7 @@ class wvmInstance(wvmConnect):
     def create_snapshot(self, name, desc=None):
         self._check_snapshot_state()
         if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
-            raise util.OperationError("The VM has external snapshots; internal snapshots cannot be mixed with them")
+            raise util.OperationError(gettext_noop("The VM has external snapshots; internal snapshots cannot be mixed with them"))
         state = "shutoff" if self.get_status() == 5 else "running"
         name_esc = util.xml_escape(name)
         desc_esc = util.xml_escape(desc) if desc else ""
@@ -1877,30 +1888,30 @@ class wvmInstance(wvmConnect):
         check_snapshot_name(name)
         if quiesce:
             if memory:
-                raise util.OperationError("A snapshot with memory is not quiesced; it keeps the whole guest state")
+                raise util.OperationError(gettext_noop("A snapshot with memory is not quiesced; it keeps the whole guest state"))
             if self.get_status() != 1:
-                raise util.OperationError("Only a running VM's file systems can be frozen")
+                raise util.OperationError(gettext_noop("Only a running VM's file systems can be frozen"))
             if not self.is_agent_ready():
-                raise util.OperationError("The QEMU guest agent is not connected; it freezes the file systems")
+                raise util.OperationError(gettext_noop("The QEMU guest agent is not connected; it freezes the file systems"))
         self._check_snapshot_state()
         if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
-            raise util.OperationError("The VM has internal snapshots; external snapshots cannot be mixed with them")
+            raise util.OperationError(gettext_noop("The VM has internal snapshots; external snapshots cannot be mixed with them"))
         if name in self.instance.snapshotListNames(0):
-            raise util.OperationError(f"A snapshot named {name} already exists")
+            raise util.OperationError(gettext_noop("A snapshot named %(name)s already exists"), name=name)
         if self.instance.hasCurrentSnapshot(0):
             if self.instance.snapshotCurrent(0).numChildren(0):
-                raise util.OperationError("Newer snapshots exist after the last revert; delete them first")
+                raise util.OperationError(gettext_noop("Newer snapshots exist after the last revert; delete them first"))
         elif self.instance.snapshotListNames(0):
             # only after changes outside WebVirtCloud; a create would start a second root
-            raise util.OperationError("No snapshot is current; revert to a snapshot first")
+            raise util.OperationError(gettext_noop("No snapshot is current; revert to a snapshot first"))
         tree = etree.fromstring(self._XMLDesc(0))
         for disk in tree.xpath("devices/disk"):
             dev = disk.xpath("string(target/@dev)")
             if disk.get("device") in ("cdrom", "floppy"):
                 if disk.xpath("source/@file|source/@dev|source/@name"):
-                    raise util.OperationError(f"Eject the media from {dev} first")
+                    raise util.OperationError(gettext_noop("Eject the media from %(dev)s first"), dev=dev)
             elif disk.get("type") != "file":
-                raise util.OperationError(f"Disk {dev} is not a file; external snapshots need file disks")
+                raise util.OperationError(gettext_noop("Disk %(dev)s is not a file; external snapshots need file disks"), dev=dev)
         disks = list(self._disk_sources(tree).values())
         # free space, and the top overlays, are known to the pools only after
         # a refresh; nothing has changed yet when it fails
@@ -1908,7 +1919,7 @@ class wvmInstance(wvmConnect):
             self.refresh_instance_pools()
         except libvirtError as err:
             raise util.OperationError(
-                f"The storage pools could not be refreshed, so their free space is unknown: {err}"
+                gettext_noop("The storage pools could not be refreshed, so their free space is unknown: %(err)s"), err=err
             ) from None
         memory_xml, memory_pool = self._snapshot_memory(name, disks) if memory else ("", None)
         self._check_snapshot_space(disks, memory_pool, free_percent, free_min_gib)
@@ -1929,13 +1940,14 @@ class wvmInstance(wvmConnect):
         """The <memory> element of a snapshot that saves memory, and the
         storage pool its file goes into: the pool of the first disk."""
         if self.get_status() != 1:
-            raise util.OperationError("Memory is saved only from a running VM")
+            raise util.OperationError(gettext_noop("Memory is saved only from a running VM"))
         if not disks:
-            raise util.OperationError("The VM has no disk to keep its memory next to")
+            raise util.OperationError(gettext_noop("The VM has no disk to keep its memory next to"))
         try:
             pool = self.get_volume_by_path(disks[0]).storagePoolLookupByVolume()
         except libvirtError:
-            raise util.OperationError(f"{disks[0]} is not in a storage pool; memory is saved only into one") from None
+            raise util.OperationError(gettext_noop("%(disk)s is not in a storage pool; memory is saved only into one"),
+                                      disk=disks[0]) from None
         path = os.path.join(os.path.dirname(disks[0]), f"{self.get_uuid()}.{name}.mem")
         return f"<memory snapshot='external' file='{util.xml_escape(path)}'/>", pool.name()
 
@@ -1964,11 +1976,10 @@ class wvmInstance(wvmConnect):
         for name, size in needed.items():
             free = pools[name].info()[3]
             if free < size:
-                raise util.OperationError(
-                    f"Storage pool {name} has {free / 1024**3:.1f} GiB free; the snapshot needs {size / 1024**3:.1f} GiB "
-                    f"({free_percent:g}% of the VM's disks in it, at least {free_min_gib:g} GiB, "
-                    "and the memory if it is saved)"
-                )
+                raise util.OperationError(gettext_noop(
+                    "Storage pool %(pool)s has %(free).1f GiB free; the snapshot needs %(size).1f GiB (%(percent)g%% "
+                    "of the VM's disks in it, at least %(minimum)g GiB, and the memory if it is saved)"),
+                    pool=name, free=free / 1024**3, size=size / 1024**3, percent=free_percent, minimum=free_min_gib)
 
     def check_external_revert(self, name):
         """Refuses a revert that cannot work, before anything changes; returns
@@ -1984,7 +1995,7 @@ class wvmInstance(wvmConnect):
         current_loader = util.get_xml_path(self._XMLDesc(PERSISTENT_XML), "/domain/os/loader/@type")
         if saved_loader == "rom" and current_loader == "pflash":
             raise util.OperationError(
-                "This snapshot was taken by an older version on a UEFI VM and cannot be reverted; delete it instead"
+                gettext_noop("This snapshot was taken by an older version on a UEFI VM and cannot be reverted; delete it instead")
             )
         return snap
 
@@ -2014,10 +2025,10 @@ class wvmInstance(wvmConnect):
             try:
                 self.instance.revertToSnapshot(snap, flags)
             except libvirtError as retry_err:
-                state = "running" if self.instance.isActive() else "shut off"
-                raise util.OperationError(
-                    f"The revert failed twice; try again in a moment ({retry_err}). The VM is {state}."
-                ) from None
+                failed = (gettext_noop("The revert failed twice; try again in a moment (%(error)s). The VM is running.")
+                          if self.instance.isActive() else
+                          gettext_noop("The revert failed twice; try again in a moment (%(error)s). The VM is shut off."))
+                raise util.OperationError(failed, error=retry_err) from None
         return self._left_behind(before)
 
     def delete_external_snapshot(self, name):
@@ -2179,9 +2190,9 @@ class wvmInstance(wvmConnect):
         dom = self.instance
         state = dom.info()[0]
         if not dom.isPersistent() or state not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_PAUSED, VIR_DOMAIN_SHUTOFF):
-            raise util.OperationError("A disk moves when its VM is defined and running, paused or shut off")
+            raise util.OperationError(gettext_noop("A disk moves when its VM is defined and running, paused or shut off"))
         if dom.snapshotNum(0) or dom.hasManagedSaveImage(0) or self.get_snapshot_jobs():
-            raise util.OperationError("A disk of a VM with snapshots, a saved state or a running block job does not move")
+            raise util.OperationError(gettext_noop("A disk of a VM with snapshots, a saved state or a running block job does not move"))
         # the running definition (the persistent one of a shut-off VM) first
         disks = [ElementTree.fromstring(xml).find(f"devices/disk/target[@dev='{dev}']/..")
                  for xml in (self._XMLDesc(0), self._XMLDesc(PERSISTENT_XML))]
@@ -2189,32 +2200,31 @@ class wvmInstance(wvmConnect):
         disk, source = disks[0], sources[0]
         if disk is None or disk.get("type") != "file" or disk.get("device") != "disk" or None in sources \
                 or len({s.get("file") for s in sources}) != 1:
-            raise util.OperationError(f"{dev} is not a disk file of the VM, the same in its running and next start's "
-                                      "definition")
+            raise util.OperationError(gettext_noop("%(dev)s is not a disk file of the VM, the same in its running and next start's definition"), dev=dev)
         driver = disk.find("driver")
         fmt = driver.get("type") if driver is not None else None
         if fmt not in ("raw", "qcow2") or disk.find("readonly") is not None or disk.find("shareable") is not None \
                 or disk.find("encryption") is not None or source.find("encryption") is not None:
-            raise util.OperationError(f"{dev} does not move: only writable raw and qcow2 disks do")
+            raise util.OperationError(gettext_noop("%(dev)s does not move: only writable raw and qcow2 disks do"), dev=dev)
         path = source.get("file")
         try:
             volume = self.wvm.storageVolLookupByPath(path)
         except libvirtError as err:
             if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
                 raise
-            raise util.OperationError(f"{dev} does not move: no storage pool has {path}") from err
+            raise util.OperationError(gettext_noop("%(dev)s does not move: no storage pool has %(path)s"), dev=dev, path=path) from err
         if ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path"):
-            raise util.OperationError(f"{dev} does not move: it has a backing file")
+            raise util.OperationError(gettext_noop("%(dev)s does not move: it has a backing file"), dev=dev)
         pools = self.file_pools()
         if pool_name not in pools:
-            raise util.OperationError(f"{pool_name} is not an active pool of disk files of this host")
+            raise util.OperationError(gettext_noop("%(pool_name)s is not an active pool of disk files of this host"), pool_name=pool_name)
         pool, directory = pools[pool_name]
         if directory == os.path.dirname(path):
-            raise util.OperationError(f"{dev} is in pool {pool_name} already")
+            raise util.OperationError(gettext_noop("%(dev)s is in pool %(pool_name)s already"), dev=dev, pool_name=pool_name)
         pool.refresh(0)
         name = os.path.basename(path)
         if self._find_volume(pool, name) is not None:
-            raise util.OperationError(f"Pool {pool_name} already has a file {name}")
+            raise util.OperationError(gettext_noop("Pool %(pool_name)s already has a file %(name)s"), pool_name=pool_name, name=name)
         return {"dev": dev, "path": path, "dest": f"{directory}/{name}", "format": fmt, "pool": pool,
                 "volume": volume, "running": state != VIR_DOMAIN_SHUTOFF}
 
@@ -2238,7 +2248,7 @@ class wvmInstance(wvmConnect):
                 while True:  # mirrored once the copy caught up: cur == end
                     info = dom.blockJobInfo(dev, 0)
                     if not info:
-                        raise util.OperationError(f"The copy of {dev} ended before it was complete")
+                        raise util.OperationError(gettext_noop("The copy of %(dev)s ended before it was complete"), dev=dev)
                     if info["end"] and info["cur"] == info["end"]:
                         break
                     time.sleep(1)
@@ -2283,16 +2293,17 @@ class wvmInstance(wvmConnect):
                 if copy is not None:
                     copy.delete(0)
         except libvirtError as cleanup_error:
-            raise util.OperationError(f"{error}; remove {dest} if it is there: {cleanup_error}") from error
+            raise util.OperationError(gettext_noop("%(error)s; remove %(dest)s if it is there: %(cleanup_error)s"), error=error, dest=dest, cleanup_error=cleanup_error) from error
         if named:
-            raise util.OperationError(f"{error}; the VM may use {dest} now: check its disk {dev}") from error
+            raise util.OperationError(gettext_noop("%(error)s; the VM may use %(dest)s now: check its disk %(dev)s"), error=error, dest=dest, dev=dev) from error
 
     def _snapshot(self, name, external):
         """The named snapshot; a snapshot of the other kind is refused."""
         flag = VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL if external else VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL
         if name not in self.instance.snapshotListNames(flag):
-            kind = "external" if external else "internal"
-            raise util.OperationError(f"The VM has no {kind} snapshot named {name}")
+            missing = (gettext_noop("The VM has no external snapshot named %(name)s") if external
+                       else gettext_noop("The VM has no internal snapshot named %(name)s"))
+            raise util.OperationError(missing, name=name)
         return self.instance.snapshotLookupByName(name, 0)
 
     def _check_snapshot_state(self):
@@ -2300,9 +2311,9 @@ class wvmInstance(wvmConnect):
         external. The internal/external mix is checked only on create, so a
         VM that is already mixed can still be cleaned up."""
         if self.instance.hasManagedSaveImage(0):
-            raise util.OperationError("The VM has a saved state; start it or remove the saved state first")
+            raise util.OperationError(gettext_noop("The VM has a saved state; start it or remove the saved state first"))
         if self.get_snapshot_jobs():
-            raise util.OperationError("A snapshot job is still running on this VM; try again when it ends")
+            raise util.OperationError(gettext_noop("A snapshot job is still running on this VM; try again when it ends"))
 
     def snapshot_delete(self, snapshot):
         self._check_snapshot_state()
@@ -2312,7 +2323,7 @@ class wvmInstance(wvmConnect):
         """An internal snapshot is reverted to on a shut-off VM; one of a
         running VM starts it again as it was then."""
         if self.get_status() != 5:
-            raise util.OperationError("Shut the VM down to revert to an internal snapshot")
+            raise util.OperationError(gettext_noop("Shut the VM down to revert to an internal snapshot"))
         self._check_snapshot_state()
         self.instance.revertToSnapshot(self._snapshot(snapshot, external=False), 0)
 
@@ -2401,7 +2412,7 @@ class wvmInstance(wvmConnect):
 
         nvram = tree.find("os/nvram")
         if nvram is not None and nvram.get("type", "file") != "file":
-            raise util.OperationError("Cannot clone a VM whose NVRAM is not a file")
+            raise util.OperationError(gettext_noop("Cannot clone a VM whose NVRAM is not a file"))
         return tree, disks
 
     def _clone_volume_xml(self, name, capacity, vol_format, owner_uid, owner_gid):
@@ -2469,7 +2480,7 @@ class wvmInstance(wvmConnect):
                     copy.delete(0)
                 except libvirtError:
                     raise util.OperationError(
-                        f"Clone failed ({err}); remove these copies by hand: {copy.path()}"
+                        gettext_noop("Clone failed (%(err)s); remove these copies by hand: %(path)s"), err=err, path=copy.path()
                     ) from err
                 raise
 
@@ -2479,7 +2490,7 @@ class wvmInstance(wvmConnect):
         the volumes this call created are removed. Returns the clone's UUID."""
         if self.get_status() != 5:
             # A running guest keeps writing while its disks are copied.
-            raise util.OperationError("Shut the VM down before cloning it")
+            raise util.OperationError(gettext_noop("Shut the VM down before cloning it"))
         _, disks = self._clone_definition(clone_data, uuid)
 
         paths = {}  # dev: path of its copy
@@ -2533,7 +2544,7 @@ class wvmInstance(wvmConnect):
                 except libvirtError:
                     leftovers.append(path)
             if leftovers:
-                raise util.OperationError(f"Clone failed ({err}); remove these copies by hand: {', '.join(leftovers)}") from err
+                raise util.OperationError(gettext_noop("Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"), err=err, leftovers=', '.join(leftovers)) from err
             raise
 
     def live_clone_targets(self, clone_data, free_percent=10, free_min_gib=1):
@@ -2544,22 +2555,22 @@ class wvmInstance(wvmConnect):
         free_min_gib GiB, free (the snapshots' rule); checked only, nothing
         is reserved."""
         if self.wvm.getLibVersion() < LIVE_CLONE_MIN_LIBVIRT:
-            raise util.OperationError("Live clone needs libvirt 11.10 or later; shut the VM down to clone it")
+            raise util.OperationError(gettext_noop("Live clone needs libvirt 11.10 or later; shut the VM down to clone it"))
         tree, disks = self._clone_definition(clone_data, "")
         if tree.find("devices/tpm") is not None:
-            raise util.OperationError("A VM with a TPM is cloned only shut down")
+            raise util.OperationError(gettext_noop("A VM with a TPM is cloned only shut down"))
         for source, dev in disks:
             if not source.get("file"):
-                raise util.OperationError(f"Disk {dev} is not a local file; shut the VM down to clone it")
+                raise util.OperationError(gettext_noop("Disk %(dev)s is not a local file; shut the VM down to clone it"), dev=dev)
             if source.getparent().find("shareable") is not None:
-                raise util.OperationError(f"Disk {dev} is shareable; shut the VM down to clone it")
+                raise util.OperationError(gettext_noop("Disk %(dev)s is shareable; shut the VM down to clone it"), dev=dev)
         # the backup copies the running disks: one the next start changes would give the clone the wrong data
         live = etree.fromstring(self._XMLDesc(0))
         for source, dev in disks:
             if live.xpath("devices/disk[target/@dev=$dev]/source/@file", dev=dev) != [source.get("file")]:
-                raise util.OperationError(f"Disk {dev} changes at the next start; shut the VM down to clone it")
+                raise util.OperationError(gettext_noop("Disk %(dev)s changes at the next start; shut the VM down to clone it"), dev=dev)
         if self.instance.jobInfo()[0] != VIR_DOMAIN_JOB_NONE:
-            raise util.OperationError("Another job is running on the VM; clone it when that ends")
+            raise util.OperationError(gettext_noop("Another job is running on the VM; clone it when that ends"))
 
         targets, pools, copied = [], {}, {}
         for source, dev in disks:
@@ -2572,7 +2583,7 @@ class wvmInstance(wvmConnect):
                 if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
                     raise
             else:
-                raise util.OperationError(f"Volume {name} already exists in storage pool {pool.name()}")
+                raise util.OperationError(gettext_noop("Volume %(name)s already exists in storage pool %(pool)s"), name=name, pool=pool.name())
             capacity = vol.info()[1]
             pools[pool.name()] = pool
             copied[pool.name()] = copied.get(pool.name(), 0) + capacity
@@ -2590,10 +2601,10 @@ class wvmInstance(wvmConnect):
             needed = size + max(size * free_percent / 100, free_min_gib * 1024**3)
             free = pools[name].info()[3]
             if free < needed:
-                raise util.OperationError(
-                    f"Storage pool {name} has {free / 1024**3:.1f} GiB free; the clone needs {needed / 1024**3:.1f} GiB "
-                    f"(the copied disks, plus {free_percent:g}% of them, at least {free_min_gib:g} GiB)"
-                )
+                raise util.OperationError(gettext_noop(
+                    "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB (the copied disks, "
+                    "plus %(percent)g%% of them, at least %(minimum)g GiB)"),
+                    pool=name, free=free / 1024**3, size=needed / 1024**3, percent=free_percent, minimum=free_min_gib)
         return targets
 
     def create_clone_target(self, target, owner_uid, owner_gid):
@@ -2730,7 +2741,7 @@ class wvmInstance(wvmConnect):
         for xml_flags, affect in self._definitions():
             nic = self._nic(xml_flags, mac_address)
             if nic is not None and nic.get("type") == "hostdev":
-                raise util.OperationError("A network interface that is a host device is removed in the XML editor")
+                raise util.OperationError(gettext_noop("A network interface that is a host device is removed in the XML editor"))
             if nic is not None:
                 removed = etree.tostring(nic).decode()
                 self.instance.detachDeviceFlags(removed, affect)
@@ -2746,10 +2757,10 @@ class wvmInstance(wvmConnect):
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         found = tree.xpath("./devices/interface[mac/@address=$mac]", mac=old_mac)
         if not found:
-            raise util.OperationError(f"No network interface with MAC {old_mac}")
+            raise util.OperationError(gettext_noop("No network interface with MAC %(old_mac)s"), old_mac=old_mac)
         iface = found[0]
         if iface.get("type") == "hostdev":
-            raise util.OperationError("A network interface that is a host device is changed in the XML editor")
+            raise util.OperationError(gettext_noop("A network interface that is a host device is changed in the XML editor"))
 
         if source is not None:
             iface_type = {"net": "network", "bridge": "bridge"}.get(source_type, "direct")
@@ -2840,7 +2851,7 @@ class wvmInstance(wvmConnect):
         refused."""
         status = self.instance.info()[0]
         if self.instance.hasManagedSaveImage(0) or status not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF):
-            raise util.OperationError("A VM changes its PCI devices while it runs, or is shut off without a saved state")
+            raise util.OperationError(gettext_noop("A VM changes its PCI devices while it runs, or is shut off without a saved state"))
         return status == VIR_DOMAIN_RUNNING
 
     def _pci_outcome(self, address, err):
@@ -2852,12 +2863,20 @@ class wvmInstance(wvmConnect):
             now = running and self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) is not None
             later = self._pci_hostdev(address) is not None
         except libvirtError:
-            return util.OperationError(f"{err}; whether the VM has PCI device {address} now is not known")
-        next_start = "its next start has it" if later else "its next start does not have it"
-        if not running:
-            return util.OperationError(f"{err}; PCI device {address}: the VM is not running, {next_start}")
-        now_text = "the running VM has it" if now else "the running VM does not have it"
-        return util.OperationError(f"{err}; PCI device {address}: {now_text}, {next_start}")
+            return util.OperationError(gettext_noop("%(err)s; whether the VM has PCI device %(address)s now is not known"), err=err, address=address)
+        outcome = {
+            (False, True): gettext_noop("%(err)s; PCI device %(address)s: the VM is not running, its next start has it"),
+            (False, False): gettext_noop(
+                "%(err)s; PCI device %(address)s: the VM is not running, its next start does not have it"),
+            (True, True): gettext_noop("%(err)s; PCI device %(address)s: the running VM has it, its next start has it"),
+            (True, False): gettext_noop(
+                "%(err)s; PCI device %(address)s: the running VM has it, its next start does not have it"),
+            (None, True): gettext_noop(
+                "%(err)s; PCI device %(address)s: the running VM does not have it, its next start has it"),
+            (None, False): gettext_noop(
+                "%(err)s; PCI device %(address)s: the running VM does not have it, its next start does not have it"),
+        }[(now or None) if running else False, later]
+        return util.OperationError(outcome, err=err, address=address)
 
     def add_pci_hostdev(self, address):
         """Gives the VM the host's PCI device at address (0000:05:00.0), for
@@ -2889,7 +2908,7 @@ class wvmInstance(wvmConnect):
         live = self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) if running else None
         saved = self._pci_hostdev(address)
         if live is None and saved is None:
-            raise util.OperationError(f"The VM has no PCI device {address}")
+            raise util.OperationError(gettext_noop("The VM has no PCI device %(address)s"), address=address)
         try:
             if live is not None:  # a refusal stops here; a request the guest has not answered goes on
                 self.instance.detachDeviceFlags(etree.tostring(live, encoding="unicode"), VIR_DOMAIN_AFFECT_LIVE)
@@ -2907,7 +2926,7 @@ class wvmInstance(wvmConnect):
         model. Refused without a USB controller."""
         for xml_flags, _ in self._definitions():
             if not etree.fromstring(self._XMLDesc(xml_flags)).xpath("devices/controller[@type='usb'][not(@model='none')]"):
-                raise util.OperationError("The VM has no USB controller")
+                raise util.OperationError(gettext_noop("The VM has no USB controller"))
         hostdev = etree.Element("hostdev", mode="subsystem", type="usb", managed="yes")
         source = etree.SubElement(hostdev, "source")
         etree.SubElement(source, "vendor", id=vendor)
@@ -2926,7 +2945,7 @@ class wvmInstance(wvmConnect):
                     found = True
                     self.instance.detachDeviceFlags(etree.tostring(element, encoding="unicode"), affect)
         if not found:
-            raise util.OperationError("The VM has no such USB device")
+            raise util.OperationError(gettext_noop("The VM has no such USB device"))
 
     def set_link_state(self, mac_address, state):
         for xml_flags, affect in self._definitions():
@@ -2967,7 +2986,7 @@ class wvmInstance(wvmConnect):
         """Adds the panel's virtio RNG device to the persistent definition, or
         removes it; another RNG device is left to the XML editor."""
         if self.get_rng() == "custom":
-            raise util.OperationError("The VM has its own RNG device: change it in the XML editor")
+            raise util.OperationError(gettext_noop("The VM has its own RNG device: change it in the XML editor"))
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         for rng in tree.xpath("devices/rng"):
             rng.getparent().remove(rng)
@@ -2994,14 +3013,14 @@ class wvmInstance(wvmConnect):
         another TPM is left to the XML editor. Its state stays on the host until
         the VM is undefined, so a TPM added again has it back."""
         if self.get_tpm() == "custom":
-            raise util.OperationError("The VM has its own TPM: change it in the XML editor")
+            raise util.OperationError(gettext_noop("The VM has its own TPM: change it in the XML editor"))
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         for tpm in tree.xpath("devices/tpm"):
             tpm.getparent().remove(tpm)
         if enabled:
             model = self.get_tpm_model(self.get_arch(), self.get_machine_type())
             if not model:
-                raise util.OperationError("This host offers no TPM 2.0: install swtpm on it")
+                raise util.OperationError(gettext_noop("This host offers no TPM 2.0: install swtpm on it"))
             tree.find("devices").append(
                 etree.fromstring(f"<tpm model='{model}'><backend type='emulator' version='2.0'/></tpm>"))
         self._defineXML(etree.tostring(tree).decode())
@@ -3013,7 +3032,7 @@ class wvmInstance(wvmConnect):
     def set_on_crash(self, action):
         """restart or destroy (stop) the VM when the guest crashes, from the next start."""
         if action not in ("restart", "destroy"):
-            raise util.OperationError(f"Unknown crash action {action}")
+            raise util.OperationError(gettext_noop("Unknown crash action %(action)s"), action=action)
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         on_crash = tree.find("on_crash")
         if on_crash is None:

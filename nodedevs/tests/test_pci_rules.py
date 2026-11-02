@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 from django.test import SimpleTestCase
 from lxml import etree
+from vrtManager import util
 from vrtManager.nodedevs import _pci, check_hostdevs, hostdev_problems, pci_problems
 from vrtManager.util import OperationError
 
@@ -60,7 +61,8 @@ def inventory(vms=()):
 
 def problems(address, managed=(), vms=()):
     devices = {d["address"]: d for d in inventory(vms)}
-    return " ".join(pci_problems("web-1", devices[address], devices, {address, *managed}))
+    return " ".join(util.render(m["text"], m["values"], str)
+                    for m in pci_problems("web-1", devices[address], devices, {address, *managed}))
 
 
 def hostdev(slot, managed="yes"):
@@ -107,7 +109,8 @@ class PciRulesTests(SimpleTestCase):
         self.assertEqual(problems("0000:00:07.0", vms=[("web-1", {"0000:00:07.0"})]), "")  # its own
 
     def test_a_device_the_host_does_not_have_can_not(self):
-        reasons = hostdev_problems("web-1", inventory(), [], {"0000:00:1f.0"}, [])
+        reasons = [util.render(m["text"], m["values"], str)
+                   for m in hostdev_problems("web-1", inventory(), [], {"0000:00:1f.0"}, [])]
         self.assertEqual(reasons, ["PCI device 0000:00:1f.0 is not on the host"])
 
 

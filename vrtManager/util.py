@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_noop
 import ipaddress
 import random
 import secrets
@@ -8,22 +9,46 @@ import libvirt
 import lxml.etree as etree
 
 from django.conf import settings
+from django.utils.translation import gettext
 
+
+
+def message(text, **values):
+    """Our text, marked with gettext_noop, with %(name)s for each of values.
+    A value may be a list of messages: they are put in its place one after
+    another."""
+    return {"text": str(text), "values": values}
+
+
+def render(text, values, translate):
+    """text with its values, through translate (gettext, or str for English)."""
+    def shown(value):
+        if isinstance(value, list):
+            return "; ".join(render(m["text"], m["values"], translate) for m in value)
+        if isinstance(value, OperationError):
+            return render(value.text, value.values, translate)
+        return value
+    text = translate(text)
+    return text % {key: shown(value) for key, value in values.items()} if values else text
 
 
 class OperationError(libvirt.libvirtError):
-    """An error with WebVirtCloud's own message: text, with %(name)s for each
-    of values. str() is the English message; a page or a job shows text
-    translated, with the values (operations.utils.said).
+    """An error with WebVirtCloud's own message (see message()). Its args are
+    the English message, for logs and the audit log; str() is the message in
+    the active language, English outside a request. A job keeps the text and
+    values (operations.utils.said) and shows them in its reader's language.
 
     libvirtError(msg) reports the thread's last libvirt error instead of msg
     when there is one, so an earlier, unrelated failure would be shown.
     """
 
     def __init__(self, text, **values):
-        Exception.__init__(self, text % values if values else text)
         self.text, self.values = str(text), values
+        Exception.__init__(self, render(self.text, values, str))
         self.err = None
+
+    def __str__(self):
+        return render(self.text, self.values, gettext)
 
 
 class ConnectionFailed(OperationError):
@@ -112,9 +137,9 @@ def parse_xml(xml):
     try:
         tree = etree.fromstring(xml.encode(), parser)  # bytes: the XML may declare its encoding
     except etree.XMLSyntaxError as err:
-        raise OperationError(f"The XML is not valid: {err}") from None
+        raise OperationError(gettext_noop("The XML is not valid: %(err)s"), err=err) from None
     if tree.getroottree().docinfo.internalDTD is not None:
-        raise OperationError("The XML may not declare a DTD")
+        raise OperationError(gettext_noop("The XML may not declare a DTD"))
     return tree
 
 

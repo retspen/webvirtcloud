@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_noop
 import contextlib
 
 import libvirt
@@ -188,8 +189,7 @@ class wvmStorage(wvmConnect):
             running_only=True,
         )
         if vms:
-            raise util.OperationError(f"Pool {name} holds disks of the running VMs {', '.join(vms)}; "
-                                      "shut them down first")
+            raise util.OperationError(gettext_noop("Pool %(name)s holds disks of the running VMs %(vms)s; shut them down first"), name=name, vms=', '.join(vms))
         return self.pool.destroy()
 
     def delete(self):
@@ -197,8 +197,7 @@ class wvmStorage(wvmConnect):
         no longer start. A disk given by its file path does not need it."""
         name = self.pool.name()
         if vms := self.domains_using(lambda domain: domain.xpath("devices/disk/source[@pool=$name]", name=name)):
-            raise util.OperationError(f"VMs {', '.join(vms)} have disks in pool {name} by its name and would no "
-                                      "longer start; detach those disks first")
+            raise util.OperationError(gettext_noop("VMs %(vms)s have disks in pool %(name)s by its name and would no longer start; detach those disks first"), vms=', '.join(vms), name=name)
         self.pool.undefine()
 
     def get_autostart(self):
@@ -277,7 +276,7 @@ class wvmStorage(wvmConnect):
         """libvirt deletes any volume; one a VM still needs is refused."""
         vol = self.pool.storageVolLookupByName(name)
         if vol.path() in self.paths_in_use():
-            raise util.OperationError(f"Volume {name} is in use: a VM's disk, a backing file or a snapshot's file")
+            raise util.OperationError(gettext_noop("Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"), name=name)
         vol.delete(0)
 
     def get_volume_format_type(self, name):

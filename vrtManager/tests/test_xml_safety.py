@@ -48,11 +48,11 @@ class TestXmlSafety(unittest.TestCase):
         wn.wvm = MagicMock()
 
         # Invalid direction
-        with self.assertRaises(ValueError):
+        with self.assertRaises(util.OperationError):
             wn.set_qos("lateral", 100, 200, 300)
 
         # Invalid numeric strings
-        with self.assertRaises(ValueError):
+        with self.assertRaises(util.OperationError):
             wn.set_qos("inbound", "not_a_number", 200, 300)
 
     def test_snapshot_xml_payload_is_escaped(self):

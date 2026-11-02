@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from libvirt import (VIR_CONNECT_LIST_NODE_DEVICES_CAP_PCI_DEV, VIR_CONNECT_LIST_NODE_DEVICES_CAP_USB_DEV,
                      VIR_ERR_NO_NODE_DEVICE, libvirtError)
 from lxml import etree
@@ -104,14 +105,26 @@ def usb_named(selector, model, address):
     return "model" if selected is None else None
 
 
+# Problems are messages (util.message), shown in the reader's language; a
+# device's label is one too, put in each problem of it
+def pci_label(address):
+    return [util.message(gettext_noop("PCI device %(address)s"), address=address)]
+
+
+def usb_label(device):
+    return [util.message(gettext_noop("USB device %(bus)s/%(device)s (%(product)s)"),
+                         bus=device["bus"], device=device["device"], product=device["product"])]
+
+
 def device_problems(label, vms, resources, vm):
     """Why a host device cannot be given to the VM named vm: the other VMs
     that name it, and what the host has on it."""
     problems = []
     if others := sorted(set(vms) - {vm}):
-        problems.append(f"{label} is given to {', '.join(others)}")
+        problems.append(util.message(gettext_noop("%(device)s is given to %(vms)s"), device=label, vms=", ".join(others)))
     if resources:
-        problems.append(f"{label} holds the host's {', '.join(resources)}")
+        problems.append(util.message(gettext_noop("%(device)s holds the host's %(resources)s"), device=label,
+                                     resources=", ".join(resources)))
     return problems
 
 
@@ -130,29 +143,37 @@ def pci_problems(vm, device, by_address, managed):
     be one of managed, or have no driver or vfio-pci; no other VM may have
     any of them; bridges stay with the pcieport driver or none. Nothing in
     the group is taken implicitly."""
-    label = f"PCI device {device['address']}"
+    label = pci_label(device["address"])
     # a bridge of any kind (a host bridge, a PCIe port) is the host's
     if device["bridge"] or device["bridge_class"]:
-        return [f"{label} is a bridge"]
+        return [util.message(gettext_noop("%(device)s is a bridge"), device=label)]
     problems = device_problems(label, device["vms"], device["resources"], vm)
     if device["resources"]:
-        problems.append(f"bind {device['address']} to vfio-pci on the host first if it is not needed there")
+        problems.append(util.message(gettext_noop(
+            "bind %(address)s to vfio-pci on the host first if it is not needed there"), address=device["address"]))
     if device["group"] is None:
-        return problems + [f"{label} is in no IOMMU group"]
-    shares = f"{label} shares IOMMU group {device['group']} with"
+        return problems + [util.message(gettext_noop("%(device)s is in no IOMMU group"), device=label)]
+    group = {"device": label, "group": device["group"]}
     for member in device["group_members"]:
         if member == device["address"]:
             continue
         other = by_address.get(member)
         if other is None:
-            problems.append(f"{shares} {member}, which cannot be read")
+            problems.append(util.message(gettext_noop(
+                "%(device)s shares IOMMU group %(group)s with %(member)s, which cannot be read"), **group, member=member))
         elif others := sorted(set(other["vms"]) - {vm}):
-            problems.append(f"{shares} {member} ({other['product']}), which {', '.join(others)} uses")
+            problems.append(util.message(gettext_noop(
+                "%(device)s shares IOMMU group %(group)s with %(member)s (%(product)s), which %(vms)s uses"),
+                **group, member=member, product=other["product"], vms=", ".join(others)))
         elif other["bridge"]:
             if other["driver"] not in ("", "pcieport"):
-                problems.append(f"{shares} the bridge {member} (driver {other['driver']})")
+                problems.append(util.message(gettext_noop(
+                    "%(device)s shares IOMMU group %(group)s with the bridge %(member)s (driver %(driver)s)"),
+                    **group, member=member, driver=other["driver"]))
         elif member not in managed and other["driver"] not in ("", "vfio-pci"):
-            problems.append(f"{shares} {member} ({other['product']}), which the host (driver {other['driver']}) uses")
+            problems.append(util.message(gettext_noop(
+                "%(device)s shares IOMMU group %(group)s with %(member)s (%(product)s), which the host "
+                "(driver %(driver)s) uses"), **group, member=member, product=other["product"], driver=other["driver"]))
     return problems
 
 
@@ -163,20 +184,23 @@ def hostdev_problems(vm, pci, usb, wanted_pci, wanted_usb, managed=frozenset()):
     another VM names them or their PCI controller too, the host has its own
     network interfaces or disks on them, or they are hubs."""
     by_address = {device["address"]: device for device in pci}
-    problems = [f"PCI device {address} is not on the host" for address in sorted(wanted_pci - by_address.keys())]
+    problems = [util.message(gettext_noop("%(device)s is not on the host"), device=pci_label(address))
+                for address in sorted(wanted_pci - by_address.keys())]
     for device in pci:
         if device["address"] in wanted_pci:
             problems += pci_problems(vm, device, by_address, managed)
     for device in usb:
         address = (device["bus"], device["device"])
         if any(usb_named(selector, device["model"], address) for selector in wanted_usb):
-            label = f"USB device {device['bus']}/{device['device']} ({device['product']})"
+            label = usb_label(device)
             problems += device_problems(label, device["vms"] + device["by_model"], device["resources"], vm)
             if device["hub"]:
-                problems.append(f"{label} is a hub")
+                problems.append(util.message(gettext_noop("%(device)s is a hub"), device=label))
             controller = by_address.get(device["controller"])
             if controller and (holders := sorted(set(controller["vms"]) - {vm})):
-                problems.append(f"{label} is on the PCI controller {controller['address']}, given to {', '.join(holders)}")
+                problems.append(util.message(gettext_noop(
+                    "%(device)s is on the PCI controller %(controller)s, given to %(vms)s"),
+                    device=label, controller=controller["address"], vms=", ".join(holders)))
     return problems
 
 
@@ -304,4 +328,5 @@ def check_hostdevs(conn, vm, trees):
     for tree, (wanted_pci, wanted_usb) in wanted:
         problems += hostdev_problems(vm, pci, usb, wanted_pci, wanted_usb, managed_pci(tree))
     if problems:
-        raise util.OperationError("; ".join(dict.fromkeys(problems)))
+        unique = list({util.render(m["text"], m["values"], str): m for m in problems}.values())
+        raise util.OperationError(gettext_noop("%(problems)s"), problems=unique)

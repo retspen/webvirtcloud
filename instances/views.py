@@ -2074,14 +2074,18 @@ def _host_devices(instance):
     else:
         managed = {row["address"] for row in own_pci if row["managed"] and row["next"]}
     by_address = {device["address"]: device for device in pci}
+    # the problems in the page's language (vrtManager.nodedevs gives messages)
+    def shown(problems):
+        return [util.render(m["text"], m["values"], _) for m in problems]
+
     for device in pci:
-        device["problems"] = pci_problems(instance.name, device, by_address, managed | {device["address"]})
+        device["problems"] = shown(pci_problems(instance.name, device, by_address, managed | {device["address"]}))
         if device["address"] in {row["address"] for row in own_pci}:
             device["problems"].append(_("The VM has it"))
     for device in usb:
         address = (device["bus"], device["device"]) if device["same_model"] else None
         device["selector"] = (*device["model"], address)
-        device["problems"] = hostdev_problems(instance.name, pci, [device], set(), [device["selector"]])
+        device["problems"] = shown(hostdev_problems(instance.name, pci, [device], set(), [device["selector"]]))
         if instance.name in device["vms"]:
             device["problems"].append(_("The VM has it"))
     return pci, usb

@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_noop
 import contextlib
 from functools import cached_property
 from xml.etree import ElementTree
@@ -31,8 +32,7 @@ def changes(conn):
         try:
             conn.changeRollback(0)
         except libvirtError as rollback_err:
-            raise util.OperationError(f"{err}; rolling the change back failed too, "
-                                      f"the host's configuration may be changed: {rollback_err}") from err
+            raise util.OperationError(gettext_noop("%(err)s; rolling the change back failed too, the host's configuration may be changed: %(rollback_err)s"), err=err, rollback_err=rollback_err) from err
         raise
 
 
@@ -266,12 +266,11 @@ class wvmInterface(wvmConnect):
         refused, which of them takes the addresses being the user's choice.
         All of it is one change of the host's configuration."""
         if self.iface.isActive():
-            raise util.OperationError(f"Stop interface {self.iface.name()} before deleting it")
+            raise util.OperationError(gettext_noop("Stop interface %(iface)s before deleting it"), iface=self.iface.name())
         tree = ElementTree.fromstring(self.iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE))
         members = tree.findall("bridge/interface")
         if len(members) > 1 and tree.findall("protocol"):
-            raise util.OperationError(f"Bridge {self.iface.name()} has addresses and several members: "
-                                      "give the addresses to one of them on the host first")
+            raise util.OperationError(gettext_noop("Bridge %(iface)s has addresses and several members: give the addresses to one of them on the host first"), iface=self.iface.name())
         with changes(self.wvm):
             self.iface.undefine()
             for member in members:

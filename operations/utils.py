@@ -19,7 +19,7 @@ from libvirt import libvirtError
 from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from instances.models import Instance
-from vrtManager.util import ConnectionFailed, OperationError
+from vrtManager.util import ConnectionFailed, OperationError, render
 
 from . import jobs
 
@@ -66,7 +66,18 @@ def safe_text(text):
 # words() puts them in the language of whoever reads them. A text that is not
 # ours (libvirt's) is a message without values and stays as it is.
 def say(text, **values):
-    return [{"text": safe_text(text), "values": {key: safe_text(value) for key, value in values.items()}}]
+    return [{"text": safe_text(text), "values": {key: _stored(value) for key, value in values.items()}}]
+
+
+def _stored(value):
+    """A value as a job keeps it: messages stay messages (vrtManager.util.message)."""
+    if isinstance(value, list):
+        return [say(m["text"], **m["values"])[0] for m in value]
+    if isinstance(value, OperationError):
+        return [say(value.text, **value.values)[0]]
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value  # for %(x).1f and the like
+    return safe_text(value)
 
 
 def said(exception):
@@ -78,7 +89,7 @@ def said(exception):
 
 def words(messages):
     """messages in the active language, each a sentence of its own."""
-    parts = [_(m["text"]) % m["values"] if m["values"] else _(m["text"]) for m in messages]
+    parts = [render(m["text"], m["values"], _) for m in messages]
     return " ".join(part if last or part.endswith((".", "。", "!", "?")) else part + "."
                     for last, part in ((i == len(parts) - 1, part) for i, part in enumerate(parts)))
 

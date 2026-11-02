@@ -64,7 +64,7 @@ def reason(exc, user):
     if isinstance(exc, claims.Busy):
         return busy_message(exc, user)
     if isinstance(exc, OperationError):
-        return str(exc)
+        return exc.args[0]  # English: str() is the reader's language
     if isinstance(exc, libvirt.libvirtError):
         return safe_text(exc.get_error_message() or str(exc))[:500]
     return type(exc).__name__
@@ -90,6 +90,10 @@ def audit(request, compute, subject, action, instance="", uuid=""):
 
 def failed(request, compute, subject, action, why, instance="", uuid=""):
     """Write the failure row of an action that was refused before it started."""
+    from vrtManager.util import OperationError
+
+    if isinstance(why, OperationError):
+        why = why.args[0]  # English: str() is the reader's language
     write(request.user.get_username(), host_of(compute), instance, f"{subject}: {action}: {why}", False,
           request_ip(request), uuid)
 

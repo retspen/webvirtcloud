@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_noop
 import contextlib
 import io
 import os
@@ -196,7 +197,7 @@ class wvmConnection(object):
         try:
             connection = self._open_transport()
             if not connection.isAlive():  # closed again before it was published
-                raise util.OperationError("the connection closed right after opening")
+                raise util.OperationError(gettext_noop("the connection closed right after opening"))
             # Drivers without keepalive or close callbacks work without them
             try:
                 connection.setKeepAlive(connection_manager.keepalive_interval, connection_manager.keepalive_count)
