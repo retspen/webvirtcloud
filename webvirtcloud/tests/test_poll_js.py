@@ -10,7 +10,7 @@ from pathlib import Path
 from django.conf import settings
 
 BASE = Path(settings.BASE_DIR)
-POLLING_SOURCES = ["static/js/instance_status.js", "static/js/instance_stats.js", "computes/templates/overview.html"]
+POLLING_SOURCES = ["static/js/instance_status.js", "static/js/instance_stats.js", "static/js/host_graphs.js"]
 
 
 class PollTestCase(unittest.TestCase):

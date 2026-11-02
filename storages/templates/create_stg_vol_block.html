@@ -15,7 +15,11 @@
                             <h5 class="modal-title" id="IsoUploadLabel">{% trans "Upload ISO Image" %}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                         </div>
-                        <form id="isoUploadForm" enctype="multipart/form-data" method="post" aria-label="{% trans "Upload iso form" %}">{% csrf_token %}
+                        <form id="isoUploadForm" action="{% url 'storage' compute.id pool %}" enctype="multipart/form-data" method="post" aria-label="{% trans "Upload iso form" %}"
+                              data-no-file="{% trans 'Please select a file to upload.' %}" data-not-iso="{% trans 'Only .iso files can be uploaded.' %}"
+                              data-empty="{% trans 'The selected file is empty.' %}" data-starting="{% trans 'Starting upload...' %}"
+                              data-uploading="{% trans 'Uploading; the job panel shows its progress. Stay on this page until it ends.' %}"
+                              data-retrying="{% trans 'Retrying upload...' %}" data-failed="{% trans 'An error occurred during upload.' %}">{% csrf_token %}
                             <div class="modal-body">
                                 <label for="id_file" class="form-label">{% trans "ISO file" %}</label>
                                 <input type="file" name="file" id="id_file" class="form-control" accept=".iso" required aria-describedby="id_file_help">
