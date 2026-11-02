@@ -1686,6 +1686,14 @@ def mount_iso(request, pk):
 
 
 @require_POST
+@superuser_only
+def refresh_iso(request, pk):
+    instance = get_instance(request.user, pk, perm_type="change")
+    instance.proxy.refresh_iso_pools()
+    return _back(request, pk, "disks")
+
+
+@require_POST
 def snapshot(request, pk):
     return _snapshot_job(request, pk, "snapshot.create",
                          {"name": request.POST.get("name", ""), "description": request.POST.get("description", "")})

@@ -40,6 +40,7 @@ urlpatterns = [
     path("<int:pk>/detach_cdrom/<str:dev>/", views.detach_cdrom, name="detach_cdrom"),
     path("<int:pk>/unmount_iso/", views.unmount_iso, name="unmount_iso"),
     path("<int:pk>/mount_iso/", views.mount_iso, name="mount_iso"),
+    path("<int:pk>/refresh_iso/", views.refresh_iso, name="refresh_iso"),
     path("<int:pk>/snapshot/", views.snapshot, name="snapshot"),
     path("<int:pk>/delete_snapshot/", views.delete_snapshot, name="delete_snapshot"),
     path("<int:pk>/revert_snapshot/", views.revert_snapshot, name="revert_snapshot"),

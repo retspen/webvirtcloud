@@ -69,30 +69,34 @@ def pool(volumes, refresh_error=False, list_error=False):
 
 
 class IsoListTestCase(unittest.TestCase):
-    """The CD-ROM choices are the .iso volumes of the active pools, refreshed
-    so that an image copied in by hand shows up."""
+    """The CD-ROM choices are the .iso volumes libvirt knows in the active
+    pools; the pools are read again only when asked."""
 
-    def iso(self, *pools):
+    def wvm(self, *pools):
         inst = wvmInstance.__new__(wvmInstance)
         inst.wvm = MagicMock()
         inst.wvm.listAllStoragePools.return_value = list(pools)
-        return inst, inst.get_iso_media()
+        return inst
 
-    def test_iso_volumes_of_the_active_pools(self):
+    def test_iso_volumes_of_the_active_pools_without_a_refresh(self):
         a, b = pool(["a.iso", "disk.qcow2"]), pool(["B.ISO"])
-        inst, iso = self.iso(a, b)
-        self.assertEqual(iso, ["a.iso", "B.ISO"])
+        inst = self.wvm(a, b)
+        self.assertEqual(inst.get_iso_media(), ["a.iso", "B.ISO"])
+        inst.wvm.listAllStoragePools.assert_called_once_with(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE)
+        a.refresh.assert_not_called()
+        b.refresh.assert_not_called()
+
+    def test_a_pool_stopped_meanwhile_is_skipped(self):
+        inst = self.wvm(pool([], list_error=True), pool(["b.iso"]))
+        self.assertEqual(inst.get_iso_media(), ["b.iso"])
+
+    def test_refresh_reads_every_active_pool_again(self):
+        a, b = pool([], refresh_error=True), pool([])
+        inst = self.wvm(a, b)
+        inst.refresh_iso_pools()
         inst.wvm.listAllStoragePools.assert_called_once_with(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE)
         a.refresh.assert_called_once_with(0)
         b.refresh.assert_called_once_with(0)
-
-    def test_a_failed_refresh_still_lists_the_pool(self):
-        _, iso = self.iso(pool(["a.iso"], refresh_error=True))
-        self.assertEqual(iso, ["a.iso"])
-
-    def test_a_pool_stopped_meanwhile_is_skipped(self):
-        _, iso = self.iso(pool([], list_error=True), pool(["b.iso"]))
-        self.assertEqual(iso, ["b.iso"])
 
 
 if __name__ == "__main__":

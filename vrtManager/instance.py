@@ -1713,12 +1713,18 @@ class wvmInstance(wvmConnect):
             if active:
                 self.instance.blockResize(disk["path"], disk["size_new"], VIR_DOMAIN_BLOCK_RESIZE_BYTES)
 
+    def refresh_iso_pools(self):
+        """Refresh the active pools, so that an image copied to one by hand
+        is listed by get_iso_media."""
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            with contextlib.suppress(libvirtError):  # stopped or removed meanwhile
+                pool.refresh(0)
+
     def get_iso_media(self):
+        """The .iso volumes libvirt knows in the active pools; one copied in
+        by hand is known after refresh_iso_pools."""
         iso = []
         for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
-            # refreshed so that an image copied to the pool by hand shows up
-            with contextlib.suppress(libvirtError):
-                pool.refresh(0)
             try:
                 names = pool.listVolumes()
             except libvirtError:  # stopped or removed meanwhile
