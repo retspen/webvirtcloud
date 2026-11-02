@@ -28,7 +28,7 @@ class AppSettingsTestCase(TestCase):
         page = self.client.get(reverse("appsettings")).content.decode()
         choice = page[page.index('<select id="language"'):]
         choice = choice[:choice.index("</select>")]
-        self.assertEqual(re.findall(r'<option value="([^"]+)"', choice), ["en", "tr"])
+        self.assertEqual(re.findall(r'<option value="([^"]+)"', choice), ["en", "tr", "zh-hans"])
 
     def test_appsettings_update_setting(self):
         setting = AppSettings.objects.get(key="SHOW_ACCESS_ROOT_PASSWORD")

@@ -96,8 +96,8 @@ jobs:
       - name: Check Translation Catalogs
         if: matrix.python-version == '3.12' && matrix.database == 'sqlite'
         run: |
-          python manage.py makemessages -l tr --no-obsolete --ignore=staticfiles -v0
-          for dir in locale/tr/LC_MESSAGES; do
+          python manage.py makemessages -l tr -l zh --no-obsolete --ignore=staticfiles -v0
+          for dir in locale/tr/LC_MESSAGES locale/zh/LC_MESSAGES; do
             msgfmt --check -o /tmp/django.mo "$dir/django.po"
             missing=$(msgattrib --untranslated "$dir/django.po"; msgattrib --only-fuzzy "$dir/django.po")
             if [ -n "$missing" ]; then echo "$missing"; echo "::error file=$dir/django.po::untranslated or fuzzy messages"; exit 1; fi

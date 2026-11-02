@@ -741,9 +741,9 @@ It lists the dead keys it leaves out: a character only a dead key types cannot b
 The panel is translated into the languages of `LANGUAGES` in `settings.py`, each with a full catalog in `locale/`. A new or changed text needs its translation in each before CI passes (needs `gettext`):
 
 ```bash
-python manage.py makemessages -l tr --no-obsolete --ignore=staticfiles --ignore=.venv
-# translate the new and fuzzy entries of locale/tr/LC_MESSAGES/django.po
-python manage.py compilemessages -l tr
+python manage.py makemessages -l tr -l zh --no-obsolete --ignore=staticfiles --ignore=.venv
+# translate the new and fuzzy entries of locale/tr/LC_MESSAGES/django.po and locale/zh/LC_MESSAGES/django.po
+python manage.py compilemessages -l tr -l zh
 ```
 
 ### Running tests
