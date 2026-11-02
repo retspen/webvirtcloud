@@ -770,7 +770,7 @@
                         <div class="col-12 col-sm">
                             <input class="form-control" id="clone_name" name="name" type="text" value="{{ instance.name }}-clone" aria-describedby="clone-name-help"
                                    data-source="{{ instance.name }}" data-guess-url="{% url 'instances:guess_clone_name' %}"
-                                   data-guess-mac-url="{% url 'instances:guess_mac_address' 'NAME' %}">
+                                   data-guess-mac-url="{% url 'instances:guess_mac_address' '__name__' %}">
                         </div>
                         <div class="col-12 col-sm-auto">
                             <button class="btn btn-secondary" type="button" id="guess-clone-name">{% trans "Guess" %}</button>

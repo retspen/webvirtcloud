@@ -8,11 +8,11 @@
 <div class="d-flex justify-content-end">
 <div class="btn-group" role="group" aria-label="{% blocktrans with name=instance.name %}Actions for {{ name }}{% endblocktrans %}">
     <button class="btn btn-sm btn-outline-secondary" type="button" data-url="{% url 'console' instance.compute_id instance.uuid %}" data-window="console-{{ instance.uuid }}"
-        onclick="window.open(this.dataset.url, this.dataset.window, 'width=850,height=650')" aria-label="{% trans "Console" %}"{% if "console" not in actions %} disabled{% endif %}>{% bs_icon 'display' %} <span class="d-none d-sm-inline">{% trans "Console" %}</span></button>
+        aria-label="{% trans "Console" %}"{% if "console" not in actions %} disabled{% endif %}>{% bs_icon 'display' %} <span class="d-none d-sm-inline">{% trans "Console" %}</span></button>
     {% if "clone" in actions %}
         <a href="{% url 'instances:instance' instance.id %}#clone" class="btn btn-sm btn-outline-secondary" title="{% trans "Clone" %}" aria-label="{% trans "Clone" %}">{% bs_icon 'copy' %}</a>
     {% elif "poweron" in actions %}
-        <form action="{% url 'instances:poweron' instance.id %}" method="post" class="btn-group" onsubmit="showPleaseWaitDialog()">
+        <form action="{% url 'instances:poweron' instance.id %}" method="post" class="btn-group">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans "Start" %}" aria-label="{% trans "Start" %}">{% bs_icon 'play-fill' %}</button>
         </form>
