@@ -67,7 +67,7 @@ from . import addresses, report, utils
 from .api.serializers import DestroyOptionsSerializer
 from .forms import ConsoleForm, FlavorForm, NewVMForm
 from .models import Flavor
-from .states import STATES, UNKNOWN, allowed_actions, state_label
+from .states import POWER_STATES, STATES, UNKNOWN, allowed_actions, state_label
 
 # the VM page waits this long (seconds) for the compute's drbdadm status
 DRBD_STATUS_TIMEOUT = 10
@@ -295,6 +295,7 @@ def _instance_page(request, pk, instance, compute):
     can_open_console = utils.can_open_console(request.user, instance)
     can_power = request.user.is_superuser or userinstance is not None
     power_actions = allowed_actions(request.user, instance, instance.status)
+    power_states = POWER_STATES  # the power tab names any other state above its strip
     # a remote viewer on the user's computer reaches a VNC or SPICE console that listens beyond the host's loopback
     vdi_reachable = instance.console_type in ("vnc", "spice") and not util.is_loopback(instance.console_listener_address)
     # root's password and keys change in a shut-off VM's disk (gstfsd on the host), or through a running VM's agent

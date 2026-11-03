@@ -19,6 +19,8 @@ STATES = {
 UNKNOWN = (_("Unknown"), "secondary")  # the VM cannot be read
 
 RUNNING = {"suspend", "poweroff", "powercycle", "force_off", "console"}
+# the states the power tab shows as its strip: active, blocked, suspended, off, PM suspended
+POWER_STATES = (1, 2, 3, 5, 7)
 STATE_ACTIONS = {
     1: RUNNING,
     2: RUNNING,
