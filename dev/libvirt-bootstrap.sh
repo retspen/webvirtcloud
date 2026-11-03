@@ -505,6 +505,36 @@ daemons_running_centos() {
 
 ##############################################################################
 #
+#   openEuler Install Functions
+#
+# qemu is openEuler's qemu-kvm, cyrus-sasl holds the DIGEST-MD5 mechanism
+install_openeuler() {
+    dnf -y install qemu libvirt python3-libguestfs cyrus-sasl || return 1
+    return 0
+}
+
+# the same files as the RHEL family: VNC listen address, SASL, gstfsd
+install_openeuler_post() {
+    install_centos_post
+}
+
+# openEuler 24.03 ships modular daemons only for qemu and the proxy, so the
+# monolithic libvirtd serves all drivers, with its TCP socket for SASL logins
+daemons_running_openeuler() {
+    systemctl enable --now libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tcp.socket || return 1
+    systemctl restart libvirtd.service || return 1
+    if [ -f /usr/lib/systemd/system/libvirt-guests.service ]; then
+        systemctl enable --now libvirt-guests.service
+    fi
+    return 0
+}
+#
+#   Ended openEuler Install Functions
+#
+##############################################################################
+
+##############################################################################
+#
 #   Fedora Install Functions
 #
 install_fedora() {
