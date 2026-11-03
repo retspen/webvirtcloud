@@ -7,6 +7,7 @@ from django.test import RequestFactory, TestCase, TransactionTestCase
 
 from vrtManager.connection import CONN_SOCKET, connection_manager
 from computes.models import Compute
+from instances.tests import livetest
 
 TEST_COMPUTE_HOST = os.environ.get("TEST_LIBVIRT_HOST", "localhost")
 TEST_COMPUTE_LOGIN = os.environ.get("TEST_LIBVIRT_LOGIN", "")
@@ -116,18 +117,24 @@ class ComputesTestCase(TestCase):
         response = self.client.get(reverse("storages", args=[self.compute.id]))
         self.assertEqual(response.status_code, 200)
 
-    def test_default_storage_volumes(self):
+    def _test_pool(self):
+        """The suite's own pool on the named test host: a host need not have one called default."""
         self._require_live_compute()
-        response = self.client.get(
-            reverse("volumes", kwargs={"compute_id": self.compute.id, "pool": "default"})
+        if not livetest.enabled():
+            self.skipTest("TEST_LIBVIRT_HOST is not set")
+        conn = connection_manager.get_connection(
+            self.compute.hostname, self.compute.login, self.compute.password, self.compute.type
         )
+        livetest.ensure_pool(conn)
+        self.addCleanup(livetest.remove_pool, conn)
+        return livetest.POOL
+
+    def test_storage_volumes(self):
+        response = self.client.get(reverse("volumes", kwargs={"compute_id": self.compute.id, "pool": self._test_pool()}))
         self.assertEqual(response.status_code, 200)
 
-    def test_default_storage(self):
-        self._require_live_compute()
-        response = self.client.get(
-            reverse("storage", kwargs={"compute_id": self.compute.id, "pool": "default"})
-        )
+    def test_storage(self):
+        response = self.client.get(reverse("storage", kwargs={"compute_id": self.compute.id, "pool": self._test_pool()}))
         self.assertEqual(response.status_code, 200)
 
     def test_networks(self):
