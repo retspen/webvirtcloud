@@ -60,7 +60,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 3. [Configuration](#configuration): [environment variables](#environment-variables), [HTTPS and reverse proxy](#https-and-reverse-proxy), [cloud-init datasource](#cloud-init-datasource), [LDAP](#ldap), [OTP](#two-factor-login-otp), [serial console](#serial-console)
 4. [Backups](#backups): [off-site copy](#off-site-copy)
 5. [Updating](#updating): [Docker](#docker-1), [installer and manual](#installer-and-manual-installation), [restore and rollback](#restore-and-rollback), [moving to a new machine](#moving-to-a-new-machine), [behavior changes](#behavior-changes)
-6. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api)
+6. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api), [screenshots](#screenshots)
 7. [Development](#development)
 
 ## Installation
@@ -794,6 +794,20 @@ The REST API (Django REST Framework, documented with `drf-spectacular`) takes th
   ```bash
   curl -H "Authorization: Token wvc_..." https://<server>/api/v1/instances/
   ```
+
+### Screenshots
+
+| VM list | VM page |
+|:---:|:---:|
+| ![VM list](doc/images/instances.png) | ![VM page](doc/images/instance.png) |
+
+| Computes | Host overview |
+|:---:|:---:|
+| ![Computes](doc/images/computes.png) | ![Host overview](doc/images/overview.png) |
+
+| New VM | Logs |
+|:---:|:---:|
+| ![New VM](doc/images/create.png) | ![Logs](doc/images/logs.png) |
 
 ## Development
 
