@@ -4,7 +4,7 @@
 
 # Create <data_dir>/secret_key (mode 600) only if missing or empty; keep an
 # existing key. A blank key would make Django fail to boot, so an empty file is
-# treated as missing.
+# treated as missing, and the function fails when it could not write one.
 wvc_ensure_secret_key() {
   local data_dir="$1" python="${2:-python3}" key_file
   key_file="$data_dir/secret_key"
@@ -15,6 +15,8 @@ wvc_ensure_secret_key() {
     ( umask 077; "$python" -c 'import secrets; print(secrets.token_urlsafe(50))' > "$key_file" )
   fi
   chmod 600 "$key_file"
+  # an empty key means the python did not run: the panel would not start
+  [ -s "$key_file" ]
 }
 
 # Copy settings.py from the template only when it does not already exist, so a

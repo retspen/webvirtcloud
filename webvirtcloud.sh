@@ -1,4 +1,6 @@
 #!/bin/bash
+# a failing step fails the pipeline that logs it
+set -o pipefail
 #/ Usage: webvirtcloud.sh [-vh]
 #/
 #/ Install Webvirtcloud virtualization web interface.
@@ -69,9 +71,6 @@ if [ -f /etc/supervisor/conf.d/webvirtcloud.conf ] || [ -f /etc/supervisord.d/we
   exit 1
 fi
 
-clear
-
-readonly APP_USER="wvcuser"
 readonly APP_REPO_URL="${APP_REPO_URL:-https://github.com/retspen/webvirtcloud.git}"
 readonly APP_NAME="webvirtcloud"
 readonly APP_PATH="/srv/$APP_NAME"
@@ -123,7 +122,7 @@ install_packages () {
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "DEBIAN_FRONTEND=noninteractive apt-get install -y $p"
+          log "DEBIAN_FRONTEND=noninteractive apt-get install -y $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done;
       ;;
@@ -133,37 +132,19 @@ install_packages () {
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "yum -y install $p"
+          log "yum -y install $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done;
       ;;
-    fedora|openEuler)
+    fedora)
       for p in $PACKAGES; do
         if dnf list installed "$p" >/dev/null 2>&1; then
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "dnf -y install $p"
+          log "dnf -y install $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done;
-      ;;
-    uos)
-      if test "${codename}" == "eagle"; then
-        check_package_cmd=("dpkg" "-s")
-        install_package_cmd="apt-get install -y"
-      else
-        check_package_cmd=("dnf" "list" "installed")
-        install_package_cmd="dnf -y install"
-      fi
-      for p in $PACKAGES; do
-        # shellcheck disable=SC2048
-        if ${check_package_cmd[*]} "$p" >/dev/null 2>&1; then
-          echo "  * $p already installed"
-        else
-          echo "  * Installing $p"
-          log "${install_package_cmd} $p"
-        fi
-      done
       ;;
     suse)
       for p in $PACKAGES; do
@@ -171,7 +152,7 @@ install_packages () {
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "zypper --non-interactive install -y $p"
+          log "zypper --non-interactive install -y $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done
       ;;
@@ -219,31 +200,10 @@ configure_systemd () {
     systemctl enable --now webvirt-backup.timer || exit 1
 }
 
-create_user () {
-  echo "* Creating webvirtcloud user."
-
-  if [ "$distro" == "ubuntu" ] || [ "$distro" == "debian" ] ||
-    [[ "$distro" == "uos" && "$codename" == "eagle" ]]; then
-    adduser --quiet --disabled-password --gecos '""' "$APP_USER"
-  elif [ "$distro" == "suse" ]; then
-    useradd -m -s /bin/bash "$APP_USER" 2>/dev/null || adduser "$APP_USER"
-  else
-    useradd -m -s /bin/bash "$APP_USER" 2>/dev/null || adduser "$APP_USER"
-  fi
-
-  usermod -a -G "$nginx_group" "$APP_USER" 2>/dev/null || true
+add_service_groups () {
+  # the panel's services reach a local libvirt and KVM as the web server's user
   usermod -a -G libvirt "$nginx_group" 2>/dev/null || true
   usermod -a -G kvm "$nginx_group" 2>/dev/null || true
-  usermod -a -G libvirt "$APP_USER" 2>/dev/null || true
-  usermod -a -G kvm "$APP_USER" 2>/dev/null || true
-}
-
-run_as_app_user () {
-  if ! hash sudo 2>/dev/null; then
-      su -c "$@" "$APP_USER"
-  else
-      sudo -i -u "$APP_USER" "$@"
-  fi
 }
 
 check_python () {
@@ -288,11 +248,11 @@ activate_python_environment () {
 
 
 install_webvirtcloud () {
-  create_user
- 
+  add_service_groups
+
   if [ ! -d "$APP_PATH/.git" ]; then
     echo "* Cloning $APP_NAME from github to the web directory."
-    log "git clone $APP_REPO_URL $APP_PATH"
+    log "git clone $APP_REPO_URL $APP_PATH" || { echo "Cloning $APP_REPO_URL failed." >&2; exit 1; }
   else
     echo "* $APP_NAME already present in $APP_PATH."
   fi
@@ -300,8 +260,11 @@ install_webvirtcloud () {
   # shellcheck source=conf/install-lib.sh
   . "$APP_PATH/conf/install-lib.sh"
 
+  echo "* Checking up Python3 version."
+  check_python
+
   echo "* Ensuring Django secret key (data/secret_key, kept across re-runs)."
-  wvc_ensure_secret_key "$APP_PATH/data" "$PYTHON"
+  wvc_ensure_secret_key "$APP_PATH/data" "$PYTHON" || { echo "The secret key could not be written." >&2; exit 1; }
 
   echo "* Configuring settings.py file."
   if wvc_ensure_settings "$APP_PATH/webvirtcloud/settings.py.template" "$APP_PATH/webvirtcloud/settings.py" >/dev/null; then
@@ -334,23 +297,20 @@ install_webvirtcloud () {
   # after migrate creates it.
   wvc_harden_modes "$APP_PATH/webvirtcloud/settings.py" "" "$APP_PATH/data"
 
-  echo "* Checking up Python3 version."
-  check_python
-
   echo "* Activate virtual environment."
   activate_python_environment
 
   echo "* Install App's Python requirements."
-  pip3 install -U pip
-  pip3 install -r conf/requirements.txt -q
+  pip3 install -U pip || exit 1
+  pip3 install -r conf/requirements.txt -q || { echo "Installing the Python requirements failed." >&2; exit 1; }
 
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 
   echo "* Django Migrate."
-  log "$PYTHON $APP_PATH/manage.py migrate"
+  log "$PYTHON $APP_PATH/manage.py migrate" || { echo "manage.py migrate failed: see /var/log/webvirtcloud-install.log." >&2; exit 1; }
 
   echo "* Django Collect Static"
-  log "$PYTHON $APP_PATH/manage.py collectstatic --noinput"
+  log "$PYTHON $APP_PATH/manage.py collectstatic --noinput" || { echo "manage.py collectstatic failed: see /var/log/webvirtcloud-install.log." >&2; exit 1; }
 
   echo "* Restricting file modes on secret, settings and database."
   wvc_harden_modes "$APP_PATH/webvirtcloud/settings.py" "$APP_PATH/db.sqlite3" "$APP_PATH/data"
@@ -460,27 +420,6 @@ case $distro in
     nginx_group=nginx
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
     ;;
-  *Uos*|*uos*)
-    # codename may be fuyu, kongzi, eagle or empty string.
-    output_expand=""
-    if test -n "${codename}"; then
-      output_expand=" codename ${codename}"
-    fi
-    echo "  The installer has detected $distro version $version${output_expand}."
-    distro=uos
-    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    if test "${codename}" == "eagle"; then
-      nginx_group=www-data
-    else
-      nginx_group=nginx
-    fi
-    ;;
-  *OpenEuler*|*openEuler*)
-    echo "  The installer has detected $distro version $version."
-    distro=openEuler
-    nginx_group=nginx
-    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    ;;
   *)
     if [[ "$id_like" =~ suse ]]; then
       echo "  The installer has detected $distro (SUSE family) version $version."
@@ -536,16 +475,17 @@ echo "========="
 case $distro in
   debian)
   debian_major="${version%%.*}"
-  if [[ -n "$debian_major" && "$debian_major" -ge 9 ]]; then
-    # Install for Debian 9.x / 10.x / 11.x / 12.x
+  if [[ -n "$debian_major" && "$debian_major" -ge 12 ]]; then
+    # Install for Debian 12 and later
     tzone=\'$(get_timezone)\'
 
     echo -n "* Updating installed packages."
-    log "apt-get update && apt-get -y upgrade" & pid=$!
+    log "apt-get update" & pid=$!
     progress
+    wait "$pid" || { echo "Updating the package lists failed." >&2; exit 1; }
 
     echo "*  Installing OS requirements."
-    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx smbios-utils libsasl2-modules gcc pkg-config python3-guestfs uuid"
+    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python3-guestfs"
     
     install_packages
     
@@ -566,16 +506,17 @@ case $distro in
   fi
   ;;
   ubuntu)
-  if [[ "$version" =~ ^(18|20|22|24) ]]; then
-    # Install for Ubuntu 18 / 20 / 22 / 24
+  if [[ "$version" =~ ^(22|24|26)\. ]]; then
+    # Install for Ubuntu 22.04 / 24.04 / 26.04
     tzone=\'$(get_timezone)\'
 
     echo -n "* Updating installed packages."
-    log "apt-get update && apt-get -y upgrade" & pid=$!
+    log "apt-get update" & pid=$!
     progress
+    wait "$pid" || { echo "Updating the package lists failed." >&2; exit 1; }
 
     echo "*  Installing OS requirements."
-    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python3-guestfs"
+    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python3-guestfs"
     install_packages
 
     set_hosts
@@ -597,7 +538,7 @@ case $distro in
   centos)
   if [[ "$version" =~ ^10  ]]; then
     # Install for CentOS/Redhat 10
-    tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
+    tzone=\'$(get_timezone)\'
 
     if command -v "crb" >/dev/null 2>&1; then
       echo "* CRB Repo is found, enabling it."
@@ -611,13 +552,11 @@ case $distro in
     log "yum -y install wget epel-release"
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openssl-devel"
+    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openssl-devel"
     install_packages
 
     set_hosts
 
-    echo "* Configuring virtualenv."
-    log "pip3 install virtualenv"
     install_webvirtcloud
 
     echo "* Configuring Nginx."
@@ -636,62 +575,6 @@ case $distro in
     exit 1
   fi
   ;;
-  uos)
-  if [[ "$version" == "20" ]]; then
-    # Install for uos 20
-    tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
-
-    echo "* Installing OS requirements."
-    if test "${codename}" == "eagle"; then
-      PACKAGES="git virtualenv python3-virtualenv python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python3-guestfs uuid"
-    else
-      PACKAGES="git python3-virtualenv python3-devel python3-pip libvirt-devel glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
-    fi
-    install_packages
-
-    set_hosts
-
-    install_webvirtcloud
-
-    echo "* Configuring Nginx."
-    configure_nginx
-
-    set_firewall
-
-    set_selinux
-
-    echo "* Configuring systemd."
-    configure_systemd
-
-    restart_nginx
-  fi
-  ;;
-  openEuler)
-  if [[ "$version" == "20.03" ]]; then
-    # Install for openEuler 20.03
-    tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
-
-    echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel python3-pip libvirt-devel glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
-    install_packages
-
-    set_hosts
-
-    install_webvirtcloud
-
-    echo "* Configuring Nginx."
-    configure_nginx
-
-    set_firewall
-
-    set_selinux
-
-    echo "* Configuring systemd."
-    configure_systemd
-
-    restart_nginx
-  fi
-  ;;
   suse)
     # Install for openSUSE Leap 15.x / Tumbleweed / SLES 15
     tzone=\'$(get_timezone)\'
@@ -699,6 +582,7 @@ case $distro in
     echo -n "* Updating installed packages."
     log "zypper --non-interactive refresh" & pid=$!
     progress
+    wait "$pid" || { echo "Updating the package lists failed." >&2; exit 1; }
 
     echo "* Installing OS requirements."
     # On SUSE, install Python 3.11 stack to satisfy Python >= 3.10 requirement along with the native libvirt bindings
@@ -728,6 +612,7 @@ esac
 
 echo ""
 echo "  ***Open http://$fqdn to login to webvirtcloud.***"
+echo "  The admin password: cat $APP_PATH/data/admin_password"
 echo ""
 echo ""
 echo "* Cleaning up..."
