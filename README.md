@@ -457,7 +457,7 @@ docker compose exec webvirtcloud /sbin/setuser www-data venv/bin/python3 manage.
 systemctl start webvirt-backup && journalctl -u webvirt-backup -n 3                          # otherwise
 ```
 
-To restore one, follow [Restore and rollback](#restore-and-rollback) with `b` set to its directory. In Docker, copy it out of the volume first (`docker compose cp webvirtcloud:/srv/webvirtcloud/backups/webvirtcloud-backup-YYYYMMDD-HHMMSS ..`) and leave out the `git checkout` and `build` lines: the backup has no commit. On a new machine, also put back `secret_key` and `node_id` into `data/` and `ssh/` into the panel user's `~/.ssh`.
+To restore one, follow [Restore and rollback](#restore-and-rollback) with `b` set to its directory. In Docker, copy it out of the volume first (`docker compose cp webvirtcloud:/srv/webvirtcloud/backups/webvirtcloud-backup-YYYYMMDD-HHMMSS ..`) and leave out the `git checkout` and `build` lines: the backup has no commit. To move the panel to a new machine, see [Moving to a new machine](#moving-to-a-new-machine).
 
 ## Updating
 
@@ -613,6 +613,38 @@ nginx -t && systemctl reload nginx && systemctl start webvirt-cloud webvirt-novn
 ```
 
 A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-worker`. A rollback keeps the systemd units. A rollback leaves the clone on a detached HEAD at the restored commit; the update steps record that commit before they switch back to `master`.
+
+### Moving to a new machine
+
+A [backup](#backups) moves the panel to a new machine, or back onto lost volumes: the database, the secret key (signed-in users stay signed in), the worker's id and the SSH keys the computes accept. Install the panel there first, the same version or a newer one, then copy the backup directory over and set `b` to it. The backup does not hold `docker-compose.override.yml`, the nginx config or `/etc/default/webvirtcloud`: bring your own lines over yourself. Users sign in with their passwords from the backup; the new installation's `data/admin_password` no longer applies.
+
+Docker, in the directory you installed from:
+
+```bash
+b=../webvirtcloud-backup-YYYYMMDD-HHMMSS &&
+docker compose stop -t 95 &&
+docker compose run --rm --no-deps -T --entrypoint /srv/webvirtcloud/venv/bin/python3 webvirtcloud \
+  -c "import os,sqlite3,sys,tempfile; t=tempfile.mktemp(); open(t,'wb').write(sys.stdin.buffer.read()); [os.remove(p) for p in ('data/db.sqlite3-journal','data/db.sqlite3-wal','data/db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(t).backup(sqlite3.connect('data/db.sqlite3'))" < "$b/db.sqlite3" &&
+docker compose cp "$b/secret_key" webvirtcloud:/srv/webvirtcloud/data/ &&
+docker compose cp "$b/node_id" webvirtcloud:/srv/webvirtcloud/data/ &&
+docker compose cp "$b/ssh/." webvirtcloud:/var/www/.ssh/ &&
+docker compose up -d    # the container migrates and fixes ownership and modes at start
+```
+
+Installer and manual installation, from a root shell (`nginx` instead of `www-data` on RHEL / openSUSE). Compare `$b/settings.py` with `webvirtcloud/settings.py` and carry your own values over:
+
+```bash
+b=/root/webvirtcloud-backup-YYYYMMDD-HHMMSS
+systemctl stop webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+cd /srv/webvirtcloud &&
+venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
+cp "$b/secret_key" "$b/node_id" data/ &&
+mkdir -p ~www-data/.ssh && cp "$b"/ssh/* ~www-data/.ssh/ &&
+venv/bin/python3 manage.py migrate &&
+chown -R www-data:www-data data ~www-data/.ssh &&
+chmod 700 data ~www-data/.ssh && chmod 600 db.sqlite3 &&
+systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+```
 
 ### Behavior changes
 
