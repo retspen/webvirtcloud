@@ -221,7 +221,7 @@ class InstanceSecurityMutationsTestCase(TestCase):
             mock_wvm_cls.return_value.get_disk_devices.return_value = []
             res = self.client.post(reverse("instances:resize_disk", args=[self.instance.id]), {})
             self.assertEqual(res.status_code, 302)
-            self.assertIn(f"/instances/{self.instance.id}/#resize", res.url)
+            self.assertIn(f"/instances/{self.instance.id}/#resizevm_disk", res.url)
 
     def test_disk_mutation_denied_with_is_change(self):
         # change_user has is_change=True, is_delete=False. Disk views are

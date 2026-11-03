@@ -1203,10 +1203,10 @@ def resize_memory(request, pk):
         new_memory = memory
     if not _is_int(new_memory) or not _is_int(new_cur_memory) or int(new_cur_memory) < 1:
         messages.error(request, _("Enter a whole number for memory"))
-        return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+        return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_mem")
     if int(new_cur_memory) > int(new_memory):
         messages.error(request, _("The current memory cannot be more than the maximum"))
-        return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+        return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_mem")
     quota_msg = utils.check_user_quota(request.user, 0, 0, int(new_memory) - memory, 0)
     if not request.user.is_superuser and quota_msg:
         msg = quota_refused(quota_msg, gettext_noop("%(quota)s: cannot resize the memory of '%(instance_name)s'."),
@@ -1218,7 +1218,7 @@ def resize_memory(request, pk):
         messages.success(request, _("Memory set to %(cur)s MiB (maximum %(max)s MiB)") % {
             "cur": new_cur_memory, "max": new_memory})
 
-    return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+    return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_mem")
 
 
 @require_POST
@@ -1236,19 +1236,19 @@ def resize_disk(request, pk):
             continue
         if not _is_int(size):
             messages.error(request, _("Enter disk sizes as whole GiB"))
-            return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+            return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
         # a disk does not shrink: one smaller size refuses them all
         if int(size) << 30 < disk["size"]:
             messages.error(request, _("%(dev)s is %(size)s: a disk cannot shrink") % {
                 "dev": disk["dev"], "size": filesizeformat(disk["size"])})
-            return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+            return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
         if int(size) << 30 > disk["size"]:
             disk["size_new"] = int(size) << 30
             disks_new.append(disk)
 
     if not disks_new:
         messages.warning(request, _("No disks were selected or valid for resizing."))
-        return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+        return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
 
     disk_sum = sum([disk["size"] >> 30 for disk in disks_new])
     disk_new_sum = sum([disk["size_new"] >> 30 for disk in disks_new])

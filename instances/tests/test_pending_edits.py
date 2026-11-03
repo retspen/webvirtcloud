@@ -209,7 +209,9 @@ class PendingEditsTestCase(TestCase):
                    "1": {"enabled": "yes", "hotpluggable": "yes", "order": "2"}}
         doc = self.page(get_guest_agent=(None, object()), get_vcpus=({}, hotplug))
         self.assertEqual(doc.xpath("//select[@name='guest_agent']/option[@selected]/@value"), ["True"])
-        self.assertEqual(doc.xpath("//select[@name='vcpu_hotplug']/option[@selected]/@value"), ["True"])
+        # the switch shows the pending hot plug on; flipping it posts off
+        self.assertEqual(doc.xpath("//input[@id='vcpu_hotplug']/@checked"), ["checked"])
+        self.assertEqual(doc.xpath("//input[@name='vcpu_hotplug']/@value"), ["False"])
         self.assertIn("No channel", doc.xpath("string(//form[.//select[@name='guest_agent']])"))
 
     def test_a_custom_rng_or_crash_action_is_left_to_the_xml_editor(self):

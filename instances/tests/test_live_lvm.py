@@ -163,7 +163,7 @@ class LiveLvmTestCase(TestCase):
 
                 response = self.post("resize_disk", inst, {"disk_size_vda": "2"})
 
-                self.assertRedirects(response, reverse("instances:instance", args=[inst.id]) + "#resize",
+                self.assertRedirects(response, reverse("instances:instance", args=[inst.id]) + "#resizevm_disk",
                                      fetch_redirect_response=False)
                 shown = [str(m) for m in get_messages(response.wsgi_request)]
                 self.assertEqual(shown[-1], "The storage pool of vda cannot resize its volumes")
