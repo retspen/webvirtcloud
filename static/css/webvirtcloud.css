@@ -129,6 +129,8 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
     border: 2px solid var(--bs-border-color);
 }
 .power-dot.bg-success, .power-dot.bg-warning, .power-dot.bg-secondary { border-color: transparent; }
+/* the access tab's two login buttons line up */
+.access-act { min-width: 9rem; }
 
 /* the boot order: the devices the VM tries in turn, numbered and joined by a line */
 .boot-chain { counter-reset: boot; }

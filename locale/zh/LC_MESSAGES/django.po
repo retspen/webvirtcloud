@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 16:37+0000\n"
+"POT-Creation-Date: 2026-11-03 17:31+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -358,6 +358,7 @@ msgstr "输入用户名"
 #: accounts/templates/accounts/otp_login.html:37
 #: accounts/templates/login.html:36 admin/templates/admin/user_form.html:106
 #: console/templates/console-vnc.html:82 instances/forms.py:28
+#: instances/templates/instances/access_tab.html:53
 msgid "Password"
 msgstr "密码"
 
@@ -1612,7 +1613,6 @@ msgstr "克隆"
 #: appsettings/views.py:45 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
-#: instances/templates/instances/access_tab.html:15
 #: instances/templates/instances/settings_tab.html:32
 #: instances/templates/instances/settings_tab.html:695
 msgid "Console"
@@ -3673,7 +3673,6 @@ msgid "Power"
 msgstr "电源"
 
 #: instances/templates/instance.html:83
-#: instances/templates/instances/access_tab.html:7
 msgid "Access"
 msgstr "访问"
 
@@ -3755,86 +3754,92 @@ msgstr "电源重置"
 msgid "more owners"
 msgstr "更多所有者"
 
-#: instances/templates/instances/access_tab.html:3
+#: instances/templates/instances/access_tab.html:2
 msgid "Instance access options"
 msgstr "虚拟机访问选项"
+
+#: instances/templates/instances/access_tab.html:7
+msgid "Screen"
+msgstr "屏幕"
 
 #: instances/templates/instances/access_tab.html:9
 msgid ""
 "Only the owners of this instance and administrators can open its console."
 msgstr "只有此虚拟机的所有者和管理员可以打开其控制台。"
 
+#: instances/templates/instances/access_tab.html:14
+msgid "Open console"
+msgstr "打开控制台"
+
+#: instances/templates/instances/access_tab.html:15
+msgid "Opens the VM's screen in a new window."
+msgstr "在新窗口中打开虚拟机的屏幕。"
+
 #: instances/templates/instances/access_tab.html:19
-msgid "Remote viewer address"
-msgstr "远程查看器地址"
+msgid "Remote viewer"
+msgstr "远程查看器"
 
-#: instances/templates/instances/access_tab.html:23
-msgid "VDI"
-msgstr "VDI"
+#: instances/templates/instances/access_tab.html:24 networks/views.py:24
+msgid "Open"
+msgstr "开放"
 
-#: instances/templates/instances/access_tab.html:24
-msgid "Get console.vv"
-msgstr "获取 console.vv"
+#: instances/templates/instances/access_tab.html:25
+msgid "Download .vv file"
+msgstr "下载 .vv 文件"
 
-#: instances/templates/instances/access_tab.html:29
-msgid "Console opens a window here."
-msgstr "控制台在此处打开一个窗口。"
+#: instances/templates/instances/access_tab.html:28
+msgid "For virt-viewer or another VNC or SPICE client on your computer."
+msgstr "用于您计算机上的 virt-viewer 或其他 VNC、SPICE 客户端。"
 
 #: instances/templates/instances/access_tab.html:30
-msgid "VDI opens your remote viewer; console.vv sets up virt-viewer."
-msgstr "VDI 会打开你的远程查看器；console.vv 用于配置 virt-viewer。"
-
-#: instances/templates/instances/access_tab.html:31
 msgid ""
 "A remote viewer cannot reach this console: it listens on the host only, or it"
 " is a serial one."
 msgstr "远程查看器无法连接此控制台：它只在主机上监听，或者是串口控制台。"
 
-#: instances/templates/instances/access_tab.html:34
+#: instances/templates/instances/access_tab.html:33
 msgid "Start the VM to open its console."
 msgstr "启动虚拟机后才能打开其控制台。"
 
-#: instances/templates/instances/access_tab.html:40 instances/views.py:1104
-msgid "Reset root password"
-msgstr "重置 root 密码"
+#: instances/templates/instances/access_tab.html:38
+msgid "Log in as root"
+msgstr "以 root 身份登录"
 
-#: instances/templates/instances/access_tab.html:42
-msgid "The guest's root user gets this password."
-msgstr "客户机的 root 用户将使用此密码。"
+#: instances/templates/instances/access_tab.html:41
+msgid "Written to the VM's disk while it is off."
+msgstr "在虚拟机关机时写入其磁盘。"
 
 #: instances/templates/instances/access_tab.html:43
-#: instances/templates/instances/access_tab.html:66
+msgid "Sent to the running VM through its guest agent."
+msgstr "通过客户机代理发送到正在运行的虚拟机。"
+
+#: instances/templates/instances/access_tab.html:45
 msgid "The guest agent is not connected: connect it, or shut the VM down."
 msgstr "客户机代理未连接：请连接它，或将虚拟机关机。"
 
-#: instances/templates/instances/access_tab.html:44
-#: instances/templates/instances/access_tab.html:67
+#: instances/templates/instances/access_tab.html:47
 msgid "Shut the VM down, or run it with its guest agent."
 msgstr "请将虚拟机关机，或在客户机代理运行时操作。"
 
-#: instances/templates/instances/access_tab.html:51
-msgid "Reset Root Password"
-msgstr "重置 root 密码"
+#: instances/templates/instances/access_tab.html:58
+msgid "Reset password"
+msgstr "重置密码"
 
-#: instances/templates/instances/access_tab.html:62
-msgid "Add SSH key for root"
-msgstr "为 root 添加 SSH 密钥"
+#: instances/templates/instances/access_tab.html:66
+msgid "SSH key"
+msgstr "SSH 密钥"
 
-#: instances/templates/instances/access_tab.html:64
+#: instances/templates/instances/access_tab.html:73
+msgid "Add key"
+msgstr "添加密钥"
+
+#: instances/templates/instances/access_tab.html:77
 msgid "You have no saved public key."
 msgstr "你没有已保存的公钥。"
 
-#: instances/templates/instances/access_tab.html:64
+#: instances/templates/instances/access_tab.html:77
 msgid "Add one in your profile."
 msgstr "请在个人资料中添加。"
-
-#: instances/templates/instances/access_tab.html:65
-msgid "One of your public keys joins root's keys in the guest."
-msgstr "你的一个公钥会加入客户机中 root 的密钥。"
-
-#: instances/templates/instances/access_tab.html:76
-msgid "Add Public Key"
-msgstr "添加公钥"
 
 #: instances/templates/instances/boot_device.html:9
 msgid "empty"
@@ -5655,6 +5660,10 @@ msgstr "请关闭虚拟机，或启动其 QEMU 客户机代理，然后重试"
 msgid "The change may still be made when the agent answers again."
 msgstr "当代理再次响应时，此更改仍可能生效。"
 
+#: instances/views.py:1104
+msgid "Reset root password"
+msgstr "重置 root 密码"
+
 #: instances/views.py:1108
 msgid "Enter a password"
 msgstr "请输入密码"
@@ -6857,10 +6866,6 @@ msgstr "虚拟机通过主机地址访问外部；如设置了 IPv6，则以路�
 msgid ""
 "The host routes the subnet; the upstream router needs a route back to it."
 msgstr "主机路由该子网；上游路由器需配置指向该子网的回程路由。"
-
-#: networks/views.py:24
-msgid "Open"
-msgstr "开放"
 
 #: networks/views.py:24
 msgid "The host routes the subnet and adds no firewall rules for it."
