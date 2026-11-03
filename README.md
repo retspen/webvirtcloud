@@ -1,5 +1,3 @@
-[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/retspen/webvirtcloud)
-
 # WebVirtCloud
 ###### Python >=3.10 & Django 5.2 LTS (tested on Python 3.10 – 3.13)
 
@@ -34,7 +32,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 ## Features
 
 * QEMU/KVM hypervisor management (multiple compute nodes), with each host's capacity and what its VMs were given
-* Virtual machine lifecycle: create, delete, power management, clone (also of a running VM), migrate (with or without shared storage), disk moves between pools
+* Virtual machine lifecycle: create, delete, power management, clone (also of a running VM, with libvirt 11.10 or later), migrate (with or without shared storage), disk moves between pools
 * Long operations (create, clone, snapshots, migration, ISO upload) run as jobs that the page follows and can cancel
 * External snapshots (memory optional, guest file systems frozen through the agent)
 * **External change detection:** VMs created, deleted or renamed via `virt-manager` or `virsh` are reconciled into the database automatically
@@ -52,15 +50,17 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * Cloud-init datasource interface (OpenStack metadata compatible) and NoCloud seed media
 * REST API — OpenAPI 3.0 (Swagger & ReDoc), with API tokens
 * LDAP / Active Directory integration (optional)
+* Daily backups of the panel, with an optional off-site copy (restic over SFTP)
+* English, Turkish and Simplified Chinese
 
 ## Contents
 
 1. [Installation](#installation): [installer](#installer), [Docker](#docker), [manual](#manual-installation), [first login](#first-login)
 2. [Adding a Compute Node](#adding-a-compute-node)
-3. [Configuration](#configuration): [environment variables](#environment-variables), [HTTPS and reverse proxy](#https-and-reverse-proxy), [cloud-init datasource](#cloud-init-datasource), [LDAP](#ldap)
-4. [Backups](#backups)
-5. [Updating](#updating)
-6. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api), [screenshots](#screenshots)
+3. [Configuration](#configuration): [environment variables](#environment-variables), [HTTPS and reverse proxy](#https-and-reverse-proxy), [cloud-init datasource](#cloud-init-datasource), [LDAP](#ldap), [OTP](#two-factor-login-otp), [serial console](#serial-console)
+4. [Backups](#backups): [off-site copy](#off-site-copy)
+5. [Updating](#updating): [Docker](#docker-1), [installer and manual](#installer-and-manual-installation), [restore and rollback](#restore-and-rollback), [moving to a new machine](#moving-to-a-new-machine), [behavior changes](#behavior-changes)
+6. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api)
 7. [Development](#development)
 
 ## Installation
@@ -96,7 +96,7 @@ EOF
 docker compose up -d
 ```
 
-The panel and its console are at `http://<server-ip>`. The database and secret key live in the `webvirtcloud-data` volume, the SSH keys in `webvirtcloud-ssh`. Other settings go in the same `environment:` list, see [Environment variables](#environment-variables).
+The panel and its console are at `http://<server-ip>`. The database and secret key live in the `webvirtcloud-data` volume, the SSH keys in `webvirtcloud-ssh`, the [backups](#backups) in `webvirtcloud-backups`. Other settings go in the same `environment:` list, see [Environment variables](#environment-variables).
 
 ### Manual installation
 
@@ -229,7 +229,7 @@ sudo cat /srv/webvirtcloud/data/admin_password            # installer or manual 
 docker compose exec webvirtcloud cat data/admin_password   # Docker
 ```
 
-Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted. To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed. A lost password is reset with `python3 manage.py changepassword admin`.
+Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted. To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed. A lost password is reset with `python3 manage.py changepassword admin` (Docker: `docker compose exec webvirtcloud /sbin/setuser www-data venv/bin/python3 manage.py changepassword admin`).
 
 ## Adding a Compute Node
 
@@ -299,7 +299,12 @@ A compute node is a KVM host the panel manages over libvirt.
 
 Firewall: the compute's VNC ports (`5900`–`65535`) must accept connections **only** from the panel's IP, never from public networks.
 
-For VM migration between computes, define shared storage as a storage pool on every host (a VM migrates only when its disk, backing and ISO files and block devices are volumes of the destination's pools), and the hosts send a migrating VM to the destination's address on the panel's Computes page; for another network (a dedicated migration network), set the compute's **Migration address** on its edit page. A VM's disks can instead be copied into storage pools of the destination during the migration: after choosing the destination, the **Disks** list shows each disk file and the destination pools that can take it (directory, filesystem and NFS pools; one with a file of the same name refuses the copy), and a disk on storage both hosts share can also stay there. Plain raw or qcow2 disks without a backing file are copied; a shut-off VM is started paused for the copy, its CPUs never run, and is shut off on the destination. A shut-off VM with a TPM (Windows 11) migrates the same way, also without copies: only a running VM's migration carries its TPM state. With **Delete the source files of copied disks** the source files go after the migration, unless another VM or volume uses them. The copy goes through the destination's migration port range (49152-49215 by default), like the memory.
+### Migration
+
+- **Shared storage:** define it as a storage pool on every host. A VM migrates when its disk, backing and ISO files and block devices are volumes of the destination's pools.
+- **Address:** a migrating VM goes to the destination's address on the Computes page; for a dedicated migration network, set the compute's **Migration address** on its edit page.
+- **Without shared storage:** after choosing the destination, the **Disks** list shows each disk and the destination pools that can take a copy (directory, filesystem and NFS pools; a pool with a file of the same name refuses it); a disk on storage both hosts share can stay there. Plain raw or qcow2 disks without a backing file are copied, through the destination's migration port range (49152-49215 by default). **Delete the source files of copied disks** removes them after the migration, unless another VM or volume uses them.
+- **Shut-off VMs:** a shut-off VM moves offline, with its NVRAM file (UEFI). When its disks are copied or it has a TPM, it is started paused for the migration instead (its CPUs never run) and shut off on the destination.
 
 If libvirt warns `Host SMBIOS information is not available`, install `dmidecode` (`apt-get`, `dnf` or `zypper install -y dmidecode`) and restart `libvirtd`.
 
@@ -317,19 +322,38 @@ If libvirt warns `Host SMBIOS information is not available`, install `dmidecode`
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | SMTP for e-mail OTP |
 | `WEBVIRTCLOUD_LOG_FILE` | log file (default `data/webvirtcloud.log`, rotated at 10 MB × 5) |
 | `SECRET_KEY` | Django secret key (default: the `data/secret_key` file) |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | the first superuser, read by the first `migrate` only, see [First login](#first-login) |
 
 Where to set them:
 
 - **Docker:** the `environment:` list of `docker-compose.override.yml`; every process in the container gets it.
-- **Installer and manual installation:** edit `webvirtcloud/settings.py`, or put them in `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); all four services read it. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
-- **gunicorn** runs at most 8 workers (fewer on hosts with under 4 CPUs) of 4 threads each; to change it, set `GUNICORN_CMD_ARGS=--workers N` in a drop-in of `webvirt-cloud` (`systemctl edit webvirt-cloud`: `[Service]` and `Environment="GUNICORN_CMD_ARGS=--workers N"`) or in `docker-compose.override.yml`.
+- **Installer and manual installation:** edit `webvirtcloud/settings.py`, or put them in `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); the panel's services read it. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
+
+Some options exist only in `settings.py` (LDAP, `OTP_ENABLED`, `LOGIN_TRUSTED_PROXIES`). Docker builds that file from the template in each new container; to keep such options there, mount your own copy and update it from the template after each update:
+
+```bash
+docker compose exec webvirtcloud cat webvirtcloud/settings.py > settings.py   # then edit it
+```
+
+add it to `docker-compose.override.yml` and run `docker compose up -d`:
+
+```yaml
+services:
+  webvirtcloud:
+    volumes:
+      - ./settings.py:/srv/webvirtcloud/webvirtcloud/settings.py
+```
+
+The container makes the file the panel user's (uid 33) with mode 600; edit it as root.
+
+gunicorn runs at most 8 workers (fewer on hosts with under 4 CPUs) of 4 threads each; to change it, set `GUNICORN_CMD_ARGS=--workers N` in a drop-in of `webvirt-cloud` (`systemctl edit webvirt-cloud`: `[Service]` and `Environment="GUNICORN_CMD_ARGS=--workers N"`) or in `docker-compose.override.yml`.
 
 ### HTTPS and reverse proxy
 
 For a panel served over HTTPS:
 
 - set `WEBVIRTCLOUD_HTTPS=1`: session and CSRF cookies become HTTPS-only, HTTP is redirected to HTTPS (except `/datasource/`, which VMs fetch over HTTP), and HSTS is sent for one year;
-- add the HTTPS origin to `CSRF_TRUSTED_ORIGINS`, e.g. `CSRF_TRUSTED_ORIGINS=https://wvc.example.com` and `WEBVIRTCLOUD_HTTPS=1` in `/etc/default/webvirtcloud`;
+- add the HTTPS origin to `CSRF_TRUSTED_ORIGINS`, e.g. `CSRF_TRUSTED_ORIGINS=https://wvc.example.com` and `WEBVIRTCLOUD_HTTPS=1` in `/etc/default/webvirtcloud`.
 
 TLS can end at the bundled nginx or at a proxy in front of it; such a proxy must send `X-Forwarded-Proto: https`. Failed logins are counted per client address, which the bundled nginx passes in `X-Real-IP`. A proxy that replaces the bundled nginx must set `X-Real-IP` itself, and its address must be in `LOGIN_TRUSTED_PROXIES` in `settings.py`. With a proxy in front of the bundled nginx, configure nginx's `set_real_ip_from` / `real_ip_header` for that proxy, or all clients share its address.
 
@@ -349,7 +373,7 @@ Without the network: tick **Cloud-init seed** (Advanced) when creating a VM. The
 
 ### LDAP
 
-The options below are set in `webvirtcloud/settings.py`. Variants for Active Directory and OpenLDAP are shown; this is a minimal config, see the [django-auth-ldap documentation](https://django-auth-ldap.readthedocs.io) for more.
+The options below are set in `webvirtcloud/settings.py` (Docker: see [Environment variables](#environment-variables) for keeping your own). Variants for Active Directory and OpenLDAP are shown; this is a minimal config, see the [django-auth-ldap documentation](https://django-auth-ldap.readthedocs.io) for more.
 
 The Docker image includes the LDAP packages. On an installer or manual install, add them to the virtualenv first; pip builds `python-ldap` against these headers:
 
@@ -376,7 +400,7 @@ AUTH_LDAP_BIND_PASSWORD = "password"
 
 # OpenLDAP
 AUTH_LDAP_SERVER_URI = "ldap://example.com"
-AUTH_LDAP_BIND_DN = "CN=username,CN=Users,OU=example,OU=com"
+AUTH_LDAP_BIND_DN = "cn=username,ou=users,dc=example,dc=com"
 AUTH_LDAP_BIND_PASSWORD = "password"
 ```
 
@@ -394,10 +418,10 @@ AUTH_LDAP_GROUP_TYPE = NestedActiveDirectoryGroupType()
 
 # OpenLDAP
 AUTH_LDAP_USER_SEARCH = LDAPSearch(
-    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(cn=%(user)s)"
+    "ou=users,dc=example,dc=com", ldap.SCOPE_SUBTREE, "(uid=%(user)s)"
 )
 AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-    "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=groupOfUniqueNames)"
+    "ou=groups,dc=example,dc=com", ldap.SCOPE_SUBTREE, "(objectClass=groupOfUniqueNames)"
 )
 AUTH_LDAP_GROUP_TYPE = GroupOfUniqueNamesType()  # import needs to be changed at the top of settings.py
 ```
@@ -720,65 +744,37 @@ systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 
 ### Behavior changes
 
+What an update from an older version changes for operators and users:
+
 - Requests for a host not in `ALLOWED_HOSTS` get 400. The installer writes the server's names and IPs; add more with the `ALLOWED_HOSTS` env var. The cloud-init datasource host must be allowed too.
 - Logging out needs a POST; a GET to `/accounts/logout/` gets 405.
-- The API accepts only a session from the login form (no HTTP Basic), and the API docs need a login. Sessions opened through the old password-only doors skip OTP; end them once after the update (everyone signs in again): `python3 manage.py shell -c "from django.contrib.sessions.models import Session; Session.objects.all().delete()"`.
+- The API accepts only a session from the login form or an API token (no HTTP Basic), and the API docs need a login. Sessions opened through the old password-only doors skip OTP; end them once after the update (everyone signs in again): `python3 manage.py shell -c "from django.contrib.sessions.models import Session; Session.objects.all().delete()"`.
 - Failed logins lock a user (django-axes). The limit and lock time are on the Settings page; unlock with `python3 manage.py axes_reset_username <username>`.
 - Changing one's own password is the "Can change password" permission (per user or group; new users have it); `SHOW_PROFILE_EDIT_PASSWORD` is gone.
 - The admin's first-login password change survives losing `data/admin_password` (migration `accounts.0007`); run `migrate` as a user who can read that file.
-- "VM Clone Auto Migrate" is removed; a clone stays on its source host.
-- The job worker runs at most half of its concurrency (Settings, at least one) of one host's jobs at a time; that host's other jobs wait in the queue, so a host that does not answer cannot take every slot.
-- A template VM is changed or deleted only by superusers and staff owners with the matching permission; other owners can still view, open the console and clone it. Power cycle no longer starts a template.
-- A VM that vanishes from its compute, or whose compute is deleted, keeps its owners for `INSTANCE_OWNERSHIP_RETENTION_DAYS` (30) in case the same UUID comes back; superusers list and remove these records on the "Removed VMs" admin page.
-- The log rotates (10 MB × 5) in `data/webvirtcloud.log`.
-- A disk can be grown while its VM runs or is paused, not only when it is shut off. A disk on an LVM pool cannot be grown (libvirt cannot resize its volumes): the resize says so instead of failing, and the VM's other disks still grow.
-- Enabling vCPU hot plug keeps the VM's current vCPU count (it enabled all of them up to the maximum).
-- A host's CPU graph shows the average since its previous point (normally 5 s) instead of a 1 s sample taken while a worker waits.
-- A new VM is made in three steps (host, machine, details) on one form: the disk is a new one, existing volumes or a copy of a template, and flavors are presets that fill vCPU, memory and disk size. A request with more than one disk source is refused.
-- The Logs page records who added, changed or deleted a compute, user, group (with its members and permissions), VM owner, flavor, setting, removed-VM record or SSH key, who mailed an OTP QR code, and every login, failed login, lockout and logout, with the address it came from and whether it worked (Result: Done, Failed, Unknown for older rows); a compute's VMs leaving the panel get a row each. On each compute it records changes to networks, storage pools, volumes (including clones and ISO uploads), host interfaces, secrets (never their values) and network filters.
-- The CPU usage in the new-VM dialog is the current load (over 1 s), read when the dialog opens; it was the average since the host booted.
-- A VM's stats are polled every 5 s like the host graph, the first point as soon as the tab opens; each point is the average since the previous one, disk rates in MB/s (they were MiB/s labelled Mb/s); a counter the host does not report shows a gap instead of 0.
-- An ISO uploads to an SSH compute about 3.5 times faster (SFTP writes no longer wait for each 32 KiB); a failed write still fails the upload.
-- On a host whose libvirt cannot change network interfaces (the udev backend: RHEL 9 and later, Debian 12), the interface pages offer no create, start, stop or delete; they only failed there.
-- Deleting a bridge on a host with the netcf backend (RHEL/AlmaLinux 8) keeps the devices it held: each is defined again on its own with the bridge's start mode and, for a single device, its addresses, as `virsh iface-unbridge` does. They lost their configuration and stayed down after a reboot.
-- On a running VM the disk list, its edit form, the QoS table, the title, description, CPU, boot order, video and console fields show the settings as they will be at the next start, so saving an edit no longer reverts another pending change. A boot order that names a device missing from that definition is refused instead of clearing the order. The settings tab of a running VM says so. A QoS edit keeps the inbound floor. Buttons shown as disabled while the VM runs can no longer be submitted with Enter.
-- A new disk or CD-ROM on a running VM gets a device name that neither the running VM nor its next-start settings use; it could take the name of a pending disk and stay attached until the next start only.
-- The OTP e-mail's QR code is drawn with segno; django-qr-code is no longer required. A `settings.py` kept from an older version still lists `"qr_code"` in `INSTALLED_APPS`: delete that line, or the app does not start in a venv without django-qr-code.
-- A disk, NIC or guest agent added to a running VM is requested for both the running VM and its next-start settings in one libvirt call: a disk name or guest agent already pending is refused before anything changes, and a NIC added without a MAC gets the same MAC in both. A failure after the device is plugged can still leave it in the running VM only.
-- The VM page shows each NIC's own QoS and each CD-ROM's own pool (they showed the previous device's), and a NIC without a source or model no longer breaks it.
-- A volume of an LVM or iSCSI pool can be attached to a VM, and bridge and direct NICs can be boot devices. The NIC model `default` lets libvirt choose, and `rt18139` is `rtl8139`: a VM with either did not start; a migration corrects the default NIC type setting.
-- A paused VM's memory is resized as a running VM's: the current memory changes and the guest takes it once resumed, the maximum stays (both only reached the VM at its next boot).
-- Cloning a UEFI VM no longer defines a storage pool on the host's NVRAM directory; the clone gets its own copy of the VM's UEFI variables.
-- The console .vv file finds the VM by its UUID; without a listen address or password it gives 127.0.0.1 and an empty password instead of "None".
-- A running VM without a guest agent shows the IPv4 address the host learned by ARP (the lookup always failed before).
-- After a migration the VM's NVRAM file is deleted on the source, when it is in libvirt's `/var/lib/libvirt/qemu/nvram` and the destination does not share that directory (a VM created there later with the same name would start with those UEFI variables).
-- gstfsd finds the guest's operating system the way libguestfs inspects it, so a root on LVM works, and it always answers (an error when it finds no or several operating systems). Update `/usr/local/bin/gstfsd` on every compute (see [Adding a Compute Node](#adding-a-compute-node), step 3).
-- gstfsd does only what the panel signs with the host's key: it does not start without `GSTFSD_KEY` in `/etc/default/webvirt-gstfsd`, and the panel needs the same value as the host's gstfsd key on its edit page. On every compute, update gstfsd and its unit and make the key as in [Adding a Compute Node](#adding-a-compute-node), step 3 (a remote panel's `GSTFSD_BIND_HOST` and `GSTFSD_ALLOW_REMOTE` move into that file from `systemctl edit webvirt-gstfsd`), then enter the key on each compute's edit page.
-- The themes ship compiled in `static/css/themes`; picking one on the Settings page only saves its name, so updates, rollbacks and recreated Docker containers keep it, and the "Theme SASS Path" setting is gone. libsass is no longer installed; `manage.py build_themes` recompiles the themes in a development setup.
-- With the bundled nginx config, browsers revalidate static files on each load (304 when unchanged), so an update or a theme change shows without a hard reload. Files cached before this update can stay until a hard reload (Ctrl+F5) of each affected page, or until the site's browser cache is cleared once; an external caching proxy may need a purge.
-- External snapshots use libvirt's snapshot API and need libvirt 9.9 or newer on the compute hosts. They work on UEFI VMs and running, paused or shut-off VMs, can save memory too or, on a running VM with a connected QEMU guest agent, freeze the guest's file systems (the default there), and a revert keeps disks added later (it detaches them). A snapshot is refused when a storage pool with the VM's disks has less free space than a share of those disks (10%, at least 1 GiB; both on the Settings page) plus, for the pool of the memory file, the VM's memory; this is checked before the snapshot only, nothing is reserved. A VM's snapshots form one chain: after a revert, delete the newer snapshots before taking another. Snapshot names no longer get an `s1.` prefix; existing ones keep theirs and can still be reverted and deleted, except that a snapshot an older version took of a UEFI VM can only be deleted. On NFS, libvirt removes merged snapshot files as the qemu user, who needs write access to the image directory; files it could not remove are named in a warning after the delete or revert. Deleting a VM with its data removes its snapshot files too, except a template it grew from and files another VM uses.
-- A storage volume a VM still needs (a disk, a backing file or a snapshot's file) is no longer deleted from the storage page or the API; the delete is refused with the reason. Only VMs on the same compute are checked.
-- The `webvirt-novncd` and `webvirt-socketiod` units run sandboxed (read-only system directories, no home directories under `/home`, no new privileges); the units installed in step 4 bring this.
-- The VNC console connects to `/novncd/` on the panel's own address, scheme and port, through nginx: it works on HTTPS, behind another proxy and on any published port without settings. `WS_PUBLIC_PORT`, `WS_PUBLIC_HOST`, `WS_PUBLIC_PATH` and `WS_CERT` are gone; remove them from `docker-compose.override.yml`, `/etc/default/webvirtcloud` or a kept `settings.py`, set `WS_HOST = "127.0.0.1"` in a kept `settings.py`, and close port 6080 in the firewall.
-- The serial console works (off by default, see [Serial console](#serial-console)); `SOCKETIO_PUBLIC_HOST`/`_PORT`/`_PATH` are gone, the page uses the panel's own address.
-- Long operations run as jobs in a worker process (`manage.py run_worker`); follow them on the VM page and on the Jobs page.
-- Cloning a VM or a volume and creating a VM run as jobs: the page returns at once and the job panel follows them. The API's VM create answers 202 with the job and needs a new `submission_key` per request. The create form no longer takes a console password; set it on the VM page.
-- Taking and reverting a snapshot run as jobs, like deleting an external snapshot: the page returns at once and the job panel follows them. Deleting an internal snapshot stays immediate.
-- Migrating a VM runs as a job: the page returns at once, the job panel shows its progress, and a running migration can be cancelled there (the VM keeps running on its source host). The 540 s limit is gone. The API's migrate answers 202 with the job and needs a new `submission_key` per request.
-- Uploading an ISO is tracked as a job: the storage page's job panel shows it and can cancel it, and the page no longer reloads when it ends. The upload dialog closes once the upload starts; the browser still sends the file, so stay on the page until it ends. An upload left idle for an hour is ended and its partial file deleted.
-- A running or paused VM can be cloned: libvirt copies its disks from one instant while it keeps running (file systems are frozen for a moment when the guest agent is ready). It needs libvirt 11.10 or later on the host, local file disks and no TPM; the VM cannot be changed from the panel until the copy ends, and the copy can be cancelled. Cancelling a clone of a shut-off VM has no effect: it shows as cancelling until the copy ends. A target pool that fills up during the copy can pause the source VM; a clone that ends uncertain keeps the VM locked until a superuser resolves the job.
-- A shut-off UEFI VM can be migrated: its NVRAM file is copied to the destination host (unless both hosts share the NVRAM directory). A shut-off VM with TPM state is started paused for the migration, which carries the state, and shut off on the destination.
-- Manual installs that keep their own `settings.py` copy the SQLite `OPTIONS` and `TEST` entries from `settings.py.template` and add `"operations"` to `INSTALLED_APPS`.
-- A host's Devices page lists its PCI devices by IOMMU group and its USB devices, with what the host itself has on each (network interfaces, disks, its graphics card) and the VMs that name it. Manual installs that keep their own `settings.py` add `"nodedevs"` to `INSTALLED_APPS`.
-- A user's quota counts, for each VM, the larger of its running and its next-start vCPUs, memory and disks, and a queued clone as one VM from the moment it is accepted. A user can be over the quota after the update; nothing is stopped, but new VMs, clones and raises are refused until it fits.
-- A user who is not a superuser names a clone with one of the free names the clone form offers (the first one with automatic names); other names are refused.
-- Deleting a VM with its disk files keeps a file that a VM or volume of another compute uses at the same path (shared storage), and is refused before the VM is stopped when one of the panel's other computes cannot be reached; the message names it.
-- An internal snapshot is reverted only on a shut-off VM; the Snapshots tab offers external snapshots first and internal ones as a fallback.
-- The SQLite database must be on a local file system (WAL).
-- Outside compose, stop the Docker container with `docker stop -t 95` so the worker can finish running jobs.
-- Installer and manual installations run the panel as systemd units (`webvirt-cloud`, `webvirt-novncd`, `webvirt-socketiod`, `webvirt-worker`) and computes run `webvirt-gstfsd`, instead of supervisor; see [Moving from supervisor to systemd](#moving-from-supervisor-to-systemd). Service settings go into `/etc/default/webvirtcloud`, service output into the journal (`journalctl -u webvirt-cloud`); the app log stays in `data/`.
-- LDAP login's packages are in `conf/requirements-ldap.txt` and no longer installed by default, nor their build headers by the installer; the Docker image keeps them. An existing virtualenv keeps them, but only installing that file updates them (see [LDAP](#ldap) and step 3).
-- The panel backs itself up every day ([Backups](#backups)); in Docker into a new volume, `webvirtcloud-backups`. Installer and manual installations get it with the units of step 4.
+- A `settings.py` kept from an older version must match the template: copy its SQLite `OPTIONS` and `TEST` entries, add `"operations"` and `"nodedevs"` to `INSTALLED_APPS`, and delete `"qr_code"` (django-qr-code is no longer installed and the app does not start with it). Step 2 of the update does this by rebuilding the file.
+- The VNC console connects to `/novncd/` on the panel's own address through nginx, and the serial console to `/socket.io/`: they work on HTTPS and behind another proxy without settings. `WS_PUBLIC_PORT`, `WS_PUBLIC_HOST`, `WS_PUBLIC_PATH`, `WS_CERT` and `SOCKETIO_PUBLIC_HOST`/`_PORT`/`_PATH` are gone; remove them from `docker-compose.override.yml`, `/etc/default/webvirtcloud` or a kept `settings.py`, set `WS_HOST = "127.0.0.1"` in a kept `settings.py`, and close port 6080 in the firewall.
+- Installer and manual installations run the panel as systemd units (`webvirt-cloud`, `webvirt-novncd`, `webvirt-socketiod`, `webvirt-worker`, `webvirt-backup.timer`) and computes run `webvirt-gstfsd`, instead of supervisor; see [Moving from supervisor to systemd](#moving-from-supervisor-to-systemd). Service settings go into `/etc/default/webvirtcloud`, service output into the journal (`journalctl -u webvirt-cloud`); the app log stays in `data/`. novncd and socketiod run sandboxed (read-only system directories, no `/home`).
+- gstfsd does only what the panel signs with the host's key: it does not start without `GSTFSD_KEY` in `/etc/default/webvirt-gstfsd`. On every compute, update gstfsd and its unit and make the key as in [Adding a Compute Node](#adding-a-compute-node), step 3 (a remote panel's `GSTFSD_BIND_HOST` and `GSTFSD_ALLOW_REMOTE` move into that file from `systemctl edit webvirt-gstfsd`), then enter the key on each compute's edit page.
+- LDAP login's packages are in `conf/requirements-ldap.txt` and no longer installed by default, nor their build headers by the installer; the Docker image keeps them. An existing virtualenv keeps them, but only installing that file updates them (see [LDAP](#ldap)).
+- The themes ship compiled; picking one on the Settings page only saves its name, and the "Theme SASS Path" setting is gone. Browsers revalidate static files on each load: files cached before the update can stay until a hard reload (Ctrl+F5) of each page; an external caching proxy may need a purge.
+- The panel backs itself up every day ([Backups](#backups)); in Docker into a new volume, `webvirtcloud-backups`.
+- The SQLite database must be on a local file system (WAL). Outside compose, stop the Docker container with `docker stop -t 95` so the worker can finish running jobs.
+- Long operations run as jobs in a worker process (`manage.py run_worker`): creating, cloning and migrating VMs, cloning volumes, taking and reverting snapshots and deleting external snapshots. The page returns at once and the job panel and the Jobs page follow them; a migration can be cancelled. The API's VM create and migrate answer 202 with the job and need a new `submission_key` per request. The create form no longer takes a console password; set it on the VM page.
+- An ISO upload is tracked as a job that can be cancelled. The browser sends the file, so stay on the page until it ends; an upload left idle for an hour is ended and its partial file deleted.
+- A clone of a running VM (libvirt 11.10 or later, local file disks, no TPM) locks the VM until the copy ends and can be cancelled; cancelling a clone of a shut-off VM has no effect. A job that ends uncertain keeps its VM locked until a superuser resolves it on its job page.
+- The job worker runs at most half of its concurrency (Settings, at least one) of one host's jobs at a time, so a host that does not answer cannot take every slot.
+- A new VM is made in three steps (host, machine, details) on one form; flavors are presets that fill vCPU, memory and disk size. "VM Clone Auto Migrate" is removed; a clone stays on its source host.
+- A user's quota counts, for each VM, the larger of its running and its next-start vCPUs, memory and disks, and a queued clone as one VM. A user can be over the quota after the update; nothing is stopped, but new VMs, clones and raises are refused until it fits.
+- A user who is not a superuser names a clone with one of the free names the clone form offers; other names are refused.
+- A template VM is changed or deleted only by superusers and staff owners with the matching permission; other owners can still view, open the console and clone it.
+- On a running VM the edit forms show the settings as they will be at the next start, so saving an edit no longer reverts another pending change.
+- External snapshots need libvirt 9.9 or newer on the computes. A VM's snapshots form one chain: after a revert, delete the newer snapshots before taking another. An internal snapshot is reverted only on a shut-off VM. Snapshot names no longer get an `s1.` prefix. A snapshot an older version took of a UEFI VM can only be deleted, not reverted. On NFS, the qemu user needs write access to the image directory to remove merged snapshot files.
+- A storage volume a VM still needs (a disk, a backing file or a snapshot's file) is not deleted; deleting a VM with its files keeps a file another compute's VM or volume uses at the same path, and is refused before the VM is stopped when one of the other computes cannot be reached.
+- A VM that vanishes from its compute, or whose compute is deleted, keeps its owners for `INSTANCE_OWNERSHIP_RETENTION_DAYS` (30) in case the same UUID comes back; superusers manage these records on the "Removed VMs" page.
+- The Logs page records who changed what (computes, users, groups, VM owners, settings, SSH keys, host networks, pools, volumes, interfaces, secrets and network filters) and every login, failed login and lockout, with the address and the result.
+- On a host whose libvirt cannot change network interfaces (the udev backend: RHEL 9 and later, Debian 12), the interface pages offer no create, start, stop or delete.
+- The panel is offered in English, Turkish and Simplified Chinese.
 
 ## Usage
 
@@ -798,20 +794,6 @@ The REST API (Django REST Framework, documented with `drf-spectacular`) takes th
   ```bash
   curl -H "Authorization: Token wvc_..." https://<server>/api/v1/instances/
   ```
-
-### Screenshots
-
-| Instance Detail |
-|:---:|
-| ![Instance Detail](doc/images/instance.PNG) |
-
-| Grouped Instances | Non-Grouped Instances |
-|:---:|:---:|
-| ![Grouped Instances](doc/images/grouped.PNG) | ![Non-Grouped Instances](doc/images/nongrouped.PNG) |
-
-| Compute Hosts | Activity Log |
-|:---:|:---:|
-| ![Compute Hosts](doc/images/hosts.PNG) | ![Activity Log](doc/images/log.PNG) |
 
 ## Development
 
