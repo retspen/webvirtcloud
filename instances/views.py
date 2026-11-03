@@ -36,7 +36,7 @@ from django.urls import reverse
 from django.template.defaultfilters import filesizeformat
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext_lazy, gettext_noop
 from django.views.decorators.http import require_POST
 from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_RUNNING,
@@ -657,12 +657,12 @@ def serialize_instance_mutation(func):
     return wrapper
 
 
-def quota_refused(quota_msg, refused):
-    """The message for a refused change: refused is the action's own
-    'User %(quota_msg)s quota reached, ...' text, already formatted."""
-    if quota_msg == utils.QUOTA_UNVERIFIED:
-        return _("The quota cannot be checked because a host of your virtual machines cannot be reached. Nothing was changed.")
-    return refused
+def quota_refused(quota, text, **values):
+    """The message for a change the quota refuses: text names the change
+    after %(quota)s, the quota it would exceed."""
+    if quota == utils.QUOTA_UNVERIFIED:
+        return _(utils.QUOTA_UNVERIFIED_TEXT)
+    return util.render(text, {"quota": utils.quota_message(quota), **values}, _)
 
 
 def serialize_user_quota(func):
@@ -1174,12 +1174,8 @@ def resizevm_cpu(request, pk):
         request.user, 0, int(new_vcpu) - vcpu, 0, 0
     )
     if not request.user.is_superuser and quota_msg:
-        msg = quota_refused(quota_msg, _(
-            "User %(quota_msg)s quota reached, cannot resize CPU of '%(instance_name)s'!"
-        ) % {
-            "quota_msg": quota_msg,
-            "instance_name": instance.name,
-        })
+        msg = quota_refused(quota_msg, gettext_noop("%(quota)s: cannot resize the CPU of '%(instance_name)s'."),
+                            instance_name=instance.name)
         messages.error(request, msg)
     else:
         cur_vcpu = new_cur_vcpu
@@ -1212,12 +1208,8 @@ def resize_memory(request, pk):
         return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
     quota_msg = utils.check_user_quota(request.user, 0, 0, int(new_memory) - memory, 0)
     if not request.user.is_superuser and quota_msg:
-        msg = quota_refused(quota_msg, _(
-            "User %(quota_msg)s quota reached, cannot resize memory of '%(instance_name)s'!"
-        ) % {
-            "quota_msg": quota_msg,
-            "instance_name": instance.name,
-        })
+        msg = quota_refused(quota_msg, gettext_noop("%(quota)s: cannot resize the memory of '%(instance_name)s'."),
+                            instance_name=instance.name)
         messages.error(request, msg)
     else:
         with audit_vm(request, instance, f"set memory to {new_cur_memory} MiB (maximum {new_memory} MiB)"):
@@ -1263,12 +1255,8 @@ def resize_disk(request, pk):
         request.user, 0, 0, 0, disk_new_sum - disk_sum
     )
     if not request.user.is_superuser and quota_msg:
-        msg = quota_refused(quota_msg, _(
-            "User %(quota_msg)s quota reached, cannot resize disks of '%(instance_name)s'!"
-        ) % {
-            "quota_msg": quota_msg,
-            "instance_name": instance.name,
-        })
+        msg = quota_refused(quota_msg, gettext_noop("%(quota)s: cannot resize the disks of '%(instance_name)s'."),
+                            instance_name=instance.name)
         messages.error(request, msg)
     else:
         for disk in disks_new:
@@ -2393,9 +2381,8 @@ def set_template(request, pk):
         quota_msg = utils.check_user_quota(request.user, 1, instance.vcpu, instance.memory,
                                            utils.disk_gib(instance.disks))
         if quota_msg:
-            messages.error(request, quota_refused(quota_msg, _(
-                "User %(quota_msg)s quota reached, '%(instance_name)s' stays a template!"
-            ) % {"quota_msg": quota_msg, "instance_name": instance.name}))
+            messages.error(request, quota_refused(quota_msg, gettext_noop("%(quota)s: '%(instance_name)s' stays a template."),
+                                                  instance_name=instance.name))
             return _back(request, pk, "options")
     with audit_vm(request, instance, "mark as template" if is_template else "unmark as template"):
         instance.is_template = is_template

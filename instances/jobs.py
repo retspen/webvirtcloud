@@ -124,7 +124,7 @@ def clone_data(user, instance, fields):
     """The clone's settings from the form fields and the source as it is now,
     and what it adds to the user's quota; OperationError with the reason when
     it cannot be made."""
-    from instances.views import VOLUME_NAME_RE, quota_refused
+    from instances.views import VOLUME_NAME_RE
 
     data = dict()
     data["name"] = fields.get("name", "").strip()
@@ -187,10 +187,11 @@ def clone_data(user, instance, fields):
         if key.startswith("disk-") and value is not None and not VOLUME_NAME_RE.fullmatch(value)
     ]
 
+    if not user.is_superuser and quota_msg == utils.QUOTA_UNVERIFIED:
+        raise util.OperationError(utils.QUOTA_UNVERIFIED_TEXT)
     if not user.is_superuser and quota_msg:
-        raise util.OperationError(quota_refused(quota_msg, _(
-            "User '%(quota_msg)s' quota reached, cannot create '%(clone_name)s'!"
-        )), quota_msg=quota_msg, clone_name=data["name"])
+        raise util.OperationError(_("%(quota)s: cannot create '%(clone_name)s'."),
+                                  quota=utils.quota_message(quota_msg), clone_name=data["name"])
     if check_instance:
         raise util.OperationError(_("Instance '%(clone_name)s' already exists!"), clone_name=data["name"])
     if not re.match(r"^[a-zA-Z0-9-]+$", data["name"]):

@@ -45,7 +45,13 @@ RETRY_AFTER = getattr(settings, "LIBVIRT_RETRY_AFTER", 30)
 # request (the job worker's, the consoles') are not counted: a job holds its
 # host for as long as it runs.
 HOST_REQUESTS = getattr(settings, "LIBVIRT_HOST_REQUESTS", 2)
-CLOSE_REASONS = {0: "error", 1: "end of file", 2: "keepalive timeout", 3: "client closed"}
+# libvirt's close reasons, one whole message each
+CLOSE_REASONS = {
+    0: gettext_noop("Connection closed (error)"),
+    1: gettext_noop("Connection closed (end of file)"),
+    2: gettext_noop("Connection closed (keepalive timeout)"),
+    3: gettext_noop("Connection closed (client closed)"),
+}
 # ssh with a connect timeout for qemu+ssh (libvirt runs the "command" binary
 # in place of ssh and never passes one itself)
 SSH_COMMAND = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libvirt-ssh")
@@ -130,8 +136,8 @@ def _count_on(connection):
         return
     _leave_host()
     if not connection.requests.acquire(timeout=CONNECT_TIMEOUT):
-        raise util.ConnectionFailed(
-            f"Connection Failed: {connection.host} does not answer: {HOST_REQUESTS} requests still wait for it")
+        raise util.ConnectionFailed(gettext_noop("Connection Failed: %(host)s does not answer: %(requests)s requests still wait for it"),
+                                    host=connection.host, requests=HOST_REQUESTS)
     _request.held = connection
 
 
@@ -199,7 +205,8 @@ class wvmConnection(object):
         if not opening.wait(CONNECT_TIMEOUT):
             with self.connection_state_lock:
                 if self._opening is opening:  # still running: give up waiting, not the open
-                    self.last_error = f"Connection Failed: {self.host} did not answer within {CONNECT_TIMEOUT} s"
+                    self.last_error = util.message(gettext_noop("Connection Failed: %(host)s did not answer within %(seconds)s s"),
+                                                   host=self.host, seconds=CONNECT_TIMEOUT)
                     opening.abandoned = True
 
     def _open(self, opening):
@@ -219,7 +226,9 @@ class wvmConnection(object):
             except libvirtError:
                 pass
         except Exception as e:  # libvirtError, or anything else from the transport
-            error = f"Connection Failed: {str(e)}"
+            # libvirt's own text stays as it is; one of ours is a message of its own
+            reason = [util.message(e.text, **e.values)] if isinstance(e, util.OperationError) else str(e)
+            error = util.message(gettext_noop("Connection Failed: %(error)s"), error=reason)
         finally:
             with self.connection_state_lock:
                 if error is None:
@@ -276,7 +285,10 @@ class wvmConnection(object):
             # not drop its successor.
             if connection is not self.connection:
                 return
-            self.last_error = f"Connection closed ({CLOSE_REASONS.get(reason, reason)})"
+            if reason in CLOSE_REASONS:
+                self.last_error = util.message(CLOSE_REASONS[reason])
+            else:
+                self.last_error = util.message(gettext_noop("Connection closed (%(reason)s)"), reason=reason)
             # prevent other threads from using the connection (in the future)
             self.connection = None
 
@@ -417,7 +429,10 @@ class wvmConnectionManager(object):
             connection.connect()
             live = connection.alive_connection()
         if live is None:
-            raise util.ConnectionFailed(connection.last_error)
+            # a connection that died without a close callback leaves no error behind
+            error = connection.last_error or util.message(gettext_noop("Connection Failed: %(host)s is not connected"),
+                                                          host=connection.host)
+            raise util.ConnectionFailed(error["text"], **error["values"])
         return live
 
     def host_is_up(self, conn_type, hostname, timeout=1):
