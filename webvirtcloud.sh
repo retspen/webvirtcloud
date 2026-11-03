@@ -210,11 +210,13 @@ configure_nginx () {
 configure_systemd () {
   # The panel's services run as the web server's user; a re-run restarts them.
   units="webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker"
-  for unit in $units; do
+  for unit in $units webvirt-backup; do
     sed "s/^\\(User\\|Group\\)=.*/\\1=$nginx_group/" "$APP_PATH/conf/systemd/$unit.service" > "/etc/systemd/system/$unit.service" || exit 1
   done
+  cp "$APP_PATH/conf/systemd/webvirt-backup.timer" /etc/systemd/system/ || exit 1
   # shellcheck disable=SC2086
-  systemctl daemon-reload && systemctl enable $units && systemctl restart $units || exit 1
+  systemctl daemon-reload && systemctl enable $units && systemctl restart $units &&
+    systemctl enable --now webvirt-backup.timer || exit 1
 }
 
 create_user () {

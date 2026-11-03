@@ -31,3 +31,6 @@ data/
 # Local planning and agent workspace (superpowers)
 /docs/superpowers/
 /.superpowers/
+
+# Panel backups (manage.py backup)
+/backups/

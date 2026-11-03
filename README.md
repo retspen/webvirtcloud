@@ -58,9 +58,10 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 1. [Installation](#installation): [installer](#installer), [Docker](#docker), [manual](#manual-installation), [first login](#first-login)
 2. [Adding a Compute Node](#adding-a-compute-node)
 3. [Configuration](#configuration): [environment variables](#environment-variables), [HTTPS and reverse proxy](#https-and-reverse-proxy), [cloud-init datasource](#cloud-init-datasource), [LDAP](#ldap)
-4. [Updating](#updating)
-5. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api), [screenshots](#screenshots)
-6. [Development](#development)
+4. [Backups](#backups)
+5. [Updating](#updating)
+6. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api), [screenshots](#screenshots)
+7. [Development](#development)
 
 ## Installation
 
@@ -127,15 +128,15 @@ pip install -r conf/requirements.txt
 python3 manage.py migrate
 python3 manage.py collectstatic --noinput
 
-# 6. systemd units (gunicorn, novncd, socketiod and the job worker) and nginx
-cp conf/systemd/webvirt-{cloud,novncd,socketiod,worker}.service /etc/systemd/system/
+# 6. systemd units (gunicorn, novncd, socketiod, the job worker and the daily backup) and nginx
+cp conf/systemd/webvirt-{cloud,novncd,socketiod,worker,backup}.service conf/systemd/webvirt-backup.timer /etc/systemd/system/
 cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 rm -f /etc/nginx/sites-enabled/default
 
 # 7. Ownership, private files, start
 chown -R www-data:www-data /srv/webvirtcloud
 chmod 700 data && chmod 600 webvirtcloud/settings.py db.sqlite3
-systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 nginx -t && systemctl restart nginx
 ```
 
@@ -164,8 +165,9 @@ pip install -r conf/requirements.txt
 python3 manage.py migrate
 python3 manage.py collectstatic --noinput
 
-# 6. systemd units (gunicorn, novncd, socketiod and the job worker, as nginx) and nginx
-for u in cloud novncd socketiod worker; do sed 's/^\(User\|Group\)=.*/\1=nginx/' conf/systemd/webvirt-$u.service > /etc/systemd/system/webvirt-$u.service; done
+# 6. systemd units (gunicorn, novncd, socketiod, the job worker and the daily backup, as nginx) and nginx
+for u in cloud novncd socketiod worker backup; do sed 's/^\(User\|Group\)=.*/\1=nginx/' conf/systemd/webvirt-$u.service > /etc/systemd/system/webvirt-$u.service; done
+cp conf/systemd/webvirt-backup.timer /etc/systemd/system/
 cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 # make sure the default server block in /etc/nginx/nginx.conf does not also listen on port 80
 
@@ -177,7 +179,7 @@ restorecon -R /srv/webvirtcloud 2>/dev/null || true
 setsebool -P httpd_can_network_connect on 2>/dev/null || true
 firewall-cmd --add-service=http --permanent 2>/dev/null || true
 firewall-cmd --reload 2>/dev/null || true
-systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 systemctl enable nginx && nginx -t && systemctl restart nginx
 ```
 
@@ -205,15 +207,16 @@ pip install -r conf/requirements.txt
 python3 manage.py migrate
 python3 manage.py collectstatic --noinput
 
-# 6. systemd units (gunicorn, novncd, socketiod and the job worker, as nginx) and nginx
-for u in cloud novncd socketiod worker; do sed 's/^\(User\|Group\)=.*/\1=nginx/' conf/systemd/webvirt-$u.service > /etc/systemd/system/webvirt-$u.service; done
+# 6. systemd units (gunicorn, novncd, socketiod, the job worker and the daily backup, as nginx) and nginx
+for u in cloud novncd socketiod worker backup; do sed 's/^\(User\|Group\)=.*/\1=nginx/' conf/systemd/webvirt-$u.service > /etc/systemd/system/webvirt-$u.service; done
+cp conf/systemd/webvirt-backup.timer /etc/systemd/system/
 cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 # make sure the default server block in /etc/nginx/nginx.conf does not also listen on port 80
 
 # 7. Ownership, private files, start
 chown -R nginx:nginx /srv/webvirtcloud
 chmod 700 data && chmod 600 webvirtcloud/settings.py db.sqlite3
-systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 systemctl enable nginx && nginx -t && systemctl restart nginx
 ```
 
@@ -436,6 +439,26 @@ A VM without graphics (no `<graphics>` device, a `<console type='pty'>`) opens a
 - One console per VM, at most 20 at a time; a second one is refused with the reason, except a superuser's, which takes the console over.
 - novncd and socketiod log to the journal (`journalctl -u webvirt-novncd -u webvirt-socketiod`) or, in Docker, to `docker logs`: a console that was refused or could not connect says why there.
 
+## Backups
+
+The panel backs itself up every day at 03:15 (cron in Docker, `webvirt-backup.timer` otherwise) into a new directory under `/srv/webvirtcloud/backups`, in Docker the `webvirtcloud-backups` volume, and keeps the newest 7. A backup holds:
+
+- `db.sqlite3`: a consistent copy taken while the panel runs, checked with `PRAGMA integrity_check`; with PostgreSQL it is left out, so back up that database yourself
+- `secret_key`, `node_id` and `settings.py`
+- `ssh/`: the SSH keys of the panel's user, which the SSH computes accept
+- `commit`, outside Docker
+
+The database holds compute passwords and keys: the directories are readable only by the panel's user. They are on the same host as the panel; copy them to another machine as well. A failed backup is reported in `docker logs` or by `systemctl status webvirt-backup` and deletes no older backup.
+
+Take one now:
+
+```bash
+docker compose exec webvirtcloud /sbin/setuser www-data venv/bin/python3 manage.py backup   # Docker
+systemctl start webvirt-backup && journalctl -u webvirt-backup -n 3                          # otherwise
+```
+
+To restore one, follow [Restore and rollback](#restore-and-rollback) with `b` set to its directory. In Docker, copy it out of the volume first (`docker compose cp webvirtcloud:/srv/webvirtcloud/backups/webvirtcloud-backup-YYYYMMDD-HHMMSS ..`) and leave out the `git checkout` and `build` lines: the backup has no commit. On a new machine, also put back `secret_key` and `node_id` into `data/` and `ssh/` into the panel user's `~/.ssh`.
+
 ## Updating
 
 Every update starts with a backup in its own directory (mode 700, named by date) that holds the database, the commit it was taken from and, for installer and manual installations, `settings.py` and the nginx config. The database is copied with SQLite's backup API, which also finishes a write interrupted by a crash. This covers sqlite only; with PostgreSQL (`WEBVIRTCLOUD_DB_HOST`), back up that database yourself before updating.
@@ -529,19 +552,20 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    Put back your own lines (`server_name`, TLS, the noVNC port). Install the systemd units; your own service settings stay in `/etc/default/webvirtcloud` and in drop-ins. Debian / Ubuntu:
 
    ```bash
-   cp conf/systemd/webvirt-{cloud,novncd,socketiod,worker}.service /etc/systemd/system/
+   cp conf/systemd/webvirt-{cloud,novncd,socketiod,worker,backup}.service conf/systemd/webvirt-backup.timer /etc/systemd/system/
    ```
 
    RHEL / openSUSE:
 
    ```bash
-   for u in cloud novncd socketiod worker; do sed 's/^\(User\|Group\)=.*/\1=nginx/' conf/systemd/webvirt-$u.service > /etc/systemd/system/webvirt-$u.service; done
+   for u in cloud novncd socketiod worker backup; do sed 's/^\(User\|Group\)=.*/\1=nginx/' conf/systemd/webvirt-$u.service > /etc/systemd/system/webvirt-$u.service; done
+   cp conf/systemd/webvirt-backup.timer /etc/systemd/system/
    ```
 
    Then reload nginx and start the panel:
 
    ```bash
-   nginx -t && systemctl reload nginx && systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+   nginx -t && systemctl reload nginx && systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
    ```
 
 Older versions collected static files into `static/`; `git clean -n static/` lists the leftovers, which can be deleted.
@@ -572,10 +596,10 @@ cd /srv/webvirtcloud &&
 ! systemctl is-active --quiet webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker &&
 git checkout -- $(git ls-files -m -- static/css dev/scss) &&
 git checkout "$(cat "$b/commit")" &&
-tar -xf "$b/local-migrations.tar" &&
+{ [ ! -f "$b/local-migrations.tar" ] || tar -xf "$b/local-migrations.tar"; } &&
 venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
 cp "$b/settings.py" webvirtcloud/settings.py &&
-cp "$b/webvirtcloud.conf" /etc/nginx/conf.d/webvirtcloud.conf &&
+{ [ ! -f "$b/webvirtcloud.conf" ] || cp "$b/webvirtcloud.conf" /etc/nginx/conf.d/webvirtcloud.conf; } &&
 venv/bin/pip3 install -r conf/requirements.txt &&
 venv/bin/python3 manage.py collectstatic --noinput &&
 chown -R www-data:www-data /srv/webvirtcloud &&
@@ -650,6 +674,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 - Outside compose, stop the Docker container with `docker stop -t 95` so the worker can finish running jobs.
 - Installer and manual installations run the panel as systemd units (`webvirt-cloud`, `webvirt-novncd`, `webvirt-socketiod`, `webvirt-worker`) and computes run `webvirt-gstfsd`, instead of supervisor; see [Moving from supervisor to systemd](#moving-from-supervisor-to-systemd). Service settings go into `/etc/default/webvirtcloud`, service output into the journal (`journalctl -u webvirt-cloud`); the app log stays in `data/`.
 - LDAP login's packages are in `conf/requirements-ldap.txt` and no longer installed by default, nor their build headers by the installer; the Docker image keeps them. An existing virtualenv keeps them, but only installing that file updates them (see [LDAP](#ldap) and step 3).
+- The panel backs itself up every day ([Backups](#backups)); in Docker into a new volume, `webvirtcloud-backups`. Installer and manual installations get it with the units of step 4.
 
 ## Usage
 
