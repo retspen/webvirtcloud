@@ -327,13 +327,20 @@ set_firewall () {
   fi
 }
 
+# A file context rule (type, path pattern): added, or changed on a re-run
+selinux_label () {
+  semanage fcontext -a -t "$1" "$2" 2>/dev/null || semanage fcontext -m -t "$1" "$2"
+}
+
 set_selinux () {
-  #Check if SELinux is enforcing
-  if [ "$(getenforce)" == "Enforcing" ]; then
+  if selinuxenabled 2>/dev/null; then
     echo "* Configuring SELinux."
-    #Sets SELinux context type so that scripts running in the web server process are allowed read/write access
-    chcon -R -h -t httpd_sys_rw_content_t "$APP_PATH/"
-    setsebool -P httpd_can_network_connect 1
+    # nginx reads the static files and systemd runs the venv's programs; rules
+    # rather than chcon, so that a relabel keeps the labels
+    selinux_label httpd_sys_content_t "$APP_PATH(/.*)?" &&
+      selinux_label bin_t "$APP_PATH/venv/bin(/.*)?" &&
+      restorecon -R "$APP_PATH" &&
+      setsebool -P httpd_can_network_connect 1 || exit 1
   fi
 }
 
@@ -562,7 +569,7 @@ case $distro in
     log "yum -y install wget epel-release"
 
     echo "* Installing OS requirements."
-    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openssl-devel"
+    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openssl-devel policycoreutils-python-utils"
     install_packages
 
     set_hosts
@@ -591,7 +598,7 @@ case $distro in
     tzone=\'$(get_timezone)\'
 
     echo "* Installing OS requirements."
-    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute cyrus-sasl openssl-devel"
+    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute cyrus-sasl openssl-devel policycoreutils-python-utils"
     install_packages
 
     set_hosts

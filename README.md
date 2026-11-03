@@ -145,7 +145,7 @@ nginx -t && systemctl restart nginx
 ```bash
 # 1. System packages (libvirt-devel is in the CRB repository)
 dnf -y install epel-release && crb enable
-dnf -y install git python3-devel libvirt-devel python3-libvirt python3-lxml cyrus-sasl-md5 openssl-devel glibc gcc nginx python3-libguestfs iproute-tc
+dnf -y install git python3-devel libvirt-devel python3-libvirt python3-lxml cyrus-sasl-md5 openssl-devel glibc gcc nginx python3-libguestfs iproute-tc policycoreutils-python-utils
 
 # 2. Code
 git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
@@ -174,7 +174,9 @@ cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 # 7. Ownership, private files, SELinux, firewall, start
 chown -R nginx:nginx /srv/webvirtcloud
 chmod 700 data && chmod 600 webvirtcloud/settings.py db.sqlite3
-semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)" 2>/dev/null || true
+# nginx reads the static files, systemd runs the virtualenv's programs
+semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)?" 2>/dev/null || true
+semanage fcontext -a -t bin_t "/srv/webvirtcloud/venv/bin(/.*)?" 2>/dev/null || true
 restorecon -R /srv/webvirtcloud 2>/dev/null || true
 setsebool -P httpd_can_network_connect on 2>/dev/null || true
 firewall-cmd --add-service=http --permanent 2>/dev/null || true
@@ -775,6 +777,7 @@ What an update from an older version changes for operators and users:
 - The Logs page records who changed what (computes, users, groups, VM owners, settings, SSH keys, host networks, pools, volumes, interfaces, secrets and network filters) and every login, failed login and lockout, with the address and the result.
 - On a host whose libvirt cannot change network interfaces (the udev backend: RHEL 9 and later, Debian 12), the interface pages offer no create, start, stop or delete.
 - The panel is offered in English, Turkish and Simplified Chinese.
+- With SELinux (RHEL family, openEuler), systemd could not run the virtualenv's programs and the panel did not start. The installer now writes file context rules (`httpd_sys_content_t` for the panel, `bin_t` for `venv/bin`) instead of `chcon`, so a relabel keeps them. A manual installation runs `semanage fcontext -a -t bin_t "/srv/webvirtcloud/venv/bin(/.*)?"` and `restorecon -R /srv/webvirtcloud` once; an installer one runs the installer again.
 
 ## Usage
 
