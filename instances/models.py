@@ -223,16 +223,24 @@ class Instance(models.Model):
         "disk:vda"."""
         order = [f"{d['dev']}:{d['target']}" for position, d in sorted(self.config_boot_order.items())]
         devices = (
-            [{"value": f"disk:{d['dev']}", "name": d["dev"], "kind": _("Disk"), "source": d["image"]}
+            [{"value": f"disk:{d['dev']}", "name": d["dev"], "kind": _("Disk"), "source": d["image"], "icon": "device-hdd"}
              for d in self.config_disks]
-            + [{"value": f"cdrom:{d['dev']}", "name": d["dev"], "kind": _("CD-ROM"), "source": d["image"]}
+            + [{"value": f"cdrom:{d['dev']}", "name": d["dev"], "kind": _("CD-ROM"), "source": d["image"], "icon": "disc"}
                for d in self.config_media]
-            + [{"value": f"network:{n['mac']}", "name": n["mac"], "kind": _("NIC"), "source": n["nic"]}
+            + [{"value": f"network:{n['mac']}", "name": n["mac"], "kind": _("NIC"), "source": n["nic"], "icon": "ethernet"}
                for n in self.config_networks]
         )
         for device in devices:
             device["checked"] = device["value"] in order
         return sorted(devices, key=lambda d: order.index(d["value"]) if d["checked"] else len(order))
+
+    @cached_property
+    def config_boot_types(self) -> str:
+        """The device types the VM boots by, in turn ("disk, cdrom"), when its
+        order names types rather than devices; "" otherwise."""
+        if any(d["checked"] for d in self.config_boot_devices):
+            return ""
+        return ", ".join(b["target"] for position, b in sorted(self.config_boot_order.items()))
 
     @cached_property
     def config_video_model(self) -> str | None:

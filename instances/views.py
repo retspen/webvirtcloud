@@ -1816,7 +1816,7 @@ def set_bootorder(request, pk):
     instance = get_instance(request.user, pk)
     bootorder = request.POST.get("bootorder", "")
     if not bootorder:
-        messages.error(request, _("Check at least one device to boot from."))
+        messages.error(request, _("Add at least one device to the boot order."))
         return _back(request, pk, "boot_opt")
     order_list = {}
     for idx, val in enumerate(bootorder.split(",")):

@@ -154,35 +154,37 @@
     // every NIC of the clone a new address: one the VM has would clash with it
     document.querySelectorAll("[data-new-mac]").forEach(function (input) { random_mac(input.name); });
 
-    // the boot order: the checked devices, top to bottom, as "disk:vda,cdrom:sda"
-    function set_orderlist() {
-        var order = $('#b_order input:checked').map(function () { return this.value; }).get();
-        $('#bootorder').val(order.join(','));
+    // the boot order: the devices of #boot-chain in turn, as "disk:vda,cdrom:sda"; each moves on its own
+    var chain = document.getElementById("boot-chain");
+    if (chain) {
+        var spare = document.getElementById("boot-spare");
+        var refresh = function () {
+            var nodes = Array.from(chain.children);
+            document.getElementById("bootorder").value = nodes.map(function (node) { return node.dataset.bootValue; }).join(",");
+            document.getElementById("boot-chain-empty").hidden = nodes.length > 0;
+            nodes.forEach(function (node, i) {
+                node.querySelector('[data-boot="up"]').disabled = i === 0;
+                node.querySelector('[data-boot="down"]').disabled = i === nodes.length - 1;
+            });
+        };
+        document.getElementById("boot_opt").addEventListener("click", function (event) {
+            var button = event.target.closest("[data-boot]");
+            if (!button) return;
+            var node = button.closest(".boot-node");
+            var action = button.dataset.boot;
+            if (action === "up") chain.insertBefore(node, node.previousElementSibling);
+            if (action === "down") chain.insertBefore(node.nextElementSibling, node);
+            if (action === "remove") spare.prepend(node);
+            if (action === "add") chain.append(node);
+            refresh();
+            // the keyboard stays on the device that moved
+            var same = { up: "up", down: "down", remove: "add", add: "remove" }[action];
+            var target = node.querySelector('[data-boot="' + same + '"]');
+            if (target.disabled) target = node.querySelector('.boot-chain-only [data-boot]:not([disabled])');
+            target.focus();
+        });
+        refresh();
     }
-    set_orderlist();
-    $('#b_order').on('change', 'input', set_orderlist);
-    $('#boot_order_up').on('click', function () {
-        $('#b_order label input:checked').each(function () {
-            var label = $(this).parent();
-            var newPos = label.index() - 1;
-            if (newPos > -1) {
-                $('#b_order label').eq(newPos).before(label);
-            }
-        });
-        set_orderlist();
-    });
-    $('#boot_order_down').on('click', function () {
-        var countOptions = $('#b_order label').length;
-        var countSelected = $('#b_order label input:checked').length;
-        $('#b_order label input:checked').each(function () {
-            var label = $(this).parent();
-            var newPos = label.index() + countSelected;
-            if (newPos < countOptions) {
-                $('#b_order label').eq(newPos).after(label);
-            }
-        });
-        set_orderlist();
-    });
 
     // the Host devices tab's add forms: loaded once, when the tab first opens
     var hostDevices = document.getElementById("host-devices");
