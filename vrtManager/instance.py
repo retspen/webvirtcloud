@@ -779,11 +779,12 @@ class wvmInstance(wvmConnect):
     def get_max_memory(self):
         return self.host_info[1] * 1048576
 
-    def get_max_cpus(self):
-        """Get number of physical CPUs."""
+    def get_max_cpus(self, at_least=0):
+        """The vCPU counts to offer: up to the host's logical CPUs, or up to
+        at_least when that is more (a VM's own maximum, kept by a resize)."""
         hostinfo = self.host_info
         pcpus = hostinfo[4] * hostinfo[5] * hostinfo[6] * hostinfo[7]
-        return range(1, int(pcpus + 1))
+        return range(1, max(int(pcpus), at_least) + 1)
 
     def get_interface_addresses(self, iface_mac):
         """The running VM's addresses of the NIC with iface_mac: (IPv4, IPv6

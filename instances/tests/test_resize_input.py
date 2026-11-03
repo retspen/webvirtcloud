@@ -8,7 +8,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.models import Instance
 from libvirt import VIR_DOMAIN_RUNNING
@@ -94,3 +94,16 @@ class ResizeInputTests(TestCase):
             from django.template.loader import render_to_string
             html = render_to_string("instances/resize_tab.html", {"instance": self.vm, "can_change": True})
         self.assertRegex(html, r'<input [^>]*name="memory"[^>]*disabled>')
+
+
+class VcpuRangeTests(SimpleTestCase):
+    """The Resize tab offers the VM's own maximum even above the host's CPUs,
+    so a resize does not lower it to the first choice."""
+
+    def test_the_counts_reach_the_vm_s_maximum(self):
+        from vrtManager.instance import wvmInstance
+
+        vm = wvmInstance.__new__(wvmInstance)
+        vm.__dict__["host_info"] = ["x86_64", 4096, 2, 0, 1, 1, 2, 1]  # 2 logical CPUs
+        self.assertEqual(list(vm.get_max_cpus()), [1, 2])
+        self.assertEqual(list(vm.get_max_cpus(at_least=4)), [1, 2, 3, 4])

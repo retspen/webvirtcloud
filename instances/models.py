@@ -117,7 +117,8 @@ class Instance(models.Model):
 
     @cached_property
     def vcpu_range(self):
-        return self.proxy.get_max_cpus()
+        """The vCPU counts the Resize tab offers, the VM's own maximum among them."""
+        return self.proxy.get_max_cpus(at_least=self.config_vcpu)
 
     @cached_property
     def cur_vcpu(self):

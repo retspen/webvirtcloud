@@ -330,7 +330,7 @@ def _instance_page(request, pk, instance, compute):
     # userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
     userinstances = instance.userinstance_set.order_by("user__username")
     # Host resources
-    vcpu_host = len(instance.vcpu_range)
+    vcpu_host = len(instance.proxy.get_max_cpus())  # the host's logical CPUs, not the VM's maximum
     memory_host = instance.proxy.get_max_memory()
     bus_host = instance.proxy.get_disk_bus_types(instance.arch, instance.machine)
     cdrom_buses = cdrom_bus_choices(instance)
