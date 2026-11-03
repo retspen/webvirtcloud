@@ -11,7 +11,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
-from instances.utils import QUOTA_UNVERIFIED
+from instances.utils import QUOTA_UNVERIFIED, QuotaExceeded
 
 
 class TemplateFlagQuotaTests(TestCase):
@@ -49,7 +49,7 @@ class TemplateFlagQuotaTests(TestCase):
 
     def test_over_quota_the_template_stays_a_template(self):
         Instance.objects.filter(pk=self.vm.pk).update(is_template=True)
-        _, messages = self.post(self.staff, is_template=False, quota="cpu")
+        _, messages = self.post(self.staff, is_template=False, quota=QuotaExceeded("cpu", 9, 8))
         self.assertTrue(self.vm.is_template)
         self.assertTrue(any("quota" in m for m in messages), messages)
 
@@ -70,6 +70,6 @@ class TemplateFlagQuotaTests(TestCase):
     def test_superusers_have_no_quota(self):
         Instance.objects.filter(pk=self.vm.pk).update(is_template=True)
         admin = get_user_model().objects.create_superuser("tq-admin", "tq@example.com", "pw")
-        check, _ = self.post(admin, is_template=False, quota="cpu")
+        check, _ = self.post(admin, is_template=False, quota=QuotaExceeded("cpu", 9, 8))
         self.assertFalse(self.vm.is_template)
         check.assert_not_called()

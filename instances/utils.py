@@ -2,6 +2,7 @@ import os
 import random
 import re
 import string
+from collections import namedtuple
 
 from accounts.models import UserInstance, UserAttributes
 from appsettings.settings import app_settings
@@ -9,12 +10,13 @@ from computes.models import Compute
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from libvirt import libvirtError
 from logs.audit import reason, write
 from operations.models import Operation
 from vrtManager.connection import other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
-from vrtManager.util import OperationError
+from vrtManager.util import OperationError, message
 
 from .models import Instance
 
@@ -73,13 +75,34 @@ def disk_gib(disks):
 
 # check_user_quota could not read every VM of the user: an increase is refused
 QUOTA_UNVERIFIED = "unverified"
+QUOTA_UNVERIFIED_TEXT = gettext_noop(
+    "The quota cannot be checked because a host of your virtual machines cannot be reached. Nothing was changed.")
+
+# The quota a change would exceed: instance, cpu, memory or disk, the total it
+# would make and the limit
+QuotaExceeded = namedtuple("QuotaExceeded", "kind total limit")
+QUOTA_REACHED = {
+    "instance": gettext_noop("The quota of virtual machines is reached"),
+    "cpu": gettext_noop("The vCPU quota is reached"),
+    "memory": gettext_noop("The memory quota is reached"),
+    "disk": gettext_noop("The disk quota is reached"),
+}
+
+
+def quota_message(exceeded):
+    """The quota check's result as messages, with the numbers when QUOTA_DEBUG is on."""
+    reached = message(QUOTA_REACHED[exceeded.kind])
+    if app_settings.QUOTA_DEBUG != "True":
+        return [reached]
+    return [message(gettext_noop("%(quota)s (%(total)s > %(limit)s)"),
+                    quota=[reached], total=exceeded.total, limit=exceeded.limit)]
 
 
 @other_hosts()
 def check_user_quota(user, instance, cpu, memory, disk_size):
     """
-    Which quota the user would exceed by adding these amounts (instances,
-    vCPUs, memory MiB, disk GiB) to their VMs, or "". A quota of -1 has no
+    The quota the user would exceed by adding these amounts (instances,
+    vCPUs, memory MiB, disk GiB) to their VMs, a QuotaExceeded, or "". A quota of -1 has no
     limit; 0 allows none. QUOTA_UNVERIFIED if a
     VM that counts cannot be read (its host is down, the VM is gone): the
     usage is unknown, so an increase is refused.
@@ -93,8 +116,6 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     if instance <= 0 and cpu <= 0 and memory <= 0 and disk_size <= 0:
         return msg
 
-    quota_debug = app_settings.QUOTA_DEBUG == "True"
-
     user_instances = UserInstance.objects.filter(user=user, instance__is_template=False).select_related(
         "instance__compute"
     )
@@ -106,10 +127,7 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     ]
     instance += user_instances.count() + len(clones)
     if ua.max_instances >= 0 and instance > ua.max_instances:
-        msg = "instance"
-        if quota_debug:
-            msg += f" ({instance} > {ua.max_instances})"
-        return msg
+        return QuotaExceeded("instance", instance, ua.max_instances)
     if ua.max_cpus < 0 and ua.max_memory < 0 and ua.max_disk_size < 0:
         return msg
 
@@ -141,17 +159,11 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
             return QUOTA_UNVERIFIED
 
     if ua.max_cpus >= 0 and cpu > ua.max_cpus:
-        msg = "cpu"
-        if quota_debug:
-            msg += f" ({cpu} > {ua.max_cpus})"
+        msg = QuotaExceeded("cpu", cpu, ua.max_cpus)
     if ua.max_memory >= 0 and memory > ua.max_memory:
-        msg = "memory"
-        if quota_debug:
-            msg += f" ({memory} > {ua.max_memory})"
+        msg = QuotaExceeded("memory", memory, ua.max_memory)
     if ua.max_disk_size >= 0 and disk_size > ua.max_disk_size:
-        msg = "disk"
-        if quota_debug:
-            msg += f" ({disk_size} > {ua.max_disk_size})"
+        msg = QuotaExceeded("disk", disk_size, ua.max_disk_size)
     return msg
 
 

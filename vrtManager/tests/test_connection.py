@@ -194,7 +194,7 @@ class BoundedOpenTestCase(unittest.TestCase):
         self.assertIs(self.get()[0], new)
         entry._wvmConnection__connection_close_callback(new, 2)
         self.assertIsNone(entry.connection)
-        self.assertEqual(entry.last_error, "Connection closed (keepalive timeout)")
+        self.assertEqual(entry.last_error, {"text": "Connection closed (keepalive timeout)", "values": {}})
 
     def test_a_connection_closed_before_it_is_published_is_an_error(self):
         self.release.set()

@@ -12,7 +12,8 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
-from instances.utils import QUOTA_UNVERIFIED, check_user_quota
+from instances.utils import QUOTA_UNVERIFIED, QuotaExceeded, check_user_quota, quota_message
+from vrtManager.util import render
 from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING
 from operations.models import Operation
 from vrtManager.util import OperationError
@@ -71,7 +72,7 @@ class QuotaTests(TestCase):
             "instances.utils.wvmInstance", side_effect=reader
         ) as wvm:
             result = check_user_quota(self.user, *delta)
-        return result.split(" ")[0], wvm.call_count  # without the QUOTA_DEBUG detail
+        return getattr(result, "kind", result), wvm.call_count  # a QuotaExceeded names the quota
 
     def test_vms_on_a_host_without_a_tcp_route_are_counted(self):
         # an ssh_config alias: the old TCP probe failed and skipped these VMs
@@ -191,12 +192,15 @@ class QuotaTests(TestCase):
 
         for i in range(5):
             self.own(self.up, i)
-        for value, expected in (("True", "instance (6 > 5)"), ("False", "instance")):
+        with patch.object(Compute, "status", True), patch("instances.utils.wvmInstance", side_effect=vm_reader()):
+            exceeded = check_user_quota(self.user, 1, 0, 0, 0)
+        self.assertEqual(exceeded, QuotaExceeded("instance", 6, 5))
+        for value, expected in (("True", "The quota of virtual machines is reached (6 > 5)"),
+                                ("False", "The quota of virtual machines is reached")):
             with self.subTest(value=value):
                 AppSettings.objects.filter(key="QUOTA_DEBUG").update(value=value)
                 get_settings()
-                with patch.object(Compute, "status", True), patch("instances.utils.wvmInstance", side_effect=vm_reader()):
-                    self.assertEqual(check_user_quota(self.user, 1, 0, 0, 0), expected)
+                self.assertEqual(render("%(quota)s", {"quota": quota_message(exceeded)}, str), expected)
 
 
 class QuotaViewTests(TestCase):
@@ -228,7 +232,7 @@ class QuotaViewTests(TestCase):
                                          status=5)
         self.assertEqual(len(messages), 1)
         self.assertIn("a host of your virtual machines cannot be reached", messages[0])
-        self.assertNotIn("quota reached", messages[0])
+        self.assertNotIn("quota is reached", messages[0])
         proxy.resize_cpu.assert_not_called()
 
     def test_running_vm_memory_charges_no_maximum_change(self):
