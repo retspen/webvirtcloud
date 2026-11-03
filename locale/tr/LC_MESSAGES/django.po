@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 17:31+0000\n"
+"POT-Creation-Date: 2026-11-03 19:32+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -229,8 +229,6 @@ msgstr "Sanal makine ekle"
 #: instances/templates/allinstances_index_nongrouped.html:8
 #: instances/templates/create_steps.html:6
 #: instances/templates/create_steps.html:8
-#: instances/templates/instances/resize_tab.html:35
-#: instances/templates/instances/resize_tab.html:134
 #: operations/templates/operations/jobs.html:24
 msgid "Host"
 msgstr "Sunucu"
@@ -710,7 +708,6 @@ msgstr "Üyeler"
 #: computes/templates/computes/form.html:46
 #: instances/templates/instances/edit_instance_volume.html:112
 #: instances/templates/instances/nic_qos_form.html:23
-#: instances/templates/instances/resize_tab.html:114
 #: instances/templates/instances/settings_tab.html:410
 #: instances/templates/instances/settings_tab.html:644
 #: instances/templates/instances/settings_tab.html:893
@@ -1656,6 +1653,7 @@ msgstr "Yeni sanal makine varsayılanları"
 
 #: appsettings/views.py:40 instances/templates/instance.html:64
 #: instances/templates/instances/destroy_instance_form.html:32
+#: instances/templates/instances/resize_tab.html:20
 #: instances/templates/instances/settings_tab.html:197
 msgid "Disks"
 msgstr "Diskler"
@@ -2074,7 +2072,7 @@ msgstr "VCPU"
 #: instances/templates/allinstances_index_nongrouped.html:15
 #: instances/templates/create_inst_block.html:33
 #: instances/templates/instance.html:60
-#: instances/templates/instances/resize_tab.html:15
+#: instances/templates/instances/resize_tab.html:17
 #: instances/templates/instances/stats_tab.html:34
 msgid "Memory"
 msgstr "Bellek"
@@ -2130,6 +2128,7 @@ msgstr "/ %(memory)s"
 #: instances/forms.py:15 instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
+#: instances/templates/instances/resize_tab.html:29
 #: instances/templates/instances/settings_tab.html:840
 msgid "vCPUs"
 msgstr "vCPU"
@@ -2718,7 +2717,7 @@ msgstr ""
 msgid "Delete snapshot"
 msgstr "Anlık görüntüyü sil"
 
-#: instances/jobs.py:304 vrtManager/instance.py:2280
+#: instances/jobs.py:304 vrtManager/instance.py:2281
 #, python-format
 msgid "The VM has no external snapshot named %(name)s"
 msgstr "Sanal makinede %(name)s adında harici anlık görüntü yok"
@@ -2753,7 +2752,7 @@ msgstr "Sanal makine artık işin çalıştığı sunucuda değil"
 msgid "Take snapshot"
 msgstr "Anlık görüntü al"
 
-#: instances/jobs.py:372 vrtManager/instance.py:1876
+#: instances/jobs.py:372 vrtManager/instance.py:1877
 #, python-format
 msgid "A snapshot named %(name)s already exists"
 msgstr "%(name)s adında bir anlık görüntü zaten var"
@@ -2928,7 +2927,7 @@ msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:775 vrtManager/instance.py:2999
+#: instances/jobs.py:775 vrtManager/instance.py:3000
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
@@ -3043,67 +3042,66 @@ msgstr "oluşturuldu"
 msgid "drbd"
 msgstr "drbd"
 
-#: instances/models.py:226 instances/templates/create_instance_w2.html:118
-#: instances/templates/instances/resize_tab.html:20
+#: instances/models.py:237 instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:51
 msgid "Disk"
 msgstr "Disk"
 
-#: instances/models.py:228 instances/templates/create_instance_w2.html:312
+#: instances/models.py:239 instances/templates/create_instance_w2.html:312
 #: instances/templates/instances/settings_tab.html:159
 msgid "CD-ROM"
 msgstr "CD-ROM"
 
-#: instances/models.py:230
+#: instances/models.py:241
 msgid "NIC"
 msgstr "NIC"
 
-#: instances/models.py:403
+#: instances/models.py:414
 msgid "Live"
 msgstr "Canlı"
 
-#: instances/models.py:404
+#: instances/models.py:415
 msgid "Offline"
 msgstr "Çevrimdışı"
 
-#: instances/models.py:405
+#: instances/models.py:416
 msgid "Auto Converge"
 msgstr "Otomatik yavaşlat"
 
-#: instances/models.py:406
+#: instances/models.py:417
 msgid "Compress"
 msgstr "Sıkıştır"
 
-#: instances/models.py:407
+#: instances/models.py:418
 msgid "Unsafe"
 msgstr "Güvenli olmayan"
 
-#: instances/models.py:419
+#: instances/models.py:430
 msgid "No Virtual Machine name has been entered"
 msgstr "Sanal makine adı girilmedi"
 
-#: instances/models.py:425
+#: instances/models.py:436
 msgid "No VCPU has been entered"
 msgstr "VCPU belirtilmedi"
 
-#: instances/models.py:431
+#: instances/models.py:442
 msgid "No RAM size has been entered"
 msgstr "RAM boyutu belirtilmedi"
 
-#: instances/models.py:435
+#: instances/models.py:446
 msgid "No Network pool has been choosen"
 msgstr "Ağ havuzu seçilmedi"
 
-#: instances/models.py:443
+#: instances/models.py:454
 msgid "Please select HDD cache mode"
 msgstr "Lütfen HDD ön bellek modunu seçin"
 
-#: instances/models.py:455
+#: instances/models.py:466
 msgid "Please select a video driver"
 msgstr "Lütfen bir video sürücüsü seçin"
 
-#: instances/models.py:492
+#: instances/models.py:503
 msgid "Can access console without password"
 msgstr "Parolasız konsol erişimi yapabilir"
 
@@ -3505,7 +3503,7 @@ msgstr "Sanal makinenin çalışacağı sunucuyu seçin."
 
 #: instances/templates/create_inst_block.html:23
 #: instances/templates/instance.html:56
-#: instances/templates/instances/resize_tab.html:10
+#: instances/templates/instances/resize_tab.html:14
 #: instances/templates/instances/stats_tab.html:27
 msgid "CPU"
 msgstr "CPU"
@@ -4494,130 +4492,111 @@ msgstr "Zorla Kapat"
 msgid "Power Cycle"
 msgstr "Yeniden başlat"
 
-#: instances/templates/instances/resize_tab.html:33
-msgid "CPU allocation"
-msgstr "CPU ataması"
+#: instances/templates/instances/resize_tab.html:8
+msgid "You don't have permission for resizing instance"
+msgstr "Sanal makineyi yeniden boyutlandırma iznine sahip değilsiniz"
 
-#: instances/templates/instances/resize_tab.html:34
-#, python-format
-msgid "Now %(cur)s of %(max)s vCPUs."
-msgstr "Şu an %(max)s vCPU'dan %(cur)s."
+#: instances/templates/instances/resize_tab.html:12
+msgid "Resources to resize"
+msgstr "Boyutlandırılacak kaynaklar"
 
 #: instances/templates/instances/resize_tab.html:35
+msgid "on, turn off"
+msgstr "açık, kapat"
+
+#: instances/templates/instances/resize_tab.html:37
+msgid "off, turn on"
+msgstr "kapalı, aç"
+
+#: instances/templates/instances/resize_tab.html:41
+msgid "on"
+msgstr "açık"
+
+#: instances/templates/instances/resize_tab.html:41
+msgid "off"
+msgstr "kapalı"
+
+#: instances/templates/instances/resize_tab.html:45
 #, python-format
-msgid "%(count)s logical CPUs"
-msgstr "%(count)s mantıksal CPU"
+msgid "%(cur)s on, up to %(max)s"
+msgstr "%(cur)s açık, en fazla %(max)s"
 
-#: instances/templates/instances/resize_tab.html:39
-#: instances/templates/instances/resize_tab.html:138
-msgid "The VM gets these at its next start."
-msgstr "Sanal makine bunları bir sonraki başlatmada alır."
+#: instances/templates/instances/resize_tab.html:46
+#, python-format
+msgid "Host: %(count)s logical CPUs"
+msgstr "Sunucu: %(count)s mantıksal CPU"
 
-#: instances/templates/instances/resize_tab.html:40
-msgid "Shut the VM down to change its vCPUs."
-msgstr "vCPU'larını değiştirmek için sanal makineyi kapatın."
-
-#: instances/templates/instances/resize_tab.html:40
-msgid "While it runs, turn vCPUs on and off below."
-msgstr "Çalışırken vCPU'ları aşağıdan açıp kapatın."
-
-#: instances/templates/instances/resize_tab.html:44
-msgid "Current vCPUs"
-msgstr "Geçerli vCPU'lar"
-
-#: instances/templates/instances/resize_tab.html:52
-msgid "Maximum vCPUs"
-msgstr "En fazla vCPU"
-
-#: instances/templates/instances/resize_tab.html:61
-msgid "Resize CPU"
-msgstr "CPU Boyutlandır"
-
-#: instances/templates/instances/resize_tab.html:70
-msgid "Live vCPUs"
-msgstr "Canlı vCPU'lar"
-
-#: instances/templates/instances/resize_tab.html:72
-msgid "Turn a vCPU on or off now; the next start keeps it so. vCPU 0 stays on."
+#: instances/templates/instances/resize_tab.html:49
+msgid "Click a vCPU to turn it on or off now; the next start keeps it so."
 msgstr ""
-"Bir vCPU'yu şimdi açın veya kapatın; sonraki başlatmada da öyle kalır. vCPU 0"
-" açık kalır."
+"Bir vCPU'ya tıklayarak onu şimdi açın veya kapatın; sonraki başlatmada da "
+"öyle kalır."
 
-#: instances/templates/instances/resize_tab.html:73
+#: instances/templates/instances/resize_tab.html:49
 msgid "A paused VM cannot let one go: resume it to turn vCPUs off."
 msgstr ""
 "Duraklatılmış sanal makine vCPU bırakamaz: vCPU'ları kapatmak için devam "
 "ettirin."
 
-#: instances/templates/instances/resize_tab.html:82
-#, python-format
-msgid "%(id)s · Fixed"
-msgstr "%(id)s · Sabit"
+#: instances/templates/instances/resize_tab.html:54
+msgid "Current"
+msgstr "Şu an"
 
-#: instances/templates/instances/resize_tab.html:84
-#, python-format
-msgid "%(id)s · On"
-msgstr "%(id)s · Açık"
+#: instances/templates/instances/resize_tab.html:60
+msgid "Maximum"
+msgstr "En fazla"
 
-#: instances/templates/instances/resize_tab.html:84
-msgid "turn off"
-msgstr "kapat"
+#: instances/templates/instances/resize_tab.html:66
+msgid "Resize CPU"
+msgstr "CPU'yu boyutlandır"
 
-#: instances/templates/instances/resize_tab.html:86
-#, python-format
-msgid "%(id)s · Off"
-msgstr "%(id)s · Kapalı"
+#: instances/templates/instances/resize_tab.html:69
+#: instances/templates/instances/resize_tab.html:101
+msgid "The VM gets these at its next start."
+msgstr "Sanal makine bunları bir sonraki başlatmada alır."
 
-#: instances/templates/instances/resize_tab.html:86
-msgid "turn on"
-msgstr "aç"
+#: instances/templates/instances/resize_tab.html:69
+msgid "Shut the VM down to change its vCPUs."
+msgstr "vCPU'larını değiştirmek için sanal makineyi kapatın."
 
-#: instances/templates/instances/resize_tab.html:99
+#: instances/templates/instances/resize_tab.html:75
 msgid "vCPU hot plug"
 msgstr "vCPU sıcak takma"
 
-#: instances/templates/instances/resize_tab.html:101
+#: instances/templates/instances/resize_tab.html:77
 msgid "Lets vCPUs up to the maximum be turned on and off while the VM runs."
 msgstr ""
 "Sanal makine çalışırken azami sayıya kadar vCPU'ların açılıp kapatılmasını "
 "sağlar."
 
-#: instances/templates/instances/resize_tab.html:102
+#: instances/templates/instances/resize_tab.html:77
 #: instances/templates/instances/settings_tab.html:913
 msgid "Shut the VM down to change this."
 msgstr "Bunu değiştirmek için sanal makineyi kapatın."
 
-#: instances/templates/instances/resize_tab.html:109
-#: instances/templates/instances/settings_tab.html:1020
-msgid "Enabled"
-msgstr "Etkin"
-
-#: instances/templates/instances/resize_tab.html:110
-#: instances/templates/instances/settings_tab.html:1021
-msgid "Disabled"
-msgstr "Devredışı"
-
-#: instances/templates/instances/resize_tab.html:123
-#: instances/templates/instances/resize_tab.html:160
-#: instances/templates/instances/resize_tab.html:201
-msgid "You don't have permission for resizing instance"
-msgstr "Sanal makineyi yeniden boyutlandırma iznine sahip değilsiniz"
-
-#: instances/templates/instances/resize_tab.html:132
-msgid "Memory allocation"
-msgstr "Bellek ataması"
-
-#: instances/templates/instances/resize_tab.html:133
+#: instances/templates/instances/resize_tab.html:84
 #, python-format
-msgid "Now %(cur)s MiB of maximum %(max)s MiB."
-msgstr "Şu an en fazla %(max)s MiB'den %(cur)s MiB."
+msgid "%(cur)s MiB of %(max)s MiB"
+msgstr "%(cur)s MiB / %(max)s MiB"
 
-#: instances/templates/instances/resize_tab.html:134
+#: instances/templates/instances/resize_tab.html:85
 #, python-format
-msgid "%(total)s memory"
-msgstr "%(total)s bellek"
+msgid "Host: %(total)s"
+msgstr "Sunucu: %(total)s"
 
-#: instances/templates/instances/resize_tab.html:139
+#: instances/templates/instances/resize_tab.html:89
+msgid "Current (MiB)"
+msgstr "Şu an (MiB)"
+
+#: instances/templates/instances/resize_tab.html:93
+msgid "Maximum (MiB)"
+msgstr "En fazla (MiB)"
+
+#: instances/templates/instances/resize_tab.html:98
+msgid "Resize memory"
+msgstr "Belleği boyutlandır"
+
+#: instances/templates/instances/resize_tab.html:101
 msgid ""
 "The current memory changes now, up to the maximum; shut the VM down to change"
 " the maximum."
@@ -4625,25 +4604,7 @@ msgstr ""
 "Geçerli bellek, azami değere kadar hemen değişir; azami değeri değiştirmek "
 "için sanal makineyi kapatın."
 
-#: instances/templates/instances/resize_tab.html:143
-msgid "Current memory (MiB)"
-msgstr "Geçerli bellek (MiB)"
-
-#: instances/templates/instances/resize_tab.html:147
-msgid "Maximum memory (MiB)"
-msgstr "En fazla bellek (MiB)"
-
-#: instances/templates/instances/resize_tab.html:153
-msgid "Resize memory"
-msgstr "Belleği boyutlandır"
-
-#: instances/templates/instances/resize_tab.html:169
-#: instances/templates/instances/resize_tab.html:191
-#: instances/templates/instances/resize_tab.html:193
-msgid "Grow disks"
-msgstr "Diskleri büyüt"
-
-#: instances/templates/instances/resize_tab.html:170
+#: instances/templates/instances/resize_tab.html:104
 msgid ""
 "A new size in GiB, larger than the disk's; empty keeps a disk as it is. Disks"
 " grow while the VM runs; the guest then grows its partition and file system."
@@ -4652,15 +4613,24 @@ msgstr ""
 "olduğu gibi kalır. Diskler sanal makine çalışırken büyür; ardından konuk "
 "sistem bölümünü ve dosya sistemini büyütür."
 
-#: instances/templates/instances/resize_tab.html:178
+#: instances/templates/instances/resize_tab.html:110
 #: instances/templates/instances/settings_tab.html:211
 msgid "Error getting disk info"
 msgstr "Disk bilgisi elde edilirken hata"
 
-#: instances/templates/instances/resize_tab.html:180
+#: instances/templates/instances/resize_tab.html:112
 #, python-format
 msgid "Now %(size)s"
 msgstr "Şu an %(size)s"
+
+#: instances/templates/instances/resize_tab.html:115
+msgid "New size"
+msgstr "Yeni boyut"
+
+#: instances/templates/instances/resize_tab.html:124
+#: instances/templates/instances/resize_tab.html:126
+msgid "Grow disks"
+msgstr "Diskleri büyüt"
 
 #: instances/templates/instances/settings_tab.html:20
 msgid "Boot"
@@ -5509,6 +5479,14 @@ msgstr "Sanal makine çalışmıyor"
 #: instances/templates/instances/settings_tab.html:1011
 msgid "No channel"
 msgstr "Kanal yok"
+
+#: instances/templates/instances/settings_tab.html:1020
+msgid "Enabled"
+msgstr "Etkin"
+
+#: instances/templates/instances/settings_tab.html:1021
+msgid "Disabled"
+msgstr "Devredışı"
 
 #: instances/templates/instances/snapshots_tab.html:11
 msgid "Snapshots"
@@ -9003,7 +8981,7 @@ msgstr ""
 "Anlık görüntü adları 1-64 harf, rakam, '.', '_' veya '-' karakterinden oluşur"
 " ve '.' ile başlamaz"
 
-#: vrtManager/instance.py:1076
+#: vrtManager/instance.py:1077
 msgid ""
 "A device other than a disk or NIC is in the boot order: change it in the XML "
 "editor"
@@ -9011,100 +8989,100 @@ msgstr ""
 "Önyükleme sırasında disk veya NIC dışında bir aygıt var: bunu XML "
 "düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:1088
+#: vrtManager/instance.py:1089
 msgid "Invalid Device Type for boot order"
 msgstr "Ön yükleme sırası için geçersiz aygıt türü"
 
-#: vrtManager/instance.py:1091
+#: vrtManager/instance.py:1092
 #, python-format
 msgid "Boot device %(dev)s is not in the definition"
 msgstr "Ön yükleme aygıtı %(dev)s tanımda yok"
 
-#: vrtManager/instance.py:1111
+#: vrtManager/instance.py:1112
 #, python-format
 msgid "CD-ROM %(dev)s is not in the running definition"
 msgstr "CD-ROM %(dev)s çalışan tanımda yok"
 
-#: vrtManager/instance.py:1112
+#: vrtManager/instance.py:1113
 #, python-format
 msgid "CD-ROM %(dev)s is not in the persistent definition"
 msgstr "CD-ROM %(dev)s kalıcı tanımda yok"
 
-#: vrtManager/instance.py:1124
+#: vrtManager/instance.py:1125
 #, python-format
 msgid "Media of %(dev)s changed in the running VM only: %(err)s"
 msgstr "%(dev)s ortamı yalnızca çalışan sanal makinede değişti: %(err)s"
 
-#: vrtManager/instance.py:1135
+#: vrtManager/instance.py:1136
 #, python-format
 msgid "ISO image %(image)s was not found"
 msgstr "ISO imajı %(image)s bulunamadı"
 
-#: vrtManager/instance.py:1137
+#: vrtManager/instance.py:1138
 #, python-format
 msgid "ISO image %(image)s is in more than one storage pool"
 msgstr "ISO imajı %(image)s birden fazla depolama havuzunda var"
 
-#: vrtManager/instance.py:1244
+#: vrtManager/instance.py:1245
 #, python-format
 msgid "Disk %(target_dev)s is not in the VM's definition"
 msgstr "Disk %(target_dev)s sanal makinenin tanımında yok"
 
-#: vrtManager/instance.py:1372
+#: vrtManager/instance.py:1373
 msgid "Please shutdown the instance then try to enable vCPU hotplug"
 msgstr ""
 "vCPU hotplug özelliğini etkinleştirmek için önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:1835
+#: vrtManager/instance.py:1836
 msgid ""
 "The VM has external snapshots; internal snapshots cannot be mixed with them"
 msgstr ""
 "Sanal makinenin harici anlık görüntüleri var; dahili anlık görüntüler "
 "bunlarla karıştırılamaz"
 
-#: vrtManager/instance.py:1867
+#: vrtManager/instance.py:1868
 msgid "A snapshot with memory is not quiesced; it keeps the whole guest state"
 msgstr ""
 "Bellekli bir anlık görüntüde dosya sistemleri dondurulmaz; tüm konuk durumunu"
 " saklar"
 
-#: vrtManager/instance.py:1869
+#: vrtManager/instance.py:1870
 msgid "Only a running VM's file systems can be frozen"
 msgstr "Yalnızca çalışan bir sanal makinenin dosya sistemleri dondurulabilir"
 
-#: vrtManager/instance.py:1871
+#: vrtManager/instance.py:1872
 msgid "The QEMU guest agent is not connected; it freezes the file systems"
 msgstr "QEMU konuk aracısı bağlı değil; dosya sistemlerini o dondurur"
 
-#: vrtManager/instance.py:1874
+#: vrtManager/instance.py:1875
 msgid ""
 "The VM has internal snapshots; external snapshots cannot be mixed with them"
 msgstr ""
 "Sanal makinenin dahili anlık görüntüleri var; harici anlık görüntüler "
 "bunlarla karıştırılamaz"
 
-#: vrtManager/instance.py:1879
+#: vrtManager/instance.py:1880
 msgid "Newer snapshots exist after the last revert; delete them first"
 msgstr ""
 "Son geri dönüşten sonra daha yeni anlık görüntüler var; önce onları silin"
 
-#: vrtManager/instance.py:1882
+#: vrtManager/instance.py:1883
 msgid "No snapshot is current; revert to a snapshot first"
 msgstr "Geçerli anlık görüntü yok; önce bir anlık görüntüye geri dönün"
 
-#: vrtManager/instance.py:1888
+#: vrtManager/instance.py:1889
 #, python-format
 msgid "Eject the media from %(dev)s first"
 msgstr "Önce %(dev)s içindeki ortamı çıkarın"
 
-#: vrtManager/instance.py:1890
+#: vrtManager/instance.py:1891
 #, python-format
 msgid "Disk %(dev)s is not a file; external snapshots need file disks"
 msgstr ""
 "Disk %(dev)s bir dosya değil; harici anlık görüntüler dosya diskleri "
 "gerektirir"
 
-#: vrtManager/instance.py:1898
+#: vrtManager/instance.py:1899
 #, python-format
 msgid ""
 "The storage pools could not be refreshed, so their free space is unknown: "
@@ -9112,21 +9090,21 @@ msgid ""
 msgstr ""
 "Depolama havuzları yenilenemedi, bu yüzden boş alanları bilinmiyor: %(err)s"
 
-#: vrtManager/instance.py:1919
+#: vrtManager/instance.py:1920
 msgid "Memory is saved only from a running VM"
 msgstr "Bellek yalnızca çalışan bir sanal makineden kaydedilir"
 
-#: vrtManager/instance.py:1921
+#: vrtManager/instance.py:1922
 msgid "The VM has no disk to keep its memory next to"
 msgstr "Sanal makinenin, belleğinin yanına kaydedileceği bir diski yok"
 
-#: vrtManager/instance.py:1925
+#: vrtManager/instance.py:1926
 #, python-format
 msgid "%(disk)s is not in a storage pool; memory is saved only into one"
 msgstr ""
 "%(disk)s bir depolama havuzunda değil; bellek yalnızca bir havuza kaydedilir"
 
-#: vrtManager/instance.py:1956
+#: vrtManager/instance.py:1957
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the snapshot needs %(size).1f "
@@ -9137,7 +9115,7 @@ msgstr ""
 "%(size).1f GiB gerektiriyor (sanal makinenin oradaki disklerinin "
 "%%%(percent)g kadarı, en az %(minimum)g GiB, ve kaydediliyorsa bellek)"
 
-#: vrtManager/instance.py:1974
+#: vrtManager/instance.py:1975
 msgid ""
 "This snapshot was taken by an older version on a UEFI VM and cannot be "
 "reverted; delete it instead"
@@ -9145,7 +9123,7 @@ msgstr ""
 "Bu anlık görüntü UEFI bir sanal makinede eski bir sürümle alındı ve geri "
 "dönülemez; bunun yerine silin"
 
-#: vrtManager/instance.py:2004
+#: vrtManager/instance.py:2005
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is "
@@ -9154,7 +9132,7 @@ msgstr ""
 "Geri dönüş iki kez başarısız oldu; biraz sonra tekrar deneyin (%(error)s). "
 "Sanal makine çalışıyor."
 
-#: vrtManager/instance.py:2006
+#: vrtManager/instance.py:2007
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is shut "
@@ -9163,13 +9141,13 @@ msgstr ""
 "Geri dönüş iki kez başarısız oldu; biraz sonra tekrar deneyin (%(error)s). "
 "Sanal makine kapalı."
 
-#: vrtManager/instance.py:2169
+#: vrtManager/instance.py:2170
 msgid "A disk moves when its VM is defined and running, paused or shut off"
 msgstr ""
 "Bir disk, sanal makinesi tanımlıyken ve çalışırken, duraklatılmışken veya "
 "kapalıyken taşınır"
 
-#: vrtManager/instance.py:2171
+#: vrtManager/instance.py:2172
 msgid ""
 "A disk of a VM with snapshots, a saved state or a running block job does not "
 "move"
@@ -9177,7 +9155,7 @@ msgstr ""
 "Anlık görüntüleri, kaydedilmiş durumu veya çalışan bir blok işi olan sanal "
 "makinenin diski taşınmaz"
 
-#: vrtManager/instance.py:2179
+#: vrtManager/instance.py:2180
 #, python-format
 msgid ""
 "%(dev)s is not a disk file of the VM, the same in its running and next "
@@ -9186,132 +9164,132 @@ msgstr ""
 "%(dev)s, sanal makinenin çalışan ve sonraki başlatma tanımlarında aynı olan "
 "bir disk dosyası değil"
 
-#: vrtManager/instance.py:2184
+#: vrtManager/instance.py:2185
 #, python-format
 msgid "%(dev)s does not move: only writable raw and qcow2 disks do"
 msgstr "%(dev)s taşınmaz: yalnızca yazılabilir raw ve qcow2 diskler taşınır"
 
-#: vrtManager/instance.py:2191
+#: vrtManager/instance.py:2192
 #, python-format
 msgid "%(dev)s does not move: no storage pool has %(path)s"
 msgstr "%(dev)s taşınmaz: hiçbir depolama havuzunda %(path)s yok"
 
-#: vrtManager/instance.py:2193
+#: vrtManager/instance.py:2194
 #, python-format
 msgid "%(dev)s does not move: it has a backing file"
 msgstr "%(dev)s taşınmaz: temel (backing) dosyası var"
 
-#: vrtManager/instance.py:2196
+#: vrtManager/instance.py:2197
 #, python-format
 msgid "%(pool_name)s is not an active pool of disk files of this host"
 msgstr "%(pool_name)s bu sunucunun etkin bir disk dosyası havuzu değil"
 
-#: vrtManager/instance.py:2199
+#: vrtManager/instance.py:2200
 #, python-format
 msgid "%(dev)s is in pool %(pool_name)s already"
 msgstr "%(dev)s zaten %(pool_name)s havuzunda"
 
-#: vrtManager/instance.py:2203
+#: vrtManager/instance.py:2204
 #, python-format
 msgid "Pool %(pool_name)s already has a file %(name)s"
 msgstr "%(pool_name)s havuzunda zaten %(name)s dosyası var"
 
-#: vrtManager/instance.py:2227
+#: vrtManager/instance.py:2228
 #, python-format
 msgid "The copy of %(dev)s ended before it was complete"
 msgstr "%(dev)s kopyası tamamlanmadan sona erdi"
 
-#: vrtManager/instance.py:2272
+#: vrtManager/instance.py:2273
 #, python-format
 msgid "%(error)s; remove %(dest)s if it is there: %(cleanup_error)s"
 msgstr "%(error)s; varsa %(dest)s dosyasını kaldırın: %(cleanup_error)s"
 
-#: vrtManager/instance.py:2274
+#: vrtManager/instance.py:2275
 #, python-format
 msgid "%(error)s; the VM may use %(dest)s now: check its disk %(dev)s"
 msgstr ""
 "%(error)s; sanal makine şu anda %(dest)s dosyasını kullanıyor olabilir: "
 "%(dev)s diskini kontrol edin"
 
-#: vrtManager/instance.py:2281
+#: vrtManager/instance.py:2282
 #, python-format
 msgid "The VM has no internal snapshot named %(name)s"
 msgstr "Sanal makinenin %(name)s adlı dahili anlık görüntüsü yok"
 
-#: vrtManager/instance.py:2290
+#: vrtManager/instance.py:2291
 msgid "The VM has a saved state; start it or remove the saved state first"
 msgstr ""
 "Sanal makinenin kaydedilmiş durumu var; önce başlatın veya kaydedilmiş durumu"
 " kaldırın"
 
-#: vrtManager/instance.py:2292
+#: vrtManager/instance.py:2293
 msgid "A snapshot job is still running on this VM; try again when it ends"
 msgstr ""
 "Bu sanal makinede hâlâ bir anlık görüntü işi çalışıyor; bittiğinde tekrar "
 "deneyin"
 
-#: vrtManager/instance.py:2302
+#: vrtManager/instance.py:2303
 msgid "Shut the VM down to revert to an internal snapshot"
 msgstr "Dahili bir anlık görüntüye geri dönmek için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2391
+#: vrtManager/instance.py:2392
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM'i dosya olmayan bir sanal makine klonlanamaz"
 
-#: vrtManager/instance.py:2459
+#: vrtManager/instance.py:2460
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(path)s"
 
-#: vrtManager/instance.py:2469
+#: vrtManager/instance.py:2470
 msgid "Shut the VM down before cloning it"
 msgstr "Klonlamadan önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2523
+#: vrtManager/instance.py:2524
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(leftovers)s"
 
-#: vrtManager/instance.py:2534
+#: vrtManager/instance.py:2535
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr ""
 "Canlı klonlama libvirt 11.10 veya sonrasını gerektirir; klonlamak için sanal "
 "makineyi kapatın"
 
-#: vrtManager/instance.py:2537
+#: vrtManager/instance.py:2538
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "TPM'i olan bir sanal makine yalnızca kapalıyken klonlanır"
 
-#: vrtManager/instance.py:2540
+#: vrtManager/instance.py:2541
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s yerel bir dosya değil; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2542
+#: vrtManager/instance.py:2543
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "Disk %(dev)s paylaşılabilir; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2547
+#: vrtManager/instance.py:2548
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s sonraki başlatmada değişiyor; klonlamak için sanal makineyi "
 "kapatın"
 
-#: vrtManager/instance.py:2549
+#: vrtManager/instance.py:2550
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "Sanal makinede başka bir iş çalışıyor; o bittiğinde klonlayın"
 
-#: vrtManager/instance.py:2562
+#: vrtManager/instance.py:2563
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "%(name)s birimi %(pool)s depolama havuzunda zaten var"
 
-#: vrtManager/instance.py:2581
+#: vrtManager/instance.py:2582
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -9321,20 +9299,20 @@ msgstr ""
 "gerektiriyor (kopyalanan diskler, artı bunların %%%(percent)g kadarı, en az "
 "%(minimum)g GiB)"
 
-#: vrtManager/instance.py:2720
+#: vrtManager/instance.py:2721
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide kaldırılır"
 
-#: vrtManager/instance.py:2736
+#: vrtManager/instance.py:2737
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "MAC adresi %(old_mac)s olan ağ arabirimi yok"
 
-#: vrtManager/instance.py:2739
+#: vrtManager/instance.py:2740
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide değiştirilir"
 
-#: vrtManager/instance.py:2830
+#: vrtManager/instance.py:2831
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
@@ -9342,14 +9320,14 @@ msgstr ""
 "Sanal makine PCI aygıtlarını çalışırken veya kaydedilmiş durumu olmadan "
 "kapalıyken değiştirir"
 
-#: vrtManager/instance.py:2842
+#: vrtManager/instance.py:2843
 #, python-format
 msgid "%(err)s; whether the VM has PCI device %(address)s now is not known"
 msgstr ""
 "%(err)s; sanal makinede şu anda %(address)s PCI aygıtının olup olmadığı "
 "bilinmiyor"
 
-#: vrtManager/instance.py:2844
+#: vrtManager/instance.py:2845
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the VM is not running, its next start has it"
@@ -9357,7 +9335,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: sanal makine çalışmıyor, sonraki başlatmada "
 "var"
 
-#: vrtManager/instance.py:2846
+#: vrtManager/instance.py:2847
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the VM is not running, its next start does "
@@ -9366,7 +9344,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: sanal makine çalışmıyor, sonraki başlatmada "
 "yok"
 
-#: vrtManager/instance.py:2847
+#: vrtManager/instance.py:2848
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM has it, its next start has it"
@@ -9374,7 +9352,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede var, sonraki "
 "başlatmada var"
 
-#: vrtManager/instance.py:2849
+#: vrtManager/instance.py:2850
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM has it, its next start does "
@@ -9383,7 +9361,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede var, sonraki "
 "başlatmada yok"
 
-#: vrtManager/instance.py:2851
+#: vrtManager/instance.py:2852
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM does not have it, its next "
@@ -9392,7 +9370,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede yok, sonraki "
 "başlatmada var"
 
-#: vrtManager/instance.py:2853
+#: vrtManager/instance.py:2854
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM does not have it, its next "
@@ -9401,29 +9379,29 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede yok, sonraki "
 "başlatmada yok"
 
-#: vrtManager/instance.py:2887
+#: vrtManager/instance.py:2888
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "Sanal makinede %(address)s PCI aygıtı yok"
 
-#: vrtManager/instance.py:2905
+#: vrtManager/instance.py:2906
 msgid "The VM has no USB controller"
 msgstr "Sanal makinede USB denetleyicisi yok"
 
-#: vrtManager/instance.py:2924
+#: vrtManager/instance.py:2925
 msgid "The VM has no such USB device"
 msgstr "Sanal makinede böyle bir USB aygıtı yok"
 
-#: vrtManager/instance.py:2965
+#: vrtManager/instance.py:2966
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr ""
 "Sanal makinenin kendi RNG aygıtı var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:2992
+#: vrtManager/instance.py:2993
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "Sanal makinenin kendi TPM'i var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3011
+#: vrtManager/instance.py:3012
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "Bilinmeyen çökme eylemi %(action)s"

@@ -132,6 +132,34 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 /* the access tab's two login buttons line up */
 .access-act { min-width: 9rem; }
 
+/* the resize tab: one cell per vCPU up to the maximum, filled when on; memory now within its maximum */
+.vcpu-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 .4rem;
+    border-radius: var(--bs-border-radius);
+    border: 2px solid var(--bs-primary);
+    background: var(--bs-body-bg);
+    color: var(--bs-primary);
+    font-size: .875rem;
+    font-weight: 600;
+}
+.vcpu-cell.on { background: var(--bs-primary); color: #fff; }
+button.vcpu-cell:not(:disabled):hover { box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .25); }
+button.vcpu-cell:disabled { opacity: .65; }
+.memory-bar {
+    width: min(18rem, 100%);
+    height: .9rem;
+    border: 2px solid var(--bs-primary);
+    border-radius: var(--bs-border-radius);
+    overflow: hidden;
+}
+.memory-bar-now { height: 100%; background: var(--bs-primary); }
+.resize-act { min-width: 9rem; }
+
 /* the boot order: the devices the VM tries in turn, numbered and joined by a line */
 .boot-chain { counter-reset: boot; }
 .boot-node { position: relative; padding: .5rem 0; }

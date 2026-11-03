@@ -1,206 +1,134 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 <div class="tab-pane" id="resize" role="tabpanel">
-    <!-- Nav tabs -->
+    {# each resource on its own tab: how much the VM has now within its maximum, and the form that changes it #}
     <div class="card">
-    <div class="card-header bg-transparent pb-0">
-    <ul class="nav nav-underline small" role="tablist" aria-label="Instance resize options">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#resizevm_cpu" type="button" role="tab" aria-controls="resizevm_cpu" aria-selected="true">
-                {% trans "CPU" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#resizevm_mem" type="button" role="tab" aria-controls="resizevm_mem" aria-selected="false">
-                {% trans "Memory" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#resizevm_disk" type="button" role="tab" aria-controls="resizevm_disk" aria-selected="false">
-                {% trans "Disk" %}
-            </button>
-        </li>
-    </ul>
-    </div>
-    <!-- Tab panes -->
-    <div class="tab-content card-body">
-        <div role="tabpanel" class="tab-pane active" id="resizevm_cpu">
-            {% if can_change %}
-            <div class="list-group">
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:resizevm_cpu' instance.id %}" method="post" aria-labelledby="cpu-heading">{% csrf_token %}
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-4">
-                            <h2 class="h6" id="cpu-heading">{% bs_icon 'cpu' %} {% trans "CPU allocation" %}</h2>
-                            <p class="small text-body-secondary mb-2">{% blocktrans with cur=instance.cur_vcpu max=instance.vcpu %}Now {{ cur }} of {{ max }} vCPUs.{% endblocktrans %}</p>
-                            <p class="small mb-0">{% trans "Host" %}: <strong>{% blocktrans with count=vcpu_host %}{{ count }} logical CPUs{% endblocktrans %}</strong></p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            <p class="small text-body-secondary" id="cpu-help">
-                                {% if instance.status == 5 %}{% trans "The VM gets these at its next start." %}
-                                {% else %}{% trans "Shut the VM down to change its vCPUs." %}{% if instance.vcpus %} {% trans "While it runs, turn vCPUs on and off below." %}{% endif %}{% endif %}
-                            </p>
-                            <div class="row g-3">
-                                <div class="col-12 col-sm-6">
-                                    <label class="form-label" for="cur_vcpu">{% trans "Current vCPUs" %}</label>
-                                    <select class="form-select" id="cur_vcpu" name="cur_vcpu" aria-describedby="cpu-help">
-                                        {% for cpu in instance.vcpu_range %}
-                                        <option value="{{ cpu }}"{% if cpu == instance.config_cur_vcpu %} selected{% endif %}>{{ cpu }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-12 col-sm-6">
-                                    <label class="form-label" for="max_vcpu">{% trans "Maximum vCPUs" %}</label>
-                                    <select class="form-select" id="max_vcpu" name="vcpu" aria-describedby="cpu-help">
-                                        {% for cpu in instance.vcpu_range %}
-                                        <option value="{{ cpu }}"{% if cpu == instance.config_vcpu %} selected{% endif %}>{{ cpu }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="text-end mt-3">
-                                <button type="submit" class="btn btn-primary" name="resizevm_cpu"{% if instance.status != 5 %} disabled{% endif %}>{% trans "Resize CPU" %}</button>
-                            </div>
-                        </div>
+        {% if not can_change %}
+        <div class="card-body">
+            <p class="mb-0">{% trans "You don't have permission for resizing instance" %}</p>
+        </div>
+        {% else %}
+        <div class="card-header bg-transparent pb-0">
+            <ul class="nav nav-underline small" role="tablist" aria-label="{% trans "Resources to resize" %}">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="resizevm_cpu-tab" data-bs-toggle="tab" data-bs-target="#resizevm_cpu" type="button" role="tab" aria-controls="resizevm_cpu" aria-selected="true">{% trans "CPU" %}</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="resizevm_mem-tab" data-bs-toggle="tab" data-bs-target="#resizevm_mem" type="button" role="tab" aria-controls="resizevm_mem" aria-selected="false">{% trans "Memory" %}</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="resizevm_disk-tab" data-bs-toggle="tab" data-bs-target="#resizevm_disk" type="button" role="tab" aria-controls="resizevm_disk" aria-selected="false">{% trans "Disks" %}</button>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content card-body">
+            <div class="tab-pane active" id="resizevm_cpu" role="tabpanel" aria-labelledby="resizevm_cpu-tab">
+                {# one cell per vCPU up to the maximum, filled when on; a running VM's hot-pluggable ones turn on and off here #}
+                {% with toggles=request.user.is_superuser %}
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <div class="d-flex flex-wrap gap-1" role="group" aria-label="{% trans "vCPUs" %}">
+                        {% for cell in instance.vcpu_cells %}
+                        {% if toggles and instance.status != 5 and instance.vcpus and not cell.fixed %}
+                        <form action="{% url 'instances:set_vcpu' instance.id %}" method="post">{% csrf_token %}
+                            <input type="hidden" name="id" value="{{ cell.id }}">
+                            {% if cell.on %}
+                            <button type="submit" class="vcpu-cell on" name="set_vcpu" value="False"{% if instance.status == 3 %} disabled{% endif %}>{{ cell.id }}<span class="visually-hidden"> {% trans "on, turn off" %}</span></button>
+                            {% else %}
+                            <button type="submit" class="vcpu-cell" name="set_vcpu" value="True">{{ cell.id }}<span class="visually-hidden"> {% trans "off, turn on" %}</span></button>
+                            {% endif %}
+                        </form>
+                        {% else %}
+                        <span class="vcpu-cell{% if cell.on %} on{% endif %}">{{ cell.id }}<span class="visually-hidden"> {% if cell.on %}{% trans "on" %}{% else %}{% trans "off" %}{% endif %}</span></span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="small">{% blocktrans with cur=instance.cur_vcpu max=instance.vcpu %}{{ cur }} on, up to {{ max }}{% endblocktrans %}</span>
+                    <span class="small ms-auto text-body-secondary">{% blocktrans with count=vcpu_host %}Host: {{ count }} logical CPUs{% endblocktrans %}</span>
+                </div>
+                {% if toggles and instance.status != 5 and instance.vcpus %}
+                <p class="small text-body-secondary mt-n2 mb-3">{% trans "Click a vCPU to turn it on or off now; the next start keeps it so." %}{% if instance.status == 3 %} {% trans "A paused VM cannot let one go: resume it to turn vCPUs off." %}{% endif %}</p>
+                {% endif %}
+                {% endwith %}
+                <form class="row g-2 align-items-end" action="{% url 'instances:resizevm_cpu' instance.id %}" method="post">{% csrf_token %}
+                    <div class="col-6 col-sm-3">
+                        <label class="form-label small mb-1" for="cur_vcpu">{% trans "Current" %}</label>
+                        <select class="form-select" id="cur_vcpu" name="cur_vcpu" aria-describedby="cpu-help"{% if instance.status != 5 %} disabled{% endif %}>
+                            {% for cpu in instance.vcpu_range %}<option value="{{ cpu }}"{% if cpu == instance.config_cur_vcpu %} selected{% endif %}>{{ cpu }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <label class="form-label small mb-1" for="max_vcpu">{% trans "Maximum" %}</label>
+                        <select class="form-select" id="max_vcpu" name="vcpu" aria-describedby="cpu-help"{% if instance.status != 5 %} disabled{% endif %}>
+                            {% for cpu in instance.vcpu_range %}<option value="{{ cpu }}"{% if cpu == instance.config_vcpu %} selected{% endif %}>{{ cpu }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-auto ms-sm-auto">
+                        <button type="submit" class="btn btn-primary resize-act" name="resizevm_cpu"{% if instance.status != 5 %} disabled{% endif %}>{% trans "Resize CPU" %}</button>
                     </div>
                 </form>
-                {% if request.user.is_superuser and instance.vcpus and instance.status != 5 %}
-                <section class="list-group-item p-3 p-md-4" aria-labelledby="vcpus-heading">
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-4">
-                            <h3 class="h6" id="vcpus-heading">{% trans "Live vCPUs" %}</h3>
-                            <p class="small text-body-secondary mb-0">
-                                {% trans "Turn a vCPU on or off now; the next start keeps it so. vCPU 0 stays on." %}
-                                {% if instance.status == 3 %}{% trans "A paused VM cannot let one go: resume it to turn vCPUs off." %}{% endif %}
-                            </p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="d-flex flex-wrap gap-2">
-                                {% for id, vcpu in instance.vcpus.items %}
-                                <form action="{% url 'instances:set_vcpu' instance.id %}" method="post">{% csrf_token %}
-                                    <input type="hidden" name="id" value="{{ id }}">
-                                    {% if vcpu.hotpluggable != "yes" %}
-                                    <button type="button" class="btn btn-secondary" disabled>{% blocktrans %}{{ id }} · Fixed{% endblocktrans %}</button>
-                                    {% elif vcpu.enabled == "yes" %}
-                                    <button type="submit" class="btn btn-primary" name="set_vcpu" value="False"{% if instance.status == 3 %} disabled{% endif %}>{% blocktrans %}{{ id }} · On{% endblocktrans %}<span class="visually-hidden"> {% trans "turn off" %}</span></button>
-                                    {% else %}
-                                    <button type="submit" class="btn btn-secondary" name="set_vcpu" value="True">{% blocktrans %}{{ id }} · Off{% endblocktrans %}<span class="visually-hidden"> {% trans "turn on" %}</span></button>
-                                    {% endif %}
-                                </form>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                {% endif %}
+                <p class="small text-body-secondary mt-1 mb-0" id="cpu-help">{% if instance.status == 5 %}{% trans "The VM gets these at its next start." %}{% else %}{% trans "Shut the VM down to change its vCPUs." %}{% endif %}</p>
                 {% if request.user.is_superuser %}
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_vcpu_hotplug' instance.id %}" method="post">{% csrf_token %}
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label fw-semibold mb-0" for="vcpu_hotplug">{% trans "vCPU hot plug" %}</label>
-                            <p class="small text-body-secondary mb-0" id="vcpu-hotplug-help">
-                                {% trans "Lets vCPUs up to the maximum be turned on and off while the VM runs." %}
-                                {% if instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}
-                            </p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="row g-2">
-                                <div class="col-12 col-sm">
-                                    <select id="vcpu_hotplug" class="form-select" name="vcpu_hotplug" aria-describedby="vcpu-hotplug-help">
-                                        <option value="True"{% if instance.config_vcpu_hotplug %} selected{% endif %}>{% trans "Enabled" %}</option>
-                                        <option value="False"{% if not instance.config_vcpu_hotplug %} selected{% endif %}>{% trans "Disabled" %}</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-sm-auto d-grid">
-                                    <button class="btn btn-secondary" type="submit" name="set_vcpu_hotplug"{% if instance.status != 5 %} disabled{% endif %}>{% trans "Save" %}</button>
-                                </div>
-                            </div>
-                        </div>
+                <form class="mt-3" action="{% url 'instances:set_vcpu_hotplug' instance.id %}" method="post">{% csrf_token %}
+                    <input type="hidden" name="vcpu_hotplug" value="{% if instance.config_vcpu_hotplug %}False{% else %}True{% endif %}">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="vcpu_hotplug" aria-describedby="vcpu-hotplug-help"{% if instance.config_vcpu_hotplug %} checked{% endif %}{% if instance.status != 5 %} disabled{% endif %} data-submit-on-change>
+                        <label class="form-check-label" for="vcpu_hotplug">{% trans "vCPU hot plug" %}</label>
                     </div>
+                    <p class="small text-body-secondary mb-0" id="vcpu-hotplug-help">{% trans "Lets vCPUs up to the maximum be turned on and off while the VM runs." %}{% if instance.status != 5 %} {% trans "Shut the VM down to change this." %}{% endif %}</p>
                 </form>
                 {% endif %}
             </div>
-            {% else %}
-            <p class="mb-0">{% trans "You don't have permission for resizing instance" %}</p>
-            {% endif %}
-        </div>
-        <div role="tabpanel" class="tab-pane" id="resizevm_mem">
-            {% if can_change %}
-            <form class="list-group" action="{% url 'instances:resize_memory' instance.id %}" method="post" aria-labelledby="memory-heading">{% csrf_token %}
-                <div class="list-group-item p-3 p-md-4">
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-4">
-                            <h2 class="h6" id="memory-heading">{% bs_icon 'memory' %} {% trans "Memory allocation" %}</h2>
-                            <p class="small text-body-secondary mb-2">{% blocktrans with cur=instance.cur_memory max=instance.memory %}Now {{ cur }} MiB of maximum {{ max }} MiB.{% endblocktrans %}</p>
-                            <p class="small mb-0">{% trans "Host" %}: <strong>{% blocktrans with total=memory_host|filesizeformat %}{{ total }} memory{% endblocktrans %}</strong></p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            <p class="small text-body-secondary" id="memory-help">
-                                {% if instance.status == 5 %}{% trans "The VM gets these at its next start." %}
-                                {% else %}{% trans "The current memory changes now, up to the maximum; shut the VM down to change the maximum." %}{% endif %}
-                            </p>
-                            <div class="row g-3">
-                                <div class="col-12 col-sm-6">
-                                    <label class="form-label" for="cur_memory">{% trans "Current memory (MiB)" %}</label>
-                                    <input class="form-control" type="number" id="cur_memory" name="cur_memory" min="1" step="1" value="{{ instance.cur_memory }}" aria-describedby="memory-help">
-                                </div>
-                                <div class="col-12 col-sm-6">
-                                    <label class="form-label" for="max_memory">{% trans "Maximum memory (MiB)" %}</label>
-                                    {# a running VM keeps its maximum: only the current memory changes #}
-                                    <input class="form-control" type="number" id="max_memory" name="memory" min="1" step="1" value="{{ instance.memory }}" aria-describedby="memory-help"{% if instance.status != 5 %} disabled{% endif %}>
-                                </div>
-                            </div>
-                            <div class="text-end mt-3">
-                                <button type="submit" class="btn btn-primary" name="resizevm_mem">{% trans "Resize memory" %}</button>
-                            </div>
-                        </div>
-                    </div>
+            <div class="tab-pane" id="resizevm_mem" role="tabpanel" aria-labelledby="resizevm_mem-tab">
+                <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3 mb-3">
+                    <div class="memory-bar" aria-hidden="true"><div class="memory-bar-now" style="width: {% widthratio instance.cur_memory instance.memory 100 %}%"></div></div>
+                    <span class="small">{% blocktrans with cur=instance.cur_memory max=instance.memory %}{{ cur }} MiB of {{ max }} MiB{% endblocktrans %}</span>
+                    <span class="small ms-auto text-body-secondary">{% blocktrans with total=memory_host|filesizeformat %}Host: {{ total }}{% endblocktrans %}</span>
                 </div>
-            </form>
-            {% else %}
-            <p class="mb-0">{% trans "You don't have permission for resizing instance" %}</p>
-            {% endif %}
-        </div>
-        <div role="tabpanel" class="tab-pane" id="resizevm_disk">
-            {% if can_change %}
-            <form class="list-group" action="{% url 'instances:resize_disk' instance.id %}" method="post" aria-labelledby="disks-grow-heading">{% csrf_token %}
-                <div class="list-group-item p-3 p-md-4">
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-4">
-                            <h2 class="h6" id="disks-grow-heading">{% bs_icon 'device-hdd' %} {% trans "Grow disks" %}</h2>
-                            <p class="small text-body-secondary mb-0" id="disks-grow-help">{% trans "A new size in GiB, larger than the disk's; empty keeps a disk as it is. Disks grow while the VM runs; the guest then grows its partition and file system." %}</p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="row g-3">
-                                {% for disk in instance.disks %}
-                                <div class="col-12 col-sm-6">
-                                    <label class="form-label" for="disk_size_{{ disk.dev }}">{{ disk.dev }}{% if disk.format %} <span class="small text-body-secondary">· {{ disk.format }}</span>{% endif %}</label>
-                                    {% if disk.storage is None %}
-                                    <p class="small text-danger mb-0">{% trans "Error getting disk info" %}</p>
-                                    {% else %}
-                                    <p class="small text-body-secondary mb-2">{% blocktrans with size=disk.size|filesizeformat %}Now {{ size }}{% endblocktrans %}</p>
-                                    <div class="input-group">
-                                        <input class="form-control" type="number" id="disk_size_{{ disk.dev }}" name="disk_size_{{ disk.dev }}" min="1" step="1" aria-describedby="disks-grow-help">
-                                        <span class="input-group-text">GiB</span>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="text-end mt-3">
-                                {% if instance.status == 1 or instance.status == 3 or instance.status == 5 %}
-                                <button type="submit" class="btn btn-primary" name="resizevm_disk">{% trans "Grow disks" %}</button>
-                                {% else %}
-                                <button type="button" class="btn btn-primary" disabled>{% trans "Grow disks" %}</button>
-                                {% endif %}
-                            </div>
-                        </div>
+                <form class="row g-2 align-items-end" action="{% url 'instances:resize_memory' instance.id %}" method="post">{% csrf_token %}
+                    <div class="col-6 col-sm-3">
+                        <label class="form-label small mb-1" for="cur_memory">{% trans "Current (MiB)" %}</label>
+                        <input class="form-control" type="number" id="cur_memory" name="cur_memory" min="1" step="1" value="{{ instance.cur_memory }}" aria-describedby="memory-help">
                     </div>
-                </div>
-            </form>
-            {% else %}
-            <p class="mb-0">{% trans "You don't have permission for resizing instance" %}</p>
-            {% endif %}
+                    <div class="col-6 col-sm-3">
+                        <label class="form-label small mb-1" for="max_memory">{% trans "Maximum (MiB)" %}</label>
+                        {# a running VM keeps its maximum: only the current memory changes #}
+                        <input class="form-control" type="number" id="max_memory" name="memory" min="1" step="1" value="{{ instance.memory }}" aria-describedby="memory-help"{% if instance.status != 5 %} disabled{% endif %}>
+                    </div>
+                    <div class="col-12 col-sm-auto ms-sm-auto">
+                        <button type="submit" class="btn btn-primary resize-act" name="resizevm_mem">{% trans "Resize memory" %}</button>
+                    </div>
+                </form>
+                <p class="small text-body-secondary mt-1 mb-0" id="memory-help">{% if instance.status == 5 %}{% trans "The VM gets these at its next start." %}{% else %}{% trans "The current memory changes now, up to the maximum; shut the VM down to change the maximum." %}{% endif %}</p>
+            </div>
+            <div class="tab-pane" id="resizevm_disk" role="tabpanel" aria-labelledby="resizevm_disk-tab">
+                <p class="small text-body-secondary mb-3" id="disks-grow-help">{% trans "A new size in GiB, larger than the disk's; empty keeps a disk as it is. Disks grow while the VM runs; the guest then grows its partition and file system." %}</p>
+                <form action="{% url 'instances:resize_disk' instance.id %}" method="post">{% csrf_token %}
+                    {% for disk in instance.disks %}
+                    <div class="row g-2 align-items-center mb-2">
+                        <label class="col-5 col-sm-3 col-form-label" for="disk_size_{{ disk.dev }}"><span class="fw-semibold">{{ disk.dev }}</span>{% if disk.format %} <span class="small text-body-secondary">{{ disk.format }}</span>{% endif %}</label>
+                        {% if disk.storage is None %}
+                        <div class="col"><span class="small text-danger">{% trans "Error getting disk info" %}</span></div>
+                        {% else %}
+                        <div class="col-7 col-sm-2 small">{% blocktrans with size=disk.size|filesizeformat %}Now {{ size }}{% endblocktrans %}</div>
+                        <div class="col-12 col-sm-4">
+                            <div class="input-group">
+                                <input class="form-control" type="number" id="disk_size_{{ disk.dev }}" name="disk_size_{{ disk.dev }}" min="1" step="1" placeholder="{% trans "New size" %}" aria-describedby="disks-grow-help">
+                                <span class="input-group-text">GiB</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="d-flex justify-content-end">
+                        {% if instance.status == 1 or instance.status == 3 or instance.status == 5 %}
+                        <button type="submit" class="btn btn-primary resize-act" name="resizevm_disk">{% trans "Grow disks" %}</button>
+                        {% else %}
+                        <button type="button" class="btn btn-primary resize-act" disabled>{% trans "Grow disks" %}</button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+        {% endif %}
     </div>
 </div>

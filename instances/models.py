@@ -129,6 +129,16 @@ class Instance(models.Model):
         return self.proxy.get_vcpus()
 
     @cached_property
+    def vcpu_cells(self) -> list[dict]:
+        """One cell per vCPU up to the maximum, as the Resize tab draws them:
+        its id, whether it is on, and whether it can be turned off and on
+        (a VM with hot-pluggable vCPUs lists them; vCPU 0 never is)."""
+        if self.vcpus:
+            return [{"id": id, "on": v["enabled"] == "yes", "fixed": v["hotpluggable"] != "yes"}
+                    for id, v in self.vcpus.items()]
+        return [{"id": str(i), "on": i < self.cur_vcpu, "fixed": True} for i in range(self.vcpu)]
+
+    @cached_property
     def get_uuid(self):
         return self.proxy.get_uuid()
 

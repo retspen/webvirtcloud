@@ -299,7 +299,7 @@ class InstancesTestCase(TestCase):
             {"memory": 512, "cur_memory": 256},
         )
         self.assertRedirects(
-            response, reverse("instances:instance", args=[self.instance.id]) + "#resize"
+            response, reverse("instances:instance", args=[self.instance.id]) + "#resizevm_mem"
         )
 
         del self.instance.memory
@@ -312,7 +312,7 @@ class InstancesTestCase(TestCase):
             {"memory": 500, "cur_memory": 200},
         )
         self.assertRedirects(
-            response, reverse("instances:instance", args=[self.instance.id]) + "#resize"
+            response, reverse("instances:instance", args=[self.instance.id]) + "#resizevm_mem"
         )
 
         del self.instance.memory
@@ -337,7 +337,7 @@ class InstancesTestCase(TestCase):
             {"memory": 512, "cur_memory": 256},
         )
         self.assertRedirects(
-            response, reverse("instances:instance", args=[self.instance.id]) + "#resize"
+            response, reverse("instances:instance", args=[self.instance.id]) + "#resizevm_mem"
         )
 
         del self.instance.memory
@@ -357,7 +357,7 @@ class InstancesTestCase(TestCase):
             },
         )
         self.assertRedirects(
-            response, reverse("instances:instance", args=[self.instance.id]) + "#resize"
+            response, reverse("instances:instance", args=[self.instance.id]) + "#resizevm_disk"
         )
 
         del self.instance.disks
@@ -379,7 +379,7 @@ class InstancesTestCase(TestCase):
             },
         )
         self.assertRedirects(
-            response, reverse("instances:instance", args=[self.instance.id]) + "#resize"
+            response, reverse("instances:instance", args=[self.instance.id]) + "#resizevm_disk"
         )
 
         # no changes as user reached quota
