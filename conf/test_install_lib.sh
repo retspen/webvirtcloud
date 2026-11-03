@@ -22,6 +22,8 @@ check "existing key kept" "[ \"\$(cat '$tmp/data/secret_key')\" = \"$first\" ]"
 wvc_ensure_secret_key "$tmp/data"
 check "empty key regenerated" "[ -s '$tmp/data/secret_key' ]"
 check "data dir is 700" "[ \"\$(stat -c %a '$tmp/data')\" = 700 ]"
+rm "$tmp/data/secret_key"
+check "fails when python cannot run" "! wvc_ensure_secret_key '$tmp/data' no-such-python 2>/dev/null"
 
 # wvc_ensure_settings: creates once, keeps on re-run
 echo "TEMPLATE" > "$tmp/tpl"
