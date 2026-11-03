@@ -136,7 +136,7 @@ install_packages () {
         fi
       done;
       ;;
-    fedora)
+    fedora|openEuler)
       for p in $PACKAGES; do
         if dnf list installed "$p" >/dev/null 2>&1; then
           echo "  * $p already installed"
@@ -172,9 +172,9 @@ configure_nginx () {
   # refresh the app snippet; a re-run never clobbers an edited main config.
   echo "  * Installing Nginx configuration"
   local nginx_template_conf
-  nginx_template_conf="${APP_PATH}/conf/nginx/${distro}_${codename}_nginx.conf"
+  nginx_template_conf="${APP_PATH}/conf/nginx/${nginx_conf}_${codename}_nginx.conf"
   if ! test -f "${nginx_template_conf}"; then
-    nginx_template_conf="${APP_PATH}/conf/nginx/${distro}_nginx.conf"
+    nginx_template_conf="${APP_PATH}/conf/nginx/${nginx_conf}_nginx.conf"
   fi
   wvc_install_nginx "${nginx_template_conf}" "$APP_PATH/conf/nginx/webvirtcloud.conf" /etc/nginx
 
@@ -408,6 +408,13 @@ case $distro in
     nginx_group=www-data
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
     ;;
+  *openEuler*)
+    echo "  The installer has detected $distro version $version."
+    distro=openEuler
+    nginx_group=nginx
+    nginx_conf=centos
+    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
+    ;;
   *centos*|*redhat*|*ol*|*rhel*|*rocky*|*Rocky*|*alma*)
     echo "  The installer has detected $distro version $version."
     distro=centos
@@ -432,6 +439,9 @@ case $distro in
     fi
     ;;
 esac
+
+# the main nginx config of the distro family
+nginx_conf="${nginx_conf:-$distro}"
 
 fqdn="localhost"
 setupfqdn=default
@@ -572,6 +582,35 @@ case $distro in
     restart_nginx
   else
     echo "Unsupported RHEL Based OS($distro) version. Version found: $version"
+    exit 1
+  fi
+  ;;
+  openEuler)
+  if [[ "$version" =~ ^24\. ]]; then
+    # Install for openEuler 24.03 LTS
+    tzone=\'$(get_timezone)\'
+
+    echo "* Installing OS requirements."
+    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute cyrus-sasl openssl-devel"
+    install_packages
+
+    set_hosts
+
+    install_webvirtcloud
+
+    echo "* Configuring Nginx."
+    configure_nginx
+
+    set_firewall
+
+    set_selinux
+
+    echo "* Configuring systemd."
+    configure_systemd
+
+    restart_nginx
+  else
+    echo "Unsupported openEuler version (24.03 LTS is supported). Version found: $version"
     exit 1
   fi
   ;;
