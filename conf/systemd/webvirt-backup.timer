@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily WebVirtCloud panel backup
+
+[Timer]
+OnCalendar=*-*-* 03:15
+# a backup missed while the server was off runs at the next boot
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

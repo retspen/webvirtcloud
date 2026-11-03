@@ -1,0 +1,2 @@
+# Daily panel backup into /srv/webvirtcloud/backups (the webvirtcloud-backups volume); the output goes to docker logs
+15 3 * * * root . /etc/container_environment.sh && cd /srv/webvirtcloud && /sbin/setuser www-data venv/bin/python3 manage.py backup > /proc/1/fd/1 2>&1

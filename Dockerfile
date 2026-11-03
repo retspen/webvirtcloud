@@ -77,6 +77,7 @@ COPY conf/runit/novncd.sh			/etc/service/novnc/run
 COPY conf/runit/socketiod.sh		/etc/service/socketiod/run
 COPY conf/runit/webvirtcloud.sh		/etc/service/webvirtcloud/run
 COPY conf/runit/webvirtcloud-worker.sh	/etc/service/webvirtcloud-worker/run
+COPY --chmod=644 conf/runit/backup.cron	/etc/cron.d/webvirtcloud-backup
 RUN chmod +x /etc/my_init.d/10_webvirtcloud_init.sh \
 	/etc/service/nginx/run \
 	/etc/service/nginx-log-forwarder/run \
@@ -90,7 +91,7 @@ RUN chmod +x /etc/my_init.d/10_webvirtcloud_init.sh \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 	CMD /srv/webvirtcloud/venv/bin/python3 -c "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1/accounts/login/', headers={'X-Forwarded-Proto': 'https'}), timeout=5)"
 
-# Declare mountable data directory for persistent SQLite and SSH keys
-VOLUME ["/srv/webvirtcloud/data", "/var/www/.ssh"]
+# Declare mountable data directory for persistent SQLite and SSH keys, and the backups of both
+VOLUME ["/srv/webvirtcloud/data", "/var/www/.ssh", "/srv/webvirtcloud/backups"]
 
 WORKDIR /srv/webvirtcloud

@@ -1,0 +1,11 @@
+[Unit]
+Description=WebVirtCloud panel backup
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+UMask=0077
+WorkingDirectory=/srv/webvirtcloud
+EnvironmentFile=-/etc/default/webvirtcloud
+ExecStart=/srv/webvirtcloud/venv/bin/python3 /srv/webvirtcloud/manage.py backup

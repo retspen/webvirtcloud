@@ -3,7 +3,7 @@ set -e
 
 APP_DIR="/srv/webvirtcloud"
 DATA_DIR="$APP_DIR/data"
-mkdir -p "$DATA_DIR" "/var/www/.ssh"
+mkdir -p "$DATA_DIR" "/var/www/.ssh" "$APP_DIR/backups"
 
 # If settings.py doesn't exist, generate from template
 if [ ! -f "$APP_DIR/webvirtcloud/settings.py" ]; then
@@ -32,12 +32,12 @@ echo "* Running database migrations..."
 "$APP_DIR/venv/bin/python3" "$APP_DIR/manage.py" migrate --noinput
 
 # Set proper permissions on runtime and data directories
-chown -R www-data:www-data "$DATA_DIR" "/var/www/.ssh"
+chown -R www-data:www-data "$DATA_DIR" "/var/www/.ssh" "$APP_DIR/backups"
 chown www-data:www-data "$APP_DIR/webvirtcloud/settings.py" 2>/dev/null || true
 chmod 700 "/var/www/.ssh" 2>/dev/null || true
 # The database holds compute passwords and password hashes; keep it, the
 # secret key and settings private to the app user (as the installer does)
-chmod 700 "$DATA_DIR"
+chmod 700 "$DATA_DIR" "$APP_DIR/backups"
 chmod 600 "$DATA_DIR/db.sqlite3" "$APP_DIR/webvirtcloud/settings.py"
 for f in "$DATA_DIR/db.sqlite3-wal" "$DATA_DIR/db.sqlite3-shm"; do
     if [ -e "$f" ]; then chown www-data:www-data "$f"; chmod 600 "$f"; fi

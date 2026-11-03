@@ -17,6 +17,7 @@
 **/.env*
 
 # Local databases and runtime data (secret key, admin password, update backups)
+backups
 **/*.sqlite3*
 data
 **/*.bak
