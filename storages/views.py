@@ -119,9 +119,11 @@ def storage(request, compute_id, pool):
     compute = get_object_or_404(Compute, pk=compute_id)
     form = CreateVolumeForm()
 
-    conn = wvmStorage(
-        compute.hostname, compute.login, compute.password, compute.type, pool
-    )
+    try:
+        conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
+    except libvirtError as lib_err:  # no such pool on the host, or the host does not answer
+        messages.error(request, lib_err)
+        return HttpResponseRedirect(reverse("storages", args=[compute_id]))
 
     if request.method == "POST" and "iso_upload" in request.POST:
         try:
