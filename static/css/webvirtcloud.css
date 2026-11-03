@@ -121,6 +121,16 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 }
 
 /* the boot order editor numbers its checked devices, top to bottom */
+/* the power tab's states: the current one filled, the others a ring */
+.power-dot {
+    width: .8rem;
+    height: .8rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid var(--bs-border-color);
+}
+.power-dot.bg-success, .power-dot.bg-warning, .power-dot.bg-secondary { border-color: transparent; }
+
 .boot-sequence {
     counter-reset: boot;
 }

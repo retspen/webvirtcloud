@@ -208,18 +208,31 @@ class PageControlsTestCase(PageControls, TestCase):
     def test_the_power_tab_offers_the_state_s_actions_and_confirms_a_power_cut(self):
         admin = get_user_model().objects.create_superuser("power_admin", "pa@example.com", "x")
         owner = self.user("power_owner", owner={})
-        for user, status, names in ((admin, 1, ["poweroff", "suspend", "powercycle", "powerforce"]),
+        # each action under the state it leads to (active, suspended, off), the power cut ones after them
+        for user, status, names in ((admin, 1, ["suspend", "poweroff", "powerforce", "powercycle"]),
                                     (admin, 3, ["resume", "powerforce"]), (owner, 3, []), (admin, 5, ["poweron"])):
             with self.subTest(user=user.username, status=status):
                 self.controls(user, status=status)
                 (tab,) = lxml_html.fromstring(self.last_page).xpath("//div[@id='power']")
                 self.assertEqual(tab.xpath(".//button/@name"), names)
                 # the power-cut actions ask first
-                self.assertTrue(all(b.get("data-confirm") for b in tab.xpath(".//button[contains(@class, 'btn-danger')]")))
+                danger = tab.xpath(".//button[contains(@class, 'danger')]")
+                self.assertEqual(len(danger), len({"powerforce", "powercycle"} & set(names)))
+                self.assertTrue(all(b.get("data-confirm") for b in danger))
                 if user == owner:
-                    self.assertIn("The VM is paused. An administrator can resume it.", tab.text_content())
+                    self.assertIn("An administrator can resume it.", tab.text_content())
                 if status == 5:
                     self.assertEqual(tab.xpath(".//form/@data-please-wait"), [""])
+
+    def test_the_power_tab_marks_the_current_state_or_names_another(self):
+        admin = get_user_model().objects.create_superuser("power_strip_admin", "ps@example.com", "x")
+        for status, now in ((1, "Active"), (3, "Suspended"), (5, "Off"), (6, None)):
+            with self.subTest(status=status):
+                self.controls(admin, status=status)
+                (tab,) = lxml_html.fromstring(self.last_page).xpath("//div[@id='power']")
+                marked = [s.text_content() for s in tab.xpath(".//span[@class='fw-semibold']")]
+                self.assertEqual(marked, [now] if now else [])
+                self.assertEqual("The VM's state: Crashed" in tab.text_content(), now is None)
 
     def test_a_running_paused_or_shut_off_vm_can_be_cloned(self):
         changer = self.user("vm_cloner", perms=("clone_instances",), owner={"is_change": True})

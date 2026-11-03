@@ -4,54 +4,75 @@
     {% if not can_power %}
     <p>{% trans "Only the owners of this instance and administrators can change its power state." %}</p>
     {% else %}
-    {# the actions the VM's state allows this user (states.allowed_actions): those that keep the guest's data, and those that cut the power #}
+    {# the three states a VM moves between, the current one marked; under each, the action that takes the VM there #}
     {% vm_state instance.status as state %}
     <div class="card">
         <div class="card-body">
-            <p class="small text-body-secondary mb-2">{% trans "Power" %} · {{ state.0 }}</p>
-            {% if "poweroff" in power_actions or "suspend" in power_actions or "resume" in power_actions or "poweron" in power_actions or "force_off" in power_actions or "powercycle" in power_actions %}
-            <div class="row g-3">
-                {% if "poweroff" in power_actions or "suspend" in power_actions or "resume" in power_actions or "poweron" in power_actions %}
-                <form class="col-12 col-md-6" method="post"{% if "poweron" in power_actions %} action="{% url 'instances:poweron' instance.id %}" data-please-wait{% endif %}>{% csrf_token %}
-                    <div class="btn-group mb-2" role="group" aria-label="{% trans "Power actions that keep the guest's data" %}">
-                        {% if "poweron" in power_actions %}<button type="submit" class="btn btn-primary" name="poweron">{% trans "Power On" %}</button>{% endif %}
-                        {% if "poweroff" in power_actions %}<button type="submit" class="btn btn-primary" name="poweroff" formaction="{% url 'instances:poweroff' instance.id %}">{% trans "Power Off" %}</button>{% endif %}
-                        {% if "resume" in power_actions %}<button type="submit" class="btn btn-primary" name="resume" formaction="{% url 'instances:resume' instance.id %}">{% trans "Resume" %}</button>{% endif %}
-                        {% if "suspend" in power_actions %}<button type="submit" class="btn btn-secondary" name="suspend" formaction="{% url 'instances:suspend' instance.id %}">{% trans "Suspend" %}</button>{% endif %}
-                    </div>
-                    <p class="small text-body-secondary mb-0">
-                        {% if "poweron" in power_actions %}{% trans "Power On starts the VM." %}{% endif %}
-                        {% if "poweroff" in power_actions %}{% trans "Power Off asks the guest to shut down; the guest decides." %}{% endif %}
-                        {% if "resume" in power_actions %}{% trans "Resume lets the paused VM run on." %}{% endif %}
-                        {% if "suspend" in power_actions %}{% trans "Suspend pauses its vCPUs; the VM stays in memory." %}{% endif %}
-                    </p>
-                </form>
-                {% endif %}
-                {% if "force_off" in power_actions or "powercycle" in power_actions %}
-                <form class="col-12 col-md-6" method="post">{% csrf_token %}
-                    <div class="btn-group mb-2" role="group" aria-label="{% trans "Power actions that cut the power" %}">
-                        {% if "powercycle" in power_actions %}
-                        <button type="submit" class="btn btn-danger" name="powercycle" formaction="{% url 'instances:powercycle' instance.id %}"
-                                data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Power Cycle" %}</button>
-                        {% endif %}
-                        {% if "force_off" in power_actions %}
-                        <button type="submit" class="btn btn-danger" name="powerforce" formaction="{% url 'instances:force_off' instance.id %}"
-                                data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Force Off" %}</button>
+            {% if instance.status not in power_states %}
+            <p class="mb-3">{% blocktrans with state=state.0 %}The VM's state: {{ state }}{% endblocktrans %}</p>
+            {% endif %}
+            <form method="post"{% if "poweron" in power_actions %} action="{% url 'instances:poweron' instance.id %}" data-please-wait{% endif %}>{% csrf_token %}
+            <div class="row g-4">
+                <div class="col-12 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        {% if instance.status == 1 or instance.status == 2 %}
+                        <span class="power-dot bg-success" aria-hidden="true"></span><span class="fw-semibold">{% trans "Active" %}</span><span class="small text-body-secondary">{% trans "now" %}</span>
+                        {% else %}
+                        <span class="power-dot" aria-hidden="true"></span><span class="text-body-secondary">{% trans "Active" %}</span>
                         {% endif %}
                     </div>
-                    <p class="small text-body-secondary mb-0">
-                        {% trans "These cut the power: what the guest has not written to disk is lost." %}
-                        {% if "powercycle" in power_actions %}{% trans "Power Cycle then starts the VM again, with the settings pending its next start." %}{% endif %}
-                    </p>
-                </form>
-                {% endif %}
+                    {% if "poweron" in power_actions %}
+                    <button type="submit" class="btn btn-primary" name="poweron">{% trans "Power On" %}</button>
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "Starts the VM." %}</p>
+                    {% elif "resume" in power_actions %}
+                    <button type="submit" class="btn btn-primary" name="resume" formaction="{% url 'instances:resume' instance.id %}">{% trans "Resume" %}</button>
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "Lets it run on." %}</p>
+                    {% endif %}
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        {% if instance.status == 3 or instance.status == 7 %}
+                        <span class="power-dot bg-warning" aria-hidden="true"></span><span class="fw-semibold">{% trans "Suspended" %}</span><span class="small text-body-secondary">{% trans "now" %}</span>
+                        {% else %}
+                        <span class="power-dot" aria-hidden="true"></span><span class="text-body-secondary">{% trans "Suspended" %}</span>
+                        {% endif %}
+                    </div>
+                    {% if "suspend" in power_actions %}
+                    <button type="submit" class="btn btn-outline-primary" name="suspend" formaction="{% url 'instances:suspend' instance.id %}">{% trans "Suspend" %}</button>
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "Pauses it; it stays in memory." %}</p>
+                    {% elif instance.status == 3 and not power_actions %}
+                    <p class="small text-body-secondary mb-0">{% trans "An administrator can resume it." %}</p>
+                    {% endif %}
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        {% if instance.status == 5 %}
+                        <span class="power-dot bg-secondary" aria-hidden="true"></span><span class="fw-semibold">{% trans "Off" %}</span><span class="small text-body-secondary">{% trans "now" %}</span>
+                        {% else %}
+                        <span class="power-dot" aria-hidden="true"></span><span class="text-body-secondary">{% trans "Off" %}</span>
+                        {% endif %}
+                    </div>
+                    {% if "poweroff" in power_actions %}
+                    <button type="submit" class="btn btn-outline-primary" name="poweroff" formaction="{% url 'instances:poweroff' instance.id %}">{% trans "Power Off" %}</button>
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "Asks the guest to shut down." %}</p>
+                    {% elif instance.status == 5 and instance.is_template %}
+                    <p class="small text-body-secondary mb-0">{% trans "A template is not started: clone it to make a VM." %}</p>
+                    {% endif %}
+                </div>
             </div>
-            {% elif instance.status == 3 %}
-            <p class="mb-0">{% trans "The VM is paused. An administrator can resume it." %}</p>
-            {% elif instance.status == 5 and instance.is_template %}
-            <p class="mb-0">{% trans "A template is not started: clone it to make a VM." %}</p>
-            {% else %}
-            <p class="mb-0">{% trans "There is no power action for the VM in this state." %}</p>
+            </form>
+            {% if "force_off" in power_actions or "powercycle" in power_actions %}
+            <form method="post" class="d-flex flex-wrap align-items-center gap-2 border-top mt-4 pt-3">{% csrf_token %}
+                <span class="small text-danger me-auto">{% trans "A power cut: what the guest has not written to disk is lost." %}</span>
+                {% if "force_off" in power_actions %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" name="powerforce" formaction="{% url 'instances:force_off' instance.id %}"
+                        data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Force Off" %}</button>
+                {% endif %}
+                {% if "powercycle" in power_actions %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" name="powercycle" formaction="{% url 'instances:powercycle' instance.id %}"
+                        data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Power Cycle" %}</button>
+                {% endif %}
+            </form>
             {% endif %}
         </div>
     </div>
