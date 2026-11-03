@@ -1,0 +1,10 @@
+[Unit]
+Description=Copy the WebVirtCloud panel backups off site
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+UMask=0077
+EnvironmentFile=/etc/webvirtcloud-offsite.env
+ExecStart=/usr/local/sbin/webvirt-offsite

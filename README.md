@@ -448,7 +448,7 @@ The panel backs itself up every day at 03:15 (cron in Docker, `webvirt-backup.ti
 - `ssh/`: the SSH keys of the panel's user, which the SSH computes accept
 - `commit`, outside Docker
 
-The database holds compute passwords and keys: the directories are readable only by the panel's user. They are on the same host as the panel; copy them to another machine as well. A failed backup is reported in `docker logs` or by `systemctl status webvirt-backup` and deletes no older backup.
+The database holds compute passwords and keys: the directories are readable only by the panel's user. They are on the same host as the panel; the [off-site copy](#off-site-copy) keeps them on another server too. A failed backup is reported in `docker logs` or by `systemctl status webvirt-backup` and deletes no older backup.
 
 Take one now:
 
@@ -458,6 +458,78 @@ systemctl start webvirt-backup && journalctl -u webvirt-backup -n 3             
 ```
 
 To restore one, follow [Restore and rollback](#restore-and-rollback) with `b` set to its directory. In Docker, copy it out of the volume first (`docker compose cp webvirtcloud:/srv/webvirtcloud/backups/webvirtcloud-backup-YYYYMMDD-HHMMSS ..`) and leave out the `git checkout` and `build` lines: the backup has no commit. To move the panel to a new machine, see [Moving to a new machine](#moving-to-a-new-machine).
+
+### Off-site copy
+
+`webvirt-offsite.timer` copies the backups every day at 03:45 with [restic](https://restic.net) over SFTP to another server, encrypted with a password that only you and the panel's host hold, and keeps 7 daily, 4 weekly and 6 monthly copies there. It runs on the panel's host as root, also with Docker. It fails, and `journalctl -u webvirt-offsite` says why, when the newest backup is older than 26 hours or the copy does not finish.
+
+On the other server, create the user the copies go to (`wvcbackup` on `backup.example.com` below):
+
+```bash
+useradd -m wvcbackup && install -d -o wvcbackup -m 700 ~wvcbackup/.ssh
+```
+
+On the panel's host, from a root shell in the directory you installed from:
+
+1. Install restic and curl (RHEL: `dnf -y install epel-release && dnf -y install restic`, openSUSE: `zypper -n install restic curl`) and the job:
+
+   ```bash
+   apt-get -y install restic curl
+   install -m 755 conf/webvirt-offsite.sh /usr/local/sbin/webvirt-offsite
+   cp conf/systemd/webvirt-offsite.service conf/systemd/webvirt-offsite.timer /etc/systemd/system/
+   ```
+
+2. Give the host a key of its own for the other server:
+
+   ```bash
+   install -d -m 700 /root/.ssh
+   ssh-keygen -q -t ed25519 -N '' -f /root/.ssh/webvirtcloud-offsite
+   cat >> /root/.ssh/config <<'EOF'
+   Host webvirtcloud-offsite
+     HostName backup.example.com
+     User wvcbackup
+     IdentityFile /root/.ssh/webvirtcloud-offsite
+   EOF
+   ```
+
+   Add `/root/.ssh/webvirtcloud-offsite.pub` to `~wvcbackup/.ssh/authorized_keys` on the other server (owned by `wvcbackup`, mode 600), then connect once to record the server's key:
+
+   ```bash
+   ssh -o StrictHostKeyChecking=accept-new webvirtcloud-offsite true
+   ```
+
+3. Write the settings with a new password and create the repository. With Docker, set `WVC_BACKUPS` to the volume, `$(docker volume inspect -f '{{.Mountpoint}}' webvirtcloud_webvirtcloud-backups)`. `WVC_HEARTBEAT` is optional: a URL called after each good copy, such as a [healthchecks.io](https://healthchecks.io) check, which tells you when a day passes without one.
+
+   ```bash
+   install -m 600 /dev/null /etc/webvirtcloud-offsite.env
+   cat > /etc/webvirtcloud-offsite.env <<EOF
+   RESTIC_REPOSITORY=sftp:webvirtcloud-offsite:restic
+   RESTIC_PASSWORD=$(head -c 30 /dev/urandom | base64)
+   WVC_BACKUPS=/srv/webvirtcloud/backups
+   WVC_HEARTBEAT=
+   EOF
+   (set -a && . /etc/webvirtcloud-offsite.env && restic init)
+   ```
+
+   Keep `RESTIC_REPOSITORY`, `RESTIC_PASSWORD` and the server's address in your password manager: without the password nobody can read the copies, you included.
+
+4. Start it and take the first copy:
+
+   ```bash
+   systemctl daemon-reload && systemctl enable --now webvirt-offsite.timer &&
+   systemctl start webvirt-offsite && journalctl -u webvirt-offsite -n 5
+   ```
+
+To get a backup back when the panel's host is lost, give the new host a key as in step 2, then:
+
+```bash
+read -rs RESTIC_PASSWORD && export RESTIC_PASSWORD RESTIC_REPOSITORY=sftp:webvirtcloud-offsite:restic
+restic snapshots --tag webvirtcloud
+restic restore latest --tag webvirtcloud --target /root/offsite-restore
+b=$(find /root/offsite-restore -type d -name 'webvirtcloud-backup-*' | sort | tail -n 1)
+```
+
+and follow [Moving to a new machine](#moving-to-a-new-machine) with that `b` (leave out its `b=` line).
 
 ## Updating
 
@@ -627,7 +699,7 @@ docker compose run --rm --no-deps -T --entrypoint /srv/webvirtcloud/venv/bin/pyt
   -c "import os,sqlite3,sys,tempfile; t=tempfile.mktemp(); open(t,'wb').write(sys.stdin.buffer.read()); [os.remove(p) for p in ('data/db.sqlite3-journal','data/db.sqlite3-wal','data/db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(t).backup(sqlite3.connect('data/db.sqlite3'))" < "$b/db.sqlite3" &&
 docker compose cp "$b/secret_key" webvirtcloud:/srv/webvirtcloud/data/ &&
 docker compose cp "$b/node_id" webvirtcloud:/srv/webvirtcloud/data/ &&
-docker compose cp "$b/ssh/." webvirtcloud:/var/www/.ssh/ &&
+{ [ ! -d "$b/ssh" ] || docker compose cp "$b/ssh/." webvirtcloud:/var/www/.ssh/; } &&
 docker compose up -d    # the container migrates and fixes ownership and modes at start
 ```
 
@@ -639,7 +711,7 @@ systemctl stop webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 cd /srv/webvirtcloud &&
 venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
 cp "$b/secret_key" "$b/node_id" data/ &&
-mkdir -p ~www-data/.ssh && cp "$b"/ssh/* ~www-data/.ssh/ &&
+mkdir -p ~www-data/.ssh && { [ ! -d "$b/ssh" ] || cp "$b"/ssh/* ~www-data/.ssh/; } &&
 venv/bin/python3 manage.py migrate &&
 chown -R www-data:www-data data ~www-data/.ssh &&
 chmod 700 data ~www-data/.ssh && chmod 600 db.sqlite3 &&
