@@ -92,56 +92,44 @@
         {% endif %}
         {% if request.user.is_superuser %}
         <div role="tabpanel" class="tab-pane active" id="boot_opt">
-            <section class="mb-4" aria-labelledby="startup-heading">
-                <h2 class="h6" id="startup-heading">{% trans "Startup settings" %}</h2>
-                <div class="list-group">
-                    <div class="list-group-item py-3">
-                        <form action="{% if instance.autostart %}{% url 'instances:unset_autostart' instance.id %}{% else %}{% url 'instances:set_autostart' instance.id %}{% endif %}" method="post">{% csrf_token %}
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="autostart" aria-describedby="autostart-help"{% if instance.autostart %} checked{% endif %} data-submit-on-change>
-                                <label class="form-check-label fw-semibold" for="autostart">{% trans "Autostart" %}</label>
-                            </div>
-                            <p class="small text-body-secondary mb-0 mt-1" id="autostart-help">{% trans "Start this VM when the host starts." %}</p>
-                        </form>
-                    </div>
-                    <div class="list-group-item py-3">
-                        <form action="{% if instance.config_bootmenu %}{% url 'instances:unset_bootmenu' instance.id %}{% else %}{% url 'instances:set_bootmenu' instance.id %}{% endif %}" method="post">{% csrf_token %}
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="bootmenu" aria-describedby="bootmenu-help"{% if instance.config_bootmenu %} checked{% endif %} data-submit-on-change>
-                                <label class="form-check-label fw-semibold" for="bootmenu">{% trans "Boot menu" %}</label>
-                            </div>
-                            <p class="small text-body-secondary mb-0 mt-1" id="bootmenu-help">{% trans "Show a device chooser when the VM starts." %}</p>
-                        </form>
-                    </div>
-                </div>
-            </section>
-            <section aria-labelledby="boot-order-heading">
+            {# the devices the VM tries in turn when it starts, and those it does not try; each moves on its own #}
+            <section class="mb-4" aria-labelledby="boot-order-heading">
                 <h2 class="h6" id="boot-order-heading">{% trans "Boot order" %}</h2>
-                <p class="small text-body-secondary" id="boot-order-help">{% trans "Checked devices boot from top to bottom. Up and Down move all checked devices." %}</p>
-                {% if instance.config_boot_order and not instance.config_boot_devices.0.checked %}
-                    <p class="small text-body-secondary" id="boot-by-type">
-                        {% trans "The VM now boots by device type:" %}
-                        {% for b in instance.config_boot_order.values %}{{ b.target }}{% if not forloop.last %}, {% endif %}{% endfor %}.
-                        {% trans "Checking devices replaces this order." %}
-                    </p>
-                {% endif %}
+                <p class="small text-body-secondary" id="boot-order-help">{% trans "When the VM starts it tries these devices in turn and boots from the first that works." %}</p>
                 <form action="{% url 'instances:set_bootorder' instance.id %}" method="post" aria-labelledby="boot-order-heading" aria-describedby="boot-order-help">{% csrf_token %}
                     <input type="hidden" id="bootorder" name="bootorder">
-                    <div id="b_order" class="list-group boot-sequence mb-3">
-                        {% for device in instance.config_boot_devices %}
-                            <label class="list-group-item d-flex align-items-center gap-3">
-                                <input class="form-check-input flex-shrink-0 m-0" type="checkbox" value="{{ device.value }}"{% if device.checked %} checked{% endif %}>
-                                <span class="boot-rank small text-body-secondary" aria-hidden="true"></span>
-                                <span class="text-break"><strong>{{ device.name }}</strong><span class="d-block small text-body-secondary">{{ device.kind }} · {{ device.source|default:_("empty") }}</span></span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <button type="button" id="boot_order_up" class="btn btn-sm btn-secondary">{% bs_icon 'arrow-up' %} {% trans "Up" %}</button>
-                        <button type="button" id="boot_order_down" class="btn btn-sm btn-secondary">{% bs_icon 'arrow-down' %} {% trans "Down" %}</button>
-                        <button type="submit" class="btn btn-sm btn-primary ms-auto">{% trans "Apply order" %}</button>
-                    </div>
+                    <ol id="boot-chain" class="boot-chain list-unstyled mb-0">
+                        {% for device in instance.config_boot_devices %}{% if device.checked %}{% include "instances/boot_device.html" %}{% endif %}{% endfor %}
+                    </ol>
+                    <p class="small text-body-secondary py-2 mb-0" id="boot-chain-empty"{% if instance.config_boot_devices.0.checked %} hidden{% endif %}>
+                        {% if instance.config_boot_types %}{% blocktrans with types=instance.config_boot_types %}The VM boots by device type: {{ types }}. Add a device to choose the order yourself.{% endblocktrans %}
+                        {% else %}{% trans "No device is in the boot order. Add one." %}{% endif %}
+                    </p>
+                    <h3 class="h6 small text-body-secondary mt-3 mb-1">{% trans "Not in the boot order" %}</h3>
+                    <ul id="boot-spare" class="boot-spare list-unstyled mb-3">
+                        {% for device in instance.config_boot_devices %}{% if not device.checked %}{% include "instances/boot_device.html" %}{% endif %}{% endfor %}
+                    </ul>
+                    <button type="submit" class="btn btn-sm btn-primary">{% trans "Save order" %}</button>
                 </form>
+            </section>
+            <section class="border-top pt-3" aria-labelledby="startup-heading">
+                <h2 class="h6" id="startup-heading">{% trans "Startup settings" %}</h2>
+                <div class="row g-3">
+                    <form class="col-12 col-md-6" action="{% if instance.autostart %}{% url 'instances:unset_autostart' instance.id %}{% else %}{% url 'instances:set_autostart' instance.id %}{% endif %}" method="post">{% csrf_token %}
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="autostart" aria-describedby="autostart-help"{% if instance.autostart %} checked{% endif %} data-submit-on-change>
+                            <label class="form-check-label" for="autostart">{% trans "Autostart" %}</label>
+                        </div>
+                        <p class="small text-body-secondary mb-0" id="autostart-help">{% trans "Start this VM when the host starts." %}</p>
+                    </form>
+                    <form class="col-12 col-md-6" action="{% if instance.config_bootmenu %}{% url 'instances:unset_bootmenu' instance.id %}{% else %}{% url 'instances:set_bootmenu' instance.id %}{% endif %}" method="post">{% csrf_token %}
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="bootmenu" aria-describedby="bootmenu-help"{% if instance.config_bootmenu %} checked{% endif %} data-submit-on-change>
+                            <label class="form-check-label" for="bootmenu">{% trans "Boot menu" %}</label>
+                        </div>
+                        <p class="small text-body-secondary mb-0" id="bootmenu-help">{% trans "Show a device chooser when the VM starts." %}</p>
+                    </form>
+                </div>
             </section>
         </div>
         <div role="tabpanel" class="tab-pane" id="disks">

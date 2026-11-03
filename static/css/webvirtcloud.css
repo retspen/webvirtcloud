@@ -120,7 +120,6 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
     padding-right: var(--bs-breadcrumb-item-padding-x);
 }
 
-/* the boot order editor numbers its checked devices, top to bottom */
 /* the power tab's states: the current one filled, the others a ring */
 .power-dot {
     width: .8rem;
@@ -131,26 +130,39 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 }
 .power-dot.bg-success, .power-dot.bg-warning, .power-dot.bg-secondary { border-color: transparent; }
 
-.boot-sequence {
-    counter-reset: boot;
+/* the boot order: the devices the VM tries in turn, numbered and joined by a line */
+.boot-chain { counter-reset: boot; }
+.boot-node { position: relative; padding: .5rem 0; }
+.boot-chain > .boot-node { counter-increment: boot; }
+.boot-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 2px solid var(--bs-primary);
+    color: var(--bs-primary);
+    background: var(--bs-body-bg);
+    font-size: .8rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
 }
-
-.boot-sequence > label:has(> input:checked) {
-    counter-increment: boot;
+.boot-chain .boot-step::before { content: counter(boot); }
+.boot-chain > .boot-node:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: calc(.875rem - 1px);
+    top: calc(50% + .875rem);
+    height: calc(100% - 1.75rem);
+    border-left: 2px solid var(--bs-border-color);
 }
-
-.boot-rank {
-    width: 1rem;
-    text-align: center;
-}
-
-.boot-rank::before {
-    content: "—";
-}
-
-.boot-sequence > label:has(> input:checked) .boot-rank::before {
-    content: counter(boot);
-}
+.boot-spare .boot-step { visibility: hidden; }
+/* on a narrow screen a device's buttons go below its name, not over it */
+.boot-text { min-width: 10rem; flex-basis: 10rem; }
+.boot-chain .boot-spare-only, .boot-spare .boot-chain-only { display: none !important; }
 
 /* a log message keeps a readable width when its table scrolls on a phone */
 .log-message {
