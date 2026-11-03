@@ -40,6 +40,22 @@ class GetVolumesViewTests(TestCase):
         self.assertEqual(response.json()["vols"], ["a.qcow2", "b.qcow2"])
 
 
+class PoolPageTests(TestCase):
+    def setUp(self):
+        get_user_model().objects.create_superuser(username="pool_admin", password="password", email="pool_admin@example.com")
+        self.client.login(request=RequestFactory().get("/"), username="pool_admin", password="password")
+        self.compute = Compute.objects.create(name="PoolCompute", hostname="localhost", type=1, login="u", password="p")
+
+    @patch("storages.views.wvmStorage")
+    def test_a_pool_the_host_does_not_have_goes_back_to_the_pools_with_the_reason(self, mock_wvm):
+        from libvirt import libvirtError
+
+        mock_wvm.side_effect = libvirtError("Storage pool not found: no storage pool with matching name 'default'")
+        response = self.client.get(reverse("storage", args=[self.compute.id, "default"]))
+        self.assertRedirects(response, reverse("storages", args=[self.compute.id]), fetch_redirect_response=False)
+        self.assertIn("no storage pool with matching name", str(list(get_messages(response.wsgi_request))[0]))
+
+
 class VolumeDeleteTests(TestCase):
     """A volume a VM still needs is refused with its reason, on the page and in the API."""
 
