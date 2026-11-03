@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 16:37+0000\n"
+"POT-Creation-Date: 2026-11-03 17:31+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -361,6 +361,7 @@ msgstr "Kullanıcı adını girin"
 #: accounts/templates/accounts/otp_login.html:37
 #: accounts/templates/login.html:36 admin/templates/admin/user_form.html:106
 #: console/templates/console-vnc.html:82 instances/forms.py:28
+#: instances/templates/instances/access_tab.html:53
 msgid "Password"
 msgstr "Parola"
 
@@ -1666,7 +1667,6 @@ msgstr "Klonlar"
 #: appsettings/views.py:45 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
-#: instances/templates/instances/access_tab.html:15
 #: instances/templates/instances/settings_tab.html:32
 #: instances/templates/instances/settings_tab.html:695
 msgid "Console"
@@ -3809,7 +3809,6 @@ msgid "Power"
 msgstr "Güç"
 
 #: instances/templates/instance.html:83
-#: instances/templates/instances/access_tab.html:7
 msgid "Access"
 msgstr "Erişim"
 
@@ -3895,9 +3894,13 @@ msgstr "Yeniden başlat"
 msgid "more owners"
 msgstr "sahip daha"
 
-#: instances/templates/instances/access_tab.html:3
+#: instances/templates/instances/access_tab.html:2
 msgid "Instance access options"
 msgstr "Sanal makine erişim seçenekleri"
+
+#: instances/templates/instances/access_tab.html:7
+msgid "Screen"
+msgstr "Ekran"
 
 #: instances/templates/instances/access_tab.html:9
 msgid ""
@@ -3905,27 +3908,32 @@ msgid ""
 msgstr ""
 "Bu sanal makinenin konsolunu yalnızca sahipleri ve yöneticiler açabilir."
 
+#: instances/templates/instances/access_tab.html:14
+msgid "Open console"
+msgstr "Konsolu aç"
+
+#: instances/templates/instances/access_tab.html:15
+msgid "Opens the VM's screen in a new window."
+msgstr "Sanal makinenin ekranını yeni bir pencerede açar."
+
 #: instances/templates/instances/access_tab.html:19
-msgid "Remote viewer address"
-msgstr "Uzak görüntüleyici adresi"
+msgid "Remote viewer"
+msgstr "Uzak görüntüleyici"
 
-#: instances/templates/instances/access_tab.html:23
-msgid "VDI"
-msgstr "VDI"
+#: instances/templates/instances/access_tab.html:24 networks/views.py:24
+msgid "Open"
+msgstr "Açık"
 
-#: instances/templates/instances/access_tab.html:24
-msgid "Get console.vv"
-msgstr "console.vv dosyasını al"
+#: instances/templates/instances/access_tab.html:25
+msgid "Download .vv file"
+msgstr ".vv dosyasını indir"
 
-#: instances/templates/instances/access_tab.html:29
-msgid "Console opens a window here."
-msgstr "Konsol burada bir pencere açar."
+#: instances/templates/instances/access_tab.html:28
+msgid "For virt-viewer or another VNC or SPICE client on your computer."
+msgstr ""
+"Bilgisayarınızdaki virt-viewer ya da başka bir VNC veya SPICE istemcisi için."
 
 #: instances/templates/instances/access_tab.html:30
-msgid "VDI opens your remote viewer; console.vv sets up virt-viewer."
-msgstr "VDI uzak görüntüleyicinizi açar; console.vv virt-viewer'ı ayarlar."
-
-#: instances/templates/instances/access_tab.html:31
 msgid ""
 "A remote viewer cannot reach this console: it listens on the host only, or it"
 " is a serial one."
@@ -3933,52 +3941,49 @@ msgstr ""
 "Uzak görüntüleyici bu konsola ulaşamaz: konsol yalnızca sunucuda dinliyor ya "
 "da seri konsol."
 
-#: instances/templates/instances/access_tab.html:34
+#: instances/templates/instances/access_tab.html:33
 msgid "Start the VM to open its console."
 msgstr "Konsolunu açmak için sanal makineyi başlatın."
 
-#: instances/templates/instances/access_tab.html:40 instances/views.py:1104
-msgid "Reset root password"
-msgstr "Root parolasını sıfırla"
+#: instances/templates/instances/access_tab.html:38
+msgid "Log in as root"
+msgstr "Root olarak oturum açma"
 
-#: instances/templates/instances/access_tab.html:42
-msgid "The guest's root user gets this password."
-msgstr "Konuk sistemin root kullanıcısı bu parolayı alır."
+#: instances/templates/instances/access_tab.html:41
+msgid "Written to the VM's disk while it is off."
+msgstr "Sanal makine kapalıyken diskine yazılır."
 
 #: instances/templates/instances/access_tab.html:43
-#: instances/templates/instances/access_tab.html:66
+msgid "Sent to the running VM through its guest agent."
+msgstr "Çalışan sanal makineye konuk ajanı üzerinden gönderilir."
+
+#: instances/templates/instances/access_tab.html:45
 msgid "The guest agent is not connected: connect it, or shut the VM down."
 msgstr "Konuk ajanı bağlı değil: bağlayın ya da sanal makineyi kapatın."
 
-#: instances/templates/instances/access_tab.html:44
-#: instances/templates/instances/access_tab.html:67
+#: instances/templates/instances/access_tab.html:47
 msgid "Shut the VM down, or run it with its guest agent."
 msgstr "Sanal makineyi kapatın ya da konuk ajanıyla çalıştırın."
 
-#: instances/templates/instances/access_tab.html:51
-msgid "Reset Root Password"
-msgstr "Kök parola sıfırla"
+#: instances/templates/instances/access_tab.html:58
+msgid "Reset password"
+msgstr "Parolayı sıfırla"
 
-#: instances/templates/instances/access_tab.html:62
-msgid "Add SSH key for root"
-msgstr "root için SSH anahtarı ekle"
+#: instances/templates/instances/access_tab.html:66
+msgid "SSH key"
+msgstr "SSH anahtarı"
 
-#: instances/templates/instances/access_tab.html:64
+#: instances/templates/instances/access_tab.html:73
+msgid "Add key"
+msgstr "Anahtar ekle"
+
+#: instances/templates/instances/access_tab.html:77
 msgid "You have no saved public key."
 msgstr "Kayıtlı açık anahtarınız yok."
 
-#: instances/templates/instances/access_tab.html:64
+#: instances/templates/instances/access_tab.html:77
 msgid "Add one in your profile."
 msgstr "Profilinizden bir tane ekleyin."
-
-#: instances/templates/instances/access_tab.html:65
-msgid "One of your public keys joins root's keys in the guest."
-msgstr ""
-"Açık anahtarlarınızdan biri konuk sistemdeki root anahtarlarına eklenir."
-
-#: instances/templates/instances/access_tab.html:76
-msgid "Add Public Key"
-msgstr "Açık Anahtar Ekle"
 
 #: instances/templates/instances/boot_device.html:9
 msgid "empty"
@@ -5960,6 +5965,10 @@ msgstr ""
 msgid "The change may still be made when the agent answers again."
 msgstr "Ajan yeniden yanıt verdiğinde değişiklik yine de yapılabilir."
 
+#: instances/views.py:1104
+msgid "Reset root password"
+msgstr "Root parolasını sıfırla"
+
 #: instances/views.py:1108
 msgid "Enter a password"
 msgstr "Bir parola girin"
@@ -7232,10 +7241,6 @@ msgid ""
 msgstr ""
 "Sunucu alt ağı yönlendirir; üst yönlendiricinin ona geri dönen bir rotası "
 "olmalıdır."
-
-#: networks/views.py:24
-msgid "Open"
-msgstr "Açık"
 
 #: networks/views.py:24
 msgid "The host routes the subnet and adds no firewall rules for it."
