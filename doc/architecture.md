@@ -1,185 +1,90 @@
-# WebVirtCloud - Codebase Overview and Architecture Documentation
+# WebVirtCloud architecture
 
-This document describes the architectural design, core components, data flow, and module interactions of the **WebVirtCloud** project.
+WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: the panel reads a host's VMs, pools, networks and devices from libvirt when a page needs them, and its database holds what libvirt does not (users, permissions, quotas, compute connection details, jobs, the audit log, settings) and, per VM, the compute, name and UUID that permissions hang on. VMs keep running when the panel is stopped. Changes made with `virsh` or `virt-manager` reach those VM rows the next time a VM list page is loaded; the API's VM list reads the rows as they are.
 
----
+## Stack
 
-## 1. Overview & Purpose
+| Layer | Technology |
+|---|---|
+| Runtime | Python 3.10–3.13, Django 5.2 LTS |
+| Database | SQLite (WAL) by default, PostgreSQL optional |
+| libvirt | `libvirt-python`, `lxml` for the XML |
+| API | Django REST Framework, `drf-nested-routers`, `drf-spectacular` (OpenAPI 3.0), API tokens (`django-rest-knox`) |
+| Frontend | Django templates, Bootstrap 5, Bootstrap Icons, vendored jQuery, Chart.js, noVNC, xterm.js |
+| Security | `django-otp` (TOTP), `django-axes` (lockout), optional `django-auth-ldap`; CSP `script-src 'self'` |
+| Serving | nginx in front of gunicorn (gthread workers) and WhiteNoise |
+| Processes | systemd units on hosts, runit in the Docker image |
 
-**WebVirtCloud** is an open-source virtualization management platform designed to manage QEMU/KVM-based hypervisors and virtual machines (instances) through a modern web UI and REST API.
+## Processes
 
-The platform provides:
-- **For Administrators**: Centralized multi-host hypervisor management, storage pools and volumes, virtual networks, compute nodes, and user quotas.
-- **For End Users**: Self-service virtual machine control (start, stop, reboot, console access, snapshot management, and live resource monitoring) based on delegated permissions.
+```
+browser ── nginx :80/:443
+             ├── /            → gunicorn 127.0.0.1:8000 (Django)
+             ├── /static/     → staticfiles/
+             ├── /novncd/     → novncd 127.0.0.1:6080 (VNC console, websockify)
+             └── /socket.io/  → socketiod 127.0.0.1:6081 (serial console)
 
----
+worker (manage.py run_worker)  long operations, one per installation
+backup (manage.py backup)      daily, from webvirt-backup.timer or cron in Docker
 
-## 2. Technology Stack
+Django, worker, novncd, socketiod ── libvirt (TCP, SSH, TLS or local socket) ── compute hosts
+panel ── gstfsd on each compute, at the compute's hostname, port 16510 (HMAC-signed requests; loopback only when the panel runs on the compute)
+```
 
-| Layer | Technology / Library | Description |
+| Unit (systemd) | runit service (Docker) | Runs |
 |---|---|---|
-| **Runtime** | Python >= 3.11 (tested up to 3.12) | Modern Python runtime environment |
-| **Web Framework** | Django 4.2 LTS | Core web framework, ORM, and MVC application foundation |
-| **API** | Django REST Framework (DRF) + `drf-spectacular` | RESTful API endpoints with OpenAPI 3.0 / Swagger & ReDoc documentation |
-| **Virtualization API** | `libvirt-python` + `lxml` | Libvirt API bindings and dynamic domain/storage/network XML generation |
-| **Console / VNC** | WebSockify + noVNC | In-browser HTML5 VNC console access via WebSocket |
-| **Frontend** | Django Templates, Bootstrap 5, Bootstrap Icons, jQuery | Server-rendered responsive and dynamic user interface |
-| **Identity & Security** | Django Auth, `django-otp` (2FA/TOTP), `django-auth-ldap` | Role-based authorization, two-factor authentication, and optional LDAP/Active Directory support |
-| **Web / WSGI Server** | Nginx + Gunicorn + WhiteNoise | Static file delivery and reverse proxy architecture |
-| **Process Manager** | systemd (hosts), runit (Docker) | Service management for Gunicorn, novncd, socketiod and the job worker |
+| `webvirt-cloud` | `webvirtcloud` | gunicorn |
+| `webvirt-novncd` | `novnc` | `console/novncd` |
+| `webvirt-socketiod` | `socketiod` | `console/socketiod` |
+| `webvirt-worker` | `webvirtcloud-worker` | `manage.py run_worker` |
+| `webvirt-backup.timer` | `cron` (`/etc/cron.d/webvirtcloud-backup`) | `manage.py backup` |
+| `webvirt-gstfsd` (on computes) | | `conf/daemon/gstfsd` |
 
----
+## Apps
 
-## 3. System Architecture & Core Layers
+| App | What it holds |
+|---|---|
+| `accounts` | users' VM permissions (`UserInstance`), quotas (`UserAttributes`), SSH keys, API tokens, OTP, login |
+| `admin` | users, groups and their permissions pages |
+| `appsettings` | settings stored in the database, themes, `manage.py backup` |
+| `computes` | compute hosts (`Compute`: hostname, type, login, password, gstfsd key, migration address), host overview and capacity |
+| `instances` | VMs (`Instance`: compute, name, UUID), flavors, removed-VM records (`InstanceTombstone`), the VM pages and their jobs |
+| `storages`, `networks`, `interfaces`, `nwfilters`, `virtsecrets` | the host's pools and volumes, networks, interfaces, network filters and secrets, read from libvirt |
+| `nodedevs` | the host's PCI and USB devices and which VM has them |
+| `console` | VNC and serial console pages, signed console tokens, `novncd`, `socketiod`, SSH tunnels to SSH computes |
+| `datasource` | cloud-init metadata (OpenStack format), a VM found by its client address |
+| `logs` | the audit log (`Logs`) and its page |
+| `operations` | jobs: `Operation`, `Claim`, `WorkerLease`, the worker and the Jobs pages |
 
-```
-                               +-----------------------------+
-                               |     Web Browser / Client    |
-                               +--------------+--------------+
-                                              |
-                        HTTP / HTTPS and WebSockets (Port 80/443)
-                                              |
-                                              v
-+------------------------------------------------------------------------------------+
-| Nginx Reverse Proxy                                                                |
-|   ├── /static/  --> Static Assets (WhiteNoise / Nginx)                             |
-|   ├── /         --> Gunicorn (Django WSGI Application)                             |
-|   ├── /novncd/  --> novncd (VNC console proxy, 127.0.0.1:6080)                     |
-|   └── /socket.io/ --> socketiod (serial console, 127.0.0.1:6081)                   |
-+-------------------------------------+----------------------------------------------+
-                                      |
-                                      v
-+------------------------------------------------------------------------------------+
-| Django Application Layer (WebVirtCloud)                                            |
-|                                                                                    |
-|  [accounts]      Users, Roles, Quotas, SSH Keys, 2FA (TOTP), LDAP                  |
-|  [computes]      Hypervisor (Compute Node) connection profiles                     |
-|  [instances]     Virtual machine models, lifecycle, live migration, flavors        |
-|  [storages]      Storage pools and volumes (dir, lvm, rbd/ceph, nfs, etc.)         |
-|  [networks]      Virtual networks (NAT, isolated, bridge, routed)                  |
-|  [interfaces]    Physical and bridged host network interfaces                      |
-|  [nwfilters]     Network filtering and firewall rules (anti-spoofing)              |
-|  [virtsecrets]   Libvirt secrets management (Ceph auth, etc.)                      |
-|  [datasource]    Cloud-init metadata and userdata HTTP endpoints                   |
-|  [logs]          User and system audit trail logging                               |
-|  [api/v1]        DRF Nested Routers exposing full REST API                         |
-+-------------------------------------+----------------------------------------------+
-                                      |
-                                      v
-+------------------------------------------------------------------------------------+
-| vrtManager Layer (Libvirt Abstraction Engine)                                      |
-|   ├── connection.py  --> TCP, SSH, TLS, or local socket libvirt connection pooling  |
-|   ├── instance.py    --> XML domain generation, CPU/RAM/Disk/Snapshots/Metrics     |
-|   ├── storage.py     --> Storage pool & volume XML management                      |
-|   ├── network.py     --> Network XML configuration & IP allocation                 |
-|   └── hostdetails.py --> Node info, memory, and CPU utilization metrics            |
-+-------------------------------------+----------------------------------------------+
-                                      |
-                       Libvirt Protocol (TCP/SSH/TLS/Socket)
-                                      |
-                                      v
-+------------------------------------------------------------------------------------+
-| KVM / QEMU Hypervisor Hosts                                                        |
-|   ├── libvirtd / virtqemud                                                         |
-|   ├── QEMU Guest Domains (VMs) + QEMU Guest Agent                                  |
-|   └── Storage & Network Infrastructure (ZFS, LVM, Ceph RBD, Linux Bridge, OVS)     |
-+------------------------------------------------------------------------------------+
-```
+## vrtManager
 
----
+The libvirt layer: the connections and the host objects the apps work on (the apps use `libvirt` itself only for its errors and constants).
 
-## 4. Module & Directory Structure Analysis
+| Module | Does |
+|---|---|
+| `connection.py` | one shared connection per host, transport and login, opened again when it closes (not more often than a pause allows after a failed open); a host gets at most two web requests at a time per process, so one that does not answer holds two threads and refuses the rest |
+| `instance.py` | a VM: power, disks, NICs, CPU, memory, snapshots, clone, live clone (push backup), migration, stats |
+| `create.py` | the XML of a new VM |
+| `hostdetails.py` | host CPU, memory and capabilities |
+| `storage.py`, `network.py`, `interface.py`, `nwfilters.py`, `virtsecrets.py`, `nodedevs.py` | the host objects of the apps with the same names |
+| `util.py` | `OperationError` (its text translated when shown, English in logs), XML helpers |
+| `rwlock.py` | the connection manager's read-write lock |
 
-### 4.1. `vrtManager/` (Core Libvirt Abstraction Engine)
-The most critical Python package in the project. Instead of persisting hypervisor and VM runtime states statically in a database, WebVirtCloud queries libvirt live in real time.
-- **`connection.py`**: Manages the libvirt connection pool (`connection_manager`) supporting multiple protocols (`CONN_TCP`, `CONN_SSH`, `CONN_TLS`, `CONN_SOCKET`). Uses a reentrant `ReadWriteLock` for thread-safe concurrent access.
-- **`instance.py`**: Encapsulates VM lifecycle operations via the `wvmInstance` class (start, shutdown, force off, suspend, resume, dynamic CPU/RAM allocation, disk hotplug/unplug, XML modification, snapshots, and real-time vCPU, network I/O, and disk I/O metrics).
-- **`create.py`**: Dynamically compiles XML definitions to provision new virtual machines.
-- **`storage.py` & `network.py`**: Handles storage pools (directory, LVM, iSCSI, Ceph RBD) and virtual network configurations.
-- **`hostdetails.py`**: Queries host capabilities, hardware architecture, total/available memory, and CPU utilization.
+## Jobs
 
-### 4.2. `computes/` (Hypervisor Management)
-- Manages hypervisor host records (`hostname`, `login`, `password`, `type`).
-- Provides lazy connection retrieval via `cached_property` using `connection_manager`.
-- Exposes host architectures (`archs`), processor topology, and memory state via REST API endpoints.
+Long operations (create, clone and migrate VMs, clone volumes, snapshots, ISO uploads) are `Operation` rows. The worker claims queued jobs and runs them on a thread pool; an ISO upload runs in the web request and is only tracked.
 
-### 4.3. `instances/` (Virtual Machine Management)
-- **`Instance` Model**: Stores the relational link between a VM and its `compute` node, unique `uuid`, and `name`. Runtime state (power state, memory, vCPUs, disks, network interfaces) is dynamically resolved through the `vrtManager.instance.wvmInstance` proxy.
-- **`Flavor` Model**: Predefined sizing templates (vCPU, RAM, disk) similar to AWS EC2 or OpenStack flavors.
-- **`MigrateInstance`**: Implements VM live migration, offline migration, compressed transfer, or unsafe tunneling to another compute host.
-- **`views.py`**: Provides VM provisioning wizards, configuration editors, cloning, snapshot management, and power controls.
+- **Claims:** a job holds claims on what it changes (VM, volume, pool, name, quota); a conflicting request is refused at once.
+- **Recovery:** a job whose worker died is never run again. The new worker reads what happened from libvirt and ends it as succeeded, failed or uncertain; an uncertain job keeps its claims until a superuser resolves it.
+- **Hosts:** one host's jobs take at most half the worker's slots, with one progress read and one control task per host, so a host that does not answer cannot stop the others.
+- **Pages:** the job panel on resource pages, the Jobs pages and `/api/v1/operations/` follow them.
 
-### 4.4. `accounts/` (Users, Permissions & Quotas)
-- Extends standard Django `User` model with granular virtualization delegation:
-  - **`UserInstance`**: Delegates granular permissions for a specific VM to a user (read, modify `is_change`, delete `is_delete`, console `is_vnc`).
-  - **`UserAttributes`**: Sets per-user resource quotas (maximum instances, maximum vCPUs, maximum RAM, and maximum storage capacity).
-  - **`UserSSHKey`**: Stores public SSH keys that can be injected automatically into new VMs via Cloud-Init.
-  - Supports Two-Factor Authentication (TOTP / QR code) and optional enterprise LDAP/Active Directory synchronization.
+## API
 
-### 4.5. `console/` (Remote Console Access)
-- **`novncd`**: Python-based WebSockify daemon bridging browser-based noVNC clients to the hypervisor's VNC TCP ports via WebSockets.
-- **`sshtunnels.py`**: If the hypervisor is remote and VNC ports are not publicly exposed, establishes an on-demand encrypted SSH tunnel to forward console traffic safely.
+`/api/v1/` (session from the login form or an API token):
 
-### 4.6. `datasource/` (Cloud-Init Support)
-- Implements a Cloud-Init compatible HTTP metadata and userdata service.
-- When a VM boots for the first time, it contacts `http://<webvirtcloud>/datasource/`.
-- Resolves the VM identity based on the client IP address and delivers the owner's SSH public keys as a formatted `user-data` payload, enabling automated passwordless SSH provisioning.
+- `computes/`, and per compute `instances/`, `instances/create/<arch>/<machine>/`, `networks/`, `interfaces/`, `storages/` (with `volumes/`), `archs/`
+- `instances/`, `flavor/`, `migrate/`, `operations/`
+- schema at `/api/schema/`, Swagger at `/swagger/`, ReDoc at `/redoc/`
 
-### 4.7. `storages/`, `networks/`, `interfaces/`, `nwfilters/`, `virtsecrets/`
-- **`storages`**: Storage pool management (dir, LVM, NFS, iSCSI, Ceph RBD), ISO image uploads, volume cloning, and disk resizing.
-- **`networks`**: Virtual network creation (NAT, Routed, Bridge, Isolated), DHCP address pools, and static IP/MAC bindings.
-- **`interfaces`**: Host physical network interfaces, bonding, and Linux bridge management.
-- **`nwfilters`**: Anti-spoofing firewall and packet filtering rules at the hypervisor level.
-- **`virtsecrets`**: Libvirt secrets management (e.g., Ceph authentication keys).
-
-### 4.8. `logs/`, `appsettings/`, and `admin/`
-- **`logs`**: Comprehensive audit trail recording user and system actions (power on, shutdown, disk attachment, user modification).
-- **`appsettings`**: Dynamic configuration stored in the database (custom titles, permissions, UI options) exposed globally via Django context processors.
-- **`admin`**: Administrative control panel for user, group, and system-level management.
-
----
-
-## 5. REST API Architecture (`/api/v1/`)
-
-Built on Django REST Framework with `drf-nested-routers`, providing a structured hierarchical API:
-
-- `/api/v1/computes/` : List and manage hypervisors
-  - `/api/v1/computes/{id}/instances/` : VMs running on a specific hypervisor
-  - `/api/v1/computes/{id}/instances/create/{arch}/{machine}/` : VM creation endpoint
-  - `/api/v1/computes/{id}/networks/` : Virtual networks on the hypervisor
-  - `/api/v1/computes/{id}/interfaces/` : Host network interfaces
-  - `/api/v1/computes/{id}/storages/` : Storage pools
-    - `/api/v1/computes/{id}/storages/{id}/volumes/` : Storage volumes (disks)
-  - `/api/v1/computes/{id}/archs/` : Supported architectures and machine types
-- `/api/v1/instances/` : Global virtual machine list
-- `/api/v1/flavor/` : Sizing templates (flavors)
-- `/api/v1/migrate/` : VM migration operations
-- `/swagger/` & `/redoc/` : Live OpenAPI 3.0 documentation (powered by `drf-spectacular`)
-
----
-
-## 6. Deployment & Service Lifecycle
-
-1. **Gunicorn**: WSGI application server running `webvirtcloud.wsgi:application` (binds to a Unix socket or port 8000).
-2. **novncd**: Background WebSockify daemon translating VNC TCP ports to WebSockets; it listens on 127.0.0.1:6080 behind nginx's `/novncd/`.
-3. **Nginx**: Front-facing reverse proxy handling ports 80/443, serving static assets directly, proxying dynamic web requests to Gunicorn, and routing WebSocket console traffic to `novncd`.
-4. **systemd / runit**: systemd units on hosts (`conf/systemd/`) and runit services in the Docker image (`conf/runit/`) run Gunicorn, novncd, socketiod and the job worker with automatic restarts.
-
----
-
-## 7. Architecture Highlights
-
-WebVirtCloud leverages a hybrid pattern: it combines the relational strengths of the **Django ORM** for persistent entities (users, compute host credentials, quotas, and permission delegations) with direct, real-time **libvirt C API bindings** for dynamic virtualization state (VM statuses, resource allocation, storage metrics, and live hardware statistics). This design ensures that the web console always reflects the true hypervisor state without risk of database desynchronization.
-
----
-
-## 8. Supported Distributions & Platform Matrix
-
-WebVirtCloud installer and runtime dependencies support modern enterprise Linux distributions:
-
-| Distribution Family | Target Versions | Package Manager | Services |
-|---|---|---|---|
-| **Ubuntu** | 20.04, 22.04 LTS, 24.04 LTS | `apt` | systemd |
-| **Debian** | 10, 11, 12 (Bookworm) | `apt` | systemd |
-| **RHEL / Rocky / Alma** | 9.x, 10.x | `dnf` | systemd |
-| **openSUSE / SLES** | openSUSE Leap 15.x, Tumbleweed, SLES 15 | `zypper` | systemd |
+Create and migrate answer 202 with the job.
