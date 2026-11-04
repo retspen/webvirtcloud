@@ -230,6 +230,27 @@ button.vcpu-cell:disabled { opacity: .65; }
 .snap-dot.snap-current { background: var(--bs-primary); }
 .snap-dot.snap-none { border-color: var(--bs-border-color); }
 
+/* the network tab: a NIC as a cable to its source, solid while its link is up, dashed while down */
+.nic-wire {
+    position: relative;
+    flex: 0 0 3.5rem;
+    margin-inline: .25rem;
+    color: var(--bs-secondary-color);
+    border-top: 2px dashed currentColor;
+}
+.nic-wire::before, .nic-wire::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.nic-wire::before { left: -3px; }
+.nic-wire::after { right: -3px; }
+.nic-wire.nic-up { color: var(--bs-success); border-top-style: solid; }
+
 /* a log message keeps a readable width when its table scrolls on a phone */
 .log-message {
     min-width: 16rem;
