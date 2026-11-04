@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 11:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -710,7 +710,7 @@ msgstr "Üyeler"
 #: instances/templates/instances/nic_qos_form.html:23
 #: instances/templates/instances/settings_tab.html:412
 #: instances/templates/instances/settings_tab.html:653
-#: instances/templates/instances/settings_tab.html:903
+#: instances/templates/instances/settings_tab.html:907
 #: networks/templates/add_network_qos.html:36
 #: networks/templates/network.html:336 networks/templates/network.html:376
 #: networks/templates/network.html:403 networks/templates/network.html:442
@@ -1662,7 +1662,6 @@ msgstr "Klonlar"
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
 #: instances/templates/instances/settings_tab.html:32
-#: instances/templates/instances/settings_tab.html:704
 msgid "Console"
 msgstr "Konsol"
 
@@ -1726,8 +1725,8 @@ msgid "Stored, leave empty to keep"
 msgstr "Kayıtlı, korumak için boş bırakın"
 
 #: computes/forms.py:28 computes/templates/computes/instances.html:45
-#: instances/templates/instances/settings_tab.html:867
-#: instances/templates/instances/settings_tab.html:899
+#: instances/templates/instances/settings_tab.html:871
+#: instances/templates/instances/settings_tab.html:903
 #: instances/templates/instances/snapshots_tab.html:27
 #: instances/templates/instances/snapshots_tab.html:71
 msgid "Description"
@@ -1990,7 +1989,7 @@ msgstr "Sanal Makineler"
 #: computes/templates/computes/host_nav.html:16
 #: computes/templates/overview.html:74
 #: instances/templates/instances/settings_tab.html:550
-#: instances/templates/instances/settings_tab.html:823
+#: instances/templates/instances/settings_tab.html:827
 #: storages/templates/storage.html:6 storages/templates/storage.html:8
 msgid "Storage"
 msgstr "Depolama"
@@ -2124,7 +2123,7 @@ msgstr "/ %(memory)s"
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
 #: instances/templates/instances/resize_tab.html:29
-#: instances/templates/instances/settings_tab.html:849
+#: instances/templates/instances/settings_tab.html:853
 msgid "vCPUs"
 msgstr "vCPU"
 
@@ -2132,7 +2131,7 @@ msgstr "vCPU"
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
-#: instances/templates/instances/settings_tab.html:963
+#: instances/templates/instances/settings_tab.html:967
 #: networks/templates/network.html:260
 msgid "Connected"
 msgstr "Bağlı"
@@ -2579,7 +2578,7 @@ msgstr ""
 "VNC olarak değiştirin."
 
 #: instances/forms.py:14 instances/templates/create_instance_w2.html:69
-#: instances/templates/instances/settings_tab.html:853
+#: instances/templates/instances/settings_tab.html:857
 msgid "Memory (MiB)"
 msgstr "Bellek (MiB)"
 
@@ -3268,7 +3267,7 @@ msgid "Letters, digits, dot, dash and underscore."
 msgstr "Harf, rakam, nokta, tire ve alt çizgi."
 
 #: instances/templates/add_instance_volume.html:44
-#: instances/templates/instances/settings_tab.html:846
+#: instances/templates/instances/settings_tab.html:850
 msgid "Size"
 msgstr "Boyut"
 
@@ -3583,7 +3582,7 @@ msgid "Firmware"
 msgstr "Üretici yazılımı"
 
 #: instances/templates/create_instance_w2.html:86
-#: instances/templates/instances/settings_tab.html:942
+#: instances/templates/instances/settings_tab.html:946
 msgid "TPM 2.0"
 msgstr "TPM 2.0"
 
@@ -3686,7 +3685,7 @@ msgid "Network filter"
 msgstr "Ağ filtresi"
 
 #: instances/templates/create_instance_w2.html:293
-#: instances/templates/instances/settings_tab.html:925
+#: instances/templates/instances/settings_tab.html:929
 #: vrtManager/nodedevs.py:30
 msgid "Video"
 msgstr "Görüntü"
@@ -3700,7 +3699,7 @@ msgid "Input device"
 msgstr "Girdi aygıtı"
 
 #: instances/templates/create_instance_w2.html:334
-#: instances/templates/instances/settings_tab.html:955
+#: instances/templates/instances/settings_tab.html:959
 msgid "Guest agent"
 msgstr "Konuk ajanı"
 
@@ -3742,8 +3741,8 @@ msgstr "Ayrıntılar"
 #: instances/templates/instance.html:34
 #: instances/templates/instance_actions.html:13
 #: instances/templates/instances/settings_tab.html:53
-#: instances/templates/instances/settings_tab.html:877
-#: instances/templates/instances/settings_tab.html:879
+#: instances/templates/instances/settings_tab.html:881
+#: instances/templates/instances/settings_tab.html:883
 #: nwfilters/templates/nwfilters.html:57 nwfilters/templates/nwfilters.html:94
 #: storages/templates/storage.html:143 storages/templates/storage.html:203
 msgid "Clone"
@@ -4561,7 +4560,7 @@ msgstr ""
 "sağlar."
 
 #: instances/templates/instances/resize_tab.html:77
-#: instances/templates/instances/settings_tab.html:915
+#: instances/templates/instances/settings_tab.html:919
 msgid "Shut the VM down to change this."
 msgstr "Bunu değiştirmek için sanal makineyi kapatın."
 
@@ -4628,7 +4627,7 @@ msgid "Boot"
 msgstr "Ön Yükleme"
 
 #: instances/templates/instances/settings_tab.html:39
-#: instances/templates/instances/settings_tab.html:801
+#: instances/templates/instances/settings_tab.html:805
 #: instances/templates/instances/stats_tab.html:44
 #: networks/templates/network.html:6 networks/templates/network.html:8
 #: networks/templates/network.html:48
@@ -5235,60 +5234,56 @@ msgstr ""
 "Çalışan konsol mevcut ayarlarını korur; buradaki değişiklikler sanal makine "
 "kapatılıp başlatıldıktan sonra uygulanır."
 
-#: instances/templates/instances/settings_tab.html:708
+#: instances/templates/instances/settings_tab.html:707
 msgid "The settings below apply to a VNC console."
 msgstr "Aşağıdaki ayarlar VNC konsolu için geçerlidir."
 
-#: instances/templates/instances/settings_tab.html:710
+#: instances/templates/instances/settings_tab.html:709
 msgid "The VNC settings appear once the console type VNC is saved."
 msgstr "VNC ayarları, konsol tipi VNC olarak kaydedildiğinde görünür."
 
-#: instances/templates/instances/settings_tab.html:718
+#: instances/templates/instances/settings_tab.html:717
 msgid "VNC connection"
 msgstr "VNC bağlantısı"
 
-#: instances/templates/instances/settings_tab.html:723
+#: instances/templates/instances/settings_tab.html:722
 msgid "Only administrators can change this."
 msgstr "Bunu yalnızca yöneticiler değiştirebilir."
 
-#: instances/templates/instances/settings_tab.html:723
+#: instances/templates/instances/settings_tab.html:722
 msgid "Beyond localhost the console is reachable from the network."
 msgstr "localhost dışında konsola ağdan erişilebilir."
 
-#: instances/templates/instances/settings_tab.html:734
+#: instances/templates/instances/settings_tab.html:733
 msgid "VNC password"
 msgstr "VNC parolası"
 
-#: instances/templates/instances/settings_tab.html:737
+#: instances/templates/instances/settings_tab.html:736
 msgid "A password is set."
 msgstr "Parola ayarlanmış."
 
-#: instances/templates/instances/settings_tab.html:737
+#: instances/templates/instances/settings_tab.html:736
 msgid "No password is set."
 msgstr "Parola ayarlanmamış."
 
 #: instances/templates/instances/settings_tab.html:747
-msgid ""
-"Up to 8 characters (an accented letter counts as two), used with \"Set a new "
-"one\"."
-msgstr ""
-"En fazla 8 karakter (aksanlı bir harf iki sayılır), \"Yenisini belirle\" ile "
-"kullanılır."
+msgid "Up to 8 characters; an accented letter counts as two."
+msgstr "En fazla 8 karakter; aksanlı bir harf iki sayılır."
 
-#: instances/templates/instances/settings_tab.html:754
+#: instances/templates/instances/settings_tab.html:758
 msgid "Save console settings"
 msgstr "Konsol ayarlarını kaydet"
 
-#: instances/templates/instances/settings_tab.html:763
+#: instances/templates/instances/settings_tab.html:767
 msgid "Create a clone"
 msgstr "Bir klon oluştur"
 
-#: instances/templates/instances/settings_tab.html:764
+#: instances/templates/instances/settings_tab.html:768
 #, python-format
 msgid "Source VM: %(name)s"
 msgstr "Kaynak sanal makine: %(name)s"
 
-#: instances/templates/instances/settings_tab.html:766
+#: instances/templates/instances/settings_tab.html:770
 msgid ""
 "The clone gets a new, empty TPM: keys in this VM's TPM, such as BitLocker's, "
 "do not come along."
@@ -5296,69 +5291,69 @@ msgstr ""
 "Klon yeni ve boş bir TPM alır: bu sanal makinenin TPM'indeki anahtarlar, "
 "örneğin BitLocker'ınkiler, klona geçmez."
 
-#: instances/templates/instances/settings_tab.html:771
-#: instances/templates/instances/settings_tab.html:784
-#: instances/templates/instances/settings_tab.html:787
+#: instances/templates/instances/settings_tab.html:775
+#: instances/templates/instances/settings_tab.html:788
+#: instances/templates/instances/settings_tab.html:791
 msgid "Clone name"
 msgstr "Klon adı"
 
-#: instances/templates/instances/settings_tab.html:779
-#: instances/templates/instances/settings_tab.html:811
+#: instances/templates/instances/settings_tab.html:783
+#: instances/templates/instances/settings_tab.html:815
 msgid "Guess"
 msgstr "Tahmin"
 
-#: instances/templates/instances/settings_tab.html:782
+#: instances/templates/instances/settings_tab.html:786
 msgid "The DHCP file has no free name to suggest."
 msgstr "DHCP dosyasında önerilecek boş ad yok."
 
-#: instances/templates/instances/settings_tab.html:785
+#: instances/templates/instances/settings_tab.html:789
 msgid "Automatic"
 msgstr "Otomatik"
 
-#: instances/templates/instances/settings_tab.html:805
+#: instances/templates/instances/settings_tab.html:809
 msgid "New MAC address"
 msgstr "Yeni MAC adresi"
 
-#: instances/templates/instances/settings_tab.html:808
+#: instances/templates/instances/settings_tab.html:812
 msgid "Random"
 msgstr "Rastgele"
 
-#: instances/templates/instances/settings_tab.html:826
+#: instances/templates/instances/settings_tab.html:830
 #, python-format
 msgid "%(pool)s pool"
 msgstr "%(pool)s havuzu"
 
-#: instances/templates/instances/settings_tab.html:827
+#: instances/templates/instances/settings_tab.html:831
 msgid "New volume name"
 msgstr "Yeni birim adı"
 
-#: instances/templates/instances/settings_tab.html:833
+#: instances/templates/instances/settings_tab.html:837
 msgid "Preallocate qcow2 metadata"
 msgstr "qcow2 meta verisini önceden ayır"
 
-#: instances/templates/instances/settings_tab.html:838
+#: instances/templates/instances/settings_tab.html:842
 msgid "The VM has no disk to copy."
 msgstr "Sanal makinenin kopyalanacak diski yok."
 
-#: instances/templates/instances/settings_tab.html:857
+#: instances/templates/instances/settings_tab.html:861
 msgid "The VM's size to start from; the quota counts the larger of the two."
 msgstr ""
 "Başlangıç olarak sanal makinenin boyutu; kota ikisinden büyük olanı sayar."
 
-#: instances/templates/instances/settings_tab.html:860
+#: instances/templates/instances/settings_tab.html:864
 msgid "Start the clone when it is made"
 msgstr "Klon oluşturulunca başlat"
 
-#: instances/templates/instances/settings_tab.html:864
+#: instances/templates/instances/settings_tab.html:868
 msgid "Optional details"
 msgstr "İsteğe bağlı ayrıntılar"
 
-#: instances/templates/instances/settings_tab.html:865
-#: instances/templates/instances/settings_tab.html:895
+#: instances/templates/instances/settings_tab.html:869
+#: instances/templates/instances/settings_tab.html:899
 msgid "Title"
 msgstr "Başlık"
 
-#: instances/templates/instances/settings_tab.html:872
+#: instances/templates/instances/settings_tab.html:876
 msgid ""
 "The clone gets none of the VM's host devices: one VM holds a device of the "
 "host."
@@ -5366,50 +5361,50 @@ msgstr ""
 "Klon, sanal makinenin sunucu aygıtlarını almaz: bir sunucu aygıtını tek bir "
 "sanal makine tutar."
 
-#: instances/templates/instances/settings_tab.html:875
+#: instances/templates/instances/settings_tab.html:879
 msgid "Cloning runs as a background job."
 msgstr "Klonlama arka planda bir iş olarak çalışır."
 
-#: instances/templates/instances/settings_tab.html:892
+#: instances/templates/instances/settings_tab.html:896
 msgid "VM details"
 msgstr "Sanal makine ayrıntıları"
 
-#: instances/templates/instances/settings_tab.html:911
+#: instances/templates/instances/settings_tab.html:915
 msgid "Use as a template"
 msgstr "Şablon olarak kullan"
 
-#: instances/templates/instances/settings_tab.html:913
+#: instances/templates/instances/settings_tab.html:917
 msgid ""
 "A template is a VM to clone: it is not counted in quotas and cannot be "
 "started."
 msgstr ""
 "Şablon, klonlanacak bir sanal makinedir: kotalarda sayılmaz ve başlatılamaz."
 
-#: instances/templates/instances/settings_tab.html:914
+#: instances/templates/instances/settings_tab.html:918
 msgid "Only administrators and staff can change this."
 msgstr "Bunu yalnızca yöneticiler ve personel değiştirebilir."
 
-#: instances/templates/instances/settings_tab.html:921
+#: instances/templates/instances/settings_tab.html:925
 msgid "Devices the guest sees"
 msgstr "Konuk sistemin gördüğü aygıtlar"
 
-#: instances/templates/instances/settings_tab.html:922
+#: instances/templates/instances/settings_tab.html:926
 msgid "Changes apply from the next start; the guest agent's at once."
 msgstr "Değişiklikler sonraki başlatmada geçerli olur; konuk ajanınki hemen."
 
-#: instances/templates/instances/settings_tab.html:931
+#: instances/templates/instances/settings_tab.html:935
 msgid "The graphics device the guest sees."
 msgstr "Konuk sistemin gördüğü grafik aygıtı."
 
-#: instances/templates/instances/settings_tab.html:934
+#: instances/templates/instances/settings_tab.html:938
 msgid "Virtio RNG"
 msgstr "Virtio RNG"
 
-#: instances/templates/instances/settings_tab.html:939
+#: instances/templates/instances/settings_tab.html:943
 msgid "The VM has its own RNG device: change it in the XML editor."
 msgstr "Sanal makinenin kendi RNG aygıtı var: XML düzenleyicide değiştirin."
 
-#: instances/templates/instances/settings_tab.html:939
+#: instances/templates/instances/settings_tab.html:943
 msgid ""
 "Feeds the guest's entropy from the host, so a new VM does not wait for it at "
 "boot."
@@ -5417,15 +5412,15 @@ msgstr ""
 "Konuk sistemin entropisini sunucudan besler; yeni bir sanal makine açılışta "
 "onu beklemez."
 
-#: instances/templates/instances/settings_tab.html:948
+#: instances/templates/instances/settings_tab.html:952
 msgid "The VM has its own TPM: change it in the XML editor."
 msgstr "Sanal makinenin kendi TPM'i var: XML düzenleyicide değiştirin."
 
-#: instances/templates/instances/settings_tab.html:949
+#: instances/templates/instances/settings_tab.html:953
 msgid "This host offers no TPM 2.0: install swtpm on it."
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun."
 
-#: instances/templates/instances/settings_tab.html:950
+#: instances/templates/instances/settings_tab.html:954
 msgid ""
 "Turned off, its state stays on the host until the VM is destroyed; turned on "
 "again, it is back."
@@ -5433,42 +5428,42 @@ msgstr ""
 "Kapatıldığında durumu, sanal makine silinene kadar sunucuda kalır; yeniden "
 "açıldığında geri gelir."
 
-#: instances/templates/instances/settings_tab.html:951
+#: instances/templates/instances/settings_tab.html:955
 msgid "Windows 11 needs it, with UEFI Secure Boot."
 msgstr "Windows 11, UEFI Secure Boot ile birlikte bunu ister."
 
-#: instances/templates/instances/settings_tab.html:960
+#: instances/templates/instances/settings_tab.html:964
 msgid "The channel to the agent in the guest: a running VM gets it at once."
 msgstr ""
 "Konuk sistemdeki ajana giden kanal: çalışan bir sanal makine onu hemen alır."
 
-#: instances/templates/instances/settings_tab.html:961
+#: instances/templates/instances/settings_tab.html:965
 msgid "VM not running"
 msgstr "Sanal makine çalışmıyor"
 
-#: instances/templates/instances/settings_tab.html:962
+#: instances/templates/instances/settings_tab.html:966
 msgid "No channel"
 msgstr "Kanal yok"
 
-#: instances/templates/instances/settings_tab.html:964
+#: instances/templates/instances/settings_tab.html:968
 msgid "Not connected: is the agent installed and running in the guest?"
 msgstr "Bağlı değil: ajan konuk sistemde kurulu ve çalışıyor mu?"
 
-#: instances/templates/instances/settings_tab.html:969
+#: instances/templates/instances/settings_tab.html:973
 msgid "When the guest crashes"
 msgstr "Konuk sistem çöktüğünde"
 
-#: instances/templates/instances/settings_tab.html:974
+#: instances/templates/instances/settings_tab.html:978
 msgid "Restart"
 msgstr "Yeniden başlat"
 
-#: instances/templates/instances/settings_tab.html:976
+#: instances/templates/instances/settings_tab.html:980
 #: interfaces/templates/interface.html:16 networks/templates/network.html:16
 #: storages/templates/storage.html:18
 msgid "Stop"
 msgstr "Durdur"
 
-#: instances/templates/instances/settings_tab.html:978
+#: instances/templates/instances/settings_tab.html:982
 msgid ""
 "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
 " and again down for a look. From the next start."
@@ -5477,7 +5472,7 @@ msgstr ""
 " tekrar çöken bir sanal makineyi incelemek için kapalı tutar. Sonraki "
 "başlatmadan itibaren."
 
-#: instances/templates/instances/settings_tab.html:980
+#: instances/templates/instances/settings_tab.html:984
 #, python-format
 msgid "%(action)s: change it in the XML editor."
 msgstr "%(action)s: XML düzenleyicide değiştirin."
