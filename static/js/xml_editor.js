@@ -60,11 +60,12 @@
         save.classList.toggle("d-none", lines.length === 0);
         save.disabled = false;
         diff.replaceChildren();
-        // skip the two file header lines; + added, - removed, @@ where
+        // skip the two file header lines; + added, - removed, @@ where: "@@ -1,9 +1,9 @@" shows as "Line 1"
         lines.slice(2).forEach(function (line) {
             var row = document.createElement("div");
-            row.textContent = line;
-            row.className = {"+": "text-success", "-": "text-danger", "@": "text-body-secondary"}[line[0]] || "";
+            var hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)/);
+            row.textContent = hunk ? diff.dataset.line.replace("__line__", hunk[1]) : line;
+            row.className = hunk ? "diff-hunk small text-body-secondary" : {"+": "diff-add text-success", "-": "diff-del text-danger"}[line[0]] || "";
             diff.appendChild(row);
         });
         diff.classList.toggle("d-none", lines.length === 0);

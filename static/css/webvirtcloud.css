@@ -52,6 +52,27 @@
     height: 350px;
 }
 
+/* the VM's XML editor: as tall as most of the window, framed like a form field */
+.xml-editor .ace_editor {
+    height: max(350px, 65vh);
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+}
+
+/* the review dialog's diff: added and removed lines on a tint, a hunk starts with its line number */
+.xml-diff > div {
+    padding: 0 .5rem;
+}
+.xml-diff .diff-add {
+    background-color: rgba(var(--bs-success-rgb), .12);
+}
+.xml-diff .diff-del {
+    background-color: rgba(var(--bs-danger-rgb), .12);
+}
+.xml-diff .diff-hunk:not(:first-child) {
+    margin-top: .75rem;
+}
+
 /* headers of sortable tables (static/js/sort_tables.js): the sorted one shows
    its direction, up for ascending */
 th[role=columnheader]:not([data-sort-method="none"]) {
