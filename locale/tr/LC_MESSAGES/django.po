@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 19:32+0000\n"
+"POT-Creation-Date: 2026-11-04 04:57+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -710,10 +710,7 @@ msgstr "Üyeler"
 #: instances/templates/instances/nic_qos_form.html:23
 #: instances/templates/instances/settings_tab.html:410
 #: instances/templates/instances/settings_tab.html:644
-#: instances/templates/instances/settings_tab.html:893
-#: instances/templates/instances/settings_tab.html:935
-#: instances/templates/instances/settings_tab.html:995
-#: instances/templates/instances/settings_tab.html:1025
+#: instances/templates/instances/settings_tab.html:894
 #: networks/templates/add_network_qos.html:36
 #: networks/templates/network.html:336 networks/templates/network.html:376
 #: networks/templates/network.html:403 networks/templates/network.html:442
@@ -878,7 +875,6 @@ msgstr "Kaldırılan sanal makinelerde ara"
 
 #: admin/templates/admin/tombstone_list.html:28
 #: instances/templates/instance.html:27
-#: instances/templates/instances/settings_tab.html:901
 msgid "Template"
 msgstr "Şablon"
 
@@ -2137,14 +2133,13 @@ msgstr "vCPU"
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
-#: instances/templates/instances/settings_tab.html:1012
+#: instances/templates/instances/settings_tab.html:954
 #: networks/templates/network.html:260
 msgid "Connected"
 msgstr "Bağlı"
 
 #: computes/templates/computes/list.html:73 computes/templates/overview.html:21
 #: instances/templates/allinstances_index_grouped.html:38
-#: instances/templates/instances/settings_tab.html:1013
 msgid "Not connected"
 msgstr "Bağlı değil"
 
@@ -3594,7 +3589,7 @@ msgid "Firmware"
 msgstr "Üretici yazılımı"
 
 #: instances/templates/create_instance_w2.html:86
-#: instances/templates/instances/settings_tab.html:969
+#: instances/templates/instances/settings_tab.html:933
 msgid "TPM 2.0"
 msgstr "TPM 2.0"
 
@@ -3696,7 +3691,9 @@ msgstr "NIC tipi"
 msgid "Network filter"
 msgstr "Ağ filtresi"
 
-#: instances/templates/create_instance_w2.html:293 vrtManager/nodedevs.py:30
+#: instances/templates/create_instance_w2.html:293
+#: instances/templates/instances/settings_tab.html:916
+#: vrtManager/nodedevs.py:30
 msgid "Video"
 msgstr "Görüntü"
 
@@ -3709,8 +3706,9 @@ msgid "Input device"
 msgstr "Girdi aygıtı"
 
 #: instances/templates/create_instance_w2.html:334
+#: instances/templates/instances/settings_tab.html:946
 msgid "Guest agent"
-msgstr "Misafir aracı"
+msgstr "Konuk ajanı"
 
 #: instances/templates/create_instance_w2.html:338
 msgid "Cloud-init seed"
@@ -3768,15 +3766,15 @@ msgstr "Yenile"
 
 #: instances/templates/instance.html:45
 msgid "Guest agent off"
-msgstr "Misafir aracı kapalı"
+msgstr "Konuk ajanı kapalı"
 
 #: instances/templates/instance.html:47
 msgid "Guest agent connected"
-msgstr "Misafir aracı bağlı"
+msgstr "Konuk ajanı bağlı"
 
 #: instances/templates/instance.html:49
 msgid "Guest agent not connected"
-msgstr "Misafir aracı bağlı değil"
+msgstr "Konuk ajanı bağlı değil"
 
 #: instances/templates/instance.html:51
 #, python-format
@@ -4570,7 +4568,7 @@ msgstr ""
 "sağlar."
 
 #: instances/templates/instances/resize_tab.html:77
-#: instances/templates/instances/settings_tab.html:913
+#: instances/templates/instances/settings_tab.html:906
 msgid "Shut the VM down to change this."
 msgstr "Bunu değiştirmek için sanal makineyi kapatın."
 
@@ -5342,7 +5340,7 @@ msgid "Optional details"
 msgstr "İsteğe bağlı ayrıntılar"
 
 #: instances/templates/instances/settings_tab.html:856
-#: instances/templates/instances/settings_tab.html:888
+#: instances/templates/instances/settings_tab.html:886
 msgid "Title"
 msgstr "Başlık"
 
@@ -5358,84 +5356,105 @@ msgstr ""
 msgid "Cloning runs as a background job."
 msgstr "Klonlama arka planda bir iş olarak çalışır."
 
-#: instances/templates/instances/settings_tab.html:884
+#: instances/templates/instances/settings_tab.html:883
 msgid "VM details"
 msgstr "Sanal makine ayrıntıları"
 
-#: instances/templates/instances/settings_tab.html:885
-msgid "A title and description to identify the VM."
-msgstr "Sanal makineyi tanımlamak için bir başlık ve açıklama."
-
 #: instances/templates/instances/settings_tab.html:902
+msgid "Use as a template"
+msgstr "Şablon olarak kullan"
+
+#: instances/templates/instances/settings_tab.html:904
 msgid ""
 "A template is a VM to clone: it is not counted in quotas and cannot be "
 "started."
 msgstr ""
 "Şablon, klonlanacak bir sanal makinedir: kotalarda sayılmaz ve başlatılamaz."
 
-#: instances/templates/instances/settings_tab.html:909
-msgid "Use as a template"
-msgstr "Şablon olarak kullan"
-
-#: instances/templates/instances/settings_tab.html:912
+#: instances/templates/instances/settings_tab.html:905
 msgid "Only administrators and staff can change this."
 msgstr "Bunu yalnızca yöneticiler ve personel değiştirebilir."
 
-#: instances/templates/instances/settings_tab.html:922
-msgid "Primary video model"
-msgstr "Birincil video modeli"
+#: instances/templates/instances/settings_tab.html:912
+msgid "Devices the guest sees"
+msgstr "Konuk sistemin gördüğü aygıtlar"
 
-#: instances/templates/instances/settings_tab.html:923
+#: instances/templates/instances/settings_tab.html:913
+msgid "Changes apply from the next start; the guest agent's at once."
+msgstr "Değişiklikler sonraki başlatmada geçerli olur; konuk ajanınki hemen."
+
+#: instances/templates/instances/settings_tab.html:922
 msgid "The graphics device the guest sees."
 msgstr "Konuk sistemin gördüğü grafik aygıtı."
 
-#: instances/templates/instances/settings_tab.html:944
-msgid "Random number generator"
-msgstr "Rastgele sayı üreteci"
-
-#: instances/templates/instances/settings_tab.html:945
-msgid ""
-"A virtio device that feeds the guest's entropy from the host: a new VM does "
-"not wait for it at boot. From the next start."
-msgstr ""
-"Konuk sistemin entropisini sunucudan besleyen bir virtio aygıtı: yeni bir "
-"sanal makine açılışta onu beklemez. Sonraki başlatmadan itibaren."
-
-#: instances/templates/instances/settings_tab.html:951
+#: instances/templates/instances/settings_tab.html:925
 msgid "Virtio RNG"
 msgstr "Virtio RNG"
 
-#: instances/templates/instances/settings_tab.html:954
+#: instances/templates/instances/settings_tab.html:930
 msgid "The VM has its own RNG device: change it in the XML editor."
 msgstr "Sanal makinenin kendi RNG aygıtı var: XML düzenleyicide değiştirin."
 
-#: instances/templates/instances/settings_tab.html:962
-msgid "TPM"
-msgstr "TPM"
-
-#: instances/templates/instances/settings_tab.html:963
+#: instances/templates/instances/settings_tab.html:930
 msgid ""
-"An emulated TPM 2.0, as Windows 11 needs with UEFI Secure Boot. Its state "
-"stays on the host until the VM is destroyed: a TPM added again has it back. "
-"From the next start."
+"Feeds the guest's entropy from the host, so a new VM does not wait for it at "
+"boot."
 msgstr ""
-"Windows 11'in UEFI Secure Boot ile birlikte istediği emüle edilmiş bir TPM "
-"2.0. Durumu sanal makine yok edilene kadar sunucuda kalır: yeniden eklenen "
-"TPM onu geri alır. Bir sonraki başlatmadan itibaren."
+"Konuk sistemin entropisini sunucudan besler; yeni bir sanal makine açılışta "
+"onu beklemez."
 
-#: instances/templates/instances/settings_tab.html:972
+#: instances/templates/instances/settings_tab.html:939
 msgid "The VM has its own TPM: change it in the XML editor."
 msgstr "Sanal makinenin kendi TPM'i var: XML düzenleyicide değiştirin."
 
-#: instances/templates/instances/settings_tab.html:974
+#: instances/templates/instances/settings_tab.html:940
 msgid "This host offers no TPM 2.0: install swtpm on it."
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun."
 
-#: instances/templates/instances/settings_tab.html:982
+#: instances/templates/instances/settings_tab.html:941
+msgid ""
+"Turned off, its state stays on the host until the VM is destroyed; turned on "
+"again, it is back."
+msgstr ""
+"Kapatıldığında durumu, sanal makine silinene kadar sunucuda kalır; yeniden "
+"açıldığında geri gelir."
+
+#: instances/templates/instances/settings_tab.html:942
+msgid "Windows 11 needs it, with UEFI Secure Boot."
+msgstr "Windows 11, UEFI Secure Boot ile birlikte bunu ister."
+
+#: instances/templates/instances/settings_tab.html:951
+msgid "The channel to the agent in the guest: a running VM gets it at once."
+msgstr ""
+"Konuk sistemdeki ajana giden kanal: çalışan bir sanal makine onu hemen alır."
+
+#: instances/templates/instances/settings_tab.html:952
+msgid "VM not running"
+msgstr "Sanal makine çalışmıyor"
+
+#: instances/templates/instances/settings_tab.html:953
+msgid "No channel"
+msgstr "Kanal yok"
+
+#: instances/templates/instances/settings_tab.html:955
+msgid "Not connected: is the agent installed and running in the guest?"
+msgstr "Bağlı değil: ajan konuk sistemde kurulu ve çalışıyor mu?"
+
+#: instances/templates/instances/settings_tab.html:960
 msgid "When the guest crashes"
 msgstr "Konuk sistem çöktüğünde"
 
-#: instances/templates/instances/settings_tab.html:983
+#: instances/templates/instances/settings_tab.html:965
+msgid "Restart"
+msgstr "Yeniden başlat"
+
+#: instances/templates/instances/settings_tab.html:967
+#: interfaces/templates/interface.html:16 networks/templates/network.html:16
+#: storages/templates/storage.html:18
+msgid "Stop"
+msgstr "Durdur"
+
+#: instances/templates/instances/settings_tab.html:969
 msgid ""
 "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
 " and again down for a look. From the next start."
@@ -5444,49 +5463,10 @@ msgstr ""
 " tekrar çöken bir sanal makineyi incelemek için kapalı tutar. Sonraki "
 "başlatmadan itibaren."
 
-#: instances/templates/instances/settings_tab.html:990
-msgid "Restart"
-msgstr "Yeniden başlat"
-
-#: instances/templates/instances/settings_tab.html:991
-#: interfaces/templates/interface.html:16 networks/templates/network.html:16
-#: storages/templates/storage.html:18
-msgid "Stop"
-msgstr "Durdur"
-
-#: instances/templates/instances/settings_tab.html:999
+#: instances/templates/instances/settings_tab.html:971
 #, python-format
 msgid "%(action)s: change it in the XML editor."
 msgstr "%(action)s: XML düzenleyicide değiştirin."
-
-#: instances/templates/instances/settings_tab.html:1007
-msgid "QEMU guest agent"
-msgstr "QEMU konuk ajanı"
-
-#: instances/templates/instances/settings_tab.html:1008
-msgid "The channel to the agent in the guest: a running VM gets it at once."
-msgstr ""
-"Konuk sistemdeki ajana giden kanal: çalışan bir sanal makine onu hemen alır."
-
-#: instances/templates/instances/settings_tab.html:1009
-msgid "Agent"
-msgstr "Ajan"
-
-#: instances/templates/instances/settings_tab.html:1010
-msgid "VM not running"
-msgstr "Sanal makine çalışmıyor"
-
-#: instances/templates/instances/settings_tab.html:1011
-msgid "No channel"
-msgstr "Kanal yok"
-
-#: instances/templates/instances/settings_tab.html:1020
-msgid "Enabled"
-msgstr "Etkin"
-
-#: instances/templates/instances/settings_tab.html:1021
-msgid "Disabled"
-msgstr "Devredışı"
 
 #: instances/templates/instances/snapshots_tab.html:11
 msgid "Snapshots"
