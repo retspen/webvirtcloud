@@ -78,6 +78,7 @@ class UploadVolumeTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             conn.upload_volume(pool, "a.iso", b"data")
         pool.createXML.return_value.delete.assert_called_once_with(0)
+        conn.wvm.newStream.return_value.abort.assert_called_once_with()
 
 
 class DeleteWithDisksTestCase(unittest.TestCase):
