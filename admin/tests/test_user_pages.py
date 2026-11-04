@@ -22,8 +22,8 @@ class UserPagesTests(TestCase):
         return [str(m) for m in get_messages(response.wsgi_request)]
 
     def form_data(self, user, **changes):
-        data = {"username": user.username, "is_active": "on", "is_superuser": "on" if user.is_superuser else "",
-                "max_instances": "2", "max_cpus": "2", "max_memory": "2048", "max_disk_size": "20", **changes}
+        data = {"username": user.username, "is_active": "on", "role": "superuser" if user.is_superuser else "user",
+                "max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20", **changes}
         return {key: value for key, value in data.items() if value != ""}
 
     def test_an_administrator_cannot_block_delete_or_demote_themselves(self):
@@ -31,7 +31,7 @@ class UserPagesTests(TestCase):
         for response in (self.client.post(reverse("admin:user_block", args=[own])),
                          self.client.post(reverse("admin:user_delete", args=[own]))):
             self.assertIn("You cannot block, delete or demote your own account", self.messages(response))
-        for change in ({"is_superuser": ""}, {"is_active": ""}):
+        for change in ({"role": "user"}, {"is_active": ""}):
             response = self.client.post(reverse("admin:user_update", args=[own]), self.form_data(self.admin, **change))
             self.assertContains(response, "You cannot block, delete or demote your own account")
         self.admin.refresh_from_db()
@@ -44,33 +44,62 @@ class UserPagesTests(TestCase):
     def test_the_form_tells_the_password_state_and_links_its_page(self):
         page = html.fromstring(self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content)
         text = " ".join(page.text_content().split())
-        self.assertIn("Password: Set Change password", text)
+        self.assertIn("Password Set Change password", text)
         self.assertNotIn("No password set", text)
         self.assertEqual(page.xpath("//a[normalize-space()='Change password']/@href"),
                          [reverse("admin:user_update_password", args=[self.alice.pk])])
         self.assertEqual(page.xpath("//a[@href='../password/']"), [])
 
-    def test_staff_and_quotas_say_what_they_mean(self):
+    def test_roles_say_what_they_mean(self):
         page = self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content.decode()
         self.assertIn("Template editor", page)
         self.assertIn("May change and delete the template VMs given to them", page)
+        self.assertIn("Manages the panel: every permission, no quota.", page)
         self.assertNotIn("log into this admin site", page)
-        self.assertIn("Max memory (MiB)", page)
-        self.assertIn("Max disk size (GiB)", page)
-        self.assertIn("-1 means no limit, 0 none allowed", page)
 
     def test_a_refused_choice_is_said_beside_its_field(self):
         url = reverse("admin:user_update", args=[self.alice.pk])
         response = self.client.post(url, {"username": "up-alice", "is_active": "on", "groups": "99999", "user_permissions": "99999",
-                                          "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+                                          "role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
         page = html.fromstring(response.content)
         self.assertEqual(len(page.xpath("//fieldset//div[contains(@class, 'invalid-feedback')]")), 2)
 
-    def test_the_folded_quota_says_what_it_allows(self):
-        UserAttributes.objects.filter(user=self.alice).update(max_instances=-1, max_cpus=1, max_memory=2048, max_disk_size=-1)
+    def test_the_quota_shows_no_limit_and_memory_in_gib(self):
+        UserAttributes.objects.filter(user=self.alice).update(max_instances=-1, max_cpus=1, max_memory=1536, max_disk_size=-1)
         page = html.fromstring(self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content)
-        (summary,) = [s for s in page.xpath("//summary") if "Quota" in s.text_content()]
-        self.assertEqual(" ".join(summary.text_content().split()), "Quota any number of VMs · 1 vCPU · 2048 MiB · any disk size")
+        shown = {box.get("name"): (box.get("value"), box.get("disabled") is not None) for box in page.xpath("//input[@type='number']")}
+        self.assertEqual(shown, {"max_instances": ("", True), "max_cpus": ("1", False), "max_memory": ("1.5", False),
+                                 "max_disk_size": ("", True)})
+        self.assertEqual(page.xpath("//input[@checked][@data-no-limit]/@name"), ["max_instances_unlimited", "max_disk_size_unlimited"])
+
+    def test_a_new_user_starts_with_the_default_quota(self):
+        page = html.fromstring(self.client.get(reverse("admin:user_create")).content)
+        shown = {box.get("name"): box.get("value") for box in page.xpath("//input[@type='number']")}
+        self.assertEqual(shown, {"max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20"})
+        self.assertEqual(page.xpath("//input[@name='role'][@checked]/@value"), ["user"])
+
+    def test_no_limit_is_kept_as_minus_one_and_gib_as_mib(self):
+        response = self.client.post(reverse("admin:user_update", args=[self.alice.pk]),
+                                    self.form_data(self.alice, max_cpus_unlimited="on", max_memory="0.75"))
+        self.assertRedirects(response, reverse("admin:user_list"))
+        quota = UserAttributes.objects.get(user=self.alice)
+        self.assertEqual((quota.max_instances, quota.max_cpus, quota.max_memory, quota.max_disk_size), (2, -1, 768, 20))
+
+    def test_a_limit_needs_a_number_or_no_limit(self):
+        for value in ("", "-1"):
+            with self.subTest(value=value):
+                response = self.client.post(reverse("admin:user_update", args=[self.alice.pk]),
+                                            self.form_data(self.alice, max_cpus=value) | {"max_cpus": value})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(len(html.fromstring(response.content).xpath("//input[@name='max_cpus'][contains(@class, 'is-invalid')]")), 1)
+
+    def test_a_role_sets_staff_and_superuser(self):
+        url = reverse("admin:user_update", args=[self.alice.pk])
+        for role, flags in (("template_editor", (True, False)), ("superuser", (True, True)), ("user", (False, False))):
+            with self.subTest(role=role):
+                self.assertRedirects(self.client.post(url, self.form_data(self.alice, role=role)), reverse("admin:user_list"))
+                self.alice.refresh_from_db()
+                self.assertEqual((self.alice.is_staff, self.alice.is_superuser), flags)
 
     def test_a_missing_users_profile_is_not_found(self):
         self.assertEqual(self.client.get(reverse("accounts:account", args=[99999])).status_code, 404)

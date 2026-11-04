@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from logs.models import Logs
 
-ATTRIBUTES = {"max_instances": 2, "max_cpus": 2, "max_memory": 2048, "max_disk_size": 20}
+ATTRIBUTES = {"role": "user", "max_instances": 2, "max_cpus": 2, "max_memory": 2, "max_disk_size": 20}
 
 
 def rows():

@@ -1,3 +1,5 @@
+from decimal import ROUND_HALF_UP, Decimal
+
 from django import forms
 from django.conf import settings
 from django.contrib.auth import password_validation
@@ -64,6 +66,14 @@ class GroupForm(forms.ModelForm):
 
 
 class UserForm(UniqueEmailMixin, forms.ModelForm):
+    # one choice for is_staff and is_superuser: a superuser keeps the
+    # is_staff it had (it adds nothing to every permission)
+    role = forms.ChoiceField(
+        widget=forms.RadioSelect,
+        choices=[("user", _("User")), ("template_editor", _("Template editor")), ("superuser", _("Superuser"))],
+        initial="user",
+    )
+
     user_permissions = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
         queryset=Permission.objects.filter(content_type__model="permissionset"),
@@ -87,12 +97,24 @@ class UserForm(UniqueEmailMixin, forms.ModelForm):
             "last_name",
             "email",
             "user_permissions",
-            "is_staff",
             "is_active",
-            "is_superuser",
         ]
-        labels = {"is_staff": _("Template editor")}
-        help_texts = {"is_staff": _("May change and delete the template VMs given to them")}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.is_superuser:
+            self.initial["role"] = "superuser"
+        elif self.instance.is_staff:
+            self.initial["role"] = "template_editor"
+
+    def clean(self):
+        cleaned = super().clean()
+        role = cleaned.get("role")
+        if role:
+            cleaned["is_superuser"] = self.instance.is_superuser = role == "superuser"
+            if role != "superuser":
+                self.instance.is_staff = role == "template_editor"
+        return cleaned
 
     def permission_rows(self):
         return permission_rows(self["user_permissions"])
@@ -152,16 +174,55 @@ class UserCreateForm(UserForm):
             "last_name",
             "email",
             "user_permissions",
-            "is_staff",
             "is_active",
-            "is_superuser",
         ]
 
 
+# the quota's limits, with the unit each is entered in (memory in GiB, kept in MiB)
+QUOTA_UNITS = {"max_instances": "", "max_cpus": "", "max_memory": "GiB", "max_disk_size": "GiB"}
+
+
 class UserAttributesForm(forms.ModelForm):
+    """The quota: each limit a number from 0 (none allowed) or No limit,
+    which is kept as -1; memory is entered in GiB and kept in MiB."""
+
+    max_instances = forms.IntegerField(label=_("VMs"), min_value=0, required=False)
+    max_cpus = forms.IntegerField(label=_("vCPUs"), min_value=0, required=False)
+    max_memory = forms.DecimalField(label=_("Memory"), min_value=0, required=False)
+    max_disk_size = forms.IntegerField(label=_("Disk"), min_value=0, required=False)
+
     class Meta:
         model = UserAttributes
-        exclude = ["user", "can_clone_instances", "must_change_password"]
+        fields = list(QUOTA_UNITS)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in QUOTA_UNITS:
+            limit = getattr(self.instance, name)  # a new user's: the model's default
+            self.fields[f"{name}_unlimited"] = forms.BooleanField(label=_("No limit"), required=False, initial=limit == -1)
+            if limit == -1:
+                self.initial[name] = None
+            elif name == "max_memory":
+                # exact: a MiB count over 1024 always ends, so saving it again changes nothing
+                self.initial[name] = format(Decimal(limit) / 1024, "f")
+            else:
+                self.initial[name] = limit
+
+    def clean(self):
+        cleaned = super().clean()
+        for name in QUOTA_UNITS:
+            if cleaned.get(f"{name}_unlimited"):
+                cleaned[name] = -1
+            elif cleaned.get(name) is None:
+                if name not in self.errors:
+                    self.add_error(name, _("Enter a limit or choose No limit."))
+            elif name == "max_memory":
+                cleaned[name] = int((cleaned[name] * 1024).to_integral_value(ROUND_HALF_UP))
+        return cleaned
+
+    def quota_rows(self):
+        """Each limit's field, its No limit box and its unit, for the form page."""
+        return [(self[name], self[f"{name}_unlimited"], unit) for name, unit in QUOTA_UNITS.items()]
 
 
 class AdminPasswordForm(AdminPasswordChangeForm):
