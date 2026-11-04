@@ -111,11 +111,12 @@ class wvmHostDetails(wvmConnect):
         vcpus = {"all": 0, "running": 0}
         assigned = {"all": 0, "running": 0}
         vms = {"running": 0, "paused": 0, "shutoff": 0, "other": 0}
-        for vm in self.get_host_instances(raw_mem_size=True).values():
-            for share in ("all",) if vm["status"] == VIR_DOMAIN_SHUTOFF else ("all", "running"):
-                vcpus[share] += int(vm["vcpu"])
-                assigned[share] += vm["memory"]
-            vms[VM_STATES.get(vm["status"], "other")] += 1
+        # the VM lists' read: the states in one call, each VM's XML once
+        for (state, _max_memory, memory, vcpu), _title in self.get_domain_rows().values():
+            for share in ("all",) if state == VIR_DOMAIN_SHUTOFF else ("all", "running"):
+                vcpus[share] += vcpu
+                assigned[share] += memory * 1024
+            vms[VM_STATES.get(state, "other")] += 1
         return {"cpus": self.host_info[2], "memory": self.host_info[1] * 1048576,
                 "vcpus": vcpus, "assigned": assigned, "vms": vms}
 
