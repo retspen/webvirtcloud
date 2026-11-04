@@ -31,7 +31,7 @@ class UnreachableListTests(TestCase):
         or up with the error its listing raises."""
         up = rows is not None
 
-        def domain_rows():
+        def domain_rows(uuids=None):
             if isinstance(rows, Exception):
                 raise rows
             return rows

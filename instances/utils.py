@@ -356,10 +356,12 @@ def read_list_rows(instances):
     """Each VM's info and title for a VM list, read once a host
     (get_domain_rows), not three calls a VM; a VM whose host or whose
     domain cannot be read has no info: the list shows it unknown."""
-    rows = {}
+    rows, shown = {}, {}
+    for inst in instances:
+        shown.setdefault(inst.compute_id, set()).add(inst.uuid)
     for compute in {inst.compute_id: inst.compute for inst in instances}.values():
         try:
-            rows[compute.pk] = compute.proxy.get_domain_rows() if compute.status is True else {}
+            rows[compute.pk] = compute.proxy.get_domain_rows(shown[compute.pk]) if compute.status is True else {}
         except libvirtError:
             rows[compute.pk] = {}
     for inst in instances:

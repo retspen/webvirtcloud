@@ -1098,13 +1098,16 @@ class wvmConnect(object):
         return {dom.UUIDString(): [dom.name(), stats["state.state"]]
                 for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE)}
 
-    def get_domain_rows(self):
-        """{uuid: (info, title)} of every domain, as the VM lists show them:
-        info in virDomainGetInfo's shape (state, max memory KiB, memory KiB,
-        vCPUs), the states in one call and the rest from each domain's live
-        XML, which the title needs anyway. A domain gone meanwhile is left out."""
+    def get_domain_rows(self, uuids=None):
+        """{uuid: (info, title)} of every domain, or of those in uuids, as the
+        VM lists show them: info in virDomainGetInfo's shape (state, max
+        memory KiB, memory KiB, vCPUs), the states in one call and the rest
+        from each domain's live XML, which the title needs anyway. A domain
+        gone meanwhile is left out."""
         rows = {}
         for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE):
+            if uuids is not None and dom.UUIDString() not in uuids:
+                continue  # a VM the list does not show: its XML is not read
             try:
                 doc = etree.fromstring(dom.XMLDesc(0))
             except libvirtError:
