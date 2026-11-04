@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if request.user.is_superuser %}
-    <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal">{% trans "Edit" %}</button>
+    <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal">{% trans "Edit" %}</button>
 
     <div class="modal fade" id="editvol{{ id }}" tabindex="-1" role="dialog" aria-labelledby="editInstanceVolumeLabel{{ id }}" aria-hidden="true">
         <div class="modal-dialog">
