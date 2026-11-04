@@ -530,13 +530,9 @@ def sshkeys(request, pk):
     :return:
     """
     instance = get_instance(request.user, pk)
-    instance_keys = []
-    userinstances = UserInstance.objects.filter(instance=instance)
-
-    for ui in userinstances:
-        keys = UserSSHKey.objects.filter(user=ui.user)
-        for k in keys:
-            instance_keys.append(k.keypublic)
+    # the keys of the VM's owners, owner by owner
+    instance_keys = list(UserSSHKey.objects.filter(user__userinstance__instance=instance)
+                         .order_by("user__userinstance__id", "id").values_list("keypublic", flat=True))
     if request.GET.get("plain", ""):
         response = "\n".join(instance_keys)
         response += "\n"

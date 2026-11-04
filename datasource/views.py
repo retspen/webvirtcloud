@@ -1,7 +1,7 @@
 import json
 import socket
 
-from accounts.models import UserInstance, UserSSHKey
+from accounts.models import UserSSHKey
 from computes.models import Compute
 from django.contrib.auth.decorators import login_not_required
 from django.core.exceptions import PermissionDenied
@@ -65,8 +65,9 @@ def os_userdata(request, version):
         # into the other VM by naming theirs the same. No keys then.
         instances = list(Instance.objects.filter(name=hostname.split(".")[0])[:2]) if hostname else []
         if len(instances) == 1:
-            for ui in UserInstance.objects.filter(instance=instances[0]):
-                instance_keys += UserSSHKey.objects.filter(user=ui.user).values_list("keypublic", flat=True)
+            # the keys of the VM's owners, owner by owner
+            instance_keys = list(UserSSHKey.objects.filter(user__userinstance__instance=instances[0])
+                                 .order_by("user__userinstance__id", "id").values_list("keypublic", flat=True))
         # quoted, so a comment such as "it's: mine" stays one YAML string
         instance_keys = [json.dumps(key) for key in instance_keys]
 
