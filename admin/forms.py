@@ -232,6 +232,8 @@ class AdminPasswordForm(AdminPasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["must_change_password"] = self.fields.pop("must_change_password")  # last, after Django's own
+        # Django's "Password-based authentication: Enabled/Disabled", said as how the user signs in
+        self.fields["usable_password"].choices = [("true", _("With a password")), ("false", _("Without a password"))]
 
     def clean(self):
         cleaned = super().clean()

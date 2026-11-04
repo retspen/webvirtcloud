@@ -281,3 +281,26 @@ button.vcpu-cell:disabled { opacity: .65; }
 fieldset:not(:has(input[value="set"]:checked)) > .console-new-password {
     display: none;
 }
+
+/* the account forms (user, group, password): each section says what it is
+   about on the left, its fields on the right, with a rule between sections */
+.form-section {
+    border-top: 1px solid var(--bs-border-color);
+    padding: 1.5rem 0;
+}
+.form-section:first-of-type {
+    border-top: 0;
+    padding-top: .5rem;
+}
+.form-section-fields {
+    max-width: 52rem;
+}
+/* a choice drawn as a card (the user's role, how a user signs in) */
+.form-choice:has(input:checked) {
+    border-color: var(--bs-primary) !important;
+    box-shadow: inset 0 0 0 1px var(--bs-primary);
+}
+/* a user's password fields: only while With a password is chosen */
+.form-section-fields:has(input[name="usable_password"][value="false"]:checked) > .with-password {
+    display: none;
+}

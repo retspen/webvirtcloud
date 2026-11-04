@@ -212,7 +212,7 @@ def change_password(request):
         messages.success(request, _("Password Changed"))
         return redirect("accounts:profile")
 
-    return render(request, "accounts/change_password_form.html", {"form": form})
+    return render(request, "accounts/change_password_form.html", {"form": form, "must_change": must_change})
 
 
 @superuser_only

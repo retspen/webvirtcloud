@@ -57,6 +57,17 @@ class UserPagesTests(TestCase):
         self.assertIn("Manages the panel: every permission, no quota.", page)
         self.assertNotIn("log into this admin site", page)
 
+    def test_the_password_page_says_how_the_user_signs_in(self):
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        page = self.client.get(url).content.decode()
+        self.assertIn("With a password", page)
+        self.assertIn("Signs in another way, such as LDAP. The current password is removed.", page)
+        self.assertIn(f'href="{reverse("admin:user_update", args=[self.alice.pk])}">Cancel', page)
+        # a mismatch is said at its field only
+        response = self.client.post(url, {"usable_password": "true", "password1": "Ab-123456x", "password2": "other"})
+        self.assertContains(response, "The two password fields didn’t match.")
+        self.assertNotIn("Wrong Data Provided", self.messages(response))
+
     def test_a_refused_choice_is_said_beside_its_field(self):
         url = reverse("admin:user_update", args=[self.alice.pk])
         response = self.client.post(url, {"username": "up-alice", "is_active": "on", "groups": "99999", "user_permissions": "99999",
