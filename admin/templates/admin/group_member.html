@@ -1,0 +1,7 @@
+{# one user of the group form's Members: box is a checkbox of GroupForm.users #}
+{% with user=box.data.value.instance %}
+<label class="border rounded px-2 py-1 text-break" data-search="{{ user.username }} {{ user.get_full_name }} {{ user.email }}">
+    <input id="{{ box.id_for_label }}" class="form-check-input me-1" type="checkbox" name="users" value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
+    {{ user.username }}{% if user.get_full_name %} <span class="small text-body-secondary">{{ user.get_full_name }}</span>{% endif %}
+</label>
+{% endwith %}
