@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase, TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 
 from accounts.models import UserInstance
 from computes.models import Compute
@@ -170,6 +171,15 @@ class ReconciliationTransactionTestCase(TransactionTestCase):
 
         self.assertEqual(seen, {"status": False, "list": False})
         self.assertTrue(Instance.objects.filter(compute=self.compute, name="vm-tx").exists())
+
+    def test_a_compute_that_matches_the_database_writes_nothing(self):
+        Instance.objects.create(compute=self.compute, name="vm-same", uuid="99999999-9999-9999-9999-999999999999")
+        self.proxy(lambda: [MockDomain(name="vm-same", uuid_str="99999999-9999-9999-9999-999999999999")])
+        self.compute.__dict__["status"] = True
+        with CaptureQueriesContext(connection) as queries:
+            refresh_instance_database(self.compute)
+
+        self.assertEqual([q["sql"].split()[0] for q in queries.captured_queries], ["SELECT", "SELECT"])
 
     def test_compute_deleted_while_listing_gets_no_instances(self):
         def list_domains():

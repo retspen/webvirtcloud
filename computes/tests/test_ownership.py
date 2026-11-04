@@ -121,6 +121,17 @@ class OwnershipTestCase(TestCase):
         self.assertFalse(InstanceTombstone.objects.exists())
         self.assertIn(("-", "-", f"VM vm ({UUID}): removed record expired"), self.rows())
 
+    @override_settings(INSTANCE_OWNERSHIP_RETENTION_DAYS=30)
+    def test_a_removed_record_expires_while_nothing_changes(self):
+        self.owned_vm(self.host_a)
+        refresh_instance_database(self.host_a)
+        InstanceTombstone.objects.update(removed=timezone.now() - timedelta(days=31))
+
+        refresh_instance_database(self.host_b)  # its VMs match the database
+
+        self.assertFalse(InstanceTombstone.objects.exists())
+        self.assertIn(("-", "-", f"VM vm ({UUID}): removed record expired"), self.rows())
+
     def test_deleted_users_are_skipped(self):
         self.owned_vm(self.host_a)
         refresh_instance_database(self.host_a)

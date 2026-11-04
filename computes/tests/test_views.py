@@ -268,13 +268,19 @@ class ComputeConcurrencyTestCase(TransactionTestCase):
         claims.admit({claims.compute_key(compute.id): Claim.EXCLUSIVE}, holder="other")
         refresh_instance_database(compute)
         self.assertEqual(Instance.objects.filter(compute=compute).count(), 1)
-        mock_proxy.wvm.listAllDomains.assert_not_called()
+        mock_proxy.wvm.listAllDomains.assert_called_once()  # the pre-check's read; no reconcile
 
     def _reconcile_compute(self, name, domains):
+        """A compute whose database differs from libvirt (a VM libvirt no
+        longer lists), so a refresh reconciles it: the listing that domains
+        answers second is the one inside the reconcile, the first is the
+        pre-check's."""
         from unittest.mock import MagicMock
+        from instances.models import Instance
 
         compute = Compute.objects.create(name=name, hostname="192.0.2.10", login="test", password="pwd",
                                          type=CONN_SOCKET)
+        Instance.objects.create(compute=compute, name="wvc-test-gone", uuid="wvc-test-gone-uuid")
         compute.proxy = MagicMock()
         compute.proxy.wvm.listAllDomains.side_effect = domains
         compute.status = True
@@ -297,10 +303,14 @@ class ComputeConcurrencyTestCase(TransactionTestCase):
             finally:
                 connection.close()
 
+        calls = []
+
         def list_domains():
-            thread = threading.Thread(target=vm_operation)
-            thread.start()
-            thread.join(10)
+            calls.append("list")
+            if len(calls) == 2:  # inside the reconcile
+                thread = threading.Thread(target=vm_operation)
+                thread.start()
+                thread.join(10)
             return []
 
         compute = self._reconcile_compute("reconcile-shared-test", list_domains)
@@ -324,7 +334,7 @@ class ComputeConcurrencyTestCase(TransactionTestCase):
 
         def list_domains():
             calls.append("list")
-            if len(calls) == 1:
+            if len(calls) == 2:  # inside the reconcile
                 thread = threading.Thread(target=second_reconcile)
                 thread.start()
                 thread.join(10)
@@ -332,7 +342,8 @@ class ComputeConcurrencyTestCase(TransactionTestCase):
 
         compute = self._reconcile_compute("reconcile-twice-test", list_domains)
         refresh_instance_database(compute)
-        self.assertEqual(calls, ["list"])
+        # the second one's pre-check, then no listing of its own
+        self.assertEqual(calls, ["list", "list", "list"])
 
     def test_a_reconcile_runs_while_a_job_holds_the_compute_shared(self):
         from computes.utils import refresh_instance_database

@@ -129,6 +129,16 @@ def _restore(inst):
     _log(inst, "owners restored")
 
 
+def _host_domains(compute):
+    """{uuid: name} of the compute's VMs, or None if libvirt cannot list them."""
+    try:
+        return {d.UUIDString(): d.name() for d in compute.proxy.wvm.listAllDomains()}
+    except Exception as e:
+        logger.warning("Failed to list the domains of compute %s (%s): %s",
+                       getattr(compute, "name", compute), getattr(compute, "hostname", ""), e)
+        return None
+
+
 def refresh_instance_database(compute):
     """
     Synchronizes the WebVirtCloud database with libvirt domain state.
@@ -145,44 +155,34 @@ def refresh_instance_database(compute):
     compute_pk = getattr(compute, "pk", getattr(compute, "id", None))
     if not compute_pk:
         return
+    # libvirt is asked before any transaction: a silent host can keep a call
+    # waiting for 30 s, and on SQLite an open transaction makes every other
+    # write of the app fail meanwhile.
+    if hasattr(compute, "status") and compute.status is False:
+        return
+    host_domains = _host_domains(compute)
+    if host_domains is None:
+        return
+    # What nearly every VM list load finds: the database matches libvirt and no
+    # removed record has expired. Nothing to write: no claim, no transaction.
+    retention = getattr(settings, "INSTANCE_OWNERSHIP_RETENTION_DAYS", 30)
+    cutoff = timezone.now() - timedelta(days=retention)
+    if (dict(Instance.objects.filter(compute_id=compute_pk).values_list("uuid", "name")) == host_domains
+            and not InstanceTombstone.objects.filter(removed__lt=cutoff).exists()):
+        return
 
     try:
         # The compute shared: VM operations and jobs on it go on; changes of
         # its VM set (create, clone, delete, migration, define) hold it
         # exclusive and stay out until the end. One reconcile of a compute at
-        # a time: two would read libvirt at different times and could commit
-        # in reverse order, an older listing undoing a newer one.
+        # a time, and libvirt read again inside it: two would read libvirt at
+        # different times and could commit in reverse order, an older listing
+        # undoing a newer one.
         with claims.hold({claims.compute_key(compute_pk): Claim.SHARED,
                           claims.reconcile_key(compute_pk): Claim.EXCLUSIVE}):
-            # libvirt is asked before the transaction: a silent host can keep a
-            # call waiting for 30 s, and on SQLite an open transaction makes every
-            # other write of the app fail meanwhile.
-            if hasattr(compute, "status") and compute.status is False:
+            host_domains = _host_domains(compute)
+            if host_domains is None:
                 return
-
-            try:
-                domains = compute.proxy.wvm.listAllDomains()
-            except Exception as e:
-                logger.warning(
-                    "Failed to retrieve domains from compute %s (%s): %s",
-                    getattr(compute, "name", compute),
-                    getattr(compute, "hostname", ""),
-                    e,
-                )
-                return
-
-            # Map libvirt UUIDs to current domain names
-            host_domains = {}
-            for d in domains:
-                try:
-                    host_domains[d.UUIDString()] = d.name()
-                except Exception as e:
-                    logger.warning(
-                        "Error reading domain metadata from compute %s: %s",
-                        getattr(compute, "name", compute),
-                        e,
-                    )
-                    return
 
             with transaction.atomic():
                 lock_ownership()
@@ -210,8 +210,7 @@ def refresh_instance_database(compute):
                 # 3. Instances created out-of-band. A UUID that also exists on another
                 #    compute is a copy and gets no owners; otherwise a tombstone's
                 #    ownership is restored.
-                retention = getattr(settings, "INSTANCE_OWNERSHIP_RETENTION_DAYS", 30)
-                expired = InstanceTombstone.objects.filter(removed__lt=timezone.now() - timedelta(days=retention))
+                expired = InstanceTombstone.objects.filter(removed__lt=cutoff)
                 for t in expired:
                     write("-", "-", "", f"VM {t.name} ({t.uuid}): removed record expired", True)
                 expired.delete()
