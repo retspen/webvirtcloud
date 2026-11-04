@@ -557,8 +557,8 @@
                 <section class="card mb-4" aria-labelledby="migrate-transfer">
                     <div class="card-body">
                         <h2 class="h6 mb-3" id="migrate-transfer">{% bs_icon 'arrow-left-right' %} {% trans "Transfer settings" %}</h2>
+                        {% if instance.status == 1 or instance.status == 3 %}
                         <div class="row g-3">
-                            {% if instance.status == 1 or instance.status == 3 %}
                             <div class="col-12 col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" name="live_migrate" value="true" id="vm_live_migrate" aria-describedby="live-help" checked>
@@ -566,7 +566,6 @@
                                 </div>
                                 <p class="small text-body-secondary mt-1 mb-0" id="live-help">{% trans "The VM keeps running while its memory is copied. Off, it is paused for the transfer." %}</p>
                             </div>
-                            {% endif %}
                             {% if instance.status == 1 %}
                             <div class="col-12 col-md-6">
                                 <div class="form-check form-switch">
@@ -582,12 +581,19 @@
                                 </div>
                                 <p class="small text-body-secondary mt-1 mb-0" id="compress-help">{% trans "Compresses the memory sent: less network, more CPU on both hosts." %}</p>
                             </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {# the switches that can lose data, set apart from how the memory moves #}
+                        <div{% if instance.status == 1 or instance.status == 3 %} class="border-top pt-3 mt-3"{% endif %}>
+                        <div class="row g-3">
+                            {% if instance.status == 1 %}
                             <div class="col-12 col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" name="unsafe_migrate" value="true" id="vm_unsafe_migrate" aria-describedby="unsafe-help">
                                     <label class="form-check-label fw-semibold" for="vm_unsafe_migrate">{% trans "Unsafe migration" %}</label>
                                 </div>
-                                <p class="small text-body-secondary mt-1 mb-0" id="unsafe-help">{% trans "Skips libvirt's safety checks, such as a disk cache mode that can corrupt data in a migration." %}</p>
+                                <p class="small text-danger mt-1 mb-0" id="unsafe-help">{% trans "Skips libvirt's safety checks, such as a disk cache mode that can corrupt data in a migration." %}</p>
                             </div>
                             {% endif %}
                             <div class="col-12 col-md-6">
@@ -595,8 +601,9 @@
                                     <input class="form-check-input" type="checkbox" role="switch" name="delete_source" value="true" id="delete_source" aria-describedby="delete-source-help">
                                     <label class="form-check-label fw-semibold" for="delete_source">{% trans "Delete the source files of copied disks" %}</label>
                                 </div>
-                                <p class="small text-body-secondary mt-1 mb-0" id="delete-source-help">{% trans "After a migration that copied disks, their files on the source host go. Disks on shared storage stay." %}</p>
+                                <p class="small text-danger mt-1 mb-0" id="delete-source-help">{% trans "After a migration that copied disks, their files on the source host go. Disks on shared storage stay." %}</p>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </section>
