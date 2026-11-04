@@ -629,7 +629,7 @@
             {% endif %}
             <form action="{% url 'instances:change_xml' instance.id %}" method="post" role="form" aria-label="Edit instance XML form" id="xml-form">
                 {% csrf_token %}
-                <div class="col-sm-12 xmlheight">
+                <div class="xml-editor mb-3">
                     <textarea id="editor">{{ instance.inst_xml }}</textarea>
                 </div>
                 <button type="submit" class="btn btn-primary float-end" name="change_xml">{% trans "Review changes" %}</button>
@@ -646,7 +646,7 @@
                         <div class="modal-body">
                             <div class="alert alert-danger d-none" role="alert" id="xml-review-error"></div>
                             <p class="d-none" id="xml-review-same">{% trans "The XML is the same as the VM's definition; there is nothing to save." %}</p>
-                            <pre class="d-none mb-0" id="xml-review-diff"></pre>
+                            <pre class="d-none mb-0 xml-diff" id="xml-review-diff" data-line="{% blocktrans with line="__line__" %}Line {{ line }}{% endblocktrans %}"></pre>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
