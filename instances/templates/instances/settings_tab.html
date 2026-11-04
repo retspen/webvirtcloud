@@ -680,8 +680,8 @@
                             </div>
                             {% if request.user.is_superuser %}
                             <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
-                                <a class="btn btn-sm btn-secondary" href="{% url 'accounts:user_instance_update' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Edit rights" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
-                                <a class="btn btn-sm btn-danger" href="{% url 'accounts:user_instance_delete' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Remove" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
+                                <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_instance_update' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Edit rights" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
+                                <a class="btn btn-sm btn-outline-danger" href="{% url 'accounts:user_instance_delete' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Remove" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
                             </div>
                             {% endif %}
                         </div>
