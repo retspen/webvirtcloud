@@ -65,8 +65,8 @@ class ListReadTests(TestCase):
 
     def assert_read_once_a_host(self, url):
         response, calls = self.get(url)
-        # every domain of the host once (the test driver's own, and other tests', too)
-        self.assertEqual(calls, {"XMLDesc": len(self.conn.listAllDomains())})
+        # each VM the list shows once; the host's other domains (the test driver's own) not at all
+        self.assertEqual(calls, {"XMLDesc": len(VMS)})
         self.assertContains(response, "2048 MiB", count=len(VMS))
         self.assertContains(response, "Active")
         self.assertContains(response, "vm-a title")
@@ -81,3 +81,15 @@ class ListReadTests(TestCase):
 
     def test_compute_instances(self):
         self.assert_read_once_a_host(reverse("instances", args=[self.compute.id]))
+
+    def test_a_user_s_list_reads_only_their_vms(self):
+        from accounts.models import UserInstance
+
+        user = get_user_model().objects.create_user("rpc-user", password="pwd")
+        UserInstance.objects.create(user=user, instance=Instance.objects.get(name="vm-a"))
+        self.client.force_login(user)
+        response, calls = self.get(reverse("instances:index"))
+        # the other VMs of the host, the test driver's own and other tests' included, are not read
+        self.assertEqual(calls, {"XMLDesc": 1})
+        self.assertContains(response, "vm-a title")
+        self.assertNotContains(response, "vm-b")
