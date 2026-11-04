@@ -42,7 +42,7 @@ class ChangePasswordPermissionTestCase(TestCase):
 
     def test_create_form_ticks_it_and_the_admin_choice_wins(self):
         self.assertIn(permission(), UserCreateForm().fields["user_permissions"].initial)
-        form = UserCreateForm(data={"username": "unticked", "password": "pw", "is_active": True})
+        form = UserCreateForm(data={"username": "unticked", "password": "pw", "is_active": True, "role": "user"})
         self.assertTrue(form.is_valid(), form.errors)
         self.assertFalse(can_change(form.save()))
 

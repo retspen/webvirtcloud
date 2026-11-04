@@ -89,9 +89,10 @@ class AdminTestCase(TestCase):
             {
                 "username": "test",
                 "password": "test",
+                "role": "user",
                 "max_instances": 1,
                 "max_cpus": 1,
-                "max_memory": 1024,
+                "max_memory": 1,  # GiB
                 "max_disk_size": 4,
             },
         )
@@ -114,9 +115,10 @@ class AdminTestCase(TestCase):
             reverse("admin:user_update", args=[user_id]),
             {
                 "username": "utest",
+                "role": "user",
                 "max_instances": 2,
                 "max_cpus": 2,
-                "max_memory": 2048,
+                "max_memory": 2,  # GiB
                 "max_disk_size": 8,
             },
         )

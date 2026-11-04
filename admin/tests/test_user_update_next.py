@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-LIMITS = {"max_instances": 1, "max_cpus": 1, "max_memory": 1024, "max_disk_size": 4}
+LIMITS = {"role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 4}
 
 
 class UserUpdateNextTests(TestCase):
