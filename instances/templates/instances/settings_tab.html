@@ -769,7 +769,7 @@
                                    data-guess-mac-url="{% url 'instances:guess_mac_address' '__name__' %}">
                         </div>
                         <div class="col-12 col-sm-auto">
-                            <button class="btn btn-secondary" type="button" id="guess-clone-name">{% trans "Guess" %}</button>
+                            <button class="btn btn-outline-secondary" type="button" id="guess-clone-name">{% trans "Guess" %}</button>
                         </div>
                     </div>
                     <p class="small text-body-secondary mt-1 mb-0" id="clone-name-help" data-no-name="{% trans "The DHCP file has no free name to suggest." %}"></p>
@@ -794,14 +794,14 @@
                                 <h3 class="h6 mb-3" id="clone-network-heading">{% bs_icon 'ethernet' %} {% trans "Network" %}</h3>
                                 {% for network in instance.config_networks %}
                                 <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
-                                    <p class="small mb-2"><strong>eth{{ forloop.counter0 }}</strong> <span class="text-body-secondary">· {{ network.nic }}</span></p>
+                                    <p class="small mb-2"><strong>eth{{ forloop.counter0 }}</strong> <span class="text-body-secondary">{{ network.nic }}</span></p>
                                     <label class="form-label small" for="clone-net-mac-{{ forloop.counter0 }}">{% trans "New MAC address" %}</label>
-                                    <input class="form-control" id="clone-net-mac-{{ forloop.counter0 }}" name="clone-net-mac-{{ forloop.counter0 }}" type="text" value="{{ network.mac }}" data-new-mac>
-                                    <div class="d-flex flex-wrap gap-2 mt-2">
-                                        <button class="btn btn-sm btn-secondary" type="button" data-random-mac="clone-net-mac-{{ forloop.counter0 }}">{% trans "Random" %}</button>
+                                    <div class="input-group">
+                                        <input class="form-control" id="clone-net-mac-{{ forloop.counter0 }}" name="clone-net-mac-{{ forloop.counter0 }}" type="text" value="{{ network.mac }}" data-new-mac>
+                                        <button class="btn btn-outline-secondary" type="button" data-random-mac="clone-net-mac-{{ forloop.counter0 }}">{% trans "Random" %}</button>
                                         {% if forloop.first %}
                                         {# the DHCP host entry of the clone's name holds one address: the first NIC's #}
-                                        <button class="btn btn-sm btn-secondary" type="button" id="guess-clone-mac">{% trans "Guess" %}</button>
+                                        <button class="btn btn-outline-secondary" type="button" id="guess-clone-mac">{% trans "Guess" %}</button>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -816,7 +816,7 @@
                                 <h3 class="h6 mb-3" id="clone-storage-heading">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</h3>
                                 {% for disk in instance.config_disks %}
                                 <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
-                                    <p class="small mb-2"><strong>{{ disk.dev }}</strong> <span class="text-body-secondary">· {% blocktrans with pool=disk.storage %}Pool: {{ pool }}{% endblocktrans %} · {{ disk.format }}</span></p>
+                                    <p class="small mb-2"><strong>{{ disk.dev }}</strong> <span class="text-body-secondary">{% blocktrans with pool=disk.storage %}{{ pool }} pool{% endblocktrans %}, {{ disk.format }}</span></p>
                                     <label class="form-label small" for="disk_name-{{ disk.dev }}">{% trans "New volume name" %}</label>
                                     <input class="form-control" id="disk_name-{{ disk.dev }}" name="disk-{{ disk.dev }}" type="text" value="{{ disk.image }}" data-image="{{ disk.image }}">
                                     {# a running or paused VM's disks are copied by a backup job, which does not preallocate #}
