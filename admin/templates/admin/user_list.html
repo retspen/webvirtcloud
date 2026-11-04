@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
-{% load common_tags %}
 {% load bootstrap_icons %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -22,7 +21,6 @@
     </div>
     <div class="list-group list-group-flush searchable">
     {% for user in users %}
-        {% has_perm user 'instances.clone_instances' as can_clone %}
         <div class="list-group-item py-3" data-search="{{ user.username }} {{ user.email }}{% for group in user.groups.all %} {{ group.name }}{% endfor %} {% if user.is_superuser %}{% trans "Superuser" %}{% elif user.is_staff %}{% trans "Template editor" %}{% else %}{% trans "User" %}{% endif %} {% if user.is_active %}{% trans "Active" %}{% else %}{% trans "Blocked" %}{% endif %}">
             <div class="row g-2 align-items-center">
                 <div class="col-12 col-md-4">
@@ -46,11 +44,11 @@
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         {% for group in user.groups.all %}<span class="badge text-bg-light border mw-100 text-wrap text-break">{{ group.name }}</span>{% endfor %}
                         {# a superuser has every permission: only a granted clone permission is news #}
-                        {% if can_clone and not user.is_superuser %}<span>{% trans "Can clone" %}</span>{% endif %}
+                        {% if user.is_active and user.can_clone and not user.is_superuser %}<span>{% trans "Can clone" %}</span>{% endif %}
                         {% if user.api_tokens %}
                             <a href="{% url 'accounts:account' user.id %}#apitokens">{% blocktrans count count=user.api_tokens %}{{ count }} API token{% plural %}{{ count }} API tokens{% endblocktrans %}</a>
                         {% endif %}
-                        {% if not user.groups.all and not user.api_tokens %}{% if user.is_superuser or not can_clone %}
+                        {% if not user.groups.all and not user.api_tokens %}{% if user.is_superuser or not user.is_active or not user.can_clone %}
                             <span class="text-body-secondary">{% trans "No groups or API tokens" %}</span>
                         {% endif %}{% endif %}
                     </div>

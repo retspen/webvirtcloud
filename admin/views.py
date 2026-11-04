@@ -5,11 +5,11 @@ from appsettings.settings import app_settings
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, Permission, User
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
@@ -107,7 +107,13 @@ OWN_ACCOUNT = _("You cannot block, delete or demote your own account")
 def user_list(request):
     # API tokens that still work: an expired one is deleted only at the user's next create
     live = Q(auth_token_set__expiry__isnull=True) | Q(auth_token_set__expiry__gt=timezone.now())
-    users = User.objects.annotate(api_tokens=Count("auth_token_set", filter=live)).prefetch_related("groups")
+    # the clone permission, given to the user or to a group of the user: one
+    # query for the list, not a has_perm (two queries) a user
+    clone = Permission.objects.filter(content_type__app_label="instances", codename="clone_instances")
+    users = User.objects.annotate(
+        api_tokens=Count("auth_token_set", filter=live),
+        can_clone=Exists(clone.filter(Q(user=OuterRef("pk")) | Q(group__user=OuterRef("pk")))),
+    ).prefetch_related("groups")
     return render(
         request,
         "admin/user_list.html",

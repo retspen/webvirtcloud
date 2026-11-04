@@ -1,7 +1,10 @@
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connection
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
+from django.test.utils import CaptureQueriesContext
+from lxml import html
 
 from accounts.models import UserAttributes
 from logs.models import Logs
@@ -53,6 +56,29 @@ class AdminTestCase(TestCase):
     def test_user_list(self):
         response = self.client.get(reverse("admin:user_list"))
         self.assertEqual(response.status_code, 200)
+
+    def test_user_list_shows_who_can_clone_in_queries_independent_of_the_users(self):
+        clone = Permission.objects.get(content_type__app_label="instances", codename="clone_instances")
+        User.objects.create_user("direct").user_permissions.add(clone)
+        group = Group.objects.create(name="Cloners")
+        group.permissions.add(clone)
+        User.objects.create_user("by-group").groups.add(group)
+        blocked = User.objects.create_user("blocked", is_active=False)
+        blocked.user_permissions.add(clone)
+        User.objects.create_user("plain")
+
+        def rows():
+            with CaptureQueriesContext(connection) as queries:
+                page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
+            return {item.xpath(".//a[contains(@class, 'fw-semibold')]")[0].text: "Can clone" in item.text_content()
+                    for item in page.xpath("//div[contains(@class, 'list-group-item')]")}, len(queries)
+
+        shown, count = rows()
+        self.assertEqual({name: shown[name] for name in ("direct", "by-group", "blocked", "plain", "admin")},
+                         {"direct": True, "by-group": True, "blocked": False, "plain": False, "admin": False})
+        for i in range(5):
+            User.objects.create_user(f"more-{i}").user_permissions.add(clone)
+        self.assertEqual(rows()[1], count)
 
     def test_users(self):
         response = self.client.get(reverse("admin:user_create"))
