@@ -205,6 +205,31 @@ button.vcpu-cell:disabled { opacity: .65; }
 .boot-text { min-width: 10rem; flex-basis: 10rem; }
 .boot-chain .boot-spare-only, .boot-spare .boot-chain-only { display: none !important; }
 
+/* the snapshots tab: the VM's history as a line, newest first; now on top, the snapshot the VM goes on from filled */
+.snap-line { position: relative; padding-left: 1.75rem; }
+.snap-line::before {
+    content: "";
+    position: absolute;
+    left: calc(.5rem - 1px);
+    top: .75rem;
+    bottom: .75rem;
+    border-left: 2px solid var(--bs-border-color);
+}
+.snap-node { position: relative; padding: .5rem 0; }
+.snap-dot {
+    position: absolute;
+    left: -1.75rem;
+    top: .75rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 2px solid var(--bs-primary);
+    background: var(--bs-body-bg);
+}
+.snap-dot.bg-success, .snap-dot.bg-warning, .snap-dot.bg-secondary { border-color: transparent; }
+.snap-dot.snap-current { background: var(--bs-primary); }
+.snap-dot.snap-none { border-color: var(--bs-border-color); }
+
 /* a log message keeps a readable width when its table scrolls on a phone */
 .log-message {
     min-width: 16rem;

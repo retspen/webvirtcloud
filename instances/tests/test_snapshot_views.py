@@ -219,7 +219,7 @@ class SnapshotTabTestCase(TestCase):
 
     def test_one_list_newest_first_each_with_its_kind(self):
         doc = self.page(internal=[self.snap("i")], external=[self.snap("e", date=datetime(2026, 2, 1), memory=True)])
-        rows = [" ".join(li.text_content().split()) for li in doc.xpath("//ul[@id='snapshot-list']/li")]
+        rows = [" ".join(li.text_content().split()) for li in doc.xpath("//ol[@id='snapshot-list']/li")]
         self.assertEqual([row.split(" ")[0] for row in rows], ["e", "i"])
         self.assertIn("external, with memory", rows[0])
         self.assertIn("internal", rows[1])

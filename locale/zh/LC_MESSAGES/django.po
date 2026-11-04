@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 04:57+0000\n"
+"POT-Creation-Date: 2026-11-04 05:47+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -431,8 +431,8 @@ msgstr "API 令牌 %(name)s 的操作"
 #: instances/templates/create_flavors.html:11
 #: instances/templates/instances/settings_tab.html:251
 #: instances/templates/instances/settings_tab.html:325
-#: instances/templates/instances/snapshots_tab.html:96
-#: instances/templates/instances/snapshots_tab.html:110
+#: instances/templates/instances/snapshots_tab.html:103
+#: instances/templates/instances/snapshots_tab.html:117
 #: networks/templates/network.html:168 storages/templates/storage.html:152
 #: templates/common/confirm_delete.html:5
 #: templates/common/confirm_delete.html:9
@@ -1674,8 +1674,8 @@ msgstr "已保存，留空则保持不变"
 #: computes/forms.py:28 computes/templates/computes/instances.html:45
 #: instances/templates/instances/settings_tab.html:858
 #: instances/templates/instances/settings_tab.html:890
-#: instances/templates/instances/snapshots_tab.html:23
-#: instances/templates/instances/snapshots_tab.html:67
+#: instances/templates/instances/snapshots_tab.html:27
+#: instances/templates/instances/snapshots_tab.html:71
 msgid "Description"
 msgstr "描述"
 
@@ -5212,176 +5212,176 @@ msgstr "适用于客户机报告的崩溃，而非挂起。“停止”会让反
 msgid "%(action)s: change it in the XML editor."
 msgstr "%(action)s：请在 XML 编辑器中更改。"
 
-#: instances/templates/instances/snapshots_tab.html:11
-msgid "Snapshots"
-msgstr "快照"
-
 #: instances/templates/instances/snapshots_tab.html:13
 msgid ""
 "A disk job is running on this VM; snapshot actions are unavailable until it "
 "ends."
 msgstr "此虚拟机正在运行磁盘任务；任务结束前快照操作不可用。"
 
-#: instances/templates/instances/snapshots_tab.html:16
-#: instances/templates/instances/snapshots_tab.html:27
+#: instances/templates/instances/snapshots_tab.html:18
+msgid "Now"
+msgstr "现在"
+
+#: instances/templates/instances/snapshots_tab.html:20
+#: instances/templates/instances/snapshots_tab.html:31
 msgid "Take a snapshot"
 msgstr "创建快照"
 
-#: instances/templates/instances/snapshots_tab.html:19
-#: instances/templates/instances/snapshots_tab.html:20
-#: instances/templates/instances/snapshots_tab.html:63
-#: instances/templates/instances/snapshots_tab.html:64
+#: instances/templates/instances/snapshots_tab.html:23
+#: instances/templates/instances/snapshots_tab.html:24
+#: instances/templates/instances/snapshots_tab.html:67
+#: instances/templates/instances/snapshots_tab.html:68
 msgid "Snapshot name"
 msgstr "快照名称"
 
-#: instances/templates/instances/snapshots_tab.html:20
-#: instances/templates/instances/snapshots_tab.html:64
+#: instances/templates/instances/snapshots_tab.html:24
+#: instances/templates/instances/snapshots_tab.html:68
 msgid "Letters, digits, '.', '_' or '-'; not starting with '.'"
 msgstr "字母、数字、“.”、“_”或“-”；不能以“.”开头"
 
-#: instances/templates/instances/snapshots_tab.html:24
-#: instances/templates/instances/snapshots_tab.html:68
+#: instances/templates/instances/snapshots_tab.html:28
+#: instances/templates/instances/snapshots_tab.html:72
 msgid "Description (optional)"
 msgstr "描述（可选）"
 
-#: instances/templates/instances/snapshots_tab.html:34
+#: instances/templates/instances/snapshots_tab.html:38
 msgid "Save memory too"
 msgstr "同时保存内存"
 
-#: instances/templates/instances/snapshots_tab.html:42
+#: instances/templates/instances/snapshots_tab.html:46
 msgid "Freeze the guest's file systems"
 msgstr "冻结客户机的文件系统"
 
-#: instances/templates/instances/snapshots_tab.html:46
+#: instances/templates/instances/snapshots_tab.html:50
 msgid ""
 "The VM has internal snapshots: delete them before taking an external one."
 msgstr "该虚拟机有内部快照：请先删除它们再创建外部快照。"
 
-#: instances/templates/instances/snapshots_tab.html:47
+#: instances/templates/instances/snapshots_tab.html:51
 msgid ""
 "Snapshots newer than the one reverted to exist: delete them before taking a "
 "new one."
 msgstr "存在比所恢复快照更新的快照：请先删除它们再创建新快照。"
 
-#: instances/templates/instances/snapshots_tab.html:48
+#: instances/templates/instances/snapshots_tab.html:52
 msgid "Each disk goes on in a new file next to it; the VM keeps running."
 msgstr "每个磁盘在其旁边的新文件中继续写入；虚拟机保持运行。"
 
-#: instances/templates/instances/snapshots_tab.html:49
+#: instances/templates/instances/snapshots_tab.html:53
 msgid "With memory, the VM pauses while its memory is saved."
 msgstr "包含内存时，虚拟机在保存内存期间暂停。"
 
-#: instances/templates/instances/snapshots_tab.html:50
+#: instances/templates/instances/snapshots_tab.html:54
 msgid "Memory and frozen file systems are for a running VM."
 msgstr "内存和冻结文件系统仅适用于运行中的虚拟机。"
 
-#: instances/templates/instances/snapshots_tab.html:50
+#: instances/templates/instances/snapshots_tab.html:54
 msgid "Freezing needs the guest agent, which is not connected."
 msgstr "冻结需要客户机代理，但它未连接。"
 
-#: instances/templates/instances/snapshots_tab.html:54
+#: instances/templates/instances/snapshots_tab.html:58
 msgid "Internal snapshot: a fallback for a VM that cannot take an external one"
 msgstr "内部快照：用于无法创建外部快照的虚拟机的备用方案"
 
-#: instances/templates/instances/snapshots_tab.html:55
-#: instances/templates/instances/snapshots_tab.html:71
+#: instances/templates/instances/snapshots_tab.html:59
+#: instances/templates/instances/snapshots_tab.html:75
 msgid "Take an internal snapshot"
 msgstr "创建内部快照"
 
-#: instances/templates/instances/snapshots_tab.html:57
+#: instances/templates/instances/snapshots_tab.html:61
 msgid ""
 "The disks and memory go into the disk files. The VM does not respond while "
 "its memory is saved, which can take long: avoid it in production."
 msgstr "磁盘和内存保存到磁盘文件中。保存内存期间虚拟机不响应，可能耗时较长：生产环境中请避免使用。"
 
-#: instances/templates/instances/snapshots_tab.html:58
+#: instances/templates/instances/snapshots_tab.html:62
 msgid ""
 "The disks and memory go into the disk files; the paused VM stays paused."
 msgstr "磁盘和内存保存到磁盘文件中；已暂停的虚拟机保持暂停。"
 
-#: instances/templates/instances/snapshots_tab.html:59
+#: instances/templates/instances/snapshots_tab.html:63
 msgid "The disks go into their files."
 msgstr "磁盘保存到各自的文件中。"
 
-#: instances/templates/instances/snapshots_tab.html:74
+#: instances/templates/instances/snapshots_tab.html:78
 msgid "The VM has external snapshots: the two kinds do not mix."
 msgstr "该虚拟机已有外部快照：两种快照不能混用。"
 
-#: instances/templates/instances/snapshots_tab.html:83
+#: instances/templates/instances/snapshots_tab.html:90
 msgid "external"
 msgstr "外部"
 
-#: instances/templates/instances/snapshots_tab.html:83
+#: instances/templates/instances/snapshots_tab.html:90
 msgid "with memory"
 msgstr "含内存"
 
-#: instances/templates/instances/snapshots_tab.html:83
+#: instances/templates/instances/snapshots_tab.html:90
 msgid "internal"
 msgstr "内部"
 
-#: instances/templates/instances/snapshots_tab.html:83
-msgid "current"
-msgstr "当前"
+#: instances/templates/instances/snapshots_tab.html:90
+msgid "the VM goes on from this one"
+msgstr "虚拟机从此快照继续"
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 #, python-format
 msgid "Revert to snapshot %(name)s? Changes made since it are lost."
 msgstr "恢复到快照 %(name)s？此后所做的更改将丢失。"
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid ""
 "The VM is powered off and starts again from the snapshot's disks, as after a "
 "power cut."
 msgstr "虚拟机将关机，并从快照的磁盘重新启动，如同断电后一样。"
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid "The VM is powered off and comes back paused on the snapshot's disks."
 msgstr "虚拟机将关机，并在快照的磁盘上以暂停状态恢复。"
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid ""
 "These disks are detached; their writes since the current snapshot are "
 "discarded and their files are kept:"
 msgstr "以下磁盘将被分离；它们自当前快照以来的写入将被丢弃，文件会保留："
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid "Firmware variables (NVRAM) are not restored."
 msgstr "固件变量（NVRAM）不会恢复。"
 
-#: instances/templates/instances/snapshots_tab.html:90
-#: instances/templates/instances/snapshots_tab.html:104
+#: instances/templates/instances/snapshots_tab.html:97
+#: instances/templates/instances/snapshots_tab.html:111
 msgid "Revert"
 msgstr "恢复"
 
-#: instances/templates/instances/snapshots_tab.html:95
+#: instances/templates/instances/snapshots_tab.html:102
 #, python-format
 msgid ""
 "Delete snapshot %(name)s? Its files are merged with the disks; the VM's data "
 "is kept."
 msgstr "删除快照 %(name)s？其文件将合并到磁盘中；虚拟机的数据会保留。"
 
-#: instances/templates/instances/snapshots_tab.html:102
+#: instances/templates/instances/snapshots_tab.html:109
 #, python-format
 msgid ""
 "Revert to snapshot %(name)s? Disk changes made since it are lost; a snapshot "
 "of a running VM starts it again as it was then."
 msgstr "恢复到快照 %(name)s？此后的磁盘更改将丢失；运行中虚拟机的快照会使其以当时的状态重新启动。"
 
-#: instances/templates/instances/snapshots_tab.html:104
-#: instances/templates/instances/snapshots_tab.html:116
+#: instances/templates/instances/snapshots_tab.html:111
+#: instances/templates/instances/snapshots_tab.html:130
 msgid "Shut the VM down to revert to an internal snapshot."
 msgstr "请先关闭虚拟机，再恢复到内部快照。"
 
-#: instances/templates/instances/snapshots_tab.html:109
+#: instances/templates/instances/snapshots_tab.html:116
 #, python-format
 msgid "Delete snapshot %(name)s? The VM's current disks are not changed."
 msgstr "删除快照 %(name)s？虚拟机的当前磁盘不会改变。"
 
-#: instances/templates/instances/snapshots_tab.html:118
+#: instances/templates/instances/snapshots_tab.html:126
 msgid "The VM has no snapshot."
 msgstr "该虚拟机没有快照。"
 
-#: instances/templates/instances/snapshots_tab.html:120
+#: instances/templates/instances/snapshots_tab.html:131
 #, python-format
 msgid "Times in %(TIME_ZONE)s. A VM with snapshots cannot be migrated."
 msgstr "时间以 %(TIME_ZONE)s 显示。有快照的虚拟机无法迁移。"
