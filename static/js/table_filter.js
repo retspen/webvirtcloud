@@ -7,7 +7,7 @@
 // be the chosen state too. In a grouped list a search for a group's host
 // shows all of its rows, and its header row (data-group-header) shows while
 // any of its rows does. A page's #no-match shows while no row does. The
-// search is remembered for a day, per page.
+// search is remembered for a day, per page, unless its box has data-forget.
 //
 // The instance list's state pills (#state-pills) set the state; each one's
 // [data-count-state] counts the VMs of its state the search finds (its
@@ -68,9 +68,13 @@ if (typeof module !== "undefined") {
 } else {
     var search = document.getElementById("filter");
     var states = document.getElementById("state-filter");
-    search.value = Cookies.get(document.title + "_filter") || "";
+    // a form's search ([data-forget], the group form's members) starts empty
+    var remember = !search.hasAttribute("data-forget");
+    search.value = remember && Cookies.get(document.title + "_filter") || "";
     search.addEventListener("input", function () {
-        Cookies.set(document.title + "_filter", search.value, {expires: 1});
+        if (remember) {
+            Cookies.set(document.title + "_filter", search.value, {expires: 1});
+        }
         filterTable(document);
     });
     if (states) {

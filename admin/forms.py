@@ -39,7 +39,7 @@ class GroupForm(forms.ModelForm):
 
     users = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
-        queryset=User.objects.all(),
+        queryset=User.objects.order_by("username"),
         required=False,
     )
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 19:19+0000\n"
+"POT-Creation-Date: 2026-11-04 19:38+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -260,7 +260,7 @@ msgstr "修改密码"
 
 #: accounts/templates/accounts/change_password_form.html:25
 #: accounts/templates/accounts/email_otp_form.html:25
-#: admin/templates/admin/group_form.html:46
+#: admin/templates/admin/group_form.html:81
 #: admin/templates/admin/user_form.html:169
 #: computes/templates/computes/form.html:45
 #: console/templates/console-vnc.html:86
@@ -653,7 +653,7 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 msgid "User"
 msgstr "用户"
 
-#: admin/forms.py:80
+#: admin/forms.py:80 admin/templates/admin/group_form.html:39
 msgid "Permissions"
 msgstr "权限"
 
@@ -702,55 +702,42 @@ msgstr "磁盘"
 msgid "No limit"
 msgstr "不限"
 
-#: admin/forms.py:216
+#: admin/forms.py:218
 msgid "Enter a limit or choose No limit."
 msgstr "请输入限制值，或选择“不限”。"
 
-#: admin/forms.py:228
+#: admin/forms.py:230
 msgid "The user must change it at their next login"
 msgstr "用户必须在下次登录时修改密码"
 
-#: admin/forms.py:238
+#: admin/forms.py:240
 msgid "A user without a password cannot be made to change it"
 msgstr "没有密码的用户无法被要求修改密码"
 
-#: admin/templates/admin/group_form.html:16
-msgid "What can its members do?"
-msgstr "其成员可以做什么？"
+#: admin/templates/admin/group_form.html:27
+msgid "Group"
+msgstr "用户组"
 
-#: admin/templates/admin/group_form.html:17
+#: admin/templates/admin/group_form.html:28
+msgid "Users who share a set of permissions."
+msgstr "共享同一组权限的用户。"
+
+#: admin/templates/admin/group_form.html:40
 msgid "Each member has these permissions besides their own."
 msgstr "每个成员除自身权限外还拥有这些权限。"
 
-#: admin/templates/admin/group_form.html:33
+#: admin/templates/admin/group_form.html:63
+#: admin/templates/admin/group_form.html:67
 #: interfaces/templates/interface.html:113
 #: interfaces/templates/interfaces.html:52
 msgid "Members"
 msgstr "成员"
 
-#: admin/templates/admin/group_form.html:47
-#: computes/templates/computes/form.html:46
-#: instances/templates/instances/edit_instance_volume.html:112
-#: instances/templates/instances/nic_qos_form.html:23
-#: instances/templates/instances/settings_tab.html:412
-#: instances/templates/instances/settings_tab.html:653
-#: instances/templates/instances/settings_tab.html:907
-#: networks/templates/add_network_qos.html:36
-#: networks/templates/network.html:336 networks/templates/network.html:376
-#: networks/templates/network.html:403 networks/templates/network.html:442
-#: nwfilters/templates/nwfilter.html:153 templates/common/form.html:23
-msgid "Save"
-msgstr "保存"
+#: admin/templates/admin/group_form.html:64
+msgid "Who gets these permissions."
+msgstr "获得这些权限的用户。"
 
-#: admin/templates/admin/group_list.html:12
-msgid "New group"
-msgstr "新建用户组"
-
-#: admin/templates/admin/group_list.html:19
-#: admin/templates/admin/user_form.html:141
-msgid "There are no groups yet."
-msgstr "还没有用户组。"
-
+#: admin/templates/admin/group_form.html:68
 #: admin/templates/admin/group_list.html:25 admin/templates/admin/logs.html:20
 #: admin/templates/admin/logs.html:26
 #: admin/templates/admin/tombstone_list.html:20
@@ -760,6 +747,34 @@ msgstr "还没有用户组。"
 #: templates/search_block.html:3 virtsecrets/templates/secrets.html:23
 msgid "Search"
 msgstr "搜索"
+
+#: admin/templates/admin/group_form.html:68
+#: admin/templates/admin/user_list.html:20
+msgid "Search users"
+msgstr "搜索用户"
+
+#: admin/templates/admin/group_form.html:74
+#: admin/templates/admin/user_list.html:86
+msgid "No user matches the search."
+msgstr "没有与搜索匹配的用户。"
+
+#: admin/templates/admin/group_form.html:82
+#: admin/templates/admin/user_form.html:170
+msgid "Save changes"
+msgstr "保存更改"
+
+#: admin/templates/admin/group_form.html:82
+msgid "Create group"
+msgstr "创建用户组"
+
+#: admin/templates/admin/group_list.html:12
+msgid "New group"
+msgstr "新建用户组"
+
+#: admin/templates/admin/group_list.html:19
+#: admin/templates/admin/user_form.html:141
+msgid "There are no groups yet."
+msgstr "还没有用户组。"
 
 #: admin/templates/admin/group_list.html:25
 msgid "Search groups"
@@ -985,10 +1000,6 @@ msgid "Off grants nothing here; it takes away nothing a group grants."
 msgstr "关闭不会在此授予任何权限，也不会撤销用户组授予的权限。"
 
 #: admin/templates/admin/user_form.html:170
-msgid "Save changes"
-msgstr "保存更改"
-
-#: admin/templates/admin/user_form.html:170
 msgid "Create user"
 msgstr "创建用户"
 
@@ -1000,10 +1011,6 @@ msgstr "新建用户"
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:32
 msgid "Users"
 msgstr "用户"
-
-#: admin/templates/admin/user_list.html:20
-msgid "Search users"
-msgstr "搜索用户"
 
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:37 instances/states.py:11
@@ -1040,10 +1047,6 @@ msgstr "禁用"
 #: admin/templates/admin/user_list.html:69
 msgid "Unblock"
 msgstr "解除禁用"
-
-#: admin/templates/admin/user_list.html:86
-msgid "No user matches the search."
-msgstr "没有与搜索匹配的用户。"
 
 #: admin/views.py:57
 msgid "Create Group"
@@ -1913,6 +1916,19 @@ msgstr "已保存"
 #: networks/templates/networks.html:63
 msgid "none"
 msgstr "无"
+
+#: computes/templates/computes/form.html:46
+#: instances/templates/instances/edit_instance_volume.html:112
+#: instances/templates/instances/nic_qos_form.html:23
+#: instances/templates/instances/settings_tab.html:412
+#: instances/templates/instances/settings_tab.html:653
+#: instances/templates/instances/settings_tab.html:907
+#: networks/templates/add_network_qos.html:36
+#: networks/templates/network.html:336 networks/templates/network.html:376
+#: networks/templates/network.html:403 networks/templates/network.html:442
+#: nwfilters/templates/nwfilter.html:153 templates/common/form.html:23
+msgid "Save"
+msgstr "保存"
 
 #: computes/templates/computes/host_nav.html:4
 msgid "Host sections"

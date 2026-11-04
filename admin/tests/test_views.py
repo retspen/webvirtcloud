@@ -53,6 +53,23 @@ class AdminTestCase(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             Group.objects.get(id=group_id)
 
+    def test_group_form_lists_its_members_first(self):
+        for name in ("zed", "bob", "amy"):
+            User.objects.create_user(name)
+        User.objects.filter(username="amy").update(first_name="Amy", last_name="Adams")
+        group = Group.objects.create(name="Ops")
+        group.user_set.add(User.objects.get(username="zed"))
+
+        page = html.fromstring(self.client.get(reverse("admin:group_update", args=[group.id])).content)
+        boxes = page.xpath("//div[contains(@class, 'searchable')]/label")
+        names = [box.text_content().split()[0] for box in boxes]
+        self.assertEqual(names, ["zed", "admin", "amy", "bob"])
+        self.assertIn("Amy Adams", boxes[2].get("data-search"))
+        self.assertEqual(page.xpath("//input[@id='filter']/@data-forget"), [""])
+        self.assertEqual(page.xpath("//form[@id='create-update']//button[@type='submit']/text()"), ["Save changes"])
+        page = html.fromstring(self.client.get(reverse("admin:group_create")).content)
+        self.assertEqual(page.xpath("//form[@id='create-update']//button[@type='submit']/text()"), ["Create group"])
+
     def test_user_list(self):
         response = self.client.get(reverse("admin:user_list"))
         self.assertEqual(response.status_code, 200)

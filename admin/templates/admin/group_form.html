@@ -1,50 +1,89 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{{ title }}{% endblock %}
 
 {% block page_heading %}{{ title }}{% endblock page_heading %}
 
+{% block style %}
+<style>
+    /* as the user form: what a section is about on the left, its fields on the right */
+    .group-form-section { border-top: 1px solid var(--bs-border-color); padding: 1.5rem 0; }
+    .group-form-section:first-of-type { border-top: 0; padding-top: .5rem; }
+    .group-form-fields { max-width: 52rem; }
+</style>
+{% endblock style %}
+
 {% block content %}
-{# as the user form: what the members may do first, then who they are #}
 <form id="create-update" method="post">
     {% csrf_token %}
     {% bootstrap_form_errors form type="non_fields" %}
-    {% bootstrap_field form.name %}
 
-    <h4 class="h5 mb-1">{% trans "What can its members do?" %}</h4>
-    <p class="small text-body-secondary mb-2">{% trans "Each member has these permissions besides their own." %}</p>
-    <div class="border-top mb-4">
-        {% for box, help in form.permission_rows %}
-            <div class="form-check form-switch border-bottom py-2 ps-5">
-                <input id="{{ box.id_for_label }}" class="form-check-input" type="checkbox" role="switch" name="permissions"
-                       value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
-                <label class="form-check-label" for="{{ box.id_for_label }}">
-                    <span class="d-block">{{ box.data.value.instance.name }}</span>
-                    <span class="small text-body-secondary">{{ help }}</span>
-                </label>
+    <section class="group-form-section">
+        <div class="row g-3">
+            <div class="col-lg-3">
+                <h2 class="h6 fw-semibold mb-1">{% trans "Group" %}</h2>
+                <p class="small text-body-secondary mb-0">{% trans "Users who share a set of permissions." %}</p>
             </div>
-        {% endfor %}
-        {% for error in form.permissions.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-    </div>
-
-    <fieldset class="mb-3">
-        <legend class="fs-6 fw-semibold">{% trans "Members" %}</legend>
-        <div class="d-flex flex-wrap gap-2">
-            {% for box in form.users %}
-                <label class="border rounded px-2 py-1 text-break">
-                    <input id="{{ box.id_for_label }}" class="form-check-input me-1" type="checkbox" name="users" value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
-                    {{ box.choice_label }}
-                </label>
-            {% endfor %}
+            <div class="col-lg-9 group-form-fields">
+                <div class="row"><div class="col-sm-6">{% bootstrap_field form.name %}</div></div>
+            </div>
         </div>
-        {% for error in form.users.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-    </fieldset>
+    </section>
 
-    <div class="d-flex justify-content-end gap-2 mt-3">
+    <section class="group-form-section">
+        <div class="row g-3">
+            <div class="col-lg-3">
+                <h2 class="h6 fw-semibold mb-1">{% trans "Permissions" %}</h2>
+                <p class="small text-body-secondary mb-0">{% trans "Each member has these permissions besides their own." %}</p>
+            </div>
+            <div class="col-lg-9 group-form-fields">
+                <div class="border-top">
+                    {% for box, help in form.permission_rows %}
+                        <div class="form-check form-switch border-bottom py-2 ps-5">
+                            <input id="{{ box.id_for_label }}" class="form-check-input" type="checkbox" role="switch" name="permissions"
+                                   value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
+                            <label class="form-check-label" for="{{ box.id_for_label }}">
+                                <span class="d-block">{{ box.data.value.instance.name }}</span>
+                                <span class="small text-body-secondary">{{ help }}</span>
+                            </label>
+                        </div>
+                    {% endfor %}
+                    {% for error in form.permissions.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="group-form-section">
+        <div class="row g-3">
+            <div class="col-lg-3">
+                <h2 class="h6 fw-semibold mb-1">{% trans "Members" %}</h2>
+                <p class="small text-body-secondary mb-0">{% trans "Who gets these permissions." %}</p>
+            </div>
+            <fieldset class="col-lg-9 group-form-fields">
+                <legend class="visually-hidden">{% trans "Members" %}</legend>
+                <input id="filter" class="form-control form-control-sm mb-2" style="max-width: 20rem" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search users" %}" data-forget>
+                {# the members first, then everyone else; each by username #}
+                <div class="d-flex flex-wrap gap-2 searchable">
+                    {% for box in form.users %}{% if box.data.selected %}{% include "admin/group_member.html" %}{% endif %}{% endfor %}
+                    {% for box in form.users %}{% if not box.data.selected %}{% include "admin/group_member.html" %}{% endif %}{% endfor %}
+                </div>
+                <p id="no-match" class="small text-body-secondary mt-2 mb-0" hidden>{% trans "No user matches the search." %}</p>
+                {% for error in form.users.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </fieldset>
+        </div>
+    </section>
+
+    <div class="group-form-section d-flex justify-content-end gap-2">
         <a class="btn btn-outline-secondary" href="{% url 'admin:group_list' %}">{% trans "Cancel" %}</a>
-        <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+        <button type="submit" class="btn btn-primary">{% if group %}{% trans "Save changes" %}{% else %}{% trans "Create group" %}{% endif %}</button>
     </div>
 </form>
 {% endblock content %}
+
+{% block script %}
+<script src="{% static 'js/table_filter.js' %}"></script>
+{% endblock script %}
