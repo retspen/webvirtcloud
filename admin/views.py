@@ -209,19 +209,10 @@ def user_update_password(request, pk):
                 request, _("Password changed for %(user)s") % {"user": user.username}
             )
             return redirect("admin:user_list")
-        else:
-            messages.error(request, _("Wrong Data Provided"))
     else:
         form = forms.AdminPasswordForm(user)
 
-    return render(
-        request,
-        "accounts/change_password_form.html",
-        {
-            "form": form,
-            "user": user.username,
-        },
-    )
+    return render(request, "admin/user_password_form.html", {"form": form, "edited_user": user})
 
 
 @superuser_only

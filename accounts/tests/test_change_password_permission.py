@@ -34,6 +34,19 @@ class ChangePasswordPermissionTestCase(TestCase):
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse("accounts:change_password")).status_code, 403)
 
+    def test_a_user_who_must_change_it_has_no_cancel(self):
+        from accounts.models import UserAttributes
+
+        user = get_user_model().objects.create_user("forced", password="pw")
+        self.client.force_login(user)
+        page = self.client.get(reverse("accounts:change_password"))
+        self.assertContains(page, "your other sessions end")
+        self.assertContains(page, f'href="{reverse("accounts:profile")}">Cancel')
+        UserAttributes.objects.create(user=user, must_change_password=True)
+        page = self.client.get(reverse("accounts:change_password"))
+        self.assertContains(page, "Choose a new password before you go on.")
+        self.assertNotContains(page, f'href="{reverse("accounts:profile")}">Cancel')
+
     def test_a_user_without_a_local_password_cannot_change_it(self):
         user = get_user_model().objects.create_user("ldap-user")  # as django-auth-ldap makes them
         self.client.force_login(user)

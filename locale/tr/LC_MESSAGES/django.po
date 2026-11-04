@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 19:38+0000\n"
+"POT-Creation-Date: 2026-11-04 19:51+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -99,7 +99,7 @@ msgstr "bir yıl içinde"
 #: accounts/forms.py:96 accounts/templates/account.html:29
 #: accounts/templates/api_token_list.html:19
 #: accounts/templates/api_token_list.html:20 accounts/templates/profile.html:25
-#: admin/templates/admin/user_form.html:31
+#: admin/templates/admin/user_form.html:21
 #: admin/templates/admin/user_list.html:56
 #: operations/templates/operations/jobs.html:15
 #: operations/templatetags/operations.py:91
@@ -180,7 +180,7 @@ msgid "Blocked"
 msgstr "Engelli"
 
 #: accounts/templates/account.html:29 accounts/templates/profile.html:25
-#: admin/templates/admin/user_form.html:31
+#: admin/templates/admin/user_form.html:21
 #: admin/templates/admin/user_list.html:56
 msgid "Last login"
 msgstr "Son oturum"
@@ -255,16 +255,27 @@ msgstr "Kullanıcıdan kaldır"
 msgid "No VMs."
 msgstr "Sanal makine yok."
 
+#: accounts/templates/accounts/change_password_form.html:5
 #: accounts/templates/accounts/change_password_form.html:7
-#: accounts/templates/accounts/change_password_form.html:14
 #: accounts/templates/profile.html:35
+#: admin/templates/admin/user_password_form.html:5
+#: admin/templates/admin/user_password_form.html:7
 msgid "Change Password"
 msgstr "Parola Değiştir"
 
-#: accounts/templates/accounts/change_password_form.html:25
+#: accounts/templates/accounts/change_password_form.html:20
+msgid "Choose a new password before you go on."
+msgstr "Devam etmeden önce yeni bir parola seçin."
+
+#: accounts/templates/accounts/change_password_form.html:20
+msgid "You stay signed in here; your other sessions end."
+msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
+
+#: accounts/templates/accounts/change_password_form.html:35
 #: accounts/templates/accounts/email_otp_form.html:25
-#: admin/templates/admin/group_form.html:81
-#: admin/templates/admin/user_form.html:169
+#: admin/templates/admin/group_form.html:72
+#: admin/templates/admin/user_form.html:159
+#: admin/templates/admin/user_password_form.html:48
 #: computes/templates/computes/form.html:45
 #: console/templates/console-vnc.html:86
 #: instances/templates/add_instance_cdrom.html:38
@@ -297,9 +308,11 @@ msgstr "Parola Değiştir"
 msgid "Cancel"
 msgstr "İptal"
 
-#: accounts/templates/accounts/change_password_form.html:27
-msgid "Change"
-msgstr "Değiştir"
+#: accounts/templates/accounts/change_password_form.html:36
+#: admin/templates/admin/user_form.html:34
+#: admin/templates/admin/user_password_form.html:49
+msgid "Change password"
+msgstr "Parolayı değiştir"
 
 #: accounts/templates/accounts/email/otp.html:2
 #, python-format
@@ -355,7 +368,7 @@ msgid "Enter username"
 msgstr "Kullanıcı adını girin"
 
 #: accounts/templates/accounts/otp_login.html:37
-#: accounts/templates/login.html:36 admin/templates/admin/user_form.html:41
+#: accounts/templates/login.html:36 admin/templates/admin/user_form.html:31
 #: console/templates/console-vnc.html:82 instances/forms.py:28
 #: instances/templates/instances/access_tab.html:53
 msgid "Password"
@@ -670,14 +683,14 @@ msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 msgid "User"
 msgstr "Kullanıcı"
 
-#: admin/forms.py:80 admin/templates/admin/group_form.html:39
+#: admin/forms.py:80 admin/templates/admin/group_form.html:30
 msgid "Permissions"
 msgstr "İzinler"
 
 #: admin/forms.py:87 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
-#: admin/templates/admin/user_form.html:133 templates/navbar.html:33
+#: admin/templates/admin/user_form.html:123 templates/navbar.html:33
 msgid "Groups"
 msgstr "Gruplar"
 
@@ -728,34 +741,42 @@ msgstr "Bir sınır girin ya da Sınır yok'u seçin."
 msgid "The user must change it at their next login"
 msgstr "Kullanıcı bir sonraki girişinde onu değiştirmek zorundadır"
 
-#: admin/forms.py:240
+#: admin/forms.py:236
+msgid "With a password"
+msgstr "Parolayla"
+
+#: admin/forms.py:236
+msgid "Without a password"
+msgstr "Parolasız"
+
+#: admin/forms.py:242
 msgid "A user without a password cannot be made to change it"
 msgstr "Parolası olmayan bir kullanıcıya parola değiştirme zorunluluğu konamaz"
 
-#: admin/templates/admin/group_form.html:27
+#: admin/templates/admin/group_form.html:18
 msgid "Group"
 msgstr "Grup"
 
-#: admin/templates/admin/group_form.html:28
+#: admin/templates/admin/group_form.html:19
 msgid "Users who share a set of permissions."
 msgstr "Aynı izinleri paylaşan kullanıcılar."
 
-#: admin/templates/admin/group_form.html:40
+#: admin/templates/admin/group_form.html:31
 msgid "Each member has these permissions besides their own."
 msgstr "Her üye kendi izinlerine ek olarak bu izinlere sahiptir."
 
-#: admin/templates/admin/group_form.html:63
-#: admin/templates/admin/group_form.html:67
+#: admin/templates/admin/group_form.html:54
+#: admin/templates/admin/group_form.html:58
 #: interfaces/templates/interface.html:113
 #: interfaces/templates/interfaces.html:52
 msgid "Members"
 msgstr "Üyeler"
 
-#: admin/templates/admin/group_form.html:64
+#: admin/templates/admin/group_form.html:55
 msgid "Who gets these permissions."
 msgstr "Bu izinleri kimlerin alacağı."
 
-#: admin/templates/admin/group_form.html:68
+#: admin/templates/admin/group_form.html:59
 #: admin/templates/admin/group_list.html:25 admin/templates/admin/logs.html:20
 #: admin/templates/admin/logs.html:26
 #: admin/templates/admin/tombstone_list.html:20
@@ -766,22 +787,22 @@ msgstr "Bu izinleri kimlerin alacağı."
 msgid "Search"
 msgstr "Ara"
 
-#: admin/templates/admin/group_form.html:68
+#: admin/templates/admin/group_form.html:59
 #: admin/templates/admin/user_list.html:20
 msgid "Search users"
 msgstr "Kullanıcı ara"
 
-#: admin/templates/admin/group_form.html:74
+#: admin/templates/admin/group_form.html:65
 #: admin/templates/admin/user_list.html:86
 msgid "No user matches the search."
 msgstr "Aramayla eşleşen kullanıcı yok."
 
-#: admin/templates/admin/group_form.html:82
-#: admin/templates/admin/user_form.html:170
+#: admin/templates/admin/group_form.html:73
+#: admin/templates/admin/user_form.html:160
 msgid "Save changes"
 msgstr "Değişiklikleri kaydet"
 
-#: admin/templates/admin/group_form.html:82
+#: admin/templates/admin/group_form.html:73
 msgid "Create group"
 msgstr "Grup oluştur"
 
@@ -790,7 +811,7 @@ msgid "New group"
 msgstr "Yeni grup"
 
 #: admin/templates/admin/group_list.html:19
-#: admin/templates/admin/user_form.html:141
+#: admin/templates/admin/user_form.html:131
 msgid "There are no groups yet."
 msgstr "Henüz grup yok."
 
@@ -883,16 +904,16 @@ msgstr "Sonuç"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:291 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:282 instances/states.py:19
 #: logs/views.py:17
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:291 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:282 logs/views.py:17
 msgid "Done"
 msgstr "Tamamlandı"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:291 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:282 logs/views.py:17
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "Başarısız"
@@ -944,88 +965,84 @@ msgstr "sona erer"
 msgid "No removed VM matches the search."
 msgstr "Aramayla eşleşen kaldırılmış sanal makine yok."
 
-#: admin/templates/admin/user_form.html:29
+#: admin/templates/admin/user_form.html:19
 msgid "Account"
 msgstr "Hesap"
 
-#: admin/templates/admin/user_form.html:33
+#: admin/templates/admin/user_form.html:23
 msgid "What the user signs in with."
 msgstr "Kullanıcının oturum açtığı bilgiler."
 
-#: admin/templates/admin/user_form.html:43
+#: admin/templates/admin/user_form.html:33
 msgid "Set"
 msgstr "Ayarla"
 
-#: admin/templates/admin/user_form.html:43
+#: admin/templates/admin/user_form.html:33
 msgid "Not set"
 msgstr "Ayarlanmadı"
 
-#: admin/templates/admin/user_form.html:44
-msgid "Change password"
-msgstr "Parolayı değiştir"
-
-#: admin/templates/admin/user_form.html:57
+#: admin/templates/admin/user_form.html:47
 msgid "May sign in"
 msgstr "Oturum açabilir"
 
-#: admin/templates/admin/user_form.html:58
+#: admin/templates/admin/user_form.html:48
 msgid "Turn off to block the user while keeping the account."
 msgstr "Hesabı koruyarak kullanıcıyı engellemek için kapatın."
 
-#: admin/templates/admin/user_form.html:67
+#: admin/templates/admin/user_form.html:57
 msgid "Role"
 msgstr "Rol"
 
-#: admin/templates/admin/user_form.html:68
+#: admin/templates/admin/user_form.html:58
 msgid "What the user manages."
 msgstr "Kullanıcının neyi yönettiği."
 
-#: admin/templates/admin/user_form.html:71
+#: admin/templates/admin/user_form.html:61
 msgid "Uses the VMs given to them, within their quota."
 msgstr "Kotası dahilinde kendisine verilen sanal makineleri kullanır."
 
-#: admin/templates/admin/user_form.html:72
+#: admin/templates/admin/user_form.html:62
 msgid "May change and delete the template VMs given to them."
 msgstr "Kendisine verilen şablon sanal makineleri değiştirebilir ve silebilir."
 
-#: admin/templates/admin/user_form.html:73
+#: admin/templates/admin/user_form.html:63
 msgid "Manages the panel: every permission, no quota."
 msgstr "Paneli yönetir: tüm izinler, kota yok."
 
-#: admin/templates/admin/user_form.html:93
+#: admin/templates/admin/user_form.html:83
 msgid ""
 "A superuser has every permission and no quota: there is nothing more to set."
 msgstr ""
 "Süperkullanıcının tüm izinleri vardır ve kotası yoktur: ayarlanacak başka bir"
 " şey yok."
 
-#: admin/templates/admin/user_form.html:99
+#: admin/templates/admin/user_form.html:89
 msgid "Quota"
 msgstr "Kota"
 
-#: admin/templates/admin/user_form.html:100
+#: admin/templates/admin/user_form.html:90
 msgid "The most the user's VMs may have in total."
 msgstr "Kullanıcının sanal makinelerinin toplamda alabileceği en fazla kaynak."
 
-#: admin/templates/admin/user_form.html:128
+#: admin/templates/admin/user_form.html:118
 msgid "Groups and permissions"
 msgstr "Gruplar ve izinler"
 
-#: admin/templates/admin/user_form.html:129
+#: admin/templates/admin/user_form.html:119
 msgid "The permissions of the user's groups apply too."
 msgstr "Kullanıcının gruplarının izinleri de geçerlidir."
 
-#: admin/templates/admin/user_form.html:147
+#: admin/templates/admin/user_form.html:137
 msgid "Own permissions"
 msgstr "Kendi izinleri"
 
-#: admin/templates/admin/user_form.html:148
+#: admin/templates/admin/user_form.html:138
 msgid "Off grants nothing here; it takes away nothing a group grants."
 msgstr ""
 "Kapalı olması burada hiçbir şey vermez; bir grubun verdiği hiçbir şeyi de "
 "geri almaz."
 
-#: admin/templates/admin/user_form.html:170
+#: admin/templates/admin/user_form.html:160
 msgid "Create user"
 msgstr "Kullanıcı oluştur"
 
@@ -1075,6 +1092,19 @@ msgstr "Engelle"
 msgid "Unblock"
 msgstr "Engeli Kaldır"
 
+#: admin/templates/admin/user_password_form.html:19
+#: admin/templates/admin/user_password_form.html:24
+msgid "How the user signs in."
+msgstr "Kullanıcının nasıl oturum açtığı."
+
+#: admin/templates/admin/user_password_form.html:22
+msgid "Signs in with the password set here."
+msgstr "Burada belirlenen parolayla oturum açar."
+
+#: admin/templates/admin/user_password_form.html:23
+msgid "Signs in another way, such as LDAP. The current password is removed."
+msgstr "LDAP gibi başka bir yolla oturum açar. Mevcut parola kaldırılır."
+
 #: admin/views.py:57
 msgid "Create Group"
 msgstr "Grup Oluştur"
@@ -1104,26 +1134,22 @@ msgstr "Kullanıcı Güncelle"
 msgid "Password changed for %(user)s"
 msgstr "%(user)s parolası değiştirildi"
 
-#: admin/views.py:213
-msgid "Wrong Data Provided"
-msgstr "Hatalı Veri"
-
-#: admin/views.py:242
+#: admin/views.py:233
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr ""
 "Sanal makinelere erişimi, SSH anahtarları ve ayarları silinir; sanal "
 "makinelerin kendisi kalır."
 
-#: admin/views.py:337
+#: admin/views.py:328
 msgid "deleted user"
 msgstr "silinmiş kullanıcı"
 
-#: admin/views.py:348
+#: admin/views.py:339
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "Kaldırılan sanal makine %(name)s silindi"
 
-#: admin/views.py:355
+#: admin/views.py:346
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri sanal makineyi artık geri almaz."

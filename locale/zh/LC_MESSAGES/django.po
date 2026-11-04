@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 19:38+0000\n"
+"POT-Creation-Date: 2026-11-04 19:51+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -96,7 +96,7 @@ msgstr "一年后"
 #: accounts/forms.py:96 accounts/templates/account.html:29
 #: accounts/templates/api_token_list.html:19
 #: accounts/templates/api_token_list.html:20 accounts/templates/profile.html:25
-#: admin/templates/admin/user_form.html:31
+#: admin/templates/admin/user_form.html:21
 #: admin/templates/admin/user_list.html:56
 #: operations/templates/operations/jobs.html:15
 #: operations/templatetags/operations.py:91
@@ -177,7 +177,7 @@ msgid "Blocked"
 msgstr "已禁用"
 
 #: accounts/templates/account.html:29 accounts/templates/profile.html:25
-#: admin/templates/admin/user_form.html:31
+#: admin/templates/admin/user_form.html:21
 #: admin/templates/admin/user_list.html:56
 msgid "Last login"
 msgstr "上次登录"
@@ -252,16 +252,27 @@ msgstr "从用户移除"
 msgid "No VMs."
 msgstr "没有虚拟机。"
 
+#: accounts/templates/accounts/change_password_form.html:5
 #: accounts/templates/accounts/change_password_form.html:7
-#: accounts/templates/accounts/change_password_form.html:14
 #: accounts/templates/profile.html:35
+#: admin/templates/admin/user_password_form.html:5
+#: admin/templates/admin/user_password_form.html:7
 msgid "Change Password"
 msgstr "修改密码"
 
-#: accounts/templates/accounts/change_password_form.html:25
+#: accounts/templates/accounts/change_password_form.html:20
+msgid "Choose a new password before you go on."
+msgstr "请先设置新密码再继续。"
+
+#: accounts/templates/accounts/change_password_form.html:20
+msgid "You stay signed in here; your other sessions end."
+msgstr "您在此处保持登录；您的其他会话将结束。"
+
+#: accounts/templates/accounts/change_password_form.html:35
 #: accounts/templates/accounts/email_otp_form.html:25
-#: admin/templates/admin/group_form.html:81
-#: admin/templates/admin/user_form.html:169
+#: admin/templates/admin/group_form.html:72
+#: admin/templates/admin/user_form.html:159
+#: admin/templates/admin/user_password_form.html:48
 #: computes/templates/computes/form.html:45
 #: console/templates/console-vnc.html:86
 #: instances/templates/add_instance_cdrom.html:38
@@ -294,9 +305,11 @@ msgstr "修改密码"
 msgid "Cancel"
 msgstr "取消"
 
-#: accounts/templates/accounts/change_password_form.html:27
-msgid "Change"
-msgstr "修改"
+#: accounts/templates/accounts/change_password_form.html:36
+#: admin/templates/admin/user_form.html:34
+#: admin/templates/admin/user_password_form.html:49
+msgid "Change password"
+msgstr "修改密码"
 
 #: accounts/templates/accounts/email/otp.html:2
 #, python-format
@@ -352,7 +365,7 @@ msgid "Enter username"
 msgstr "输入用户名"
 
 #: accounts/templates/accounts/otp_login.html:37
-#: accounts/templates/login.html:36 admin/templates/admin/user_form.html:41
+#: accounts/templates/login.html:36 admin/templates/admin/user_form.html:31
 #: console/templates/console-vnc.html:82 instances/forms.py:28
 #: instances/templates/instances/access_tab.html:53
 msgid "Password"
@@ -653,14 +666,14 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 msgid "User"
 msgstr "用户"
 
-#: admin/forms.py:80 admin/templates/admin/group_form.html:39
+#: admin/forms.py:80 admin/templates/admin/group_form.html:30
 msgid "Permissions"
 msgstr "权限"
 
 #: admin/forms.py:87 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
-#: admin/templates/admin/user_form.html:133 templates/navbar.html:33
+#: admin/templates/admin/user_form.html:123 templates/navbar.html:33
 msgid "Groups"
 msgstr "用户组"
 
@@ -710,34 +723,42 @@ msgstr "请输入限制值，或选择“不限”。"
 msgid "The user must change it at their next login"
 msgstr "用户必须在下次登录时修改密码"
 
-#: admin/forms.py:240
+#: admin/forms.py:236
+msgid "With a password"
+msgstr "使用密码"
+
+#: admin/forms.py:236
+msgid "Without a password"
+msgstr "不使用密码"
+
+#: admin/forms.py:242
 msgid "A user without a password cannot be made to change it"
 msgstr "没有密码的用户无法被要求修改密码"
 
-#: admin/templates/admin/group_form.html:27
+#: admin/templates/admin/group_form.html:18
 msgid "Group"
 msgstr "用户组"
 
-#: admin/templates/admin/group_form.html:28
+#: admin/templates/admin/group_form.html:19
 msgid "Users who share a set of permissions."
 msgstr "共享同一组权限的用户。"
 
-#: admin/templates/admin/group_form.html:40
+#: admin/templates/admin/group_form.html:31
 msgid "Each member has these permissions besides their own."
 msgstr "每个成员除自身权限外还拥有这些权限。"
 
-#: admin/templates/admin/group_form.html:63
-#: admin/templates/admin/group_form.html:67
+#: admin/templates/admin/group_form.html:54
+#: admin/templates/admin/group_form.html:58
 #: interfaces/templates/interface.html:113
 #: interfaces/templates/interfaces.html:52
 msgid "Members"
 msgstr "成员"
 
-#: admin/templates/admin/group_form.html:64
+#: admin/templates/admin/group_form.html:55
 msgid "Who gets these permissions."
 msgstr "获得这些权限的用户。"
 
-#: admin/templates/admin/group_form.html:68
+#: admin/templates/admin/group_form.html:59
 #: admin/templates/admin/group_list.html:25 admin/templates/admin/logs.html:20
 #: admin/templates/admin/logs.html:26
 #: admin/templates/admin/tombstone_list.html:20
@@ -748,22 +769,22 @@ msgstr "获得这些权限的用户。"
 msgid "Search"
 msgstr "搜索"
 
-#: admin/templates/admin/group_form.html:68
+#: admin/templates/admin/group_form.html:59
 #: admin/templates/admin/user_list.html:20
 msgid "Search users"
 msgstr "搜索用户"
 
-#: admin/templates/admin/group_form.html:74
+#: admin/templates/admin/group_form.html:65
 #: admin/templates/admin/user_list.html:86
 msgid "No user matches the search."
 msgstr "没有与搜索匹配的用户。"
 
-#: admin/templates/admin/group_form.html:82
-#: admin/templates/admin/user_form.html:170
+#: admin/templates/admin/group_form.html:73
+#: admin/templates/admin/user_form.html:160
 msgid "Save changes"
 msgstr "保存更改"
 
-#: admin/templates/admin/group_form.html:82
+#: admin/templates/admin/group_form.html:73
 msgid "Create group"
 msgstr "创建用户组"
 
@@ -772,7 +793,7 @@ msgid "New group"
 msgstr "新建用户组"
 
 #: admin/templates/admin/group_list.html:19
-#: admin/templates/admin/user_form.html:141
+#: admin/templates/admin/user_form.html:131
 msgid "There are no groups yet."
 msgstr "还没有用户组。"
 
@@ -863,16 +884,16 @@ msgstr "结果"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:291 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:282 instances/states.py:19
 #: logs/views.py:17
 msgid "Unknown"
 msgstr "未知"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:291 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:282 logs/views.py:17
 msgid "Done"
 msgstr "完成"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:291 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:282 logs/views.py:17
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "失败"
@@ -922,84 +943,80 @@ msgstr "过期"
 msgid "No removed VM matches the search."
 msgstr "没有与搜索匹配的已移除虚拟机。"
 
-#: admin/templates/admin/user_form.html:29
+#: admin/templates/admin/user_form.html:19
 msgid "Account"
 msgstr "账户"
 
-#: admin/templates/admin/user_form.html:33
+#: admin/templates/admin/user_form.html:23
 msgid "What the user signs in with."
 msgstr "用户登录所用的信息。"
 
-#: admin/templates/admin/user_form.html:43
+#: admin/templates/admin/user_form.html:33
 msgid "Set"
 msgstr "已设置"
 
-#: admin/templates/admin/user_form.html:43
+#: admin/templates/admin/user_form.html:33
 msgid "Not set"
 msgstr "未设置"
 
-#: admin/templates/admin/user_form.html:44
-msgid "Change password"
-msgstr "修改密码"
-
-#: admin/templates/admin/user_form.html:57
+#: admin/templates/admin/user_form.html:47
 msgid "May sign in"
 msgstr "可以登录"
 
-#: admin/templates/admin/user_form.html:58
+#: admin/templates/admin/user_form.html:48
 msgid "Turn off to block the user while keeping the account."
 msgstr "关闭后将禁用该用户，但保留账户。"
 
-#: admin/templates/admin/user_form.html:67
+#: admin/templates/admin/user_form.html:57
 msgid "Role"
 msgstr "角色"
 
-#: admin/templates/admin/user_form.html:68
+#: admin/templates/admin/user_form.html:58
 msgid "What the user manages."
 msgstr "用户可以管理的内容。"
 
-#: admin/templates/admin/user_form.html:71
+#: admin/templates/admin/user_form.html:61
 msgid "Uses the VMs given to them, within their quota."
 msgstr "在配额范围内使用分配给其的虚拟机。"
 
-#: admin/templates/admin/user_form.html:72
+#: admin/templates/admin/user_form.html:62
 msgid "May change and delete the template VMs given to them."
 msgstr "可修改和删除分配给他们的模板虚拟机。"
 
-#: admin/templates/admin/user_form.html:73
+#: admin/templates/admin/user_form.html:63
 msgid "Manages the panel: every permission, no quota."
 msgstr "管理面板：拥有所有权限，不受配额限制。"
 
-#: admin/templates/admin/user_form.html:93
+#: admin/templates/admin/user_form.html:83
 msgid ""
 "A superuser has every permission and no quota: there is nothing more to set."
 msgstr "超级用户拥有所有权限且不受配额限制：无需再设置其他内容。"
 
-#: admin/templates/admin/user_form.html:99
+#: admin/templates/admin/user_form.html:89
 msgid "Quota"
 msgstr "配额"
 
-#: admin/templates/admin/user_form.html:100
+#: admin/templates/admin/user_form.html:90
 msgid "The most the user's VMs may have in total."
 msgstr "用户的虚拟机总共可使用的最大资源。"
 
-#: admin/templates/admin/user_form.html:128
+#: admin/templates/admin/user_form.html:118
 msgid "Groups and permissions"
 msgstr "用户组和权限"
 
-#: admin/templates/admin/user_form.html:129
+#: admin/templates/admin/user_form.html:119
 msgid "The permissions of the user's groups apply too."
 msgstr "用户所在用户组的权限同样适用。"
 
-#: admin/templates/admin/user_form.html:147
+#: admin/templates/admin/user_form.html:137
 msgid "Own permissions"
 msgstr "自身权限"
 
-#: admin/templates/admin/user_form.html:148
+#: admin/templates/admin/user_form.html:138
 msgid "Off grants nothing here; it takes away nothing a group grants."
 msgstr "关闭不会在此授予任何权限，也不会撤销用户组授予的权限。"
 
-#: admin/templates/admin/user_form.html:170
+#: admin/templates/admin/user_form.html:160
 msgid "Create user"
 msgstr "创建用户"
 
@@ -1048,6 +1065,19 @@ msgstr "禁用"
 msgid "Unblock"
 msgstr "解除禁用"
 
+#: admin/templates/admin/user_password_form.html:19
+#: admin/templates/admin/user_password_form.html:24
+msgid "How the user signs in."
+msgstr "用户的登录方式。"
+
+#: admin/templates/admin/user_password_form.html:22
+msgid "Signs in with the password set here."
+msgstr "使用此处设置的密码登录。"
+
+#: admin/templates/admin/user_password_form.html:23
+msgid "Signs in another way, such as LDAP. The current password is removed."
+msgstr "通过其他方式（如 LDAP）登录。当前密码将被移除。"
+
 #: admin/views.py:57
 msgid "Create Group"
 msgstr "创建用户组"
@@ -1077,24 +1107,20 @@ msgstr "更新用户"
 msgid "Password changed for %(user)s"
 msgstr "已为 %(user)s 修改密码"
 
-#: admin/views.py:213
-msgid "Wrong Data Provided"
-msgstr "提供的数据有误"
-
-#: admin/views.py:242
+#: admin/views.py:233
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr "其对虚拟机、SSH 密钥和设置的访问将被移除；虚拟机本身保留。"
 
-#: admin/views.py:337
+#: admin/views.py:328
 msgid "deleted user"
 msgstr "已删除的用户"
 
-#: admin/views.py:348
+#: admin/views.py:339
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "已删除已移除的虚拟机 %(name)s"
 
-#: admin/views.py:355
+#: admin/views.py:346
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr "若其 UUID 再次出现，其所有者将不再恢复对该虚拟机的所有权。"
 
