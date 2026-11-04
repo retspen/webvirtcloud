@@ -464,8 +464,9 @@ class LiveDataLossTestCase(TestCase):
         options = form("change_options")
         self.assertEqual(options["title"], "wvc-title")
         self.post("change_options", inst, {**options, "description": "wvc-description"})
-        # vCPUs are refused: the VM would get them at its next start, past the quota counted now
-        response = self.post("resizevm_cpu", inst, {**form("resizevm_cpu"), "vcpu": "2"})
+        # vCPUs are refused: the VM would get them at its next start, past the quota counted now;
+        # the page disables their fields while it runs, so this is a direct post of both
+        response = self.post("resizevm_cpu", inst, {**form("resizevm_cpu"), "vcpu": "2", "cur_vcpu": "1"})
         self.assertIn("Shut off the VM to change its vCPUs",
                       [str(m) for m in get_messages(response.wsgi_request)])
 
