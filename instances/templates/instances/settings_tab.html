@@ -700,8 +700,7 @@
                 {% if instance.status != 5 %}
                 <p class="small text-body-secondary">{% trans "The running console keeps its current settings; changes here apply after the VM is shut down and started." %}</p>
                 {% endif %}
-                <section class="mb-4" aria-labelledby="console-heading">
-                    <h2 class="h6" id="console-heading">{% trans "Console" %}</h2>
+                <div class="mb-4">
                     <label class="form-label" for="{{ console_form.console_type.id_for_label }}">{{ console_form.console_type.label }}</label>
                     {{ console_form.console_type }}
                     {% if console_form.keymap %}
@@ -709,7 +708,7 @@
                     {% else %}
                     <p class="small text-body-secondary mt-1 mb-0">{% trans "The VNC settings appear once the console type VNC is saved." %}</p>
                     {% endif %}
-                </section>
+                </div>
                 {% if console_form.keymap %}
                 <div class="row g-3 mb-3">
                     <div class="col-12 col-lg-6">
@@ -740,18 +739,23 @@
                                         {{ choice.tag }}
                                         <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
                                     </div>
+                                    {% if choice.data.value == "set" %}
+                                    {# shown while "Set a new one" is chosen (webvirtcloud.css) #}
+                                    <div class="console-new-password ms-4 mt-1 mb-2">
+                                        <label class="form-label small" for="{{ console_form.password.id_for_label }}">{{ console_form.password.label }}</label>
+                                        {{ console_form.password }}
+                                        <p class="small text-body-secondary mt-1 mb-0">{% trans "Up to 8 characters; an accented letter counts as two." %}</p>
+                                    </div>
+                                    {% endif %}
                                     {% endfor %}
                                 </fieldset>
-                                <label class="form-label mt-3" for="{{ console_form.password.id_for_label }}">{{ console_form.password.label }}</label>
-                                {{ console_form.password }}
-                                <p class="small text-body-secondary mt-1 mb-0">{% trans 'Up to 8 characters (an accented letter counts as two), used with "Set a new one".' %}</p>
                             </div>
                         </section>
                     </div>
                 </div>
                 {% endif %}
                 <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-sm btn-primary">{% trans "Save console settings" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Save console settings" %}</button>
                 </div>
             </form>
         </div>
