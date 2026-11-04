@@ -1225,39 +1225,6 @@ class wvmConnect(object):
             for dev in self.wvm.listAllDevices(libvirt.VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET)
         ]
 
-    def get_host_instances(self, raw_mem_size=False):
-        vname = {}
-
-        def get_info(doc):
-            mem = util.get_xpath(doc, "/domain/currentMemory")
-            mem = int(mem) // 1024
-            if raw_mem_size:
-                mem = int(mem) * (1024 * 1024)
-            cur_vcpu = util.get_xpath(doc, "/domain/vcpu/@current")
-            if cur_vcpu:
-                vcpu = cur_vcpu
-            else:
-                vcpu = util.get_xpath(doc, "/domain/vcpu")
-            title = util.get_xpath(doc, "/domain/title")
-            title = title if title else ""
-            description = util.get_xpath(doc, "/domain/description")
-            description = description if description else ""
-            return mem, vcpu, title, description
-
-        for name in self.get_instances():
-            dom = self.get_instance(name)
-            xml = dom.XMLDesc(0)
-            (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
-            vname[dom.name()] = {
-                "status": dom.info()[0],
-                "uuid": dom.UUIDString(),
-                "vcpu": vcpu,
-                "memory": mem,
-                "title": title,
-                "description": description,
-            }
-        return vname
-
     def get_user_instances(self, name):
         dom = self.get_instance(name)
         xml = dom.XMLDesc(0)

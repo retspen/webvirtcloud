@@ -153,11 +153,12 @@ class CapacityTestCase(unittest.TestCase):
     def test_a_host_gives_its_vms_cpus_and_memory(self):
         conn = connection(wvmHostDetails)
         gib = 1024 ** 3
-        # get_host_instances gives the vCPUs as text, the memory in bytes
-        conn.get_host_instances = MagicMock(return_value={
-            "web": {"status": VIR_DOMAIN_RUNNING, "vcpu": "4", "memory": 4 * gib},
-            "db": {"status": VIR_DOMAIN_PAUSED, "vcpu": "2", "memory": 2 * gib},
-            "old": {"status": VIR_DOMAIN_SHUTOFF, "vcpu": "8", "memory": 8 * gib},
+        kib = gib // 1024
+        # get_domain_rows: info (state, max memory KiB, memory KiB, vCPUs) and title
+        conn.get_domain_rows = MagicMock(return_value={
+            "u-web": ([VIR_DOMAIN_RUNNING, 8 * kib, 4 * kib, 4], ""),
+            "u-db": ([VIR_DOMAIN_PAUSED, 2 * kib, 2 * kib, 2], ""),
+            "u-old": ([VIR_DOMAIN_SHUTOFF, 8 * kib, 8 * kib, 8], ""),
         })
         self.assertEqual(conn.get_capacity(), {
             "cpus": 4, "memory": 2 * gib,
@@ -165,7 +166,7 @@ class CapacityTestCase(unittest.TestCase):
             "assigned": {"all": 14 * gib, "running": 6 * gib},
             "vms": {"running": 1, "paused": 1, "shutoff": 1, "other": 0},
         })
-        conn.get_host_instances.assert_called_once_with(raw_mem_size=True)
+        conn.get_domain_rows.assert_called_once_with()
 
 
 class CpuTopologyTestCase(unittest.TestCase):
