@@ -90,6 +90,22 @@ class CloudInitTestCase(TestCase):
     def test_owner_keys_for_a_unique_name(self):
         self.assertIn(self.KEY, self.userdata())
 
+    def test_every_owner_s_keys_and_no_one_else_s(self):
+        second_key, stranger_key = (f"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI{who} {who}@example" for who in ("Second", "Stranger"))
+        second = get_user_model().objects.create_user("ci_second", password="pw")
+        UserSSHKey.objects.create(user=second, keyname="k", keypublic=second_key)
+        UserInstance.objects.create(instance=self.vm, user=second)
+        stranger = get_user_model().objects.create_user("ci_stranger", password="pw")
+        UserSSHKey.objects.create(user=stranger, keyname="k", keypublic=stranger_key)
+        other_vm = Instance.objects.create(compute=self.compute, name="web2", uuid="11111111-2222-3333-4444-999999999993")
+        UserInstance.objects.create(instance=other_vm, user=stranger)
+        UserInstance.objects.create(instance=other_vm, user=self.owner)
+
+        page = self.userdata()
+        self.assertLess(page.index(self.KEY), page.index(second_key))
+        self.assertEqual(page.count(self.KEY), 1)
+        self.assertNotIn(stranger_key, page)
+
     def test_no_keys_when_the_name_is_taken_twice(self):
         other = Compute.objects.create(name="ci-b", hostname="b.example", login="", password="", type=4)
         Instance.objects.create(compute=other, name="web1", uuid="11111111-2222-3333-4444-999999999992")
