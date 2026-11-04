@@ -465,6 +465,14 @@ class NvramCopyTestCase(unittest.TestCase):
         copy.upload.assert_called_once_with(self.dest.wvm.newStream.return_value, 0, 4, 0)
         self.assertEqual(self.host.defined, ["<domain><name>vm</name></domain>"])
 
+    def test_a_failed_download_aborts_its_stream(self):
+        stream = self.source.wvm.newStream.return_value
+        stream.recvAll.side_effect = libvirt.libvirtError("download failed")
+        with self.assertRaises(libvirt.libvirtError):
+            self.move()
+        stream.abort.assert_called_once_with()
+        self.dest_pool.createXML.assert_not_called()
+
     def test_a_shared_directory_is_not_copied(self):
         self.shared.stop()
         with mock.patch.object(wvmInstances, "same_directory", return_value=True):

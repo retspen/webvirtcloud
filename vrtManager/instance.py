@@ -427,9 +427,14 @@ class wvmInstances(wvmConnect):
                 return None
             chunks = []
             stream = conn.wvm.newStream(0)
-            vol.download(stream, 0, 0, 0)
-            stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
-            stream.finish()
+            try:
+                vol.download(stream, 0, 0, 0)
+                stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
+                stream.finish()
+            except Exception:
+                with contextlib.suppress(libvirtError):
+                    stream.abort()
+                raise
             self.upload_volume(target, name, b"".join(chunks))
         return name
 
