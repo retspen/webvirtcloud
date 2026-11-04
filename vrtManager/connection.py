@@ -1225,35 +1225,6 @@ class wvmConnect(object):
             for dev in self.wvm.listAllDevices(libvirt.VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET)
         ]
 
-    def get_user_instances(self, name):
-        dom = self.get_instance(name)
-        xml = dom.XMLDesc(0)
-
-        def get_info(ctx):
-            mem = util.get_xpath(ctx, "/domain/currentMemory")
-            mem = int(mem) // 1024
-            cur_vcpu = util.get_xpath(ctx, "/domain/vcpu/@current")
-            if cur_vcpu:
-                vcpu = cur_vcpu
-            else:
-                vcpu = util.get_xpath(ctx, "/domain/vcpu")
-            title = util.get_xpath(ctx, "/domain/title")
-            title = title if title else ""
-            description = util.get_xpath(ctx, "/domain/description")
-            description = description if description else ""
-            return mem, vcpu, title, description
-
-        (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
-        return {
-            "name": dom.name(),
-            "status": dom.info()[0],
-            "uuid": dom.UUIDString(),
-            "vcpu": vcpu,
-            "memory": mem,
-            "title": title,
-            "description": description,
-        }
-
     def close(self):
         """Close connection"""
         # to-do: do not close connection ;)
