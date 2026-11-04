@@ -1271,7 +1271,7 @@ def resize_disk(request, pk):
                 continue
             messages.success(request, _("Disk is resized: %(dev)s") % {"dev": disk["dev"]})
 
-    return redirect(reverse("instances:instance", args=[instance.id]) + "#resize")
+    return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
 
 
 @require_POST
