@@ -132,6 +132,17 @@ th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
 /* the access tab's two login buttons line up */
 .access-act { min-width: 9rem; }
 
+/* the options tab: one row per device the guest sees, its name, its control and a note */
+.option-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 1rem;
+    row-gap: .25rem;
+    padding: .6rem 0;
+}
+.option-name { flex: 0 0 8rem; }
+
 /* the resize tab: one cell per vCPU up to the maximum, filled when on; memory now within its maximum */
 .vcpu-cell {
     display: inline-flex;

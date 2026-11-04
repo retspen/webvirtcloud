@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 19:32+0000\n"
+"POT-Creation-Date: 2026-11-04 04:57+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -692,10 +692,7 @@ msgstr "成员"
 #: instances/templates/instances/nic_qos_form.html:23
 #: instances/templates/instances/settings_tab.html:410
 #: instances/templates/instances/settings_tab.html:644
-#: instances/templates/instances/settings_tab.html:893
-#: instances/templates/instances/settings_tab.html:935
-#: instances/templates/instances/settings_tab.html:995
-#: instances/templates/instances/settings_tab.html:1025
+#: instances/templates/instances/settings_tab.html:894
 #: networks/templates/add_network_qos.html:36
 #: networks/templates/network.html:336 networks/templates/network.html:376
 #: networks/templates/network.html:403 networks/templates/network.html:442
@@ -856,7 +853,6 @@ msgstr "搜索已移除的虚拟机"
 
 #: admin/templates/admin/tombstone_list.html:28
 #: instances/templates/instance.html:27
-#: instances/templates/instances/settings_tab.html:901
 msgid "Template"
 msgstr "模板"
 
@@ -2068,14 +2064,13 @@ msgstr "vCPU"
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
-#: instances/templates/instances/settings_tab.html:1012
+#: instances/templates/instances/settings_tab.html:954
 #: networks/templates/network.html:260
 msgid "Connected"
 msgstr "已连接"
 
 #: computes/templates/computes/list.html:73 computes/templates/overview.html:21
 #: instances/templates/allinstances_index_grouped.html:38
-#: instances/templates/instances/settings_tab.html:1013
 msgid "Not connected"
 msgstr "未连接"
 
@@ -3461,7 +3456,7 @@ msgid "Firmware"
 msgstr "固件"
 
 #: instances/templates/create_instance_w2.html:86
-#: instances/templates/instances/settings_tab.html:969
+#: instances/templates/instances/settings_tab.html:933
 msgid "TPM 2.0"
 msgstr "TPM 2.0"
 
@@ -3563,7 +3558,9 @@ msgstr "网卡类型"
 msgid "Network filter"
 msgstr "网络过滤器"
 
-#: instances/templates/create_instance_w2.html:293 vrtManager/nodedevs.py:30
+#: instances/templates/create_instance_w2.html:293
+#: instances/templates/instances/settings_tab.html:916
+#: vrtManager/nodedevs.py:30
 msgid "Video"
 msgstr "显卡"
 
@@ -3576,6 +3573,7 @@ msgid "Input device"
 msgstr "输入设备"
 
 #: instances/templates/create_instance_w2.html:334
+#: instances/templates/instances/settings_tab.html:946
 msgid "Guest agent"
 msgstr "客户机代理"
 
@@ -4380,7 +4378,7 @@ msgid "Lets vCPUs up to the maximum be turned on and off while the VM runs."
 msgstr "允许在虚拟机运行时开启或关闭不超过最大数量的 vCPU。"
 
 #: instances/templates/instances/resize_tab.html:77
-#: instances/templates/instances/settings_tab.html:913
+#: instances/templates/instances/settings_tab.html:906
 msgid "Shut the VM down to change this."
 msgstr "请先关闭虚拟机再修改此项。"
 
@@ -5097,7 +5095,7 @@ msgid "Optional details"
 msgstr "可选详情"
 
 #: instances/templates/instances/settings_tab.html:856
-#: instances/templates/instances/settings_tab.html:888
+#: instances/templates/instances/settings_tab.html:886
 msgid "Title"
 msgstr "标题"
 
@@ -5111,127 +5109,108 @@ msgstr "克隆不会获得虚拟机的任何主机设备：一个主机设备只
 msgid "Cloning runs as a background job."
 msgstr "克隆作为后台任务运行。"
 
-#: instances/templates/instances/settings_tab.html:884
+#: instances/templates/instances/settings_tab.html:883
 msgid "VM details"
 msgstr "虚拟机详情"
 
-#: instances/templates/instances/settings_tab.html:885
-msgid "A title and description to identify the VM."
-msgstr "用于识别虚拟机的标题和描述。"
-
 #: instances/templates/instances/settings_tab.html:902
+msgid "Use as a template"
+msgstr "用作模板"
+
+#: instances/templates/instances/settings_tab.html:904
 msgid ""
 "A template is a VM to clone: it is not counted in quotas and cannot be "
 "started."
 msgstr "模板是用于克隆的虚拟机：不计入配额，且无法启动。"
 
-#: instances/templates/instances/settings_tab.html:909
-msgid "Use as a template"
-msgstr "用作模板"
-
-#: instances/templates/instances/settings_tab.html:912
+#: instances/templates/instances/settings_tab.html:905
 msgid "Only administrators and staff can change this."
 msgstr "只有管理员和工作人员可以更改此项。"
 
-#: instances/templates/instances/settings_tab.html:922
-msgid "Primary video model"
-msgstr "主显卡型号"
+#: instances/templates/instances/settings_tab.html:912
+msgid "Devices the guest sees"
+msgstr "客户机看到的设备"
 
-#: instances/templates/instances/settings_tab.html:923
+#: instances/templates/instances/settings_tab.html:913
+msgid "Changes apply from the next start; the guest agent's at once."
+msgstr "更改在下次启动时生效；客户机代理的更改立即生效。"
+
+#: instances/templates/instances/settings_tab.html:922
 msgid "The graphics device the guest sees."
 msgstr "客户机看到的图形设备。"
 
-#: instances/templates/instances/settings_tab.html:944
-msgid "Random number generator"
-msgstr "随机数生成器"
-
-#: instances/templates/instances/settings_tab.html:945
-msgid ""
-"A virtio device that feeds the guest's entropy from the host: a new VM does "
-"not wait for it at boot. From the next start."
-msgstr "一个从主机为客户机提供熵的 virtio 设备：新虚拟机启动时无需等待熵。下次启动时生效。"
-
-#: instances/templates/instances/settings_tab.html:951
+#: instances/templates/instances/settings_tab.html:925
 msgid "Virtio RNG"
 msgstr "Virtio RNG"
 
-#: instances/templates/instances/settings_tab.html:954
+#: instances/templates/instances/settings_tab.html:930
 msgid "The VM has its own RNG device: change it in the XML editor."
 msgstr "该虚拟机有自定义的 RNG 设备：请在 XML 编辑器中更改。"
 
-#: instances/templates/instances/settings_tab.html:962
-msgid "TPM"
-msgstr "TPM"
-
-#: instances/templates/instances/settings_tab.html:963
+#: instances/templates/instances/settings_tab.html:930
 msgid ""
-"An emulated TPM 2.0, as Windows 11 needs with UEFI Secure Boot. Its state "
-"stays on the host until the VM is destroyed: a TPM added again has it back. "
-"From the next start."
-msgstr ""
-"模拟的 TPM 2.0，Windows 11 配合 UEFI 安全启动时需要。其状态保留在主机上，直到虚拟机被销毁：再次添加 TPM "
-"时会恢复该状态。下次启动时生效。"
+"Feeds the guest's entropy from the host, so a new VM does not wait for it at "
+"boot."
+msgstr "从主机为客户机提供熵，新虚拟机启动时无需等待。"
 
-#: instances/templates/instances/settings_tab.html:972
+#: instances/templates/instances/settings_tab.html:939
 msgid "The VM has its own TPM: change it in the XML editor."
 msgstr "该虚拟机有自定义的 TPM：请在 XML 编辑器中更改。"
 
-#: instances/templates/instances/settings_tab.html:974
+#: instances/templates/instances/settings_tab.html:940
 msgid "This host offers no TPM 2.0: install swtpm on it."
 msgstr "此主机不提供 TPM 2.0：请在其上安装 swtpm。"
 
-#: instances/templates/instances/settings_tab.html:982
+#: instances/templates/instances/settings_tab.html:941
+msgid ""
+"Turned off, its state stays on the host until the VM is destroyed; turned on "
+"again, it is back."
+msgstr "关闭后，其状态保留在主机上，直到虚拟机被销毁；再次开启时会恢复。"
+
+#: instances/templates/instances/settings_tab.html:942
+msgid "Windows 11 needs it, with UEFI Secure Boot."
+msgstr "Windows 11 需要它，并需 UEFI 安全启动。"
+
+#: instances/templates/instances/settings_tab.html:951
+msgid "The channel to the agent in the guest: a running VM gets it at once."
+msgstr "通往客户机内代理的通道：运行中的虚拟机会立即获得。"
+
+#: instances/templates/instances/settings_tab.html:952
+msgid "VM not running"
+msgstr "虚拟机未运行"
+
+#: instances/templates/instances/settings_tab.html:953
+msgid "No channel"
+msgstr "无通道"
+
+#: instances/templates/instances/settings_tab.html:955
+msgid "Not connected: is the agent installed and running in the guest?"
+msgstr "未连接：客户机中是否已安装并运行代理？"
+
+#: instances/templates/instances/settings_tab.html:960
 msgid "When the guest crashes"
 msgstr "客户机崩溃时"
 
-#: instances/templates/instances/settings_tab.html:983
-msgid ""
-"For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
-" and again down for a look. From the next start."
-msgstr "适用于客户机报告的崩溃，而非挂起。“停止”会让反复崩溃的虚拟机保持停止状态以便排查。下次启动时生效。"
-
-#: instances/templates/instances/settings_tab.html:990
+#: instances/templates/instances/settings_tab.html:965
 msgid "Restart"
 msgstr "重启"
 
-#: instances/templates/instances/settings_tab.html:991
+#: instances/templates/instances/settings_tab.html:967
 #: interfaces/templates/interface.html:16 networks/templates/network.html:16
 #: storages/templates/storage.html:18
 msgid "Stop"
 msgstr "停止"
 
-#: instances/templates/instances/settings_tab.html:999
+#: instances/templates/instances/settings_tab.html:969
+msgid ""
+"For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
+" and again down for a look. From the next start."
+msgstr "适用于客户机报告的崩溃，而非挂起。“停止”会让反复崩溃的虚拟机保持停止状态以便排查。下次启动时生效。"
+
+#: instances/templates/instances/settings_tab.html:971
 #, python-format
 msgid "%(action)s: change it in the XML editor."
 msgstr "%(action)s：请在 XML 编辑器中更改。"
-
-#: instances/templates/instances/settings_tab.html:1007
-msgid "QEMU guest agent"
-msgstr "QEMU 客户机代理"
-
-#: instances/templates/instances/settings_tab.html:1008
-msgid "The channel to the agent in the guest: a running VM gets it at once."
-msgstr "通往客户机内代理的通道：运行中的虚拟机会立即获得。"
-
-#: instances/templates/instances/settings_tab.html:1009
-msgid "Agent"
-msgstr "代理"
-
-#: instances/templates/instances/settings_tab.html:1010
-msgid "VM not running"
-msgstr "虚拟机未运行"
-
-#: instances/templates/instances/settings_tab.html:1011
-msgid "No channel"
-msgstr "无通道"
-
-#: instances/templates/instances/settings_tab.html:1020
-msgid "Enabled"
-msgstr "已启用"
-
-#: instances/templates/instances/settings_tab.html:1021
-msgid "Disabled"
-msgstr "已禁用"
 
 #: instances/templates/instances/snapshots_tab.html:11
 msgid "Snapshots"

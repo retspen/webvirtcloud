@@ -877,155 +877,99 @@
         {% endif %}
         {% if can_change %}
         <div role="tabpanel" class="tab-pane" id="options">
+            {# what the VM is (its name, a template or not), then what the guest sees and what happens when it crashes #}
             <div class="list-group">
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:change_options' instance.id %}" method="post" aria-labelledby="options-details">{% csrf_token %}
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-4">
-                            <h2 class="h6" id="options-details">{% bs_icon 'pencil-square' %} {% trans "VM details" %}</h2>
-                            <p class="small text-body-secondary mb-0">{% trans "A title and description to identify the VM." %}</p>
+                <div class="list-group-item p-3 p-md-4">
+                    <h2 class="h6 mb-3" id="options-details">{% trans "VM details" %}</h2>
+                    <form action="{% url 'instances:change_options' instance.id %}" method="post" aria-labelledby="options-details">{% csrf_token %}
+                        <div class="row g-2 mb-2">
+                            <label class="col-sm-2 col-form-label" for="options-title">{% trans "Title" %}</label>
+                            <div class="col-sm-10"><input class="form-control" type="text" id="options-title" name="title" value="{{ instance.config_title }}"></div>
                         </div>
-                        <div class="col-12 col-lg-8">
-                            <label class="form-label" for="options-title">{% trans "Title" %}</label>
-                            <input class="form-control mb-3" type="text" id="options-title" name="title" value="{{ instance.config_title }}">
-                            <label class="form-label" for="options-description">{% trans "Description" %}</label>
-                            <textarea class="form-control mb-3" id="options-description" name="description" rows="2">{{ instance.config_description }}</textarea>
-                            <div class="text-end">
-                                <button class="btn btn-primary" type="submit" name="change_options">{% trans "Save" %}</button>
-                            </div>
+                        <div class="row g-2 mb-2">
+                            <label class="col-sm-2 col-form-label" for="options-description">{% trans "Description" %}</label>
+                            <div class="col-sm-10"><textarea class="form-control" id="options-description" name="description" rows="2">{{ instance.config_description }}</textarea></div>
                         </div>
-                    </div>
-                </form>
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_template' instance.id %}" method="post">{% csrf_token %}
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label fw-semibold mb-0" for="is_template">{% trans "Template" %}</label>
-                            <p class="small text-body-secondary mb-0" id="template-help">{% trans "A template is a VM to clone: it is not counted in quotas and cannot be started." %}</p>
+                        <div class="text-end">
+                            <button class="btn btn-primary" type="submit" name="change_options">{% trans "Save" %}</button>
                         </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" name="is_template" value="True" id="is_template" aria-describedby="template-help template-state"
-                                       {% if instance.is_template %}checked{% endif %}
-                                       {% if instance.status != 5 or not request.user.is_superuser and not request.user.is_staff %}disabled{% endif %} data-submit-on-change>
-                                <label class="form-check-label" for="is_template">{% trans "Use as a template" %}</label>
-                            </div>
-                            <p class="small text-body-secondary mt-1 mb-0" id="template-state">
-                                {% if not request.user.is_superuser and not request.user.is_staff %}{% trans "Only administrators and staff can change this." %}
-                                {% elif instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}
-                            </p>
+                    </form>
+                    <form class="border-top mt-3 pt-3" action="{% url 'instances:set_template' instance.id %}" method="post">{% csrf_token %}
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" role="switch" name="is_template" value="True" id="is_template" aria-describedby="template-help"
+                                   {% if instance.is_template %}checked{% endif %}
+                                   {% if instance.status != 5 or not request.user.is_superuser and not request.user.is_staff %}disabled{% endif %} data-submit-on-change>
+                            <label class="form-check-label" for="is_template">{% trans "Use as a template" %}</label>
                         </div>
-                    </div>
-                </form>
+                        <p class="small text-body-secondary mb-0" id="template-help">{% trans "A template is a VM to clone: it is not counted in quotas and cannot be started." %}
+                            {% if not request.user.is_superuser and not request.user.is_staff %}{% trans "Only administrators and staff can change this." %}
+                            {% elif instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}</p>
+                    </form>
+                </div>
                 {% if request.user.is_superuser %}
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_video_model' instance.id %}" method="post">{% csrf_token %}
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label fw-semibold mb-0" for="video_model_select">{% trans "Primary video model" %}</label>
-                            <p class="small text-body-secondary mb-0" id="video-help">{% trans "The graphics device the guest sees." %}</p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="row g-2">
-                                <div class="col-12 col-sm">
-                                    <select id="video_model_select" class="form-select" name="video_model" aria-describedby="video-help">
-                                        {% for vmodel in instance.video_models %}
-                                        <option value="{{ vmodel }}"{% if vmodel == instance.config_video_model %} selected{% endif %}>{{ vmodel }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-12 col-sm-auto d-grid">
-                                    <button class="btn btn-secondary" type="submit" name="set_video_model">{% trans "Save" %}</button>
-                                </div>
-                            </div>
-                        </div>
+                <div class="list-group-item p-3 p-md-4" role="group" aria-labelledby="options-devices">
+                    <div class="d-flex flex-wrap justify-content-between column-gap-3 mb-2">
+                        <h2 class="h6 mb-0" id="options-devices">{% trans "Devices the guest sees" %}</h2>
+                        <span class="small text-body-secondary">{% trans "Changes apply from the next start; the guest agent's at once." %}</span>
                     </div>
-                </form>
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_rng' instance.id %}" method="post">{% csrf_token %}
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label fw-semibold mb-0" for="rng">{% trans "Random number generator" %}</label>
-                            <p class="small text-body-secondary mb-0" id="rng-help">{% trans "A virtio device that feeds the guest's entropy from the host: a new VM does not wait for it at boot. From the next start." %}</p>
+                    <form class="option-row" action="{% url 'instances:set_video_model' instance.id %}" method="post">{% csrf_token %}
+                        <label class="option-name" for="video_model_select">{% trans "Video" %}</label>
+                        <select id="video_model_select" class="form-select form-select-sm w-auto" name="video_model" data-submit-on-change>
+                            {% for vmodel in instance.video_models %}
+                            <option value="{{ vmodel }}"{% if vmodel == instance.config_video_model %} selected{% endif %}>{{ vmodel }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="small text-body-secondary">{% trans "The graphics device the guest sees." %}</span>
+                    </form>
+                    <form class="option-row border-top" action="{% url 'instances:set_rng' instance.id %}" method="post">{% csrf_token %}
+                        <label class="option-name" for="rng">{% trans "Virtio RNG" %}</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" name="rng" value="True" id="rng" aria-describedby="rng-help"
+                                   {% if instance.config_rng %}checked{% endif %}{% if instance.config_rng == "custom" %} disabled{% endif %} data-submit-on-change>
                         </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" name="rng" value="True" id="rng" aria-describedby="rng-help rng-state"
-                                       {% if instance.config_rng %}checked{% endif %}{% if instance.config_rng == "custom" %} disabled{% endif %} data-submit-on-change>
-                                <label class="form-check-label" for="rng">{% trans "Virtio RNG" %}</label>
-                            </div>
-                            {% if instance.config_rng == "custom" %}
-                            <p class="small text-body-secondary mt-1 mb-0" id="rng-state">{% trans "The VM has its own RNG device: change it in the XML editor." %}</p>
-                            {% endif %}
+                        <span class="small text-body-secondary" id="rng-help">{% if instance.config_rng == "custom" %}{% trans "The VM has its own RNG device: change it in the XML editor." %}{% else %}{% trans "Feeds the guest's entropy from the host, so a new VM does not wait for it at boot." %}{% endif %}</span>
+                    </form>
+                    <form class="option-row border-top" action="{% url 'instances:set_tpm' instance.id %}" method="post">{% csrf_token %}
+                        <label class="option-name" for="tpm">{% trans "TPM 2.0" %}</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" name="tpm" value="True" id="tpm" aria-describedby="tpm-help"
+                                   {% if instance.config_tpm %}checked{% endif %}{% if instance.config_tpm == "custom" or not instance.config_tpm and not tpm_support %} disabled{% endif %} data-submit-on-change>
                         </div>
-                    </div>
-                </form>
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_tpm' instance.id %}" method="post">{% csrf_token %}
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label fw-semibold mb-0" for="tpm">{% trans "TPM" %}</label>
-                            <p class="small text-body-secondary mb-0" id="tpm-help">{% trans "An emulated TPM 2.0, as Windows 11 needs with UEFI Secure Boot. Its state stays on the host until the VM is destroyed: a TPM added again has it back. From the next start." %}</p>
+                        <span class="small text-body-secondary" id="tpm-help">
+                            {% if instance.config_tpm == "custom" %}{% trans "The VM has its own TPM: change it in the XML editor." %}
+                            {% elif not instance.config_tpm and not tpm_support %}{% trans "This host offers no TPM 2.0: install swtpm on it." %}
+                            {% elif instance.config_tpm %}{% trans "Turned off, its state stays on the host until the VM is destroyed; turned on again, it is back." %}
+                            {% else %}{% trans "Windows 11 needs it, with UEFI Secure Boot." %}{% endif %}</span>
+                    </form>
+                    <form class="option-row border-top" action="{% url 'instances:set_guest_agent' instance.id %}" method="post">{% csrf_token %}
+                        <input type="hidden" name="guest_agent" value="{% if instance.config_guest_agent %}False{% else %}True{% endif %}">
+                        <label class="option-name" for="guest_agent">{% trans "Guest agent" %}</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="guest_agent" aria-describedby="agent-help"{% if instance.config_guest_agent %} checked{% endif %} data-submit-on-change>
                         </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" name="tpm" value="True" id="tpm" aria-describedby="tpm-help tpm-state"
-                                       {% if instance.config_tpm %}checked{% endif %}{% if instance.config_tpm == "custom" or not instance.config_tpm and not tpm_support %} disabled{% endif %} data-submit-on-change>
-                                <label class="form-check-label" for="tpm">{% trans "TPM 2.0" %}</label>
-                            </div>
-                            {% if instance.config_tpm == "custom" %}
-                            <p class="small text-body-secondary mt-1 mb-0" id="tpm-state">{% trans "The VM has its own TPM: change it in the XML editor." %}</p>
-                            {% elif not instance.config_tpm and not tpm_support %}
-                            <p class="small text-body-secondary mt-1 mb-0" id="tpm-state">{% trans "This host offers no TPM 2.0: install swtpm on it." %}</p>
-                            {% endif %}
+                        <span class="small d-inline-flex align-items-center gap-2" id="agent-help">
+                            {% if not instance.config_guest_agent %}<span class="text-body-secondary">{% trans "The channel to the agent in the guest: a running VM gets it at once." %}</span>
+                            {% elif instance.status != 1 and instance.status != 3 %}<span class="power-dot" aria-hidden="true"></span>{% trans "VM not running" %}
+                            {% elif not instance.guest_agent %}<span class="power-dot" aria-hidden="true"></span>{% trans "No channel" %}
+                            {% elif instance.guest_agent_ready %}<span class="power-dot bg-success" aria-hidden="true"></span>{% trans "Connected" %}
+                            {% else %}<span class="power-dot bg-danger" aria-hidden="true"></span>{% trans "Not connected: is the agent installed and running in the guest?" %}{% endif %}
+                        </span>
+                    </form>
+                </div>
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_on_crash' instance.id %}" method="post" aria-labelledby="options-crash">{% csrf_token %}
+                    <h2 class="h6 mb-2" id="options-crash">{% trans "When the guest crashes" %}</h2>
+                    <div class="d-flex flex-wrap align-items-center column-gap-3 row-gap-2">
+                        {% if instance.config_on_crash == "restart" or instance.config_on_crash == "destroy" %}
+                        <div class="btn-group btn-group-sm" role="radiogroup" aria-labelledby="options-crash">
+                            <input type="radio" class="btn-check" name="on_crash" value="restart" id="on_crash_restart"{% if instance.config_on_crash == "restart" %} checked{% endif %} data-submit-on-change>
+                            <label class="btn btn-outline-primary" for="on_crash_restart">{% trans "Restart" %}</label>
+                            <input type="radio" class="btn-check" name="on_crash" value="destroy" id="on_crash_destroy"{% if instance.config_on_crash == "destroy" %} checked{% endif %} data-submit-on-change>
+                            <label class="btn btn-outline-primary" for="on_crash_destroy">{% trans "Stop" %}</label>
                         </div>
-                    </div>
-                </form>
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_on_crash' instance.id %}" method="post">{% csrf_token %}
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label fw-semibold mb-0" for="on_crash">{% trans "When the guest crashes" %}</label>
-                            <p class="small text-body-secondary mb-0" id="on-crash-help">{% trans "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again and again down for a look. From the next start." %}</p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            {% if instance.config_on_crash == "restart" or instance.config_on_crash == "destroy" %}
-                            <div class="row g-2">
-                                <div class="col-12 col-sm">
-                                    <select id="on_crash" class="form-select" name="on_crash" aria-describedby="on-crash-help">
-                                        <option value="restart"{% if instance.config_on_crash == "restart" %} selected{% endif %}>{% trans "Restart" %}</option>
-                                        <option value="destroy"{% if instance.config_on_crash == "destroy" %} selected{% endif %}>{% trans "Stop" %}</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-sm-auto d-grid">
-                                    <button class="btn btn-secondary" type="submit" name="set_on_crash">{% trans "Save" %}</button>
-                                </div>
-                            </div>
-                            {% else %}
-                            <p class="small mb-0" id="on_crash">{% blocktrans with action=instance.config_on_crash %}{{ action }}: change it in the XML editor.{% endblocktrans %}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </form>
-                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_guest_agent' instance.id %}" method="post">{% csrf_token %}
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label fw-semibold mb-0" for="guest_agent">{% trans "QEMU guest agent" %}</label>
-                            <p class="small text-body-secondary mb-0" id="agent-help">{% trans "The channel to the agent in the guest: a running VM gets it at once." %}</p>
-                            <p class="small mt-2 mb-0">{% trans "Agent" %}:
-                                {% if instance.status != 1 and instance.status != 3 %}<span class="badge bg-secondary">{% trans "VM not running" %}</span>
-                                {% elif not instance.guest_agent %}<span class="badge bg-secondary">{% trans "No channel" %}</span>
-                                {% elif instance.guest_agent_ready %}<span class="badge bg-success">{% trans "Connected" %}</span>
-                                {% else %}<span class="badge bg-danger">{% trans "Not connected" %}</span>{% endif %}
-                            </p>
-                        </div>
-                        <div class="col-12 col-lg-8">
-                            <div class="row g-2">
-                                <div class="col-12 col-sm">
-                                    <select id="guest_agent" class="form-select" name="guest_agent" aria-describedby="agent-help">
-                                        <option value="True"{% if instance.config_guest_agent %} selected{% endif %}>{% trans "Enabled" %}</option>
-                                        <option value="False"{% if not instance.config_guest_agent %} selected{% endif %}>{% trans "Disabled" %}</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-sm-auto d-grid">
-                                    <button class="btn btn-secondary" type="submit" name="set_guest_agent">{% trans "Save" %}</button>
-                                </div>
-                            </div>
-                        </div>
+                        <span class="small text-body-secondary">{% trans "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again and again down for a look. From the next start." %}</span>
+                        {% else %}
+                        <p class="small mb-0" id="on_crash">{% blocktrans with action=instance.config_on_crash %}{{ action }}: change it in the XML editor.{% endblocktrans %}</p>
+                        {% endif %}
                     </div>
                 </form>
                 {% endif %}

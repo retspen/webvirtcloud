@@ -208,20 +208,22 @@ class PendingEditsTestCase(TestCase):
         hotplug = {"0": {"enabled": "yes", "hotpluggable": "no", "order": "1"},
                    "1": {"enabled": "yes", "hotpluggable": "yes", "order": "2"}}
         doc = self.page(get_guest_agent=(None, object()), get_vcpus=({}, hotplug))
-        self.assertEqual(doc.xpath("//select[@name='guest_agent']/option[@selected]/@value"), ["True"])
+        # the agent switch shows the pending channel on; flipping it posts off
+        self.assertEqual(doc.xpath("//input[@id='guest_agent']/@checked"), ["checked"])
+        self.assertEqual(doc.xpath("//input[@name='guest_agent']/@value"), ["False"])
         # the switch shows the pending hot plug on; flipping it posts off
         self.assertEqual(doc.xpath("//input[@id='vcpu_hotplug']/@checked"), ["checked"])
         self.assertEqual(doc.xpath("//input[@name='vcpu_hotplug']/@value"), ["False"])
-        self.assertIn("No channel", doc.xpath("string(//form[.//select[@name='guest_agent']])"))
+        self.assertIn("No channel", doc.xpath("string(//form[.//input[@name='guest_agent']])"))
 
     def test_a_custom_rng_or_crash_action_is_left_to_the_xml_editor(self):
         doc = self.page(get_rng=("custom", "custom"), get_on_crash=("preserve", "preserve"))
         self.assertIsNotNone(doc.xpath("//input[@name='rng']")[0].get("disabled"))
-        self.assertEqual(doc.xpath("//select[@name='on_crash']"), [])
+        self.assertEqual(doc.xpath("//input[@name='on_crash']"), [])
         self.assertIn("preserve: change it in the XML editor.", doc.xpath("string(//p[@id='on_crash'])"))
         doc = self.page(get_rng=("virtio", "virtio"), get_on_crash=("restart", "restart"))  # read from the persistent definition
         self.assertEqual(doc.xpath("//input[@name='rng']/@checked"), ["checked"])
-        self.assertEqual(doc.xpath("//select[@name='on_crash']/option[@selected]/@value"), ["restart"])
+        self.assertEqual(doc.xpath("//input[@name='on_crash'][@checked]/@value"), ["restart"])
 
     def test_the_tpm_switch_is_off_where_it_cannot_change(self):
         tpm = "//input[@name='tpm']"
@@ -229,11 +231,11 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual((doc.xpath(f"{tpm}/@checked"), doc.xpath(f"{tpm}/@disabled")), (["checked"], []))
         doc = self.page(get_tpm=("custom", "custom"))
         self.assertTrue(doc.xpath(f"{tpm}/@disabled"))
-        self.assertIn("change it in the XML editor", doc.xpath("string(//p[@id='tpm-state'])"))
+        self.assertIn("change it in the XML editor", doc.xpath("string(//span[@id='tpm-help'])"))
         # no swtpm: none can be added, one the VM has can still go
         doc = self.page(get_tpm=(None, None), tpm_model=None)
         self.assertTrue(doc.xpath(f"{tpm}/@disabled"))
-        self.assertIn("install swtpm", doc.xpath("string(//p[@id='tpm-state'])"))
+        self.assertIn("install swtpm", doc.xpath("string(//span[@id='tpm-help'])"))
         doc = self.page(get_tpm=("emulator", "emulator"), tpm_model=None)
         self.assertEqual(doc.xpath(f"{tpm}/@disabled"), [])
 
