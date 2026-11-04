@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 04:57+0000\n"
+"POT-Creation-Date: 2026-11-04 05:47+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -436,8 +436,8 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: instances/templates/create_flavors.html:11
 #: instances/templates/instances/settings_tab.html:251
 #: instances/templates/instances/settings_tab.html:325
-#: instances/templates/instances/snapshots_tab.html:96
-#: instances/templates/instances/snapshots_tab.html:110
+#: instances/templates/instances/snapshots_tab.html:103
+#: instances/templates/instances/snapshots_tab.html:117
 #: networks/templates/network.html:168 storages/templates/storage.html:152
 #: templates/common/confirm_delete.html:5
 #: templates/common/confirm_delete.html:9
@@ -1728,8 +1728,8 @@ msgstr "Kayıtlı, korumak için boş bırakın"
 #: computes/forms.py:28 computes/templates/computes/instances.html:45
 #: instances/templates/instances/settings_tab.html:858
 #: instances/templates/instances/settings_tab.html:890
-#: instances/templates/instances/snapshots_tab.html:23
-#: instances/templates/instances/snapshots_tab.html:67
+#: instances/templates/instances/snapshots_tab.html:27
+#: instances/templates/instances/snapshots_tab.html:71
 msgid "Description"
 msgstr "Tanım"
 
@@ -5468,10 +5468,6 @@ msgstr ""
 msgid "%(action)s: change it in the XML editor."
 msgstr "%(action)s: XML düzenleyicide değiştirin."
 
-#: instances/templates/instances/snapshots_tab.html:11
-msgid "Snapshots"
-msgstr "Anlık görüntüler"
-
 #: instances/templates/instances/snapshots_tab.html:13
 msgid ""
 "A disk job is running on this VM; snapshot actions are unavailable until it "
@@ -5480,44 +5476,48 @@ msgstr ""
 "Bu sanal makinede bir disk işi çalışıyor; bitene kadar anlık görüntü "
 "işlemleri kullanılamaz."
 
-#: instances/templates/instances/snapshots_tab.html:16
-#: instances/templates/instances/snapshots_tab.html:27
+#: instances/templates/instances/snapshots_tab.html:18
+msgid "Now"
+msgstr "Şimdi"
+
+#: instances/templates/instances/snapshots_tab.html:20
+#: instances/templates/instances/snapshots_tab.html:31
 msgid "Take a snapshot"
 msgstr "Anlık görüntü al"
 
-#: instances/templates/instances/snapshots_tab.html:19
-#: instances/templates/instances/snapshots_tab.html:20
-#: instances/templates/instances/snapshots_tab.html:63
-#: instances/templates/instances/snapshots_tab.html:64
+#: instances/templates/instances/snapshots_tab.html:23
+#: instances/templates/instances/snapshots_tab.html:24
+#: instances/templates/instances/snapshots_tab.html:67
+#: instances/templates/instances/snapshots_tab.html:68
 msgid "Snapshot name"
 msgstr "Anlık görüntü adı"
 
-#: instances/templates/instances/snapshots_tab.html:20
-#: instances/templates/instances/snapshots_tab.html:64
+#: instances/templates/instances/snapshots_tab.html:24
+#: instances/templates/instances/snapshots_tab.html:68
 msgid "Letters, digits, '.', '_' or '-'; not starting with '.'"
 msgstr "Harfler, rakamlar, '.', '_' veya '-'; '.' ile başlamaz"
 
-#: instances/templates/instances/snapshots_tab.html:24
-#: instances/templates/instances/snapshots_tab.html:68
+#: instances/templates/instances/snapshots_tab.html:28
+#: instances/templates/instances/snapshots_tab.html:72
 msgid "Description (optional)"
 msgstr "Açıklama (isteğe bağlı)"
 
-#: instances/templates/instances/snapshots_tab.html:34
+#: instances/templates/instances/snapshots_tab.html:38
 msgid "Save memory too"
 msgstr "Belleği de kaydet"
 
-#: instances/templates/instances/snapshots_tab.html:42
+#: instances/templates/instances/snapshots_tab.html:46
 msgid "Freeze the guest's file systems"
 msgstr "Konuk sistemin dosya sistemlerini dondur"
 
-#: instances/templates/instances/snapshots_tab.html:46
+#: instances/templates/instances/snapshots_tab.html:50
 msgid ""
 "The VM has internal snapshots: delete them before taking an external one."
 msgstr ""
 "Sanal makinenin dahili anlık görüntüleri var: harici bir tane almadan önce "
 "onları silin."
 
-#: instances/templates/instances/snapshots_tab.html:47
+#: instances/templates/instances/snapshots_tab.html:51
 msgid ""
 "Snapshots newer than the one reverted to exist: delete them before taking a "
 "new one."
@@ -5525,38 +5525,38 @@ msgstr ""
 "Geri dönülen anlık görüntüden daha yeni anlık görüntüler var: yenisini "
 "almadan önce onları silin."
 
-#: instances/templates/instances/snapshots_tab.html:48
+#: instances/templates/instances/snapshots_tab.html:52
 msgid "Each disk goes on in a new file next to it; the VM keeps running."
 msgstr ""
 "Her disk yanındaki yeni bir dosyada devam eder; sanal makine çalışmaya devam "
 "eder."
 
-#: instances/templates/instances/snapshots_tab.html:49
+#: instances/templates/instances/snapshots_tab.html:53
 msgid "With memory, the VM pauses while its memory is saved."
 msgstr ""
 "Bellekle birlikte alınırsa sanal makine, belleği kaydedilirken duraklatılır."
 
-#: instances/templates/instances/snapshots_tab.html:50
+#: instances/templates/instances/snapshots_tab.html:54
 msgid "Memory and frozen file systems are for a running VM."
 msgstr ""
 "Bellek ve dondurulmuş dosya sistemleri çalışan bir sanal makine içindir."
 
-#: instances/templates/instances/snapshots_tab.html:50
+#: instances/templates/instances/snapshots_tab.html:54
 msgid "Freezing needs the guest agent, which is not connected."
 msgstr "Dondurma için konuk ajanı gerekir, ancak bağlı değil."
 
-#: instances/templates/instances/snapshots_tab.html:54
+#: instances/templates/instances/snapshots_tab.html:58
 msgid "Internal snapshot: a fallback for a VM that cannot take an external one"
 msgstr ""
 "Dahili anlık görüntü: harici anlık görüntü alamayan bir sanal makine için "
 "yedek yol"
 
-#: instances/templates/instances/snapshots_tab.html:55
-#: instances/templates/instances/snapshots_tab.html:71
+#: instances/templates/instances/snapshots_tab.html:59
+#: instances/templates/instances/snapshots_tab.html:75
 msgid "Take an internal snapshot"
 msgstr "Dahili anlık görüntü al"
 
-#: instances/templates/instances/snapshots_tab.html:57
+#: instances/templates/instances/snapshots_tab.html:61
 msgid ""
 "The disks and memory go into the disk files. The VM does not respond while "
 "its memory is saved, which can take long: avoid it in production."
@@ -5564,46 +5564,46 @@ msgstr ""
 "Diskler ve bellek disk dosyalarına yazılır. Belleği kaydedilirken sanal "
 "makine yanıt vermez ve bu uzun sürebilir: üretim ortamında kaçının."
 
-#: instances/templates/instances/snapshots_tab.html:58
+#: instances/templates/instances/snapshots_tab.html:62
 msgid ""
 "The disks and memory go into the disk files; the paused VM stays paused."
 msgstr ""
 "Diskler ve bellek disk dosyalarına yazılır; duraklatılmış sanal makine "
 "duraklatılmış kalır."
 
-#: instances/templates/instances/snapshots_tab.html:59
+#: instances/templates/instances/snapshots_tab.html:63
 msgid "The disks go into their files."
 msgstr "Diskler kendi dosyalarına yazılır."
 
-#: instances/templates/instances/snapshots_tab.html:74
+#: instances/templates/instances/snapshots_tab.html:78
 msgid "The VM has external snapshots: the two kinds do not mix."
 msgstr ""
 "Sanal makinenin harici anlık görüntüleri var: iki tür bir arada kullanılamaz."
 
-#: instances/templates/instances/snapshots_tab.html:83
+#: instances/templates/instances/snapshots_tab.html:90
 msgid "external"
 msgstr "harici"
 
-#: instances/templates/instances/snapshots_tab.html:83
+#: instances/templates/instances/snapshots_tab.html:90
 msgid "with memory"
 msgstr "bellekle"
 
-#: instances/templates/instances/snapshots_tab.html:83
+#: instances/templates/instances/snapshots_tab.html:90
 msgid "internal"
 msgstr "dahili"
 
-#: instances/templates/instances/snapshots_tab.html:83
-msgid "current"
-msgstr "geçerli"
+#: instances/templates/instances/snapshots_tab.html:90
+msgid "the VM goes on from this one"
+msgstr "sanal makine bundan devam ediyor"
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 #, python-format
 msgid "Revert to snapshot %(name)s? Changes made since it are lost."
 msgstr ""
 "%(name)s anlık görüntüsüne dönülsün mü? O zamandan beri yapılan değişiklikler"
 " kaybolur."
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid ""
 "The VM is powered off and starts again from the snapshot's disks, as after a "
 "power cut."
@@ -5611,13 +5611,13 @@ msgstr ""
 "Sanal makine kapatılır ve bir elektrik kesintisinden sonraki gibi anlık "
 "görüntünün diskleriyle yeniden başlar."
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid "The VM is powered off and comes back paused on the snapshot's disks."
 msgstr ""
 "Sanal makine kapatılır ve anlık görüntünün diskleriyle duraklatılmış olarak "
 "geri gelir."
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid ""
 "These disks are detached; their writes since the current snapshot are "
 "discarded and their files are kept:"
@@ -5625,16 +5625,16 @@ msgstr ""
 "Bu diskler ayrılır; geçerli anlık görüntüden beri yapılan yazmaları atılır ve"
 " dosyaları korunur:"
 
-#: instances/templates/instances/snapshots_tab.html:89
+#: instances/templates/instances/snapshots_tab.html:96
 msgid "Firmware variables (NVRAM) are not restored."
 msgstr "Üretici yazılımı değişkenleri (NVRAM) geri yüklenmez."
 
-#: instances/templates/instances/snapshots_tab.html:90
-#: instances/templates/instances/snapshots_tab.html:104
+#: instances/templates/instances/snapshots_tab.html:97
+#: instances/templates/instances/snapshots_tab.html:111
 msgid "Revert"
 msgstr "Geri dön"
 
-#: instances/templates/instances/snapshots_tab.html:95
+#: instances/templates/instances/snapshots_tab.html:102
 #, python-format
 msgid ""
 "Delete snapshot %(name)s? Its files are merged with the disks; the VM's data "
@@ -5643,7 +5643,7 @@ msgstr ""
 "%(name)s anlık görüntüsü silinsin mi? Dosyaları disklerle birleştirilir; "
 "sanal makinenin verileri korunur."
 
-#: instances/templates/instances/snapshots_tab.html:102
+#: instances/templates/instances/snapshots_tab.html:109
 #, python-format
 msgid ""
 "Revert to snapshot %(name)s? Disk changes made since it are lost; a snapshot "
@@ -5653,23 +5653,23 @@ msgstr ""
 "değişiklikleri kaybolur; çalışan bir sanal makinenin anlık görüntüsü onu o "
 "anki hâliyle yeniden başlatır."
 
-#: instances/templates/instances/snapshots_tab.html:104
-#: instances/templates/instances/snapshots_tab.html:116
+#: instances/templates/instances/snapshots_tab.html:111
+#: instances/templates/instances/snapshots_tab.html:130
 msgid "Shut the VM down to revert to an internal snapshot."
 msgstr "Dahili bir anlık görüntüye dönmek için sanal makineyi kapatın."
 
-#: instances/templates/instances/snapshots_tab.html:109
+#: instances/templates/instances/snapshots_tab.html:116
 #, python-format
 msgid "Delete snapshot %(name)s? The VM's current disks are not changed."
 msgstr ""
 "%(name)s anlık görüntüsü silinsin mi? Sanal makinenin geçerli diskleri "
 "değişmez."
 
-#: instances/templates/instances/snapshots_tab.html:118
+#: instances/templates/instances/snapshots_tab.html:126
 msgid "The VM has no snapshot."
 msgstr "Sanal makinenin anlık görüntüsü yok."
 
-#: instances/templates/instances/snapshots_tab.html:120
+#: instances/templates/instances/snapshots_tab.html:131
 #, python-format
 msgid "Times in %(TIME_ZONE)s. A VM with snapshots cannot be migrated."
 msgstr ""
