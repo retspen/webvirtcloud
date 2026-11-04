@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
+from instances.utils import read_list_rows
 from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims
@@ -134,7 +135,8 @@ def instances(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
 
     utils.refresh_instance_database(compute)
-    instances = Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set")
+    instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set"))
+    read_list_rows(instances)
 
     return render(
         request, "computes/instances.html",

@@ -1098,6 +1098,23 @@ class wvmConnect(object):
         return {dom.UUIDString(): [dom.name(), stats["state.state"]]
                 for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE)}
 
+    def get_domain_rows(self):
+        """{uuid: (info, title)} of every domain, as the VM lists show them:
+        info in virDomainGetInfo's shape (state, max memory KiB, memory KiB,
+        vCPUs), the states in one call and the rest from each domain's live
+        XML, which the title needs anyway. A domain gone meanwhile is left out."""
+        rows = {}
+        for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE):
+            try:
+                doc = etree.fromstring(dom.XMLDesc(0))
+            except libvirtError:
+                continue
+            vcpu = doc.find("vcpu")
+            info = [stats["state.state"], int(doc.findtext("memory")), int(doc.findtext("currentMemory")),
+                    int(vcpu.get("current", vcpu.text))]
+            rows[dom.UUIDString()] = (info, doc.findtext("title") or "")
+        return rows
+
     def domain_trees(self, running_only=False):
         """Each domain's name with its definitions, parsed: the live one, and
         for a persistent domain the one saved for its next boot too, read

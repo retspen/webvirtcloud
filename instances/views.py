@@ -81,22 +81,25 @@ def index(request):
     computes = list(Compute.objects.all().order_by("name"))
     for compute in computes:
         utils.refr(compute)
-    # each host's VMs by name: the database keeps no order of its own
-    prefetch_related_objects(computes, Prefetch("instance_set", queryset=Instance.objects.order_by("name")),
-                             "instance_set__userinstance_set__user")
 
     show_hosts = request.user.is_superuser or request.user.has_perm("instances.view_instances")
     own_hosts_down = False
-    if show_hosts:
-        instances = Instance.objects.order_by("name").prefetch_related("userinstance_set__user")
+    if request.user.is_superuser and app_settings.VIEW_INSTANCES_LIST_STYLE == "grouped":
+        # each host's VMs by name: the database keeps no order of its own
+        prefetch_related_objects(computes, Prefetch("instance_set", queryset=Instance.objects.order_by("name")),
+                                 "instance_set__userinstance_set__user")
+        instances = [inst for compute in computes for inst in compute.instance_set.all()]
+    elif show_hosts:
+        instances = list(Instance.objects.order_by("name").prefetch_related("userinstance_set__user"))
     else:
-        instances = Instance.objects.filter(
+        instances = list(Instance.objects.filter(
             userinstance__user=request.user
-        ).order_by("name").prefetch_related("userinstance_set__user")
+        ).order_by("name").prefetch_related("userinstance_set__user"))
         # other users get no host names or connection errors, only whether
         # a host of their own VMs is down
-        own = set(instances.values_list("compute_id", flat=True))
+        own = {inst.compute_id for inst in instances}
         own_hosts_down = any(c.status is not True for c in computes if c.pk in own)
+    utils.read_list_rows(instances)
 
     return render(
         request,

@@ -17,19 +17,6 @@ ERROR = "Connection Failed: No route to host"
 UP_INFO = [1, 4194304, 2097152, 3, 0]
 
 
-class Domain:
-    def info(self):
-        return UP_INFO
-
-
-def live(*args, **kwargs):
-    return SimpleNamespace(instance=Domain(), get_title=lambda: "", get_uuid=lambda: "uuid")
-
-
-def unreachable(*args, **kwargs):
-    raise OperationError(ERROR)
-
-
 class UnreachableListTests(TestCase):
     def setUp(self):
         self.client.force_login(
@@ -39,7 +26,15 @@ class UnreachableListTests(TestCase):
         self.vm_a = Instance.objects.create(compute=self.compute, name="vm-a", uuid="11111111-1111-1111-1111-111111111111")
         self.vm_b = Instance.objects.create(compute=self.compute, name="vm-b", uuid="22222222-2222-2222-2222-222222222222")
 
-    def get(self, url, wvm_instance, up=False):
+    def get(self, url, rows=None):
+        """The page with the host down, or up with these VM rows (get_domain_rows),
+        or up with the error its listing raises."""
+        up = rows is not None
+
+        def domain_rows():
+            if isinstance(rows, Exception):
+                raise rows
+            return rows
         def no_live_host_data(_self):
             raise AssertionError("host data read for a host that is down")
 
@@ -53,7 +48,8 @@ class UnreachableListTests(TestCase):
         patches += [
             patch("instances.views.utils.refr"),
             patch("computes.views.utils.refresh_instance_database"),
-            patch("instances.models.wvmInstance", side_effect=wvm_instance),
+            patch.object(Compute, "proxy", new_callable=PropertyMock,
+                         return_value=SimpleNamespace(get_domain_rows=domain_rows)),
         ]
         for p in patches:
             p.start()
@@ -75,35 +71,36 @@ class UnreachableListTests(TestCase):
 
     def test_nongrouped_index_lists_the_vms_of_a_down_host(self):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")
-        response = self.get(reverse("instances:index"), unreachable)
+        response = self.get(reverse("instances:index"))
         self.assert_unknown(response, [self.vm_a, self.vm_b])
         self.assertContains(response, ERROR)
 
     def test_grouped_index_lists_the_vms_of_a_down_host(self):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
-        response = self.get(reverse("instances:index"), unreachable)
+        response = self.get(reverse("instances:index"))
         self.assert_unknown(response, [self.vm_a, self.vm_b])
         self.assertContains(response, "Not connected")
 
     def test_one_unreadable_vm_does_not_hide_the_others(self):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")
 
-        def vm_b_gone(*args, uuid=None, **kwargs):
-            if uuid == self.vm_b.uuid:
-                raise OperationError("Domain not found")
-            return live()
-
-        response = self.get(reverse("instances:index"), vm_b_gone, up=True)
+        # vm-b is gone from its host
+        response = self.get(reverse("instances:index"), {self.vm_a.uuid: (UP_INFO, "")})
         self.assert_unknown(response, [self.vm_b])
         self.assertContains(response, reverse("instances:poweroff", args=[self.vm_a.id]))
 
+    def test_a_host_whose_listing_fails_shows_its_vms_unknown(self):
+        AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")
+        response = self.get(reverse("instances:index"), OperationError(ERROR))
+        self.assert_unknown(response, [self.vm_a, self.vm_b])
+
     def test_compute_instances_page_of_a_down_host(self):
-        response = self.get(reverse("instances", args=[self.compute.id]), unreachable)
+        response = self.get(reverse("instances", args=[self.compute.id]))
         self.assert_unknown(response, [self.vm_a, self.vm_b])
         self.assertContains(response, ERROR)
 
     def test_compute_instances_page_does_not_claim_a_down_host_is_empty(self):
         Instance.objects.all().delete()
-        response = self.get(reverse("instances", args=[self.compute.id]), unreachable)
+        response = self.get(reverse("instances", args=[self.compute.id]))
         self.assertNotContains(response, "have any Instances")
         self.assertContains(response, ERROR)
