@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 06:09+0000\n"
+"POT-Creation-Date: 2026-11-04 09:10+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -5320,8 +5320,8 @@ msgstr "Rastgele"
 
 #: instances/templates/instances/settings_tab.html:819
 #, python-format
-msgid "Pool: %(pool)s"
-msgstr "Havuz: %(pool)s"
+msgid "%(pool)s pool"
+msgstr "%(pool)s havuzu"
 
 #: instances/templates/instances/settings_tab.html:820
 msgid "New volume name"
