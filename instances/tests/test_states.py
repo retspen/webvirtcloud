@@ -54,16 +54,13 @@ class StateTests(TestCase):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")
 
     def get(self, user, url):
-        by_uuid = {vm.uuid: state for state, vm in self.vms.items()}
-
-        def wvm(*args, uuid=None, **kwargs):
-            return SimpleNamespace(instance=Domain(by_uuid[uuid]), get_title=lambda: "", get_uuid=lambda: uuid)
+        rows = {vm.uuid: (Domain(state).info(), "") for state, vm in self.vms.items()}
 
         self.client.force_login(user)
-        props = {"status": True, "connection_error": None, "cpu_count": 1, "ram_size": 1, "ram_usage": 0}
+        props = {"status": True, "connection_error": None, "cpu_count": 1, "ram_size": 1, "ram_usage": 0,
+                 "proxy": SimpleNamespace(get_domain_rows=lambda: rows)}
         patches = [patch.object(Compute, k, new_callable=PropertyMock, return_value=v) for k, v in props.items()]
-        patches += [patch("instances.views.utils.refr"), patch("computes.views.utils.refresh_instance_database"),
-                    patch("instances.models.wvmInstance", side_effect=wvm)]
+        patches += [patch("instances.views.utils.refr"), patch("computes.views.utils.refresh_instance_database")]
         for p in patches:
             p.start()
         try:

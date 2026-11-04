@@ -352,6 +352,20 @@ def record_migration(instance, new_compute):
             instance.save()
 
 
+def read_list_rows(instances):
+    """Each VM's info and title for a VM list, read once a host
+    (get_domain_rows), not three calls a VM; a VM whose host or whose
+    domain cannot be read has no info: the list shows it unknown."""
+    rows = {}
+    for compute in {inst.compute_id: inst.compute for inst in instances}.values():
+        try:
+            rows[compute.pk] = compute.proxy.get_domain_rows() if compute.status is True else {}
+        except libvirtError:
+            rows[compute.pk] = {}
+    for inst in instances:
+        inst.info, inst.title = rows[inst.compute_id].get(inst.uuid, (None, ""))
+
+
 def vm_states(user, computes):
     """{compute pk: {"ok": True, "vms": {uuid: [name, state]}}, or {"ok": False}
     for a host that cannot be read}: what the VM lists poll, read from libvirt;
