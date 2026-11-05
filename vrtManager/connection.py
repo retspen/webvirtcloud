@@ -58,6 +58,10 @@ CLOSE_REASONS = {
 SSH_COMMAND = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libvirt-ssh")
 
 logger = logging.getLogger(__name__)
+# libvirt prints each error on stderr without saying where it came from; every
+# process that talks to libvirt imports this module. The errors are raised to
+# the callers, which handle or report them.
+libvirt.registerErrorHandler(lambda context, error: None, None)
 
 
 class wvmEventLoop(threading.Thread):
