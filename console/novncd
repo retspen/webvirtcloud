@@ -8,6 +8,7 @@ import logging
 import os
 import socket
 import sys
+import threading
 from urllib.parse import parse_qs, urlparse
 
 import django
@@ -21,6 +22,7 @@ django.setup()
 from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 
 from console.sshtunnels import open_tunnel, tunnel_target  # noqa: E402
+from console.tokens import ACCESS_CHECK, authorize, may_still_open  # noqa: E402
 from vrtManager.connection import CONN_SOCKET, CONN_SSH  # noqa: E402
 from vrtManager.util import is_loopback  # noqa: E402
 from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
@@ -54,11 +56,9 @@ def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080):
     return parser
 
 
-def get_connection_infos(token):
-    from console.tokens import authorize
+def get_connection_infos(instance):
     from vrtManager.instance import wvmInstance
 
-    instance, _user = authorize(token)
     conn = wvmInstance(
         instance.compute.hostname,
         instance.compute.login,
@@ -77,6 +77,19 @@ def get_connection_infos(token):
 WILDCARD = (None, "", "0.0.0.0", "::")
 
 
+def end_when_refused(instance, user_id, tsock, ended):
+    """Close the session's VNC socket, which ends it, once its user may no
+    longer open the console (as the serial console does)."""
+    while not ended.wait(ACCESS_CHECK):
+        if not may_still_open(user_id, instance):
+            logging.info("VNC console of VM %s closed: its user may no longer open it", instance.name)
+            try:
+                tsock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass  # the session ended meanwhile
+            return
+
+
 class ConsoleClient:
     """What a console websocket is joined to; ConsoleProxyHandler is the
     websockify handler that runs it."""
@@ -90,7 +103,8 @@ class ConsoleClient:
             return
 
         try:
-            connhost, connuser, conntype, console_host, console_port, console_socket = get_connection_infos(token)
+            instance, user = authorize(token, "vnc")
+            connhost, connuser, conntype, console_host, console_port, console_socket = get_connection_infos(instance)
         except Exception as e:
             logging.warning("Console connection denied: %s", e)
             return
@@ -126,10 +140,13 @@ class ConsoleClient:
             self.msg("connecting to: %s:%s" % (address, console_port))
             tsock = socket_factory(address, console_port, connect=True)
 
+        ended = threading.Event()
+        threading.Thread(target=end_when_refused, args=(instance, user.pk, tsock, ended), daemon=True).start()
         try:
             self.msg("Start proxying")
             self.do_proxy(tsock)
         finally:
+            ended.set()
             tsock.close()
             if tunnel:
                 error = tunnel.close()

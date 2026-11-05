@@ -36,12 +36,12 @@ class Base(TestCase):
 
     def token(self, user=None, vm=None):
         vm = vm or self.vm
-        return tokens.SIGNER.sign(f"{vm.compute_id}:{vm.uuid}:{(user or self.user).id}")
+        return tokens.sign(vm.compute_id, vm.uuid, (user or self.user).id, "pty")
 
 
 class TokenTestCase(Base):
     def test_a_token_opens_its_vm_for_a_user_who_may_open_it(self):
-        self.assertEqual(tokens.authorize(self.token()), (self.vm, self.user))
+        self.assertEqual(tokens.authorize(self.token(), "pty"), (self.vm, self.user))
 
     def test_refused_tokens(self):
         stranger = get_user_model().objects.create_user("stranger", password="pw")
@@ -53,14 +53,15 @@ class TokenTestCase(Base):
             "tampered": self.token()[:-2] + "xx",
             "no access": self.token(stranger),
             "inactive user": self.token(inactive),
+            "a VNC page's token": tokens.sign(self.vm.compute_id, self.vm.uuid, self.user.id, "vnc"),
         }
         for name, token in cases.items():
             with self.subTest(name), self.assertRaises(PermissionError):
-                tokens.authorize(token)
+                tokens.authorize(token, "pty")
         token = self.token()
         with patch("django.core.signing.time.time", return_value=time.time() + tokens.MAX_AGE + 1):
             with self.assertRaises(PermissionError):
-                tokens.authorize(token)
+                tokens.authorize(token, "pty")
 
 
 class SocketiodTestCase(Base):

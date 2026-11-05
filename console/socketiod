@@ -61,7 +61,7 @@ def connect(sid, environ, auth):
     if not settings.SERIAL_CONSOLE_ENABLED:
         raise refused("The serial console is turned off on this server")
     try:
-        instance, user = authorize((auth or {}).get("token"))
+        instance, user = authorize((auth or {}).get("token"), "pty")
     except PermissionError:
         raise refused("The console link has expired, or you may no longer open this console: reload the page")
     finally:

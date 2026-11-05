@@ -13,6 +13,7 @@ from django.test import TestCase as DjangoTestCase
 
 from accounts.models import UserInstance
 from computes.models import Compute
+from console import tokens
 from instances.models import Instance
 
 CONSOLECALLBACK = Path(__file__).resolve().parent.parent.parent / "conf" / "daemon" / "consolecallback"
@@ -100,7 +101,7 @@ class AccessTests(DjangoTestCase):
         vm = Instance.objects.create(compute=compute, name="vm-a", uuid="11111111-0000-0000-0000-000000000009")
         owner = get_user_model().objects.create_user("owner", password="pw")
         ownership = UserInstance.objects.create(user=owner, instance=vm)
-        with patch.object(cb.db.connection, "close"):  # the test's transaction keeps its connection
+        with patch.object(tokens.db.connection, "close"):  # the test's transaction keeps its connection
             self.assertTrue(cb.may_still_open(owner.pk, vm))
             ownership.delete()
             self.assertFalse(cb.may_still_open(owner.pk, vm))

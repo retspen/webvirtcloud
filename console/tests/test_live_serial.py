@@ -61,12 +61,12 @@ class LiveSerialConsoleTestCase(TransactionTestCase):
         dom = serial_vm(conn, f"{P}serial-{conn_type}")
         vm = Instance.objects.create(compute=compute, name=dom.name(), uuid=dom.UUIDString())
         UserInstance.objects.create(user=self.user, instance=vm)
-        return tokens.SIGNER.sign(f"{compute.id}:{vm.uuid}:{self.user.id}"), dom
+        return tokens.sign(compute.id, vm.uuid, self.user.id, "pty"), dom
 
     def admin_token(self, token):
-        host, uuid, _user = tokens.SIGNER.unsign(token).split(":")
+        host, uuid, _user, _type = tokens.SIGNER.unsign(token).split(":")
         admin, _ = get_user_model().objects.get_or_create(username="serial-live-admin", is_superuser=True)
-        return tokens.SIGNER.sign(f"{host}:{uuid}:{admin.id}")
+        return tokens.sign(host, uuid, admin.id, "pty")
 
     def test_the_console_of_a_running_vm_opens_once(self):
         for args in self.hosts:

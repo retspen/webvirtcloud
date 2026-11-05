@@ -107,7 +107,7 @@ class SocketiodProcessTestCase(TransactionTestCase):
         for n, name in enumerate(("vm-a", "vm-b"), 1):
             vm = Instance.objects.create(compute=compute, name=name, uuid=f"22222222-0000-0000-0000-00000000000{n}")
             UserInstance.objects.create(user=user, instance=vm)
-            self.tokens[name] = tokens.SIGNER.sign(f"{compute.id}:{vm.uuid}:{user.id}")
+            self.tokens[name] = tokens.sign(compute.id, vm.uuid, user.id, "pty")
         self.server, self.port = start_socketiod(self)
 
     def console(self, token):
