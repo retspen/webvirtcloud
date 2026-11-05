@@ -68,12 +68,29 @@ if (typeof module !== "undefined") {
 } else {
     var search = document.getElementById("filter");
     var states = document.getElementById("state-filter");
-    // a form's search ([data-forget], the group form's members) starts empty
+    // a list's search is kept for this tab, in the browser only; a form's
+    // search ([data-forget], the group form's members) starts empty
     var remember = !search.hasAttribute("data-forget");
-    search.value = remember && Cookies.get(document.title + "_filter") || "";
+    var key = document.title + "_filter";
+    function keep(value) {
+        try {
+            if (value) {
+                sessionStorage.setItem(key, value);
+            } else {
+                sessionStorage.removeItem(key);
+            }
+        } catch (e) {
+            // storage turned off: the search is not kept
+        }
+    }
+    try {
+        search.value = remember && sessionStorage.getItem(key) || "";
+    } catch (e) {
+        search.value = "";
+    }
     search.addEventListener("input", function () {
         if (remember) {
-            Cookies.set(document.title + "_filter", search.value, {expires: 1});
+            keep(search.value);
         }
         filterTable(document);
     });
@@ -103,7 +120,7 @@ if (typeof module !== "undefined") {
     if (clear) {
         clear.addEventListener("click", function () {
             search.value = "";
-            Cookies.remove(document.title + "_filter");
+            keep("");
             if (pills) {
                 chooseState(pills.querySelector('[data-pill-state=""]'));
             } else if (states) {
