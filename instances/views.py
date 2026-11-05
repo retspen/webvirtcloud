@@ -1046,7 +1046,10 @@ def gstfsd_request(compute, data):
     try:
         s.settimeout(GSTFSD_TIMEOUT)
         stream = s.makefile("rb")
-        challenge = json.loads(stream.readline(GSTFSD_MAX_FRAME))["challenge"]
+        first = json.loads(stream.readline(GSTFSD_MAX_FRAME))
+        if "error" in first:  # busy: gstfsd took no request
+            raise ValueError(first["error"])
+        challenge = first["challenge"]
         nonce, request = secrets.token_hex(32), json.dumps(data)
         s.sendall(json.dumps({"nonce": nonce, "request": request,
                               "mac": gstfsd_mac(compute.gstfsd_key, "request", challenge, nonce, request)}).encode())

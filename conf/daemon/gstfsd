@@ -43,6 +43,9 @@ KEY = os.environ.get("GSTFSD_KEY", "").strip()
 PORT = int(os.environ.get("GSTFSD_PORT", 16510))
 ADDRESS = os.environ.get("GSTFSD_BIND_HOST", "127.0.0.1")
 MAX_REQUEST = 64 * 1024
+# connections at a time, each a thread that may run a guestfs appliance; one
+# more is told gstfsd is busy before it gets a thread
+MAX_CLIENTS = 4
 # A request, from accepting the connection to closing the appliance, must
 # finish within this many seconds, or it is stopped: the panel gives up 120 s
 # after connecting and releases the VM, which may then be started.
@@ -344,6 +347,23 @@ def serve():
     class MyTCPServer(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
         address_family = socket.AF_INET6 if ":" in ADDRESS else socket.AF_INET
+        clients = threading.BoundedSemaphore(MAX_CLIENTS)
+
+        def process_request(self, request, client_address):
+            if not self.clients.acquire(blocking=False):
+                try:
+                    request.sendall(b'{"error": "gstfsd is busy with other changes: try again in a moment"}\n')
+                except OSError:
+                    pass
+                self.shutdown_request(request)
+                return
+            super().process_request(request, client_address)
+
+        def process_request_thread(self, request, client_address):
+            try:
+                super().process_request_thread(request, client_address)
+            finally:
+                self.clients.release()
 
     MyTCPServer((ADDRESS, PORT), MyTCPServerHandler).serve_forever()
     return 0
