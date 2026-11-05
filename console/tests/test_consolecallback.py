@@ -106,3 +106,10 @@ class AccessTests(DjangoTestCase):
             ownership.delete()
             self.assertFalse(cb.may_still_open(owner.pk, vm))
             self.assertFalse(cb.may_still_open(999999, vm))
+
+    def test_a_vm_deleted_since_the_connect_is_told_not_a_traceback(self):
+        cb = load()
+        with patch.object(cb.sys, "argv", ["consolecallback", "999999", "1"]), patch.object(cb, "say") as say, \
+                self.assertRaises(SystemExit):
+            cb.main()
+        say.assert_called_once_with("The VM is no longer in the panel")

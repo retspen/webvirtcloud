@@ -115,7 +115,10 @@ def main():
     if os.environ.get("CONSOLECALLBACK_LOG_FD"):
         log.addHandler(logging.StreamHandler(os.fdopen(int(os.environ["CONSOLECALLBACK_LOG_FD"]), "w", buffering=1)))
         log.propagate = False
-    instance = Instance.objects.select_related("compute").get(pk=int(sys.argv[1]))
+    instance = Instance.objects.select_related("compute").filter(pk=int(sys.argv[1])).first()
+    if instance is None:  # deleted since socketiod accepted the token
+        say("The VM is no longer in the panel")
+        sys.exit(1)
     user_id = int(sys.argv[2])
     c = instance.compute
     try:
