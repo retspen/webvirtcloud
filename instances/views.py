@@ -1417,6 +1417,11 @@ def add_existing_vol(request, pk):
         # an iSCSI volume's path is not the pool target plus its name
         source = conn_create.get_volume(name).path()
 
+    # a form sent twice would attach the file twice, and the VM would not start again
+    if source in {disk["path"] for disk in instance.disks + instance.config_disks}:
+        messages.error(request, _("%(volume)s is already a disk of this VM") % {"volume": name})
+        return _back(request, pk, "disks")
+
     target_dev = utils.get_new_disk_dev(
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
     )
@@ -2014,6 +2019,10 @@ def add_network(request, pk):
         messages.error(request, _("No network selected"))
         return _back(request, pk, "network")
     mac = request.POST.get("add-net-mac")
+    # the form fills in a random MAC: a form sent twice would add a second NIC with it
+    if mac and mac.lower() in {net["mac"].lower() for net in instance.networks + instance.config_networks}:
+        messages.error(request, _("The VM already has a network device with MAC %(mac)s") % {"mac": mac})
+        return _back(request, pk, "network")
     nwfilter = request.POST.get("add-net-nwfilter")
     (source, source_type) = utils.get_network_tuple(network)
     model = request.POST.get("add-net-model")
