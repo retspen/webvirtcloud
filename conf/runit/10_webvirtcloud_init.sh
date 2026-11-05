@@ -15,8 +15,8 @@ fi
 if [ -z "$SECRET_KEY" ]; then
     if [ ! -s "$DATA_DIR/secret_key" ]; then
         echo "* Generating fresh random SECRET_KEY..."
-        "$APP_DIR/venv/bin/python3" -c 'import secrets; print(secrets.token_urlsafe(50))' > "$DATA_DIR/secret_key"
-        chmod 600 "$DATA_DIR/secret_key"
+        # created private: not readable by others before a chmod
+        (umask 077 && "$APP_DIR/venv/bin/python3" -c 'import secrets; print(secrets.token_urlsafe(50))' > "$DATA_DIR/secret_key")
     fi
 fi
 
