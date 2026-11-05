@@ -1,12 +1,14 @@
 """Every {% bs_icon %} of the templates is in the committed icon cache
-(BS_ICONS_CACHE). A missing one is fetched from the CDN when a page is
-rendered, or shown as an error where the server has no internet access."""
+(webvirtcloud/bootstrap_icons.py): a missing one is an error page."""
 
 import re
 import unittest
 from pathlib import Path
 
 from django.conf import settings
+from django.template import Context, Template
+
+from webvirtcloud.bootstrap_icons import ICONS
 
 BASE = Path(settings.BASE_DIR)
 CALL = re.compile(r"\{%\s*bs_icon\s+(.*?)\s*%\}")
@@ -16,7 +18,7 @@ KWARG = re.compile(r"""(\w+)=['"]([^'"]*)['"]""")
 
 class IconCacheTestCase(unittest.TestCase):
     def test_every_template_icon_is_cached(self):
-        cache = Path(settings.BS_ICONS_CACHE)
+        cache = ICONS
         missing = []
         templates = [*BASE.glob("templates/**/*.html"), *BASE.glob("*/templates/**/*.html")]
         self.assertGreater(len(templates), 50)  # the globs still find the templates
@@ -25,8 +27,13 @@ class IconCacheTestCase(unittest.TestCase):
                 name = NAME.match(args)
                 self.assertIsNotNone(name, f"{template}: icon name is not a literal: {args}")
                 kw = dict(KWARG.findall(args))
-                # the file name django-bootstrap-icons uses for its cache
+                # the file name bs_icon reads
                 cached = f"{name.group(1)}_{kw.get('size')}_{kw.get('color')}_{kw.get('extra_classes')}.svg".replace(" ", "_")
                 if not (cache / cached).exists():
                     missing.append(f"{template.relative_to(BASE)}: {cached}")
         self.assertEqual(missing, [])
+
+    def test_an_icon_is_its_svg_inline(self):
+        html = Template("{% load bootstrap_icons %}{% bs_icon 'pencil' %}").render(Context())
+        self.assertEqual(html, (ICONS / "pencil_None_None_None.svg").read_text(encoding="utf-8"))
+        self.assertIn("<svg", html)
