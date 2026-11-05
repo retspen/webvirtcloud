@@ -16,7 +16,7 @@ from logs.audit import reason, write
 from operations.models import Operation
 from vrtManager.connection import other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
-from vrtManager.util import OperationError, message
+from vrtManager.util import ConnectionFailed, message
 
 from .models import Instance
 
@@ -52,8 +52,9 @@ def get_clone_free_names(size=10):
 def paths_used_on_other_computes(compute, own):
     """The paths in own that the VMs and volumes of the panel's other computes
     use (paths_in_use): shared storage holds a file at the same path on every
-    host that mounts it, as migration needs. OperationError naming a compute
-    that cannot be read: it might use them."""
+    host that mounts it, as migration needs. ConnectionFailed naming a compute
+    that cannot be read, which might use them: users who do not see hosts
+    learn only that a host cannot be reached."""
     used = set()
     host = wvmConnect(compute.hostname, compute.login, compute.password, compute.type).host_uuid()
     for other in Compute.objects.exclude(pk=compute.pk):
@@ -63,8 +64,8 @@ def paths_used_on_other_computes(compute, own):
                 continue  # the VM's own host under another record: its VM is the one going
             used |= conn.paths_in_use(own=own)
         except libvirtError as err:
-            raise OperationError(_("The disk files cannot be checked on %(host)s: %(err)s") % {
-                "host": other.name, "err": err.get_error_message()}) from err
+            raise ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: %(err)s"),
+                                   host=other.name, err=err) from err
     return used & set(own)
 
 
