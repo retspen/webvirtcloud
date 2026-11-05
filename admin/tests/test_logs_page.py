@@ -79,6 +79,16 @@ class LogsPageTests(TestCase):
         self.assertEqual([row[1] for row in values[1:]], ["mallory", "alice"])
         # a message starting with = stays text
         self.assertEqual(sheet.cell(row=2, column=6).data_type, "s")
+        # a bold header that stays in view, with filters over every row
+        self.assertEqual((sheet.freeze_panes, sheet.auto_filter.ref, sheet["A1"].font.b), ("A2", "A1:H3", True))
+
+    def test_the_workbook_is_written_row_by_row(self):
+        # openpyxl's write-only mode: a large download does not keep every cell in memory
+        from openpyxl import Workbook
+
+        with patch("instances.report.Workbook", wraps=Workbook) as book:
+            self.client.get(reverse("admin:logs_export"))
+        book.assert_called_once_with(write_only=True)
         page = self.page(q="alice", failed="1")
         self.assertEqual(page.xpath("//a[contains(@href, 'export')]/@href"),
                          [reverse("admin:logs_export") + "?q=alice&failed=1"])
