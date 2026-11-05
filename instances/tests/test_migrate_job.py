@@ -213,3 +213,18 @@ class MigrateJobTestCase(TransactionTestCase):
             proxy.return_value.instance.isActive.return_value = False
             get_kind(op.kind).cancel(op)
         proxy.return_value.instance.abortJob.assert_not_called()
+
+    def test_each_end_of_a_migration_leaves_one_logs_row(self):
+        from logs.models import Logs
+
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        get_kind(op.kind).run(op, ctx)  # migrate_instance writes its row
+        op.refresh_from_db()
+        self.assertIsNone(MigrateInstance().log_entry(op, Operation.SUCCEEDED))
+        self.assertEqual(Logs.objects.filter(instance_uuid=UUID).count(), 1)
+        # ended without migrate_instance: refused, cancelled while queued, or by recovery
+        queued = Operation(params={"instance": self.vm.pk, "target": self.dest.pk}, intent={"uuid": UUID},
+                           resource_label="mig-src/mig-vm")
+        self.assertEqual(MigrateInstance().log_entry(queued, Operation.CANCELLED),
+                         ("mig-src", "mig-vm", UUID, "VM mig-vm: migrate to mig-dst (cancelled)"))
