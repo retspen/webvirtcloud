@@ -4,12 +4,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.test import TransactionTestCase
 from django.urls import reverse
 
 from computes.models import Compute
 from operations.jobs import Context
 from operations.models import Claim, Operation, acquire
+from libvirt import libvirtError
 from storages.jobs import CloneVolume
 
 
@@ -72,3 +74,16 @@ class VolumeCloneJobTestCase(TransactionTestCase):
         self.assertEqual(CloneVolume().reconcile(op).state, Operation.FAILED)
         op.intent["created"] = "copy.qcow2"
         self.assertEqual(CloneVolume().reconcile(op).state, Operation.SUCCEEDED)
+
+    def test_the_worker_checks_the_user_and_the_name_again(self):
+        user = get_user_model().objects.get(username="vol_admin")
+        op = Operation(kind="volume.clone", user=user, intent={"target": "copy.qcow2"},
+                       params={"compute": self.compute.pk, "pool": "pool-a", "image": "base.qcow2", "name": "copy",
+                               "format": "", "prealloc": False})
+        CloneVolume().precheck(op, None)
+        self.stg.get_volumes.return_value = ["base.qcow2", "copy.qcow2"]  # made outside the panel meanwhile
+        with self.assertRaisesMessage(libvirtError, "Name of volume already in use"):
+            CloneVolume().precheck(op, None)
+        user.is_superuser = False
+        with self.assertRaises(PermissionDenied):
+            CloneVolume().precheck(op, None)

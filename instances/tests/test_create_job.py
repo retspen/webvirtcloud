@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import libvirt
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.test import TransactionTestCase
 
 from appsettings.settings import get_settings
@@ -114,3 +115,19 @@ class CreateJobTestCase(TransactionTestCase):
         self.assertEqual(CreateInstance().reconcile(op).state, Operation.FAILED)
         pool.listVolumes.return_value = ["api-vm.qcow2"]
         self.assertEqual(CreateInstance().reconcile(op).state, Operation.UNCERTAIN)
+
+    def test_the_worker_checks_the_user_and_the_name_again(self):
+        response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", BODY,
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        op = Operation.objects.get()
+        CreateInstance().precheck(op, None)
+        # a VM of that name found on a host meanwhile
+        self.conn.get_instances.return_value = ["api-vm"]
+        with self.assertRaisesMessage(libvirt.libvirtError, "A virtual machine with this name already exists"):
+            CreateInstance().precheck(op, None)
+        # the user is no longer a superuser
+        op.user.is_superuser = False
+        op.user.save()
+        with self.assertRaises(PermissionDenied):
+            CreateInstance().precheck(op, None)

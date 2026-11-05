@@ -51,6 +51,13 @@ class CloneVolume(Kind):
         if not user.is_superuser:
             raise PermissionDenied
 
+    def precheck(self, op, ctx):
+        if op.user is None or not op.user.is_active or not op.user.is_superuser:
+            raise PermissionDenied
+        # a volume made outside the panel since the job was queued may have taken the name
+        if op.intent["target"] in _storage(op.params)[1].get_volumes():
+            raise util.OperationError(gettext_noop("Name of volume already in use"))
+
     def plan(self, user, params):
         compute, stg = _storage(params)
         volumes = stg.get_volumes()
