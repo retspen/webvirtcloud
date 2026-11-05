@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 06:39+0000\n"
+"POT-Creation-Date: 2026-11-05 07:49+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -623,12 +623,17 @@ msgstr "OTP 已发送至 %(email)s"
 msgid "Email OTP"
 msgstr "邮件发送 OTP"
 
-#: accounts/views.py:349
+#: accounts/views.py:350
+#, python-format
+msgid "The OTP QR code could not be mailed to %(user)s: %(error)s"
+msgstr "无法将 OTP 二维码通过邮件发送给 %(user)s：%(error)s"
+
+#: accounts/views.py:354
 #, python-format
 msgid "OTP QR code was emailed to user %(user)s"
 msgstr "OTP 二维码已通过邮件发送给用户 %(user)s"
 
-#: accounts/views.py:353
+#: accounts/views.py:358
 msgid "User email not set, failed to send QR code"
 msgstr "未设置用户邮箱，无法发送二维码"
 

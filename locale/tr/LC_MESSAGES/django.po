@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 06:39+0000\n"
+"POT-Creation-Date: 2026-11-05 07:49+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -636,12 +636,17 @@ msgstr "OTP %(email)s ye gönderildi"
 msgid "Email OTP"
 msgstr "OTP E-Postası"
 
-#: accounts/views.py:349
+#: accounts/views.py:350
+#, python-format
+msgid "The OTP QR code could not be mailed to %(user)s: %(error)s"
+msgstr "OTP QR kodu %(user)s kullanıcısına e-postayla gönderilemedi: %(error)s"
+
+#: accounts/views.py:354
 #, python-format
 msgid "OTP QR code was emailed to user %(user)s"
 msgstr "OTP QR kodu %(user)s kullanıcısına gönderildi"
 
-#: accounts/views.py:353
+#: accounts/views.py:358
 msgid "User email not set, failed to send QR code"
 msgstr "Kullanıcı e-postası girilmemiş, QR kod gönderimi başarısız"
 

@@ -85,9 +85,9 @@ class AdminAccountRowTests(TestCase):
         with patch("accounts.views.send_email_with_otp") as send:
             self.client.post(url)
             send.assert_called_once()
-        with patch("accounts.views.send_email_with_otp", side_effect=SMTPException("refused")), \
-                self.assertRaises(SMTPException):
-            self.client.post(url)
+        with patch("accounts.views.send_email_with_otp", side_effect=SMTPException("refused")):
+            response = self.client.post(url, follow=True)
+        self.assertContains(response, "The OTP QR code could not be mailed to bob: refused")
         self.assertEqual(rows(), [
             ("User bob: mail OTP QR code: no email address", False),
             ("User bob: mail OTP QR code", True),

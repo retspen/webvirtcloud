@@ -401,6 +401,8 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 ## password associated with above email-id
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+# seconds an SMTP server may take to answer; without it a server that stops answering holds the request for good
+EMAIL_TIMEOUT = 10
 
 # LDAP Config
 #
