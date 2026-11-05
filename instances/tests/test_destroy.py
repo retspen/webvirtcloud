@@ -65,6 +65,20 @@ class DestroyOrderTestCase(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(proxy.get_volume_by_path.called, deleted)
 
+    def test_the_api_tells_which_disks_were_not_deleted(self):
+        with patch("instances.models.wvmInstance") as wvm:
+            proxy = wvm.return_value
+            proxy.instance.isActive.return_value = False
+            proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], ["/pool/shared.qcow2"])
+            proxy.backing_path.return_value = None
+            proxy.get_volume_by_path.return_value.delete.side_effect = libvirtError("Permission denied")
+            url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
+            response = self.client.delete(url, {"delete_disk": True}, content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "Instance is destroyed", "messages": [
+            "The VM is removed, but disk /pool/own.qcow2 was not deleted: Permission denied",
+            "Disk /pool/shared.qcow2 is used by another VM and was kept"]})
+
     def test_a_disk_file_that_stays_keeps_the_files_it_needs(self):
         # the overlay is not deleted: the file below it would leave it broken
         volumes = {}

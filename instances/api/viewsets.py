@@ -1,6 +1,7 @@
 from admin.permissions import IsSuperUser
 from computes import utils
 from computes.models import Compute
+from django.contrib.messages import get_messages
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -23,7 +24,7 @@ from operations.api.serializers import OperationSerializer
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from webvirtcloud.serializers import StatusSerializer
+from webvirtcloud.serializers import ActionStatusSerializer
 
 from .serializers import (
     CreateInstanceSerializer,
@@ -39,7 +40,9 @@ def instance_action_response(action, request, pk, message):
     response = action(request, pk)
     if response.status_code >= 400:
         return response
-    return Response({"status": message})
+    # the page's view reports a partial result (a disk that was kept) as a
+    # message for the page it redirects to: the API answers with them
+    return Response({"status": message, "messages": [str(m) for m in get_messages(request)]})
 
 
 class InstancesViewSet(viewsets.ViewSet):
@@ -121,14 +124,14 @@ class InstanceViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    @extend_schema(request=DestroyOptionsSerializer, responses=StatusSerializer)
+    @extend_schema(request=DestroyOptionsSerializer, responses=ActionStatusSerializer)
     def destroy(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="delete")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
         return instance_action_response(instance_destroy, request, pk, "Instance is destroyed")
 
-    @extend_schema(request=None, responses=StatusSerializer)
+    @extend_schema(request=None, responses=ActionStatusSerializer)
     @action(detail=True, methods=["post"])
     def poweron(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
@@ -138,7 +141,7 @@ class InstanceViewSet(viewsets.ViewSet):
             return Response({"status": "Templates cannot be started"}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(poweron, request, pk, "poweron command send")
 
-    @extend_schema(request=None, responses=StatusSerializer)
+    @extend_schema(request=None, responses=ActionStatusSerializer)
     @action(detail=True, methods=["post"])
     def poweroff(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
@@ -146,7 +149,7 @@ class InstanceViewSet(viewsets.ViewSet):
             raise Http404()
         return instance_action_response(poweroff, request, pk, "poweroff command send")
 
-    @extend_schema(request=None, responses=StatusSerializer)
+    @extend_schema(request=None, responses=ActionStatusSerializer)
     @action(detail=True, methods=["post"])
     def powercycle(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
@@ -156,7 +159,7 @@ class InstanceViewSet(viewsets.ViewSet):
             return Response({"status": "Templates cannot be started"}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(powercycle, request, pk, "powercycle command send")
 
-    @extend_schema(request=None, responses=StatusSerializer)
+    @extend_schema(request=None, responses=ActionStatusSerializer)
     @action(detail=True, methods=["post"])
     def forceoff(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
@@ -164,7 +167,7 @@ class InstanceViewSet(viewsets.ViewSet):
             raise Http404()
         return instance_action_response(force_off, request, pk, "force off command send")
 
-    @extend_schema(request=None, responses=StatusSerializer)
+    @extend_schema(request=None, responses=ActionStatusSerializer)
     @action(detail=True, methods=["post"])
     def suspend(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk)
@@ -172,7 +175,7 @@ class InstanceViewSet(viewsets.ViewSet):
             raise Http404()
         return instance_action_response(suspend, request, pk, "suspend command send")
 
-    @extend_schema(request=None, responses=StatusSerializer)
+    @extend_schema(request=None, responses=ActionStatusSerializer)
     @action(detail=True, methods=["post"])
     def resume(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk)
