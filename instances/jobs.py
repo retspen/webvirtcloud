@@ -519,7 +519,9 @@ class CloneInstance(Kind):
 
     def plan(self, user, params):
         instance = _clonable(user, params["instance"])
-        data, quota = clone_data(user, instance, params["fields"])
+        # the source once a request: a running VM's NICs read its guest agent, which may take its whole timeout
+        with instance.proxy.cached_reads():
+            data, quota = clone_data(user, instance, params["fields"])
         keys = vm_claims(instance.compute, data["name"])
         # the VM's definition is read again when the clone is defined
         keys[claims.instance_key(instance.uuid)] = Claim.EXCLUSIVE
