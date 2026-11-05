@@ -415,8 +415,10 @@ def drbd_status(request, pk):
                 text=True,
                 timeout=DRBD_STATUS_TIMEOUT,
             )
-        except subprocess.TimeoutExpired:
-            return result
+        except (subprocess.TimeoutExpired, OSError):
+            return _("Unknown")  # not "None DRBD": the compute did not tell
+        if remoteDrbdStatus.returncode != 0:
+            return _("Unknown")
 
         # the VM's resources are its name or its name_SUFFIX, at the start of a line
         instanceFindDrbd = re.compile(
