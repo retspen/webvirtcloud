@@ -1,5 +1,6 @@
 """VM clone runs as a job: the page queues it, the worker clones and records it."""
 
+import contextlib
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -123,6 +124,24 @@ class CloneJobTestCase(TransactionTestCase):
                                     {"name": "copy", "disk-vda": "copy.qcow2", "clone-net-mac-0": "52:54:00:00:00:01",
                                      "submission_key": "key-clone003", "clone-vcpu": "\u00b2"})
         self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Enter a whole number of vCPUs for the clone"])
+
+    def test_the_form_reads_the_vm_in_one_cached_reads_block(self):
+        inside, reads = [], []
+
+        @contextlib.contextmanager
+        def cached_reads():
+            inside.append(True)
+            yield self.proxy
+            inside.pop()
+
+        self.proxy.cached_reads = cached_reads
+        disks = self.proxy.get_disk_devices.return_value
+        self.proxy.get_disk_devices.side_effect = lambda *args, **kwargs: reads.append(bool(inside)) or disks
+        self.client.post(reverse("instances:clone", args=[self.source.pk]),
+                         {"name": "copy", "disk-vda": "copy.qcow2", "clone-net-mac-0": "52:54:00:00:00:01",
+                          "submission_key": "key-clone004"})
+        self.assertTrue(Operation.objects.exists())
+        self.assertEqual(reads, [True])
 
     def test_a_clone_that_cannot_start_is_made_with_a_warning(self):
         self.proxy.start.side_effect = libvirt.libvirtError("no memory")
