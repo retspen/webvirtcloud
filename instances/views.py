@@ -46,6 +46,7 @@ from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA,
                      VIR_DOMAIN_UNDEFINE_NVRAM,
                      VIR_DOMAIN_XML_INACTIVE,
+                     VIR_ERR_NO_DOMAIN,
                      VIR_ERR_NO_SUPPORT,
                      libvirtError)
 from logs.audit import audit, audit_vm, changed_fields, failed_vm
@@ -264,6 +265,14 @@ def instance(request, pk):
         else:
             msg = _("The host of '%(name)s' cannot be reached right now.") % {"name": instance.name}
         messages.error(request, msg + _(" Jobs on it can be followed under Jobs in the menu."))
+        return redirect(reverse("instances:index"))
+    try:
+        instance.proxy
+    except libvirtError as err:
+        if err.get_error_code() != VIR_ERR_NO_DOMAIN:
+            raise
+        # removed outside the panel: the list's sync forgets its record
+        messages.error(request, _("'%(name)s' is no longer on its host.") % {"name": instance.name})
         return redirect(reverse("instances:index"))
     # The page only reads the VM, and its getters read the same XML some 30
     # times: libvirt is asked once per kind of XML.

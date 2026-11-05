@@ -1,10 +1,13 @@
-"""The VM page reads the user's rights from the VM's own record."""
+"""The VM page reads the user's rights from the VM's own record, and a VM
+removed outside the panel sends the user back to the list."""
 
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
+from libvirt import VIR_ERR_NO_DOMAIN, libvirtError
 
 from accounts.models import UserInstance
 from computes.models import Compute
@@ -42,3 +45,10 @@ class VmPageRecordsTestCase(TestCase):
         response = self.page()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["userinstance"].instance, self.vm)
+
+    def test_a_vm_removed_outside_the_panel_sends_the_user_to_the_list(self):
+        error = libvirtError("Domain not found")
+        error.get_error_code = lambda: VIR_ERR_NO_DOMAIN
+        response = self.page(wvm_error=error)
+        self.assertRedirects(response, reverse("instances:index"), fetch_redirect_response=False)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["'web' is no longer on its host."])
