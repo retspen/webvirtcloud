@@ -15,6 +15,9 @@ try:
     from libvirt import (
         VIR_DOMAIN_AFFECT_CONFIG,
         VIR_DOMAIN_AFFECT_LIVE,
+        VIR_DOMAIN_STATS_BLOCK,
+        VIR_DOMAIN_STATS_CPU_TOTAL,
+        VIR_DOMAIN_STATS_INTERFACE,
         VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
         VIR_DOMAIN_PAUSED,
         VIR_DOMAIN_RUNNING,
@@ -92,6 +95,7 @@ HOST_DEVICES = "devices/hostdev | devices/interface[@type='hostdev'] | devices/i
 SNAPSHOT_NAME = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}")
 # the longest window wvmInstance.usage() averages over
 USAGE_MAX_WINDOW = 30
+USAGE_STATS = VIR_DOMAIN_STATS_CPU_TOTAL | VIR_DOMAIN_STATS_BLOCK | VIR_DOMAIN_STATS_INTERFACE
 # seconds the guest agent has to set a password or add a key
 AGENT_TIMEOUT = 10
 # A running VM is cloned with a push backup that keeps the VM alive when the
@@ -1434,15 +1438,24 @@ class wvmInstance(wvmConnect):
             }
 
         key = [self.instance.ID(), self.host_info[2], disks, nics]
-        unread = (-1,) * 8
+        unread = [-1, -1]
 
         def read():
-            blocks = [self.instance.blockStats(dev) for dev in disks]
-            links = [self.instance.interfaceStats(target) if target else unread for _, target in nics]
+            # one call for the CPU time and every disk's and NIC's counters
+            [(_dom, stats)] = self.wvm.domainListGetStats([self.instance], USAGE_STATS)
+
+            def counters(kind, names):
+                """{device name: [its counters]} of stats' kind (block, net); -1 for one not reported."""
+                return {stats.get(f"{kind}.{i}.name"): [stats.get(f"{kind}.{i}.{name}", -1) for name in names]
+                        for i in range(stats.get(f"{kind}.count", 0))}
+
+            blocks = counters("block", ("rd.bytes", "wr.bytes"))
+            links = counters("net", ("rx.bytes", "tx.bytes"))
             return [
-                self.instance.info()[4],
-                [[stats[1], stats[3]] for stats in blocks],
-                [[stats[0], stats[4]] for stats in links],
+                # a driver without these stats (libvirt's test driver) still has info()
+                stats["cpu.time"] if "cpu.time" in stats else self.instance.info()[4],
+                [blocks.get(dev, unread) for dev in disks],
+                [links.get(target, unread) if target else unread for _, target in nics],
                 time.monotonic(),
             ]
 

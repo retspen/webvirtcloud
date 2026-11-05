@@ -4,6 +4,7 @@ devices; otherwise over one second. The stats view runs in a sync worker,
 polled every 5 s by each open VM page."""
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.conf import settings
@@ -40,20 +41,24 @@ class FakeDomain:
     def info(self):
         return [self.state, 0, 0, 2, int(self.now() * 500_000_000)]  # 0.5 s of CPU time per second
 
-    def blockStats(self, dev):
-        n = {"vda": 1, "vdb": 2}[dev]  # disks are read by target name
-        written = -1 if self.unsupported and dev == "vdb" else int(self.now() * n * 3000)
-        return (0, int(self.now() * n * 1000), 0, written, 0)
-
-    def interfaceStats(self, dev):
-        assert dev == "vnet0"
-        return (int(self.now() * 100), 0, 0, 0, int(self.now() * 50), 0, 0, 0)
+    def stats(self):
+        """domainListGetStats' counters: disks and NICs by name, as libvirt
+        lists them (the CD-ROM too); a counter the host does not report is left out."""
+        stats = {"cpu.time": int(self.now() * 500_000_000), "block.count": 3, "net.count": 1}  # 0.5 s of CPU a second
+        for i, (name, n) in enumerate((("vda", 1), ("vdb", 2), ("sda", 0))):
+            stats[f"block.{i}.name"] = name
+            stats[f"block.{i}.rd.bytes"] = int(self.now() * n * 1000)
+            if not (self.unsupported and name == "vdb"):
+                stats[f"block.{i}.wr.bytes"] = int(self.now() * n * 3000)
+        stats.update({"net.0.name": "vnet0", "net.0.rx.bytes": int(self.now() * 100), "net.0.tx.bytes": int(self.now() * 50)})
+        return stats
 
 
 def instance(state, clock):
     proxy = wvmInstance.__new__(wvmInstance)  # no connection: only these calls
     proxy._read_cache = None
     proxy.instance = FakeDomain(state, clock)
+    proxy.wvm = SimpleNamespace(domainListGetStats=lambda doms, kinds: [(doms[0], doms[0].stats())])
     proxy._XMLDesc = lambda flags: XML
     proxy.host_info = ["x86_64", 0, 4]  # 4 host CPUs
     proxy.get_status = lambda: state
@@ -151,7 +156,8 @@ class UsageTestCase(unittest.TestCase):
 
         def restart(seconds):
             real_sleep(seconds)
-            domain.info = lambda: [1, 0, 0, 2, 0]  # CPU time starts over
+            counters = domain.stats
+            domain.stats = lambda: {**counters(), "cpu.time": 0}  # CPU time starts over
 
         self.time.sleep.side_effect = restart
         result = proxy.usage()
