@@ -90,7 +90,7 @@ def console(request, compute_id, uuid):
         return render(request, "console-error.html", {"instance": instance, "console_error": console_error})
 
     # the console daemons' credential for this page
-    token = tokens.SIGNER.sign(f"{compute_id}:{uuid}:{request.user.id}")
+    token = tokens.sign(compute_id, uuid, request.user.id, console_type)
     if console_type == "pty":
         return render(request, "console-xterm.html", {"instance": instance, "token": token})
 

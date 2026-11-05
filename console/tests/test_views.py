@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from computes.models import Compute
+from console import tokens
 from console.views import LAYOUTS_DIR
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -96,7 +97,7 @@ class ConsoleViewsTestCase(TestCase):
         signer = TimestampSigner(salt="console.novnc")
         unsigned = signer.unsign(config["token"], max_age=120)
         self.assertEqual(
-            unsigned, f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}"
+            unsigned, f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}:vnc"
         )
         self.assertEqual(config["password"], "vncsecret")
 
@@ -130,7 +131,7 @@ class ConsoleViewsTestCase(TestCase):
         # the page's credential for socketiod, as data
         signed = json.loads(html.fromstring(response.content).get_element_by_id("serial-token").text)
         self.assertEqual(TimestampSigner(salt="console.novnc").unsign(signed),
-                         f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}")
+                         f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}:pty")
 
     @override_settings(SERIAL_CONSOLE_ENABLED=False)
     @patch("console.views.wvmInstance")
@@ -227,7 +228,7 @@ class ConsoleViewsTestCase(TestCase):
 
         signed = vnc_config(response)["token"]
         self.assertEqual(TimestampSigner(salt="console.novnc").unsign(signed),
-                         f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}")
+                         f"{self.compute.id}:{self.instance.uuid}:{self.admin_user.id}:vnc")
 
     @patch("console.views.wvmInstance")
     def test_a_shut_off_vm_says_so(self, mock_wvm):
@@ -405,6 +406,9 @@ class NovncdDaemonLogicTestCase(TestCase):
     def setUp(self):
         self.get_parser = novncd_mod.get_parser
         self.ConsoleClient = novncd_mod.ConsoleClient
+        patcher = patch.object(novncd_mod, "authorize", return_value=(MagicMock(), MagicMock()))
+        self.authorize = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_novncd_parser_defaults(self):
         parser = self.get_parser()
@@ -431,7 +435,7 @@ class NovncdDaemonLogicTestCase(TestCase):
         handler.msg = MagicMock()
         handler.do_proxy = MagicMock()
         handler._new_client(socket_factory=MagicMock())
-        mock_get_info.assert_called_once_with("1-uuid-of-this-tab")
+        self.authorize.assert_called_once_with("1-uuid-of-this-tab", "vnc")
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_compatibility_mixin_token_from_query_params(self, mock_get_info):
@@ -453,7 +457,7 @@ class NovncdDaemonLogicTestCase(TestCase):
         socket_factory = MagicMock()
         handler._new_client(socket_factory=socket_factory)
 
-        mock_get_info.assert_called_once_with("1-uuid-from-query")
+        self.authorize.assert_called_once_with("1-uuid-from-query", "vnc")
         # the address the console listens on
         socket_factory.assert_called_once_with("192.168.1.50", 5901, connect=True)
 
@@ -539,18 +543,14 @@ class NovncdDaemonLogicTestCase(TestCase):
         socket_factory.assert_not_called()
         self.assertIn("without a token", log.output[0])
 
-    @patch("console.tokens.authorize")
     @patch("vrtManager.instance.wvmInstance")
-    def test_get_connection_infos_valid_signed_token(self, mock_wvm, mock_inst_get):
-        User = get_user_model()
-        user = User.objects.filter(is_superuser=True).first()
+    def test_get_connection_infos_reads_the_vm_it_was_given(self, mock_wvm):
         mock_instance = MagicMock()
         mock_instance.compute.hostname = "127.0.0.1"
         mock_instance.compute.login = "root"
         mock_instance.compute.password = ""
         mock_instance.compute.type = 1
         mock_instance.name = "test-vm"
-        mock_inst_get.return_value = (mock_instance, user)
 
         mock_conn = MagicMock()
         mock_conn.get_console_listener_addr.return_value = "127.0.0.1"
@@ -558,22 +558,38 @@ class NovncdDaemonLogicTestCase(TestCase):
         mock_conn.get_console_socket.return_value = None
         mock_wvm.return_value = mock_conn
 
-        signer = TimestampSigner(salt="console.novnc")
-        token = signer.sign(f"1:test-uuid:{user.id}")
-
-        infos = novncd_mod.get_connection_infos(token)
+        infos = novncd_mod.get_connection_infos(mock_instance)
         self.assertEqual(infos[0], "127.0.0.1")
         self.assertEqual(infos[4], 5900)
         # the VM access was checked for, not whichever VM has its name now
         self.assertEqual(mock_wvm.call_args.kwargs["uuid"], mock_instance.uuid)
 
+    def test_a_vnc_session_ends_when_its_user_may_no_longer_open_it(self):
+        tsock, ended = MagicMock(), MagicMock()
+        ended.wait.return_value = False  # ACCESS_CHECK passed, the session still open
+        vm = MagicMock()
+        with patch.object(novncd_mod, "may_still_open", side_effect=[True, False]) as may_still_open:
+            novncd_mod.end_when_refused(vm, 7, tsock, ended)
+        self.assertEqual(may_still_open.call_count, 2)
+        may_still_open.assert_called_with(7, vm)
+        tsock.shutdown.assert_called_once_with(novncd_mod.socket.SHUT_RDWR)
+
+    def test_a_token_of_a_serial_console_does_not_open_a_vnc_console(self):
+        user = get_user_model().objects.create_user("vnc-owner", password="pw")
+        compute = Compute.objects.create(name="novnc-type-compute", hostname="127.0.0.1", login="root", password="", type=1)
+        instance = Instance.objects.create(compute=compute, name="novnc-type-vm", uuid="77777777-7777-7777-7777-777777777777")
+        UserInstance.objects.create(instance=instance, user=user)
+        self.assertEqual(tokens.authorize(tokens.sign(compute.id, instance.uuid, user.id, "vnc"), "vnc"), (instance, user))
+        with self.assertRaises(PermissionError):
+            tokens.authorize(tokens.sign(compute.id, instance.uuid, user.id, "pty"), "vnc")
+
     @patch("sys.argv", ["novncd"])
     @override_settings(DEBUG=False)
-    def test_get_connection_infos_invalid_token_in_production(self):
+    def test_vnc_token_invalid_token_in_production(self):
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos("invalid-raw-token")
+            tokens.authorize("invalid-raw-token", "vnc")
 
-    def test_get_connection_infos_unauthorized_user(self):
+    def test_vnc_token_unauthorized_user(self):
         User = get_user_model()
         unauthorized_user = User.objects.create_user(
             username="unauthorized_console_user",
@@ -592,13 +608,12 @@ class NovncdDaemonLogicTestCase(TestCase):
             uuid="33333333-3333-3333-3333-333333333333",
         )
 
-        signer = TimestampSigner(salt="console.novnc")
-        token = signer.sign(f"{compute.id}:{instance.uuid}:{unauthorized_user.id}")
+        token = tokens.sign(compute.id, instance.uuid, unauthorized_user.id, "vnc")
 
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos(token)
+            tokens.authorize(token, "vnc")
 
-    def test_get_connection_infos_rejects_signed_token_without_user(self):
+    def test_vnc_token_rejects_signed_token_without_user(self):
         # The console view always signs host:uuid:user_id; a token without the
         # user part would skip the per-user access check entirely.
         compute = Compute.objects.create(
@@ -613,9 +628,9 @@ class NovncdDaemonLogicTestCase(TestCase):
         token = signer.sign(f"{compute.id}:{instance.uuid}")
 
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos(token)
+            tokens.authorize(token, "vnc")
 
-    def test_get_connection_infos_rejects_unsigned_token_even_under_test_runner(self):
+    def test_vnc_token_rejects_unsigned_token_even_under_test_runner(self):
         # sys.argv contains "test" while this suite runs; production code must
         # not change behaviour based on that.
         compute = Compute.objects.create(
@@ -628,9 +643,9 @@ class NovncdDaemonLogicTestCase(TestCase):
         )
 
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos(f"{compute.id}-{instance.uuid}")
+            tokens.authorize(f"{compute.id}-{instance.uuid}", "vnc")
 
-    def test_get_connection_infos_view_instances_user_is_not_enough(self):
+    def test_vnc_token_view_instances_user_is_not_enough(self):
         User = get_user_model()
         viewer = User.objects.create_user(username="novnc_viewer", password="password")
         viewer.user_permissions.add(Permission.objects.get(codename="view_instances"))
@@ -643,13 +658,12 @@ class NovncdDaemonLogicTestCase(TestCase):
             uuid="55555555-5555-5555-5555-555555555555",
         )
 
-        signer = TimestampSigner(salt="console.novnc")
-        token = signer.sign(f"{compute.id}:{instance.uuid}:{viewer.id}")
+        token = tokens.sign(compute.id, instance.uuid, viewer.id, "vnc")
 
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos(token)
+            tokens.authorize(token, "vnc")
 
-    def test_get_connection_infos_inactive_user(self):
+    def test_vnc_token_inactive_user(self):
         User = get_user_model()
         inactive_user = User.objects.create_user(
             username="inactive_console_user",
@@ -670,20 +684,19 @@ class NovncdDaemonLogicTestCase(TestCase):
         )
         UserInstance.objects.create(instance=instance, user=inactive_user)
 
-        signer = TimestampSigner(salt="console.novnc")
-        token = signer.sign(f"{compute.id}:{instance.uuid}:{inactive_user.id}")
+        token = tokens.sign(compute.id, instance.uuid, inactive_user.id, "vnc")
 
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos(token)
+            tokens.authorize(token, "vnc")
 
     @patch("sys.argv", ["novncd"])
     @override_settings(DEBUG=True)
-    def test_get_connection_infos_debug_true_does_not_bypass(self):
+    def test_vnc_token_debug_true_does_not_bypass(self):
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos("invalid-token-in-debug")
+            tokens.authorize("invalid-token-in-debug", "vnc")
 
     @patch("sys.argv", ["novncd"])
-    def test_get_connection_infos_expired_token(self):
+    def test_vnc_token_expired_token(self):
         User = get_user_model()
         user = User.objects.filter(is_superuser=True).first()
         compute = Compute.objects.create(
@@ -703,8 +716,7 @@ class NovncdDaemonLogicTestCase(TestCase):
         from unittest.mock import patch
         # Sign token 300 seconds in the past (> 120s TTL)
         with patch("time.time", return_value=time.time() - 300):
-            signer = TimestampSigner(salt="console.novnc")
-            expired_token = signer.sign(f"{compute.id}:{instance.uuid}:{user.id}")
+            expired_token = tokens.sign(compute.id, instance.uuid, user.id, "vnc")
 
         with self.assertRaises(PermissionError):
-            novncd_mod.get_connection_infos(expired_token)
+            tokens.authorize(expired_token, "vnc")
