@@ -25,7 +25,7 @@ from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 from console.sshtunnels import open_tunnel, tunnel_target  # noqa: E402
 from console.tokens import ACCESS_CHECK, authorize, may_still_open, session_user_id  # noqa: E402
 from logs.audit import write  # noqa: E402
-from vrtManager.connection import CONN_SOCKET, CONN_SSH  # noqa: E402
+from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONNECT_TIMEOUT  # noqa: E402
 from vrtManager.util import is_loopback  # noqa: E402
 from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
 
@@ -77,6 +77,14 @@ def get_connection_infos(instance):
 
 
 WILDCARD = (None, "", "0.0.0.0", "::")
+
+
+def bounded_connect(host, port, connect=True):
+    """A connection to a VNC server, in place of websockify's socket(), which
+    waits for one that does not answer as long as the OS does (some 2 minutes)."""
+    tsock = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT)
+    tsock.settimeout(None)  # a console may stay quiet for long once connected
+    return tsock
 
 
 def client_address(value):
@@ -178,7 +186,7 @@ class ConsoleProxyHandler(ProxyRequestHandler, ConsoleClient):
         self.log_message(*args, **kwargs)
 
     def new_websocket_client(self):
-        self._new_client(self.server.socket)
+        self._new_client(bounded_connect)
 
 
 if __name__ == "__main__":
