@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 13:37+0000\n"
+"POT-Creation-Date: 2026-11-05 14:27+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -314,19 +314,6 @@ msgstr "İptal"
 msgid "Change password"
 msgstr "Parolayı değiştir"
 
-#: accounts/templates/accounts/email/otp.html:2
-#, python-format
-msgid ""
-"\n"
-"Scan this QR code to get OTP for account '%(user)s'\n"
-msgstr ""
-"\n"
-"'%(user)s' hesabı için bu OTP QR kodunu tarayın\n"
-
-#: accounts/templates/accounts/email/otp.html:7
-msgid "Some e-mail clients does not render SVG, also generating PNG."
-msgstr "Bazı e-posta istemcileri SVG göstermez, PNG de oluşturuluyor."
-
 #: accounts/templates/accounts/email_otp_form.html:12
 msgid ""
 "\n"
@@ -407,6 +394,16 @@ msgstr "Doğrula ve oturum aç"
 #: accounts/templates/accounts/otp_login.html:67
 msgid "2FA Protection Active"
 msgstr "2FA Koruması Etkin"
+
+#: accounts/templates/accounts/otp_qr.html:4
+#: accounts/templates/accounts/otp_qr.html:6 accounts/utils.py:70
+msgid "OTP QR Code"
+msgstr "OTP QR Kodu"
+
+#: accounts/templates/accounts/otp_qr.html:11
+#, python-format
+msgid "Scan this QR code to get OTP for account '%(user)s'"
+msgstr "'%(user)s' hesabının OTP kodlarını almak için bu QR kodunu tarayın"
 
 #: accounts/templates/api_token_created.html:4
 #: accounts/templates/api_token_created.html:5
@@ -526,7 +523,7 @@ msgid "Add"
 msgstr "Ekle"
 
 #: accounts/templates/profile.html:64 accounts/templates/profile.html:70
-#: accounts/views.py:69 accounts/views.py:73
+#: accounts/views.py:70 accounts/views.py:74
 msgid "Create an API token"
 msgstr "API anahtarı oluştur"
 
@@ -556,97 +553,100 @@ msgstr "%(name)s SSH anahtarı için işlemler"
 msgid "No SSH keys."
 msgstr "SSH anahtarı yok."
 
-#: accounts/utils.py:65
-msgid "OTP QR Code"
-msgstr "OTP QR Kodu"
+#: accounts/utils.py:71
+#, python-format
+msgid ""
+"Open this link within an hour to see the OTP QR code of account '%(user)s':\n"
+"\n"
+"%(url)s"
+msgstr ""
+"'%(user)s' hesabının OTP QR kodunu görmek için bu bağlantıyı bir saat içinde açın:\n"
+"\n"
+"%(url)s"
 
-#: accounts/utils.py:66
-msgid "Please view HTML version of this message."
-msgstr "Lütfen bu mesajın HTML sürümünü görüntüleyin."
-
-#: accounts/views.py:46
+#: accounts/views.py:47
 msgid "Profile updated"
 msgstr "Profil güncellendi"
 
-#: accounts/views.py:72
+#: accounts/views.py:73
 #, python-format
 msgid "A user has at most %(limit)s API tokens: delete one first."
 msgstr ""
 "Bir kullanıcının en fazla %(limit)s API anahtarı olabilir: önce birini silin."
 
-#: accounts/views.py:107
+#: accounts/views.py:108
 msgid "API token deleted"
 msgstr "API anahtarı silindi"
 
-#: accounts/views.py:115
+#: accounts/views.py:116
 msgid "Delete API token"
 msgstr "API anahtarını sil"
 
-#: accounts/views.py:116
+#: accounts/views.py:117
 msgid "Scripts and tools that use it can no longer reach the API."
 msgstr "Onu kullanan betikler ve araçlar artık API'ye erişemez."
 
-#: accounts/views.py:126
+#: accounts/views.py:127
 msgid "SSH key added"
 msgstr "SSH anahtarı eklendi"
 
-#: accounts/views.py:134
+#: accounts/views.py:135
 msgid "Add SSH key"
 msgstr "SSH Anahtarı Ekle"
 
-#: accounts/views.py:155
+#: accounts/views.py:156
 msgid "SSH key deleted"
 msgstr "SSH anahtarı silindi"
 
-#: accounts/views.py:163
+#: accounts/views.py:164
 msgid "Delete SSH key"
 msgstr "SSH anahtarı sil"
 
-#: accounts/views.py:164
+#: accounts/views.py:165
 msgid ""
 "VMs that already have it keep it; VMs created from now on do not get it."
 msgstr ""
 "Ona zaten sahip olan sanal makinelerde kalır; bundan sonra oluşturulan sanal "
 "makinelere eklenmez."
 
-#: accounts/views.py:212
+#: accounts/views.py:213
 msgid "Password Changed"
 msgstr "Parola Değişti"
 
-#: accounts/views.py:241
+#: accounts/views.py:242
 msgid "Create User Instance"
 msgstr "Yeni Kullanıcı Sanal Makinesi Oluştur"
 
-#: accounts/views.py:275
+#: accounts/views.py:276
 msgid "Update User Instance"
 msgstr "Kullanıcı Sanal Makinesini Güncelle"
 
-#: accounts/views.py:293
+#: accounts/views.py:294
 msgid "The user loses access to this VM; the VM itself is not changed."
 msgstr ""
 "Kullanıcı bu sanal makineye erişimini kaybeder; sanal makinenin kendisi "
 "değişmez."
 
-#: accounts/views.py:326
+#: accounts/views.py:327
 #, python-format
 msgid "OTP Sent to %(email)s"
 msgstr "OTP %(email)s ye gönderildi"
 
-#: accounts/views.py:335
+#: accounts/views.py:336
 msgid "Email OTP"
 msgstr "OTP E-Postası"
 
-#: accounts/views.py:350
+#: accounts/views.py:370
 #, python-format
 msgid "The OTP QR code could not be mailed to %(user)s: %(error)s"
 msgstr "OTP QR kodu %(user)s kullanıcısına e-postayla gönderilemedi: %(error)s"
 
-#: accounts/views.py:354
+#: accounts/views.py:374
 #, python-format
 msgid "OTP QR code was emailed to user %(user)s"
 msgstr "OTP QR kodu %(user)s kullanıcısına gönderildi"
 
-#: accounts/views.py:358
+#: accounts/views.py:378
 msgid "User email not set, failed to send QR code"
 msgstr "Kullanıcı e-postası girilmemiş, QR kod gönderimi başarısız"
 
@@ -2699,57 +2699,57 @@ msgstr ""
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "Sanal makine adı özel karakterler içeremez"
 
-#: instances/jobs.py:68
+#: instances/jobs.py:69
 msgid "The VM moved to another compute after the job was queued"
 msgstr "İş kuyruğa alındıktan sonra sanal makine başka bir sunucuya taşındı"
 
-#: instances/jobs.py:136
+#: instances/jobs.py:137
 msgid "Enter a whole number of vCPUs for the clone"
 msgstr "Klon için vCPU sayısını tam sayı olarak girin"
 
-#: instances/jobs.py:138
+#: instances/jobs.py:139
 msgid "Enter a whole number of memory (MiB) for the clone"
 msgstr "Klon için belleği (MiB) tam sayı olarak girin"
 
-#: instances/jobs.py:165
+#: instances/jobs.py:166
 msgid "Choose the clone's name from the list of free names"
 msgstr "Klonun adını boş adlar listesinden seçin"
 
-#: instances/jobs.py:193
+#: instances/jobs.py:194
 #, python-format
 msgid "%(quota)s: cannot create '%(clone_name)s'."
 msgstr "%(quota)s: '%(clone_name)s' oluşturulamıyor."
 
-#: instances/jobs.py:196 instances/jobs.py:545
+#: instances/jobs.py:197 instances/jobs.py:546
 #, python-format
 msgid "Instance '%(clone_name)s' already exists!"
 msgstr "'%(clone_name)s' sanal makinesi zaten mevcut!"
 
-#: instances/jobs.py:198
+#: instances/jobs.py:199
 #, python-format
 msgid "Instance name '%(clone_name)s' contains invalid characters!"
 msgstr "Sanal makine adı '%(clone_name)s' geçersiz karakterler içermektedir!"
 
-#: instances/jobs.py:201
+#: instances/jobs.py:202
 #, python-format
 msgid "Instance MAC '%(clone_mac)s' invalid format!"
 msgstr "Sanal makine MAC adresi '%(clone_mac)s' geçersiz biçemde belirtilmiş!"
 
-#: instances/jobs.py:203
+#: instances/jobs.py:204
 #, python-format
 msgid "Disk name '%(disk_name)s' contains invalid characters!"
 msgstr "Disk adı '%(disk_name)s' geçersiz karakterler içeriyor!"
 
-#: instances/jobs.py:223
+#: instances/jobs.py:224
 #, python-format
 msgid "The clone is made, but not as asked: %(error)s"
 msgstr "Klon oluşturuldu, ama istendiği gibi değil: %(error)s"
 
-#: instances/jobs.py:279
+#: instances/jobs.py:280
 msgid "The VM was not defined and no volume of it was left."
 msgstr "Sanal makine tanımlanmadı ve ondan geriye birim kalmadı."
 
-#: instances/jobs.py:281
+#: instances/jobs.py:282
 #, python-format
 msgid ""
 "The VM was not defined; check these volumes, then resolve this job: "
@@ -2758,28 +2758,28 @@ msgstr ""
 "Sanal makine tanımlanmadı; şu birimleri kontrol edin, sonra bu işi çözün: "
 "%(volumes)s"
 
-#: instances/jobs.py:302
+#: instances/jobs.py:303
 msgid "Delete snapshot"
 msgstr "Anlık görüntüyü sil"
 
-#: instances/jobs.py:312 vrtManager/instance.py:2286
+#: instances/jobs.py:313 vrtManager/instance.py:2286
 #, python-format
 msgid "The VM has no external snapshot named %(name)s"
 msgstr "Sanal makinede %(name)s adında harici anlık görüntü yok"
 
-#: instances/jobs.py:325
+#: instances/jobs.py:326
 msgid "Merging the snapshot"
 msgstr "Anlık görüntü birleştiriliyor"
 
-#: instances/jobs.py:344
+#: instances/jobs.py:345
 msgid "The VM is no longer on its compute"
 msgstr "Sanal makine artık kendi sunucusunda değil"
 
-#: instances/jobs.py:347
+#: instances/jobs.py:348
 msgid "libvirt is still merging the snapshot"
 msgstr "libvirt anlık görüntüyü hâlâ birleştiriyor"
 
-#: instances/jobs.py:355
+#: instances/jobs.py:356
 msgid ""
 "The snapshot is still listed and no merge runs. It cannot be told whether the"
 " disks changed; check the VM before deleting the snapshot again or reverting "
@@ -2789,44 +2789,44 @@ msgstr ""
 "değişmediği bilinemiyor; anlık görüntüyü yeniden silmeden ya da ona dönmeden "
 "önce sanal makineyi kontrol edin."
 
-#: instances/jobs.py:362
+#: instances/jobs.py:363
 msgid "The VM is no longer on the compute the job ran on"
 msgstr "Sanal makine artık işin çalıştığı sunucuda değil"
 
-#: instances/jobs.py:368
+#: instances/jobs.py:369
 msgid "Take snapshot"
 msgstr "Anlık görüntü al"
 
-#: instances/jobs.py:380 vrtManager/instance.py:1882
+#: instances/jobs.py:381 vrtManager/instance.py:1882
 #, python-format
 msgid "A snapshot named %(name)s already exists"
 msgstr "%(name)s adında bir anlık görüntü zaten var"
 
-#: instances/jobs.py:392
+#: instances/jobs.py:393
 msgid "Taking the snapshot"
 msgstr "Anlık görüntü alınıyor"
 
-#: instances/jobs.py:405
+#: instances/jobs.py:406
 msgid "libvirt is still taking the snapshot"
 msgstr "libvirt anlık görüntüyü hâlâ alıyor"
 
-#: instances/jobs.py:408
+#: instances/jobs.py:409
 msgid "The snapshot was not taken"
 msgstr "Anlık görüntü alınmadı"
 
-#: instances/jobs.py:431
+#: instances/jobs.py:432
 msgid "Revert snapshot"
 msgstr "Snapshota dön"
 
-#: instances/jobs.py:462
+#: instances/jobs.py:463
 msgid "Reverting the VM"
 msgstr "Sanal makine geri döndürülüyor"
 
-#: instances/jobs.py:473
+#: instances/jobs.py:474
 msgid "libvirt is still reverting the VM"
 msgstr "libvirt sanal makineyi hâlâ geri döndürüyor"
 
-#: instances/jobs.py:477
+#: instances/jobs.py:478
 msgid ""
 "It cannot be told whether the VM was reverted; check it, then revert again or"
 " resolve this job."
@@ -2834,12 +2834,12 @@ msgstr ""
 "Sanal makinenin geri döndürülüp döndürülmediği bilinemiyor; kontrol edin, "
 "sonra yeniden geri döndürün ya da bu işi çözün."
 
-#: instances/jobs.py:494
+#: instances/jobs.py:495
 msgid "The VM must be running, paused or shut off to be cloned"
 msgstr ""
 "Klonlanmak için sanal makine çalışıyor, duraklatılmış ya da kapalı olmalı"
 
-#: instances/jobs.py:495
+#: instances/jobs.py:496
 #, python-format
 msgid ""
 "The guest's file systems could not be thawed (%(error)s); thaw them with: "
@@ -2848,19 +2848,19 @@ msgstr ""
 "Konuğun dosya sistemleri çözülemedi (%(error)s); şununla çözün: virsh "
 "domfsthaw %(vm)s"
 
-#: instances/jobs.py:514
+#: instances/jobs.py:515
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:555 instances/jobs.py:562 instances/jobs.py:830
+#: instances/jobs.py:556 instances/jobs.py:563 instances/jobs.py:831
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
-#: instances/jobs.py:614
+#: instances/jobs.py:615
 msgid "libvirt has no result of the copy"
 msgstr "libvirt'te kopyanın sonucu yok"
 
-#: instances/jobs.py:625
+#: instances/jobs.py:626
 #, python-format
 msgid ""
 "The copy failed: %(error)s. The guest's file systems could not be thawed "
@@ -2869,11 +2869,11 @@ msgstr ""
 "Kopyalama başarısız oldu: %(error)s. Konuğun dosya sistemleri çözülemedi "
 "(%(thaw)s); şununla çözün: virsh domfsthaw %(vm)s"
 
-#: instances/jobs.py:628 instances/jobs.py:712
+#: instances/jobs.py:629 instances/jobs.py:713
 msgid "The copy failed"
 msgstr "Kopyalama başarısız oldu"
 
-#: instances/jobs.py:653
+#: instances/jobs.py:654
 #, python-format
 msgid ""
 "The VM is no longer on the compute the job ran on; check these volumes, then "
@@ -2882,7 +2882,7 @@ msgstr ""
 "Sanal makine artık işin çalıştığı sunucuda değil; şu birimleri kontrol edin, "
 "sonra bu işi çözün: %(volumes)s"
 
-#: instances/jobs.py:688
+#: instances/jobs.py:689
 #, python-format
 msgid ""
 "A volume of the clone was being created; check these volumes, then resolve "
@@ -2891,15 +2891,15 @@ msgstr ""
 "Klonun bir birimi oluşturuluyordu; şu birimleri kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: instances/jobs.py:692
+#: instances/jobs.py:693
 msgid "The job stopped before the copy started"
 msgstr "İş, kopyalama başlamadan durdu"
 
-#: instances/jobs.py:699
+#: instances/jobs.py:700
 msgid "libvirt is still copying the disks"
 msgstr "libvirt diskleri hâlâ kopyalıyor"
 
-#: instances/jobs.py:702
+#: instances/jobs.py:703
 #, python-format
 msgid ""
 "Another backup runs on the VM; check these volumes, then resolve this job: "
@@ -2908,7 +2908,7 @@ msgstr ""
 "Sanal makinede başka bir yedekleme çalışıyor; şu birimleri kontrol edin, "
 "sonra bu işi çözün: %(volumes)s"
 
-#: instances/jobs.py:707
+#: instances/jobs.py:708
 #, python-format
 msgid ""
 "libvirt has no result of the copy; check these volumes, then resolve this "
@@ -2917,140 +2917,140 @@ msgstr ""
 "libvirt'te kopyanın sonucu yok; şu birimleri kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: instances/jobs.py:735 instances/templates/create_instance_w1.html:60
+#: instances/jobs.py:736 instances/templates/create_instance_w1.html:60
 #: instances/templates/create_instance_w2.html:356
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:759 instances/jobs.py:804 instances/views.py:2491
+#: instances/jobs.py:760 instances/jobs.py:805 instances/views.py:2491
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/jobs.py:761 instances/jobs.py:801
+#: instances/jobs.py:762 instances/jobs.py:802
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
-#: instances/jobs.py:764
+#: instances/jobs.py:765
 msgid "First you need to create or select an image"
 msgstr "Öncelikle bir imaj oluşturun ya da mevcut bir imajı seçin"
 
-#: instances/jobs.py:766
+#: instances/jobs.py:767
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr ""
 "Tek bir disk kaynağı seçin: yeni bir disk, mevcut birimler ya da bir şablon"
 
-#: instances/jobs.py:768
+#: instances/jobs.py:769
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 "İmaj zaten mevcut. Lütfen ya makine adını değişin ya da disk alanlarını "
 "kontrol edin"
 
-#: instances/jobs.py:770
+#: instances/jobs.py:771
 msgid "Invalid cache mode"
 msgstr "Geçersiz önbellek modu"
 
-#: instances/jobs.py:772
+#: instances/jobs.py:773
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "Bu sunucu %(mode)s CPU modunu veya modelini sunmuyor"
 
-#: instances/jobs.py:774
+#: instances/jobs.py:775
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM %(bus)s veri yolunu kullanamaz"
 
-#: instances/jobs.py:777
+#: instances/jobs.py:778
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init tohumu bir CD-ROM'dan okunur: veri yolunu seçin"
 
-#: instances/jobs.py:780
+#: instances/jobs.py:781
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 
-#: instances/jobs.py:786
+#: instances/jobs.py:787
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:788 vrtManager/instance.py:3010
+#: instances/jobs.py:789 vrtManager/instance.py:3010
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
-#: instances/jobs.py:849
+#: instances/jobs.py:850
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:856
+#: instances/jobs.py:857
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:889
+#: instances/jobs.py:890
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s. Şu birimleri elle silin: %(volumes)s"
 
-#: instances/jobs.py:914
+#: instances/jobs.py:915
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:916
+#: instances/jobs.py:917
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:918
+#: instances/jobs.py:919
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:936
+#: instances/jobs.py:937
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:980
+#: instances/jobs.py:981
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1027
+#: instances/jobs.py:1028
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1034
+#: instances/jobs.py:1035
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1036
+#: instances/jobs.py:1037
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1068
+#: instances/jobs.py:1085
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1075
+#: instances/jobs.py:1092
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1099
+#: instances/jobs.py:1116
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1142
+#: instances/jobs.py:1159
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1148
+#: instances/jobs.py:1165
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1150
+#: instances/jobs.py:1167
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"

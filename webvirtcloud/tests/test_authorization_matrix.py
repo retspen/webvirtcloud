@@ -35,6 +35,7 @@ ALLOWED_FOR_ANY_USER = {
     "instances:states": "the VM list's poll: only the user's own instances",
     "accounts:login": "login page",
     "accounts:email_otp": "part of the login flow (its own issues are tracked separately)",
+    "accounts:otp_qr": "the OTP QR code a mailed link opens: only with that signed, hour-old-at-most link",
     "accounts:logout": "logout",
     "accounts:profile": "the user's own profile",
     "accounts:change_password": "the user's own password; new users get the permission by default",
@@ -64,6 +65,7 @@ ALLOWED_FOR_ANY_USER = {
 ALLOWED_FOR_ANONYMOUS = {
     "accounts:login": "login page",
     "accounts:email_otp": "part of the login flow (its own issues are tracked separately)",
+    "accounts:otp_qr": "the OTP QR code a mailed link opens: only with that signed, hour-old-at-most link",
     "ds_openstack_index": "cloud-init datasource, fetched by VMs that do not log in",
     "ds_openstack_metadata": "cloud-init datasource, fetched by VMs that do not log in",
     "ds_openstack_userdata": "cloud-init datasource, fetched by VMs that do not log in",

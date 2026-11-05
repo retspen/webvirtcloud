@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "OTP QR Code" %}{% endblock %}
+
+{% block page_heading %}{% trans "OTP QR Code" %}{% endblock page_heading %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <p>{% blocktrans %}Scan this QR code to get OTP for account '{{ user }}'{% endblocktrans %}</p>
+        {{ qr_svg }}
+    </div>
+</div>
+{% endblock content %}

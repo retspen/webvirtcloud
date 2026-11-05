@@ -1,8 +1,0 @@
-{% load i18n %}
-{% blocktrans %}
-Scan this QR code to get OTP for account '{{ user }}'
-{% endblocktrans %}
-<br>
-{{ qr_svg }}
-<p class="small">{% trans 'Some e-mail clients does not render SVG, also generating PNG.' %}</p>
-<img src="{{ qr_png }}" alt="{{ totp_url }}">
