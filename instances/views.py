@@ -79,7 +79,8 @@ STATS_SAMPLE_SIGNER = signing.TimestampSigner(salt="instances.stats-sample")
 def index(request):
     instances = None
 
-    computes = list(Compute.objects.all().order_by("name"))
+    # a user who sees no hosts makes the panel read only those of their own VMs
+    computes = _listed_computes(request.user, list(Compute.objects.all().order_by("name")))
     for compute in computes:
         utils.refr(compute)
 
@@ -98,8 +99,7 @@ def index(request):
         ).order_by("name").prefetch_related("userinstance_set__user"))
         # other users get no host names or connection errors, only whether
         # a host of their own VMs is down
-        own = {inst.compute_id for inst in instances}
-        own_hosts_down = any(c.status is not True for c in computes if c.pk in own)
+        own_hosts_down = any(c.status is not True for c in computes)
     utils.read_list_rows(instances)
 
     return render(

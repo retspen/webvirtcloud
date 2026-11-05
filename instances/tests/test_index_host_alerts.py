@@ -68,3 +68,17 @@ class IndexHostAlertTests(TestCase):
         response = self.get(viewer, down=set())
         self.assertContains(response, "mine-host")
         self.assertNotContains(response, reverse("overview", args=[self.mine.id]))
+
+    def test_a_users_list_reads_only_the_hosts_of_their_vms(self):
+        read = []
+
+        def status(compute):
+            read.append(compute.name)
+            return True
+
+        self.client.force_login(self.user)
+        with patch("instances.views.utils.refr") as refr, patch.object(Compute, "status", property(status)), \
+                patch.object(Instance, "info", new_callable=PropertyMock, return_value=None):
+            self.assertEqual(self.client.get(reverse("instances:index")).status_code, 200)
+        self.assertEqual([call.args[0].name for call in refr.call_args_list], ["mine-host"])
+        self.assertNotIn("other-host", read)
