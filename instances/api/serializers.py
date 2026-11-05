@@ -113,7 +113,6 @@ class CreateInstanceSerializer(serializers.ModelSerializer):
 
 
 class MigrateSerializer(serializers.ModelSerializer):
-    instance = Instance.objects.all().prefetch_related("userinstance_set")
     live = serializers.BooleanField(default=True)
     offline = serializers.BooleanField(default=False)
     # left out, also from a form-encoded request: auto converge on
