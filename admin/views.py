@@ -306,9 +306,12 @@ def logs_export(request):
     rows, text, failed, _query = _logs(request)
     zone = timezone.get_current_timezone_name()
     header = [f"Date ({zone})", "User", "Host", "VM", "VM UUID", "Message", "Result", "IP"]
-    logs = list(rows[:EXPORT_ROWS + 1])
-    data = [[timezone.localtime(log.date).strftime("%Y-%m-%d %H:%M:%S"), log.user, log.host, log.instance,
-             log.instance_uuid, log.message, str(_result(log.success)), log.ip or ""] for log in logs[:EXPORT_ROWS]]
+    # tuples, not model objects: up to EXPORT_ROWS of them are held at once
+    logs = list(rows.values_list("date", "user", "host", "instance", "instance_uuid", "message", "success", "ip")
+                [:EXPORT_ROWS + 1])
+    data = [[timezone.localtime(date).strftime("%Y-%m-%d %H:%M:%S"), user, host, instance, uuid, message,
+             str(_result(success)), ip or ""]
+            for date, user, host, instance, uuid, message, success, ip in logs[:EXPORT_ROWS]]
     notes = [f"Search: {text}" if text else "Search: none", "Failed only" if failed else "All results",
              f"Rows: {len(data)}", f"Times in {zone}"]
     if len(logs) > EXPORT_ROWS:
