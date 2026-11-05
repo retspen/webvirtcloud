@@ -167,6 +167,18 @@ class CloneJobTestCase(TransactionTestCase):
         self.assertIn("copy.qcow2", words(outcome.error))
 
     @patch("instances.jobs.wvmConnect")
+    def test_recovery_gives_a_defined_shut_off_clone_the_size_asked(self, conn):
+        conn.return_value.wvm.lookupByUUIDString.return_value.state.return_value = [libvirt.VIR_DOMAIN_SHUTOFF, 0]
+        op = Operation(user=self.admin, intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
+                                                "name": "copy", "clone": {"name": "copy", "disk-vda": "copy.qcow2",
+                                                                          "vcpu": 4, "memory": None, "start": True}})
+        recovered = CloneInstance().reconcile(op)
+        self.assertEqual(recovered.state, Operation.SUCCEEDED)
+        self.proxy.resize_cpu.assert_called_once_with("4", "4")
+        self.proxy.start.assert_called_once_with()
+        self.assertIn("open", recovered.result)
+
+    @patch("instances.jobs.wvmConnect")
     def test_a_clone_that_left_nothing_failed(self, conn):
         op = Operation(user=self.admin, intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
                                                 "name": "copy", "clone": {"name": "copy", "disk-vda": "copy.qcow2"}})
@@ -513,7 +525,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
 
     # recovery
 
-    def recovered(self, cancel=False, defined=False, **intent):
+    def recovered(self, cancel=False, defined=False, state=libvirt.VIR_DOMAIN_RUNNING, **intent):
         base = {"live": True, "targets": [target("vda")],
                 "planned": [{"dev": "vda", "path": "/pool/copy-vda.qcow2"}], "created": self.CREATED,
                 "copy_started": True}
@@ -523,6 +535,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
         with patch("instances.jobs.wvmConnect") as conn:
             if not defined:
                 conn.return_value.wvm.lookupByUUIDString.side_effect = libvirt_error(libvirt.VIR_ERR_NO_DOMAIN)
+            conn.return_value.wvm.lookupByUUIDString.return_value.state.return_value = [state, 0]
             return CloneInstance().reconcile(op), op
 
     def test_recovery_before_the_copy_deletes_what_was_created(self):
@@ -586,6 +599,24 @@ class LiveCloneJobTestCase(TransactionTestCase):
         self.assertNotIn("define_clone", self.events)
         clone = Instance.objects.get(uuid=op.intent["uuid"])
         self.assertEqual(outcome.result["open"], reverse("instances:instance", args=[clone.pk]))
+
+    def test_recovery_of_a_defined_clone_gives_it_the_size_asked_unless_it_runs(self):
+        # the worker stopped after it defined the clone, before or while it resized and started it
+        self.proxy.backup_result.return_value = None
+        self.proxy.backup_targets.return_value = {"/other/x.qcow2"}
+        clone = {"name": "copy", "disk-vda": "copy-vda.qcow2", "vcpu": 2, "memory": 1024, "start": True}
+        outcome, op = self.recovered(defined=True, state=libvirt.VIR_DOMAIN_SHUTOFF, clone=clone)
+        self.assertEqual(outcome.state, Operation.SUCCEEDED)
+        self.proxy.resize_cpu.assert_called_once_with("2", "2")
+        self.proxy.resize_mem.assert_called_once_with(1024, 1024)
+        self.proxy.start.assert_called_once_with()
+        Instance.objects.filter(uuid=op.intent["uuid"]).delete()
+        op.delete()
+        self.proxy.reset_mock()
+        outcome, _op = self.recovered(defined=True, clone=clone)  # it runs: the last step was done
+        self.assertEqual(outcome.state, Operation.SUCCEEDED)
+        self.proxy.resize_cpu.assert_not_called()
+        self.proxy.start.assert_not_called()
 
     def test_recovery_of_a_failed_copy_deletes_what_was_created(self):
         outcome, _op = self.recovered(copy_result=[False, "No space left on device"])

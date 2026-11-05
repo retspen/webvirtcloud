@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
-                     VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
+                     VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
@@ -222,6 +222,14 @@ def _finish_clone(op, clone, warning):
     except libvirtError as err:
         notes += say(_("The clone is made, but not as asked: %(error)s"), error=err)
     return {"warning": notes} if notes else {}
+
+
+def _recovered_clone(op):
+    """A clone defined before the worker stopped: given the size asked and
+    started if asked, unless it runs, as starting is the last step."""
+    if _domain(op.intent["compute"], op.intent["uuid"]).state()[0] != VIR_DOMAIN_SHUTOFF:
+        return {}
+    return _finish_clone(op, op.intent["clone"], [])
 
 
 def _clone_made(op, result):
@@ -632,7 +640,7 @@ class CloneInstance(Kind):
             disks = [v for k, v in op.intent["clone"].items() if k.startswith("disk-") and v]
             outcome = vm_outcome(op, owner=True, volumes=disks)
             if outcome.state == Operation.SUCCEEDED:
-                outcome.result = {**outcome.result, "open": _clone_page(op)}
+                outcome.result = {**outcome.result, **_recovered_clone(op), "open": _clone_page(op)}
             return outcome
         proxy = _recovery_proxy(op)
         if proxy is None:
@@ -654,7 +662,7 @@ class CloneInstance(Kind):
         """The spec's recovery table: a defined clone first, then a volume
         still being created, since it comes before the copy."""
         if _domain(op.intent["compute"], op.intent["uuid"]) is not None:
-            return Outcome(Operation.SUCCEEDED, result=_clone_made(op, {}))
+            return Outcome(Operation.SUCCEEDED, result=_clone_made(op, _recovered_clone(op)))
         created = op.intent.get("created", [])
         paths = [c["path"] for c in created]
         ended = Operation.CANCELLED if op.cancel_requested else Operation.FAILED
