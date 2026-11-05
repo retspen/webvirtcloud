@@ -38,6 +38,8 @@ import time
 
 HEX64 = re.compile(r"[0-9a-f]{64}")
 KEY = os.environ.get("GSTFSD_KEY", "").strip()
+# the panel always connects to 16510 (instances.views.GSTFSD_PORT); GSTFSD_PORT
+# is for the tests, which run gstfsd on a free port
 PORT = int(os.environ.get("GSTFSD_PORT", 16510))
 ADDRESS = os.environ.get("GSTFSD_BIND_HOST", "127.0.0.1")
 MAX_REQUEST = 64 * 1024
