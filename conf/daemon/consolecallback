@@ -133,10 +133,11 @@ def main():
     libvirt.virEventAddHandle(0, libvirt.VIR_EVENT_HANDLE_READABLE, from_client, console)
     checked = time.monotonic()
     try:
-        # a VM's start or stop shows within a second; its output and the
-        # user's keys travel through libvirt's event loop, not this one
+        # its output and the user's keys travel through libvirt's event loop,
+        # not this one; a VM that runs is checked once a second, one that does
+        # not five times, so that its first output after a start is not lost
         while console.running:
-            time.sleep(1)
+            time.sleep(1 if console.active else 0.2)
             console.check()
             if time.monotonic() - checked > ACCESS_CHECK:
                 if not may_still_open(user_id, instance):
