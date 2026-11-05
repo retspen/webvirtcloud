@@ -570,6 +570,12 @@ class NovncdDaemonLogicTestCase(TestCase):
         # the VM access was checked for, not whichever VM has its name now
         self.assertEqual(mock_wvm.call_args.kwargs["uuid"], mock_instance.uuid)
 
+    def test_the_vnc_server_is_waited_for_a_bounded_time(self):
+        with patch.object(novncd_mod.socket, "create_connection") as create_connection:
+            tsock = novncd_mod.bounded_connect("192.0.2.40", 5900, connect=True)
+        create_connection.assert_called_once_with(("192.0.2.40", 5900), timeout=novncd_mod.CONNECT_TIMEOUT)
+        tsock.settimeout.assert_called_once_with(None)
+
     def test_a_token_without_its_users_session_is_refused_and_logged(self):
         from logs.models import Logs
 
