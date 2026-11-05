@@ -1,6 +1,7 @@
 from django.utils.translation import gettext_noop
 import contextlib
 import io
+import logging
 import os
 import re
 import socket
@@ -55,6 +56,8 @@ CLOSE_REASONS = {
 # ssh with a connect timeout for qemu+ssh (libvirt runs the "command" binary
 # in place of ssh and never passes one itself)
 SSH_COMMAND = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libvirt-ssh")
+
+logger = logging.getLogger(__name__)
 
 
 class wvmEventLoop(threading.Thread):
@@ -136,6 +139,7 @@ def _count_on(connection):
         return
     _leave_host()
     if not connection.requests.acquire(timeout=CONNECT_TIMEOUT):
+        logger.warning("%s: request refused, %s requests still wait for the host", connection.host, HOST_REQUESTS)
         raise util.ConnectionFailed(gettext_noop("Connection Failed: %(host)s does not answer: %(requests)s requests still wait for it"),
                                     host=connection.host, requests=HOST_REQUESTS)
     _request.held = connection
@@ -178,6 +182,7 @@ class wvmConnection(object):
         self.last_error = None
         self._opening = None  # threading.Event of the open in progress
         self._retry_at = 0.0  # monotonic time before which no new open is tried
+        self._failing = False  # the last open failed: its failure is logged, the next ones are not
         self.requests = None  # the web requests using the host (HOST_REQUESTS), set by the manager
 
         # credentials
@@ -210,6 +215,7 @@ class wvmConnection(object):
                     self.last_error = util.message(gettext_noop("Connection Failed: %(host)s did not answer within %(seconds)s s"),
                                                    host=self.host, seconds=CONNECT_TIMEOUT)
                     opening.abandoned = True
+                    self._log_failure()
 
     def _open(self, opening):
         """Helper thread: open, configure and publish the connection."""
@@ -237,12 +243,21 @@ class wvmConnection(object):
                     self.connection = connection
                     self.last_error = None
                     self._retry_at = 0.0
+                    self._failing = False
+                    logger.info("%s: connected", self.host)
                 else:
                     self.connection = None
                     self.last_error = error
                     self._retry_at = time.monotonic() + RETRY_AFTER
+                    self._log_failure()
                 self._opening = None
             opening.set()
+
+    def _log_failure(self):
+        """Log last_error if it starts a run of failures (the caller holds connection_state_lock)."""
+        if not self._failing:
+            self._failing = True
+            logger.warning("%s: %s", self.host, util.render(self.last_error["text"], self.last_error["values"], str))
 
     def _open_transport(self):
         if self.type == CONN_TCP:
@@ -293,6 +308,7 @@ class wvmConnection(object):
                 self.last_error = util.message(gettext_noop("Connection closed (%(reason)s)"), reason=reason)
             # prevent other threads from using the connection (in the future)
             self.connection = None
+            logger.warning("%s: %s", self.host, util.render(self.last_error["text"], self.last_error["values"], str))
 
     def __connect_tcp(self):
         flags = [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]

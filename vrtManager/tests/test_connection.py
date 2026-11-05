@@ -197,6 +197,26 @@ class BoundedOpenTestCase(unittest.TestCase):
         self.assertIsNone(entry.connection)
         self.assertEqual(entry.last_error, {"text": "Connection closed (keepalive timeout)", "values": {}})
 
+    def test_the_log_has_each_change_of_a_host_not_each_retry(self):
+        self.release.set()
+        conn = alive_connection()
+        with self.assertLogs("vrtManager.connection") as logs:
+            with self.open_auth(libvirt.libvirtError("refused")):
+                self.get()
+                entry = self.manager._search_connection("h", "u", "p", CONN_TCP)
+                entry._retry_at = 0.0  # RETRY_AFTER is over
+                self.get()
+            entry._retry_at = 0.0
+            with self.open_auth(conn):
+                self.get()
+            entry._wvmConnection__connection_close_callback(conn, 2)
+        self.assertEqual(self.calls, 3)
+        self.assertEqual(logs.output, [
+            "WARNING:vrtManager.connection:h: Connection Failed: refused",
+            "INFO:vrtManager.connection:h: connected",
+            "WARNING:vrtManager.connection:h: Connection closed (keepalive timeout)",
+        ])
+
     def test_a_connection_closed_before_it_is_published_is_an_error(self):
         self.release.set()
         dead = alive_connection()
@@ -264,8 +284,10 @@ class HostRequestsTestCase(unittest.TestCase):
     def test_a_third_request_to_a_host_is_refused_and_other_hosts_answer(self):
         self.assertEqual(self.request("h") + self.request("h"), [])
         started = time.monotonic()
-        self.assertEqual(self.request("h"), ["Connection Failed: h does not answer: 2 requests still wait for it"])
+        with self.assertLogs("vrtManager.connection", "WARNING") as logs:
+            self.assertEqual(self.request("h"), ["Connection Failed: h does not answer: 2 requests still wait for it"])
         self.assertGreaterEqual(time.monotonic() - started, 0.2)
+        self.assertEqual(logs.output, ["WARNING:vrtManager.connection:h: request refused, 2 requests still wait for the host"])
         self.assertEqual(self.request("g"), [])
 
     def test_a_host_counts_its_requests_whatever_the_login(self):
