@@ -138,6 +138,14 @@ class ApiTokenTests(TestCase):
         self.assertNotRegex(response.content.decode(), r"wvc_[0-9a-f]{64}")
         self.assertIn("at most 10", response.content.decode())
 
+    def test_a_form_sent_twice_makes_one_token(self):
+        self.make("ci")
+        response = self.client.post(reverse("accounts:api_token_create"), {"name": "ci", "days": "90"})
+        self.assertContains(response, "You have a token named ci: choose another name.")
+        self.assertEqual(ApiToken.objects.filter(user=self.user).count(), 1)
+        self.make("ci-2")  # another name is fine
+        self.assertEqual(ApiToken.objects.filter(user=self.user).count(), 2)
+
     def test_expired_tokens_do_not_count_toward_the_limit(self):
         for number in range(10):
             self.make(name=f"t{number}")

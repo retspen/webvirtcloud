@@ -69,13 +69,21 @@ def api_token_create(request):
     form = ApiTokenForm(request.POST)
     if not form.is_valid():
         return render(request, "common/form.html", {"form": form, "title": _("Create an API token")})
-    ApiToken.objects.filter(user=request.user, expiry__lt=timezone.now()).delete()
-    if ApiToken.objects.filter(user=request.user).count() >= ApiToken.LIMIT:
-        form.add_error(None, _("A user has at most %(limit)s API tokens: delete one first.") % {"limit": ApiToken.LIMIT})
-        return render(request, "common/form.html", {"form": form, "title": _("Create an API token")})
     name, days = form.cleaned_data["name"], form.cleaned_data["days"]
-    with audit(request, None, f"API token {name}", "add"):
-        _token, key = ApiToken.objects.create(request.user, expiry=timedelta(days=days) if days else None, name=name)
+    with transaction.atomic():
+        # the user's row: two forms sent at once (a double click) take their turns
+        get_user_model().objects.select_for_update().get(pk=request.user.pk)
+        ApiToken.objects.filter(user=request.user, expiry__lt=timezone.now()).delete()
+        if ApiToken.objects.filter(user=request.user).count() >= ApiToken.LIMIT:
+            form.add_error(None, _("A user has at most %(limit)s API tokens: delete one first.") % {"limit": ApiToken.LIMIT})
+        elif ApiToken.objects.filter(user=request.user, name=name).exists():
+            form.add_error("name", _("You have a token named %(name)s: choose another name.") % {"name": name})
+        else:
+            with audit(request, None, f"API token {name}", "add"):
+                _token, key = ApiToken.objects.create(request.user, expiry=timedelta(days=days) if days else None,
+                                                      name=name)
+    if form.errors:
+        return render(request, "common/form.html", {"form": form, "title": _("Create an API token")})
     # shown by a GET, so reloading the page does not create another token
     request.session["api_token_created"] = {"name": name, "key": key}
     return redirect("accounts:api_token_created")
