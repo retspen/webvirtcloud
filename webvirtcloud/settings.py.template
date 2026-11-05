@@ -411,6 +411,8 @@ if HAS_LDAP:
     AUTH_LDAP_SERVER_URI = "ldap://example.com"
     AUTH_LDAP_BIND_DN = "username@example.com"
     AUTH_LDAP_BIND_PASSWORD = "password"
+    # seconds to connect and for each answer: python-ldap waits for a server without end
+    AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_NETWORK_TIMEOUT: 5, ldap.OPT_TIMEOUT: 10}
     AUTH_LDAP_USER_SEARCH = LDAPSearch(
         "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(sAMAccountName=%(user)s)"
     )
