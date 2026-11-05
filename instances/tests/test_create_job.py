@@ -131,3 +131,15 @@ class CreateJobTestCase(TransactionTestCase):
         op.user.save()
         with self.assertRaises(PermissionDenied):
             CreateInstance().precheck(op, None)
+
+    def test_the_api_takes_a_body_without_a_mac_or_a_network_filter(self):
+        body = {k: v for k, v in BODY.items() if k not in ("mac", "nwfilter")}
+        response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", body,
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        op = Operation.objects.get()
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.assertEqual(self.conn.create_instance.call_args.kwargs["nwfilter"], "")

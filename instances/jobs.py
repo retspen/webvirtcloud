@@ -738,7 +738,8 @@ class CreateInstance(Kind):
     def normalize(self, raw):
         # what the API leaves out means what create_instance did by default
         params = {"template": "", "images": "", "firmware": "", "net_model": "virtio", "add_cdrom": "sata",
-                  "add_input": "default", "meta_prealloc": False, "hdd_size": 0, "cloud_init": False, "tpm": False}
+                  "add_input": "default", "meta_prealloc": False, "hdd_size": 0, "cloud_init": False, "tpm": False,
+                  "mac": "", "nwfilter": ""}
         params.update({k: v for k, v in raw.items() if k not in ("submission_key", "create", "csrfmiddlewaretoken")})
         params.update(compute=int(raw["compute"]), devices=[list(d) for d in raw.get("devices", [])])
         if params["firmware"] == "UEFI Secure Boot" and "q35" not in params["machine"]:
