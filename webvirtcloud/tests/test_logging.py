@@ -1,10 +1,17 @@
 """The app log is bounded (rotates) and written to a deterministic absolute
 path, not the process working directory."""
 
+import io
+import logging
 import os
 
 from django.conf import settings
-from django.test import TestCase
+from django.contrib.auth.models import User
+from django.http import HttpResponse
+from django.test import RequestFactory, TestCase
+
+from webvirtcloud.log_context import RequestFilter
+from webvirtcloud.middleware import RequestIdMiddleware
 
 
 class LoggingConfigTestCase(TestCase):
@@ -38,3 +45,30 @@ class LoggingConfigTestCase(TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(os.path.isdir(os.path.dirname(log)), log)
+
+
+class RequestIdTestCase(TestCase):
+    def test_a_line_of_a_request_names_the_request_user_and_address(self):
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.addFilter(RequestFilter())
+        handler.setFormatter(logging.Formatter(settings.LOGGING["formatters"]["standard"]["format"]))
+        logger = logging.getLogger("webvirtcloud.tests.request")
+        logger.addHandler(handler)
+        self.addCleanup(logger.removeHandler, handler)
+
+        def view(request):
+            logger.warning("refused")
+            return HttpResponse()
+
+        # from nginx: its request ID, the client in X-Real-IP
+        request = RequestFactory().get("/", HTTP_X_REQUEST_ID="0123456789abcdef" * 2, HTTP_X_REAL_IP="192.0.2.7")
+        request.user = User.objects.create_user("alice")
+        response = RequestIdMiddleware(view)(request)
+
+        self.assertEqual(response["X-Request-ID"], "0123456789abcdef" * 2)
+        self.assertIn(f"{'0123456789abcdef' * 2} alice 192.0.2.7: refused", stream.getvalue())
+
+    def test_an_id_sent_by_a_client_cannot_write_into_the_log(self):
+        response = self.client.get("/accounts/login/", HTTP_X_REQUEST_ID="x\n[forged] line")
+        self.assertRegex(response["X-Request-ID"], r"^[0-9a-f]{32}$")
