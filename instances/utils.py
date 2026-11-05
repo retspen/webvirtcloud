@@ -7,6 +7,7 @@ from collections import namedtuple
 from accounts.models import UserInstance, UserAttributes
 from appsettings.settings import app_settings
 from computes.models import Compute
+from computes.utils import lock_ownership
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -321,6 +322,8 @@ def record_migration(instance, new_compute):
     """Moves instance to new_compute in the database. A record the list of
     new_compute made for it meanwhile takes its owners and template mark."""
     with transaction.atomic():
+        # owners are moved here: not while a sync of a third compute moves them too
+        lock_ownership()
         target_inst = Instance.objects.filter(compute=new_compute, uuid=instance.uuid).first()
         if target_inst and target_inst.id != instance.id:
             for ui in UserInstance.objects.filter(instance=instance):
