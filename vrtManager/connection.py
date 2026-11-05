@@ -147,9 +147,11 @@ def other_hosts():
     then goes on with the host it used before, through the objects it kept:
     the request counts on that host again after the block (HOST_REQUESTS)."""
     held = getattr(_request, "held", None)
-    yield
-    if held is not None:
-        _count_on(held)
+    try:
+        yield
+    finally:
+        if held is not None:
+            _count_on(held)
 
 
 request_started.connect(_request_started, dispatch_uid="vrtManager.connection.request_started")
