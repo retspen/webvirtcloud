@@ -122,6 +122,9 @@ class DatabaseEnvTestCase(SimpleTestCase):
              "NAME": "wvc", "USER": "wvcuser", "PASSWORD": "secret"},
         )
 
+    def test_postgres_connects_within_a_bounded_time(self):
+        self.assertEqual(self.db({"WEBVIRTCLOUD_DB_HOST": "db.example.com"})["OPTIONS"], {"connect_timeout": 5})
+
     def test_postgres_defaults(self):
         db = self.db({"WEBVIRTCLOUD_DB_HOST": "db.example.com"})
         self.assertEqual(

@@ -149,6 +149,8 @@ if db_host := os.getenv("WEBVIRTCLOUD_DB_HOST"):
             "NAME": os.getenv("WEBVIRTCLOUD_DB_NAME", "webvirtcloud"),
             "USER": os.getenv("WEBVIRTCLOUD_DB_USER", "webvirtcloud"),
             "PASSWORD": os.getenv("WEBVIRTCLOUD_DB_PASSWORD", ""),
+            # seconds to connect: libpq waits for the operating system's TCP timeout (minutes)
+            "OPTIONS": {"connect_timeout": 5},
         }
     }
 else:
