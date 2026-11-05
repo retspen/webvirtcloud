@@ -4,8 +4,10 @@ import struct
 from decimal import Decimal
 
 import segno
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
+from django.db import transaction
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
@@ -24,13 +26,15 @@ def get_existing_totp_device(user):
 
 
 def get_user_totp_device(user):
-    devices = devices_for_user(user)
-    for device in devices:
-        if isinstance(device, TOTPDevice):
-            return device
-
-    device = user.totpdevice_set.create()
-    return device
+    """The user's TOTP device, made if they have none. The user's row is
+    locked meanwhile: two requests at once (a double click) make one device,
+    not two that both log in."""
+    with transaction.atomic():
+        get_user_model().objects.select_for_update().get(pk=user.pk)
+        for device in devices_for_user(user):
+            if isinstance(device, TOTPDevice):
+                return device
+        return user.totpdevice_set.create()
 
 
 def validate_ssh_key(key):
