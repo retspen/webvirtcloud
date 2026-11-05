@@ -9,6 +9,8 @@ runs in gunicorn)."""
 import re
 
 import libvirt
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
@@ -51,6 +53,9 @@ TRANSPORT_ERROR_CODES = {
 }
 UNREACHABLE = gettext_noop("The host of this virtual machine cannot be reached right now.")
 HOST_BUSY = gettext_noop("The host of this virtual machine is busy with other requests right now: try again in a moment.")
+# a job's checks in the worker (precheck) refuse with Django's exceptions, which have no text
+NOT_ALLOWED = gettext_noop("You may no longer do this.")
+NOT_FOUND = gettext_noop("The virtual machine is no longer in the panel.")
 
 BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365)}
 
@@ -105,6 +110,10 @@ def public_error(exception):
     )
     if isinstance(exception, HostBusy):
         return say(HOST_BUSY)
+    if isinstance(exception, PermissionDenied):
+        return say(NOT_ALLOWED)
+    if isinstance(exception, Http404):
+        return say(NOT_FOUND)
     return say(UNREACHABLE) if connection_error else said(exception)
 
 
