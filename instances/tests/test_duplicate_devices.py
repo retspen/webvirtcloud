@@ -60,3 +60,16 @@ class DuplicateDeviceTests(TestCase):
         self.assertEqual(self.post("add_network", form),
                          [f"The VM already has a network device with MAC {MAC.upper()}"])
         self.proxy.add_network.assert_called_once()
+
+    def test_an_iso_in_a_cdrom_of_the_vm_is_not_added_again(self):
+        iso = "/var/lib/libvirt/isos/alma.iso"
+        self.proxy.get_iso_path.return_value = iso
+        with patch("instances.views.cdrom_bus_choices", return_value=["sata"]):
+            form = {"bus": "sata", "media": "alma.iso"}
+            self.post("add_cdrom", form)
+            self.proxy.attach_disk.assert_called_once()
+            self.proxy.get_media_devices.side_effect = lambda config=False: [{"path": iso, "dev": "sdb"}] if config else []
+            self.assertEqual(self.post("add_cdrom", form), ["alma.iso is already in a CD-ROM of this VM"])
+            # an empty drive may be added more than once
+            self.post("add_cdrom", {"bus": "sata", "media": ""})
+        self.assertEqual(self.proxy.attach_disk.call_count, 2)
