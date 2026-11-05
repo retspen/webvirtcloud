@@ -144,8 +144,8 @@ def _count_on(connection):
     _leave_host()
     if not connection.requests.acquire(timeout=CONNECT_TIMEOUT):
         logger.warning("%s: request refused, %s requests still wait for the host", connection.host, HOST_REQUESTS)
-        raise util.ConnectionFailed(gettext_noop("Connection Failed: %(host)s does not answer: %(requests)s requests still wait for it"),
-                                    host=connection.host, requests=HOST_REQUESTS)
+        raise util.HostBusy(gettext_noop("Connection Failed: %(host)s does not answer: %(requests)s requests still wait for it"),
+                            host=connection.host, requests=HOST_REQUESTS)
     _request.held = connection
 
 

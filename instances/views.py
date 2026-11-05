@@ -51,7 +51,7 @@ from libvirt import (VIR_DOMAIN_PAUSED,
 from logs.audit import audit, audit_vm, changed_fields, failed_vm
 from logs.audit import snapshot as audit_snapshot
 from operations import claims, jobs
-from operations.utils import busy_message, summary
+from operations.utils import HOST_BUSY, busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
 from vrtManager.connection import CONNECT_TIMEOUT
@@ -253,7 +253,9 @@ def instance(request, pk):
     # the page reads the VM from libvirt throughout; without the host it would
     # be the error page, with a connection error that names the host
     if compute.status is not True:
-        if request.user.is_superuser or request.user.has_perm("instances.view_instances"):
+        if isinstance(compute.connection, util.HostBusy):
+            msg = _(HOST_BUSY)
+        elif request.user.is_superuser or request.user.has_perm("instances.view_instances"):
             msg = _("The host %(host)s of '%(name)s' cannot be reached: %(error)s") % {
                 "host": compute.name,
                 "name": instance.name,

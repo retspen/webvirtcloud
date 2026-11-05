@@ -56,6 +56,11 @@ class ConnectionFailed(OperationError):
     is reached."""
 
 
+class HostBusy(ConnectionFailed):
+    """The host is connected, but this process's web requests to it
+    (HOST_REQUESTS) still wait for its answers."""
+
+
 def is_kvm_available(xml):
     kvm_domains = get_xml_path(xml, "//domain/@type='kvm'")
     return kvm_domains > 0

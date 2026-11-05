@@ -19,7 +19,7 @@ from libvirt import libvirtError
 from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from instances.models import Instance
-from vrtManager.util import ConnectionFailed, OperationError, render
+from vrtManager.util import ConnectionFailed, HostBusy, OperationError, render
 
 from . import jobs
 
@@ -50,6 +50,7 @@ TRANSPORT_ERROR_CODES = {
     libvirt.VIR_ERR_LIBSSH,
 }
 UNREACHABLE = gettext_noop("The host of this virtual machine cannot be reached right now.")
+HOST_BUSY = gettext_noop("The host of this virtual machine is busy with other requests right now: try again in a moment.")
 
 BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365)}
 
@@ -102,6 +103,8 @@ def public_error(exception):
         and exception.get_error_domain() in TRANSPORT_ERROR_DOMAINS
         and exception.get_error_code() in TRANSPORT_ERROR_CODES
     )
+    if isinstance(exception, HostBusy):
+        return say(HOST_BUSY)
     return say(UNREACHABLE) if connection_error else said(exception)
 
 
