@@ -343,11 +343,16 @@ def admin_email_otp(request, user_id):
     user = get_object_or_404(get_user_model(), pk=user_id)
     subject = f"User {user.username}"
     if user.email != "":
-        with audit(request, None, subject, "mail OTP QR code"):
-            send_email_with_otp(user, get_user_totp_device(user))
-        messages.success(
-            request, _("OTP QR code was emailed to user %(user)s") % {"user": user}
-        )
+        try:
+            with audit(request, None, subject, "mail OTP QR code"):
+                send_email_with_otp(user, get_user_totp_device(user))
+        except OSError as err:  # the SMTP server refused it, or did not answer within EMAIL_TIMEOUT
+            messages.error(request, _("The OTP QR code could not be mailed to %(user)s: %(error)s") % {
+                "user": user, "error": err})
+        else:
+            messages.success(
+                request, _("OTP QR code was emailed to user %(user)s") % {"user": user}
+            )
     else:
         failed(request, None, subject, "mail OTP QR code", "no email address")
         messages.error(request, _("User email not set, failed to send QR code"))

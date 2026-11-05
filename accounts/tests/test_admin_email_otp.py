@@ -30,3 +30,9 @@ class AdminEmailOtpTestCase(TestCase):
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 302)
         mock_send.assert_called_once()
+
+    def test_the_smtp_connection_waits_a_bounded_time(self):
+        from django.core.mail.backends.smtp import EmailBackend
+
+        # None would wait for a server that stopped answering forever
+        self.assertIsNotNone(EmailBackend().timeout)
