@@ -3,6 +3,8 @@
 import contextlib
 import os
 import socket
+import subprocess
+import sys
 import threading
 import time
 import unittest
@@ -410,3 +412,14 @@ class EventLoopTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LibvirtStderrTestCase(unittest.TestCase):
+    def test_a_libvirt_error_is_not_printed_on_stderr(self):
+        script = (
+            "from django.conf import settings; settings.configure(); "
+            "import libvirt, vrtManager.connection\n"
+            "try:\n    libvirt.open('test:///default').lookupByName('no-such-vm')\nexcept libvirt.libvirtError:\n    pass"
+        )
+        result = subprocess.run([sys.executable, "-c", script], cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))

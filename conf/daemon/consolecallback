@@ -28,9 +28,6 @@ from instances.utils import can_open_console  # noqa: E402
 from operations.utils import public_error_text  # noqa: E402
 from vrtManager.connection import connection_manager  # noqa: E402
 
-# libvirt prints its errors on stderr, which is the user's terminal: they are
-# raised and told in one line instead
-libvirt.registerErrorHandler(lambda context, error: None, None)
 SEND_WAIT = 5  # seconds a paste may wait for the VM to take it
 ACCESS_CHECK = 10  # seconds between checks that the user may still use the console
 
