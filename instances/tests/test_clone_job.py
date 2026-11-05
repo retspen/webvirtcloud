@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import libvirt
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.core.exceptions import PermissionDenied
 from django.test import TransactionTestCase
 from django.urls import reverse
@@ -115,6 +116,13 @@ class CloneJobTestCase(TransactionTestCase):
                 op, _result = self.clone_with(**{"clone-vcpu": value})
                 self.assertIsNone(op)
                 self.proxy.clone_instance.assert_not_called()
+
+    def test_a_digit_that_is_not_a_number_is_refused_with_the_reason(self):
+        # superscript two: str.isdigit() takes it, int() does not
+        response = self.client.post(reverse("instances:clone", args=[self.source.pk]),
+                                    {"name": "copy", "disk-vda": "copy.qcow2", "clone-net-mac-0": "52:54:00:00:00:01",
+                                     "submission_key": "key-clone003", "clone-vcpu": "\u00b2"})
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Enter a whole number of vCPUs for the clone"])
 
     def test_a_clone_that_cannot_start_is_made_with_a_warning(self):
         self.proxy.start.side_effect = libvirt.libvirtError("no memory")
