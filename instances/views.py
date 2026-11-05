@@ -288,11 +288,7 @@ def _instance_page(request, pk, instance, compute):
     console_listener_addresses = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
     ipv4_addresses = [address for net in instance.networks for address in net["ipv4"] or []]
     try:
-        userinstance = UserInstance.objects.get(
-            instance__compute_id=compute.id,
-            instance__name=instance.name,
-            user__id=request.user.id,
-        )
+        userinstance = UserInstance.objects.get(instance=instance, user=request.user)
     except UserInstance.DoesNotExist:
         userinstance = None
     # The page offers only what the backend allows this user (get_instance
