@@ -18,14 +18,13 @@ class StaticFilesTestCase(SimpleTestCase):
         self.assertIn(SOURCE, [Path(d) for d in settings.STATICFILES_DIRS])
 
     def test_no_collected_files_in_the_source_dir(self):
-        for byproduct in ("staticfiles.json", "rest_framework", "bootstrap_icons"):
+        for byproduct in ("staticfiles.json", "rest_framework"):
             self.assertFalse((SOURCE / byproduct).exists(), byproduct)
         self.assertEqual(list(SOURCE.rglob("*.gz")), [])
 
     def test_collectstatic_gathers_source_and_app_assets(self):
         with tempfile.TemporaryDirectory() as root, override_settings(STATIC_ROOT=root):
             call_command("collectstatic", "--noinput", verbosity=0)
-            for name in ("css/webvirtcloud.css", "rest_framework/css/bootstrap.min.css",
-                         "bootstrap_icons/css/bootstrap_icons.css"):
+            for name in ("css/webvirtcloud.css", "rest_framework/css/bootstrap.min.css"):
                 self.assertTrue((Path(root) / name).exists(), name)
         self.assertIsNotNone(finders.find("css/webvirtcloud.css"))
