@@ -1,5 +1,6 @@
 """Reachability probe and connections that do not block each other."""
 
+import contextlib
 import os
 import socket
 import threading
@@ -296,11 +297,19 @@ class HostRequestsTestCase(unittest.TestCase):
         self.assertEqual(self.request("h") + self.request("h"), [])
 
     def test_a_request_back_from_other_hosts_counts_on_its_own_again(self):
+        self.back_from_other_hosts(fails=False)
+
+    def test_a_request_back_from_other_hosts_that_failed_counts_on_its_own_again(self):
+        self.back_from_other_hosts(fails=True)
+
+    def back_from_other_hosts(self, fails):
         def run():
             request_started.send(sender=None)
             self.manager.get_connection("h", "u", "p", CONN_TCP)
-            with connection.other_hosts():
+            with contextlib.suppress(RuntimeError), connection.other_hosts():
                 self.manager.get_connection("g", "u", "p", CONN_TCP)
+                if fails:
+                    raise RuntimeError("the other host's read failed")
             back.set()
             self.done.wait(5)
             request_finished.send(sender=None)
