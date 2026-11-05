@@ -70,6 +70,15 @@ class SnapshotJobsTestCase(TransactionTestCase):
             self.assertContains(response, "Snapshot names are 1-64 letters")
         self.assertFalse(Operation.objects.exists())
 
+    def test_a_name_taken_outside_the_panel_meanwhile_is_refused_before_effects(self):
+        self.client.post(reverse("instances:snapshot", args=[self.instance.pk]),
+                         {"name": "b", "submission_key": "key-snap0001"})
+        op = Operation.objects.get()
+        self.proxy.instance.snapshotListNames.return_value = ["b"]  # virsh snapshot-create-as
+        with self.assertRaisesMessage(OperationError, "A snapshot named b already exists"):
+            CreateSnapshot().precheck(op, None)
+        self.proxy.create_snapshot.assert_not_called()
+
     def test_create_recovery(self):
         op = Operation(params={"instance": self.instance.pk, "name": "a", "external": True},
                        intent={"compute": self.instance.compute_id})
