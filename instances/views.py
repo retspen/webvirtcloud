@@ -645,10 +645,12 @@ def _moved_meanwhile(pk, inst):
 
 
 def serialize_instance_mutation(func):
-    """Serialize one VM, after checking visibility, without blocking sibling VMs."""
+    """Serialize one VM, without blocking sibling VMs. Only a user who may
+    change the VM somehow (power, the least right) takes its claim: a
+    refused request must not hold up others."""
     @functools.wraps(func)
     def wrapper(request, pk, *args, **kwargs):
-        inst = get_instance(request.user, pk)
+        inst = get_instance(request.user, pk, perm_type="power")
         try:
             with libvirt_instance_lock(inst):
                 if _moved_meanwhile(pk, inst):
@@ -685,10 +687,12 @@ def serialize_user_quota(func):
 
 
 def serialize_compute_mutation(func):
-    """Hold the whole compute: disk deletions must not race another VM attaching that disk."""
+    """Hold the whole compute: disk deletions must not race another VM attaching that disk.
+    Only a user who may delete the VM (destroy's right; the other views are
+    superuser-only) takes the claim: a refused request must not hold up others."""
     @functools.wraps(func)
     def wrapper(request, pk, *args, **kwargs):
-        inst = get_instance(request.user, pk)
+        inst = get_instance(request.user, pk, perm_type="delete")
         if request.method in ("GET", "HEAD"):  # e.g. the destroy confirmation page
             return func(request, pk, *args, **kwargs)
         try:
