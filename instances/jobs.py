@@ -3,6 +3,7 @@
 import math
 import os
 import re
+import threading
 import time
 
 from django.db import transaction
@@ -1047,17 +1048,33 @@ def _movable(user, params):
     return instance, _proxy(instance).disk_move_plan(params["dev"], params["pool"])
 
 
+USED_CHECK_WAIT = 60  # seconds a disk move waits for the computes to tell whether its old file is used
+
+
 def _used_anywhere(path):
     """Whether a VM or volume of any compute uses path (paths_in_use), as
     shared storage holds it for every host that mounts it; a compute that
-    cannot be read might."""
-    for c in Compute.objects.all():
-        try:
-            if path in wvmConnect(c.hostname, c.login, c.password, c.type).paths_in_use():
-                return True
-        except libvirtError:
-            return True
-    return False
+    cannot be read might, and so might one that does not answer within
+    USED_CHECK_WAIT: libvirt has no call timeout, and a stuck host would
+    hold the job for as long as it is stuck."""
+    computes = list(Compute.objects.all())
+    answer = []
+
+    def check():
+        for c in computes:
+            try:
+                if path in wvmConnect(c.hostname, c.login, c.password, c.type).paths_in_use():
+                    answer.append(True)
+                    return
+            except libvirtError:
+                answer.append(True)
+                return
+        answer.append(False)
+
+    thread = threading.Thread(target=check, daemon=True)
+    thread.start()
+    thread.join(USED_CHECK_WAIT)
+    return answer[0] if answer else True
 
 
 @register
