@@ -292,6 +292,32 @@ class GstfsdTestCase(unittest.TestCase):
                 views.gstfsd_request(compute, {"action": "password", "vname": "vm", "passwd": "$6$other"})
         self.assertIn("root:$6$panel:", json.loads(self.state.read_text())["files"]["/etc/shadow"])
 
+    def test_a_connection_over_the_limit_is_told_gstfsd_is_busy(self):
+        from unittest.mock import patch
+
+        from instances import views
+        from vrtManager.util import OperationError
+
+        port = self._serve()
+        held = []
+        for _ in range(4):  # MAX_CLIENTS connections that send no request
+            s = socket.create_connection(("127.0.0.1", port), timeout=10)
+            self.addCleanup(s.close)
+            challenge_of(s)
+            held.append(s)
+        compute = SimpleNamespace(name="host-a", hostname="127.0.0.1", gstfsd_key=KEY)
+        with patch.object(views, "GSTFSD_PORT", port):
+            with self.assertRaisesRegex(OperationError, "gstfsd is busy with other changes"):
+                views.gstfsd_request(compute, {"action": "password", "vname": "vm", "passwd": "$6$x"})
+            held.pop().close()  # a connection ends: its place is free again
+            for _ in range(50):
+                try:
+                    reply = views.gstfsd_request(compute, {"action": "password", "vname": "vm", "passwd": "$6$x"})
+                    break
+                except OperationError:
+                    time.sleep(0.1)
+        self.assertEqual(reply, {"return": "success"})
+
     def test_root_password_is_set_on_the_guest_root(self):
         reply = self._request("127.0.0.1", self._serve(), {"action": "password", "vname": "vm", "passwd": "$6$new"})
         self.assertEqual(reply, {"return": "success"})
