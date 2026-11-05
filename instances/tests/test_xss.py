@@ -134,7 +134,7 @@ class TemplateHtmlConcatenationTestCase(TestCase):
 # has to be reviewed (use .text() / .val() / DOM APIs for server data instead).
 HTML_SINK = re.compile(r"""\.html\(|innerHTML\s*=|append\(\s*['"]<""")
 # the libraries kept as published, not the app's scripts
-VENDORED_SCRIPTS = {"jquery.js", "js.cookie.js", "socket.io.js"}
+VENDORED_SCRIPTS = {"jquery.js", "socket.io.js"}
 ALLOWED_HTML_SINKS = {
     ("static/js/instance_page.js", "hostDevices.innerHTML = html;"): "the panel's own fragment, host_devices_form.html, escaped by Django",
     ("static/js/instance_page.js", "migratePlan.innerHTML = html;"): "the panel's own fragment, migrate_plan.html, escaped by Django",
