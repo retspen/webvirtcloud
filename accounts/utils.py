@@ -5,7 +5,8 @@ from decimal import Decimal
 
 import segno
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
+from django.core.signing import TimestampSigner
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django_otp import devices_for_user
@@ -56,24 +57,26 @@ def validate_ssh_key(key):
     return True
 
 
-def send_email_with_otp(user, device):
-    # An inline SVG (1.8 mm modules) and, for mail clients that show no SVG,
-    # a PNG (12 px modules); error correction M, 4-module border.
-    qr = segno.make(device.config_url, error="m", mode="byte", encoding="utf-8", micro=False)
-    style = {"border": 4, "dark": "black", "light": "white"}
+# the link a mail carries to its user's OTP QR code: the mail holds no secret
+OTP_LINK = TimestampSigner(salt="accounts.otp_qr")
+OTP_LINK_MAX_AGE = 3600
+
+
+def send_email_with_otp(request, user):
+    """Mail the user a link to the page of their OTP QR code, good for
+    OTP_LINK_MAX_AGE: the QR code's secret is never in a mailbox."""
+    url = request.build_absolute_uri(reverse("accounts:otp_qr", args=[OTP_LINK.sign(str(user.pk))]))
     send_mail(
         _("OTP QR Code"),
-        _("Please view HTML version of this message."),
+        _("Open this link within an hour to see the OTP QR code of account '%(user)s':\n\n%(url)s")
+        % {"user": user, "url": url},
         None,
         [user.email],
-        html_message=render_to_string(
-            "accounts/email/otp.html",
-            {
-                "totp_url": device.config_url,
-                "user": user,
-                "qr_svg": mark_safe(qr.svg_inline(scale=Decimal("1.8"), unit="mm", **style)),
-                "qr_png": qr.png_data_uri(scale=12, **style),
-            },
-        ),
         fail_silently=False,
     )
+
+
+def otp_qr_svg(device):
+    """The device's QR code as inline SVG: 1.8 mm modules, error correction M, a 4-module border."""
+    qr = segno.make(device.config_url, error="m", mode="byte", encoding="utf-8", micro=False)
+    return mark_safe(qr.svg_inline(scale=Decimal("1.8"), unit="mm", border=4, dark="black", light="white"))

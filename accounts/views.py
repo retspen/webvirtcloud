@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_not_required, login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import PermissionDenied
+from django.core.signing import BadSignature
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -28,7 +29,7 @@ from accounts.forms import ApiTokenForm, EmailOTPForm, ProfileForm, UserSSHKeyFo
 from accounts.models import ApiToken, User, UserAttributes, UserInstance, UserSSHKey
 
 from . import forms
-from .utils import get_existing_totp_device, get_user_totp_device, send_email_with_otp
+from .utils import OTP_LINK, OTP_LINK_MAX_AGE, get_existing_totp_device, get_user_totp_device, otp_qr_svg, send_email_with_otp
 
 
 def profile(request):
@@ -301,7 +302,7 @@ EMAIL_OTP_INTERVAL = 300
 @login_not_required
 def email_otp(request):
     """
-    "Lost OTP?": mail the OTP QR code to the user with this address. Open to
+    "Lost OTP?": mail a link to the OTP QR code to the user with this address. Open to
     anyone, so it mails only one exact, active match, at most once per
     EMAIL_OTP_INTERVAL, and answers the same in every case.
     """
@@ -318,7 +319,7 @@ def email_otp(request):
             device = get_existing_totp_device(user)
             if device is not None:
                 try:
-                    send_email_with_otp(user, device)
+                    send_email_with_otp(request, user)
                 except Exception:
                     logging.getLogger(__name__).exception("Could not mail the OTP QR code to user %s", user.pk)
 
@@ -337,6 +338,24 @@ def email_otp(request):
     )
 
 
+@login_not_required
+def otp_qr(request, token):
+    """The OTP QR code of the user a mailed link (send_email_with_otp) names."""
+    if not settings.OTP_ENABLED:
+        raise Http404
+    try:
+        user_id = OTP_LINK.unsign(token, max_age=OTP_LINK_MAX_AGE)
+    except BadSignature:
+        raise Http404
+    user = get_object_or_404(get_user_model(), pk=user_id, is_active=True)
+    device = get_existing_totp_device(user)
+    if device is None:
+        raise Http404
+    response = render(request, "accounts/otp_qr.html", {"user": user, "qr_svg": otp_qr_svg(device)})
+    response["Cache-Control"] = "no-store"
+    return response
+
+
 @require_POST
 @superuser_only
 def admin_email_otp(request, user_id):
@@ -345,7 +364,8 @@ def admin_email_otp(request, user_id):
     if user.email != "":
         try:
             with audit(request, None, subject, "mail OTP QR code"):
-                send_email_with_otp(user, get_user_totp_device(user))
+                get_user_totp_device(user)
+                send_email_with_otp(request, user)
         except OSError as err:  # the SMTP server refused it, or did not answer within EMAIL_TIMEOUT
             messages.error(request, _("The OTP QR code could not be mailed to %(user)s: %(error)s") % {
                 "user": user, "error": err})

@@ -2,17 +2,19 @@ import base64
 import hashlib
 import re
 import struct
-import zlib
+import time
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core import mail
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
+from django.urls import reverse
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from lxml import html
 
-from accounts.utils import (get_existing_totp_device, get_user_totp_device, send_email_with_otp, validate_ssh_key)
+from accounts.utils import (OTP_LINK, OTP_LINK_MAX_AGE, get_existing_totp_device, get_user_totp_device, otp_qr_svg,
+                            send_email_with_otp, validate_ssh_key)
 
 
 class AccountsUtilsTestCase(TestCase):
@@ -80,32 +82,30 @@ class AccountsUtilsTestCase(TestCase):
         device = TOTPDevice.objects.create(user=self.user, confirmed=True)
         self.assertEqual(get_existing_totp_device(self.user).id, device.id)
 
-    def test_send_email_with_otp(self):
+    @override_settings(OTP_ENABLED=True)
+    def test_the_mail_links_to_the_qr_code_and_holds_no_secret(self):
         device = get_user_totp_device(self.user)
-        send_email_with_otp(self.user, device)
+        send_email_with_otp(RequestFactory().get("/"), self.user)
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("OTP QR Code", mail.outbox[0].subject)
-        self.assertEqual(mail.outbox[0].to, ["user@example.com"])
-        # the QR code as inline SVG and, for clients without SVG, as a PNG data URI
-        doc = html.fromstring(mail.outbox[0].alternatives[0][0])
-        self.assertEqual(len(doc.xpath("//svg")), 1)
-        (img,) = doc.xpath("//img")
-        self.assertEqual(img.get("alt"), device.config_url)
-        self.assertTrue(base64.b64decode(img.get("src").removeprefix("data:image/png;base64,")).startswith(b"\x89PNG"))
+        message = mail.outbox[0]
+        self.assertEqual((message.subject, message.to, message.alternatives), ("OTP QR Code", ["user@example.com"], []))
+        self.assertNotIn(device.bin_key.hex(), message.body)
+        self.assertNotIn("otpauth", message.body)
+        link = re.search(r"http://testserver(/\S+)", message.body).group(1)
+        page = self.client.get(link)
+        self.assertEqual(page["Cache-Control"], "no-store")
+        self.assertEqual(len(html.fromstring(page.content).xpath("//svg")), 1)
 
-    def test_otp_email_qr_codes_are_what_django_qr_code_drew(self):
-        # sha256 of the SVG and the PNG django-qr-code 4.2.0 made for this URL
+    @override_settings(OTP_ENABLED=True)
+    def test_a_link_that_is_old_or_not_signed_shows_nothing(self):
+        get_user_totp_device(self.user)
+        token = OTP_LINK.sign(str(self.user.pk))
+        with patch("django.core.signing.time.time", return_value=time.time() + OTP_LINK_MAX_AGE + 1):
+            self.assertEqual(self.client.get(reverse("accounts:otp_qr", args=[token])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("accounts:otp_qr", args=[f"{self.user.pk}:x:y"])).status_code, 404)
+
+    def test_the_qr_code_is_what_django_qr_code_drew(self):
+        # sha256 of the SVG django-qr-code 4.2.0 made for this URL
         url = "otpauth://totp/WebVirtCloud:alice?secret=JBSWY3DPEHPK3PXP&issuer=WebVirtCloud"
-        with patch("accounts.utils.send_mail") as send:
-            send_email_with_otp(self.user, SimpleNamespace(config_url=url))
-        page = send.call_args.kwargs["html_message"]
-        svg = re.search(r"<svg.*?</svg>", page, re.S).group(0)
-        png = base64.b64decode(re.search(r'<img src="data:image/png;base64,([^"]+)"', page).group(1))
+        svg = str(otp_qr_svg(SimpleNamespace(config_url=url)))
         self.assertEqual(hashlib.sha256(svg.encode()).hexdigest(), "b57323be725891af13d862a3a3351cac3ac64a493793c0258cf3e4a5886467c2")
-        # the PNG's header and pixel rows: its compressed bytes depend on the zlib build
-        chunks, pos = {}, 8
-        while pos < len(png):
-            size, kind = struct.unpack(">I4s", png[pos:pos + 8])
-            chunks[kind] = chunks.get(kind, b"") + png[pos + 8:pos + 8 + size]
-            pos += 12 + size
-        self.assertEqual(hashlib.sha256(chunks[b"IHDR"] + zlib.decompress(chunks[b"IDAT"])).hexdigest(), "cca16de611c73468827f70001f69dc2e48633e6aae2b570a9391eb40a1f8ae88")
