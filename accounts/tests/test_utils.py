@@ -82,6 +82,14 @@ class AccountsUtilsTestCase(TestCase):
         device = TOTPDevice.objects.create(user=self.user, confirmed=True)
         self.assertEqual(get_existing_totp_device(self.user).id, device.id)
 
+    def test_the_device_is_made_under_a_lock_on_the_user(self):
+        from django.db.models.query import QuerySet
+
+        with patch.object(QuerySet, "select_for_update", autospec=True, side_effect=QuerySet.select_for_update) as lock:
+            device = get_user_totp_device(self.user)
+        lock.assert_called_once()
+        self.assertEqual(get_user_totp_device(self.user), device)
+
     @override_settings(OTP_ENABLED=True)
     def test_the_mail_links_to_the_qr_code_and_holds_no_secret(self):
         device = get_user_totp_device(self.user)
