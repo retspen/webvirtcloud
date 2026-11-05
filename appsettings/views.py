@@ -48,7 +48,8 @@ GROUPS = [
     (gettext_noop("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
                                "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
     (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
-    (gettext_noop("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE"]),
+    (gettext_noop("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE",
+                                         "LOG_RETENTION_DAYS"]),
 ]
 
 
