@@ -228,3 +228,13 @@ class MigrateJobTestCase(TransactionTestCase):
                            resource_label="mig-src/mig-vm")
         self.assertEqual(MigrateInstance().log_entry(queued, Operation.CANCELLED),
                          ("mig-src", "mig-vm", UUID, "VM mig-vm: migrate to mig-dst (cancelled)"))
+
+    def test_recording_a_migration_holds_the_ownership_lock(self):
+        # a sync of a third compute must not move the owners at the same time
+        from instances import utils
+
+        with patch.object(utils, "lock_ownership") as lock:
+            utils.record_migration(self.vm, self.dest)
+        lock.assert_called_once_with()
+        self.vm.refresh_from_db()
+        self.assertEqual(self.vm.compute, self.dest)
