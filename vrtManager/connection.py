@@ -1040,12 +1040,13 @@ class wvmConnect(object):
         stream, which every connection type carries. A failed write leaves
         no volume."""
         stream = self.wvm.newStream(0)
-        vol = pool.createXML(
-            f"<volume><name>{util.xml_escape(name)}</name><capacity>{len(data)}</capacity>"
-            "<target><format type='raw'/></target></volume>",
-            0,
-        )
+        vol = None
         try:
+            vol = pool.createXML(
+                f"<volume><name>{util.xml_escape(name)}</name><capacity>{len(data)}</capacity>"
+                "<target><format type='raw'/></target></volume>",
+                0,
+            )
             vol.upload(stream, 0, len(data), 0)
             stream.sendAll(lambda _stream, size, buffer: buffer.read(size), io.BytesIO(data))
             stream.finish()
@@ -1053,7 +1054,8 @@ class wvmConnect(object):
             # libvirt: a stream that did not finish is aborted before it is freed
             with contextlib.suppress(libvirtError):
                 stream.abort()
-            vol.delete(0)
+            if vol is not None:
+                vol.delete(0)
             raise
         return vol
 

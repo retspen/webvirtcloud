@@ -81,6 +81,16 @@ class UploadVolumeTestCase(unittest.TestCase):
         conn.wvm.newStream.return_value.abort.assert_called_once_with()
 
 
+    def test_a_volume_that_cannot_be_made_aborts_the_stream(self):
+        conn = wvmConnect.__new__(wvmConnect)
+        conn.wvm = MagicMock()
+        pool = MagicMock()
+        pool.createXML.side_effect = libvirtError("pool is full")
+        with self.assertRaises(libvirtError):
+            conn.upload_volume(pool, "a.iso", b"data")
+        conn.wvm.newStream.return_value.abort.assert_called_once_with()
+
+
 class DeleteWithDisksTestCase(unittest.TestCase):
     def vm(self, seed_in_pool=True):
         from vrtManager.instance import wvmInstance
