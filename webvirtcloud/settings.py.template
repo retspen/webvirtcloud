@@ -256,6 +256,7 @@ LOGGING = {
     },
     'filters': {
         'request': {'()': 'webvirtcloud.log_context.RequestFilter'},
+        'not_found': {'()': 'webvirtcloud.log_context.NotFoundFilter'},
     },
     'handlers': {
         'mail_admins': {
@@ -282,6 +283,7 @@ LOGGING = {
             "handlers": ["mail_admins"],
             "level": "ERROR",
             "propagate": True,
+            "filters": ["not_found"],
         }
     },
 }

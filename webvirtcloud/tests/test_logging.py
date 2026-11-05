@@ -72,3 +72,14 @@ class RequestIdTestCase(TestCase):
     def test_an_id_sent_by_a_client_cannot_write_into_the_log(self):
         response = self.client.get("/accounts/login/", HTTP_X_REQUEST_ID="x\n[forged] line")
         self.assertRegex(response["X-Request-ID"], r"^[0-9a-f]{32}$")
+
+
+class NotFoundTestCase(TestCase):
+    def test_a_404_is_not_logged_and_a_403_is(self):
+        self.client.force_login(User.objects.create_user("plain"))
+        with self.assertLogs("django.request", "WARNING") as logs:
+            self.client.get("/no-such-page/")
+            self.client.get("/admin/users/")
+            logging.getLogger("django.request").warning("end")  # assertLogs needs one line
+        self.assertEqual([line.split(":")[0] for line in logs.output], ["WARNING", "WARNING"])
+        self.assertIn("Forbidden", logs.output[0])

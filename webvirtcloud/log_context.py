@@ -22,3 +22,11 @@ class RequestFilter(logging.Filter):
         except Exception:  # the user may be read from the database here; a failure must not lose the line
             pass
         return True
+
+
+class NotFoundFilter(logging.Filter):
+    """Leaves out django.request's line for a 404: scanners and old links
+    would bury the lines that matter."""
+
+    def filter(self, record):
+        return getattr(record, "status_code", None) != 404
