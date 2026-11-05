@@ -137,7 +137,7 @@ def clone_data(user, instance, fields):
                                  ("memory", instance.config_memory,
                                   _("Enter a whole number of memory (MiB) for the clone"))):
         value = fields.get(f"clone-{key}") or str(source)
-        if not value.isdigit() or int(value) < 1:
+        if not value.isdecimal() or int(value) < 1:
             raise util.OperationError(refusal)
         # None: as the VM, nothing to change after the copy
         data[key] = int(value) if int(value) != source else None
