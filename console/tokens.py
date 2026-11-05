@@ -1,11 +1,18 @@
 """The console token: the console view signs "host:uuid:user_id:console type"
 for the VM whose console it shows; the console daemons (novncd for vnc,
 socketiod for pty) accept it for 120 s if that user may still open that VM's
-console. A bearer token: whoever holds it within that time gets the console."""
+console. novncd, whose token travels in the websocket URL (and so in logs),
+also wants the session cookie of the token's user (session_user_id).
+socketiod's token travels in the Socket.IO handshake, not the URL."""
+
+from importlib import import_module
 
 from django import db
+from django.conf import settings
+from django.contrib.auth import SESSION_KEY
 from django.contrib.auth import get_user_model
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
+from django.http import parse_cookie
 
 from instances.models import Instance
 from instances.utils import can_open_console
@@ -44,3 +51,12 @@ def may_still_open(user_id, instance):
         return user is not None and can_open_console(user, instance)
     finally:
         db.connection.close()  # a session may last for days: no idle connection meanwhile
+
+
+def session_user_id(cookie_header):
+    """The id (a string) of the user signed in with the session cookie of a
+    request's Cookie header, or None."""
+    session_key = parse_cookie(cookie_header or "").get(settings.SESSION_COOKIE_NAME)
+    if not session_key:
+        return None
+    return import_module(settings.SESSION_ENGINE).SessionStore(session_key).get(SESSION_KEY)

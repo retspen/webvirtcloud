@@ -406,8 +406,14 @@ class NovncdDaemonLogicTestCase(TestCase):
     def setUp(self):
         self.get_parser = novncd_mod.get_parser
         self.ConsoleClient = novncd_mod.ConsoleClient
-        patcher = patch.object(novncd_mod, "authorize", return_value=(MagicMock(), MagicMock()))
-        self.authorize = patcher.start()
+        user = MagicMock(pk=7)
+        user.username = "vnc-user"
+        for name, value in (("authorize", (MagicMock(), user)), ("session_user_id", "7")):
+            patcher = patch.object(novncd_mod, name, return_value=value)
+            setattr(self, name, patcher.start())
+            self.addCleanup(patcher.stop)
+        patcher = patch.object(novncd_mod.ConsoleClient, "headers", {}, create=True)
+        patcher.start()
         self.addCleanup(patcher.stop)
 
     def test_novncd_parser_defaults(self):
@@ -563,6 +569,34 @@ class NovncdDaemonLogicTestCase(TestCase):
         self.assertEqual(infos[4], 5900)
         # the VM access was checked for, not whichever VM has its name now
         self.assertEqual(mock_wvm.call_args.kwargs["uuid"], mock_instance.uuid)
+
+    def test_a_token_without_its_users_session_is_refused_and_logged(self):
+        from logs.models import Logs
+
+        self.session_user_id.return_value = None  # read from a log, used in another browser
+        handler = self.ConsoleClient()
+        handler.headers = {"Cookie": "sessionid=another", "X-Real-IP": "192.0.2.9"}
+        handler.path = "/novncd/?token=1-uuid"
+        handler.msg = MagicMock()
+        socket_factory = MagicMock()
+        with patch.object(novncd_mod, "get_connection_infos") as get_info, self.assertLogs(level="WARNING"):
+            handler._new_client(socket_factory=socket_factory)
+        get_info.assert_not_called()
+        socket_factory.assert_not_called()
+        self.session_user_id.assert_called_once_with("sessionid=another")
+        row = Logs.objects.get()
+        self.assertEqual((row.user, row.ip, row.success), ("vnc-user", "192.0.2.9", False))
+        self.assertEqual(row.message, "VNC console refused: The console page was opened in another session")
+
+    def test_the_session_names_its_user(self):
+        from django.contrib.sessions.backends.db import SessionStore
+
+        user = get_user_model().objects.create_user("vnc-session", password="pw")
+        self.client.force_login(user)
+        cookie = f"{settings.SESSION_COOKIE_NAME}={self.client.session.session_key}; other=1"
+        self.assertEqual(tokens.session_user_id(cookie), str(user.pk))
+        self.assertIsNone(tokens.session_user_id(f"{settings.SESSION_COOKIE_NAME}={SessionStore().session_key}"))
+        self.assertIsNone(tokens.session_user_id(None))
 
     def test_a_vnc_session_ends_when_its_user_may_no_longer_open_it(self):
         tsock, ended = MagicMock(), MagicMock()

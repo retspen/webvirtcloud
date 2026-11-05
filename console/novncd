@@ -4,6 +4,7 @@
 # through an SSH tunnel or a local Unix socket.
 
 import argparse
+import ipaddress
 import logging
 import os
 import socket
@@ -22,7 +23,8 @@ django.setup()
 from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 
 from console.sshtunnels import open_tunnel, tunnel_target  # noqa: E402
-from console.tokens import ACCESS_CHECK, authorize, may_still_open  # noqa: E402
+from console.tokens import ACCESS_CHECK, authorize, may_still_open, session_user_id  # noqa: E402
+from logs.audit import write  # noqa: E402
 from vrtManager.connection import CONN_SOCKET, CONN_SSH  # noqa: E402
 from vrtManager.util import is_loopback  # noqa: E402
 from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
@@ -77,6 +79,14 @@ def get_connection_infos(instance):
 WILDCARD = (None, "", "0.0.0.0", "::")
 
 
+def client_address(value):
+    """The client's address nginx sends in X-Real-IP, or None."""
+    try:
+        return str(ipaddress.ip_address(value))
+    except ValueError:
+        return None
+
+
 def end_when_refused(instance, user_id, tsock, ended):
     """Close the session's VNC socket, which ends it, once its user may no
     longer open the console (as the serial console does)."""
@@ -102,11 +112,20 @@ class ConsoleClient:
             logging.warning("Console connection without a token in its websocket URL")
             return
 
+        user = None
         try:
             instance, user = authorize(token, "vnc")
+            # a token read from a log or a URL is no use without its user's session
+            if session_user_id(self.headers.get("Cookie")) != str(user.pk):
+                raise PermissionError("The console page was opened in another session")
             connhost, connuser, conntype, console_host, console_port, console_socket = get_connection_infos(instance)
+        except PermissionError as e:
+            address = client_address(self.headers.get("X-Real-IP"))
+            logging.warning("Console connection from %s denied: %s", address, e)
+            write(user.username if user else "", "-", "", f"VNC console refused: {e}", False, address)
+            return
         except Exception as e:
-            logging.warning("Console connection denied: %s", e)
+            logging.warning("Console connection failed: %s", e)
             return
         logging.debug(
             "Console of %s@%s (type %s): %s:%s, socket %s",
