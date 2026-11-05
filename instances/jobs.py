@@ -792,6 +792,16 @@ class CreateInstance(Kind):
                     label=f"{compute.name}/{params['name']}",
                     intent={"compute": compute.pk, "uuid": util.randomUUID(), "name": params["name"]})
 
+    def precheck(self, op, ctx):
+        if op.user is None or not op.user.is_active or not op.user.is_superuser:
+            raise PermissionDenied
+        # a VM found on a host since the job was queued may have taken the name
+        if Instance.objects.filter(name__exact=op.params["name"]).exists():
+            raise util.OperationError(_("There is an instance with same name. Remove it and try again!"))
+        c = Compute.objects.get(pk=op.params["compute"])
+        if op.params["name"] in wvmCreate(c.hostname, c.login, c.password, c.type).get_instances():
+            raise util.OperationError(_("A virtual machine with this name already exists"))
+
     def run(self, op, ctx):
         data = op.params
         c = Compute.objects.get(pk=data["compute"])
