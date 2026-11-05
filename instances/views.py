@@ -1626,6 +1626,11 @@ def add_cdrom(request, pk):
     if bus == "usb" and not image:
         messages.error(request, _("A USB CD-ROM needs an ISO image: libvirt has no empty USB drive"))
         return _back(request, pk, "disks")
+    path = instance.proxy.get_iso_path(image) if image else ""
+    # a form sent twice (a double click) adds the drive once
+    if path and path in {media["path"] for media in instance.media + instance.config_media}:
+        messages.error(request, _("%(image)s is already in a CD-ROM of this VM") % {"image": image})
+        return _back(request, pk, "disks")
 
     target = utils.get_new_disk_dev(
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
@@ -1634,7 +1639,7 @@ def add_cdrom(request, pk):
         with audit_vm(request, instance, f"add CD-ROM {target}" + (f" with {image}" if image else "")):
             instance.proxy.attach_disk(
                 target,
-                instance.proxy.get_iso_path(image) if image else "",
+                path,
                 disk_device="cdrom",
                 cache_mode="none",
                 target_bus=bus,
