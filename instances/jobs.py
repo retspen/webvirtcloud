@@ -384,7 +384,10 @@ class CreateSnapshot(Kind):
         return _vm_plan(params)
 
     def precheck(self, op, ctx):
-        _checked_proxy(op)
+        # a snapshot taken outside the panel since the job was queued may have
+        # the name, and recovery would count it as this job's
+        if op.params["name"] in _checked_proxy(op).instance.snapshotListNames(0):
+            raise util.OperationError(_("A snapshot named %(name)s already exists"), name=op.params["name"])
 
     def run(self, op, ctx):
         p = op.params
