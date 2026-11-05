@@ -15,6 +15,7 @@ import uuid
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from importlib import import_module
 from pathlib import Path
 
 from django.conf import settings
@@ -23,6 +24,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_noop
 
 from appsettings.settings import get_settings
+from logs.models import Logs
 
 from . import claims, jobs, utils
 from .models import Claim, LeaseLost, Operation, acquire, fenced, renew
@@ -367,6 +369,9 @@ def housekeeping():
     )
     Operation.objects.filter(pk__in=old).delete()
     Claim.objects.filter(operation__isnull=True, expires_at__lt=timezone.now()).delete()
+    # nothing else removes the Logs page's rows or the expired sessions
+    Logs.objects.filter(date__lt=timezone.now() - timedelta(days=utils.log_retention_days())).delete()
+    import_module(settings.SESSION_ENGINE).SessionStore.clear_expired()
     # each kind ends its idle jobs; HOUSEKEEPING_EVERY bounds how late an idle request job ends
     for op in Operation.objects.filter(state__in=ACTIVE, worker=Operation.REQUEST):
         try:

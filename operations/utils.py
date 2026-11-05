@@ -51,7 +51,7 @@ TRANSPORT_ERROR_CODES = {
 }
 UNREACHABLE = gettext_noop("The host of this virtual machine cannot be reached right now.")
 
-BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30)}
+BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365)}
 
 
 def safe_text(text):
@@ -177,3 +177,7 @@ def concurrency():
 
 def retention_days():
     return _value("JOB_RETENTION_DAYS")
+
+
+def log_retention_days():
+    return _value("LOG_RETENTION_DAYS")

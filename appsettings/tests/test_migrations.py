@@ -55,7 +55,7 @@ class SnapshotFreeSpaceSettingsTestCase(TestCase):
 
 class WorkerSettingsTestCase(TestCase):
     def test_the_rows_fit_their_columns(self):
-        for key in ("WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"):
+        for key in ("WORKER_CONCURRENCY", "JOB_RETENTION_DAYS", "LOG_RETENTION_DAYS"):
             setting = AppSettings.objects.get(key=key)
             for field in ("name", "key", "value", "description"):
                 limit = AppSettings._meta.get_field(field).max_length

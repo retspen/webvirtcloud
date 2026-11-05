@@ -302,6 +302,20 @@ class RequestJobTestCase(TransactionTestCase):
         self.assertEqual(fakes.EXPIRED, [str(idle.pk)])
         self.assertNotIn(str(fresh.pk), fakes.EXPIRED)
 
+    def test_housekeeping_removes_old_log_rows_and_expired_sessions(self):
+        from django.contrib.sessions.models import Session
+        from logs.models import Logs
+
+        AppSettings.objects.update_or_create(key="LOG_RETENTION_DAYS", defaults={"name": "t", "value": "10", "choices": ""})
+        old, kept = (Logs.objects.create(user="u", host="h", instance="vm", message=m) for m in ("old", "kept"))
+        Logs.objects.filter(pk=old.pk).update(date=timezone.now() - timedelta(days=11))
+        Logs.objects.filter(pk=kept.pk).update(date=timezone.now() - timedelta(days=9))
+        Session.objects.create(session_key="expired-session", session_data="", expire_date=timezone.now() - timedelta(1))
+        Session.objects.create(session_key="current-session", session_data="", expire_date=timezone.now() + timedelta(1))
+        housekeeping()
+        self.assertEqual(list(Logs.objects.values_list("message", flat=True)), ["kept"])
+        self.assertEqual(list(Session.objects.values_list("session_key", flat=True)), ["current-session"])
+
     def test_one_failing_expire_does_not_stop_the_others(self):
         self.request_job("key-00000001", 61, uuid="u1", fail_expire=True)
         other = self.request_job("key-00000002", 61, uuid="u2")
