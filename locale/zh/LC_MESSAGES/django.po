@@ -517,7 +517,7 @@ msgid "Add"
 msgstr "添加"
 
 #: accounts/templates/profile.html:64 accounts/templates/profile.html:70
-#: accounts/views.py:71 accounts/views.py:75
+#: accounts/views.py:71 accounts/views.py:86
 msgid "Create an API token"
 msgstr "创建 API 令牌"
 
@@ -560,80 +560,85 @@ msgstr ""
 msgid "Profile updated"
 msgstr "资料已更新"
 
-#: accounts/views.py:74
+#: accounts/views.py:78
 #, python-format
 msgid "A user has at most %(limit)s API tokens: delete one first."
 msgstr "每个用户最多有 %(limit)s 个 API 令牌：请先删除一个。"
 
-#: accounts/views.py:109
+#: accounts/views.py:80
+#, python-format
+msgid "You have a token named %(name)s: choose another name."
+msgstr "您已有名为 %(name)s 的令牌：请换一个名称。"
+
+#: accounts/views.py:117
 msgid "API token deleted"
 msgstr "API 令牌已删除"
 
-#: accounts/views.py:117
+#: accounts/views.py:125
 msgid "Delete API token"
 msgstr "删除 API 令牌"
 
-#: accounts/views.py:118
+#: accounts/views.py:126
 msgid "Scripts and tools that use it can no longer reach the API."
 msgstr "使用它的脚本和工具将无法再访问 API。"
 
-#: accounts/views.py:128
+#: accounts/views.py:136
 msgid "SSH key added"
 msgstr "SSH 密钥已添加"
 
-#: accounts/views.py:136
+#: accounts/views.py:144
 msgid "Add SSH key"
 msgstr "添加 SSH 密钥"
 
-#: accounts/views.py:157
+#: accounts/views.py:165
 msgid "SSH key deleted"
 msgstr "SSH 密钥已删除"
 
-#: accounts/views.py:165
+#: accounts/views.py:173
 msgid "Delete SSH key"
 msgstr "删除 SSH 密钥"
 
-#: accounts/views.py:166
+#: accounts/views.py:174
 msgid ""
 "VMs that already have it keep it; VMs created from now on do not get it."
 msgstr "已有此密钥的虚拟机会保留它；此后创建的虚拟机不会再获得它。"
 
-#: accounts/views.py:215
+#: accounts/views.py:223
 msgid "Password Changed"
 msgstr "密码已修改"
 
-#: accounts/views.py:244
+#: accounts/views.py:252
 msgid "Create User Instance"
 msgstr "创建用户虚拟机"
 
-#: accounts/views.py:278
+#: accounts/views.py:286
 msgid "Update User Instance"
 msgstr "更新用户虚拟机"
 
-#: accounts/views.py:296
+#: accounts/views.py:304
 msgid "The user loses access to this VM; the VM itself is not changed."
 msgstr "该用户将失去对此虚拟机的访问权限；虚拟机本身不受影响。"
 
-#: accounts/views.py:329
+#: accounts/views.py:337
 #, python-format
 msgid "OTP Sent to %(email)s"
 msgstr "OTP 已发送至 %(email)s"
 
-#: accounts/views.py:338
+#: accounts/views.py:346
 msgid "Email OTP"
 msgstr "邮件发送 OTP"
 
-#: accounts/views.py:372
+#: accounts/views.py:380
 #, python-format
 msgid "The OTP QR code could not be mailed to %(user)s: %(error)s"
 msgstr "无法将 OTP 二维码通过邮件发送给 %(user)s：%(error)s"
 
-#: accounts/views.py:376
+#: accounts/views.py:384
 #, python-format
 msgid "OTP QR code was emailed to user %(user)s"
 msgstr "OTP 二维码已通过邮件发送给用户 %(user)s"
 
-#: accounts/views.py:380
+#: accounts/views.py:388
 msgid "User email not set, failed to send QR code"
 msgstr "未设置用户邮箱，无法发送二维码"
 
