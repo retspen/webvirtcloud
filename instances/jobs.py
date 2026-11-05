@@ -968,7 +968,6 @@ class MigrateInstance(Kind):
         ctx.record_intent()
         ctx.set_phase(gettext_noop("Migrating the VM"))
         try:
-            # migrate_instance logs the outcome
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
                                    disk_pools=p["disk_pools"],
                                    **{k: p[k] for k in MIGRATE_OPTIONS})
@@ -982,7 +981,18 @@ class MigrateInstance(Kind):
             if isinstance(err, util.OperationError):
                 raise
             raise util.OperationError(str(err)) from err
+        finally:
+            # migrate_instance wrote the outcome's Logs row (log_entry)
+            ctx.record_intent(outcome_logged=True)
         return {}
+
+    def log_entry(self, op, state):
+        """A row for an end migrate_instance did not log: refused before it
+        ran, cancelled while queued, or ended by recovery."""
+        if op.intent.get("outcome_logged"):
+            return None
+        target = Compute.objects.filter(pk=op.params["target"]).values_list("name", flat=True).first()
+        return _log(op, state, f"migrate to {target}")
 
     def progress(self, op):
         info = _proxy(_instance(op.params["instance"])).instance.jobInfo()
