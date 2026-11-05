@@ -38,6 +38,14 @@ class LoginLockoutTests(TestCase):
         self.login("wrong")
         self.assertEqual(self.login("right-pass-1").status_code, 302)
 
+    def test_a_successful_login_is_logged_on_the_logs_page_only(self):
+        from axes.models import AccessLog
+        from logs.models import Logs
+
+        self.assertEqual(self.login("right-pass-1").status_code, 302)
+        self.assertTrue(Logs.objects.filter(user="lo-user").exists())
+        self.assertFalse(AccessLog.objects.exists())
+
     def test_the_proxy_header_is_trusted_only_from_the_local_proxy(self):
         # direct requests: X-Real-IP is ignored, so changing it does not escape the lock
         for n in range(3):

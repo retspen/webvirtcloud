@@ -191,6 +191,8 @@ AXES_FAILURE_LIMIT = "accounts.lockout.failure_limit"
 AXES_COOLOFF_TIME = "accounts.lockout.cooloff_time"
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_RESET_ON_SUCCESS = True
+# successful logins are on the Logs page; django-axes' own record of them would only grow
+AXES_DISABLE_ACCESS_LOG = True
 AXES_CLIENT_IP_CALLABLE = "accounts.lockout.client_ip"
 # Reverse proxies other than a local one whose X-Real-IP header gives the
 # client address, e.g. ["10.0.0.5", "172.18.0.0/16"]
