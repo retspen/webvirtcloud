@@ -54,6 +54,7 @@ from operations import claims, jobs
 from operations.utils import busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
+from vrtManager.connection import CONNECT_TIMEOUT
 from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import USAGE_MAX_WINDOW, wvmInstances
 from vrtManager.interface import wvmInterface
@@ -1026,10 +1027,12 @@ def gstfsd_request(compute, data):
             "compute": compute.name})
     try:
         # the host name may resolve to IPv4 or IPv6
-        s = socket.create_connection((compute.hostname, GSTFSD_PORT), timeout=GSTFSD_TIMEOUT)
+        # a host that is down is told in seconds, as libvirt's; the change itself may take GSTFSD_TIMEOUT
+        s = socket.create_connection((compute.hostname, GSTFSD_PORT), timeout=CONNECT_TIMEOUT)
     except OSError as err:
         raise util.OperationError(_("gstfsd error: %(err)s") % {"err": err}) from err
     try:
+        s.settimeout(GSTFSD_TIMEOUT)
         stream = s.makefile("rb")
         challenge = json.loads(stream.readline(GSTFSD_MAX_FRAME))["challenge"]
         nonce, request = secrets.token_hex(32), json.dumps(data)

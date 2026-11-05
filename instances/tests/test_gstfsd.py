@@ -610,6 +610,25 @@ class GstfsdClientTestCase(unittest.TestCase):
             with self.subTest(name), self.assertRaises(OperationError):
                 self.ask(*sent)
 
+    def test_a_host_that_does_not_answer_is_told_in_the_connect_timeout(self):
+        from unittest.mock import MagicMock, patch
+
+        from instances import views
+        from vrtManager.connection import CONNECT_TIMEOUT
+        from vrtManager.util import OperationError
+
+        with patch("instances.views.socket.create_connection", side_effect=TimeoutError("timed out")) as connect:
+            with self.assertRaisesRegex(OperationError, "gstfsd error: timed out"):
+                views.gstfsd_request(SimpleNamespace(name="host-a", hostname="192.0.2.1", gstfsd_key="ab" * 32), {})
+        self.assertEqual(connect.call_args.kwargs["timeout"], CONNECT_TIMEOUT)
+        # the change itself, once connected, has its own, longer limit
+        connected = MagicMock()
+        connected.makefile.return_value.readline.side_effect = OSError("closed")
+        with patch("instances.views.socket.create_connection", return_value=connected), \
+                self.assertRaises(OperationError):
+            views.gstfsd_request(SimpleNamespace(name="host-a", hostname="192.0.2.1", gstfsd_key="ab" * 32), {})
+        connected.settimeout.assert_called_once_with(views.GSTFSD_TIMEOUT)
+
     def test_a_host_without_a_key_is_not_asked(self):
         from unittest.mock import patch
 
