@@ -2,6 +2,8 @@
 it, the worker moves it, recovery ends a copy no worker waits for and reads
 the outcome from the VM's definitions."""
 
+import threading
+import time
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -129,3 +131,17 @@ class MoveDiskJobTestCase(TransactionTestCase):
         self.proxy.instance.blockJobAbort.reset_mock()
         self.assertEqual(self.reconcile({OLD}, job={"cur": 1, "end": 2}, mirror="/other").state, Operation.UNCERTAIN)
         self.proxy.instance.blockJobAbort.assert_not_called()
+
+
+class UsedAnywhereTestCase(TransactionTestCase):
+    def test_a_host_that_does_not_answer_counts_as_using_the_file(self):
+        from instances import jobs
+
+        Compute.objects.create(name="stuck", hostname="192.0.2.62", login="root", password="", type=1)
+        stuck = threading.Event()
+        self.addCleanup(stuck.set)
+        with patch("instances.jobs.wvmConnect") as hosts, patch.object(jobs, "USED_CHECK_WAIT", 0.2):
+            hosts.return_value.paths_in_use.side_effect = lambda: stuck.wait(10) and set()
+            started = time.monotonic()
+            self.assertTrue(jobs._used_anywhere(OLD))
+        self.assertLess(time.monotonic() - started, 2)
