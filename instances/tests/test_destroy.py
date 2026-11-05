@@ -9,7 +9,8 @@ from django.urls import reverse
 from instances.models import Instance
 from instances.utils import paths_used_on_other_computes
 from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, libvirtError
-from vrtManager.util import OperationError
+from operations.utils import public_error_text
+from vrtManager.util import ConnectionFailed, OperationError
 
 
 class DestroyOrderTestCase(TestCase):
@@ -243,5 +244,8 @@ class OtherComputesTestCase(TestCase):
         hosts = self.hosts({"192.0.2.61": set(), "192.0.2.62": set()})
         hosts["192.0.2.61"].paths_in_use.side_effect = libvirtError("connection refused")
         with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
-            with self.assertRaisesMessage(OperationError, "The disk files cannot be checked on host-b"):
+            with self.assertRaises(ConnectionFailed) as caught:
                 paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"])
+        self.assertEqual(caught.exception.args[0], "The disk files cannot be checked on host-b: connection refused")
+        # users who do not see hosts get neither the host nor libvirt's text
+        self.assertEqual(public_error_text(caught.exception), "The host of this virtual machine cannot be reached right now.")
