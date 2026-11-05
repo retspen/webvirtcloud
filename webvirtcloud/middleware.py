@@ -1,13 +1,21 @@
+import re
+import uuid
+
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
+from logs.audit import request_ip
 from operations import claims, jobs
 from operations.utils import busy_message, public_error_text, said, summary, words
 
+from webvirtcloud.log_context import current_request
+
 API_PREFIX = "/api/"
+# nginx's $request_id; any other value is replaced, so a client cannot write into the log
+REQUEST_ID = re.compile(r"[0-9a-f]{32}")
 # scripts only from this site: no inline script or event handler runs (inline styles still do);
 # the XML editor (Ace) and the API docs (Redoc) start their workers from blob: URLs
 CONTENT_SECURITY_POLICY = (
@@ -36,6 +44,23 @@ def error_text(request, exception):
     if user and (user.is_superuser or user.has_perm("instances.view_instances")):
         return words(said(exception))
     return public_error_text(exception)
+
+
+class RequestIdMiddleware:
+    """Names the request for its log lines (see log_context) and sends the ID back in X-Request-ID."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request_id = request.headers.get("X-Request-ID", "")
+        request.request_id = request_id if REQUEST_ID.fullmatch(request_id) else uuid.uuid4().hex
+        request.client_ip = request_ip(request)
+        # not reset after the response: Django logs a 4xx or 5xx answer after the middleware returns
+        current_request.set(request)
+        response = self.get_response(request)
+        response["X-Request-ID"] = request.request_id
+        return response
 
 
 class ContentSecurityPolicyMiddleware:

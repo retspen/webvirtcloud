@@ -178,6 +178,9 @@ tmp_upload_dir = None
 logfile = '-'
 loglevel = 'info'
 accesslog = '-'
+# the client's address from nginx (gunicorn itself sees 127.0.0.1) and the
+# request's ID, as on the app log's lines
+access_log_format = '%({x-real-ip}i)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %({x-request-id}o)s'
 
 #
 # Process naming
