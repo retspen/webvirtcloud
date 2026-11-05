@@ -3,6 +3,7 @@ from computes.models import Compute
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
+from django.views.decorators.debug import sensitive_post_parameters
 from instances.models import Instance
 from libvirt import libvirtError
 from logs.audit import audit
@@ -11,6 +12,7 @@ from vrtManager.virtsecrets import wvmSecrets
 from virtsecrets.forms import USAGE_TEXTS, AddSecret
 
 
+@sensitive_post_parameters()
 @superuser_only
 def secrets(request, compute_id):
     """The host's secrets with the VMs and pools that use them; one created,

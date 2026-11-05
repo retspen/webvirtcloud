@@ -38,6 +38,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, gettext_noop
 from django.views.decorators.http import require_POST
+from django.views.decorators.debug import sensitive_post_parameters
 from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_RUNNING,
                      VIR_DOMAIN_SHUTOFF,
@@ -1091,6 +1092,7 @@ def access_error(request, err):
     return text
 
 
+@sensitive_post_parameters()
 @require_POST
 @serialize_instance_mutation
 def set_root_pass(request, pk):
@@ -2320,6 +2322,7 @@ def clone(request, pk):
     return redirect(reverse("instances:instance", args=[pk]))
 
 
+@sensitive_post_parameters()
 @require_POST
 @serialize_instance_mutation
 def update_console(request, pk):

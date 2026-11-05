@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
+from django.views.decorators.debug import sensitive_post_parameters
 from instances.models import InstanceTombstone
 from instances.report import workbook
 from logs.audit import audit, changed_fields, snapshot
@@ -124,6 +125,7 @@ def user_list(request):
     )
 
 
+@sensitive_post_parameters()
 @superuser_only
 def user_create(request):
     user_form = forms.UserCreateForm(request.POST or None)
@@ -149,6 +151,7 @@ def user_create(request):
     )
 
 
+@sensitive_post_parameters()
 @superuser_only
 def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
@@ -190,6 +193,7 @@ def user_update(request, pk):
     )
 
 
+@sensitive_post_parameters()
 @superuser_only
 def user_update_password(request, pk):
     user = get_object_or_404(User, pk=pk)

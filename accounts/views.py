@@ -20,6 +20,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
+from django.views.decorators.debug import sensitive_post_parameters
 
 from accounts.apps import admin_password_path
 from computes.utils import lock_ownership
@@ -186,6 +187,7 @@ def account(request, user_id):
     )
 
 
+@sensitive_post_parameters()
 @login_required
 def change_password(request):
     must_change = UserAttributes.objects.filter(

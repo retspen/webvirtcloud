@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.debug import sensitive_post_parameters
 from instances.models import Instance
 from instances.utils import read_list_rows
 from libvirt import libvirtError
@@ -145,6 +146,7 @@ def instances(request, compute_id):
     )
 
 
+@sensitive_post_parameters()
 @superuser_only
 def compute_create(request, FormClass):
     form = FormClass(request.POST or None)
@@ -157,6 +159,7 @@ def compute_create(request, FormClass):
     return render(request, "computes/form.html", {"form": form})
 
 
+@sensitive_post_parameters()
 @superuser_only
 def compute_update(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
