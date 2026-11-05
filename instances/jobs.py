@@ -449,6 +449,8 @@ class RevertSnapshot(Kind):
         proxy = _checked_proxy(op)
         if op.params["external"]:
             proxy.check_external_revert(op.params["name"])
+        else:
+            proxy.check_internal_revert()
         # a revert gives the VM the host devices it had then: not one given since to another VM
         has_hostdevs, definitions = _snapshot_definitions(proxy, op.params)
         if has_hostdevs:

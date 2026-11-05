@@ -92,6 +92,14 @@ class SnapshotJobsTestCase(TransactionTestCase):
             self.queue_and_run("revert_external_snapshot", {"name": "a"})
         self.assertFalse(Operation.objects.get().effects_started)
 
+    def test_an_internal_revert_of_a_running_vm_is_refused_before_effects(self):
+        # the page disables the button, but it may be older than the VM's start
+        self.proxy.check_internal_revert.side_effect = OperationError("Shut the VM down to revert to an internal snapshot")
+        with self.assertRaises(OperationError):
+            self.queue_and_run("revert_snapshot", {"name": "b"})
+        self.assertFalse(Operation.objects.get().effects_started)
+        self.proxy.snapshot_revert.assert_not_called()
+
     def test_an_internal_revert_is_made_by_the_worker(self):
         self.queue_and_run("revert_snapshot", {"name": "b"})
         self.proxy.snapshot_revert.assert_called_once_with("b")

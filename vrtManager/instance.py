@@ -2301,12 +2301,17 @@ class wvmInstance(wvmConnect):
         self._check_snapshot_state()
         self._snapshot(snapshot, external=False).delete(0)
 
-    def snapshot_revert(self, snapshot):
-        """An internal snapshot is reverted to on a shut-off VM; one of a
-        running VM starts it again as it was then."""
+    def check_internal_revert(self):
+        """Refuses a revert to an internal snapshot, before anything changes,
+        unless the VM is shut off."""
         if self.get_status() != 5:
             raise util.OperationError(gettext_noop("Shut the VM down to revert to an internal snapshot"))
         self._check_snapshot_state()
+
+    def snapshot_revert(self, snapshot):
+        """An internal snapshot is reverted to on a shut-off VM; one of a
+        running VM starts it again as it was then."""
+        self.check_internal_revert()
         self.instance.revertToSnapshot(self._snapshot(snapshot, external=False), 0)
 
     def get_managed_save_image(self):
