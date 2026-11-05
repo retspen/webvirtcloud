@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
-from logs.audit import request_ip
+from logs.audit import request_ip, write
 from operations import claims, jobs
 from operations.utils import busy_message, public_error_text, said, summary, words
 
@@ -60,6 +60,28 @@ class RequestIdMiddleware:
         current_request.set(request)
         response = self.get_response(request)
         response["X-Request-ID"] = request.request_id
+        return response
+
+
+class AccessDeniedMiddleware:
+    """
+    A Logs row for each 401 or 403 answered to a signed-in user or to a request
+    with credentials (an API token). Anonymous requests are left out: a
+    scanner would fill the table.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if response.status_code in (401, 403):
+            user = getattr(request, "user", None)
+            signed_in = user is not None and user.is_authenticated
+            if signed_in or "Authorization" in request.headers:
+                write(user.get_username() if signed_in else "", "-", "",
+                      f"Access denied ({response.status_code}): {request.method} {request.path}", False,
+                      request_ip(request))
         return response
 
 
