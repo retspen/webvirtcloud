@@ -8,6 +8,12 @@ services:
     restart: unless-stopped
     # above my_init's 80 s, which is above the worker's 60 s drain
     stop_grace_period: 95s
+    # every request is a line of gunicorn's access log: kept to 5 files of 10 MB, as the panel's own log
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
     ports:
       - "80:80"
     environment:
