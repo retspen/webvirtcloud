@@ -79,7 +79,7 @@ DENIED = (403, 404)
 
 # Per-role reachability on the test VM, outside ALLOWED_FOR_ANY_USER. Compared
 # in both directions: an extra URL is a privilege leak, a missing one is a
-# regression. Must match the roles table in README.md.
+# regression. Must match the roles table in doc/permissions.md.
 VIEW_VM = {
     "instances:instance",
     "instances:status",
