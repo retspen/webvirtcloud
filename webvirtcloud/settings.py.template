@@ -23,7 +23,7 @@ if not SECRET_KEY:
     if secret_file.exists():
         try:
             SECRET_KEY = secret_file.read_text().strip()
-        except Exception:
+        except OSError:
             pass
 
 DEBUG = False
@@ -242,7 +242,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 LOCALE_PATHS = [
-    "locale/",
+    BASE_DIR / "locale",
 ]
 
 # Resolve the application log path and make sure its directory exists, so a
