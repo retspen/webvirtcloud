@@ -8,7 +8,7 @@ venv2
 .webvirtcloud
 *.pyc
 db.sqlite3*
-test_db.sqlite3*
+test_db*.sqlite3*
 console/cert.pem*
 tags
 dhcpd.*

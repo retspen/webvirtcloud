@@ -8,11 +8,6 @@ can change interfaces at all."""
 import unittest
 from unittest.mock import MagicMock
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from libvirt import (
     VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET,
     VIR_DOMAIN_PAUSED,

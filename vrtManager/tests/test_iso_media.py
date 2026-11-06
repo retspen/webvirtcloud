@@ -1,11 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from libvirt import (
     VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE,
     VIR_DOMAIN_AFFECT_CONFIG,

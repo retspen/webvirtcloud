@@ -11,10 +11,6 @@ import unittest
 from unittest import mock
 
 import libvirt
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
 
 from vrtManager import util
 from vrtManager.connection import wvmConnect

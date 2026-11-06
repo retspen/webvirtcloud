@@ -1,16 +1,4 @@
-import sys
 import unittest
-from unittest.mock import MagicMock
-
-try:
-    from django.conf import settings
-    if not settings.configured:
-        settings.configure(MAC_OUI="52:54:10")
-except ImportError:
-    django_mock = MagicMock()
-    django_mock.conf.settings.MAC_OUI = "52:54:10"
-    sys.modules["django"] = django_mock
-    sys.modules["django.conf"] = django_mock.conf
 
 from lxml import etree
 from vrtManager.network import ip_networks, network_size

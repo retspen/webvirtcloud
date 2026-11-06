@@ -1,11 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from vrtManager import util
 from vrtManager.instance import wvmInstance
 from vrtManager.network import wvmNetworks, wvmNetwork
@@ -119,7 +114,6 @@ class TestXmlSafety(unittest.TestCase):
 
         inst._defineXML.assert_not_called()
         self.assertIn("type='pflash'", inst._snapshotCreateXML.call_args[0][0])
-
 
 
 class TestCloneRollback(unittest.TestCase):
