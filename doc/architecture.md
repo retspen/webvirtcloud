@@ -18,7 +18,7 @@ WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: t
 ## Processes
 
 ```
-browser ── nginx :80/:443
+browser ── nginx :80 (:443 with your TLS)
              ├── /            → gunicorn 127.0.0.1:8000 (Django)
              ├── /static/     → staticfiles/
              ├── /novncd/     → novncd 127.0.0.1:6080 (VNC console, websockify)
@@ -72,7 +72,7 @@ The libvirt layer: the connections and the host objects the apps work on (the ap
 
 ## Jobs
 
-Long operations (create, clone and migrate VMs, clone volumes, snapshots, ISO uploads) are `Operation` rows. The worker claims queued jobs and runs them on a thread pool; an ISO upload runs in the web request and is only tracked.
+Long operations (create, clone, migrate and delete VMs, move disks, clone volumes, snapshots, ISO uploads) are `Operation` rows. The worker claims queued jobs and runs them on a thread pool; an ISO upload runs in the web request and is only tracked.
 
 - **Claims:** a job holds claims on what it changes (VM, volume, pool, name, quota); a conflicting request is refused at once.
 - **Recovery:** a job whose worker died is never run again. The new worker reads what happened from libvirt and ends it as succeeded, failed or uncertain; an uncertain job keeps its claims until a superuser resolves it.
@@ -87,4 +87,4 @@ Long operations (create, clone and migrate VMs, clone volumes, snapshots, ISO up
 - `instances/`, `flavor/`, `migrate/`, `operations/`
 - schema at `/api/schema/`, Swagger at `/swagger/`, ReDoc at `/redoc/`
 
-Create and migrate answer 202 with the job.
+Create, migrate and delete answer 202 with the job.
