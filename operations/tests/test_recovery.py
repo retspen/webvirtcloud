@@ -9,7 +9,7 @@ from operations import jobs
 from operations.jobs import Outcome
 from operations.models import Claim, Operation, WorkerLease, acquire
 from operations.tests import fakes
-from operations.worker import ABANDONED, STALL_LIMIT, STALLED, WAITING, Scheduler
+from operations.worker import ABANDONED, RECOVERY_LIMIT, STALL_LIMIT, STALLED, UNREACHABLE, WAITING, Scheduler
 
 
 class FakeWorker:
@@ -162,6 +162,27 @@ class RecoveryTestCase(TransactionTestCase):
         op = self.reload(op)
         self.assertEqual((op.state, op.phase), (Operation.RUNNING, WAITING))
         self.assertEqual(self.scheduler.attempts[op.pk], 1)
+
+    def test_a_host_unreachable_for_the_recovery_limit_ends_the_job_uncertain(self):
+        op = self.orphan({})
+        for now in (1000, 1000 + RECOVERY_LIMIT - 1, 1000 + RECOVERY_LIMIT):
+            self.scheduler.next_try[op.pk] = 0
+            with patch("operations.worker.time.monotonic", return_value=now), \
+                    patch.object(fakes.ScriptedKind, "reconcile", side_effect=OSError("host down")):
+                self.run_due()
+            self.assertEqual(self.reload(op).state,
+                             Operation.UNCERTAIN if now == 1000 + RECOVERY_LIMIT else Operation.RUNNING)
+        self.assertTrue(words(op.error).endswith(UNREACHABLE))
+        self.assertTrue(Claim.objects.filter(operation=op).exists())
+
+    def test_an_answer_restarts_the_recovery_limit(self):
+        op = self.orphan({})
+        with patch("operations.worker.time.monotonic", return_value=1000), \
+                patch.object(fakes.ScriptedKind, "reconcile", side_effect=OSError("host down")):
+            self.run_due()
+        self.scheduler.next_try[op.pk] = 0
+        self.run_at(1100, Outcome(Operation.RUNNING))
+        self.assertNotIn(op.pk, self.scheduler.failing_since)
 
     def test_a_job_that_never_recorded_its_intent_fails(self):
         op = self.orphan({}, effects=False)

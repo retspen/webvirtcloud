@@ -44,6 +44,9 @@ STALLED = gettext_noop("libvirt's merge finished copying but never completed (fo
 ABANDONED = gettext_noop("The worker that ran this job stopped responding; an administrator must make sure it "
                          "is no longer running, then resolve this job")
 WAITING = gettext_noop("Waiting for recovery")
+RECOVERY_LIMIT = 3600  # a host gone for good would keep its jobs and their claims forever
+UNREACHABLE = gettext_noop("Recovery could not read the job's state for an hour; check the VM, then "
+                           "resolve this job")
 ACTIVE = (Operation.RUNNING, Operation.CANCELLING)
 
 
@@ -387,6 +390,7 @@ class Scheduler:
         self.attempts = {}
         self.errors = {}
         self.stalled_since = {}
+        self.failing_since = {}
         self.inflight = set()
 
     def schedule_orphans(self):
@@ -409,7 +413,7 @@ class Scheduler:
                 self.inflight.discard(op_id)  # its host's control task still runs: a later tick
 
     def _done(self, op_id):
-        for table in (self.next_try, self.attempts, self.errors, self.stalled_since):
+        for table in (self.next_try, self.attempts, self.errors, self.stalled_since, self.failing_since):
             table.pop(op_id, None)
 
     def _take_over(self, op):
@@ -462,12 +466,18 @@ class Scheduler:
             try:
                 outcome = jobs.get_kind(op.kind).reconcile(op)
             except Exception as err:
+                now = time.monotonic()
+                if now - self.failing_since.setdefault(op_id, now) >= RECOVERY_LIMIT:
+                    self._finish(op, jobs.Outcome(Operation.UNCERTAIN, error=self._error(
+                        op_id, [*utils.public_error(err), *utils.say(UNREACHABLE)])))
+                    return
                 n = self.attempts.get(op_id, 0)
                 self.attempts[op_id] = n + 1
-                self.next_try[op_id] = time.monotonic() + BACKOFF[min(n, len(BACKOFF) - 1)]
+                self.next_try[op_id] = now + BACKOFF[min(n, len(BACKOFF) - 1)]
                 self._phase(op_id, WAITING)
                 logger.warning("recovery of job %s waits: %s", op_id, utils.safe_text(err))
                 return
+            self.failing_since.pop(op_id, None)
             if outcome.state == Operation.RUNNING:
                 now = time.monotonic()
                 if not outcome.stalled:
