@@ -19,7 +19,7 @@ from importlib import import_module
 from pathlib import Path
 
 from django.conf import settings
-from django.db import close_old_connections
+from django.db import DatabaseError, close_old_connections
 from django.utils import timezone
 from django.utils.translation import gettext_noop
 
@@ -116,7 +116,8 @@ class Worker:
     def run(self):
         """Until SIGTERM. Returns 1 if another worker runs on this host. Ends
         with os._exit, so job threads past the grace period end with it; a
-        failing manager loop ends the process the same way (status 1)."""
+        manager loop failing other than on the database ends the process the
+        same way (status 1)."""
         lock = open(self.lock_path, "a")
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -133,7 +134,13 @@ class Worker:
             logger.info("Worker %s started on %s", self.identity, socket.gethostname())
             self.recovery.schedule_orphans()
             while not self.stopping.is_set():
-                self.tick_once()
+                try:
+                    self.tick_once()
+                except DatabaseError as err:
+                    # a database restart or a long lock ends no job: the next tick tries
+                    # again, and a lease lost meanwhile still ends the worker (renew)
+                    logger.error("Worker %s tick failed: %s", self.identity, utils.safe_text(err))
+                    close_old_connections()
                 self.stopping.wait(self.tick)
             self._drain()
         except Exception as err:

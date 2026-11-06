@@ -256,12 +256,33 @@ class WorkerTestCase(TransactionTestCase):
         self.assertIn("no context", words(Operation.objects.get(pk=op.pk).error))
         self.assertFalse(Claim.objects.filter(operation=op).exists())
 
+    def test_a_database_error_skips_a_tick(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.worker = Worker(data=directory.name, tick=0)
+        errors = [OperationalError("database is locked"), OperationalError("server closed the connection")]
+
+        def tick():
+            if errors:
+                raise errors.pop()
+            self.worker.stopping.set()
+        with (
+            patch.object(self.worker, "tick_once", side_effect=tick),
+            patch("operations.worker.signal.signal"),
+            patch("operations.worker.logging.shutdown"),
+            patch("operations.worker.os._exit", side_effect=SystemExit) as exit_,
+            self.assertLogs("operations.worker", "ERROR"),
+        ):
+            with self.assertRaises(SystemExit):
+                self.worker.run()
+        exit_.assert_called_once_with(0)
+
     def test_a_failing_manager_loop_ends_the_process(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.worker = Worker(data=directory.name)
         with (
-            patch.object(self.worker, "tick_once", side_effect=OperationalError("database is down")),
+            patch.object(self.worker, "tick_once", side_effect=KeyError("a bug")),
             patch("operations.worker.signal.signal"),
             patch("operations.worker.logging.shutdown"),
             patch("operations.worker.os._exit", side_effect=SystemExit) as exit_,
