@@ -1,5 +1,6 @@
 """Every {% bs_icon %} of the templates is in the committed icon cache
-(webvirtcloud/bootstrap_icons.py): a missing one is an error page."""
+(webvirtcloud/bootstrap_icons.py), and the cache holds nothing else: a
+missing one is an error page."""
 
 import re
 import unittest
@@ -17,9 +18,9 @@ KWARG = re.compile(r"""(\w+)=['"]([^'"]*)['"]""")
 
 
 class IconCacheTestCase(unittest.TestCase):
-    def test_every_template_icon_is_cached(self):
+    def test_the_cache_holds_every_template_icon_and_no_other(self):
         cache = ICONS
-        missing = []
+        missing, used = [], set()
         templates = [*BASE.glob("templates/**/*.html"), *BASE.glob("*/templates/**/*.html")]
         self.assertGreater(len(templates), 50)  # the globs still find the templates
         for template in templates:
@@ -29,9 +30,11 @@ class IconCacheTestCase(unittest.TestCase):
                 kw = dict(KWARG.findall(args))
                 # the file name bs_icon reads
                 cached = f"{name.group(1)}_{kw.get('size')}_{kw.get('color')}_{kw.get('extra_classes')}.svg".replace(" ", "_")
+                used.add(cached)
                 if not (cache / cached).exists():
                     missing.append(f"{template.relative_to(BASE)}: {cached}")
         self.assertEqual(missing, [])
+        self.assertEqual(sorted({path.name for path in cache.glob("*.svg")} - used), [])
 
     def test_an_icon_is_its_svg_inline(self):
         html = Template("{% load bootstrap_icons %}{% bs_icon 'pencil' %}").render(Context())
