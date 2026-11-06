@@ -1,7 +1,3 @@
-try:
-    import crypt_r as crypt
-except ImportError:
-    import crypt
 import difflib
 import functools
 import hashlib
@@ -11,9 +7,16 @@ import os
 import re
 import secrets
 import socket
+import sys
 import subprocess
 import time
 from ipaddress import ip_address
+
+# the stdlib crypt is deprecated from Python 3.11 and gone in 3.13: crypt_r is the same module
+if sys.version_info >= (3, 11):
+    import crypt_r as crypt
+else:
+    import crypt
 
 from accounts.models import UserInstance, UserSSHKey
 from admin.decorators import superuser_only

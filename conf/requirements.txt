@@ -23,4 +23,4 @@ python-socketio==5.18.1
 segno==1.6.6
 websockify==0.13.0
 whitenoise==6.12.0
-crypt-r>=3.13.0; python_version >= "3.13"
+crypt-r>=3.13.0; python_version >= "3.11"
