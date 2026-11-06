@@ -635,7 +635,7 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    ```
 
    Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` and LDAP. Two need care:
-   - a literal `SECRET_KEY = "..."` (older installers wrote it there): put the value into `data/secret_key` instead, or every user is signed out;
+   - a literal `SECRET_KEY = "..."` (older installers wrote it there): put the value into `data/secret_key` instead (`mkdir -p data` first if there is no `data/`). With no key, `migrate` in step 3 stops with "The SECRET_KEY setting must not be empty" and every page fails; with another key, every user is signed out;
    - `SHOW_PROFILE_EDIT_PASSWORD`: keep it for this one `migrate` if you have it (migration `accounts.0008` reads it), then delete it.
 
 3. Install, migrate, and fix ownership and modes (`nginx:nginx` instead of `www-data:www-data` on RHEL / openSUSE). With LDAP, also run `venv/bin/pip3 install -U -r conf/requirements-ldap.txt` (headers: [LDAP](#ldap)):
