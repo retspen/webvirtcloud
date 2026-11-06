@@ -184,6 +184,22 @@ class RecoveryTestCase(TransactionTestCase):
         self.run_at(1100, Outcome(Operation.RUNNING))
         self.assertNotIn(op.pk, self.scheduler.failing_since)
 
+    def test_a_cancel_of_a_job_libvirt_still_runs_goes_to_libvirt_once(self):
+        op = self.orphan({})
+        Operation.objects.filter(pk=op.pk).update(state=Operation.CANCELLING, cancel_requested=True)
+        with patch.object(fakes.ScriptedKind, "cancel") as cancel:
+            self.run_at(1000, Outcome(Operation.RUNNING))
+            self.scheduler.next_try[op.pk] = 0
+            self.run_at(1015, Outcome(Operation.RUNNING))
+        cancel.assert_called_once()
+        self.assertEqual(cancel.call_args.args[0].pk, op.pk)
+
+    def test_a_job_without_a_cancel_is_watched_without_one(self):
+        self.orphan({})
+        with patch.object(fakes.ScriptedKind, "cancel") as cancel:
+            self.run_at(1000, Outcome(Operation.RUNNING))
+        cancel.assert_not_called()
+
     def test_a_job_that_never_recorded_its_intent_fails(self):
         op = self.orphan({}, effects=False)
         self.run_due()

@@ -1076,6 +1076,8 @@ class MigrateInstance(Kind):
             return Outcome(Operation.SUCCEEDED, result=_moved(op, dest))
         if source is not None and dest is None:
             _shut_off_again(op, source)
+            if op.cancel_requested:
+                return Outcome(Operation.CANCELLED)
             return Outcome(Operation.FAILED, error=say(_("The VM stayed on the source host")))
         return Outcome(Operation.UNCERTAIN, error=say(_(
             "The VM is on both computes or on neither; check them, then resolve this job.")))

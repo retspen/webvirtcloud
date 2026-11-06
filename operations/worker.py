@@ -391,6 +391,7 @@ class Scheduler:
         self.errors = {}
         self.stalled_since = {}
         self.failing_since = {}
+        self.cancel_sent = set()
         self.inflight = set()
 
     def schedule_orphans(self):
@@ -415,6 +416,7 @@ class Scheduler:
     def _done(self, op_id):
         for table in (self.next_try, self.attempts, self.errors, self.stalled_since, self.failing_since):
             table.pop(op_id, None)
+        self.cancel_sent.discard(op_id)
 
     def _take_over(self, op):
         """True if op is now this worker's. Another host's job ends uncertain
@@ -479,6 +481,10 @@ class Scheduler:
                 return
             self.failing_since.pop(op_id, None)
             if outcome.state == Operation.RUNNING:
+                # libvirt still runs it: a cancel asked meanwhile goes to libvirt once, as for a job thread's
+                if op.cancel_requested and op_id not in self.cancel_sent:
+                    self.cancel_sent.add(op_id)
+                    _guarded(jobs.get_kind(op.kind).cancel, op)
                 now = time.monotonic()
                 if not outcome.stalled:
                     self.stalled_since.pop(op_id, None)
