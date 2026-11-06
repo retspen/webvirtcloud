@@ -105,7 +105,7 @@ class AdminTestCase(TestCase):
             reverse("admin:user_create"),
             {
                 "username": "test",
-                "password": "test",
+                "password": "Wvc-created-9",
                 "role": "user",
                 "max_instances": 1,
                 "max_cpus": 1,
