@@ -2752,7 +2752,7 @@ msgstr "无法解冻客户机的文件系统（%(error)s）；请用以下命令
 msgid "Clone VM"
 msgstr "克隆虚拟机"
 
-#: instances/jobs.py:559 instances/jobs.py:566 instances/jobs.py:834
+#: instances/jobs.py:559 instances/jobs.py:566 instances/jobs.py:841
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
@@ -2807,134 +2807,141 @@ msgid ""
 "job: %(volumes)s"
 msgstr "libvirt 没有复制的结果；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:739 instances/templates/create_instance_w1.html:60
+#: instances/jobs.py:723
+#, python-format
+msgid ""
+"The disks were copied, but the clone could not be defined: %(error)s; check "
+"these volumes, then resolve this job: %(volumes)s"
+msgstr "磁盘已复制，但无法定义克隆：%(error)s；请检查这些卷，然后处理此任务：%(volumes)s"
+
+#: instances/jobs.py:746 instances/templates/create_instance_w1.html:60
 #: instances/templates/create_instance_w2.html:356
 msgid "Create VM"
 msgstr "创建虚拟机"
 
-#: instances/jobs.py:763 instances/jobs.py:808 instances/views.py:2504
+#: instances/jobs.py:770 instances/jobs.py:815 instances/views.py:2504
 msgid "A virtual machine with this name already exists"
 msgstr "同名虚拟机已存在"
 
-#: instances/jobs.py:765 instances/jobs.py:805
+#: instances/jobs.py:772 instances/jobs.py:812
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "已存在同名虚拟机。请删除后重试！"
 
-#: instances/jobs.py:768
+#: instances/jobs.py:775
 msgid "First you need to create or select an image"
 msgstr "请先创建或选择一个镜像"
 
-#: instances/jobs.py:770
+#: instances/jobs.py:777
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr "请选择一种磁盘来源：新磁盘、现有卷或模板"
 
-#: instances/jobs.py:772
+#: instances/jobs.py:779
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 
-#: instances/jobs.py:774
+#: instances/jobs.py:781
 msgid "Invalid cache mode"
 msgstr "无效的缓存模式"
 
-#: instances/jobs.py:776
+#: instances/jobs.py:783
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "此主机不提供 CPU 模式或型号 %(mode)s"
 
-#: instances/jobs.py:778
+#: instances/jobs.py:785
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM 不能使用 %(bus)s 总线"
 
-#: instances/jobs.py:781
+#: instances/jobs.py:788
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init 种子从 CD-ROM 读取：请选择其总线"
 
-#: instances/jobs.py:784
+#: instances/jobs.py:791
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init 种子需要为磁盘使用目录类型的存储池"
 
-#: instances/jobs.py:790
+#: instances/jobs.py:797
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "此主机不提供固件 %(firmware)s"
 
-#: instances/jobs.py:792 vrtManager/instance.py:3023
+#: instances/jobs.py:799 vrtManager/instance.py:3023
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0：请在主机上安装 swtpm"
 
-#: instances/jobs.py:853
+#: instances/jobs.py:860
 msgid "Writing the cloud-init seed"
 msgstr "正在写入 cloud-init 种子"
 
-#: instances/jobs.py:860
+#: instances/jobs.py:867
 msgid "Defining the VM"
 msgstr "正在定义虚拟机"
 
-#: instances/jobs.py:893
+#: instances/jobs.py:900
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s。请手动删除这些卷：%(volumes)s"
 
-#: instances/jobs.py:918
+#: instances/jobs.py:925
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "虚拟机已在 %(compute)s 上"
 
-#: instances/jobs.py:920
+#: instances/jobs.py:927
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "无法连接 %(compute)s"
 
-#: instances/jobs.py:922
+#: instances/jobs.py:929
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s 是该虚拟机所在主机的另一个名称"
 
-#: instances/jobs.py:940
+#: instances/jobs.py:947
 msgid "Migrate VM"
 msgstr "迁移虚拟机"
 
-#: instances/jobs.py:984
+#: instances/jobs.py:991
 msgid "Migrating the VM"
 msgstr "正在迁移虚拟机"
 
-#: instances/jobs.py:1031
+#: instances/jobs.py:1038
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt 仍在迁移虚拟机"
 
-#: instances/jobs.py:1038
+#: instances/jobs.py:1045
 msgid "The VM stayed on the source host"
 msgstr "虚拟机留在了源主机上"
 
-#: instances/jobs.py:1040
+#: instances/jobs.py:1047
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr "虚拟机同时位于两个计算节点上，或都不在；请检查后处理此任务。"
 
-#: instances/jobs.py:1088
+#: instances/jobs.py:1095
 msgid "Move disk"
 msgstr "移动磁盘"
 
-#: instances/jobs.py:1095
+#: instances/jobs.py:1102
 msgid "Choose a disk of the VM"
 msgstr "请选择虚拟机的一个磁盘"
 
-#: instances/jobs.py:1119
+#: instances/jobs.py:1126
 msgid "Copying the disk"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:1162
+#: instances/jobs.py:1169
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr "%(dev)s 上正在运行另一个块任务；请检查虚拟机"
 
-#: instances/jobs.py:1168
+#: instances/jobs.py:1175
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "磁盘仍在 %(path)s；如果 %(dest)s 存在，请将其删除"
 
-#: instances/jobs.py:1170
+#: instances/jobs.py:1177
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s 的定义指向 %(paths)s；请检查虚拟机"
