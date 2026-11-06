@@ -941,6 +941,12 @@ def _domain(compute_pk, uuid):
         return None
 
 
+def _shut_off_again(op, dom):
+    """A shut-off VM the migration started paused, left running by a job that stopped."""
+    if op.intent.get("shut_off") and dom.isActive():
+        dom.destroy()
+
+
 @register
 class MigrateInstance(Kind):
     name = "instance.migrate"
@@ -987,7 +993,8 @@ class MigrateInstance(Kind):
     def run(self, op, ctx):
         p = op.params
         instance = _instance(p["instance"])
-        ctx.record_intent()
+        # a shut-off VM may migrate started paused (migrate_running): recovery shuts it off again
+        ctx.record_intent(shut_off=instance.proxy.get_status() == 5)
         ctx.set_phase(gettext_noop("Migrating the VM"))
         try:
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
@@ -1040,8 +1047,10 @@ class MigrateInstance(Kind):
             instance = Instance.objects.filter(pk=op.params["instance"], compute_id=op.intent["compute"]).first()
             if instance is not None:  # the job stopped before it moved the record
                 utils.record_migration(instance, Compute.objects.get(pk=op.params["target"]))
+            _shut_off_again(op, dest)
             return Outcome(Operation.SUCCEEDED)
         if source is not None and dest is None:
+            _shut_off_again(op, source)
             return Outcome(Operation.FAILED, error=say(_("The VM stayed on the source host")))
         return Outcome(Operation.UNCERTAIN, error=say(_(
             "The VM is on both computes or on neither; check them, then resolve this job.")))

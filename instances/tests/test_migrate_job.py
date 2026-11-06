@@ -79,6 +79,27 @@ class MigrateJobTestCase(TransactionTestCase):
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.dest)
 
+    def test_recovery_shuts_off_a_shut_off_vm_the_migration_left_started(self):
+        self.vm.proxy.get_status.return_value = 5
+        op = self.queue()
+        ctx = self.start(op)
+        self.dest_conn.moveto.side_effect = OSError("the worker stops here")
+        with self.assertRaises(OSError):
+            get_kind(op.kind).run(op, ctx)
+        self.assertTrue(op.intent["shut_off"])
+        dom = MagicMock()
+        dom.isActive.return_value = True
+        dom.jobInfo.return_value = [0] * 12  # VIR_DOMAIN_JOB_NONE
+        for found in ([dom, None], [None, dom]):  # stayed on the source, or moved
+            with self.subTest(found=found), patch("instances.jobs._domain", side_effect=found):
+                MigrateInstance().reconcile(op)
+            dom.destroy.assert_called_once_with()
+            dom.destroy.reset_mock()
+        op.intent["shut_off"] = False  # a running VM keeps running
+        with patch("instances.jobs._domain", side_effect=[dom, None]):
+            MigrateInstance().reconcile(op)
+        dom.destroy.assert_not_called()
+
     def test_a_copy_claims_its_volume_on_both_computes(self):
         Instance.proxy.get_disk_devices.return_value = [
             {"dev": "vda", "storage": "default", "image": "mig-vm.qcow2", "path": "/i/mig-vm.qcow2"},
