@@ -70,6 +70,12 @@ class DestroyOptionsSerializer(serializers.Serializer):
     delete_nvram = serializers.BooleanField(default=False)
 
 
+class DestroySerializer(DestroyOptionsSerializer):
+    """The API's delete: a job, which a new submission key per request names."""
+
+    submission_key = serializers.CharField(write_only=True)
+
+
 class CreateInstanceSerializer(serializers.ModelSerializer):
     # BIOS, UEFI or UEFI Secure Boot, as the host offers; left out: the machine's default
     firmware = serializers.CharField(required=False)

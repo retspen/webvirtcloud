@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load operations %}
 {% block title %}{% blocktrans with name=instance.name %}Destroy {{ name }}{% endblocktrans %}{% endblock title %}
 
 {% block page_heading %}
@@ -8,7 +9,7 @@
 
 {% block content %}
 <p class="small">{% trans "The VM's definition, saved state and snapshot records are removed. A running VM is forced off first; what the guest has not written to disk is lost." %}</p>
-<form action="{% url 'instances:destroy' instance.id %}" method="post" id="delete_form">{% csrf_token %}
+<form action="{% url 'instances:destroy' instance.id %}" method="post" id="delete_form">{% csrf_token %}{% submission_key %}
     <fieldset class="mb-3">
         <legend class="h6">{% trans "What should happen to the files?" %}</legend>
         <div class="row g-2">

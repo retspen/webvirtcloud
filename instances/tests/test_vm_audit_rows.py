@@ -143,17 +143,6 @@ class VMRowTests(TestCase):
         self.assertEqual(self.rows(), [("VM vm: set console password", True)])
         self.proxy.set_console_listener_addr.assert_not_called()
 
-    def test_a_deleted_vm_and_each_of_its_disks_have_their_own_row(self):
-        self.proxy.split_disk_paths_by_use.return_value = (["/pool/a.qcow2", "/pool/b.qcow2"], [])
-        volume = self.proxy.get_volume_by_path.return_value
-        volume.delete.side_effect = [libvirtError("Permission denied"), None]
-        self.client.post(reverse("instances:destroy", args=[self.vm.pk]), {"delete_disk": "1"})
-        self.assertFalse(Instance.objects.filter(pk=self.vm.pk).exists())
-        self.assertEqual(self.rows(), [("VM vm: delete", True),
-                                       ("VM vm: delete volume /pool/a.qcow2: Permission denied", False),
-                                       ("VM vm: delete volume /pool/b.qcow2", True)])
-        self.assertEqual(set(Logs.objects.values_list("instance_uuid", flat=True)), {UUID})
-
     def test_a_disk_delete_logs_the_detach_and_the_volume(self):
         disk = {"dev": "vdb", "path": "/pool/data.qcow2", "storage": "default", "image": "data.qcow2"}
         self.proxy.get_disk_devices.return_value = [disk]

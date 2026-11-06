@@ -14,7 +14,9 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
-                     VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
+                     VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
+                     VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, VIR_ERR_NO_DOMAIN,
+                     VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
@@ -27,6 +29,7 @@ from appsettings.settings import app_settings
 from computes.models import Compute
 from instances import utils
 from instances.models import Instance
+from logs.audit import write
 from operations import claims
 from operations.utils import safe_text, say
 from operations.jobs import Cancelled, Kind, Outcome, Plan, register
@@ -1215,3 +1218,108 @@ class MoveDisk(Kind):
 
     def log_entry(self, op, state):
         return _log(op, state, f"move disk {op.params['dev']} to pool {op.params['pool']}")
+
+
+DISK_KEPT_BELOW = _("Disk %(path)s was kept: a disk file that stays needs it")
+DISK_NOT_DELETED = _("The VM is removed, but disk %(path)s was not deleted: %(err)s")
+DISK_SHARED = _("Disk %(path)s is used by another VM and was kept")
+
+
+def _deletable(user, pk):
+    """The delete view's rule: the VM's delete right."""
+    from instances.views import get_instance
+
+    if user is None or not user.is_active:
+        raise PermissionDenied
+    return get_instance(user, pk, perm_type="delete")
+
+
+def _removed(op, recovering=False):
+    """What follows the undefine: the VM's record, then the disk files the job
+    chose before it stopped the VM; the job's result. Each disk has its own
+    Logs row; a file that stays keeps the files below it, which it needs. In
+    recovery a file already gone was deleted before the worker stopped."""
+    Instance.objects.filter(compute_id=op.intent["compute"], uuid=op.intent["uuid"]).delete()
+    compute = Compute.objects.get(pk=op.intent["compute"])
+    conn = wvmConnect(compute.hostname, compute.login, compute.password, compute.type)
+    notes, kept = [], set()
+    for path in op.intent["to_delete"]:
+        if path in kept:
+            notes += say(DISK_KEPT_BELOW, path=path)
+            continue
+        try:
+            conn.get_volume_by_path(path).delete(0)
+        except util.ConnectionFailed:
+            raise  # unreachable: recovery waits and retries
+        except libvirtError as err:
+            if recovering and err.get_error_code() == VIR_ERR_NO_STORAGE_VOL:
+                continue
+            notes += say(DISK_NOT_DELETED, path=path, err=err)
+            write(op.username, compute.name, op.intent["name"], f"VM {op.intent['name']}: delete volume {path}: "
+                  f"{safe_text(err)}", False, uuid=op.intent["uuid"])
+            try:
+                while (path := conn.backing_path(path)) and path not in kept:
+                    kept.add(path)
+            except libvirtError:
+                kept.update(op.intent["to_delete"])  # the files it needs are unknown: none of the rest goes
+        else:
+            write(op.username, compute.name, op.intent["name"], f"VM {op.intent['name']}: delete volume {path}",
+                  True, uuid=op.intent["uuid"])
+    for path in op.intent["shared"]:
+        notes += say(DISK_SHARED, path=path)
+    return {"open": reverse("instances:index"), **({"warning": notes} if notes else {})}
+
+
+@register
+class DeleteInstance(Kind):
+    """Undefine the VM, then remove its record and the disk files chosen
+    before it was stopped. Recovery finishes a delete libvirt has done."""
+
+    name = "instance.delete"
+    label = gettext_noop("Delete VM")
+
+    def normalize(self, raw):
+        return {"instance": int(raw["instance"]), "delete_disk": bool(raw.get("delete_disk")),
+                "delete_nvram": bool(raw.get("delete_nvram"))}
+
+    def validate(self, user, params):
+        _deletable(user, params["instance"])
+
+    def plan(self, user, params):
+        instance = _instance(params["instance"])
+        # the whole compute: a file to delete must not be attached by another VM meanwhile
+        return Plan(claims={claims.compute_key(instance.compute_id): Claim.EXCLUSIVE,
+                            claims.instance_key(instance.uuid): Claim.EXCLUSIVE},
+                    resource=claims.instance_key(instance.uuid), label=f"{instance.compute.name}/{instance.name}",
+                    intent={"compute": instance.compute_id, "uuid": instance.uuid, "name": instance.name})
+
+    def precheck(self, op, ctx):
+        if _deletable(op.user, op.params["instance"]).compute_id != op.intent["compute"]:
+            raise util.OperationError(MOVED)
+
+    def run(self, op, ctx):
+        instance = _instance(op.params["instance"])
+        proxy = _proxy(instance)
+        to_delete, shared = [], []
+        if op.params["delete_disk"]:
+            # known before the VM is stopped: a host that cannot be checked stops nothing
+            to_delete, shared = proxy.split_disk_paths_by_use(
+                lambda own: utils.paths_used_on_other_computes(instance.compute, own))
+        ctx.record_intent(to_delete=to_delete, shared=shared)
+        ctx.set_phase(gettext_noop("Deleting the VM"))
+        # paused and other active states stop too, or the VM runs on as a transient domain
+        if proxy.instance.isActive():
+            proxy.force_shutdown()
+        # snapshot metadata goes with the domain; internal snapshot data stays in kept disk images
+        flags = VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+        flags |= VIR_DOMAIN_UNDEFINE_NVRAM if op.params["delete_nvram"] else VIR_DOMAIN_UNDEFINE_KEEP_NVRAM
+        proxy.delete(flags)
+        return _removed(op)
+
+    def reconcile(self, op):
+        if _domain(op.intent["compute"], op.intent["uuid"]) is not None:
+            return Outcome(Operation.FAILED, error=say(_("The VM was not deleted; it may have been shut off")))
+        return Outcome(Operation.SUCCEEDED, result=_removed(op, recovering=True))
+
+    def log_entry(self, op, state):
+        return _log(op, state, "delete")
