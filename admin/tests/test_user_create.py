@@ -1,6 +1,8 @@
 """Creating a user in the admin pages: the password reaches the database only
 hashed, and the configured password validators apply as on the change forms."""
 
+import re
+
 from django.contrib.auth.models import Group, Permission, User
 from django.db import connection
 from django.test import TestCase, override_settings
@@ -35,6 +37,12 @@ class UserCreateTests(TestCase):
         self.assertRedirects(response, reverse("admin:user_list"))
         self.assertEqual(written, [])
         self.assertTrue(User.objects.get(username="newbie").check_password(RAW))
+
+    def test_a_new_user_may_change_the_password_and_open_consoles_unless_unticked(self):
+        # new VMs have a VNC password, which the console page sends only with passwordless_console
+        page = self.client.get(reverse("admin:user_create")).content.decode()
+        ticked = set(re.findall(r'<input[^>]*name="user_permissions"[^>]*value="(\d+)"[^>]*checked', page))
+        self.assertEqual(ticked, {str(self.change_password.pk), str(Permission.objects.get(codename="passwordless_console").pk)})
 
     def test_groups_and_permissions_are_saved(self):
         group = Group.objects.create(name="uc-group")

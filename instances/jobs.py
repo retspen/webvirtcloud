@@ -884,7 +884,7 @@ class CreateInstance(Kind):
                 nwfilter=data["nwfilter"],
                 net_model="virtio" if data["net_model"] == "default" else data["net_model"],
                 video=data["video"],
-                console_pass="",
+                console_pass="random",  # without one, anyone reaching the VNC port is in
                 mac=data["mac"],
                 qemu_ga=data["qemu_ga"],
                 add_cdrom=data["add_cdrom"],

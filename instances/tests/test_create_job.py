@@ -48,6 +48,8 @@ class CreateJobTestCase(TransactionTestCase):
         op.refresh_from_db()
         CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
         self.assertEqual(self.conn.create_instance.call_args.kwargs["uuid"], op.intent["uuid"])
+        # a console password of its own: without one, anyone reaching the VNC port is in
+        self.assertEqual(self.conn.create_instance.call_args.kwargs["console_pass"], "random")
         self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"], name="api-vm").exists())
 
     def test_the_api_takes_secure_boot_and_a_tpm(self):

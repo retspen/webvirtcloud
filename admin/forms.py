@@ -6,6 +6,7 @@ from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from accounts.forms import UniqueEmailMixin
@@ -124,9 +125,11 @@ class UserCreateForm(UserForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # New users may change their own password unless unticked here
+        # New users may change their own password and open their VMs' consoles
+        # (whose VNC password the console page sends) unless unticked here
         self.fields["user_permissions"].initial = Permission.objects.filter(
-            content_type__app_label="accounts", codename="change_password"
+            Q(content_type__app_label="accounts", codename="change_password")
+            | Q(content_type__app_label="instances", codename="passwordless_console")
         )
 
     def clean(self):

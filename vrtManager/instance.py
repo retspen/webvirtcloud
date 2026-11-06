@@ -2398,6 +2398,10 @@ class wvmInstance(wvmConnect):
                 raise ValueError(f"No MAC address for network interface {num}")
             net.find("mac").set("address", self.fix_mac(mac))
 
+        # the clone's console gets a password of its own: one copied from the source would open both
+        for graphics in tree.findall("devices/graphics[@type='vnc']"):
+            graphics.set("passwd", util.randomPasswd(8))  # the length VNC allows
+
         nvram = tree.find("os/nvram")
         if nvram is not None and nvram.get("type", "file") != "file":
             raise util.OperationError(gettext_noop("Cannot clone a VM whose NVRAM is not a file"))
