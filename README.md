@@ -634,7 +634,7 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    diff "$b/settings.py" webvirtcloud/settings.py
    ```
 
-   Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` and LDAP. Two need care:
+   Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, LDAP and, with PostgreSQL, your `DATABASES`: the template's is sqlite, so without it `migrate` would make a new, empty sqlite database and the panel would start on that. Two need care:
    - a literal `SECRET_KEY = "..."` (older installers wrote it there): put the value into `data/secret_key` instead (`mkdir -p data` first if there is no `data/`). With no key, `migrate` in step 3 stops with "The SECRET_KEY setting must not be empty" and every page fails; with another key, every user is signed out;
    - `SHOW_PROFILE_EDIT_PASSWORD`: keep it for this one `migrate` if you have it (migration `accounts.0008` reads it), then delete it.
 
