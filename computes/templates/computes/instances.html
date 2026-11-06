@@ -27,7 +27,7 @@
     <div class="col-lg-12">
         {% if compute.status is not True %}
             <div class="alert alert-danger shadow-sm">
-                {% trans 'Problem occurred with host' %} {{ compute.name }}: {{ compute.connection_error }}
+                {% blocktrans with name=compute.name error=compute.connection_error %}Problem occurred with host {{ name }}: {{ error }}{% endblocktrans %}
             </div>
         {% endif %}
         {% if not instances %}

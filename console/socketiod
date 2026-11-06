@@ -30,7 +30,11 @@ import socketio  # noqa: E402
 from gunicorn.app.base import BaseApplication  # noqa: E402
 from django import db  # noqa: E402
 from django.conf import settings  # noqa: E402
+from django.http import HttpRequest  # noqa: E402
+from django.http.cookie import parse_cookie  # noqa: E402
+from django.utils import translation  # noqa: E402
 
+from console import refusals  # noqa: E402
 from console.tokens import authorize, session_user_id  # noqa: E402
 
 CONSOLECALLBACK = os.path.join(ROOT_PATH, "conf", "daemon", "consolecallback")
@@ -49,30 +53,34 @@ sessions = {}
 sessions_lock = threading.Lock()
 
 
-def refused(reason):
-    """The refusal the page shows; it is logged too."""
+def refused(environ, reason):
+    """The refusal the page shows, in its language (LocaleMiddleware's choice:
+    the language cookie, else the browser's); it is logged too, in English."""
     logger.info("serial console refused: %s", reason)
-    return socketio.exceptions.ConnectionRefusedError(reason)
+    request = HttpRequest()
+    request.COOKIES, request.META = parse_cookie(environ.get("HTTP_COOKIE", "")), environ
+    with translation.override(translation.get_language_from_request(request)):
+        return socketio.exceptions.ConnectionRefusedError(translation.gettext(reason))
 
 
 @sio.event
 def connect(sid, environ, auth):
     # the page shows the reason
     if not settings.SERIAL_CONSOLE_ENABLED:
-        raise refused("The serial console is turned off on this server")
+        raise refused(environ, refusals.TURNED_OFF)
     try:
         instance, user = authorize((auth or {}).get("token"), "pty")
     except PermissionError:
-        raise refused("The console link has expired, or you may no longer open this console: reload the page")
+        raise refused(environ, refusals.NOT_ALLOWED)
     finally:
         db.close_old_connections()
     taken = None
     with sessions_lock:
         open_sid = next((s for s, session in sessions.items() if session["vm"] == instance.pk), None)
         if open_sid is not None and not user.is_superuser:
-            raise refused("The console of this VM is open in another window")
+            raise refused(environ, refusals.OPEN_ELSEWHERE)
         if open_sid is None and len(sessions) >= MAX_SESSIONS:
-            raise refused("Too many consoles are open on this server: try again later")
+            raise refused(environ, refusals.TOO_MANY)
         if open_sid is not None:  # a superuser takes over a console left open
             taken = open_sid, sessions.pop(open_sid)
             # the page tells its user who took the console; first, as its

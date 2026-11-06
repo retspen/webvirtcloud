@@ -5,7 +5,7 @@ import logging
 import os
 
 from django.core.exceptions import PermissionDenied
-from django.utils.translation import gettext_noop
+from django.utils.translation import gettext, gettext_noop
 from libvirt import libvirtError
 from vrtManager import util
 from vrtManager.storage import wvmStorage
@@ -115,13 +115,13 @@ class UploadVolume(Kind):
             raise PermissionDenied
         name = params["name"]
         if not name or name in (".", "..") or "\x00" in name:
-            raise ValueError("Invalid file name")
+            raise ValueError(gettext("Invalid file name"))
         if len(name) <= 4 or not is_iso(name):
-            raise ValueError("Only .iso files can be uploaded")
+            raise ValueError(gettext("Only .iso files can be uploaded"))
         if params["size"] <= 0:
-            raise ValueError("Invalid file size")
+            raise ValueError(gettext("Invalid file size"))
         if params["chunks"] < 1:
-            raise ValueError("Invalid chunk index or total chunks")
+            raise ValueError(gettext("Invalid chunk index or total chunks"))
 
     def plan(self, user, params):
         compute, stg = _storage(params)

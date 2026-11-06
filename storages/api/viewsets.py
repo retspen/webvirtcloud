@@ -5,6 +5,7 @@ from appsettings.settings import app_settings
 from computes.models import Compute
 from computes.utils import libvirt_compute_lock
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema, inline_serializer
 from libvirt import libvirtError
 from logs.audit import audit, failed
@@ -199,7 +200,7 @@ class VolumeViewSet(viewsets.ViewSet):
                 return Response({"status": "Volume: " + ret + " is created"})
             else:
                 failed(request, compute, subject, action, "pool is not active")
-                return Response({"status": "Pool is not active"}, status=status.HTTP_409_CONFLICT)
+                return Response({"status": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -220,4 +221,4 @@ class VolumeViewSet(viewsets.ViewSet):
             return Response({"status": "Volume: " + pk + " is deleted"})
         else:
             failed(request, compute, subject, action, "pool is not active")
-            return Response({"status": "Pool is not active"}, status=status.HTTP_409_CONFLICT)
+            return Response({"status": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)

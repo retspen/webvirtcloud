@@ -5,6 +5,7 @@ from django.contrib.messages import get_messages
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from instances.jobs import MIGRATE_OPTIONS
 from instances.models import Flavor, Instance
 from instances.views import (
@@ -144,7 +145,7 @@ class InstanceViewSet(viewsets.ViewSet):
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
         if queryset.is_template:
-            return Response({"status": "Templates cannot be started"}, status=status.HTTP_409_CONFLICT)
+            return Response({"status": _("Templates cannot be started.")}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(poweron, request, pk, "poweron command send")
 
     @extend_schema(request=None, responses=ActionStatusSerializer)
@@ -162,7 +163,7 @@ class InstanceViewSet(viewsets.ViewSet):
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
         if queryset.is_template:
-            return Response({"status": "Templates cannot be started"}, status=status.HTTP_409_CONFLICT)
+            return Response({"status": _("Templates cannot be started.")}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(powercycle, request, pk, "powercycle command send")
 
     @extend_schema(request=None, responses=ActionStatusSerializer)

@@ -2119,8 +2119,10 @@ msgid "New Instance"
 msgstr "Yeni sanal makine"
 
 #: computes/templates/computes/instances.html:30
-msgid "Problem occurred with host"
-msgstr "Sunucu ile ilgili bir problem meydana geldi"
+#, python-format
+#| msgid "Problem occurred with host"
+msgid "Problem occurred with host %(name)s: %(error)s"
+msgstr "%(name)s sunucusuyla ilgili bir sorun oluştu: %(error)s"
 
 #: computes/templates/computes/instances.html:36
 #: computes/templates/computes/list.html:16
@@ -2379,7 +2381,7 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:202
+#: computes/views.py:205
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -2389,6 +2391,28 @@ msgstr ""
 "Sanal makineleri sunucuda çalışmaya devam eder ve panelden çıkar; sahipleri "
 "Kaldırılan Sanal Makineler sayfasında %(days)s gün tutulur ve sunucu yeniden "
 "eklenirse geri gelir."
+
+#: console/refusals.py:6
+#| msgid "The device is not on this host"
+msgid "The serial console is turned off on this server"
+msgstr "Seri konsol bu sunucuda kapalı"
+
+#: console/refusals.py:7
+msgid ""
+"The console link has expired, or you may no longer open this console: reload "
+"the page"
+msgstr ""
+"Konsol bağlantısının süresi doldu ya da bu konsolu artık açamazsınız: sayfayı"
+" yeniden yükleyin"
+
+#: console/refusals.py:8
+#| msgid "The console starts scaled to its window"
+msgid "The console of this VM is open in another window"
+msgstr "Bu sanal makinenin konsolu başka bir pencerede açık"
+
+#: console/refusals.py:9
+msgid "Too many consoles are open on this server: try again later"
+msgstr "Bu sunucuda çok fazla konsol açık: daha sonra yeniden deneyin"
 
 #: console/templates/console-menu.html:6
 msgid "Send key(s)"
@@ -2633,6 +2657,11 @@ msgid ""
 msgstr ""
 "'%(type)s' konsol tipi desteklenmiyor. Lütfen sanal makinenin grafik tipini "
 "VNC olarak değiştirin."
+
+#: instances/api/viewsets.py:148 instances/api/viewsets.py:166
+#: instances/views.py:792 instances/views.py:807
+msgid "Templates cannot be started."
+msgstr "Şablon makineler başlatılamaz."
 
 #: instances/forms.py:13 instances/templates/create_instance_w2.html:69
 #: instances/templates/instances/settings_tab.html:857
@@ -2999,7 +3028,6 @@ msgstr "Sanal makine tanımlanıyor"
 
 #: instances/jobs.py:906
 #, python-format
-#| msgid "The panel failed unexpectedly; its log has the details."
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
 "by hand: %(volumes)s"
@@ -5924,7 +5952,7 @@ msgstr ""
 "Sunucu aygıtları olan bir sanal makine taşınamaz: hedefte bu aygıtlar "
 "olmayabilir. Önce onları kaldırın."
 
-#: instances/views.py:644
+#: instances/views.py:643 instances/views.py:644
 msgid "The VM was moved meanwhile; try again."
 msgstr "Sanal makine bu arada taşındı; yeniden deneyin."
 
@@ -5957,10 +5985,6 @@ msgstr ""
 #, python-format
 msgid "Invalid disk options: %(options)s"
 msgstr "Geçersiz disk seçenekleri: %(options)s"
-
-#: instances/views.py:792 instances/views.py:807
-msgid "Templates cannot be started."
-msgstr "Şablon makineler başlatılamaz."
 
 #: instances/views.py:999
 #, python-format
@@ -7628,6 +7652,12 @@ msgstr ""
 msgid "%(phase)s (over its time limit)"
 msgstr "%(phase)s (süre sınırını aştı)"
 
+#: operations/jobs.py:151
+#| msgid "The form has no valid submission key; reload the page"
+msgid "This form was already submitted for another request; reload the page"
+msgstr ""
+"Bu form başka bir istek için zaten gönderildi; sayfayı yeniden yükleyin"
+
 #: operations/jobs.py:157
 msgid "The form has no valid submission key; reload the page"
 msgstr "Formun geçerli bir gönderim anahtarı yok; sayfayı yeniden yükleyin"
@@ -7907,9 +7937,13 @@ msgstr ""
 "Kurtarma bir saat boyunca işin durumunu okuyamadı; sanal makineyi kontrol "
 "edin, sonra bu işi çözün"
 
-#: operations/worker.py:474
+#: operations/worker.py:479
 msgid "The worker stopped before the job changed anything"
 msgstr "Worker, iş herhangi bir şeyi değiştirmeden önce durdu"
+
+#: storages/api/viewsets.py:203 storages/api/viewsets.py:224
+msgid "Pool is not active"
+msgstr "Havuz etkin değil"
 
 #: storages/forms.py:30 storages/templates/storage.html:102
 #: storages/templates/storages.html:43
@@ -8008,6 +8042,26 @@ msgstr "Kopya oluşturulmadı"
 #: storages/jobs.py:103
 msgid "Upload ISO image"
 msgstr "ISO imajı yükle"
+
+#: storages/jobs.py:118
+#| msgid "Invalid file size."
+msgid "Invalid file name"
+msgstr "Geçersiz dosya adı"
+
+#: storages/jobs.py:120
+#| msgid "Only .iso files can be uploaded."
+msgid "Only .iso files can be uploaded"
+msgstr "Yalnızca .iso dosyaları yüklenebilir"
+
+#: storages/jobs.py:122
+#| msgid "Invalid file size."
+msgid "Invalid file size"
+msgstr "Geçersiz dosya boyutu"
+
+#: storages/jobs.py:124
+#| msgid "Invalid chunk index or total chunks."
+msgid "Invalid chunk index or total chunks"
+msgstr "Geçersiz parça dizini veya toplam parça sayısı"
 
 #: storages/templates/create_stg_block.html:7
 msgid "New pool"
@@ -9833,6 +9887,11 @@ msgstr "XML geçerli değil: %(err)s"
 #: vrtManager/util.py:97
 msgid "The XML may not declare a DTD"
 msgstr "XML bir DTD bildiremez"
+
+#: vrtManager/util.py:143
+#, python-format
+msgid "MAC address must be of the format AA:BB:CC:DD:EE:FF, was %(mac)s"
+msgstr "MAC adresi AA:BB:CC:DD:EE:FF biçiminde olmalı; girilen: %(mac)s"
 
 #: vrtManager/virtsecrets.py:26
 msgid "A Ceph key is base64 text, as `ceph auth get-key` prints it"

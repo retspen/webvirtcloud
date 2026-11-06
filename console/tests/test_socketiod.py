@@ -116,6 +116,18 @@ class SocketiodTestCase(Base):
                 self.assertIn("Too many", self.refused("over", {"token": self.token(vm=other)}))
         self.assertEqual(list(self.d.sessions), ["first"])
 
+    @override_settings(SERIAL_CONSOLE_ENABLED=False)
+    def test_a_refusal_is_in_the_page_s_language_and_logged_in_english(self):
+        # as LocaleMiddleware: the language cookie first, then the browser's
+        for environ, shown in (({"HTTP_COOKIE": "django_language=tr", "HTTP_ACCEPT_LANGUAGE": "zh-hans"}, "Seri konsol bu sunucuda kapalı"),
+                               ({"HTTP_ACCEPT_LANGUAGE": "zh-CN,zh;q=0.9"}, "此服务器已关闭串行控制台"),
+                               ({}, "The serial console is turned off on this server")):
+            with self.subTest(shown), self.assertRaises(self.d.socketio.exceptions.ConnectionRefusedError) as refusal, \
+                    self.assertLogs("socketiod", level="INFO") as log:
+                self.d.connect("sid", environ, {"token": self.token()})
+            self.assertEqual(refusal.exception.error_args["message"], shown)
+            self.assertIn("refused: The serial console is turned off on this server", log.output[0])
+
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
     def test_input_and_resize_go_to_the_session_and_are_checked(self):
         self.d.connect("sid-1", {}, {"token": self.token()})

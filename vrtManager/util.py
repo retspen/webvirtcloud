@@ -140,7 +140,7 @@ def validate_macaddr(val):
 
     form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)
     if form is None:
-        raise ValueError("MAC address must be of the format AA:BB:CC:DD:EE:FF, was {}".format(val))
+        raise ValueError(gettext("MAC address must be of the format AA:BB:CC:DD:EE:FF, was %(mac)s") % {"mac": val})
 
 
 def vol_dev_type(vol_bus):

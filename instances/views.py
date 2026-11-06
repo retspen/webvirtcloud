@@ -640,7 +640,7 @@ def _busy(request, pk, busy):
 
 def _moved(request, pk):
     if hasattr(request, "accepted_renderer") or from_script(request):
-        return JsonResponse({"detail": "The VM was moved meanwhile; try again."}, status=409)
+        return JsonResponse({"detail": _("The VM was moved meanwhile; try again.")}, status=409)
     messages.error(request, _("The VM was moved meanwhile; try again."))
     return get_safe_redirect(request, default=reverse("instances:instance", args=[pk]))
 

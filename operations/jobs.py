@@ -13,7 +13,7 @@ from django.db import transaction
 from django.db.models import F, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from django.utils.translation import gettext_noop
+from django.utils.translation import gettext, gettext_noop
 
 from logs.audit import write
 from vrtManager.util import OperationError
@@ -148,7 +148,7 @@ def _existing(user, key, kind_name, params):
         Operation.objects.filter(pk=op.pk).update(submission_key=f"expired:{op.pk.hex}")
         return None
     if op.kind != kind_name or op.params != params:
-        raise SubmissionConflict("This form was already submitted for another request; reload the page")
+        raise SubmissionConflict(gettext("This form was already submitted for another request; reload the page"))
     return op
 
 
