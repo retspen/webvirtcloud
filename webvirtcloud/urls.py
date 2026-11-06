@@ -9,17 +9,6 @@ from appsettings.views import appsettings
 from console.views import console
 from instances.views import index
 
-# Fallback for existing installations where REST_FRAMEWORK.DEFAULT_SCHEMA_CLASS is not configured in settings.py
-user_rf = getattr(settings, "REST_FRAMEWORK", None)
-if not user_rf or "DEFAULT_SCHEMA_CLASS" not in user_rf:
-    try:
-        from rest_framework.settings import api_settings
-        from drf_spectacular.openapi import AutoSchema
-
-        api_settings.DEFAULT_SCHEMA_CLASS = AutoSchema
-    except (ImportError, AttributeError):
-        pass
-
 urlpatterns = [
     path("", index, name="index"),
     path("admin/", include(("admin.urls", "admin"), namespace="admin")),
