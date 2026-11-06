@@ -1080,21 +1080,6 @@ class InstancesTestCase(TestCase):
 
         id = Flavor.objects.last().id
 
-        response = self.client.get(reverse("instances:flavor_update", args=[id]))
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.post(
-            reverse("instances:flavor_update", args=[id]),
-            {
-                "label": "test_flavor_",
-                "memory": 256,
-                "vcpu": 1,
-                "disk": 10,
-            },
-            HTTP_REFERER=reverse("index"),
-        )
-        self.assertEqual(response.status_code, 302)
-
         response = self.client.get(reverse("instances:flavor_delete", args=[id]))
         self.assertEqual(response.status_code, 200)
 

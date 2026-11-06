@@ -6,16 +6,10 @@ if not settings.configured:
     settings.configure(MAC_OUI="52:54:10")
 
 from vrtManager.util import (
-    compareMAC,
     get_xml_path,
-    is_kvm_available,
-    pretty_bytes,
-    pretty_mem,
-    randomMAC,
     randomPasswd,
     randomUUID,
     validate_macaddr,
-    validate_uuid,
     vol_dev_type,
     vol_driver_type,
     xml_escape,
@@ -30,38 +24,6 @@ class TestVrtManagerUtil(unittest.TestCase):
         self.assertRegex(uuid_str, pattern)
         # Ensure successive UUIDs are distinct
         self.assertNotEqual(uuid_str, randomUUID())
-
-    def test_validate_uuid(self):
-        valid_dashed = "c9a646d3-9c61-4cd8-8024-f6b72a6642d9"
-        self.assertEqual(validate_uuid(valid_dashed), valid_dashed)
-
-        valid_no_dash = "c9a646d39c614cd88024f6b72a6642d9"
-        self.assertEqual(validate_uuid(valid_no_dash), valid_dashed)
-
-        with self.assertRaises(ValueError):
-            validate_uuid("invalid-uuid-too-short")
-
-        with self.assertRaises(ValueError):
-            validate_uuid(12345)
-
-    def test_random_mac(self):
-        mac = randomMAC()
-        self.assertTrue(mac.startswith("52:54:10:"))
-        parts = mac.split(":")
-        self.assertEqual(len(parts), 6)
-        for part in parts:
-            self.assertEqual(len(part), 2)
-            int(part, 16)  # valid hex
-
-    def test_compare_mac(self):
-        mac1 = "52:54:10:00:00:01"
-        mac2 = "52:54:10:00:00:02"
-        self.assertEqual(compareMAC(mac1, mac1), 0)
-        self.assertEqual(compareMAC(mac1, mac2), -1)
-        self.assertEqual(compareMAC(mac2, mac1), 1)
-        # Different lengths
-        self.assertEqual(compareMAC("52:54", "52:54:10"), -1)
-        self.assertEqual(compareMAC("52:54:10", "52:54"), 1)
 
     def test_validate_macaddr(self):
         self.assertIsNone(validate_macaddr(None))
@@ -102,23 +64,6 @@ class TestVrtManagerUtil(unittest.TestCase):
         # Missing both path and func
         with self.assertRaises(ValueError):
             get_xml_path(xml)
-
-    def test_is_kvm_available(self):
-        kvm_xml = "<capabilities><guest><arch name='x86_64'><domain type='kvm'/></arch></guest></capabilities>"
-        qemu_xml = "<capabilities><guest><arch name='x86_64'><domain type='qemu'/></arch></guest></capabilities>"
-        self.assertTrue(is_kvm_available(kvm_xml))
-        self.assertFalse(is_kvm_available(qemu_xml))
-
-    def test_pretty_mem(self):
-        # Value in KB
-        self.assertEqual(pretty_mem(1024), " 1 MB")
-        self.assertEqual(pretty_mem(1024 * 1024), "1024 MB")
-        self.assertEqual(pretty_mem(16 * 1024 * 1024), "16.00 GB")
-
-    def test_pretty_bytes(self):
-        # Value in Bytes
-        self.assertEqual(pretty_bytes(10 * 1024 * 1024), "10.00 MB")
-        self.assertEqual(pretty_bytes(2 * 1024 * 1024 * 1024), "2.00 GB")
 
     def test_vol_dev_type(self):
         self.assertEqual(vol_dev_type("ide"), "hd")

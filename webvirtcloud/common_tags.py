@@ -24,6 +24,3 @@ def class_active(request, pattern):
     return "active" if re.search(pattern, request.path) else ""
 
 
-@register.simple_tag
-def has_perm(user, permission_codename):
-    return bool(user.has_perm(permission_codename))

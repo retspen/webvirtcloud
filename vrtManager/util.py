@@ -1,6 +1,5 @@
 from django.utils.translation import gettext_noop
 import ipaddress
-import random
 import secrets
 import re
 import string
@@ -8,7 +7,6 @@ import string
 import libvirt
 import lxml.etree as etree
 
-from django.conf import settings
 from django.utils.translation import gettext
 
 
@@ -61,22 +59,6 @@ class HostBusy(ConnectionFailed):
     (HOST_REQUESTS) still wait for its answers."""
 
 
-def is_kvm_available(xml):
-    kvm_domains = get_xml_path(xml, "//domain/@type='kvm'")
-    return kvm_domains > 0
-
-
-def randomMAC():
-    """Generate a random MAC address."""
-    # qemu MAC
-    mac = settings.MAC_OUI + ":%02x:%02x:%02x" % (
-        random.randint(0x00, 0xFF),
-        random.randint(0x00, 0xFF),
-        random.randint(0x00, 0xFF),
-    )
-    return mac
-
-
 def randomUUID():
     """Generate a random UUID."""
     u = [secrets.randbelow(256) for _ in range(16)]
@@ -90,18 +72,6 @@ def randomPasswd(length=12, alphabet=string.ascii_letters + string.digits):
     return "".join([secrets.choice(alphabet) for _ in range(length)])
 
 
-def get_max_vcpus(conn, guest_type=None):
-    """@param conn: libvirt connection to poll for max possible vcpus
-    @param guest_type: optional guest type (kvm, etc.)"""
-    if type is None:
-        guest_type = conn.getType()
-    try:
-        m = conn.getMaxVcpus(guest_type.lower())
-    except libvirt.libvirtError:
-        m = 32
-    return m
-
-
 def xml_escape(xml_str):
     """Replaces chars ' " < > & with xml safe counterparts"""
     if xml_str is None:
@@ -113,26 +83,6 @@ def xml_escape(xml_str):
     xml_str = xml_str.replace("<", "&lt;")
     xml_str = xml_str.replace(">", "&gt;")
     return xml_str
-
-
-def compareMAC(p, q):
-    """Compare two MAC addresses"""
-    pa = p.split(":")
-    qa = q.split(":")
-
-    if len(pa) != len(qa):
-        if p > q:
-            return 1
-        else:
-            return -1
-
-    for i in range(len(pa)):
-        n = int(pa[i], 0x10) - int(qa[i], 0x10)
-        if n > 0:
-            return 1
-        elif n < 0:
-            return -1
-    return 0
 
 
 def parse_xml(xml):
@@ -179,41 +129,6 @@ def get_xpath(doc, path):
             result = ret
 
     return result
-
-
-def pretty_mem(val):
-    val = int(val)
-    if val > (10 * 1024 * 1024):
-        return "%2.2f GB" % (val / (1024.0 * 1024.0))
-    else:
-        return "%2.0f MB" % (val / 1024.0)
-
-
-def pretty_bytes(val):
-    val = int(val)
-    if val > (1024 * 1024 * 1024):
-        return "%2.2f GB" % (val / (1024.0 * 1024.0 * 1024.0))
-    else:
-        return "%2.2f MB" % (val / (1024.0 * 1024.0))
-
-
-def validate_uuid(val):
-    if not isinstance(val, str):
-        raise ValueError("UUID must be a string.")
-
-    form = re.match("[a-fA-F0-9]{8}[-]([a-fA-F0-9]{4}[-]){3}[a-fA-F0-9]{12}$", val)
-    if form is None:
-        form = re.match("[a-fA-F0-9]{32}$", val)
-        if form is None:
-            raise ValueError(
-                "UUID must be a 32-digit hexadecimal number. It may take "
-                "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
-                "omit hyphens altogether."
-            )
-
-        else:  # UUID had no dashes, so add them in
-            val = val[0:8] + "-" + val[8:12] + "-" + val[12:16] + "-" + val[16:20] + "-" + val[20:32]
-    return val
 
 
 def validate_macaddr(val):

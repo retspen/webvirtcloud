@@ -3,8 +3,6 @@ import contextlib
 import io
 import logging
 import os
-import re
-import socket
 import threading
 import time
 import uuid
@@ -23,9 +21,6 @@ CONN_SOCKET = 4
 CONN_TLS = 3
 CONN_SSH = 2
 CONN_TCP = 1
-TLS_PORT = 16514
-SSH_PORT = 22
-TCP_PORT = 16509
 
 # libvirt has no timeout for opening a connection: an unreachable host
 # blocks for the kernel's TCP connect timeout (about 2 minutes), a daemon
@@ -457,34 +452,6 @@ class wvmConnectionManager(object):
             raise util.ConnectionFailed(error["text"], **error["values"])
         return live
 
-    def host_is_up(self, conn_type, hostname, timeout=1):
-        """True if the libvirt endpoint of hostname accepts a TCP (or Unix
-        socket) connection. This is a reachability probe only: it does not
-        check credentials or libvirt itself. hostname may carry a port
-        ("host:port", "[v6]:port")."""
-        if conn_type == CONN_SOCKET:
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            try:
-                sock.settimeout(timeout)
-                sock.connect("/var/run/libvirt/libvirt-sock")
-                return True
-            except OSError:
-                return False
-            finally:
-                sock.close()
-        default_port = {CONN_SSH: SSH_PORT, CONN_TCP: TCP_PORT, CONN_TLS: TLS_PORT}.get(conn_type)
-        if default_port is None:
-            return False
-        host, port = str(hostname), default_port
-        match = re.fullmatch(r"\[?([^\[\]]+?)\]?:(\d+)", host)
-        if match and (host.startswith("[") or host.count(":") == 1):
-            host, port = match.group(1), int(match.group(2))
-        try:
-            with socket.create_connection((host.strip("[]"), port), timeout=timeout):
-                return True
-        except OSError:
-            return False
-
 connection_manager = wvmConnectionManager(
     settings.LIBVIRT_KEEPALIVE_INTERVAL if hasattr(settings, "LIBVIRT_KEEPALIVE_INTERVAL") else 5,
     settings.LIBVIRT_KEEPALIVE_COUNT if hasattr(settings, "LIBVIRT_KEEPALIVE_COUNT") else 5,
@@ -633,12 +600,6 @@ class wvmConnect(object):
         release = ver
         return f"{major}.{minor}.{release}"
 
-    def is_kvm_supported(self):
-        """
-        :return: kvm support or not
-        """
-        return util.is_kvm_available(self.get_cap_xml())
-
     def get_storages(self, only_actives=False):
         """
         :return: list of active or all storages
@@ -776,21 +737,6 @@ class wvmConnect(object):
 
         return util.get_xml_path(self.get_cap_xml(), func=machines)
 
-    def get_emulators(self):
-        """
-        :return: host emulators list
-        """
-
-        def emulators(ctx):
-            result = {}
-            for arch in ctx.xpath("/capabilities/guest/arch"):
-                emulator = arch.xpath("emulator")
-                arch_name = arch.xpath("@name")[0]
-                result[arch_name] = emulator
-            return result
-
-        return util.get_xml_path(self.get_cap_xml(), func=emulators)
-
     def get_os_loaders(self, arch="x86_64", machine="pc"):
         """
         :param arch: architecture
@@ -921,12 +867,6 @@ class wvmConnect(object):
         :return: available image formats
         """
         return ["raw", "qcow", "qcow2"]
-
-    def get_file_extensions(self):
-        """
-        :return: available image filename extensions
-        """
-        return ["img", "qcow", "qcow2"]
 
     def get_video_models(self, arch, machine):
         """
@@ -1105,15 +1045,6 @@ class wvmConnect(object):
     def get_network(self, net):
         return self.wvm.networkLookupByName(net)
 
-    def get_network_forward(self, net_name):
-        def get_forward(doc):
-            forward_mode = util.get_xpath(doc, "/network/forward/@mode")
-            return forward_mode or "isolated"
-
-        net = self.get_network(net_name)
-        xml = net.XMLDesc(0)
-        return util.get_xml_path(xml, func=get_forward)
-
     def get_nwfilter(self, name):
         return self.wvm.nwfilterLookupByName(name)
 
@@ -1228,18 +1159,6 @@ class wvmConnect(object):
             else:
                 paths += [v for v in (source.get("file"), source.get("dev"), source.get("name")) if v]
         return paths
-
-    def get_snapshots(self):
-        instance = []
-        for snap_id in self.wvm.listDomainsID():
-            dom = self.wvm.lookupByID(int(snap_id))
-            if dom.snapshotNum(0) != 0:
-                instance.append(dom.name())
-        for name in self.wvm.listDefinedDomains():
-            dom = self.wvm.lookupByName(name)
-            if dom.snapshotNum(0) != 0:
-                instance.append(dom.name())
-        return instance
 
     def can_change_interfaces(self):
         """Whether the host's libvirt can define interfaces: the udev backend
