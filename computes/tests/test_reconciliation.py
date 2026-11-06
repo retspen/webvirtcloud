@@ -9,18 +9,7 @@ from computes.models import Compute
 from computes.utils import refresh_instance_database
 from instances.models import Instance
 from instances.utils import refr
-
-
-class MockDomain:
-    def __init__(self, name, uuid_str):
-        self._name = name
-        self._uuid_str = uuid_str
-
-    def name(self):
-        return self._name
-
-    def UUIDString(self):
-        return self._uuid_str
+from computes.tests.fakes import Domain
 
 
 class InstanceReconciliationTestCase(TestCase):
@@ -36,8 +25,8 @@ class InstanceReconciliationTestCase(TestCase):
         )
 
     def test_new_domain_created_in_libvirt_is_added_to_db(self):
-        dom1 = MockDomain(name="vm-alpha", uuid_str="11111111-1111-1111-1111-111111111111")
-        dom2 = MockDomain(name="vm-beta", uuid_str="22222222-2222-2222-2222-222222222222")
+        dom1 = Domain(name="vm-alpha", uuid="11111111-1111-1111-1111-111111111111")
+        dom2 = Domain(name="vm-beta", uuid="22222222-2222-2222-2222-222222222222")
 
         mock_proxy = MagicMock()
         mock_proxy.wvm.listAllDomains.return_value = [dom1, dom2]
@@ -81,7 +70,7 @@ class InstanceReconciliationTestCase(TestCase):
         original_inst_id = inst.id
         user_inst = UserInstance.objects.create(instance=inst, user=self.user, is_change=True)
 
-        dom_renamed = MockDomain(name="vm-new-name", uuid_str=uuid)
+        dom_renamed = Domain(name="vm-new-name", uuid=uuid)
 
         mock_proxy = MagicMock()
         mock_proxy.wvm.listAllDomains.return_value = [dom_renamed]
@@ -163,7 +152,7 @@ class ReconciliationTransactionTestCase(TransactionTestCase):
 
         def list_domains():
             seen["list"] = connection.in_atomic_block
-            return [MockDomain(name="vm-tx", uuid_str="77777777-7777-7777-7777-777777777777")]
+            return [Domain(name="vm-tx", uuid="77777777-7777-7777-7777-777777777777")]
 
         self.proxy(list_domains)
         with patch.object(Compute, "status", new_callable=PropertyMock, side_effect=status):
@@ -174,7 +163,7 @@ class ReconciliationTransactionTestCase(TransactionTestCase):
 
     def test_a_compute_that_matches_the_database_writes_nothing(self):
         Instance.objects.create(compute=self.compute, name="vm-same", uuid="99999999-9999-9999-9999-999999999999")
-        self.proxy(lambda: [MockDomain(name="vm-same", uuid_str="99999999-9999-9999-9999-999999999999")])
+        self.proxy(lambda: [Domain(name="vm-same", uuid="99999999-9999-9999-9999-999999999999")])
         self.compute.__dict__["status"] = True
         with CaptureQueriesContext(connection) as queries:
             refresh_instance_database(self.compute)
@@ -184,7 +173,7 @@ class ReconciliationTransactionTestCase(TransactionTestCase):
     def test_compute_deleted_while_listing_gets_no_instances(self):
         def list_domains():
             Compute.objects.filter(pk=self.compute.pk).delete()
-            return [MockDomain(name="vm-orphan", uuid_str="88888888-8888-8888-8888-888888888888")]
+            return [Domain(name="vm-orphan", uuid="88888888-8888-8888-8888-888888888888")]
 
         self.proxy(list_domains)
         self.compute.__dict__["status"] = True
