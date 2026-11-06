@@ -1,4 +1,6 @@
-from instances.models import CreateInstance, Flavor, Instance, MigrateInstance
+from computes.models import Compute
+from django.conf import settings
+from instances.models import Flavor, Instance
 from instances.utils import nic_macs
 from rest_framework import serializers
 
@@ -76,14 +78,28 @@ class DestroySerializer(DestroyOptionsSerializer):
     submission_key = serializers.CharField(write_only=True)
 
 
-class CreateInstanceSerializer(serializers.ModelSerializer):
+class CreateInstanceSerializer(serializers.Serializer):
+    """The API's VM create: the new VM form's fields, as a job."""
+
+    name = serializers.CharField(max_length=64)
     # BIOS, UEFI or UEFI Secure Boot, as the host offers; left out: the machine's default
     firmware = serializers.CharField(required=False)
-    video = serializers.CharField(initial="vga")
+    tpm = serializers.BooleanField(required=False)
+    vcpu = serializers.IntegerField(min_value=1)
+    vcpu_mode = serializers.CharField(max_length=64)
+    memory = serializers.IntegerField(min_value=1)
+    networks = serializers.CharField(max_length=256)
+    mac = serializers.CharField(allow_blank=True, max_length=255, required=False)
+    nwfilter = serializers.CharField(allow_blank=True, max_length=256, required=False)
     storage = serializers.CharField(initial="default")
+    hdd_size = serializers.IntegerField(min_value=1, required=False)
     cache_mode = serializers.CharField(initial="none")
+    meta_prealloc = serializers.BooleanField(required=False)
     virtio = serializers.BooleanField(initial=True)
     qemu_ga = serializers.BooleanField(initial=True)
+    cloud_init = serializers.BooleanField(required=False)
+    video = serializers.CharField(initial="vga")
+    listener_addr = serializers.ChoiceField(choices=settings.QEMU_CONSOLE_LISTENER_ADDRESSES)
     submission_key = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
@@ -93,32 +109,10 @@ class CreateInstanceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"mac": str(err)})
         return attrs
 
-    class Meta:
-        model = CreateInstance
-        fields = [
-            "name",
-            "firmware",
-            "tpm",
-            "vcpu",
-            "vcpu_mode",
-            "memory",
-            "networks",
-            "mac",
-            "nwfilter",
-            "storage",
-            "hdd_size",
-            "cache_mode",
-            "meta_prealloc",
-            "virtio",
-            "qemu_ga",
-            "cloud_init",
-            "video",
-            "listener_addr",
-            "submission_key",
-        ]
 
-
-class MigrateSerializer(serializers.ModelSerializer):
+class MigrateSerializer(serializers.Serializer):
+    instance = serializers.PrimaryKeyRelatedField(queryset=Instance.objects.all())
+    target_compute = serializers.PrimaryKeyRelatedField(queryset=Compute.objects.all())
     live = serializers.BooleanField(default=True)
     offline = serializers.BooleanField(default=False)
     # left out, also from a form-encoded request: auto converge on
@@ -129,18 +123,3 @@ class MigrateSerializer(serializers.ModelSerializer):
     disk_pools = serializers.DictField(child=serializers.CharField(allow_blank=True), default=dict)
     delete_source = serializers.BooleanField(default=False)
     submission_key = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = MigrateInstance
-        fields = [
-            "instance",
-            "target_compute",
-            "live",
-            "offline",
-            "autoconverge",
-            "compress",
-            "unsafe",
-            "disk_pools",
-            "delete_source",
-            "submission_key",
-        ]

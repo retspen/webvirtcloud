@@ -1,6 +1,4 @@
 from computes.models import Compute
-from django.conf import settings
-from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -401,76 +399,6 @@ class Instance(models.Model):
     @cached_property
     def formats(self):
         return self.proxy.get_image_formats()
-
-
-class MigrateInstance(models.Model):
-    instance = models.ForeignKey(
-        Instance, related_name="source_host", on_delete=models.DO_NOTHING
-    )
-    target_compute = models.ForeignKey(
-        Compute, related_name="target_host", on_delete=models.DO_NOTHING
-    )
-
-    live = models.BooleanField(_("Live"))
-    offline = models.BooleanField(_("Offline"))
-    autoconverge = models.BooleanField(_("Auto Converge"), default=True)
-    compress = models.BooleanField(_("Compress"), default=False)
-    unsafe = models.BooleanField(_("Unsafe"), default=False)
-
-    class Meta:
-        managed = False
-
-
-class CreateInstance(models.Model):
-    compute = models.ForeignKey(
-        Compute, related_name="host", on_delete=models.DO_NOTHING
-    )
-    name = models.CharField(
-        max_length=64,
-        error_messages={"required": _("No Virtual Machine name has been entered")},
-    )
-    firmware = models.CharField(max_length=64)
-    # an emulated TPM 2.0, as Windows 11 needs
-    tpm = models.BooleanField(default=False)
-    vcpu = models.IntegerField(
-        error_messages={"required": _("No VCPU has been entered")}, validators=[MinValueValidator(1)]
-    )
-    # a mode of libvirt's (host-model, host-passthrough, maximum) or a CPU model's name
-    vcpu_mode = models.CharField(max_length=64)
-    disk = models.IntegerField(blank=True)
-    memory = models.IntegerField(
-        error_messages={"required": _("No RAM size has been entered")}, validators=[MinValueValidator(1)]
-    )
-    networks = models.CharField(
-        max_length=256,
-        error_messages={"required": _("No Network pool has been choosen")},
-    )
-    nwfilter = models.CharField(max_length=256, blank=True)
-    net_model = models.CharField(max_length=256, blank=True)
-    storage = models.CharField(max_length=256, blank=True)
-    template = models.CharField(max_length=256, blank=True)
-    images = models.CharField(max_length=256, blank=True)
-    cache_mode = models.CharField(
-        max_length=16, error_messages={"required": _("Please select HDD cache mode")}
-    )
-    hdd_size = models.IntegerField(blank=True, validators=[MinValueValidator(1)])
-    meta_prealloc = models.BooleanField(default=False, blank=True)
-    virtio = models.BooleanField(default=True)
-    qemu_ga = models.BooleanField(default=False)
-    mac = models.CharField(max_length=255, blank=True)  # one per NIC, comma separated
-    add_cdrom = models.CharField(max_length=16)
-    # a NoCloud seed on a CD-ROM: the hostname and the creating user's SSH keys
-    cloud_init = models.BooleanField(default=False)
-    add_input = models.CharField(max_length=16)
-    video = models.CharField(
-        max_length=16, error_messages={"required": _("Please select a video driver")}
-    )
-    listener_addr = models.CharField(
-        max_length=20, choices=settings.QEMU_CONSOLE_LISTENER_ADDRESSES
-    )
-
-    class Meta:
-        managed = False
 
 
 class InstanceTombstone(models.Model):
