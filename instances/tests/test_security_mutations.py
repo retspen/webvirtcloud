@@ -9,6 +9,7 @@ from django.urls import reverse
 from accounts.models import UserInstance
 from computes.models import Compute
 from instances.models import Instance
+from operations.models import Operation
 from operations import claims
 from instances.views import get_instance
 
@@ -257,11 +258,11 @@ class InstanceSecurityMutationsTestCase(TestCase):
 
         # 3. Superuser can destroy VM
         self.client.force_login(self.superuser)
-        with patch("instances.models.wvmInstance") as mock_wvm_cls:
-            mock_wvm_cls.return_value.get_status.return_value = 5  # shutoff
-            res = self.client.post(reverse("instances:destroy", args=[self.instance.id]), {})
+        with patch("instances.models.wvmInstance"):
+            res = self.client.post(reverse("instances:destroy", args=[self.instance.id]),
+                                   {"submission_key": "key-destroy01"})
             self.assertEqual(res.status_code, 302)
-            self.assertFalse(Instance.objects.filter(id=self.instance.id).exists())
+            self.assertTrue(Operation.objects.filter(kind="instance.delete").exists())  # queued
 
     def test_migration_deduplicate_instances_logic(self):
         import importlib

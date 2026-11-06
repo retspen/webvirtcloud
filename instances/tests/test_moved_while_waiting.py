@@ -12,7 +12,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from computes.models import Compute
+from instances.jobs import DeleteInstance
 from instances.models import Instance
+from operations.models import Operation
+from vrtManager.util import OperationError
 
 
 class MovedWhileWaitingTestCase(TestCase):
@@ -54,18 +57,11 @@ class MovedWhileWaitingTestCase(TestCase):
         self.assertTrue(touched)
 
     def test_destroy_of_a_vm_moved_while_it_waited_is_not_run(self):
-        # destroy holds the whole compute; the migration moved the VM before
-        # releasing it
-        @contextmanager
-        def compute_lock_after_a_migration(compute, *, shared=False):
-            Instance.objects.filter(pk=self.vm.pk).update(compute=self.target)
-            yield
-
-        with patch("instances.views.libvirt_compute_lock", compute_lock_after_a_migration), patch(
-            "instances.models.wvmInstance"
-        ) as wvm, patch.object(Compute, "status", new_callable=PropertyMock, return_value=True):
-            response = self.client.post(reverse("instances:destroy", args=[self.vm.id]), {"delete_disk": "on"})
-        self.assertFalse(wvm.return_value.delete.called)
-        self.assertTrue(Instance.objects.filter(pk=self.vm.pk).exists())
-        messages = [str(m) for m in response.wsgi_request._messages]
-        self.assertIn("The VM was moved meanwhile; try again.", messages)
+        # the delete job holds the whole compute; a migration moved the VM before it ran
+        with patch("instances.models.wvmInstance"):
+            self.client.post(reverse("instances:destroy", args=[self.vm.id]),
+                             {"delete_disk": "on", "submission_key": "key-moved001"})
+        op = Operation.objects.get(kind="instance.delete")
+        Instance.objects.filter(pk=self.vm.pk).update(compute=self.target)
+        with self.assertRaisesMessage(OperationError, "The VM moved to another compute"):
+            DeleteInstance().precheck(op, None)

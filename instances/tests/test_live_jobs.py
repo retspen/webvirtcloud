@@ -20,7 +20,7 @@ from vrtManager.instance import wvmInstance
 
 from appsettings.settings import get_settings
 from computes.models import Compute
-from instances.jobs import DeleteExternalSnapshot
+from instances.jobs import DeleteExternalSnapshot, DeleteInstance
 from instances.models import Instance
 from operations import jobs
 from operations.models import Operation
@@ -110,6 +110,23 @@ class LiveJobsTestCase(TransactionTestCase):
         op.refresh_from_db()
         self.assertEqual(op.state, Operation.SUCCEEDED, op.error)
         return op
+
+    def test_the_worker_deletes_a_running_vm_with_its_disk_and_recovery_agrees(self):
+        disk = livetest.create_volume(self.conn, P + "job-delete")
+        dom = livetest.define_vm(self.conn, P + "job-delete", [disk])
+        dom.create()
+        instance = Instance.objects.create(compute=self.compute, name=dom.name(), uuid=dom.UUIDString())
+        op = self.run_job(jobs.submit("instance.delete", self.admin, {"instance": instance.pk, "delete_disk": True},
+                                      "key-delete01"))
+        self.assertEqual(op.result, {"open": reverse("instances:index")})
+        self.assertFalse(Instance.objects.filter(pk=instance.pk).exists())
+        self.assertFalse(livetest.volume_exists(self.conn, disk))
+        with self.assertRaises(libvirt.libvirtError):
+            self.conn.lookupByUUIDString(op.intent["uuid"])
+        # a worker that stopped after the undefine: recovery finds the work done
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING)
+        op.refresh_from_db()
+        self.assertEqual(DeleteInstance().reconcile(op).state, Operation.SUCCEEDED)
 
     def test_snapshot_create_and_revert_run_as_jobs(self):
         running, _vm = self.vm("smoke-ext", "running")

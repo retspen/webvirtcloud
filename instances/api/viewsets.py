@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from instances.jobs import MIGRATE_OPTIONS
 from instances.models import Flavor, Instance
-from instances.views import destroy as instance_destroy
 from instances.views import (
     force_off,
     get_instance,
@@ -28,7 +27,7 @@ from webvirtcloud.serializers import ActionStatusSerializer
 
 from .serializers import (
     CreateInstanceSerializer,
-    DestroyOptionsSerializer,
+    DestroySerializer,
     FlavorSerializer,
     InstanceDetailsSerializer,
     InstanceSerializer,
@@ -40,8 +39,8 @@ def instance_action_response(action, request, pk, message):
     response = action(request, pk)
     if response.status_code >= 400:
         return response
-    # the page's view reports a partial result (a disk that was kept) as a
-    # message for the page it redirects to: the API answers with them
+    # the page's view reports a partial result as a message for the page it
+    # redirects to: the API answers with them
     return Response({"status": message, "messages": [str(m) for m in get_messages(request)]})
 
 
@@ -124,12 +123,19 @@ class InstanceViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    @extend_schema(request=DestroyOptionsSerializer, responses=ActionStatusSerializer)
+    @extend_schema(request=DestroySerializer, responses={202: OperationSerializer, 400: dict})
     def destroy(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="delete")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
-        return instance_action_response(instance_destroy, request, pk, "Instance is destroyed")
+        serializer = DestroySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = dict(serializer.validated_data)
+        key = data.pop("submission_key")
+        op = jobs.submit("instance.delete", request.user, {"instance": queryset.pk, **data}, key)
+        return Response(OperationSerializer(op, context={"request": request}).data, status=status.HTTP_202_ACCEPTED,
+                        headers={"Location": reverse("operation-detail", args=[op.pk])})
 
     @extend_schema(request=None, responses=ActionStatusSerializer)
     @action(detail=True, methods=["post"])

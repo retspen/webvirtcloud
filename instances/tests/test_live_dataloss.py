@@ -8,6 +8,8 @@ TEST_LIBVIRT_HOST set (see instances/tests/livetest.py).
 
 import os
 import unittest
+from types import SimpleNamespace
+from uuid import uuid4
 
 import libvirt
 from computes.models import Compute
@@ -18,7 +20,10 @@ from django.urls import reverse
 from vrtManager.connection import connection_manager
 
 from . import livetest
+from instances.jobs import DeleteInstance
 from instances.models import Instance
+from operations.jobs import Context
+from operations.models import Operation, acquire
 from instances.utils import refr
 
 P = livetest.PREFIX
@@ -74,6 +79,19 @@ class LiveDataLossTestCase(TestCase):
             data or {},
             HTTP_REFERER=reverse("instances:instance", args=[instance.id]),
         )
+
+    def destroy(self, instance, data=None):
+        """The delete page's request, then its job as the worker runs it."""
+        response = self.post("destroy", instance, {"submission_key": f"key-{uuid4().hex[:12]}", **(data or {})})
+        op = Operation.objects.get(kind="instance.delete", state=Operation.QUEUED)
+        acquire("live-test:1:a", "live-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="live-test:1:a")
+        op.refresh_from_db()
+        ctx = Context(op, SimpleNamespace(identity="live-test:1:a"))
+        DeleteInstance().precheck(op, ctx)
+        DeleteInstance().run(op, ctx)
+        Operation.objects.filter(pk=op.pk).update(state=Operation.SUCCEEDED)
+        return response
 
     def disk_sources(self, dom, flags=0):
         from lxml import etree
@@ -156,7 +174,7 @@ class LiveDataLossTestCase(TestCase):
         _, inst = self.vm("r14-a", [shared])
         self.vm("r14-b", [shared])
 
-        response = self.post("destroy", inst, {"delete_disk": "1"})
+        response = self.destroy(inst, {"delete_disk": "1"})
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(livetest.volume_exists(self.conn, shared), "destroy deleted another VM's disk")
@@ -175,7 +193,7 @@ class LiveDataLossTestCase(TestCase):
         if running:
             dom_b.create()
 
-        response = self.post("destroy", inst, {"delete_disk": "1"})
+        response = self.destroy(inst, {"delete_disk": "1"})
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(livetest.volume_exists(self.conn, base), "deleted the backing file of another VM's disk")
@@ -192,7 +210,7 @@ class LiveDataLossTestCase(TestCase):
         dom.create()
         dom.managedSave(0)
 
-        self.post("destroy", inst, {"delete_disk": "1"})
+        self.destroy(inst, {"delete_disk": "1"})
 
         uuid = dom.UUIDString()
         self.assertFalse(self.domain_exists(uuid), "VM is still defined")
@@ -204,7 +222,7 @@ class LiveDataLossTestCase(TestCase):
         dom.create()
         dom.suspend()
 
-        self.post("destroy", inst)
+        self.destroy(inst)
 
         self.assertFalse(self.domain_exists(dom.UUIDString()), "paused VM is still running")
 
@@ -231,7 +249,7 @@ class LiveDataLossTestCase(TestCase):
         dom.destroy()
         self.assertIn(f"{P}r14-nvram_VARS.fd", self.nvram_files())
 
-        self.post("destroy", inst, data)
+        self.destroy(inst, data)
 
         self.assertFalse(self.domain_exists(dom.UUIDString()), "VM is still defined")
         return f"{P}r14-nvram_VARS.fd" in self.nvram_files()
@@ -267,7 +285,7 @@ class LiveDataLossTestCase(TestCase):
         dom, inst = self.vm("r14-chain", [overlay])
         dom.snapshotCreateXML("<domainsnapshot><name>snap</name></domainsnapshot>", 0)
 
-        response = self.post("destroy", inst, {"delete_disk": "1"})
+        response = self.destroy(inst, {"delete_disk": "1"})
 
         self.assertEqual(response.status_code, 302)
         self.assertFalse(self.domain_exists(dom.UUIDString()), "VM is still defined")
@@ -295,7 +313,7 @@ class LiveDataLossTestCase(TestCase):
         made = {name for name in pool.listVolumes() if name.startswith(P + "r14-ext.")} - {P + "r14-ext.qcow2"}
         self.assertEqual(len(made), 2, made)  # one overlay per snapshot
 
-        response = self.post("destroy", inst, {"delete_disk": "1"})
+        response = self.destroy(inst, {"delete_disk": "1"})
 
         self.assertEqual(response.status_code, 302)
         self.assertFalse(self.domain_exists(dom.UUIDString()), "VM is still defined")
@@ -313,7 +331,7 @@ class LiveDataLossTestCase(TestCase):
         inst.proxy.create_external_snapshot("b")
         inst.proxy.revert_external_snapshot("a")  # b's overlay is off the disk's chain now
 
-        response = self.post("destroy", inst, {"delete_disk": "1"})
+        response = self.destroy(inst, {"delete_disk": "1"})
 
         self.assertEqual(response.status_code, 302)
         pool = self.conn.storagePoolLookupByName(livetest.POOL)

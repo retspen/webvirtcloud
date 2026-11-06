@@ -42,10 +42,6 @@ from django.views.decorators.debug import sensitive_post_parameters
 from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_RUNNING,
                      VIR_DOMAIN_SHUTOFF,
-                     VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
-                     VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
-                     VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA,
-                     VIR_DOMAIN_UNDEFINE_NVRAM,
                      VIR_DOMAIN_XML_INACTIVE,
                      VIR_ERR_NO_DOMAIN,
                      VIR_ERR_NO_SUPPORT,
@@ -861,62 +857,21 @@ def force_off(request, pk):
     )
 
 
-@serialize_compute_mutation
 def destroy(request, pk):
     if request.method in ["POST", "DELETE"]:
-        instance = get_instance(request.user, pk, perm_type="delete")
-        # an API request is a DRF request whose body is in .data; refused
-        # options stop nothing
-        options = DestroyOptionsSerializer(data=getattr(request, "data", request.POST))
+        get_instance(request.user, pk, perm_type="delete")
+        options = DestroyOptionsSerializer(data=request.POST)
         options.is_valid(raise_exception=True)
-        with libvirt_instance_lock(instance):
-            with audit_vm(request, instance, "delete"):
-                proxy = instance.proxy
-                # the files to delete are known before the VM is stopped: a
-                # host that cannot be checked refuses the destruction
-                to_delete, shared = [], []
-                if options.validated_data["delete_disk"]:
-                    to_delete, shared = proxy.split_disk_paths_by_use(
-                        lambda own: utils.paths_used_on_other_computes(instance.compute, own))
-
-                # Paused and other active states must stop too, or the VM keeps
-                # running as a transient domain after the undefine.
-                if proxy.instance.isActive():
-                    proxy.force_shutdown()
-
-                # Undefine before deleting any disk: if it fails, nothing is lost.
-                # Snapshot metadata goes with the domain; internal snapshot data
-                # stays in the disk images that are kept.
-                flags = VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
-                if options.validated_data["delete_nvram"]:
-                    flags |= VIR_DOMAIN_UNDEFINE_NVRAM
-                else:
-                    flags |= VIR_DOMAIN_UNDEFINE_KEEP_NVRAM
-                proxy.delete(flags)
-                instance.delete()
-
-            # each disk has its own row: the VM is gone even if one is kept; a
-            # file that stays keeps the files below it, which it needs
-            kept = set()
-            for path in to_delete:
-                if path in kept:
-                    messages.warning(request, _("Disk %(path)s was kept: a disk file that stays needs it") % {"path": path})
-                    continue
-                try:
-                    with audit_vm(request, instance, f"delete volume {path}"):
-                        proxy.get_volume_by_path(path).delete(0)
-                except libvirtError as err:
-                    messages.error(request, _("The VM is removed, but disk %(path)s was not deleted: %(err)s") % {
-                        "path": path, "err": error_text(request, err)})
-                    try:
-                        while (path := proxy.backing_path(path)) and path not in kept:
-                            kept.add(path)
-                    except libvirtError:
-                        # the files it needs are unknown: none of the rest goes
-                        kept.update(to_delete)
-            for path in shared:
-                messages.warning(request, _("Disk %(path)s is used by another VM and was kept") % {"path": path})
-        return redirect(reverse("instances:index"))
+        try:
+            op = jobs.submit("instance.delete", request.user, {"instance": pk, **options.validated_data},
+                             request.POST.get("submission_key", ""))
+        except claims.Busy as busy:
+            return _busy(request, pk, busy)
+        except (jobs.SubmissionConflict, libvirtError) as err:
+            messages.error(request, error_text(request, err))
+            return redirect(reverse("instances:destroy", args=[pk]))
+        jobs.remember_job(request, op)
+        return redirect(reverse("instances:instance", args=[pk]))
 
     instance = get_instance(request.user, pk, perm_type="delete")
     try:

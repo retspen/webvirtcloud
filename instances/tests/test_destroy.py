@@ -1,36 +1,67 @@
 from contextlib import contextmanager
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
+from instances.jobs import DeleteInstance
 from instances.models import Instance
 from instances.utils import paths_used_on_other_computes
-from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, libvirtError
-from operations.utils import public_error_text
+from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_ERR_NO_STORAGE_VOL, libvirtError
+from logs.models import Logs
+from operations.jobs import Context
+from operations.models import Claim, Operation, acquire
+from operations.utils import public_error_text, words
 from vrtManager.util import ConnectionFailed, OperationError
 
+UUID = "11111111-2222-3333-4444-555555555555"
 
-class DestroyOrderTestCase(TestCase):
+
+class DestroyOrderTestCase(TransactionTestCase):
     def setUp(self):
-        admin = get_user_model().objects.create_superuser("destroy_admin", "d@example.com", "pw")
-        self.client.force_login(admin)
+        self.admin = get_user_model().objects.create_superuser("destroy_admin", "d@example.com", "pw")
+        self.client.force_login(self.admin)
         self.client.raise_request_exception = False
         compute = Compute.objects.create(name="destroy-compute", hostname="127.0.0.1", login="", password="", type=4)
-        self.instance = Instance.objects.create(
-            compute=compute, name="destroy-vm", uuid="11111111-2222-3333-4444-555555555555"
-        )
+        self.instance = Instance.objects.create(compute=compute, name="destroy-vm", uuid=UUID)
+        self.proxy = MagicMock()
+        self.proxy.instance.isActive.return_value = False
+        self.proxy.backing_path.return_value = None
+        self.proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], ["/pool/shared.qcow2"])
+        # the job's VM and its compute's connection are the same host here
+        for target in ("instances.jobs.wvmInstance", "instances.jobs.wvmConnect", "instances.models.wvmInstance"):
+            patch(target, return_value=self.proxy).start()
+        self.addCleanup(patch.stopall)
 
-    def destroy(self, undefine_error=None, data=None):
-        with patch("instances.models.wvmInstance") as wvm:
-            proxy = wvm.return_value
-            proxy.instance.isActive.return_value = False
-            proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], ["/pool/shared.qcow2"])
-            proxy.delete.side_effect = undefine_error
-            self.client.post(reverse("instances:destroy", args=[self.instance.id]), data or {"delete_disk": "1"})
-        return proxy
+    def queue(self, **data):
+        self.client.post(reverse("instances:destroy", args=[self.instance.id]),
+                         {"submission_key": "key-destroy01", **data})
+        return Operation.objects.get()
+
+    def run_job(self, op):
+        """The job as the worker runs it; its result."""
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        ctx = Context(op, SimpleNamespace(identity="wvc-test:1:a"))
+        DeleteInstance().precheck(op, ctx)
+        return DeleteInstance().run(op, ctx)
+
+    def test_the_page_queues_the_delete_and_changes_nothing(self):
+        response = self.client.post(reverse("instances:destroy", args=[self.instance.id]),
+                                    {"submission_key": "key-destroy01", "delete_disk": "true"})
+        self.assertRedirects(response, reverse("instances:instance", args=[self.instance.id]),
+                             fetch_redirect_response=False)
+        op = Operation.objects.get()
+        self.assertEqual((op.kind, op.params), ("instance.delete", {
+            "instance": self.instance.pk, "delete_disk": True, "delete_nvram": False}))
+        # the whole compute: a file to delete must not be attached meanwhile
+        self.assertEqual(set(Claim.objects.values_list("resource", "mode")), {
+            (f"compute:{self.instance.compute_id}", "exclusive"), (f"instance:{UUID}", "exclusive")})
+        self.assertEqual(self.proxy.mock_calls, [])
 
     def test_the_nvram_goes_only_when_asked(self):
         for data, wanted, unwanted in (
@@ -38,47 +69,35 @@ class DestroyOrderTestCase(TestCase):
             ({}, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM),
         ):
             with self.subTest(data=data):
-                Instance.objects.get_or_create(
-                    compute=self.instance.compute, name="destroy-vm", uuid="11111111-2222-3333-4444-555555555555"
-                )
-                self.instance = Instance.objects.get(uuid="11111111-2222-3333-4444-555555555555")
-                flags = self.destroy(data=data).delete.call_args[0][0]
+                self.instance = Instance.objects.get_or_create(compute=self.instance.compute, name="destroy-vm",
+                                                               uuid=UUID)[0]
+                Operation.objects.all().delete()
+                self.run_job(self.queue(**data))
+                flags = self.proxy.delete.call_args[0][0]
                 self.assertTrue(flags & wanted)
                 self.assertFalse(flags & unwanted)
 
-    def test_the_api_takes_its_options_as_booleans(self):
-        url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
-        for body, content_type, deleted in (
-            ({"delete_disk": True}, "application/json", True),
-            ("delete_disk=false", "application/x-www-form-urlencoded", False),
-        ):
-            with self.subTest(body=body):
-                Instance.objects.get_or_create(
-                    compute=self.instance.compute, name="destroy-vm", uuid="11111111-2222-3333-4444-555555555555"
-                )
-                self.instance = Instance.objects.get(uuid="11111111-2222-3333-4444-555555555555")
-                with patch("instances.models.wvmInstance") as wvm:
-                    proxy = wvm.return_value
-                    proxy.instance.isActive.return_value = False
-                    proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], [])
-                    url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
-                    response = self.client.delete(url, body, content_type=content_type)
-                self.assertEqual(response.status_code, 200)
-                self.assertEqual(proxy.get_volume_by_path.called, deleted)
+    def test_the_files_are_checked_before_the_vm_is_stopped_and_deleted_after_the_undefine(self):
+        self.proxy.instance.isActive.return_value = True
+        op = self.queue(delete_disk="true")
+        result = self.run_job(op)
+        calls = [name for name, *_ in self.proxy.mock_calls
+                 if name in ("split_disk_paths_by_use", "force_shutdown", "delete", "get_volume_by_path")]
+        self.assertEqual(calls, ["split_disk_paths_by_use", "force_shutdown", "delete", "get_volume_by_path"])
+        self.proxy.get_volume_by_path.assert_called_once_with("/pool/own.qcow2")
+        self.assertFalse(Instance.objects.filter(pk=self.instance.pk).exists())
+        self.assertEqual(Operation.objects.get().intent["to_delete"], ["/pool/own.qcow2"])  # recorded first
+        self.assertEqual(result["open"], reverse("instances:index"))
+        self.assertEqual(words(result["warning"]), "Disk /pool/shared.qcow2 is used by another VM and was kept")
+        self.assertEqual(list(Logs.objects.exclude(message="Login").values_list("message", "success")),
+                         [("VM destroy-vm: delete volume /pool/own.qcow2", True)])
 
-    def test_the_api_tells_which_disks_were_not_deleted(self):
-        with patch("instances.models.wvmInstance") as wvm:
-            proxy = wvm.return_value
-            proxy.instance.isActive.return_value = False
-            proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], ["/pool/shared.qcow2"])
-            proxy.backing_path.return_value = None
-            proxy.get_volume_by_path.return_value.delete.side_effect = libvirtError("Permission denied")
-            url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
-            response = self.client.delete(url, {"delete_disk": True}, content_type="application/json")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"status": "Instance is destroyed", "messages": [
-            "The VM is removed, but disk /pool/own.qcow2 was not deleted: Permission denied",
-            "Disk /pool/shared.qcow2 is used by another VM and was kept"]})
+    def test_a_failed_undefine_deletes_no_disk(self):
+        self.proxy.delete.side_effect = libvirtError("refused")
+        with self.assertRaises(libvirtError):
+            self.run_job(self.queue(delete_disk="true"))
+        self.proxy.get_volume_by_path.assert_not_called()
+        self.assertTrue(Instance.objects.filter(pk=self.instance.pk).exists())
 
     def test_a_disk_file_that_stays_keeps_the_files_it_needs(self):
         # the overlay is not deleted: the file below it would leave it broken
@@ -90,64 +109,85 @@ class DestroyOrderTestCase(TestCase):
                 vol.delete.side_effect = libvirtError("Permission denied")
             return vol
 
-        with patch("instances.models.wvmInstance") as wvm:
-            proxy = wvm.return_value
-            proxy.instance.isActive.return_value = False
-            proxy.split_disk_paths_by_use.return_value = (["/pool/vm.snap1", "/pool/vm.qcow2", "/pool/vm-data.qcow2"], [])
-            proxy.get_volume_by_path.side_effect = volume
-            proxy.backing_path.side_effect = {"/pool/vm.snap1": "/pool/vm.qcow2"}.get
-            response = self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
+        self.proxy.split_disk_paths_by_use.return_value = (
+            ["/pool/vm.snap1", "/pool/vm.qcow2", "/pool/vm-data.qcow2"], [])
+        self.proxy.get_volume_by_path.side_effect = volume
+        self.proxy.backing_path.side_effect = {"/pool/vm.snap1": "/pool/vm.qcow2"}.get
+        result = self.run_job(self.queue(delete_disk="true"))
         self.assertNotIn("/pool/vm.qcow2", volumes)
         volumes["/pool/vm-data.qcow2"].delete.assert_called_once_with(0)
-        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)][-1],
+        # each disk has its own row, and the job's end the VM's (log_entry)
+        self.assertEqual(list(Logs.objects.exclude(message="Login").values_list("message", "success", "instance_uuid")), [
+            ("VM destroy-vm: delete volume /pool/vm.snap1: Permission denied", False, UUID),
+            ("VM destroy-vm: delete volume /pool/vm-data.qcow2", True, UUID)])
+        self.assertEqual(DeleteInstance().log_entry(Operation.objects.get(), Operation.SUCCEEDED),
+                         ("destroy-compute", "destroy-vm", UUID, "VM destroy-vm: delete"))
+        self.assertEqual(words(result["warning"]),
+                         "The VM is removed, but disk /pool/vm.snap1 was not deleted: Permission denied. "
                          "Disk /pool/vm.qcow2 was kept: a disk file that stays needs it")
 
     def test_when_the_files_a_kept_one_needs_are_unknown_none_of_the_rest_goes(self):
-        with patch("instances.models.wvmInstance") as wvm:
-            proxy = wvm.return_value
-            proxy.instance.isActive.return_value = False
-            proxy.split_disk_paths_by_use.return_value = (["/pool/a.qcow2", "/pool/b.qcow2"], [])
-            proxy.get_volume_by_path.return_value.delete.side_effect = libvirtError("Permission denied")
-            proxy.backing_path.side_effect = libvirtError("pool unreachable")
-            response = self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
-        self.assertEqual(response.status_code, 302)
-        proxy.get_volume_by_path.assert_called_once_with("/pool/a.qcow2")
-
-    def test_the_files_are_checked_before_the_vm_is_stopped(self):
-        with patch("instances.models.wvmInstance") as wvm:
-            proxy = wvm.return_value
-            proxy.instance.isActive.return_value = True
-            proxy.split_disk_paths_by_use.return_value = (["/pool/own.qcow2"], [])
-            self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
-        calls = [name for name, *_ in proxy.mock_calls if name in ("split_disk_paths_by_use", "force_shutdown", "delete")]
-        self.assertEqual(calls, ["split_disk_paths_by_use", "force_shutdown", "delete"])
+        self.proxy.split_disk_paths_by_use.return_value = (["/pool/a.qcow2", "/pool/b.qcow2"], [])
+        self.proxy.get_volume_by_path.return_value.delete.side_effect = libvirtError("Permission denied")
+        self.proxy.backing_path.side_effect = libvirtError("pool unreachable")
+        self.run_job(self.queue(delete_disk="true"))
+        self.proxy.get_volume_by_path.assert_called_once_with("/pool/a.qcow2")
 
     def test_a_host_that_cannot_be_checked_stops_nothing(self):
         Compute.objects.create(name="other-host", hostname="192.0.2.50", login="u", password="p", type=1)
+
         def connect(host, *args):
             if host == "192.0.2.50":
                 raise libvirtError("unreachable")
             return MagicMock()
 
-        with patch("instances.models.wvmInstance") as wvm, patch("instances.utils.wvmConnect", side_effect=connect):
-            proxy = wvm.return_value
-            proxy.instance.isActive.return_value = True
-            proxy.split_disk_paths_by_use.side_effect = lambda elsewhere: elsewhere(["/pool/own.qcow2"])
-            response = self.client.post(reverse("instances:destroy", args=[self.instance.id]), {"delete_disk": "true"})
-        proxy.force_shutdown.assert_not_called()
-        proxy.delete.assert_not_called()
+        self.proxy.instance.isActive.return_value = True
+        self.proxy.split_disk_paths_by_use.side_effect = lambda elsewhere: elsewhere(["/pool/own.qcow2"])
+        op = self.queue(delete_disk="true")
+        with patch("instances.utils.wvmConnect", side_effect=connect), \
+                self.assertRaisesMessage(ConnectionFailed, "The disk files cannot be checked on other-host"):
+            self.run_job(op)
+        self.proxy.force_shutdown.assert_not_called()
+        self.proxy.delete.assert_not_called()
+        self.assertFalse(Operation.objects.get().effects_started)  # the job fails without recovery
         self.assertTrue(Instance.objects.filter(pk=self.instance.pk).exists())
-        self.assertIn("The disk files cannot be checked on other-host", str(list(get_messages(response.wsgi_request))[-1]))
 
-    def test_disks_are_deleted_after_the_undefine(self):
-        proxy = self.destroy()
-        proxy.get_volume_by_path.assert_called_once_with("/pool/own.qcow2")
+    def test_recovery_finishes_a_delete_libvirt_has_done(self):
+        op = self.queue(delete_disk="true")
+        Operation.objects.filter(pk=op.pk).update(intent={**op.intent, "to_delete": ["/pool/gone.qcow2", "/pool/own.qcow2"],
+                                                          "shared": []})
+        op.refresh_from_db()
+        gone = libvirtError("no volume")
+        gone.err = (VIR_ERR_NO_STORAGE_VOL, 0, "no volume")
+        self.proxy.get_volume_by_path.side_effect = lambda path: (_ for _ in ()).throw(gone) \
+            if path == "/pool/gone.qcow2" else MagicMock()
+        with patch("instances.jobs._domain", return_value=None):
+            outcome = DeleteInstance().reconcile(op)
+        self.assertEqual((outcome.state, outcome.result), (Operation.SUCCEEDED, {"open": reverse("instances:index")}))
         self.assertFalse(Instance.objects.filter(pk=self.instance.pk).exists())
+        self.assertEqual(list(Logs.objects.exclude(message="Login").values_list("message", flat=True)),
+                         ["VM destroy-vm: delete volume /pool/own.qcow2"])
 
-    def test_failed_undefine_deletes_no_disk(self):
-        proxy = self.destroy(undefine_error=libvirtError("refused"))
-        proxy.get_volume_by_path.assert_not_called()
+    def test_recovery_of_a_vm_still_on_its_host_fails(self):
+        op = self.queue(delete_disk="true")
+        with patch("instances.jobs._domain", return_value=MagicMock()):
+            self.assertEqual(DeleteInstance().reconcile(op).state, Operation.FAILED)
         self.assertTrue(Instance.objects.filter(pk=self.instance.pk).exists())
+        self.proxy.get_volume_by_path.assert_not_called()
+
+    def test_the_api_queues_the_delete_with_its_options_as_booleans(self):
+        url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
+        for n, (body, content_type, deleted) in enumerate((
+            ({"delete_disk": True, "submission_key": "key-api00001"}, "application/json", True),
+            ("delete_disk=false&submission_key=key-api00002", "application/x-www-form-urlencoded", False),
+        )):
+            with self.subTest(body=body):
+                Operation.objects.all().delete()
+                response = self.client.delete(url, body, content_type=content_type)
+                self.assertEqual(response.status_code, 202)
+                self.assertEqual(Operation.objects.get().params["delete_disk"], deleted)
+        self.assertEqual(self.client.delete(url, {"delete_disk": True}, content_type="application/json").status_code,
+                         400)  # no submission key
 
     def test_destroy_and_delete_vol_hold_the_compute_exclusively(self):
         calls = []
@@ -158,10 +198,8 @@ class DestroyOrderTestCase(TestCase):
             yield
 
         with patch("instances.views.libvirt_compute_lock", record):
-            with patch("instances.models.wvmInstance"):
-                self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vda"})
-            self.destroy()
-        self.assertEqual(calls, [False, False])
+            self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vda"})
+        self.assertEqual(calls, [False])
 
     def test_a_volume_the_vms_snapshots_need_is_kept_after_the_detach(self):
         disk = {"dev": "vdb", "path": "/pool/data.qcow2", "storage": "default", "image": "data.qcow2"}

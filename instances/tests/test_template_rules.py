@@ -12,6 +12,7 @@ from rest_framework.test import APIClient
 from accounts.models import UserInstance
 from computes.models import Compute
 from instances.models import Instance
+from operations.models import Operation
 
 
 class TemplateRulesTestCase(TestCase):
@@ -46,10 +47,9 @@ class TemplateRulesTestCase(TestCase):
         self.assertFalse(wvm.return_value.delete.called)
 
         self.client.force_login(self.staff)
-        with patch("instances.models.wvmInstance") as wvm:
-            wvm.return_value.instance.isActive.return_value = False
-            self.client.post(reverse("instances:destroy", args=[self.template.id]))
-        self.assertTrue(wvm.return_value.delete.called)
+        with patch("instances.models.wvmInstance"):
+            self.client.post(reverse("instances:destroy", args=[self.template.id]), {"submission_key": "key-tpldel01"})
+        self.assertTrue(Operation.objects.filter(kind="instance.delete").exists())  # queued
 
     def test_the_destroy_confirmation_page_offers_the_form_to_who_may_delete(self):
         url = reverse("instances:destroy", args=[self.template.id])

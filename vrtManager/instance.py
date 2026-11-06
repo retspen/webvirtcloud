@@ -1833,18 +1833,6 @@ class wvmInstance(wvmConnect):
                     grew = True
         return files[len(tops):] + memory
 
-    def backing_path(self, path):
-        """The backing file of a volume; None if it has none or is in no pool.
-        Any other error is raised: a chain cut short would let a file a kept
-        one needs count as deletable."""
-        try:
-            vol = self.get_volume_by_path(path)
-        except libvirtError as err:
-            if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
-                raise
-            return None
-        return util.get_xml_path(vol.XMLDesc(0), "/volume/backingStore/path")
-
     def _snapshotCreateXML(self, xml, flag):
         self.instance.snapshotCreateXML(xml, flag)
 
