@@ -93,7 +93,7 @@ RUN chmod +x /etc/my_init.d/10_webvirtcloud_init.sh \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 	CMD /usr/local/bin/webvirtcloud-healthcheck
 
-# Declare mountable data directory for persistent SQLite and SSH keys, and the backups of both
-VOLUME ["/srv/webvirtcloud/data", "/var/www/.ssh", "/srv/webvirtcloud/backups"]
+# Declare mountable data directory for persistent SQLite, SSH keys and TLS certificates, and their backups
+VOLUME ["/srv/webvirtcloud/data", "/var/www/.ssh", "/var/www/.pki", "/srv/webvirtcloud/backups"]
 
 WORKDIR /srv/webvirtcloud

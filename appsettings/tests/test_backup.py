@@ -63,6 +63,15 @@ class BackupTests(SimpleTestCase):
         self.assertEqual(oct((backup / "db.sqlite3").stat().st_mode & 0o777), "0o600")
         self.assertEqual(oct((backup / "ssh/id_ed25519").stat().st_mode & 0o777), "0o600")
 
+    def test_a_backup_holds_the_tls_certificates_of_the_panel_user(self):
+        key = self.base / "home/.pki/libvirt/clientkey.pem"
+        key.parent.mkdir(parents=True)
+        key.write_text("tls key")
+        key.chmod(0o600)
+        copy = self.backup() / "pki/libvirt/clientkey.pem"
+        self.assertEqual(copy.read_text(), "tls key")
+        self.assertEqual(oct(copy.stat().st_mode & 0o777), "0o600")
+
     def test_only_the_newest_backups_and_no_partial_one_are_kept(self):
         for name in ("webvirtcloud-backup-20260101-000000", "webvirtcloud-backup-20260102-000000",
                      ".webvirtcloud-backup-20260103-000000"):

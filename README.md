@@ -270,6 +270,8 @@ A compute node is a KVM host the panel manages over libvirt.
    docker compose exec -u www-data webvirtcloud ssh root@<compute-node-ip> true   # no password or prompt: ready
    ```
 
+   For TLS connections, put the CA certificate and the panel's client certificate and key in the panel user's `~/.pki/libvirt/` as `cacert.pem`, `clientcert.pem` and `clientkey.pem`, readable only by that user: `$H/.pki/libvirt/` with the installer; in Docker `/var/www/.pki/libvirt/` (the `webvirtcloud-pki` volume), owned by `www-data`.
+
 3. Install or update the `gstfsd` daemon on the compute node (the bootstrap script does this too). It sets the root password and SSH key of a shut-off VM:
 
    ```bash
@@ -474,6 +476,7 @@ The panel backs itself up every day at 03:15 (cron in Docker, `webvirt-backup.ti
 - `db.sqlite3`: a consistent copy taken while the panel runs, checked with `PRAGMA integrity_check`; with PostgreSQL it is left out, so back up that database yourself
 - `secret_key`, `node_id` and `settings.py`
 - `ssh/`: the SSH keys of the panel's user, which the SSH computes accept
+- `pki/`: the TLS client certificates of the panel's user, which the TLS computes accept
 - `commit`, outside Docker
 
 The database holds compute passwords and keys: the directories are readable only by the panel's user. They are on the same host as the panel; the [off-site copy](#off-site-copy) keeps them on another server too. A failed backup is reported in `docker logs` or by `systemctl status webvirt-backup` and deletes no older backup.
@@ -716,7 +719,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 
 ### Moving to a new machine
 
-A [backup](#backups) moves the panel to a new machine, or back onto lost volumes: the database, the secret key (signed-in users stay signed in), the worker's id and the SSH keys the computes accept. Install the panel there first, the same version or a newer one, then copy the backup directory over and set `b` to it. The backup does not hold `docker-compose.override.yml`, the nginx config or `/etc/default/webvirtcloud`: bring your own lines over yourself. Users sign in with their passwords from the backup; the new installation's `data/admin_password` no longer applies.
+A [backup](#backups) moves the panel to a new machine, or back onto lost volumes: the database, the secret key (signed-in users stay signed in), the worker's id and the SSH keys and TLS certificates the computes accept. Install the panel there first, the same version or a newer one, then copy the backup directory over and set `b` to it. The backup does not hold `docker-compose.override.yml`, the nginx config or `/etc/default/webvirtcloud`: bring your own lines over yourself. Users sign in with their passwords from the backup; the new installation's `data/admin_password` no longer applies.
 
 Docker, in the directory you installed from:
 
@@ -728,6 +731,7 @@ docker compose run --rm --no-deps -T --entrypoint /srv/webvirtcloud/venv/bin/pyt
 docker compose cp "$b/secret_key" webvirtcloud:/srv/webvirtcloud/data/ &&
 docker compose cp "$b/node_id" webvirtcloud:/srv/webvirtcloud/data/ &&
 { [ ! -d "$b/ssh" ] || docker compose cp "$b/ssh/." webvirtcloud:/var/www/.ssh/; } &&
+{ [ ! -d "$b/pki" ] || docker compose cp "$b/pki/." webvirtcloud:/var/www/.pki/; } &&
 docker compose up -d    # the container migrates and fixes ownership and modes at start
 ```
 
@@ -740,9 +744,10 @@ cd /srv/webvirtcloud &&
 venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
 cp "$b/secret_key" "$b/node_id" data/ &&
 mkdir -p ~www-data/.ssh && { [ ! -d "$b/ssh" ] || cp "$b"/ssh/* ~www-data/.ssh/; } &&
+mkdir -p ~www-data/.pki && { [ ! -d "$b/pki" ] || cp -r "$b"/pki/. ~www-data/.pki/; } &&
 venv/bin/python3 manage.py migrate &&
-chown -R www-data:www-data data ~www-data/.ssh &&
-chmod 700 data ~www-data/.ssh && chmod 600 db.sqlite3 &&
+chown -R www-data:www-data data ~www-data/.ssh ~www-data/.pki &&
+chmod 700 data ~www-data/.ssh ~www-data/.pki && chmod 600 db.sqlite3 &&
 systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 ```
 
@@ -763,6 +768,7 @@ What an update from an older version changes for operators and users:
 - LDAP login's packages are in `conf/requirements-ldap.txt` and no longer installed by default, nor their build headers by the installer; the Docker image keeps them. An existing virtualenv keeps them, but only installing that file updates them (see [LDAP](#ldap)).
 - The themes ship compiled; picking one on the Settings page only saves its name, and the "Theme SASS Path" setting is gone. Browsers revalidate static files on each load: files cached before the update can stay until a hard reload (Ctrl+F5) of each page; an external caching proxy may need a purge.
 - The panel backs itself up every day ([Backups](#backups)); in Docker into a new volume, `webvirtcloud-backups`.
+- In Docker, the TLS client certificates of TLS computes are kept in a new volume, `webvirtcloud-pki` (`/var/www/.pki`), and backed up; put them there once ([Adding a Compute Node](#adding-a-compute-node), step 2).
 - The SQLite database must be on a local file system (WAL). Outside compose, stop the Docker container with `docker stop -t 95` so the worker can finish running jobs.
 - Long operations run as jobs in a worker process (`manage.py run_worker`): creating, cloning and migrating VMs, cloning volumes, taking and reverting snapshots and deleting external snapshots. The page returns at once and the job panel and the Jobs page follow them; a migration can be cancelled. The API's VM create and migrate answer 202 with the job and need a new `submission_key` per request. The create form no longer takes a console password; set it on the VM page.
 - An ISO upload is tracked as a job that can be cancelled. The browser sends the file, so stay on the page until it ends; an upload left idle for an hour is ended and its partial file deleted.

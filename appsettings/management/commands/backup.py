@@ -15,8 +15,8 @@ PREFIX = "webvirtcloud-backup-"
 
 
 class Command(BaseCommand):
-    help = ("Copy the database, secret key, worker id, settings and the SSH keys of the panel's user into a new "
-            "directory in backups/, then delete all but the newest --keep backups.")
+    help = ("Copy the database, secret key, worker id, settings and the SSH keys and TLS certificates of the "
+            "panel's user into a new directory in backups/, then delete all but the newest --keep backups.")
 
     def add_arguments(self, parser):
         parser.add_argument("--keep", type=int, default=7, help="how many backups to keep (default 7)")
@@ -73,6 +73,10 @@ class Command(BaseCommand):
             for source in ssh.iterdir():
                 if source.is_file() and not source.is_symlink():
                     shutil.copyfile(source, to / "ssh" / source.name)
+        # the TLS client certificates libvirt reads (~/.pki/libvirt); a link stays a link
+        pki = Path.home() / ".pki"
+        if pki.is_dir():
+            shutil.copytree(pki, to / "pki", symlinks=True)
         if (settings.BASE_DIR / ".git").exists():
             commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=settings.BASE_DIR, capture_output=True, text=True)
             if commit.returncode == 0:
