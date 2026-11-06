@@ -2,6 +2,7 @@
 
 import contextlib
 import os
+import secrets
 
 from django.db import connections
 from django.test.runner import DiscoverRunner
@@ -28,9 +29,13 @@ class TestRunner(DiscoverRunner):
         return self.test_suite([suite, *serial])
 
     def setup_databases(self, **kwargs):
+        # migrate creates the admin user (accounts.apps.create_admin): with a
+        # password given it writes no data/admin_password into the checkout
+        if not os.environ.get("ADMIN_PASSWORD"):  # an empty one counts as none
+            os.environ["ADMIN_PASSWORD"] = secrets.token_urlsafe(16)
         # Django clones a SQLite test database by copying its main file, but
-        # migrate's writes are still in the WAL file (operations/apps.py):
-        # create the database alone, write the WAL back, then clone.
+        # migrate's writes are still in the WAL file (the init_command's
+        # journal mode): create the database alone, write the WAL back, then clone.
         parallel, self.parallel = self.parallel, 0
         test_files = [c.settings_dict["TEST"]["NAME"] for c in connections.all() if c.vendor == "sqlite"]
         for name in filter(None, test_files) if not self.keepdb else ():

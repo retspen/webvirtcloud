@@ -1,9 +1,10 @@
 import json
 import os
 from unittest.mock import patch
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase
 
 from vrtManager.connection import CONN_SOCKET, connection_manager
 from computes.models import Compute
@@ -17,7 +18,8 @@ TEST_COMPUTE_TYPE = int(os.environ.get("TEST_LIBVIRT_TYPE", CONN_SOCKET))
 
 class ComputesTestCase(TestCase):
     def setUp(self):
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
         self.compute, _ = Compute.objects.get_or_create(
             name="computes-test-compute",
             defaults={
@@ -34,6 +36,8 @@ class ComputesTestCase(TestCase):
         super().tearDown()
 
     def _require_live_compute(self):
+        if not livetest.enabled():  # never the machine's own libvirt by default
+            self.skipTest("Set TEST_LIBVIRT_HOST to run the live libvirt tests")
         try:
             conn = connection_manager.get_connection(
                 self.compute.hostname,

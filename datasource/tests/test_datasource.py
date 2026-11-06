@@ -16,7 +16,8 @@ from datasource.views import get_client_ip, get_hostname_by_ip
 class DataSourceTestCase(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
         self.compute = Compute.objects.create(
             name="test_compute",
             hostname="localhost",

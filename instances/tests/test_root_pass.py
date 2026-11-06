@@ -1,7 +1,8 @@
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from computes.models import Compute
@@ -12,7 +13,8 @@ from vrtManager.util import OperationError
 
 class SetRootPassTestCase(TestCase):
     def setUp(self):
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
         self.compute = Compute.objects.create(
             name="test_compute_root_pass",
             hostname="localhost",
@@ -73,9 +75,8 @@ class SetRootPassTestCase(TestCase):
     @patch.object(Instance, "proxy")
     def test_unreachable_gstfsd_is_an_error_message_not_a_crash(self, mock_proxy, gstfsd):
         from accounts.models import UserSSHKey
-        from django.contrib.auth import get_user_model
 
-        admin = get_user_model().objects.get(username="admin")
+        admin = self.admin
         key = UserSSHKey.objects.create(user=admin, keyname="k", keypublic="ssh-ed25519 AAAA k")
         mock_proxy.instance.name.return_value = "root-pass-vm"
         mock_proxy.get_status.return_value = 5
@@ -94,11 +95,12 @@ class GuestAgentAccessTestCase(TestCase):
         from accounts.models import UserSSHKey
         from django.contrib.auth import get_user_model
 
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
         compute = Compute.objects.create(name="agent-compute", hostname="192.0.2.1", type=1)
         self.instance = Instance.objects.create(compute=compute, name="agent-vm",
                                                 uuid="11111111-2222-3333-4444-555555555555")
-        admin = get_user_model().objects.get(username="admin")
+        admin = self.admin
         self.key = UserSSHKey.objects.create(user=admin, keyname="laptop", keypublic="ssh-ed25519 AAAA laptop")
         patcher = patch.object(Instance, "proxy")
         self.proxy = patcher.start()
@@ -175,7 +177,8 @@ class OsInfoErrorTestCase(TestCase):
     answer in time is an error answer, not a server error."""
 
     def setUp(self):
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
         compute = Compute.objects.create(name="osinfo-compute", hostname="192.0.2.1", type=1)
         self.instance = Instance.objects.create(compute=compute, name="osinfo-vm",
                                                 uuid="22222222-3333-4444-5555-666666666666")

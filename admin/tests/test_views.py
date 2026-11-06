@@ -1,8 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
 from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from lxml import html
 
@@ -12,7 +13,8 @@ from logs.models import Logs
 
 class AdminTestCase(TestCase):
     def setUp(self):
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
         Logs.objects.all().delete()  # the login's row
 
     def test_group_list(self):
@@ -63,7 +65,7 @@ class AdminTestCase(TestCase):
         page = html.fromstring(self.client.get(reverse("admin:group_update", args=[group.id])).content)
         boxes = page.xpath("//div[contains(@class, 'searchable')]/label")
         names = [box.text_content().split()[0] for box in boxes]
-        self.assertEqual(names, ["zed", "admin", "amy", "bob"])
+        self.assertEqual(names, ["zed", "admin", "amy", "bob", "tests-admin"])
         self.assertIn("Amy Adams", boxes[2].get("data-search"))
         self.assertEqual(page.xpath("//input[@id='filter']/@data-forget"), [""])
         self.assertEqual(page.xpath("//form[@id='create-update']//button[@type='submit']/text()"), ["Save changes"])
