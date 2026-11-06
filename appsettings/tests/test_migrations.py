@@ -1,6 +1,8 @@
-"""The default settings rows of the first migrations carry fixed ids, which a
-PostgreSQL id sequence does not see. A later migration that inserts without
-an id must not collide with them."""
+"""The settings rows: those a new database gets fit their columns (PostgreSQL
+refuses a longer value, SQLite does not), say what they do, and hold one of
+their choices. The steps the squashed migration replaces still run on an
+installation that stopped between them: they repair its rows, and their
+inserts do not collide with the fixed ids of the first ones."""
 
 import importlib
 import unittest
@@ -40,27 +42,6 @@ class NicTypeTestCase(TestCase):
         nic_type.fix_rtl8139(apps, SimpleNamespace(connection=connection))
         setting.refresh_from_db()
         self.assertEqual((setting.value, setting.choices), ("rtl8139", "default,e1000,e1000e,rtl8139,virtio"))
-
-
-class SnapshotFreeSpaceSettingsTestCase(TestCase):
-    def test_the_rows_fit_their_columns(self):
-        # PostgreSQL refuses a value longer than the column, sqlite does not
-        for key in ("SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB"):
-            setting = AppSettings.objects.get(key=key)
-            for field in ("name", "key", "value", "description"):
-                limit = AppSettings._meta.get_field(field).max_length
-                if limit:
-                    self.assertLessEqual(len(getattr(setting, field)), limit, f"{key} {field}")
-
-
-class WorkerSettingsTestCase(TestCase):
-    def test_the_rows_fit_their_columns(self):
-        for key in ("WORKER_CONCURRENCY", "JOB_RETENTION_DAYS", "LOG_RETENTION_DAYS"):
-            setting = AppSettings.objects.get(key=key)
-            for field in ("name", "key", "value", "description"):
-                limit = AppSettings._meta.get_field(field).max_length
-                if limit:
-                    self.assertLessEqual(len(getattr(setting, field)), limit, f"{key} {field}")
 
 
 choices_fix = importlib.import_module("appsettings.migrations.0020_fix_setting_choices")
@@ -116,3 +97,26 @@ class CpuModeChoicesTestCase(TestCase):
                 cpu_mode.fix_cpu_mode(apps, SimpleNamespace(connection=connection))
                 setting = AppSettings.objects.get(key="INSTANCE_CPU_DEFAULT_MODE")
                 self.assertEqual((setting.value, setting.choices), (new, "host-model,host-passthrough,maximum"))
+
+
+class SettingsRowsTestCase(TestCase):
+    def test_every_row_fits_its_columns_and_has_a_description(self):
+        for setting in AppSettings.objects.all():
+            with self.subTest(key=setting.key):
+                self.assertTrue(setting.description)
+                for field in ("name", "key", "value", "choices", "description"):
+                    limit = AppSettings._meta.get_field(field).max_length
+                    self.assertLessEqual(len(getattr(setting, field)), limit, field)
+
+    def test_a_setting_with_choices_holds_one_of_them(self):
+        for setting in AppSettings.objects.exclude(choices=""):
+            with self.subTest(key=setting.key):
+                self.assertIn(setting.value, setting.choices_as_list())
+
+    def test_the_choices_offer_only_what_the_panel_uses(self):
+        rows = {s.key: (s.value, s.choices) for s in AppSettings.objects.all()}
+        self.assertEqual(rows["INSTANCE_NIC_DEFAULT_TYPE"][1], "default,e1000,e1000e,rtl8139,virtio")
+        self.assertEqual(rows["INSTANCE_CPU_DEFAULT_MODE"], ("host-model", "host-model,host-passthrough,maximum"))
+        self.assertEqual(rows["INSTANCE_MACHINE_DEFAULT_TYPE"], ("q35", "q35,pc,virt"))
+        self.assertEqual(rows["INSTANCE_CDROM_ADD"], ("sata", "None,ide,sata,scsi"))
+        self.assertEqual(rows["CLONE_INSTANCE_DEFAULT_PREFIX"][1], "")
