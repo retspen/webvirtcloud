@@ -15,19 +15,9 @@ from logs.models import Logs
 from operations import claims
 from operations.models import Claim
 from rest_framework.test import APIClient
+from computes.tests.fakes import Domain
 
 UUID = "44444444-4444-4444-4444-444444444444"
-
-
-class Domain:
-    def __init__(self, name, uuid):
-        self._name, self._uuid = name, uuid
-
-    def name(self):
-        return self._name
-
-    def UUIDString(self):
-        return self._uuid
 
 
 class OwnershipTestCase(TestCase):
