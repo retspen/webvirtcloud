@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 20:48+0000\n"
+"POT-Creation-Date: 2026-11-06 21:10+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -2051,7 +2051,6 @@ msgstr "新建虚拟机"
 
 #: computes/templates/computes/instances.html:30
 #, python-format
-#| msgid "Problem occurred with host"
 msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "主机 %(name)s 出现问题：%(error)s"
 
@@ -2313,7 +2312,6 @@ msgid ""
 msgstr "其虚拟机继续在主机上运行并离开面板；其所有者在“已移除的虚拟机”页面保留 %(days)s 天，如果再次添加该主机则会恢复。"
 
 #: console/refusals.py:6
-#| msgid "The device is not on this host"
 msgid "The serial console is turned off on this server"
 msgstr "此服务器已关闭串行控制台"
 
@@ -2324,7 +2322,6 @@ msgid ""
 msgstr "控制台链接已过期，或您已无权打开此控制台：请重新加载页面"
 
 #: console/refusals.py:8
-#| msgid "The console starts scaled to its window"
 msgid "The console of this VM is open in another window"
 msgstr "此虚拟机的控制台已在另一个窗口中打开"
 
@@ -7249,7 +7246,6 @@ msgid "%(phase)s (over its time limit)"
 msgstr "%(phase)s（已超出时间限制）"
 
 #: operations/jobs.py:151
-#| msgid "The form has no valid submission key; reload the page"
 msgid "This form was already submitted for another request; reload the page"
 msgstr "此表单已为另一个请求提交过；请重新加载页面"
 
@@ -7623,22 +7619,18 @@ msgid "Upload ISO image"
 msgstr "上传 ISO 镜像"
 
 #: storages/jobs.py:118
-#| msgid "Invalid file size."
 msgid "Invalid file name"
 msgstr "文件名无效"
 
 #: storages/jobs.py:120
-#| msgid "Only .iso files can be uploaded."
 msgid "Only .iso files can be uploaded"
 msgstr "只能上传 .iso 文件"
 
 #: storages/jobs.py:122
-#| msgid "Invalid file size."
 msgid "Invalid file size"
 msgstr "文件大小无效"
 
 #: storages/jobs.py:124
-#| msgid "Invalid chunk index or total chunks."
 msgid "Invalid chunk index or total chunks"
 msgstr "分块索引或分块总数无效"
 
@@ -8426,6 +8418,12 @@ msgstr "连接已关闭（%(reason)s）"
 #, python-format
 msgid "Connection Failed: %(host)s is not connected"
 msgstr "连接失败：%(host)s 未连接"
+
+#: vrtManager/connection.py:502
+#, python-format
+#| msgid "This host has no secrets."
+msgid "This host has no architecture %(arch)s"
+msgstr "此主机没有 %(arch)s 架构"
 
 #: vrtManager/instance.py:138
 msgid "A running or paused VM cannot be migrated offline"

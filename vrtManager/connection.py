@@ -497,7 +497,10 @@ class wvmConnect(object):
     def get_dom_cap_xml(self, arch, machine):
         """ Return domain capabilities xml"""
         emulatorbin = self.get_emulator(arch)
-        virttype = "kvm" if "kvm" in self.get_hypervisors_domain_types()[arch] else "qemu"
+        domain_types = self.get_hypervisors_domain_types().get(arch)
+        if domain_types is None:  # the architecture comes from the URL
+            raise util.OperationError(gettext_noop("This host has no architecture %(arch)s"), arch=arch)
+        virttype = "kvm" if "kvm" in domain_types else "qemu"
 
         machine_types = self.get_machine_types(arch)
         if not machine or machine not in machine_types:

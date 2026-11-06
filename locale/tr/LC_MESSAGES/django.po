@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 20:48+0000\n"
+"POT-Creation-Date: 2026-11-06 21:10+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -2120,7 +2120,6 @@ msgstr "Yeni sanal makine"
 
 #: computes/templates/computes/instances.html:30
 #, python-format
-#| msgid "Problem occurred with host"
 msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "%(name)s sunucusuyla ilgili bir sorun oluştu: %(error)s"
 
@@ -2393,7 +2392,6 @@ msgstr ""
 "eklenirse geri gelir."
 
 #: console/refusals.py:6
-#| msgid "The device is not on this host"
 msgid "The serial console is turned off on this server"
 msgstr "Seri konsol bu sunucuda kapalı"
 
@@ -2406,7 +2404,6 @@ msgstr ""
 " yeniden yükleyin"
 
 #: console/refusals.py:8
-#| msgid "The console starts scaled to its window"
 msgid "The console of this VM is open in another window"
 msgstr "Bu sanal makinenin konsolu başka bir pencerede açık"
 
@@ -7653,7 +7650,6 @@ msgid "%(phase)s (over its time limit)"
 msgstr "%(phase)s (süre sınırını aştı)"
 
 #: operations/jobs.py:151
-#| msgid "The form has no valid submission key; reload the page"
 msgid "This form was already submitted for another request; reload the page"
 msgstr ""
 "Bu form başka bir istek için zaten gönderildi; sayfayı yeniden yükleyin"
@@ -8044,22 +8040,18 @@ msgid "Upload ISO image"
 msgstr "ISO imajı yükle"
 
 #: storages/jobs.py:118
-#| msgid "Invalid file size."
 msgid "Invalid file name"
 msgstr "Geçersiz dosya adı"
 
 #: storages/jobs.py:120
-#| msgid "Only .iso files can be uploaded."
 msgid "Only .iso files can be uploaded"
 msgstr "Yalnızca .iso dosyaları yüklenebilir"
 
 #: storages/jobs.py:122
-#| msgid "Invalid file size."
 msgid "Invalid file size"
 msgstr "Geçersiz dosya boyutu"
 
 #: storages/jobs.py:124
-#| msgid "Invalid chunk index or total chunks."
 msgid "Invalid chunk index or total chunks"
 msgstr "Geçersiz parça dizini veya toplam parça sayısı"
 
@@ -8888,6 +8880,12 @@ msgstr "Bağlantı kapandı (%(reason)s)"
 #, python-format
 msgid "Connection Failed: %(host)s is not connected"
 msgstr "Bağlantı başarısız: %(host)s bağlı değil"
+
+#: vrtManager/connection.py:502
+#, python-format
+#| msgid "This host has no secrets."
+msgid "This host has no architecture %(arch)s"
+msgstr "Bu sunucuda %(arch)s mimarisi yok"
 
 #: vrtManager/instance.py:138
 msgid "A running or paused VM cannot be migrated offline"

@@ -20,6 +20,7 @@ from libvirt import (
     VIR_ERR_XML_ERROR,
     libvirtError,
 )
+from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.storage import wvmStorage, wvmStorages
@@ -89,6 +90,11 @@ class CapabilitiesOnceTestCase(unittest.TestCase):
             conn.wvm.reads,
             ["capabilities", ("/usr/bin/qemu-kvm", "x86_64", "q35", "kvm"), ("/usr/bin/qemu-kvm", "x86_64", "pc", "kvm")],
         )
+
+    def test_an_architecture_the_host_does_not_run_is_refused_with_its_name(self):
+        # the create page and the API take it from the URL: it was a KeyError, a 500
+        with self.assertRaisesRegex(util.OperationError, "This host has no architecture noarch"):
+            connection().get_dom_cap_xml("noarch", "q35")
 
     def test_the_overview_reads_the_info_once_and_the_free_memory_each_time(self):
         conn = connection(wvmHostDetails)
