@@ -24,7 +24,7 @@ class GeneratedAdminPasswordTestCase(TestCase):
             plan = [(migration, False)]
         out = io.StringIO()
         env = {k: v for k, v in os.environ.items() if k not in ("ADMIN_PASSWORD", "ADMIN_USERNAME")}
-        with override_settings(BASE_DIR=Path(base_dir)), patch("sys.argv", ["manage.py", "migrate"]), patch.dict(
+        with override_settings(BASE_DIR=Path(base_dir)), patch.dict(
             os.environ, env, clear=True
         ), redirect_stdout(out):
             create_admin(sender=None, plan=plan, apps=apps)

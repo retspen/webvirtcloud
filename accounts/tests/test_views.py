@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.shortcuts import reverse
-from django.test import Client, RequestFactory, TestCase
+from django.test import Client, RequestFactory, TestCase, override_settings
 from instances.models import Instance
 
 
@@ -16,12 +16,9 @@ from accounts.utils import validate_ssh_key
 
 class AccountsTestCase(TestCase):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        # Add users for testing purposes
+    def setUpTestData(cls):
         User = get_user_model()
-        cls.admin_user = User.objects.get(pk=1)
+        cls.admin_user = User.objects.create_superuser("accounts-admin", "admin@example.com", "pw")
         cls.test_user = User.objects.create_user(username="test", password="test")
 
         # Add compute
@@ -38,16 +35,8 @@ class AccountsTestCase(TestCase):
             name="test-vm",
         )
 
-    @classmethod
-    def tearDownClass(cls):
-        if getattr(cls, "instance", None):
-            cls.instance.delete()
-        if getattr(cls, "compute", None):
-            cls.compute.delete()
-        super().tearDownClass()
-
     def setUp(self):
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.client.force_login(self.admin_user)
         permission = Permission.objects.get(codename="change_password")
         self.test_user.user_permissions.add(permission)
         self.rsa_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC6OOdbfv27QVnSC6sKxGaHb6YFc+3gxCkyVR3cTSXE/n5BEGf8aOgBpepULWa1RZfxYHY14PlKULDygdXSdrrR2kNSwoKz/Oo4d+3EE92L7ocl1+djZbptzgWgtw1OseLwbFik+iKlIdqPsH+IUQvX7yV545ZQtAP8Qj1R+uCqkw== test@test"
@@ -62,8 +51,8 @@ class AccountsTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+    @override_settings(OTP_ENABLED=True)
     def test_account_with_otp(self):
-        settings.OTP_ENABLED = True
         response = self.client.get(
             reverse("accounts:account", args=[self.test_user.id])
         )
@@ -249,7 +238,7 @@ class AccountsTestCase(TestCase):
         self.assertRedirects(response, reverse("accounts:profile") + "#sshkeys")
 
     def test_the_profile_lists_keys_and_tokens_where_links_land(self):
-        admin = get_user_model().objects.get(username="admin")
+        admin = self.admin_user
         key = UserSSHKey.objects.create(user=admin, keyname="laptop", keypublic=self.rsa_key)
         response = self.client.get(reverse("accounts:profile"))
         # other pages link to #sshkeys and #apitokens
@@ -288,6 +277,7 @@ class AccountsTestCase(TestCase):
         )
         self.assertFalse(form.is_valid())
 
+        self.addCleanup(setattr, app_settings, "ALLOW_INSTANCE_MULTIPLE_OWNER", app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER)
         app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER = "False"
         form = UserInstanceForm(
             {

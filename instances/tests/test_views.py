@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.http.response import Http404
 from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 from vrtManager.create import wvmCreate
 from vrtManager.util import randomUUID
 
@@ -124,7 +124,8 @@ class InstancesTestCase(TestCase):
             )
 
     def setUp(self):
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
         self.rsa_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC6OOdbfv27QVnSC6sKxGaHb6YFc+3gxCkyVR3cTSXE/n5BEGf8aOgBpepULWa1RZfxYHY14PlKULDygdXSdrrR2kNSwoKz/Oo4d+3EE92L7ocl1+djZbptzgWgtw1OseLwbFik+iKlIdqPsH+IUQvX7yV545ZQtAP8Qj1R+uCqkw== test@test"
 
     def test_index(self):

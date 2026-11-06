@@ -3,11 +3,16 @@ enter a valid code; a user without one logs in with the password alone. The
 device is chosen by the server (a posted device id is ignored), so the single
 token field of the login page works and no one else's device can be used."""
 
+import importlib
+
 from django.contrib.auth import get_user_model
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
+from django.urls import clear_url_caches
 from django_otp.oath import totp
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
+import accounts.urls
+import webvirtcloud.urls
 from accounts.otp import SingleDeviceOTPForm
 
 
@@ -84,6 +89,13 @@ class SingleDeviceOTPFormTestCase(TestCase):
         self.assertFalse(self._form(otp_token=code).is_valid())
 
 
+def reload_urls():
+    importlib.reload(accounts.urls)
+    importlib.reload(webvirtcloud.urls)
+    clear_url_caches()
+
+
+@override_settings(OTP_ENABLED=True)
 class OTPLoginHTTPTestCase(TestCase):
     """The actual login page (OTP_ENABLED): the single token field logs an
     enrolled user in, and a user without a device needs only the password.
@@ -92,32 +104,10 @@ class OTPLoginHTTPTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
-        import importlib
-        from django.conf import settings
-        from django.urls import clear_url_caches
-        import accounts.urls
-        import webvirtcloud.urls
-
-        cls._otp_was_enabled = settings.OTP_ENABLED
-        settings.OTP_ENABLED = True
-        importlib.reload(accounts.urls)
-        importlib.reload(webvirtcloud.urls)
-        clear_url_caches()
-
-    @classmethod
-    def tearDownClass(cls):
-        import importlib
-        from django.conf import settings
-        from django.urls import clear_url_caches
-        import accounts.urls
-        import webvirtcloud.urls
-
-        settings.OTP_ENABLED = cls._otp_was_enabled
-        importlib.reload(accounts.urls)
-        importlib.reload(webvirtcloud.urls)
-        clear_url_caches()
-        super().tearDownClass()
+        # class cleanups run last first: the URLs reload after the setting is off again
+        cls.addClassCleanup(reload_urls)
+        super().setUpClass()  # turns OTP_ENABLED on
+        reload_urls()
 
     def setUp(self):
         self.user = get_user_model().objects.create_user("bob", password="pw-correct-horse")

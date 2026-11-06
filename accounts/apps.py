@@ -66,7 +66,6 @@ def create_admin(sender, **kwargs):
     """
     import os
     import secrets
-    import sys
     from django.contrib.auth.models import User
 
     from accounts.models import UserAttributes
@@ -82,17 +81,13 @@ def create_admin(sender, **kwargs):
     if User.objects.exists():
         return
 
-    is_testing = "test" in sys.argv
     admin_user = os.environ.get("ADMIN_USERNAME", "admin")
     admin_pass = os.environ.get("ADMIN_PASSWORD")
-    generated_password = not admin_pass and not is_testing
+    generated_password = not admin_pass
 
-    if not admin_pass:
-        if is_testing:
-            admin_pass = "admin"
-        else:
-            admin_pass = secrets.token_urlsafe(16)
-            _store_generated_password(admin_pass)
+    if generated_password:
+        admin_pass = secrets.token_urlsafe(16)
+        _store_generated_password(admin_pass)
 
     print(f"\033[1m* \033[92mCreating default admin user '{admin_user}'\033[0m")
     with transaction.atomic():

@@ -1,7 +1,8 @@
 import re
 
+from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from appsettings.models import AppSettings
@@ -10,7 +11,8 @@ from appsettings.settings import app_settings, get_settings
 
 class AppSettingsTestCase(TestCase):
     def setUp(self):
-        self.client.login(request=RequestFactory().get("/"), username="admin", password="admin")
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
 
     def test_get_settings_populates_singleton(self):
         AppSettings.objects.update_or_create(
