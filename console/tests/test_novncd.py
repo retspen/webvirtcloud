@@ -17,6 +17,7 @@ from django.core.signing import TimestampSigner
 from django.conf import settings
 from django.test import TestCase, override_settings
 from instances.models import Instance
+from libvirt import libvirtError
 from console.tests.daemons import novncd_mod
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -62,6 +63,31 @@ class NovncdDaemonLogicTestCase(TestCase):
         self.assertTrue(opts.debug)
         self.assertEqual(opts.host, "192.168.1.100")
         self.assertEqual(opts.port, 7070)
+
+    @patch.object(novncd_mod, "get_connection_infos")
+    def test_a_console_that_cannot_be_reached_is_logged_with_its_vm_and_user(self, mock_get_info):
+        mock_get_info.side_effect = libvirtError("Domain not found")
+        self.authorize.return_value[0].name = "vm-alpha"
+        handler = self.ConsoleClient()
+        handler.path = "/novncd/?token=1-uuid"
+        with self.assertLogs(level="WARNING") as logs:
+            handler._new_client(socket_factory=MagicMock())
+        self.assertEqual(logs.output, ["WARNING:root:Console connection to VM vm-alpha for vnc-user failed: Domain not found"])
+
+    @patch.object(novncd_mod, "get_connection_infos")
+    def test_a_fault_of_the_panel_is_logged_with_its_traceback_without_secrets(self, mock_get_info):
+        try:
+            raise RuntimeError("password=review-dummy-secret")
+        except RuntimeError as cause:
+            mock_get_info.side_effect = OSError("console setup failed")
+            mock_get_info.side_effect.__cause__ = cause
+        handler = self.ConsoleClient()
+        handler.path = "/novncd/?token=1-uuid"
+        with self.assertLogs(level="WARNING") as logs:
+            handler._new_client(socket_factory=MagicMock())
+        self.assertIn("Traceback", logs.output[0])
+        self.assertIn("password=***", logs.output[0])
+        self.assertNotIn("review-dummy-secret", logs.output[0])
 
     @patch.object(novncd_mod, "get_connection_infos")
     def test_a_cookie_does_not_choose_the_console(self, mock_get_info):

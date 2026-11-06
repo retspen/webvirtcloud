@@ -18,3 +18,16 @@ function focusFirstError() {
 }
 window.focusFirstError = focusFirstError;
 if (document.body.dataset.errorFocus !== "manual") focusFirstError();
+
+// A list a page loads (jQuery) that the server could not give: its error goes
+// with the page's messages. A load a newer one aborted has none.
+function showLoadError(xhr) {
+  const text = (xhr.responseJSON || {}).error;
+  if (!text) return;
+  const alert = document.createElement("div");
+  alert.className = "alert alert-danger";
+  alert.setAttribute("role", "alert");
+  alert.textContent = text;
+  document.querySelector("#messages").append(alert);
+}
+window.showLoadError = showLoadError;

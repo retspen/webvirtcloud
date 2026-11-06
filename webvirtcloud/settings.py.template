@@ -285,6 +285,9 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True
         },
+        # django-axes writes several lines a login; logins and failed logins
+        # are on the Logs page, a lock is a warning
+        'axes': {'level': 'WARNING'},
         'django.request': {
             "handlers": ["mail_admins"],
             "level": "ERROR",

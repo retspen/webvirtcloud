@@ -21,7 +21,7 @@ from operations.utils import words
 from operations import jobs
 from operations.models import Claim, Operation, WorkerLease
 from operations.tests import fakes
-from operations.worker import Worker, data_dir, host_identity, housekeeping, traceback_of
+from operations.worker import Worker, _guarded, data_dir, host_identity, housekeeping, traceback_of
 from vrtManager.util import ConnectionFailed
 
 
@@ -396,3 +396,28 @@ class HostIdentityTestCase(SimpleTestCase):
         with patch("operations.worker.socket.gethostname", return_value="wvc-test-b"):
             self.assertEqual(host_identity(self.dir), first)
 
+
+
+class CancelHookLogTests(SimpleTestCase):
+    def test_a_failed_cancel_names_its_job(self):
+        # every kind's hook is "cancel": the line alone said nothing of which job
+        op = Operation(kind="instance.clone", resource_label="c1/vm-alpha", username="alice")
+
+        def cancel(op):
+            raise ConnectionFailed("Connection Failed: %(host)s did not answer within 5 s", host="192.0.2.10")
+        with self.assertLogs("operations.worker", "ERROR") as logs:
+            _guarded(cancel, op)
+        self.assertEqual(logs.output, [f"ERROR:operations.worker:cancel of job {op.pk} (instance.clone, c1/vm-alpha, "
+                                       "by alice) failed: Connection Failed: 192.0.2.10 did not answer within 5 s"])
+
+    def test_housekeeping_runs_as_a_control_task_and_its_failure_is_logged(self):
+        # the worker submits it without a job
+        ran = []
+        _guarded(lambda: ran.append(True))
+        self.assertEqual(ran, [True])
+
+        def housekeeping():
+            raise RuntimeError("disk full")
+        with self.assertLogs("operations.worker", "ERROR") as logs:
+            _guarded(housekeeping)
+        self.assertTrue(logs.output[0].startswith("ERROR:operations.worker:housekeeping failed: disk full\nTraceback"))

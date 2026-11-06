@@ -25,6 +25,7 @@ from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 from console.sshtunnels import open_tunnel, tunnel_target  # noqa: E402
 from console.tokens import ACCESS_CHECK, authorize, may_still_open, session_user_id  # noqa: E402
 from logs.audit import write  # noqa: E402
+from operations.utils import safe_text, traceback_of  # noqa: E402
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONNECT_TIMEOUT  # noqa: E402
 from vrtManager.util import is_loopback  # noqa: E402
 from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
@@ -120,7 +121,7 @@ class ConsoleClient:
             logging.warning("Console connection without a token in its websocket URL")
             return
 
-        user = None
+        instance = user = None
         try:
             instance, user = authorize(token, "vnc")
             # a token read from a log or a URL is no use without its user's session
@@ -133,7 +134,9 @@ class ConsoleClient:
             write(user.username if user else "", "-", "", f"VNC console refused: {e}", False, address)
             return
         except Exception as e:
-            logging.warning("Console connection failed: %s", e)
+            # the VM and its user, as the refusal above; a fault of the panel with its traceback, without secrets
+            logging.warning("Console connection to VM %s for %s failed: %s%s", instance.name if instance else "-",
+                            user.username if user else "-", safe_text(e), traceback_of(e))
             return
         logging.debug(
             "Console of %s@%s (type %s): %s:%s, socket %s",

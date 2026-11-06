@@ -332,11 +332,16 @@ def hosts_of(op_ids):
     return {op_id: frozenset(found) for op_id, found in hosts.items()}
 
 
-def _guarded(fn, *args):
+def _guarded(fn, op=None):
+    """A control task: housekeeping, or a job's cancel hook, which names its job when it fails."""
     try:
-        fn(*args)
+        if op is None:
+            fn()
+        else:
+            fn(op)
     except Exception as err:
-        logger.error("worker task %s failed: %s", getattr(fn, "__name__", fn), utils.safe_text(err))
+        job = f" of job {op.pk} ({op.kind}, {op.resource_label}, by {op.username})" if op is not None else ""
+        logger.error("%s%s failed: %s%s", getattr(fn, "__name__", fn), job, utils.safe_text(err), traceback_of(err))
     finally:
         close_old_connections()
 

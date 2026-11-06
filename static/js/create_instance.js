@@ -148,7 +148,7 @@ function volumes_url(pool) {
 // older one: an answer for the previous choice never fills it.
 function load_list(list, url, fill) {
     if (list.request) list.request.abort();
-    list.request = $.getJSON(url, fill);
+    list.request = $.getJSON(url, fill).fail(showLoadError);
     return list.request;
 }
 

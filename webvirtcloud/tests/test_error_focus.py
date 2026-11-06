@@ -57,3 +57,16 @@ class ErrorFocusTests(unittest.TestCase):
         invalid = {"sel": ".is-invalid", "offsetParent": {}, "name": "field", "field": True}
         self.assertEqual(self.focused([invalid], {"errorFocus": "manual"}), {"focused": None, "tabIndex": None})
         self.assertEqual(self.focused([invalid], {"errorFocus": "manual"}, call=True), {"focused": "field", "tabIndex": None})
+
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_a_list_the_server_could_not_give_says_why_with_the_page_s_messages(self):
+        script = ("const added = []; const messages = {append: e => added.push(e)};"
+                  "const document = {body: {dataset: {errorFocus: 'manual'}}, querySelector: () => messages,"
+                  " createElement: () => ({setAttribute(k, v) { this[k] = v; }})}; const window = globalThis;"
+                  + SCRIPT +
+                  "showLoadError({responseJSON: {error: 'Cannot recv data'}}); showLoadError({status: 0});"
+                  "console.log(JSON.stringify(added.map(e => [e.className, e.role, e.textContent])));")
+        result = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        # an aborted load (no answer) adds nothing
+        self.assertEqual(json.loads(result.stdout), [["alert alert-danger", "alert", "Cannot recv data"]])

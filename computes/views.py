@@ -1,9 +1,10 @@
 import json
+import logging
 
 from admin.decorators import superuser_only
 from django.conf import settings
 from django.core import signing
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -27,6 +28,8 @@ from computes.forms import (
 from computes.models import Compute
 
 from . import utils
+
+logger = logging.getLogger(__name__)
 
 # The host CPU graph sends back the CPU sample of its previous answer; usage
 # is taken since then when it is this recent, otherwise over one second.
@@ -227,7 +230,10 @@ def get_compute_disk_buses(request, compute_id, arch, machine, disk):
     :return:
     """
     comp_mgr = ComputeManager(compute_id)
-    return HttpResponse(comp_mgr.get_disk_buses(arch, machine, disk), content_type="application/json")
+    try:
+        return HttpResponse(comp_mgr.get_disk_buses(arch, machine, disk), content_type="application/json")
+    except libvirtError as err:
+        return read_failed(comp_mgr.compute, "disk buses", err)
 
 
 def get_compute_machine_types(request, compute_id, arch):
@@ -238,7 +244,17 @@ def get_compute_machine_types(request, compute_id, arch):
     :return:
     """
     comp_mgr = ComputeManager(compute_id)
-    return HttpResponse(comp_mgr.get_machine_types(arch), content_type="application/json")
+    try:
+        return HttpResponse(comp_mgr.get_machine_types(arch), content_type="application/json")
+    except libvirtError as err:
+        return read_failed(comp_mgr.compute, "machine types", err)
+
+
+def read_failed(compute, what, err):
+    """A list the new VM form loads that the host did not give: not 200 with
+    an empty list, which the form cannot tell from none."""
+    logger.warning("Reading the %s of compute %s failed: %s", what, compute.name, err)
+    return JsonResponse({"error": str(err)}, status=400)
 
 
 class ComputeManager:
@@ -246,30 +262,21 @@ class ComputeManager:
         self.compute = get_object_or_404(Compute, pk=compute_id)
 
     def get_machine_types(self, arch):
-        data = dict()
-        try:
-            data["machines"] = self.compute.proxy.get_machine_types(arch)
-        except libvirtError:
-            pass
-
-        return json.dumps(data)
+        return json.dumps({"machines": self.compute.proxy.get_machine_types(arch)})
 
     def get_disk_buses(self, arch, machine, disk):
         data = dict()
-        try:
-            disk_device_types = self.compute.proxy.get_disk_device_types(arch, machine)
+        disk_device_types = self.compute.proxy.get_disk_device_types(arch, machine)
 
-            if disk in disk_device_types:
-                if disk == "disk":
-                    data["bus"] = sorted(self.compute.proxy.get_disk_bus_types(arch, machine))
-                elif disk == "cdrom":
-                    data["bus"] = ["ide", "sata", "scsi"]
-                elif disk == "floppy":
-                    data["bus"] = ["fdc"]
-                elif disk == "lun":
-                    data["bus"] = ["scsi"]
-        except libvirtError:
-            pass
+        if disk in disk_device_types:
+            if disk == "disk":
+                data["bus"] = sorted(self.compute.proxy.get_disk_bus_types(arch, machine))
+            elif disk == "cdrom":
+                data["bus"] = ["ide", "sata", "scsi"]
+            elif disk == "floppy":
+                data["bus"] = ["fdc"]
+            elif disk == "lun":
+                data["bus"] = ["scsi"]
 
         return json.dumps(data)
 

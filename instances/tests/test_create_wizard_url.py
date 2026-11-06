@@ -53,7 +53,8 @@ class CreateWizardUrlTests(TestCase):
             js = ("const next = {disabled: false}, select = {dataset: {machinesUrl: '/__arch__/'}, replaceChildren() {}};"
                   "const document = {querySelector: sel => sel === '#next' ? next : select};"
                   "const Option = function () {};"
-                  f"const $ = {{getJSON: (url, f) => f({{machines: {machines!r}}})}};"
+                  f"const $ = {{getJSON: (url, f) => {{ f({{machines: {machines!r}}}); return {{fail() {{}}}}; }}}};"
+                  "const showLoadError = null;"
                   f"{load_machines} load_machines('x86_64'); console.log(next.disabled);")
             out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
             with self.subTest(machines=machines):
@@ -65,7 +66,8 @@ class CreateWizardUrlTests(TestCase):
         js = ("const next = {}, select = {dataset: {machinesUrl: '/__arch__/'}, children: ['pc'], replaceChildren(...items) { this.children = items; }};"
               "const document = {querySelector: sel => sel === '#next' ? next : select};"
               "const Option = function (text) { this.text = text; }; const requests = [];"
-              "const $ = {getJSON: (url, fill) => { const r = {fill, abort() { r.aborted = true; }}; requests.push(r); return r; }};"
+              "const $ = {getJSON: (url, fill) => { const r = {fill, abort() { r.aborted = true; }, fail() { return r; }}; requests.push(r); return r; }};"
+              "const showLoadError = null;"
               f"{load_machines} load_machines('x86_64'); const loading = select.children; load_machines('aarch64');"
               "requests[1].fill({machines: ['virt']});"
               "console.log(JSON.stringify({loading, aborted: requests.map(r => !!r.aborted), filled: select.children.map(o => o.text)}));")

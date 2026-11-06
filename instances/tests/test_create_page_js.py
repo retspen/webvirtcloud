@@ -45,7 +45,8 @@ const field = sel => fields[sel] ??= new El();
 const rows = list => field(list).children;
 const document = {getElementById: id => templates[id], querySelector: field, querySelectorAll: sel => all[sel] ?? []};
 const replies = [];
-const $ = Object.assign(() => ({ready: f => f()}), {getJSON: (url, f) => { replies.push(f); return {}; }});
+const $ = Object.assign(() => ({ready: f => f()}), {getJSON: (url, f) => { replies.push(f); return {fail() { return this; }}; }});
+const showLoadError = () => {};
 const Option = function (text, value) { return {text, value}; };
 // TomSelect: records its added options and items, and calls the page's
 // callbacks as TomSelect does (a silent addItem still calls onItemAdd)
@@ -90,7 +91,7 @@ class CreatePageScriptTests(TestCase):
         compute, page = self.page()
         buses_url = html.fromstring(page).get_element_by_id("create-vm-form").get("data-buses-url")
         out = node(f"const document = {{querySelector: () => ({{dataset: {{busesUrl: {json.dumps(buses_url)}}}}})}};"
-                   "let asked; const $ = {getJSON: url => { asked = url; }};"
+                   "let asked; const $ = {getJSON: url => { asked = url; return {fail() {}}; }}; const showLoadError = null;"
                    + functions("form_data", "load_list", "load_buses")
                    + "load_buses({replaceChildren() {}}, 'cdrom'); console.log(JSON.stringify(asked));")
         self.assertEqual(out, reverse("buses", args=[compute.id, "i686", "pc", "cdrom"]))
@@ -98,14 +99,17 @@ class CreatePageScriptTests(TestCase):
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_a_list_is_empty_while_it_loads_and_a_newer_load_aborts_the_older(self):
         out = node("const document = {querySelector: () => ({dataset: {busesUrl: '/__disk__/'}})}; const requests = [];"
-                   "const $ = {getJSON: (url, fill) => { const r = {fill, abort() { r.aborted = true; }}; requests.push(r); return r; }};"
+                   "const $ = {getJSON: (url, fill) => { const r = {fill, abort() { r.aborted = true; }, fail(f) { r.failed = f; return r; }}; requests.push(r); return r; }};"
+                   "const showLoadError = () => {};"
                    "const Option = function (text) { this.text = text; };"
                    "const bus = {children: ['ide'], replaceChildren(...items) { this.children = items; }};"
                    + functions("form_data", "load_list", "load_buses")
                    + "load_buses(bus, 'disk'); const loading = bus.children; load_buses(bus, 'cdrom');"
                    "requests[1].fill({bus: ['sata']});"
-                   "console.log(JSON.stringify({loading, aborted: requests.map(r => !!r.aborted), filled: bus.children.map(o => o.text)}));")
-        self.assertEqual(out, {"loading": [], "aborted": [True, False], "filled": ["sata"]})
+                   "console.log(JSON.stringify({loading, aborted: requests.map(r => !!r.aborted), filled: bus.children.map(o => o.text),"
+                   " reported: requests.every(r => r.failed === showLoadError)}));")
+        # a load the host refused says why on the page
+        self.assertEqual(out, {"loading": [], "aborted": [True, False], "filled": ["sata"], "reported": True})
 
     def test_the_form_has_one_mac_field(self):
         _, page = self.page()

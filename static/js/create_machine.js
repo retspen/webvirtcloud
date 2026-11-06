@@ -13,7 +13,7 @@ function load_machines(arch) {
         list.replaceChildren(...data['machines'].map(
             item => new Option(item, item, false, item === list.dataset.default)));
         next.disabled = !data['machines'].length;
-    });
+    }).fail(showLoadError);
 }
 
 // placeholders, not "x86_64"/"pc": an architecture such as ppc64 contains "pc"

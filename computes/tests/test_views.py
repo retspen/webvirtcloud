@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import reverse
 from django.test import TestCase
+from libvirt import libvirtError
 
 from vrtManager.connection import CONN_SOCKET, connection_manager
 from computes.models import Compute
@@ -189,6 +190,17 @@ class ComputesTestCase(TestCase):
             )
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_a_list_the_host_does_not_give_is_an_error_not_an_empty_list(self):
+        # the new VM form showed nothing and could not go on; the error was nowhere
+        for url, method in ((reverse("machines", args=[self.compute.id, "x86_64"]), "get_machine_types"),
+                            (reverse("buses", args=[self.compute.id, "x86_64", "q35", "disk"]), "get_disk_device_types")):
+            with self.subTest(method), patch("computes.models.wvmHostDetails") as conn, \
+                    self.assertLogs("computes.views", "WARNING") as logs:
+                getattr(conn.return_value, method).side_effect = libvirtError("Cannot recv data")
+                response = self.client.get(url)
+            self.assertEqual((response.status_code, json.loads(response.content)), (400, {"error": "Cannot recv data"}))
+            self.assertIn(f"of compute {self.compute.name} failed: Cannot recv data", logs.output[0])
 
     def test_a_disk_is_offered_the_hosts_disk_buses(self):
         with patch("computes.models.wvmHostDetails") as conn:

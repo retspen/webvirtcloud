@@ -71,7 +71,7 @@ class GraphTestCase(TestCase):
         self.assertEqual((data["cpudata"], data["memdata"]["total"]), (None, None))
         self.assertNotIn("cpu_sample", data)
 
-    def test_a_host_that_cannot_be_connected_to_answers_without_values(self):
+    def test_a_host_that_cannot_be_connected_to_answers_without_values_or_with_its_error(self):
         down = ConnectionFailed("192.0.2.1 is down")
         with patch("computes.views.wvmHostDetails", side_effect=down), patch(
             "computes.models.wvmHostDetails", side_effect=down
@@ -79,7 +79,9 @@ class GraphTestCase(TestCase):
             self.assertIsNone(self.graph()["cpudata"])
             for url in (reverse("machines", args=[self.compute.id, "x86_64"]),
                         reverse("buses", args=[self.compute.id, "x86_64", "q35", "disk"])):
-                self.assertEqual(json.loads(self.client.get(url).content), {})
+                # a list the new VM form waits for: the error, not an empty answer
+                response = self.client.get(url)
+                self.assertEqual((response.status_code, json.loads(response.content)), (400, {"error": "192.0.2.1 is down"}))
 
 
 @unittest.skipUnless(shutil.which("node"), "node is not installed")
