@@ -37,6 +37,8 @@ services:
       - webvirtcloud-data:/srv/webvirtcloud/data
       # Persistent SSH keys for compute node authentication
       - webvirtcloud-ssh:/var/www/.ssh
+      # Persistent TLS client certificates for TLS computes (.pki/libvirt)
+      - webvirtcloud-pki:/var/www/.pki
       # Daily backups of both (manage.py backup)
       - webvirtcloud-backups:/srv/webvirtcloud/backups
 
@@ -44,6 +46,8 @@ volumes:
   webvirtcloud-data:
     driver: local
   webvirtcloud-ssh:
+    driver: local
+  webvirtcloud-pki:
     driver: local
   webvirtcloud-backups:
     driver: local
