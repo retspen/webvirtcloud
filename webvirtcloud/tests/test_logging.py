@@ -4,17 +4,18 @@ path, not the process working directory."""
 import io
 import logging
 import os
+import shutil
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase
 
 from webvirtcloud.log_context import RequestFilter
 from webvirtcloud.middleware import RequestIdMiddleware
 
 
-class LoggingConfigTestCase(TestCase):
+class LoggingConfigTestCase(SimpleTestCase):
     def test_default_handler_rotates(self):
         handler = settings.LOGGING["handlers"]["default"]
         self.assertEqual(handler["class"], "logging.handlers.RotatingFileHandler")
@@ -33,6 +34,7 @@ class LoggingConfigTestCase(TestCase):
         import tempfile
 
         tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
         log = os.path.join(tmp, "nested", "wvc.log")
         env = {
             **os.environ,

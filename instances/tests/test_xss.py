@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from accounts.models import UserInstance, UserSSHKey
@@ -99,7 +99,7 @@ class JsonEndpointContentTypeTestCase(TestCase):
         self.assertJson(self.client.get(reverse("vm_logs", args=[self.instance.pk])))
 
 
-class TemplateHtmlConcatenationTestCase(TestCase):
+class TemplateHtmlConcatenationTestCase(SimpleTestCase):
     """
     The log table and the volume dropdown are filled by JavaScript from JSON
     that contains user-entered names. They must use DOM APIs (.text()/.val())
@@ -142,7 +142,7 @@ ALLOWED_HTML_SINKS = {
 }
 
 
-class TemplateHtmlSinkInventoryTestCase(TestCase):
+class TemplateHtmlSinkInventoryTestCase(SimpleTestCase):
     def test_every_html_sink_in_templates_is_reviewed(self):
         found = set()
         for path in ROOT.glob("*/templates/**/*.html"):

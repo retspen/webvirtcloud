@@ -2,7 +2,7 @@ from datetime import timedelta
 from types import SimpleNamespace
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
 from operations import jobs
@@ -11,7 +11,7 @@ from operations.models import TAKEOVER_AFTER, Claim, LeaseLost, Operation, Worke
 from operations.tests import fakes
 
 
-class RegistryTestCase(TestCase):
+class RegistryTestCase(SimpleTestCase):
     def test_kinds_register_by_name(self):
         self.assertIs(get_kind("test.noop"), KINDS["test.noop"])
         self.assertEqual((label_of("test.noop"), label_of("unknown.kind")), ("No-op", "unknown.kind"))

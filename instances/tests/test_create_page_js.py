@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from django.conf import settings
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.forms import NewVMForm
 from instances.tests.create_page import render_create_page
@@ -183,7 +183,7 @@ console.log(JSON.stringify([field("#networks").value, field("#vm_mac").value]));
         self.assertEqual(NewVMForm.base_fields["mac"].clean(macs), macs)
 
 
-class DiskSourceAndPresetScriptTests(TestCase):
+class DiskSourceAndPresetScriptTests(SimpleTestCase):
     """The disk source choice enables only its own fields; a preset fills the
     sizes, picks a new disk and is announced."""
 
@@ -235,7 +235,7 @@ console.log(JSON.stringify({applied, cleared: pressed()}));""")
         self.assertEqual(out["cleared"], [["false", "text-body"], ["false", "text-body"]])
 
 
-class NewFormScriptTests(TestCase):
+class NewFormScriptTests(SimpleTestCase):
     """A new form starts with one interface; the template's copy goes into the
     template's pool unless the user picks another."""
 

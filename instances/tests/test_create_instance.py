@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.api.serializers import CreateInstanceSerializer
 from instances.models import Instance
@@ -164,7 +164,7 @@ class CreateInstanceViewTests(TestCase):
         conn.get_firmwares.assert_called_once_with("x86_64", "q35")
 
 
-class NicMacsTestCase(TestCase):
+class NicMacsTestCase(SimpleTestCase):
     def test_macs_follow_the_networks(self):
         self.assertEqual(nic_macs("52:54:00:00:00:01", "a,b"), ["52:54:00:00:00:01"])
         self.assertEqual(nic_macs("", "a,b"), [])
