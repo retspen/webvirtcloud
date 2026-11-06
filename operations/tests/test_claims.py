@@ -1,6 +1,7 @@
 """Admission writes claims only when nothing active conflicts, all or
 nothing; exclusive conflicts with any claim, shared only with exclusive."""
 
+import subprocess
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -61,6 +62,26 @@ class AdmitTestCase(TestCase):
                              expires_at=timezone.now() - timedelta(seconds=1))
         claims.admit({"instance:u1": X}, holder="b")
         self.assertEqual(list(Claim.objects.values_list("holder", flat=True)), ["b"])
+
+    def test_a_claim_of_a_process_that_ended_does_not_block(self):
+        ended = subprocess.Popen(["true"])
+        ended.wait()
+        node = claims._node()
+        Claim.objects.create(resource="instance:u1", mode=X, holder=f"{node}:{ended.pid}:1",
+                             expires_at=timezone.now() + claims.TRANSIENT_TTL)
+        claims.admit({"instance:u1": X}, holder="b")
+        self.assertEqual(list(Claim.objects.values_list("holder", flat=True)), ["b"])
+
+    def test_a_claim_of_a_running_process_or_another_installation_blocks(self):
+        ended = subprocess.Popen(["true"])
+        ended.wait()
+        for holder in (claims.holder_id(), f"other-node:{ended.pid}:1"):
+            with self.subTest(holder=holder):
+                Claim.objects.create(resource="instance:u1", mode=X, holder=holder,
+                                     expires_at=timezone.now() + claims.TRANSIENT_TTL)
+                with self.assertRaises(claims.Busy):
+                    claims.admit({"instance:u1": X}, holder="b")
+                Claim.objects.all().delete()
 
     def test_keys_are_canonical(self):
         self.assertEqual(claims.compute_key(3), "compute:3")
