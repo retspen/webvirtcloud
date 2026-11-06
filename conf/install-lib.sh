@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Idempotent installer primitives. Sourcing this file has NO side effects;
-# it only defines functions, so it can be unit-tested (conf/test_install_lib.sh).
+# it only defines functions, so it can be unit-tested (webvirtcloud/tests/sh/install_lib.test.sh).
 
 # Create <data_dir>/secret_key (mode 600) only if missing or empty; keep an
 # existing key. A blank key would make Django fail to boot, so an empty file is
