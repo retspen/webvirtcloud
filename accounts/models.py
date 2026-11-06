@@ -27,7 +27,7 @@ class UserInstance(models.Model):
         }
 
     class Meta:
-        unique_together = ["user", "instance"]
+        constraints = [models.UniqueConstraint(fields=["user", "instance"], name="unique_user_instance")]
 
 
 class UserSSHKey(models.Model):
