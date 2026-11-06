@@ -78,6 +78,7 @@ COPY conf/runit/socketiod.sh		/etc/service/socketiod/run
 COPY conf/runit/webvirtcloud.sh		/etc/service/webvirtcloud/run
 COPY conf/runit/webvirtcloud-worker.sh	/etc/service/webvirtcloud-worker/run
 COPY --chmod=644 conf/runit/backup.cron	/etc/cron.d/webvirtcloud-backup
+COPY --chmod=755 conf/runit/healthcheck	/usr/local/bin/webvirtcloud-healthcheck
 RUN chmod +x /etc/my_init.d/10_webvirtcloud_init.sh \
 	/etc/service/nginx/run \
 	/etc/service/nginx-log-forwarder/run \
@@ -86,10 +87,11 @@ RUN chmod +x /etc/my_init.d/10_webvirtcloud_init.sh \
 	/etc/service/webvirtcloud/run \
 	/etc/service/webvirtcloud-worker/run
 
-# X-Forwarded-Proto: https keeps the probe from being redirected when the
-# HTTPS profile is on (nginx passes the header on; see conf/nginx).
+# The panel's page and every service (conf/runit/healthcheck). X-Forwarded-Proto:
+# https keeps the probe from being redirected when the HTTPS profile is on
+# (nginx passes the header on; see conf/nginx).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-	CMD /srv/webvirtcloud/venv/bin/python3 -c "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1/accounts/login/', headers={'X-Forwarded-Proto': 'https'}), timeout=5)"
+	CMD /usr/local/bin/webvirtcloud-healthcheck
 
 # Declare mountable data directory for persistent SQLite and SSH keys, and the backups of both
 VOLUME ["/srv/webvirtcloud/data", "/var/www/.ssh", "/srv/webvirtcloud/backups"]
