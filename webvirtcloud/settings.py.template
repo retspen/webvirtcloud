@@ -99,7 +99,6 @@ MIDDLEWARE = [
     "django_otp.middleware.OTPMiddleware",
     "django.contrib.auth.middleware.LoginRequiredMiddleware",
     "accounts.middleware.ForcePasswordChangeMiddleware",
-    "django.contrib.auth.middleware.RemoteUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "webvirtcloud.middleware.ContentSecurityPolicyMiddleware",
