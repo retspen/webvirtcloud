@@ -682,7 +682,7 @@ Older versions collected static files into `static/`; `git clean -n static/` lis
 
 ### Restore and rollback
 
-Restoring puts back the database as it was at the backup; changes made since are lost. Migrations are not reversed. This covers sqlite; restore a PostgreSQL database from your own backup before rolling back the code. Set `b` to the backup directory to restore. To restore the database without rolling back the code, leave out the `git checkout` and `build` lines.
+Restoring puts back the database as it was at the backup; changes made since are lost. Migrations are not reversed. This covers sqlite; restore a PostgreSQL database from your own backup before rolling back the code. Set `b` to the backup directory to restore. To restore the database without rolling back the code, leave out the `build` line and every line that takes another file from `$b`: the commit, `local-migrations.tar`, `settings.py`, the nginx config and `/etc/default/webvirtcloud`.
 
 Docker, in the directory you installed from:
 
@@ -711,6 +711,7 @@ venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-
 cp "$b/settings.py" webvirtcloud/settings.py &&
 { [ ! -f "$b/webvirtcloud.conf" ] || cp "$b/webvirtcloud.conf" /etc/nginx/conf.d/webvirtcloud.conf; } &&
 venv/bin/pip3 install -r conf/requirements.txt &&
+venv/bin/python3 manage.py migrate &&
 venv/bin/python3 manage.py collectstatic --noinput &&
 chown -R www-data:www-data /srv/webvirtcloud &&
 chmod 600 db.sqlite3 webvirtcloud/settings.py
