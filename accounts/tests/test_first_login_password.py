@@ -114,3 +114,36 @@ class FirstLoginPasswordChangeTestCase(TestCase):
         with patch("pathlib.Path.read_text", side_effect=PermissionError("unreadable")):
             with self.assertRaisesRegex(RuntimeError, "run migrate as its owner"):
                 migration.flag_legacy_generated_password(None, None)
+
+
+class DefaultAdminPasswordMigrationTestCase(TestCase):
+    """An installation of a version up to v2.0.0 still signed in as admin/admin."""
+
+    def admin_with(self, password):
+        admin, _ = get_user_model().objects.get_or_create(username="admin", defaults={"is_superuser": True})
+        admin.set_password(password)
+        admin.save()
+        UserAttributes.objects.filter(user=admin).delete()  # the migration also makes them
+        return admin
+
+    def migrate(self):
+        import importlib
+        from types import SimpleNamespace
+        from django.apps import apps
+        from django.db import connection
+        migration = importlib.import_module("accounts.migrations.0013_default_admin_password")
+        migration.flag_default_admin_password(apps, SimpleNamespace(connection=connection))
+
+    def test_the_default_admin_password_must_be_changed(self):
+        admin = self.admin_with("admin")
+        self.migrate()
+        self.assertTrue(UserAttributes.objects.get(user=admin).must_change_password)
+        self.client.force_login(admin)
+        self.assertRedirects(self.client.get(reverse("instances:index")), reverse("accounts:change_password"),
+                             fetch_redirect_response=False)
+
+    def test_a_changed_admin_password_is_left_alone(self):
+        admin = self.admin_with("Changed-pw-2026")
+        UserAttributes.objects.create(user=admin)
+        self.migrate()
+        self.assertFalse(UserAttributes.objects.get(user=admin).must_change_password)
