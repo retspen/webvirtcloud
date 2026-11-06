@@ -621,9 +621,11 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    { [ ! -f /etc/default/webvirtcloud ] || cp -p /etc/default/webvirtcloud "$b"/; } &&
    git rev-parse HEAD > "$b/commit" &&
    git ls-files -z --others --exclude-standard -- '*/migrations/*.py' | tar --null -T - --remove-files -cf "$b/local-migrations.tar" &&
-   git checkout -- $(git ls-files -m -- static/css dev/scss) &&
+   git checkout -- $(git ls-files -m -- static dev/scss install.sh webvirtcloud.sh) &&
    git checkout master && git pull
    ```
+
+   Older installers collected static files into the tracked `static/` and deleted the tracked `install.sh` and `webvirtcloud.sh`; the second-to-last line puts those files back, so that `git pull` can update them.
 
 2. Rebuild `settings.py` from the template (the file keeps its owner and mode), then put back your own values; the `diff` lists them:
 
