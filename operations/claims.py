@@ -3,10 +3,10 @@ or a job writes its claims in one short transaction, only if no active
 claim conflicts; otherwise it is refused at once (Busy)."""
 
 import os
-import socket
 import threading
 from contextlib import contextmanager
 from datetime import timedelta
+from functools import cache
 
 from django.db import connection, transaction
 from django.db.models import Q
@@ -57,8 +57,34 @@ def quota_key(user_id):
     return f"quota:user:{user_id}"
 
 
+@cache
+def _node():
+    """The installation's id (worker.host_identity): the same after a container
+    is recreated on its volume, unlike its hostname."""
+    from .worker import data_dir, host_identity  # the worker imports this module
+
+    return host_identity(data_dir())
+
+
 def holder_id():
-    return f"{socket.gethostname()}:{os.getpid()}:{threading.get_ident()}"
+    return f"{_node()}:{os.getpid()}:{threading.get_ident()}"
+
+
+def _gone(holder):
+    """Whether a transient claim's process ended: one of this installation
+    that no longer runs, killed before its request's finally removed the
+    claim (a gunicorn worker past its timeout, OOM, a restart). A PID used
+    again keeps the claim until it expires."""
+    node, _sep, rest = holder.partition(":")
+    if node != _node():
+        return False
+    try:
+        os.kill(int(rest.partition(":")[0]), 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:  # another user's process
+        pass
+    return False
 
 
 def serialize(keys):
@@ -80,6 +106,9 @@ def _check(wanted, now):
     )
     for claim in active:
         if wanted[claim.resource] == Claim.EXCLUSIVE or claim.mode == Claim.EXCLUSIVE:
+            if claim.operation is None and _gone(claim.holder):
+                claim.delete()
+                continue
             raise Busy(claim.resource, claim.operation)
 
 
