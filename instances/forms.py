@@ -4,7 +4,7 @@ from django import forms
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
-from .models import CreateInstance, Flavor
+from .models import Flavor
 from .utils import nic_macs
 
 
@@ -100,30 +100,36 @@ class ConsoleForm(forms.Form):
         return data
 
 
-class NewVMForm(forms.ModelForm):
-    # name = forms.CharField(error_messages={'required': _('No Virtual Machine name has been entered')}, max_length=64)
-    # firmware = forms.CharField(max_length=50, required=False)
-    # vcpu = forms.IntegerField(error_messages={'required': _('No VCPU has been entered')})
-    # disk = forms.IntegerField(required=False)
-    # memory = forms.IntegerField(error_messages={'required': _('No RAM size has been entered')})
-    # networks = forms.CharField(error_messages={'required': _('No Network pool has been choosen')})
-    # nwfilter = forms.CharField(required=False)
-    # storage = forms.CharField(max_length=20, required=False)
-    # template = forms.CharField(required=False)
-    # images = forms.CharField(required=False)
-    # cache_mode = forms.CharField(error_messages={'required': _('Please select HDD cache mode')})
-    # hdd_size = forms.IntegerField(required=False)
-    # meta_prealloc = forms.BooleanField(required=False)
-    # virtio = forms.BooleanField(required=False)
-    # qemu_ga = forms.BooleanField(required=False)
-    # mac = forms.CharField(required=False)
-    # graphics = forms.CharField(error_messages={'required': _('Please select a graphics type')})
-    # video = forms.CharField(error_messages={'required': _('Please select a video driver')})
-    # listener_addr = forms.ChoiceField(required=True, widget=forms.RadioSelect, choices=QEMU_CONSOLE_LISTENER_ADDRESSES)
-    class Meta:
-        model = CreateInstance
-        fields = "__all__"
-        exclude = ["compute"]
+class NewVMForm(forms.Form):
+    """The new VM form (create_instance_w2.html); the API takes CreateInstanceSerializer."""
+
+    name = forms.CharField(max_length=64)
+    firmware = forms.CharField(max_length=64)
+    # an emulated TPM 2.0, as Windows 11 needs
+    tpm = forms.BooleanField(required=False)
+    vcpu = forms.IntegerField(min_value=1)
+    # a mode of libvirt's (host-model, host-passthrough, maximum) or a CPU model's name
+    vcpu_mode = forms.CharField(max_length=64)
+    disk = forms.IntegerField(required=False)
+    memory = forms.IntegerField(min_value=1)
+    networks = forms.CharField(max_length=256)
+    nwfilter = forms.CharField(max_length=256, required=False)
+    net_model = forms.CharField(max_length=256, required=False)
+    storage = forms.CharField(max_length=256, required=False)
+    template = forms.CharField(max_length=256, required=False)
+    images = forms.CharField(max_length=256, required=False)
+    cache_mode = forms.CharField(max_length=16)
+    hdd_size = forms.IntegerField(min_value=1, required=False)
+    meta_prealloc = forms.BooleanField(required=False)
+    virtio = forms.BooleanField(required=False, initial=True)
+    qemu_ga = forms.BooleanField(required=False)
+    mac = forms.CharField(max_length=255, required=False)  # one per NIC, comma separated
+    add_cdrom = forms.CharField(max_length=16)
+    # a NoCloud seed on a CD-ROM: the hostname and the creating user's SSH keys
+    cloud_init = forms.BooleanField(required=False)
+    add_input = forms.CharField(max_length=16)
+    video = forms.CharField(max_length=16)
+    listener_addr = forms.ChoiceField(choices=settings.QEMU_CONSOLE_LISTENER_ADDRESSES)
 
     def clean_name(self):
         name = self.cleaned_data["name"]
