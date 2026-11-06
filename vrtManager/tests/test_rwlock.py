@@ -10,29 +10,55 @@ class TestReadWriteLock(unittest.TestCase):
     def setUp(self):
         self.lock = ReadWriteLock()
 
+    def another_thread_gets(self, acquire_name):
+        """Whether another thread can take the read or write lock within 0.2 s now."""
+        got = []
+
+        def run():
+            try:
+                getattr(self.lock, acquire_name)(timeout=0.2)
+            except RuntimeError:
+                got.append(False)
+            else:
+                got.append(True)
+                self.lock.release()
+        thread = threading.Thread(target=run)
+        thread.start()
+        thread.join()
+        return got[0]
+
     def test_single_thread_read_lock(self):
-        """Test basic read lock acquire and release in a single thread."""
+        """A read lock lets other readers in, keeps writers out, and is released."""
         self.lock.acquireRead()
+        self.assertTrue(self.another_thread_gets("acquireRead"))
+        self.assertFalse(self.another_thread_gets("acquireWrite"))
         self.lock.release()
+        self.assertTrue(self.another_thread_gets("acquireWrite"))
 
     def test_single_thread_write_lock(self):
-        """Test basic write lock acquire and release in a single thread."""
+        """A write lock keeps everyone else out until it is released."""
         self.lock.acquireWrite()
+        self.assertFalse(self.another_thread_gets("acquireRead"))
         self.lock.release()
+        self.assertTrue(self.another_thread_gets("acquireRead"))
 
     def test_nested_read_locks(self):
-        """Test reentrant read locks by the same thread."""
+        """Reentrant read locks are held until the last release."""
         self.lock.acquireRead()
         self.lock.acquireRead()
         self.lock.release()
+        self.assertFalse(self.another_thread_gets("acquireWrite"))
         self.lock.release()
+        self.assertTrue(self.another_thread_gets("acquireWrite"))
 
     def test_nested_write_locks(self):
-        """Test reentrant write locks by the same thread."""
+        """Reentrant write locks are held until the last release."""
         self.lock.acquireWrite()
         self.lock.acquireWrite()
         self.lock.release()
+        self.assertFalse(self.another_thread_gets("acquireRead"))
         self.lock.release()
+        self.assertTrue(self.another_thread_gets("acquireRead"))
 
     def test_release_unheld_lock_raises_value_error(self):
         """Releasing a lock when none is held should raise ValueError."""
@@ -43,9 +69,10 @@ class TestReadWriteLock(unittest.TestCase):
         """A thread holding a read lock can upgrade to a write lock."""
         self.lock.acquireRead()
         self.lock.acquireWrite(timeout=1.0)
-        # Should now hold write lock with nested count
+        self.assertFalse(self.another_thread_gets("acquireRead"))
         self.lock.release()
         self.lock.release()
+        self.assertTrue(self.another_thread_gets("acquireWrite"))
 
     def test_multiple_concurrent_readers(self):
         """Multiple threads should be able to acquire read locks simultaneously."""
