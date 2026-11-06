@@ -36,6 +36,16 @@ class APISchemaTestCase(TestCase):
                 self.assertEqual(getattr(client, method)("/api/v1/nothere/").status_code, 404)
         self.assertEqual(client.get("/api/schema/").status_code, 200)
 
+    def test_a_volume_s_size_is_gib_to_create_and_bytes_to_read(self):
+        # one serializer had both: a size read back and sent again asked 2**30 times as much
+        schema = SchemaGenerator().get_schema(request=None, public=True)
+        create = schema["paths"]["/api/v1/computes/{compute_pk}/storages/{storage_pk}/volumes/"]["post"]
+        self.assertEqual(create["requestBody"]["content"]["application/json"]["schema"]["$ref"],
+                         "#/components/schemas/CreateVolume")
+        components = schema["components"]["schemas"]
+        self.assertEqual(components["CreateVolume"]["properties"]["size"]["description"], "Capacity in GiB")
+        self.assertEqual(components["Volume"]["properties"]["size"]["description"], "Capacity in bytes")
+
     def test_a_refusal_s_body_is_documented_with_its_409(self):
         schema = SchemaGenerator().get_schema(request=None, public=True)
         poweron = schema["paths"]["/api/v1/computes/{compute_pk}/instances/{id}/poweron/"]["post"]

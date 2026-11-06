@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from vrtManager.storage import wvmStorage, wvmStorages
 from webvirtcloud.serializers import ErrorSerializer, StatusSerializer
 
-from .serializers import StorageSerializer, StoragesSerializer, VolumeSerializer
+from .serializers import CreateVolumeSerializer, StorageSerializer, StoragesSerializer, VolumeSerializer
 
 
 class StorageViewSet(viewsets.ViewSet):
@@ -170,7 +170,7 @@ class VolumeViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    @extend_schema(responses={200: StatusSerializer, 400: dict, 409: ErrorSerializer})
+    @extend_schema(request=CreateVolumeSerializer, responses={200: StatusSerializer, 400: dict, 409: ErrorSerializer})
     def create(self, request, storage_pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
@@ -178,7 +178,7 @@ class VolumeViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
 
-        serializer = VolumeSerializer(data=request.data)
+        serializer = CreateVolumeSerializer(data=request.data)
         if serializer.is_valid():
             subject, action = f"Storage pool {storage_pk}", f"add volume {serializer.validated_data['name']}"
             state = conn.is_active()

@@ -7,7 +7,7 @@ class StoragesSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=20)
     status = serializers.IntegerField()
     type = serializers.CharField(max_length=100)
-    size = serializers.IntegerField()
+    size = serializers.IntegerField(help_text="Capacity in bytes")
     volumes = serializers.IntegerField()
 
 
@@ -15,8 +15,8 @@ class StorageSerializer(serializers.Serializer):
     """A storage pool's details."""
 
     state = serializers.IntegerField()
-    size = serializers.IntegerField()
-    free = serializers.IntegerField()
+    size = serializers.IntegerField(help_text="Capacity in bytes")
+    free = serializers.IntegerField(help_text="Free space in bytes")
     status = serializers.CharField(max_length=128)
     path = serializers.CharField(max_length=128)
     type = serializers.CharField(max_length=128)
@@ -26,10 +26,20 @@ class StorageSerializer(serializers.Serializer):
 
 
 class VolumeSerializer(serializers.Serializer):
-    # what the web form (storages.forms.CreateVolumeForm) takes
+    """A volume as the API reads it."""
+
+    name = serializers.CharField()
+    type = serializers.CharField()
+    allocation = serializers.IntegerField(help_text="Bytes the volume takes in its pool")
+    size = serializers.IntegerField(help_text="Capacity in bytes")
+
+
+class CreateVolumeSerializer(serializers.Serializer):
+    """A new volume, as the web form (storages.forms.CreateVolumeForm) takes it:
+    its size in GiB, where a volume read back tells bytes."""
+
     name = serializers.RegexField(r"^[a-zA-Z0-9._-]+$", max_length=120)
     type = serializers.ChoiceField(choices=[("qcow2", "qcow2 (recommended)"), ("qcow", "qcow"), ("raw", "raw")],
                                    label="Format")
-    allocation = serializers.IntegerField(read_only=True)
-    size = serializers.IntegerField(min_value=1)  # GiB
-    meta_prealloc = serializers.BooleanField(write_only=True, default=False)
+    size = serializers.IntegerField(min_value=1, help_text="Capacity in GiB")
+    meta_prealloc = serializers.BooleanField(default=False)
