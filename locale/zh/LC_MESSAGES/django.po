@@ -2898,50 +2898,61 @@ msgstr "无法连接 %(compute)s"
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s 是该虚拟机所在主机的另一个名称"
 
-#: instances/jobs.py:947
+#: instances/jobs.py:963
+#, python-format
+msgid ""
+"The VM migrated, but autostart could not be set on the destination: %(error)s"
+msgstr "虚拟机已迁移，但无法在目标主机上设置自动启动：%(error)s"
+
+#: instances/jobs.py:969
+#, python-format
+msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
+msgstr "虚拟机已迁移，但其 NVRAM 文件仍留在源主机上：%(error)s"
+
+#: instances/jobs.py:976
 msgid "Migrate VM"
 msgstr "迁移虚拟机"
 
-#: instances/jobs.py:991
+#: instances/jobs.py:1023
 msgid "Migrating the VM"
 msgstr "正在迁移虚拟机"
 
-#: instances/jobs.py:1038
+#: instances/jobs.py:1070
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt 仍在迁移虚拟机"
 
-#: instances/jobs.py:1045
+#: instances/jobs.py:1079
 msgid "The VM stayed on the source host"
 msgstr "虚拟机留在了源主机上"
 
-#: instances/jobs.py:1047
+#: instances/jobs.py:1081
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr "虚拟机同时位于两个计算节点上，或都不在；请检查后处理此任务。"
 
-#: instances/jobs.py:1095
+#: instances/jobs.py:1129
 msgid "Move disk"
 msgstr "移动磁盘"
 
-#: instances/jobs.py:1102
+#: instances/jobs.py:1136
 msgid "Choose a disk of the VM"
 msgstr "请选择虚拟机的一个磁盘"
 
-#: instances/jobs.py:1126
+#: instances/jobs.py:1160
 msgid "Copying the disk"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:1169
+#: instances/jobs.py:1203
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr "%(dev)s 上正在运行另一个块任务；请检查虚拟机"
 
-#: instances/jobs.py:1175
+#: instances/jobs.py:1209
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "磁盘仍在 %(path)s；如果 %(dest)s 存在，请将其删除"
 
-#: instances/jobs.py:1177
+#: instances/jobs.py:1211
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s 的定义指向 %(paths)s；请检查虚拟机"
