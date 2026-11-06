@@ -714,7 +714,14 @@ class CloneInstance(Kind):
         if not success:
             _delete_created(proxy, op)
             return Outcome(ended, error=say(errmsg or _("The copy failed")))
-        proxy.define_clone(op.intent["clone"], op.intent["uuid"], {c["dev"]: c["path"] for c in created})
+        try:
+            proxy.define_clone(op.intent["clone"], op.intent["uuid"], {c["dev"]: c["path"] for c in created})
+        except util.ConnectionFailed:
+            raise  # unreachable: recovery waits and retries
+        except libvirtError as err:  # it would fail the same way at every retry
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "The disks were copied, but the clone could not be defined: %(error)s; check these volumes, "
+                "then resolve this job: %(volumes)s"), error=err, volumes=volumes))
         return Outcome(Operation.SUCCEEDED, result=_clone_made(op, _finish_clone(op, op.intent["clone"], [])))
 
     def log_entry(self, op, state):

@@ -19,7 +19,7 @@ from instances.jobs import CloneInstance
 from instances.models import Instance
 from operations.utils import words
 from operations.jobs import Cancelled, Context
-from vrtManager.util import OperationError
+from vrtManager.util import ConnectionFailed, OperationError
 from operations.models import Claim, Operation, acquire
 
 
@@ -600,6 +600,17 @@ class LiveCloneJobTestCase(TransactionTestCase):
                 self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"]).exists())
                 Instance.objects.filter(uuid=op.intent["uuid"]).delete()
                 op.delete()
+
+    def test_recovery_that_cannot_define_the_clone_ends_uncertain(self):
+        # the worker stopped after define_clone copied the UEFI variables: a retry finds the copy there
+        self.track("define_clone", libvirt_error(libvirt.VIR_ERR_STORAGE_VOL_EXIST))
+        outcome, _op = self.recovered(copy_result=[True, ""])
+        self.assertEqual(outcome.state, Operation.UNCERTAIN)
+        self.assertIn("/real/copy-vda.qcow2", words(outcome.error))
+        self.assertEqual(self.deleted(), [])
+        self.track("define_clone", ConnectionFailed("host down"))
+        with self.assertRaises(ConnectionFailed):
+            self.recovered(copy_result=[True, ""])
 
     def test_recovery_gives_the_clone_the_size_asked_and_starts_it(self):
         clone = {"name": "copy", "disk-vda": "copy-vda.qcow2", "disk_owner_uid": 107, "disk_owner_gid": 107,
