@@ -12,7 +12,7 @@ from unittest.mock import patch
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import OperationalError, connection
-from django.test import TransactionTestCase
+from django.test import SimpleTestCase, TransactionTestCase
 from django.utils import timezone
 
 from appsettings.models import AppSettings
@@ -345,14 +345,14 @@ class RequestJobTestCase(TransactionTestCase):
         self.assertEqual(fakes.EXPIRED, [str(other.pk)])
 
 
-class DataDirTestCase(TransactionTestCase):
+class DataDirTestCase(SimpleTestCase):
     def test_the_data_dir_does_not_follow_the_log_file(self):
         with self.settings(WEBVIRTCLOUD_LOG_FILE="/var/log/wvc-test/webvirtcloud.log"):
             moved = data_dir()
         self.assertEqual(str(moved), str(settings.BASE_DIR / "data"))
 
 
-class HostIdentityTestCase(TransactionTestCase):
+class HostIdentityTestCase(SimpleTestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
