@@ -205,12 +205,11 @@ class InstancesTestCase(TestCase):
         response = self.client.get(reverse("instances:destroy", args=[instance.id]))
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.post(
-            reverse("instances:destroy", args=[instance.id]),
-            {},  # do not destroy disk image
-            HTTP_REFERER=reverse("index"),
-        )
-        self.assertRedirects(response, reverse("instances:index"))
+        # the page queues the delete; the worker runs it
+        response = self.client.post(reverse("instances:destroy", args=[instance.id]), {"submission_key": "key-destroy-new"})  # the disk image stays
+        self.assertRedirects(response, reverse("instances:instance", args=[instance.id]), fetch_redirect_response=False)
+        run(Operation.objects.get(kind="instance.delete", params__instance=instance.id))
+        self.assertFalse(Instance.objects.filter(pk=instance.id).exists())
 
     def test_create_from_xml(self):
         uuid = randomUUID()
@@ -233,12 +232,11 @@ class InstancesTestCase(TestCase):
         # destroy started instance to maximize coverage
         xml_instance.proxy.start()
 
-        response = self.client.post(
-            reverse("instances:destroy", args=[xml_instance.id]),
-            {},  # do not delete disk image
-            HTTP_REFERER=reverse("index"),
-        )
-        self.assertRedirects(response, reverse("instances:index"))
+        # the page queues the delete; the worker runs it
+        response = self.client.post(reverse("instances:destroy", args=[xml_instance.id]), {"submission_key": "key-destroy-xml"})  # the disk image stays
+        self.assertRedirects(response, reverse("instances:instance", args=[xml_instance.id]), fetch_redirect_response=False)
+        run(Operation.objects.get(kind="instance.delete", params__instance=xml_instance.id))
+        self.assertFalse(Instance.objects.filter(pk=xml_instance.id).exists())
 
     def test_resize_cpu(self):
         self.assertEqual(self.instance.vcpu, 1)
@@ -663,12 +661,11 @@ class InstancesTestCase(TestCase):
 
         clone.proxy.create_snapshot("test")
 
-        response = self.client.post(
-            reverse("instances:destroy", args=[clone.id]),
-            {"delete_disk": True, "delete_nvram": True},
-            HTTP_REFERER=reverse("index"),
-        )
-        self.assertRedirects(response, reverse("instances:index"))
+        # the page queues the delete; the worker runs it
+        response = self.client.post(reverse("instances:destroy", args=[clone.id]), {"delete_disk": True, "delete_nvram": True, "submission_key": "key-destroy-clone"})
+        self.assertRedirects(response, reverse("instances:instance", args=[clone.id]), fetch_redirect_response=False)
+        run(Operation.objects.get(kind="instance.delete", params__instance=clone.id))
+        self.assertFalse(Instance.objects.filter(pk=clone.id).exists())
         self.assertEqual(Instance.objects.count(), instance_count)
 
     def test_clone_with_quota(self):
