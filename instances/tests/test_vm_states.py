@@ -54,6 +54,9 @@ class VmStatesTestCase(TestCase):
         stranger = get_user_model().objects.create_user("st-stranger", password="pw")
         self.assertEqual(self.get(stranger).json()["computes"], {})
 
+    def test_a_host_id_that_is_not_a_number_is_not_found(self):
+        self.assertEqual(self.get(self.admin, "?compute=x").status_code, 404)
+
     def test_one_host_s_list_is_for_administrators(self):
         self.assertEqual(self.get(self.admin, f"?compute={self.up.pk}").json()["computes"],
                          {str(self.up.pk): {"ok": True, "vms": UP}})

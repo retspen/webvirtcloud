@@ -126,10 +126,12 @@ def states(request):
     """The VM lists' poll: utils.vm_states of the list's hosts; ?compute=id
     for one host's list (administrators)."""
     computes = list(Compute.objects.all())
-    if request.GET.get("compute"):
+    if compute := request.GET.get("compute"):
         if not request.user.is_superuser:
             raise PermissionDenied
-        computes = [get_object_or_404(Compute, pk=request.GET["compute"])]
+        if not compute.isdigit():
+            raise Http404
+        computes = [get_object_or_404(Compute, pk=compute)]
     response = JsonResponse({"computes": utils.vm_states(request.user, _listed_computes(request.user, computes))})
     response["Cache-Control"] = "no-store"
     return response
