@@ -49,6 +49,10 @@ class OperationError(libvirt.libvirtError):
         return render(self.text, self.values, gettext)
 
 
+class InUse(OperationError):
+    """An object something still uses cannot be changed or deleted."""
+
+
 class ConnectionFailed(OperationError):
     """The host could not be connected to; the message may name it and how it
     is reached."""

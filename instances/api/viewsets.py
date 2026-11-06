@@ -24,7 +24,7 @@ from operations.api.serializers import OperationSerializer
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from webvirtcloud.serializers import ActionStatusSerializer
+from webvirtcloud.serializers import ActionStatusSerializer, ErrorSerializer
 
 from .serializers import (
     CreateInstanceSerializer,
@@ -124,7 +124,7 @@ class InstanceViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    @extend_schema(request=DestroySerializer, responses={202: OperationSerializer, 400: dict})
+    @extend_schema(request=DestroySerializer, responses={202: OperationSerializer, 400: dict, 409: ErrorSerializer})
     def destroy(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="delete")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
@@ -138,17 +138,17 @@ class InstanceViewSet(viewsets.ViewSet):
         return Response(OperationSerializer(op, context={"request": request}).data, status=status.HTTP_202_ACCEPTED,
                         headers={"Location": reverse("operation-detail", args=[op.pk])})
 
-    @extend_schema(request=None, responses=ActionStatusSerializer)
+    @extend_schema(request=None, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])
     def poweron(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
         if queryset.is_template:
-            return Response({"status": _("Templates cannot be started.")}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": _("Templates cannot be started.")}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(poweron, request, pk, "poweron command send")
 
-    @extend_schema(request=None, responses=ActionStatusSerializer)
+    @extend_schema(request=None, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])
     def poweroff(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
@@ -156,17 +156,17 @@ class InstanceViewSet(viewsets.ViewSet):
             raise Http404()
         return instance_action_response(poweroff, request, pk, "poweroff command send")
 
-    @extend_schema(request=None, responses=ActionStatusSerializer)
+    @extend_schema(request=None, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])
     def powercycle(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
         if compute_pk is not None and str(queryset.compute_id) != str(compute_pk):
             raise Http404()
         if queryset.is_template:
-            return Response({"status": _("Templates cannot be started.")}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": _("Templates cannot be started.")}, status=status.HTTP_409_CONFLICT)
         return instance_action_response(powercycle, request, pk, "powercycle command send")
 
-    @extend_schema(request=None, responses=ActionStatusSerializer)
+    @extend_schema(request=None, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])
     def forceoff(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
@@ -174,7 +174,7 @@ class InstanceViewSet(viewsets.ViewSet):
             raise Http404()
         return instance_action_response(force_off, request, pk, "force off command send")
 
-    @extend_schema(request=None, responses=ActionStatusSerializer)
+    @extend_schema(request=None, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])
     def suspend(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk)
@@ -182,7 +182,7 @@ class InstanceViewSet(viewsets.ViewSet):
             raise Http404()
         return instance_action_response(suspend, request, pk, "suspend command send")
 
-    @extend_schema(request=None, responses=ActionStatusSerializer)
+    @extend_schema(request=None, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])
     def resume(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk)
@@ -200,7 +200,7 @@ class MigrateViewSet(viewsets.ViewSet):
     serializer_class = MigrateSerializer
     queryset = ""
 
-    @extend_schema(responses={202: OperationSerializer, 400: dict})
+    @extend_schema(responses={202: OperationSerializer, 400: dict, 409: ErrorSerializer})
     def create(self, request):
         serializer = MigrateSerializer(data=request.data)
         if not serializer.is_valid():
@@ -254,7 +254,7 @@ class CreateInstanceViewSet(viewsets.ViewSet):
     serializer_class = CreateInstanceSerializer
     queryset = ""
 
-    @extend_schema(responses={202: OperationSerializer, 400: dict})
+    @extend_schema(responses={202: OperationSerializer, 400: dict, 409: ErrorSerializer})
     def create(self, request, compute_pk=None, arch=None, machine=None):
         serializer = CreateInstanceSerializer(data=request.data,
                                               context={"compute_pk": compute_pk, "arch": arch, "machine": machine})

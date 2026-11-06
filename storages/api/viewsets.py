@@ -13,7 +13,7 @@ from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from vrtManager.storage import wvmStorage, wvmStorages
-from webvirtcloud.serializers import StatusSerializer
+from webvirtcloud.serializers import ErrorSerializer, StatusSerializer
 
 from .serializers import StorageSerializer, StoragesSerializer, VolumeSerializer
 
@@ -135,6 +135,7 @@ class VolumeViewSet(viewsets.ViewSet):
     serializer_class = VolumeSerializer
     lookup_value_converter = "str"
 
+    @extend_schema(responses={200: VolumeSerializer(many=True), 409: ErrorSerializer})
     def list(self, request, storage_pk=None, compute_pk=None):
 
         compute = get_object_or_404(Compute, pk=compute_pk)
@@ -142,12 +143,9 @@ class VolumeViewSet(viewsets.ViewSet):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
-        state = conn.is_active()
-
-        if state:
-            volume_queryset = conn.update_volumes()
-        else:
-            volume_queryset = None
+        if not conn.is_active():
+            return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
+        volume_queryset = conn.update_volumes()
         conn.close()
         serializer = VolumeSerializer(
             volume_queryset, many=True, context={"request": request}
@@ -155,15 +153,16 @@ class VolumeViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
+    @extend_schema(responses={200: VolumeSerializer, 409: ErrorSerializer})
     def retrieve(self, request, storage_pk=None, compute_pk=None, pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
-        state = conn.is_active()
-
-        volume_queryset = conn.get_volume_details(pk) if state else None
+        if not conn.is_active():
+            return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
+        volume_queryset = conn.get_volume_details(pk)
         conn.close()
         serializer = VolumeSerializer(
             volume_queryset, many=False, context={"request": request}
@@ -171,7 +170,7 @@ class VolumeViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    @extend_schema(responses={200: StatusSerializer, 400: dict, 409: StatusSerializer})
+    @extend_schema(responses={200: StatusSerializer, 400: dict, 409: ErrorSerializer})
     def create(self, request, storage_pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
@@ -200,11 +199,11 @@ class VolumeViewSet(viewsets.ViewSet):
                 return Response({"status": "Volume: " + ret + " is created"})
             else:
                 failed(request, compute, subject, action, "pool is not active")
-                return Response({"status": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
+                return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(responses={200: StatusSerializer, 409: StatusSerializer})
+    @extend_schema(responses={200: StatusSerializer, 409: ErrorSerializer})
     def destroy(self, request, storage_pk=None, compute_pk=None, pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
@@ -221,4 +220,4 @@ class VolumeViewSet(viewsets.ViewSet):
             return Response({"status": "Volume: " + pk + " is deleted"})
         else:
             failed(request, compute, subject, action, "pool is not active")
-            return Response({"status": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)

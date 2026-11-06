@@ -206,10 +206,14 @@ class AuthorizationMatrixTestCase(TestCase):
                 data["sshkeyid"] = key.pk
             response = self.client.post(url, data, HTTP_REFERER=f"/instances/{self.instance.pk}/")
         if response.status_code >= 500:
-            # Only the fixture's explicit libvirt failure is an acceptable
-            # authorization outcome. Unexpected failures must fail the test.
-            self.assertEqual(response.status_code, 500)
-            self.assertTrue(response.context and response.context.get("libvirt_error"))
+            # Only the fixture's explicit libvirt failure (its host is not
+            # reached) is an acceptable authorization outcome: the page's error
+            # page, the API's 503. Unexpected failures must fail the test.
+            if url.startswith("/api/"):
+                self.assertEqual(response.status_code, 503)
+            else:
+                self.assertEqual(response.status_code, 500)
+                self.assertTrue(response.context and response.context.get("libvirt_error"))
         return response
 
     def _url(self, name, params):

@@ -5,9 +5,23 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerSplitView,
 )
+from drf_spectacular.utils import extend_schema
+from rest_framework.decorators import api_view
+from rest_framework.exceptions import NotFound
+
 from appsettings.views import appsettings
 from console.views import console
 from instances.views import index
+
+
+@extend_schema(exclude=True)
+@api_view(["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"])
+def api_not_found(request):
+    """An API URL that names nothing: JSON, after the API's authentication, as
+    every other API answer. Only one with a trailing slash: one without is
+    redirected to it first."""
+    raise NotFound
+
 
 urlpatterns = [
     path("", index, name="index"),
@@ -26,6 +40,7 @@ urlpatterns = [
     re_path(r"^swagger\.(?P<format>json|yaml)$", SpectacularAPIView.as_view(), name="schema-json"),
     path("swagger/", SpectacularSwaggerSplitView.as_view(url_name="schema"), name="schema-swagger-ui"),
     path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="schema-redoc"),
+    re_path(r"^api/(?:.*/)?$", api_not_found),
 ]
 
 if settings.DEBUG:

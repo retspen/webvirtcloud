@@ -70,7 +70,7 @@ class VolumeDeleteTests(TestCase):
         conn = mock_wvm.return_value
         conn.is_active.return_value = False
         conn.get_size.return_value = (1, 1)
-        conn.del_volume.side_effect = util.OperationError("Volume disk.qcow2 is in use")
+        conn.del_volume.side_effect = util.InUse("Volume disk.qcow2 is in use")
         return conn
 
     @patch("storages.views.wvmStorage")
@@ -129,5 +129,15 @@ class VolumeDeleteTests(TestCase):
         conn = self.refused(mock_wvm)
         conn.is_active.return_value = True
         response = self.client.delete(f"/api/v1/computes/{self.compute.id}/storages/default/volumes/disk.qcow2/")
-        self.assertEqual(response.status_code, 400, response.content)
+        self.assertEqual(response.status_code, 409, response.content)
         self.assertIn("disk.qcow2 is in use", response.json()["detail"])
+
+    @patch("storages.api.viewsets.wvmStorage")
+    def test_the_api_reads_no_volumes_of_a_stopped_pool(self, mock_wvm):
+        # it answered an empty list, or a made-up volume for any name
+        mock_wvm.return_value.is_active.return_value = False
+        base = f"/api/v1/computes/{self.compute.id}/storages/default/volumes/"
+        for url in (base, base + "anything.qcow2/"):
+            with self.subTest(url):
+                response = self.client.get(url)
+                self.assertEqual((response.status_code, response.json()), (409, {"detail": "Pool is not active"}))

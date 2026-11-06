@@ -3,6 +3,7 @@ import os
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
+from drf_spectacular.generators import SchemaGenerator
 from rest_framework.response import Response
 from rest_framework.test import APIClient, APIRequestFactory
 from rest_framework.views import APIView
@@ -20,6 +21,26 @@ class APISchemaTestCase(TestCase):
         client.force_login(admin)
         self.assertEqual(client.get("/api/v1/computes/abc/instances/").status_code, 404)
         self.assertEqual(client.get("/api/v1/instances/abc/").status_code, 404)
+
+    def test_an_api_url_that_names_nothing_is_a_json_404_after_authentication(self):
+        # it was the HTML error page
+        client = APIClient()
+        self.assertEqual(client.get("/api/v1/nothere/").status_code, 401)
+        client.force_login(get_user_model().objects.create_user("schema_user", password="pw"))
+        for url in ("/api/v1/nothere/", "/api/v1/nothere", "/api/v1/instances/1/x/", "/api/", "/api/v1/", "/api/nope/"):
+            with self.subTest(url):
+                response = client.get(url, follow=True)
+                self.assertEqual((response.status_code, response.json()), (404, {"detail": "Not found."}))
+        for method in ("head", "options"):
+            with self.subTest(method):
+                self.assertEqual(getattr(client, method)("/api/v1/nothere/").status_code, 404)
+        self.assertEqual(client.get("/api/schema/").status_code, 200)
+
+    def test_a_refusal_s_body_is_documented_with_its_409(self):
+        schema = SchemaGenerator().get_schema(request=None, public=True)
+        poweron = schema["paths"]["/api/v1/computes/{compute_pk}/instances/{id}/poweron/"]["post"]
+        self.assertEqual(poweron["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
+                         "#/components/schemas/Error")
 
 
 class SchemaPermissionTestCase(TestCase):

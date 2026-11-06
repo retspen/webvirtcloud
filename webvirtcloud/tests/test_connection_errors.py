@@ -11,7 +11,7 @@ from django.contrib.messages import get_messages
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase
-from vrtManager.util import ConnectionFailed
+from vrtManager.util import ConnectionFailed, InUse, OperationError
 from webvirtcloud.middleware import ExceptionMiddleware, error_text
 
 HOST_DETAIL = "ssh: connect to host 10.0.0.9 port 22: No route to host"
@@ -90,10 +90,24 @@ class ConnectionErrorPageTests(TestCase):
 
     def test_api_answers_the_same_way(self):
         response, _ = self.handle(self.owner, ConnectionFailed(f"Connection Failed: {HOST_DETAIL}"), path="/api/v1/instances/1/")
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 503)  # a client may try again
         self.assertNotIn(b"10.0.0.9", response.content)
         response, _ = self.handle(self.admin, ConnectionFailed(f"Connection Failed: {HOST_DETAIL}"), path="/api/v1/instances/1/")
         self.assertIn(b"10.0.0.9", response.content)
+
+    def test_the_api_s_status_says_what_kind_of_error_it_is(self):
+        for error, expected, method in (
+            (libvirt_error(libvirt.VIR_FROM_STORAGE, "Storage pool not found", libvirt.VIR_ERR_NO_STORAGE_POOL), 404, "get"),
+            (libvirt_error(libvirt.VIR_FROM_QEMU, "Domain not found", libvirt.VIR_ERR_NO_DOMAIN), 404, "delete"),
+            # starting a VM whose network was removed: the VM is there
+            (libvirt_error(libvirt.VIR_FROM_NETWORK, "Network not found", libvirt.VIR_ERR_NO_NETWORK), 400, "post"),
+            (InUse("Volume %(name)s is in use", name="a.qcow2"), 409, "delete"),
+            (libvirt_error(libvirt.VIR_FROM_QEMU, "Requested operation is not valid", libvirt.VIR_ERR_OPERATION_INVALID), 400, "post"),
+            (OperationError("Invalid cache mode"), 400, "post"),
+        ):
+            with self.subTest(str(error)):
+                response, _ = self.handle(self.admin, error, path="/api/v1/instances/1/", method=method)
+                self.assertEqual(response.status_code, expected)
 
     def test_views_that_report_the_error_themselves(self):
         request = RequestFactory().post("/")

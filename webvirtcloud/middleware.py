@@ -6,11 +6,13 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
+import libvirt
 from libvirt import libvirtError
 from logs.audit import request_ip, write
 from operations import claims, jobs
 from operations.utils import busy_message, public_error_text, said, summary, words
 
+from vrtManager.util import ConnectionFailed, InUse
 from webvirtcloud.log_context import current_request
 
 API_PREFIX = "/api/"
@@ -44,6 +46,29 @@ def error_text(request, exception):
     if user and (user.is_superuser or user.has_perm("instances.view_instances")):
         return words(said(exception))
     return public_error_text(exception)
+
+
+# libvirt's "no such object" errors
+NOT_FOUND_CODES = {
+    libvirt.VIR_ERR_NO_DOMAIN, libvirt.VIR_ERR_NO_DOMAIN_SNAPSHOT, libvirt.VIR_ERR_NO_STORAGE_POOL,
+    libvirt.VIR_ERR_NO_STORAGE_VOL, libvirt.VIR_ERR_NO_NETWORK, libvirt.VIR_ERR_NO_INTERFACE,
+    libvirt.VIR_ERR_NO_NWFILTER, libvirt.VIR_ERR_NO_SECRET, libvirt.VIR_ERR_NO_NODE_DEVICE,
+}
+
+
+def api_status(request, exception):
+    """An API client's status for a libvirt error: 404 for an object the host
+    does not have, 409 for one in use, 503 for a host that cannot be reached
+    (a client may try again), else 400. Only a read or a delete names the
+    object not found: an action (POST) may miss another one it needs, as a
+    VM's removed network, and the VM is there."""
+    if isinstance(exception, InUse):
+        return 409
+    if isinstance(exception, ConnectionFailed):
+        return 503
+    if request.method in ("GET", "HEAD", "DELETE") and exception.get_error_code() in NOT_FOUND_CODES:
+        return 404
+    return 400
 
 
 class RequestIdMiddleware:
@@ -106,7 +131,7 @@ class ExceptionMiddleware:
         # API clients get JSON with a failure status, not the HTML error page.
         if request.path_info.startswith(API_PREFIX):
             if isinstance(exception, libvirtError):
-                return JsonResponse({"detail": error_text(request, exception)}, status=400)
+                return JsonResponse({"detail": error_text(request, exception)}, status=api_status(request, exception))
             if isinstance(exception, claims.Busy):
                 return JsonResponse({"detail": busy_message(exception, request.user),
                                      "operation": summary(exception.blocker, request.user) if exception.blocker else None},

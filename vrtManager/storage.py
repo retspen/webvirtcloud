@@ -267,7 +267,7 @@ class wvmStorage(wvmConnect):
         """libvirt deletes any volume; one a VM still needs is refused."""
         vol = self.pool.storageVolLookupByName(name)
         if vol.path() in self.paths_in_use():
-            raise util.OperationError(gettext_noop("Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"), name=name)
+            raise util.InUse(gettext_noop("Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"), name=name)
         vol.delete(0)
 
     def get_volume_format_type(self, name):

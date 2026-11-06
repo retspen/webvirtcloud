@@ -1,4 +1,6 @@
+from django.http import JsonResponse
 from django.shortcuts import redirect
+from django.utils.translation import gettext as _
 from django.urls import Resolver404, resolve
 
 from accounts.models import UserAttributes
@@ -22,5 +24,7 @@ class ForcePasswordChangeMiddleware:
             except Resolver404:
                 view_name = None
             if view_name not in ALLOWED_VIEWS:
+                if request.path_info.startswith("/api/"):  # as for a token (accounts.auth)
+                    return JsonResponse({"detail": _("Change your password before using the API.")}, status=403)
                 return redirect("accounts:change_password")
         return self.get_response(request)

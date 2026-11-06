@@ -38,6 +38,12 @@ class FirstLoginPasswordChangeTestCase(TestCase):
                 )
         self.assertEqual(self.client.get(reverse("accounts:change_password")).status_code, 200)
 
+    def test_an_api_request_of_the_session_gets_json_not_the_form(self):
+        # as a token of that user does (accounts.auth)
+        self.client.login(request=RequestFactory().get("/"), username="firstadmin", password=GENERATED)
+        response = self.client.get("/api/v1/instances/")
+        self.assertEqual((response.status_code, response.json()), (403, {"detail": "Change your password before using the API."}))
+
     def test_changing_the_password_lifts_the_redirect_and_deletes_the_file(self):
         self.client.login(request=RequestFactory().get("/"), username="firstadmin", password=GENERATED)
         self.client.post(
